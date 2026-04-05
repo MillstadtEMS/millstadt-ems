@@ -68,17 +68,16 @@ export default function Nav() {
             <WeatherTicker />
           </div>
 
-          {/* Ambulance menu button — desktop only */}
-          <div className="hidden md:flex shrink-0 flex-col items-center">
+          {/* Ambulance — flashes on new dispatch; opens menu on desktop, decorative on mobile (bottom nav handles menu) */}
+          <div className="flex shrink-0 flex-col items-center">
             <button
               onClick={() => setMobileOpen((v) => !v)}
               className="relative flex flex-col items-center outline-none focus:outline-none"
               aria-label="Toggle menu"
             >
-              {/* Ambulance — top half black, bottom half yellow, lights flash on open or new dispatch */}
               <div
                 className={mobileOpen || dispatchFlash ? "ambo-img-active" : ""}
-                style={{ position: "relative", width: "52px" }}
+                style={{ position: "relative", width: "clamp(36px, 5vw, 52px)" }}
               >
                 {/* invisible spacer sets container height */}
                 <img src="/images/millstadt-ems/ambo-56-nobg.png" alt="" style={{ width: "100%", display: "block", visibility: "hidden" }} />
@@ -92,7 +91,7 @@ export default function Nav() {
                     filter: "grayscale(1) contrast(3) brightness(0.2)",
                   }}
                 />
-                {/* BOTTOM HALF — clean yellow, no red: grayscale first then recolour */}
+                {/* BOTTOM HALF — clean yellow, no red */}
                 <img
                   src="/images/millstadt-ems/ambo-56-nobg.png"
                   alt=""
@@ -103,7 +102,7 @@ export default function Nav() {
                   }}
                 />
               </div>
-              <div className="text-center text-[10px] text-slate-300 uppercase tracking-widest font-black mt-0.5">menu</div>
+              <div className="text-center text-[9px] text-slate-300 uppercase tracking-widest font-black mt-0.5">menu</div>
             </button>
           </div>
 
@@ -342,9 +341,9 @@ function WeatherTicker() {
     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "0 1rem" }}>
       <span
         key={pulseKey}
+        className="text-[10px] sm:text-[14px]"
         style={{
           color,
-          fontSize: "0.88rem",
           fontWeight: 800,
           textTransform: "uppercase",
           letterSpacing: "0.06em",

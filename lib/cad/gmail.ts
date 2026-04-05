@@ -60,7 +60,7 @@ export async function fetchUnreadDispatchEmails(): Promise<RawEmail[]> {
   //   'from:noreply@chief360.com is:unread'
   //   'subject:"CAD Alert" is:unread'
   //   'is:unread in:inbox'
-  const searchQuery = process.env.GMAIL_SEARCH_QUERY ?? "is:unread in:inbox";
+  const searchQuery = process.env.GMAIL_SEARCH_QUERY ?? "(from:alert@cfmsg.co OR from:cencom@omnigo.com) is:unread";
 
   const listRes = await gmail.users.messages.list({
     userId,

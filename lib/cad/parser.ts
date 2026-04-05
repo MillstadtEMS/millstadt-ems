@@ -227,9 +227,15 @@ function buildDatetime(date: Date, hours: number, minutes: number): { iso: strin
  * (not an address, not a date/time line, not a signature line).
  */
 function extractFreeformNature(body: string): string | null {
-  const ADDRESS_RE  = /^\d+\s+(?:\w+\s+)+(?:St|Street|Ave|Avenue|Blvd|Boulevard|Dr|Drive|Rd|Road|Ln|Lane|Ct|Court|Way|Pl|Place|Hwy|Highway|Pkwy|Parkway)\b/i;
-  const DATETIME_RE = /^\d{1,2}:\d{2}|^\d{1,2}\/\d{1,2}\/\d{2,4}|^\d{4}-\d{2}-\d{2}|^(?:January|February|March|April|May|June|July|August|September|October|November|December)/i;
-  const SIGNATURE_RE = /^(?:respectfully|sent from|regards|sincerely|thank|--)/i;
+  const ADDRESS_RE   = /^\d+\s+(?:\w+\s+)+(?:St|Street|Ave|Avenue|Blvd|Boulevard|Dr|Drive|Rd|Road|Ln|Lane|Ct|Court|Way|Pl|Place|Hwy|Highway|Pkwy|Parkway)\b/i;
+  const DATETIME_RE  = /^\d{1,2}:\d{2}|^\d{1,2}\/\d{1,2}\/\d{2,4}|^\d{4}-\d{2}-\d{2}|^(?:January|February|March|April|May|June|July|August|September|October|November|December)/i;
+  const SIGNATURE_RE = /^(?:respectfully|sent from|regards|sincerely|thank|--|on \w+ \d)/i;
+  // Email header lines that appear in forwarded messages
+  const EMAIL_HDR_RE = /^(?:from|to|cc|bcc|subject|date|message-id|reply-to|delivered-to|received|mime-version|content-type|x-)\s*:/i;
+  // Image placeholders from email clients / Gmail
+  const IMAGE_RE     = /^\[image/i;
+  // Forwarding / quoting separators
+  const SEPARATOR_RE = /^[-=_]{3,}/;
 
   const lines = body.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
@@ -237,9 +243,13 @@ function extractFreeformNature(body: string): string | null {
     if (ADDRESS_RE.test(line))   continue;
     if (DATETIME_RE.test(line))  continue;
     if (SIGNATURE_RE.test(line)) continue;
+    if (EMAIL_HDR_RE.test(line)) continue;
+    if (IMAGE_RE.test(line))     continue;
+    if (SEPARATOR_RE.test(line)) continue;
     if (line.length < 4)         continue;
-    // Skip lines that look like email headers or disclaimers
     if (line.startsWith("*") || line.includes("CONFIDENTIALITY")) continue;
+    // Skip lines that are just email addresses or contain angle-bracketed addresses
+    if (line.includes("@") && line.includes("<"))  continue;
     return line;
   }
   return null;
@@ -277,6 +287,12 @@ export function parseDispatchEmail(
   const dispatchNature = normalizeNature(rawNature);
   if (!dispatchNature || dispatchNature.length < 2) {
     return { status: "failed", reason: "Dispatch nature extracted but too short to be valid" };
+  }
+  // Reject nature strings that look like email metadata (From:, alert@cfmsg.co, [IMAGE:…], etc.)
+  if (/^from\s*:/i.test(dispatchNature) || /^date\s*:/i.test(dispatchNature) ||
+      dispatchNature.startsWith("[Image") || dispatchNature.includes("@cfmsg") ||
+      dispatchNature.includes("@omnigo") || dispatchNature.includes("cencom")) {
+    return { status: "failed", reason: "Extracted nature looks like email metadata, not a call type" };
   }
 
   // ── Extract dispatch status (Dispatched / Enroute / etc.) ──────────────

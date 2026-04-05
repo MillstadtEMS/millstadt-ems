@@ -14,9 +14,9 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-t from-[#040d1a] via-transparent to-transparent" style={{ zIndex: 2 }} />
         <HolidayOverlay />
 
-        <div className="relative z-10 w-full flex flex-col items-center text-center px-6 pb-16 pt-20">
+        <div className="relative z-10 w-full flex flex-col items-center text-center px-6 pb-10 sm:pb-16 pt-16 sm:pt-20">
 
-          <div className="flex items-center justify-center gap-3 mb-10">
+          <div className="flex items-center justify-center gap-3 mb-6 sm:mb-10">
             <span className="h-px w-12 bg-[#f0b429]" />
             <span className="text-[#f0b429] text-xs font-bold tracking-[0.35em] uppercase">
               Millstadt, Illinois · Est. 1980
@@ -24,13 +24,13 @@ export default function Home() {
             <span className="h-px w-12 bg-[#f0b429]" />
           </div>
 
-          <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-white leading-[0.88] tracking-tight mb-10">
+          <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-white leading-[0.88] tracking-tight mb-6 sm:mb-10">
             Millstadt<br />
             <span className="text-[#f0b429]">Ambulance</span><br />
             Service
           </h1>
 
-          <p className="text-slate-300 text-xl md:text-2xl leading-relaxed mb-14 max-w-xl">
+          <p className="text-slate-300 text-lg md:text-2xl leading-relaxed mb-8 sm:mb-14 max-w-xl">
             Advanced Life Support When it Matters Most.<br />
             24 hours a day, every day.
           </p>

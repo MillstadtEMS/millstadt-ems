@@ -38,7 +38,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} h-full`}>
       <head>
         <meta name="theme-color" content="#040d1a" />
-        <link rel="apple-touch-icon" href="/images/millstadt-ems/logo.png" />
+        <link rel="apple-touch-icon" href="/images/millstadt-ems/pwa-icon.png" />
       </head>
       <body className="min-h-full flex flex-col bg-[#040d1a] text-slate-100 antialiased overflow-x-hidden">
         <CallTicker />
