@@ -56,7 +56,7 @@ export default function ContactFormWrapper({
         </p>
         <Link
           href={backHref}
-          className={`${btnClass} bg-[#f0b429] hover:bg-[#d9a320] text-[#040d1a] mt-6 max-w-sm mx-auto`}
+          className={`${btnClass} bg-[#f0b429] hover:bg-[#d9a320] text-[#040d1a] mt-6 w-full`}
         >
           Back to Forms
         </Link>
