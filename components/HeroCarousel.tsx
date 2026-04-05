@@ -1,0 +1,61 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Image from "next/image";
+
+const IMAGES = [
+  "/images/millstadt-ems/IMG_7771.jpeg",
+  "/images/millstadt-ems/hero/IMG_5333.jpeg",
+  "/images/millstadt-ems/hero/IMG_7773.jpeg",
+  "/images/millstadt-ems/hero/IMG_8392.jpeg",
+  "/images/millstadt-ems/hero/IMG_8467.JPG",
+  "/images/millstadt-ems/hero/IMG_8516.jpeg",
+  "/images/millstadt-ems/hero/IMG_2072.JPG",
+  "/images/millstadt-ems/hero/7A8662CA-9125-4252-8E4C-F029CE247079.jpeg",
+  "/images/millstadt-ems/hero/811D6F5D-4DD7-4E6C-B758-7B4167F03B38.jpeg",
+  "/images/millstadt-ems/hero/6A3DE69E-2C3E-4E0E-90FA-FF42A7320338.png",
+];
+
+export default function HeroCarousel() {
+  const [current, setCurrent] = useState(0);
+  const [prev, setPrev]       = useState<number | null>(null);
+  const [fading, setFading]   = useState(false);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setPrev(current);
+      setFading(true);
+      setCurrent(c => (c + 1) % IMAGES.length);
+      // Clear prev after fade completes
+      setTimeout(() => { setPrev(null); setFading(false); }, 1200);
+    }, 10_000);
+    return () => clearInterval(id);
+  }, [current]);
+
+  return (
+    <>
+      {/* Previous image — fades out */}
+      {prev !== null && (
+        <Image
+          key={`prev-${prev}`}
+          src={IMAGES[prev]}
+          alt=""
+          fill
+          className="object-cover object-center"
+          style={{ opacity: fading ? 0 : 1, transition: "opacity 1.2s ease", zIndex: 0 }}
+          aria-hidden
+        />
+      )}
+      {/* Current image — fades in */}
+      <Image
+        key={`cur-${current}`}
+        src={IMAGES[current]}
+        alt="Millstadt EMS"
+        fill
+        className="object-cover object-center"
+        style={{ opacity: 1, transition: "opacity 1.2s ease", zIndex: 1 }}
+        priority={current === 0}
+      />
+    </>
+  );
+}

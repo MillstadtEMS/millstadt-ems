@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import HolidayOverlay from "@/components/HolidayOverlay";
+import HeroCarousel from "@/components/HeroCarousel";
 
 export default function Home() {
   return (
@@ -9,13 +10,7 @@ export default function Home() {
           HERO
       ════════════════════════════════ */}
       <section className="relative min-h-screen flex items-center overflow-hidden" style={{ marginTop: "-96px" }}>
-        <Image
-          src="/images/millstadt-ems/IMG_7771.jpeg"
-          alt="Millstadt EMS Paramedic Unit"
-          fill
-          className="object-cover object-center"
-          priority
-        />
+        <HeroCarousel />
         <div className="absolute inset-0 bg-[#040d1a]/65" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#040d1a] via-transparent to-[#040d1a]/20" />
         <HolidayOverlay />
