@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchUnreadDispatchEmails, markAsRead } from "@/lib/cad/gmail";
 import { parseDispatchEmail, isCloseoutEmail, parseCloseoutEmail } from "@/lib/cad/parser";
 import { isDuplicate, saveCall, saveFailedParse, markCallComplete } from "@/lib/cad/db";
+import { transcribeAudio, extractNatureFromTranscript } from "@/lib/cad/whisper";
 
 export const runtime = "nodejs"; // needs fs access
 
@@ -62,6 +63,19 @@ async function handlePoll(req: NextRequest): Promise<NextResponse> {
           continue;
         }
 
+        // ── Whisper: transcribe audio pager tone if present ──────────────
+        let audioNature: string | null = null;
+        if (email.audioAttachment) {
+          const transcript = await transcribeAudio(
+            email.audioAttachment.data,
+            email.audioAttachment.mimeType,
+            email.audioAttachment.filename,
+          );
+          if (transcript) {
+            audioNature = extractNatureFromTranscript(transcript);
+          }
+        }
+
         // ── Parse dispatch email ─────────────────────────────────────────
         const parsed = parseDispatchEmail(email.subject, email.body, email.received);
 
@@ -82,7 +96,8 @@ async function handlePoll(req: NextRequest): Promise<NextResponse> {
             dispatchDatetime: parsed.dispatchDatetime,
             dispatchDate:     parsed.dispatchDate,
             dispatchTime:     parsed.dispatchTime,
-            dispatchNature:   parsed.dispatchNature,
+            // Whisper transcript takes priority over text parsing
+            dispatchNature:   audioNature ?? parsed.dispatchNature,
             sourceYear:       parsed.sourceYear,
             parseStatus:      parsed.status,
             completedAt:      null,

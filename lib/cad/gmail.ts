@@ -38,6 +38,7 @@ export interface RawEmail {
   subject: string;
   body: string;      // Plain text (HTML stripped)
   received: Date;    // Date the email was delivered
+  audioAttachment?: { data: Buffer; mimeType: string; filename: string } | null;
 }
 
 // ── Fetch unread dispatch emails ───────────────────────────────────────────
@@ -90,7 +91,10 @@ export async function fetchUnreadDispatchEmails(): Promise<RawEmail[]> {
     // Extract plain text body
     const body = extractPlainText(payload);
 
-    emails.push({ id: msg.id, subject, body, received });
+    // Extract audio attachment if present (pager tone)
+    const audioAttachment = extractAudioAttachment(payload);
+
+    emails.push({ id: msg.id, subject, body, received, audioAttachment });
   }
 
   return emails;
@@ -156,4 +160,32 @@ function extractPlainText(payload: any): string {
 
 function decodeBase64(data: string): string {
   return Buffer.from(data.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf-8");
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractAudioAttachment(payload: any): { data: Buffer; mimeType: string; filename: string } | null {
+  if (!payload) return null;
+  const AUDIO_TYPES = ["audio/", "application/octet-stream"];
+
+  function searchParts(p: any): { data: Buffer; mimeType: string; filename: string } | null {
+    if (!p) return null;
+    const mime = (p.mimeType ?? "").toLowerCase();
+    const filename = p.filename ?? "";
+    const isAudio = AUDIO_TYPES.some(t => mime.startsWith(t)) ||
+      /\.(mp3|wav|ogg|m4a|aac|amr|flac|opus)$/i.test(filename);
+
+    if (isAudio && p.body?.data) {
+      const raw = p.body.data.replace(/-/g, "+").replace(/_/g, "/");
+      return { data: Buffer.from(raw, "base64"), mimeType: p.mimeType ?? "audio/mpeg", filename: filename || "audio.mp3" };
+    }
+    if (p.parts && Array.isArray(p.parts)) {
+      for (const part of p.parts) {
+        const found = searchParts(part);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  return searchParts(payload);
 }
