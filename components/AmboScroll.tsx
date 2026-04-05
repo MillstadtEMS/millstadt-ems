@@ -18,13 +18,11 @@ export default function AmboScroll() {
           cooldownRef.current = true;
           setTriggered(true);
           setDriving(true);
-          // After animation completes (~4s), reset for next scroll
+          // After animation completes, unmount immediately (no snap-back)
           setTimeout(() => {
+            setTriggered(false);
             setDriving(false);
-            setTimeout(() => {
-              setTriggered(false);
-              cooldownRef.current = false;
-            }, 500);
+            cooldownRef.current = false;
           }, 4000);
         }
       },
