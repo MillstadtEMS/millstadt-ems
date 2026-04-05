@@ -118,7 +118,7 @@ export default function CallTicker() {
 
   const moon = getMoonPhase();
   const currentYear = now.getFullYear();
-  const onARun = latest.length > 0 && isActive(latest[0]);
+  const onARun = latest.some(isActive);
 
   return (
     <div ref={wrapperRef} className="fixed top-0 left-0 right-0 z-[60]">
@@ -214,7 +214,7 @@ export default function CallTicker() {
               latest.map((call, i) => {
                 const active = isActive(call);
                 return (
-                  <div key={call.id} className={`flex items-center gap-1.5 shrink-0 ${i > 0 ? "hidden lg:flex" : ""}`}>
+                  <div key={call.id} className={`flex items-center gap-1.5 shrink-0 ${i > 0 && !active ? "hidden lg:flex" : ""}`}>
                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${active ? "bg-emerald-400" : "bg-red-500/70"}`} />
                     <span className={`text-[10px] tabular-nums shrink-0 font-mono ${active ? "text-emerald-300 font-bold" : "text-slate-500"}`}>
                       {shortDate(call.dispatchDate)} {call.dispatchTime}

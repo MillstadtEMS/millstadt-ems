@@ -10,6 +10,6 @@ export const runtime = "nodejs";
 export const revalidate = 0; // always fresh
 
 export async function GET() {
-  const calls = await getLatestCalls(3);
+  const calls = await getLatestCalls(10);
   return NextResponse.json(calls);
 }
