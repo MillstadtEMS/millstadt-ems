@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
   The cartoon image faces LEFT already — no flip needed.
 */
 
-const DRIVE_DURATION = 4200; // ms to cross the full screen
+const DRIVE_DURATION = 7500; // ms to cross the full screen
 
 export default function AmboScroll() {
   const [active, setActive] = useState(false);
@@ -24,7 +24,7 @@ export default function AmboScroll() {
         if (entries[0].isIntersecting && !firedRef.current) {
           firedRef.current = true;
           setActive(true);
-          setTimeout(() => setActive(false), DRIVE_DURATION + 600);
+          setTimeout(() => setActive(false), DRIVE_DURATION + 800);
         }
       },
       { threshold: 0.5 }
