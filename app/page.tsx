@@ -125,15 +125,12 @@ export default function Home() {
               <Link
                 key={card.label}
                 href={card.href}
-                className="group flex flex-col items-center text-center pt-10 pb-12 px-10 rounded-2xl bg-[#071428] border border-white/8 hover:bg-[#0c1e3d] hover:border-[#f0b429]/50 transition-all duration-200 cursor-pointer"
+                className="group flex flex-col items-center text-center gap-10 pt-20 pb-12 px-10 rounded-2xl bg-[#071428] border border-white/8 hover:bg-[#0c1e3d] hover:border-[#f0b429]/50 transition-all duration-200 cursor-pointer"
               >
-                {/* Spacer pushes icon to vertical center of the upper area */}
-                <div className="flex-1 flex items-center justify-center py-6">
-                  <div className="w-24 h-24 min-w-[6rem] min-h-[6rem] rounded-2xl bg-[#1a3a6e]/70 border border-[#2563eb]/25 flex items-center justify-center text-[#f0b429] group-hover:border-[#2563eb]/60 group-hover:bg-[#1a3a6e] transition-all duration-200">
-                    {card.icon}
-                  </div>
+                <div className="w-24 h-24 min-w-[6rem] min-h-[6rem] rounded-2xl bg-[#1a3a6e]/70 border border-[#2563eb]/25 flex items-center justify-center self-center mx-auto text-[#f0b429] group-hover:border-[#2563eb]/60 group-hover:bg-[#1a3a6e] transition-all duration-200">
+                  {card.icon}
                 </div>
-                <div>
+                <div className="flex-1">
                   <div className="text-white font-black text-2xl leading-snug mb-3 group-hover:text-[#f0b429] transition-colors duration-200">
                     {card.label}
                   </div>
