@@ -183,67 +183,66 @@ export default function CallTicker() {
       )}
 
       {/* ── Ticker strip ── */}
-      <div className="bg-[#020912] border-b border-white/10 select-none" style={{ height: "40px" }}>
+      <div className="bg-[#020912] border-b border-white/10 select-none" style={{ height: "46px" }}>
         <div className="wrap h-full flex items-center gap-3 px-4">
 
           {/* ── Status indicator ── */}
           <div className="shrink-0 flex items-center gap-1.5">
-            <span className="relative flex w-2 h-2">
+            <span className="relative flex w-2.5 h-2.5">
               <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${onARun ? "bg-red-400" : "bg-emerald-400"}`} />
-              <span className={`relative inline-flex rounded-full h-2 w-2 ${onARun ? "bg-red-400" : "bg-emerald-400"}`} />
+              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${onARun ? "bg-red-400" : "bg-emerald-400"}`} />
             </span>
-            <span className={`text-[9px] font-black tracking-wider uppercase ${onARun ? "text-red-400" : "text-emerald-400"}`}>
+            <span className={`text-[11px] font-black tracking-wider uppercase ${onARun ? "text-red-400" : "text-emerald-400"}`}>
               {onARun ? "On A Run" : "In Service"}
             </span>
           </div>
 
-          <span className="h-2.5 w-px bg-white/15 shrink-0" />
+          <span className="h-3 w-px bg-white/15 shrink-0" />
 
           {/* ── Call status info ── */}
           <div className="flex-1 min-w-0 flex items-center">
-            {onARun ? (
-              // Active call — date/time bold white, Responding in green
-              <span className="text-[10px] truncate flex items-center gap-1.5">
-                {activeCall && (
-                  <span className="text-white font-bold tabular-nums font-mono">
-                    {activeCall.dispatchDate} @ {activeCall.dispatchTime}
-                  </span>
-                )}
-                <span className="text-emerald-300 font-bold tracking-wide">Responding</span>
+            {onARun && activeCall ? (
+              <span className="flex items-center gap-2 min-w-0">
+                <span className="text-white font-bold tabular-nums font-mono text-[12px]">
+                  {activeCall.dispatchDate} @ {activeCall.dispatchTime}
+                </span>
+                <span className="text-white/20">·</span>
+                <span className="text-emerald-300 font-bold text-[12px] tracking-wide truncate">
+                  Responding: {activeCall.dispatchNature}
+                </span>
               </span>
             ) : lastRun ? (
-              // Completed — show last run with nature
-              <span className="text-[10px] truncate">
-                <span className="text-slate-500">Last Run </span>
-                <span className="text-slate-400 tabular-nums font-mono">{shortDate(lastRun.dispatchDate)} @ {lastRun.dispatchTime}</span>
-                <span className="text-white/30 mx-1.5">—</span>
-                <span className="text-[#f0b429] font-bold">{lastRun.dispatchNature}</span>
+              <span className="flex items-center gap-2 min-w-0 truncate">
+                <span className="text-slate-400 text-[11px]">Last Run</span>
+                <span className="text-white font-bold tabular-nums font-mono text-[12px]">{lastRun.dispatchDate} @ {lastRun.dispatchTime}</span>
+                <span className="text-white/20">—</span>
+                <span className="text-[#f0b429] font-bold text-[12px] truncate">{lastRun.dispatchNature}</span>
               </span>
             ) : (
-              <span className="text-slate-600 text-[10px]">No calls logged yet this year.</span>
+              <span className="text-slate-600 text-[11px]">No calls logged yet this year.</span>
             )}
           </div>
 
           {/* ── Date & Time ── */}
           <div className="shrink-0 items-center gap-1.5 hidden md:flex">
-            <span className="text-white text-[10px] tabular-nums font-mono font-bold">{formatDate(now)}</span>
-            <span className="text-white text-[10px] tabular-nums font-mono font-bold">{formatClock(now)}</span>
+            <span className="text-white text-[12px] tabular-nums font-mono font-bold">{formatDate(now)}</span>
+            <span className="text-white text-[12px] tabular-nums font-mono font-bold">{formatClock(now)}</span>
           </div>
 
-          <span className="h-2.5 w-px bg-white/15 shrink-0 hidden md:block" />
+          <span className="h-3 w-px bg-white/15 shrink-0 hidden md:block" />
 
           {/* ── Moon phase ── */}
           <div className="shrink-0 items-center gap-1 hidden lg:flex" title={moon.name}>
-            <span className="text-sm leading-none">{moon.symbol}</span>
-            <span className="text-slate-500 text-[9px] font-bold tracking-wider uppercase">{moon.name}</span>
+            <span className="text-base leading-none">{moon.symbol}</span>
+            <span className="text-slate-500 text-[10px] font-bold tracking-wider uppercase">{moon.name}</span>
           </div>
 
-          <span className="h-2.5 w-px bg-white/15 shrink-0 hidden lg:block" />
+          <span className="h-3 w-px bg-white/15 shrink-0 hidden lg:block" />
 
           {/* ── Expand toggle ── */}
           <button
             onClick={() => setExpanded(v => !v)}
-            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-white transition-colors text-[10px] font-bold tracking-wide"
+            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-white transition-colors text-[11px] font-bold tracking-wide"
             aria-label={expanded ? "Collapse call log" : "View full call log"}
           >
             <span className="hidden sm:inline">{expanded ? "Close" : "Log"}</span>

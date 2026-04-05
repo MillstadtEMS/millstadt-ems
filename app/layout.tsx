@@ -21,6 +21,12 @@ export const metadata: Metadata = {
   description:
     "Millstadt Ambulance Service provides 24/7 advanced life support and emergency medical services to Millstadt and surrounding areas in Illinois.",
   keywords: ["EMS", "ambulance", "Millstadt", "emergency medical services", "ALS", "Illinois"],
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Millstadt EMS",
+  },
 };
 
 export default function RootLayout({
@@ -30,6 +36,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
+      <head>
+        <meta name="theme-color" content="#040d1a" />
+        <link rel="apple-touch-icon" href="/images/millstadt-ems/logo.png" />
+      </head>
       <body className="min-h-full flex flex-col bg-[#040d1a] text-slate-100 antialiased overflow-x-hidden">
         <CallTicker />
         <Nav />

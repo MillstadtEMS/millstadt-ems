@@ -115,68 +115,43 @@ export async function markCallComplete(
   eventNumber?: string | null,
   dispatchDate?: string,
   dispatchTime?: string,
-  nature?: string | null,
 ): Promise<boolean> {
   await ensureSchema();
   const db = sql();
 
-  // Prefer matching by event number (most reliable)
+  // 1. Match by event number (most reliable)
   if (eventNumber) {
-    const r = nature
-      ? await db`
-          UPDATE cad_calls SET completed_at = ${closedAt}, dispatch_nature = ${nature}
-          WHERE event_number = ${eventNumber} AND completed_at IS NULL
-        `
-      : await db`
-          UPDATE cad_calls SET completed_at = ${closedAt}
-          WHERE event_number = ${eventNumber} AND completed_at IS NULL
-        `;
+    const r = await db`
+      UPDATE cad_calls SET completed_at = ${closedAt}
+      WHERE event_number = ${eventNumber} AND completed_at IS NULL
+    `;
     if ((r as unknown as { count: number }).count > 0) return true;
   }
 
-  // Fallback: match by dispatch date + time (within 10 minutes)
+  // 2. Match by dispatch date + time
   if (dispatchDate && dispatchTime) {
     const timePrefix = dispatchTime.slice(0, 5);
-    const r = nature
-      ? await db`
-          UPDATE cad_calls SET completed_at = ${closedAt}, dispatch_nature = ${nature}
-          WHERE dispatch_date = ${dispatchDate}
-            AND dispatch_time = ${timePrefix}
-            AND completed_at IS NULL
-        `
-      : await db`
-          UPDATE cad_calls SET completed_at = ${closedAt}
-          WHERE dispatch_date = ${dispatchDate}
-            AND dispatch_time = ${timePrefix}
-            AND completed_at IS NULL
-        `;
+    const r = await db`
+      UPDATE cad_calls SET completed_at = ${closedAt}
+      WHERE dispatch_date = ${dispatchDate}
+        AND dispatch_time = ${timePrefix}
+        AND completed_at IS NULL
+    `;
     if ((r as unknown as { count: number }).count > 0) return true;
   }
 
-  // Last resort: match most recent open call on the same date
-  // (handles cases where call was saved with received time, not CAD dispatch time)
+  // 3. Last resort: most recent open call on the same date
   if (dispatchDate) {
-    const r = nature
-      ? await db`
-          UPDATE cad_calls SET completed_at = ${closedAt}, dispatch_nature = ${nature}
-          WHERE id = (
-            SELECT id FROM cad_calls
-            WHERE dispatch_date = ${dispatchDate}
-              AND completed_at IS NULL
-            ORDER BY dispatch_datetime DESC
-            LIMIT 1
-          )
-        `
-      : await db`
-          UPDATE cad_calls SET completed_at = ${closedAt}
-          WHERE id = (
-            SELECT id FROM cad_calls
-            WHERE dispatch_date = ${dispatchDate}
-              AND completed_at IS NULL
-            ORDER BY dispatch_datetime DESC
-            LIMIT 1
-          )
-        `;
+    const r = await db`
+      UPDATE cad_calls SET completed_at = ${closedAt}
+      WHERE id = (
+        SELECT id FROM cad_calls
+        WHERE dispatch_date = ${dispatchDate}
+          AND completed_at IS NULL
+        ORDER BY dispatch_datetime DESC
+        LIMIT 1
+      )
+    `;
     return (r as unknown as { count: number }).count > 0;
   }
 

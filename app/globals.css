@@ -19,7 +19,19 @@ body {
   overflow-x: hidden;
 }
 
-/* ticker animation handled in JS (Nav.tsx WeatherTicker) */
+/* ── Weather ticker pulse animations ── */
+@keyframes weather-pulse-green {
+  0%, 100% { opacity: 1;    text-shadow: 0 0 0px #34d399; }
+  50%       { opacity: 0.75; text-shadow: 0 0 8px #34d399; }
+}
+@keyframes weather-pulse-yellow {
+  0%, 100% { opacity: 1;    text-shadow: 0 0 6px #facc15; }
+  50%       { opacity: 0.8;  text-shadow: 0 0 18px #facc15; }
+}
+@keyframes weather-pulse-red {
+  0%, 100% { opacity: 1;    text-shadow: 0 0 8px #f87171; }
+  50%       { opacity: 0.8;  text-shadow: 0 0 22px #f87171; }
+}
 
 @keyframes ambo-drive {
   0%   { right: -300px; }

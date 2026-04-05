@@ -54,9 +54,12 @@ async function handlePoll(req: NextRequest): Promise<NextResponse> {
         if (isCloseoutEmail(email.subject)) {
           const closeout = parseCloseoutEmail(email.subject, email.body);
           if (closeout) {
-            // Pass nature from closeout so the call record gets the real complaint
-            const closeoutNature = closeout.nature !== "UNKNOWN" ? closeout.nature : null;
-            await markCallComplete(closeout.closedAt, closeout.eventNumber, closeout.dispatchDate, closeout.dispatchTime, closeoutNature);
+            await markCallComplete(
+              closeout.closedAt,
+              closeout.eventNumber,
+              closeout.dispatchDate ?? undefined,
+              closeout.dispatchTime ?? undefined,
+            );
             results.processed++;
           } else {
             results.failed++;

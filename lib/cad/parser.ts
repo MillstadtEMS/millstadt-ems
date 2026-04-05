@@ -329,10 +329,9 @@ export function parseDispatchEmail(
 
 export interface ParsedCloseout {
   eventNumber: string | null;
-  dispatchDate: string;
-  dispatchTime: string;
+  dispatchDate: string | null;
+  dispatchTime: string | null;
   closedAt: string;
-  nature: string;
 }
 
 /** Returns true if this email is a St. Clair County closeout report */
@@ -349,32 +348,39 @@ export function isCloseoutEmail(subject: string): boolean {
  *   Closed:    04/04/2026 18:37:35
  */
 export function parseCloseoutEmail(subject: string, body: string): ParsedCloseout | null {
-  // Extract nature from subject: "EVENT CLOSEOUT ACCIDENT W/ INJURIES" → "Accident W/ Injuries"
-  const natureMatch = subject.match(/event\s+closeout\s+(.+)/i);
-  const nature = natureMatch ? formatNature(natureMatch[1].trim()) : "UNKNOWN";
+  const fullText = body + "\n" + subject;
 
-  // MM/DD/YYYY HH:MM:SS format
-  const DATETIME_RE = /(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2}:\d{2})/;
+  // Event number — primary match key
+  const eventNumber = extractFirst(fullText, PATTERNS.eventNumber) ?? null;
 
-  const dispatchMatch = body.match(/^dispatch\s*[:\-]?\s*(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2})/im);
-  const closedMatch   = body.match(/^closed\s*[:\-]?\s*(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2}:\d{2})/im)
-                     || body.match(new RegExp(`closed[^\\n]*?(${DATETIME_RE.source})`, "im"));
+  // Dispatch date/time — used as fallback match if no event number
+  const dispatchMatch = body.match(/^dispatch(?:ed)?\s*(?:time)?\s*[:\-]?\s*(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2})/im);
 
-  if (!dispatchMatch) return null;
+  // Closed time — any line with "closed" followed by a datetime
+  const closedMatch =
+    body.match(/^closed\s*[:\-]?\s*(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2}(?::\d{2})?)/im) ||
+    body.match(/closed[^\n]*?(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2}(?::\d{2})?)/im);
 
-  const eventNumber = extractFirst(body + "\n" + subject, PATTERNS.eventNumber);
-  const dispatchDate = dispatchMatch[1];
-  const dispatchTime = dispatchMatch[2];
+  // Also scan for any date in the body so we can fallback-match by date
+  const anyDateMatch = body.match(/\b(\d{1,2}\/\d{1,2}\/\d{4})\b/);
+
+  // We need at least an event number OR a date to do any matching
+  if (!eventNumber && !dispatchMatch && !anyDateMatch) return null;
+
+  const dispatchDate = dispatchMatch?.[1] ?? anyDateMatch?.[1] ?? null;
+  const dispatchTime = dispatchMatch?.[2] ?? null;
 
   let closedIso = new Date().toISOString();
   if (closedMatch) {
     const [, d, t] = closedMatch;
     const [mo, dy, yr] = d.split("/");
-    const [hh, mm, ss] = t.split(":");
-    closedIso = new Date(`${yr}-${mo.padStart(2,"0")}-${dy.padStart(2,"0")}T${hh.padStart(2,"0")}:${mm}:${ss ?? "00"}`).toISOString();
+    const timeParts = t.split(":");
+    const [hh, mm, ss] = [timeParts[0], timeParts[1], timeParts[2] ?? "00"];
+    const dt = new Date(`${yr}-${mo.padStart(2,"0")}-${dy.padStart(2,"0")}T${hh.padStart(2,"0")}:${mm}:${ss}`);
+    if (!isNaN(dt.getTime())) closedIso = dt.toISOString();
   }
 
-  return { eventNumber: eventNumber ?? null, dispatchDate, dispatchTime, closedAt: closedIso, nature };
+  return { eventNumber, dispatchDate, dispatchTime, closedAt: closedIso };
 }
 
 /** Strip HTML tags from an email body for plain-text parsing */

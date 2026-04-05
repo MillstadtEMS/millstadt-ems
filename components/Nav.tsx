@@ -262,66 +262,37 @@ function getAlertLevel(event: string, severity: string, headline = "", descripti
   return "green";
 }
 
+interface ProcessedAlert {
+  text: string;
+  level: "red" | "yellow" | "green";
+}
+
 function WeatherTicker() {
-  const trackRef  = useRef<HTMLDivElement>(null);
-  const posRef    = useRef(0);
-  const rafRef    = useRef<number>(0);
-  const colorRef  = useRef("#34d399");
-  const textRef   = useRef("NO ACTIVE WEATHER ALERTS FOR MILLSTADT, ILLINOIS");
+  const [alerts, setAlerts]       = useState<ProcessedAlert[]>([]);
+  const [idx, setIdx]             = useState(0);
 
-  // JS-driven animation — never resets on content updates
+  // Cycle through multiple alerts every 5 seconds
   useEffect(() => {
-    function animate() {
-      const track = trackRef.current;
-      if (!track) { rafRef.current = requestAnimationFrame(animate); return; }
-      const halfW = track.scrollWidth / 2;
-      if (halfW <= 0)  { rafRef.current = requestAnimationFrame(animate); return; }
-      posRef.current -= 0.6; // px per frame (~36px/s at 60fps)
-      if (posRef.current <= -halfW) posRef.current = 0;
-      track.style.transform = `translateX(${posRef.current}px)`;
-      rafRef.current = requestAnimationFrame(animate);
-    }
-    rafRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, []);
-
-  function applyUpdate(text: string, color: string) {
-    textRef.current  = text;
-    colorRef.current = color;
-    const padded = text + "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0";
-    const track = trackRef.current;
-    if (!track) return;
-    track.querySelectorAll("span").forEach((s) => {
-      s.textContent = padded;
-      (s as HTMLElement).style.color = color;
-    });
-  }
+    if (alerts.length <= 1) return;
+    const id = setInterval(() => setIdx(i => (i + 1) % alerts.length), 5000);
+    return () => clearInterval(id);
+  }, [alerts.length]);
 
   useEffect(() => {
-    function update(alerts: NWSAlert[]) {
-      let text: string;
-      let color: string;
-      if (alerts.length === 0) {
-        text  = "NO ACTIVE WEATHER ALERTS FOR MILLSTADT, ILLINOIS";
-        color = "#34d399";
-      } else {
-        const top = alerts.reduce<"red" | "yellow" | "green">((acc, a) => {
-          const lvl = getAlertLevel(a.properties.event, a.properties.severity, a.properties.headline, a.properties.description);
-          if (lvl === "red") return "red";
-          if (lvl === "yellow" && acc !== "red") return "yellow";
-          return acc;
-        }, "green");
-        color = top === "red" ? "#f87171" : top === "yellow" ? "#facc15" : "#34d399";
-        text  = alerts.map((a) => {
-          const h = (a.properties.headline + " " + (a.properties.description ?? "")).toLowerCase();
-          const e = a.properties.event.toLowerCase();
-          let label = a.properties.event.toUpperCase();
-          if (e.includes("warning") && h.includes("tornado emergency")) label = "⚠ TORNADO EMERGENCY";
-          else if (e.includes("watch") && (h.includes("particularly dangerous situation") || h.includes("pds"))) label = "⚠ PDS TORNADO WATCH";
-          return `${label} \u2014 ${a.properties.headline.toUpperCase()}`;
-        }).join("     \u00b7     ");
+    function processAlerts(raw: NWSAlert[]): ProcessedAlert[] {
+      if (raw.length === 0) {
+        return [{ text: "NO ACTIVE WEATHER ALERTS — MILLSTADT, ILLINOIS", level: "green" }];
       }
-      applyUpdate(text, color);
+      return raw.map(a => {
+        const h = (a.properties.headline + " " + (a.properties.description ?? "")).toLowerCase();
+        const e = a.properties.event.toLowerCase();
+        const level = getAlertLevel(a.properties.event, a.properties.severity, a.properties.headline, a.properties.description);
+        let label = a.properties.event.toUpperCase();
+        if (e.includes("warning") && h.includes("tornado emergency")) label = "⚠ TORNADO EMERGENCY";
+        else if (e.includes("watch") && (h.includes("particularly dangerous situation") || h.includes("pds"))) label = "⚠ PDS TORNADO WATCH";
+        const text = `${label} — ${a.properties.headline.toUpperCase()}`;
+        return { text, level };
+      });
     }
 
     async function fetchAlerts() {
@@ -330,49 +301,62 @@ function WeatherTicker() {
           headers: { "User-Agent": "(millstadtems.org, millstadtems@gmail.com)", Accept: "application/geo+json" },
         });
         const data = await res.json();
-        update(data.features ?? []);
+        setAlerts(processAlerts(data.features ?? []));
+        setIdx(0);
       } catch {
-        update([]);
+        setAlerts([{ text: "NO ACTIVE WEATHER ALERTS — MILLSTADT, ILLINOIS", level: "green" }]);
       }
     }
 
     fetchAlerts();
     const id = setInterval(fetchAlerts, 5 * 60 * 1000);
 
-    const MOCK_ALERTS: Record<string, { event: string; headline: string; description: string; severity: string }[]> = {
-      thunderstorm_watch:   [{ event: "Severe Thunderstorm Watch",   headline: "Severe Thunderstorm Watch issued for St. Clair County until 10:00 PM CDT.",          description: "", severity: "Moderate" }],
-      thunderstorm_warning: [{ event: "Severe Thunderstorm Warning", headline: "Severe Thunderstorm Warning issued for St. Clair County.",                            description: "", severity: "Severe"  }],
-      tornado_watch:        [{ event: "Tornado Watch",               headline: "Tornado Watch issued for St. Clair County until midnight CDT.",                       description: "", severity: "Severe"  }],
-      tornado_pds_watch:    [{ event: "Tornado Watch",               headline: "Particularly Dangerous Situation — Tornado Watch for St. Clair County.",              description: "THIS IS A PARTICULARLY DANGEROUS SITUATION", severity: "Extreme" }],
-      tornado_warning:      [{ event: "Tornado Warning",             headline: "Tornado Warning issued for St. Clair County. TAKE SHELTER IMMEDIATELY.",              description: "", severity: "Extreme" }],
-      tornado_emergency:    [{ event: "Tornado Warning",             headline: "Tornado Emergency for Millstadt. CONFIRMED LARGE TORNADO. SEEK SHELTER NOW.",         description: "THIS IS A TORNADO EMERGENCY", severity: "Extreme" }],
-      clear:                [],
+    const MOCK_ALERTS: Record<string, NWSAlert[]> = {
+      thunderstorm_watch:   [{ properties: { event: "Severe Thunderstorm Watch",   headline: "Severe Thunderstorm Watch issued for St. Clair County until 10:00 PM CDT.", description: "", severity: "Moderate" } }],
+      thunderstorm_warning: [{ properties: { event: "Severe Thunderstorm Warning", headline: "Severe Thunderstorm Warning issued for St. Clair County.", description: "", severity: "Severe" } }],
+      tornado_watch:        [{ properties: { event: "Tornado Watch",               headline: "Tornado Watch issued for St. Clair County until midnight CDT.", description: "", severity: "Severe" } }],
+      tornado_pds_watch:    [{ properties: { event: "Tornado Watch",               headline: "Particularly Dangerous Situation — Tornado Watch for St. Clair County.", description: "THIS IS A PARTICULARLY DANGEROUS SITUATION", severity: "Extreme" } }],
+      tornado_warning:      [{ properties: { event: "Tornado Warning",             headline: "Tornado Warning issued for St. Clair County. TAKE SHELTER IMMEDIATELY.", description: "", severity: "Extreme" } }],
+      tornado_emergency:    [{ properties: { event: "Tornado Warning",             headline: "Tornado Emergency for Millstadt. CONFIRMED LARGE TORNADO. SEEK SHELTER NOW.", description: "THIS IS A TORNADO EMERGENCY", severity: "Extreme" } }],
+      multi:                [
+        { properties: { event: "Tornado Warning", headline: "Tornado Warning for St. Clair County.", description: "", severity: "Extreme" } },
+        { properties: { event: "Severe Thunderstorm Warning", headline: "Severe Thunderstorm Warning until 9:00 PM.", description: "", severity: "Severe" } },
+      ],
+      clear: [],
     };
     function handleTest(e: Event) {
       const scenario = (e as CustomEvent<string>).detail;
-      update((MOCK_ALERTS[scenario] ?? []).map((a) => ({ properties: a })));
+      const processed = processAlerts(MOCK_ALERTS[scenario] ?? []);
+      setAlerts(processed);
+      setIdx(0);
     }
     window.addEventListener("weather-test-scenario", handleTest);
     return () => { clearInterval(id); window.removeEventListener("weather-test-scenario", handleTest); };
   }, []);
 
-  const spanStyle: React.CSSProperties = {
-    color: "#34d399",
-    fontSize: "0.82rem",
-    fontWeight: 700,
-    whiteSpace: "nowrap",
-    textTransform: "uppercase",
-    paddingRight: "0",
-  };
-
-  const padded = textRef.current + "\u00a0".repeat(20);
+  const current  = alerts[idx] ?? { text: "NO ACTIVE WEATHER ALERTS — MILLSTADT, ILLINOIS", level: "green" as const };
+  const color    = current.level === "red" ? "#f87171" : current.level === "yellow" ? "#facc15" : "#34d399";
+  const pulseKey = current.level; // changing key resets animation when level changes
 
   return (
-    <div style={{ overflow: "hidden", width: "100%" }}>
-      <div ref={trackRef} style={{ display: "flex", willChange: "transform" }}>
-        <span style={spanStyle}>{padded}</span>
-        <span style={spanStyle} aria-hidden>{padded}</span>
-      </div>
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "0 1rem" }}>
+      <span
+        key={pulseKey}
+        style={{
+          color,
+          fontSize: "0.88rem",
+          fontWeight: 800,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          whiteSpace: "nowrap",
+          textOverflow: "ellipsis",
+          overflow: "hidden",
+          maxWidth: "100%",
+          animation: `weather-pulse-${current.level} 2.5s ease-in-out infinite`,
+        }}
+      >
+        {current.text}
+      </span>
     </div>
   );
 }
