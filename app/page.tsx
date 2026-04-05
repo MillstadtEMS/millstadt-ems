@@ -75,9 +75,9 @@ export default function Home() {
       {/* ════════════════════════════════
           QUICK ACTION CARDS
       ════════════════════════════════ */}
-      <section className="pb-40 bg-[#040d1a]">
+      <section className="py-20 bg-[#040d1a]">
         <div className="wrap flex justify-center">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-4xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 w-full max-w-4xl">
             {[
               {
                 href: "/careers/apply",
@@ -123,7 +123,7 @@ export default function Home() {
               <Link
                 key={card.label}
                 href={card.href}
-                className="group flex flex-col items-center text-center gap-8 pt-14 pb-10 px-10 rounded-2xl bg-[#071428] border border-white/8 hover:bg-[#0c1e3d] hover:border-[#f0b429]/50 transition-all duration-200 cursor-pointer"
+                className="group flex flex-col items-center text-center gap-10 pt-16 pb-12 px-10 rounded-2xl bg-[#071428] border border-white/8 hover:bg-[#0c1e3d] hover:border-[#f0b429]/50 transition-all duration-200 cursor-pointer"
               >
                 <div className="w-24 h-24 min-w-[6rem] min-h-[6rem] rounded-2xl bg-[#1a3a6e]/70 border border-[#2563eb]/25 flex items-center justify-center self-center mx-auto text-[#f0b429] group-hover:border-[#2563eb]/60 group-hover:bg-[#1a3a6e] transition-all duration-200">
                   {card.icon}
