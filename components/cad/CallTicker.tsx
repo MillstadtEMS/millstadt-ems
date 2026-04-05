@@ -29,7 +29,7 @@ export default function CallTicker() {
   const [allCalls, setAllCalls] = useState<Call[]>([]);
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading]   = useState(true);
-  const expandRef               = useRef<HTMLDivElement>(null);
+  const wrapperRef              = useRef<HTMLDivElement>(null);
 
   const fetchLatest = useCallback(async () => {
     try {
@@ -60,7 +60,7 @@ export default function CallTicker() {
   useEffect(() => {
     if (!expanded) return;
     const handler = (e: MouseEvent) => {
-      if (expandRef.current && !expandRef.current.contains(e.target as Node)) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setExpanded(false);
       }
     };
@@ -74,14 +74,12 @@ export default function CallTicker() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <>
+    <div ref={wrapperRef} className="fixed bottom-16 md:bottom-0 left-0 right-0 z-[48]">
+
       {/* ── Expanded call log panel (slides up from ticker) ── */}
       {expanded && (
         <div
-          ref={expandRef}
-          className="fixed bottom-[40px] md:bottom-[44px] left-0 right-0 z-[48]
-                     bottom-mobile-ticker
-                     bg-[#020912]/98 backdrop-blur-md border-t border-white/10
+          className="bg-[#020912]/98 backdrop-blur-md border-t border-white/10
                      shadow-2xl shadow-black/60"
           style={{ maxHeight: "60vh", overflowY: "auto" }}
         >
@@ -111,11 +109,11 @@ export default function CallTicker() {
                   return (
                     <div
                       key={call.id}
-                      className="flex items-center gap-3 py-2.5 px-1"
+                      className="flex items-center gap-3 py-3 px-1"
                     >
                       {/* Status dot */}
                       <span
-                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        className={`w-2 h-2 rounded-full shrink-0 ${
                           active ? "bg-emerald-400" : "bg-red-500/70"
                         }`}
                       />
@@ -147,22 +145,19 @@ export default function CallTicker() {
       )}
 
       {/* ── Ticker strip ── */}
-      {/* On mobile: bottom-16 (above tab bar). On desktop: bottom-0. */}
       <div
-        className="fixed bottom-16 md:bottom-0 left-0 right-0 z-[48]
-                   bg-[#020912]/95 backdrop-blur-sm border-t border-white/8
-                   select-none"
-        style={{ minHeight: "44px" }}
+        className="bg-[#020912]/95 backdrop-blur-sm border-t border-white/8 select-none"
+        style={{ minHeight: "56px" }}
       >
-        <div className="wrap h-full flex items-center gap-3 py-2">
+        <div className="wrap h-full flex items-center gap-3 py-2.5">
 
           {/* Label */}
-          <span className="text-[#f0b429] text-[10px] font-black tracking-[0.2em] uppercase shrink-0 hidden sm:block">
+          <span className="text-[#f0b429] text-[11px] font-black tracking-[0.2em] uppercase shrink-0 hidden sm:block">
             Dispatch
           </span>
           <span className="h-3 w-px bg-white/15 shrink-0 hidden sm:block" />
 
-          {/* Latest calls — scrollable on small screens */}
+          {/* Latest calls */}
           <div className="flex-1 flex items-center gap-4 overflow-hidden min-w-0">
             {latest.length === 0 ? (
               <span className="text-slate-600 text-xs">No calls logged yet for this year.</span>
@@ -172,15 +167,15 @@ export default function CallTicker() {
                 return (
                   <div key={call.id} className={`flex items-center gap-2 shrink-0 ${i > 0 ? "hidden lg:flex" : ""}`}>
                     {/* Dot */}
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${
                       active ? "bg-emerald-400" : "bg-red-500/70"
                     }`} />
                     {/* Date/time */}
-                    <span className="text-slate-500 text-[11px] tabular-nums shrink-0 font-mono">
+                    <span className="text-slate-500 text-xs tabular-nums shrink-0 font-mono">
                       {shortDate(call.dispatchDate)} {call.dispatchTime}
                     </span>
                     {/* Nature */}
-                    <span className={`text-[11px] font-bold uppercase tracking-wide truncate max-w-[180px] ${
+                    <span className={`text-xs font-bold uppercase tracking-wide truncate max-w-[180px] ${
                       active ? "text-emerald-300" : "text-red-400"
                     }`}>
                       {call.dispatchNature}
@@ -200,7 +195,7 @@ export default function CallTicker() {
             onClick={() => setExpanded(v => !v)}
             className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg
                        bg-white/5 hover:bg-white/10 border border-white/10
-                       text-slate-400 hover:text-white transition-colors text-[11px] font-bold tracking-wide"
+                       text-slate-400 hover:text-white transition-colors text-xs font-bold tracking-wide"
             aria-label={expanded ? "Collapse call log" : "View full call log"}
           >
             <span className="hidden sm:inline">{expanded ? "Close" : "View Log"}</span>
@@ -214,6 +209,6 @@ export default function CallTicker() {
 
         </div>
       </div>
-    </>
+    </div>
   );
 }
