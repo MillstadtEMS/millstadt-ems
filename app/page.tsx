@@ -9,7 +9,7 @@ export default function Home() {
       {/* ════════════════════════════════
           HERO
       ════════════════════════════════ */}
-      <section className="relative min-h-screen flex items-center overflow-hidden" style={{ marginTop: "-96px" }}>
+      <section className="relative min-h-screen flex items-start md:items-center overflow-hidden" style={{ marginTop: "-96px" }}>
         <HeroCarousel />
         <div className="absolute inset-0 bg-gradient-to-t from-[#040d1a] via-transparent to-transparent" style={{ zIndex: 2 }} />
         <HolidayOverlay />

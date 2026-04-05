@@ -142,7 +142,7 @@ export default function CallTicker() {
           className="bg-[#020912]/98 backdrop-blur-md border-b border-white/10 shadow-2xl shadow-black/60"
           style={{ maxHeight: "60vh", overflowY: "auto" }}
         >
-          <div className="px-4 md:px-6 py-4">
+          <div className="wrap py-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <span className="h-px w-5 bg-[#f0b429]" />
@@ -184,7 +184,7 @@ export default function CallTicker() {
 
       {/* ── Ticker strip ── */}
       <div className="bg-[#020912] border-b border-white/10 select-none" style={{ height: "46px" }}>
-        <div className="h-full flex items-center gap-2 px-3">
+        <div className="h-full wrap flex items-center gap-2">
 
           {/* ── Status dot + label ── */}
           <div className="shrink-0 flex items-center gap-1.5">
@@ -215,7 +215,7 @@ export default function CallTicker() {
                 <span className="text-[#f0b429] font-bold text-[11px] truncate">{lastRun.dispatchNature}</span>
               </div>
             ) : (
-              <span className="text-slate-600 text-[10px]">No calls yet this year.</span>
+              <span className="text-slate-600 text-[10px]">No active incidents.</span>
             )}
           </div>
 
