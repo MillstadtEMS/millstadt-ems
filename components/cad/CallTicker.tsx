@@ -184,56 +184,52 @@ export default function CallTicker() {
 
       {/* ── Ticker strip ── */}
       <div className="bg-[#020912] border-b border-white/10 select-none" style={{ height: "46px" }}>
-        <div className="wrap h-full flex items-center gap-3 px-4">
+        <div className="h-full flex items-center gap-2 px-3">
 
-          {/* ── Status indicator ── */}
+          {/* ── Status dot + label ── */}
           <div className="shrink-0 flex items-center gap-1.5">
-            <span className="relative flex w-2.5 h-2.5">
+            <span className="relative flex w-2 h-2">
               <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${onARun ? "bg-red-400" : "bg-emerald-400"}`} />
-              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${onARun ? "bg-red-400" : "bg-emerald-400"}`} />
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${onARun ? "bg-red-400" : "bg-emerald-400"}`} />
             </span>
-            <span className={`text-[11px] font-black tracking-wider uppercase ${onARun ? "text-red-400" : "text-emerald-400"}`}>
+            <span className={`text-[10px] font-black tracking-wider uppercase whitespace-nowrap ${onARun ? "text-red-400" : "text-emerald-400"}`}>
               {onARun ? "On A Run" : "In Service"}
             </span>
           </div>
 
           <span className="h-3 w-px bg-white/15 shrink-0" />
 
-          {/* ── Call status info ── */}
-          <div className="flex-1 min-w-0 flex items-center">
+          {/* ── Call status info — flex-1 so it fills available space ── */}
+          <div className="flex-1 min-w-0 overflow-hidden">
             {onARun && activeCall ? (
-              <span className="flex items-center gap-2 min-w-0">
-                <span className="text-emerald-300 font-black text-[13px] tracking-widest uppercase">
-                  Responding
-                </span>
-                <span className="text-white/20">·</span>
-                <span className="text-white font-bold text-[12px] truncate">
-                  {activeCall.dispatchNature}
-                </span>
-              </span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-emerald-300 font-black text-[11px] tracking-widest uppercase whitespace-nowrap">Responding</span>
+                <span className="text-white/20 shrink-0">·</span>
+                <span className="text-white font-bold text-[11px] truncate">{activeCall.dispatchNature}</span>
+              </div>
             ) : lastRun ? (
-              <span className="flex items-center gap-2 min-w-0 truncate">
-                <span className="text-slate-400 text-[11px]">Last Run</span>
-                <span className="text-white font-bold tabular-nums font-mono text-[12px]">{lastRun.dispatchDate} @ {lastRun.dispatchTime}</span>
-                <span className="text-white/20">—</span>
-                <span className="text-[#f0b429] font-bold text-[12px] truncate">{lastRun.dispatchNature}</span>
-              </span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-slate-500 text-[10px] whitespace-nowrap shrink-0">Last</span>
+                <span className="text-white font-bold tabular-nums font-mono text-[10px] whitespace-nowrap shrink-0">{shortDate(lastRun.dispatchDate)} {lastRun.dispatchTime}</span>
+                <span className="text-white/20 shrink-0">·</span>
+                <span className="text-[#f0b429] font-bold text-[11px] truncate">{lastRun.dispatchNature}</span>
+              </div>
             ) : (
-              <span className="text-slate-600 text-[11px]">No calls logged yet this year.</span>
+              <span className="text-slate-600 text-[10px]">No calls yet this year.</span>
             )}
           </div>
 
-          {/* ── Date & Time ── */}
+          {/* ── Date & Time — desktop only ── */}
           <div className="shrink-0 items-center gap-1.5 hidden md:flex">
-            <span className="text-white text-[12px] tabular-nums font-mono font-bold">{formatDate(now)}</span>
-            <span className="text-white text-[12px] tabular-nums font-mono font-bold">{formatClock(now)}</span>
+            <span className="text-white text-[11px] tabular-nums font-mono font-bold">{formatDate(now)}</span>
+            <span className="text-white text-[11px] tabular-nums font-mono font-bold">{formatClock(now)}</span>
           </div>
 
           <span className="h-3 w-px bg-white/15 shrink-0 hidden md:block" />
 
-          {/* ── Moon phase ── */}
+          {/* ── Moon phase — desktop only ── */}
           <div className="shrink-0 items-center gap-1 hidden lg:flex" title={moon.name}>
-            <span className="text-base leading-none">{moon.symbol}</span>
+            <span className="text-sm leading-none">{moon.symbol}</span>
             <span className="text-slate-500 text-[10px] font-bold tracking-wider uppercase">{moon.name}</span>
           </div>
 
@@ -242,7 +238,7 @@ export default function CallTicker() {
           {/* ── Expand toggle ── */}
           <button
             onClick={() => setExpanded(v => !v)}
-            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-white transition-colors text-[11px] font-bold tracking-wide"
+            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-white transition-colors text-[10px] font-bold"
             aria-label={expanded ? "Collapse call log" : "View full call log"}
           >
             <span className="hidden sm:inline">{expanded ? "Close" : "Log"}</span>

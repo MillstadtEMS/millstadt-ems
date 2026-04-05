@@ -46,11 +46,11 @@ export default function Nav() {
   }, []);
 
   return (
-    <header className="fixed top-10 left-0 right-0 z-50">
+    <header className="fixed top-[46px] left-0 right-0 z-50">
 
       {/* ── Single unified bar: logo | weather ticker | menu ── */}
       <div className="bg-[#020912] border-b border-white/8" style={{ overflow: "visible" }}>
-        <div className="wrap flex items-center justify-between gap-4 py-1" style={{ overflow: "visible" }}>
+        <div className="wrap flex items-center justify-between gap-4 py-3" style={{ overflow: "visible" }}>
 
           {/* Logo */}
           <Link href="/" className="shrink-0 group">

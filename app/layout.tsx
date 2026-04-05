@@ -44,7 +44,7 @@ export default function RootLayout({
         <CallTicker />
         <Nav />
         <WeatherAlertOverlay />
-        <main className="flex-1 w-full overflow-x-hidden" style={{ paddingTop: "106px" }}>
+        <main className="flex-1 w-full overflow-x-hidden" style={{ paddingTop: "120px" }}>
           {children}
           <AmboScroll />
         </main>
