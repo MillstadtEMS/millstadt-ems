@@ -1,26 +1,26 @@
 /**
- * CAD Call database — JSON file storage (same pattern as testimonials).
- * For production on a writable server (Railway, Fly.io, VPS).
- * Swap readCalls/writeCalls for PostgreSQL if needed later.
+ * CAD Call database — Neon Postgres (serverless).
+ * Tables are created on first use via ensureSchema().
  */
 
-import { readFile, writeFile, mkdir } from "fs/promises";
-import { join } from "path";
+import { neon } from "@neondatabase/serverless";
 
-const DATA_DIR   = join(process.cwd(), "data");
-const CALLS_FILE = join(DATA_DIR, "cad-calls.json");
-const FAILED_FILE = join(DATA_DIR, "cad-failed.json"); // admin-only, never public
+function sql() {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL not set");
+  return neon(url);
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export interface Call {
-  id: string;                         // cuid-style unique id
-  gmailMessageId: string;             // deduplication key
-  dispatchDatetime: string;           // ISO-8601 in UTC (display in Chicago TZ)
-  dispatchDate: string;               // "04/04/2026" — display-ready
-  dispatchTime: string;               // "17:29"       — display-ready
-  dispatchNature: string;             // "ACCIDENT W/ INJURIES"
-  sourceYear: number;                 // calendar year in America/Chicago
+  id: string;
+  gmailMessageId: string;
+  dispatchDatetime: string;
+  dispatchDate: string;
+  dispatchTime: string;
+  dispatchNature: string;
+  sourceYear: number;
   parseStatus: "ok" | "partial";
   createdAt: string;
 }
@@ -31,13 +31,42 @@ export interface FailedParse {
   subject: string;
   receivedAt: string;
   errorMessage: string;
-  rawSnippet: string; // first 300 chars max, for admin debug only — never public
+  rawSnippet: string;
+}
+
+// ── Schema ─────────────────────────────────────────────────────────────────
+
+async function ensureSchema() {
+  const db = sql();
+  await db`
+    CREATE TABLE IF NOT EXISTS cad_calls (
+      id               TEXT PRIMARY KEY,
+      gmail_message_id TEXT UNIQUE NOT NULL,
+      dispatch_datetime TIMESTAMPTZ NOT NULL,
+      dispatch_date    TEXT NOT NULL,
+      dispatch_time    TEXT NOT NULL,
+      dispatch_nature  TEXT NOT NULL,
+      source_year      INTEGER NOT NULL,
+      parse_status     TEXT NOT NULL,
+      created_at       TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await db`
+    CREATE TABLE IF NOT EXISTS cad_failed (
+      id               TEXT PRIMARY KEY,
+      gmail_message_id TEXT UNIQUE NOT NULL,
+      subject          TEXT,
+      received_at      TIMESTAMPTZ,
+      error_message    TEXT,
+      raw_snippet      TEXT,
+      created_at       TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function nowChicago(): Date {
-  // Create a Date whose local representation matches America/Chicago
   return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Chicago" }));
 }
 
@@ -45,94 +74,107 @@ export function currentChicagoYear(): number {
   return nowChicago().getFullYear();
 }
 
-/** Simple unique id — no external dep needed */
 function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-// ── Read / Write ───────────────────────────────────────────────────────────
-
-async function readCalls(): Promise<Call[]> {
-  try {
-    const raw = await readFile(CALLS_FILE, "utf-8");
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-
-async function writeCalls(calls: Call[]): Promise<void> {
-  await mkdir(DATA_DIR, { recursive: true });
-  await writeFile(CALLS_FILE, JSON.stringify(calls, null, 2));
-}
-
-async function readFailed(): Promise<FailedParse[]> {
-  try {
-    const raw = await readFile(FAILED_FILE, "utf-8");
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-
-async function writeFailed(items: FailedParse[]): Promise<void> {
-  await mkdir(DATA_DIR, { recursive: true });
-  await writeFile(FAILED_FILE, JSON.stringify(items, null, 2));
+function rowToCall(row: Record<string, unknown>): Call {
+  return {
+    id:               String(row.id),
+    gmailMessageId:   String(row.gmail_message_id),
+    dispatchDatetime: row.dispatch_datetime instanceof Date
+      ? row.dispatch_datetime.toISOString()
+      : String(row.dispatch_datetime),
+    dispatchDate:     String(row.dispatch_date),
+    dispatchTime:     String(row.dispatch_time),
+    dispatchNature:   String(row.dispatch_nature),
+    sourceYear:       Number(row.source_year),
+    parseStatus:      String(row.parse_status) as "ok" | "partial",
+    createdAt:        row.created_at instanceof Date
+      ? row.created_at.toISOString()
+      : String(row.created_at),
+  };
 }
 
 // ── Public API ─────────────────────────────────────────────────────────────
 
-/** Check if a Gmail message ID has already been processed */
 export async function isDuplicate(gmailMessageId: string): Promise<boolean> {
-  const calls  = await readCalls();
-  const failed = await readFailed();
-  return (
-    calls.some(c  => c.gmailMessageId  === gmailMessageId) ||
-    failed.some(f => f.gmailMessageId === gmailMessageId)
-  );
+  await ensureSchema();
+  const db = sql();
+  const [calls, failed] = await Promise.all([
+    db`SELECT 1 FROM cad_calls  WHERE gmail_message_id = ${gmailMessageId} LIMIT 1`,
+    db`SELECT 1 FROM cad_failed WHERE gmail_message_id = ${gmailMessageId} LIMIT 1`,
+  ]);
+  return calls.length > 0 || failed.length > 0;
 }
 
-/** Persist a successfully parsed call */
 export async function saveCall(data: Omit<Call, "id" | "createdAt">): Promise<Call> {
-  const calls = await readCalls();
-  const call: Call = {
-    ...data,
-    id: uid(),
-    createdAt: new Date().toISOString(),
-  };
-  calls.push(call);
-  // Keep the file sorted newest-first for easier reading
-  calls.sort((a, b) => b.dispatchDatetime.localeCompare(a.dispatchDatetime));
-  await writeCalls(calls);
-  return call;
+  await ensureSchema();
+  const db = sql();
+  const id = uid();
+  await db`
+    INSERT INTO cad_calls
+      (id, gmail_message_id, dispatch_datetime, dispatch_date, dispatch_time, dispatch_nature, source_year, parse_status)
+    VALUES
+      (${id}, ${data.gmailMessageId}, ${data.dispatchDatetime}, ${data.dispatchDate},
+       ${data.dispatchTime}, ${data.dispatchNature}, ${data.sourceYear}, ${data.parseStatus})
+    ON CONFLICT (gmail_message_id) DO NOTHING
+  `;
+  const rows = await db`SELECT * FROM cad_calls WHERE id = ${id}`;
+  return rowToCall(rows[0] as Record<string, unknown>);
 }
 
-/** Persist a failed / unparseable email for admin review */
 export async function saveFailedParse(data: Omit<FailedParse, "id">): Promise<void> {
-  const items = await readFailed();
-  items.unshift({ ...data, id: uid() });
-  // Keep at most 500 failed records
-  await writeFailed(items.slice(0, 500));
+  await ensureSchema();
+  const db = sql();
+  const id = uid();
+  await db`
+    INSERT INTO cad_failed
+      (id, gmail_message_id, subject, received_at, error_message, raw_snippet)
+    VALUES
+      (${id}, ${data.gmailMessageId}, ${data.subject}, ${data.receivedAt},
+       ${data.errorMessage}, ${data.rawSnippet})
+    ON CONFLICT (gmail_message_id) DO NOTHING
+  `;
 }
 
-/** Return the 3 most recent calls across all years */
 export async function getLatestCalls(limit = 3): Promise<Call[]> {
-  const calls = await readCalls();
-  return calls
-    .sort((a, b) => b.dispatchDatetime.localeCompare(a.dispatchDatetime))
-    .slice(0, limit);
+  await ensureSchema();
+  const db = sql();
+  const rows = await db`
+    SELECT * FROM cad_calls
+    ORDER BY dispatch_datetime DESC
+    LIMIT ${limit}
+  `;
+  return (rows as Record<string, unknown>[]).map(rowToCall);
 }
 
-/** Return all calls for the current Chicago calendar year, newest first */
 export async function getCallsForCurrentYear(): Promise<Call[]> {
-  const year  = currentChicagoYear();
-  const calls = await readCalls();
-  return calls
-    .filter(c => c.sourceYear === year)
-    .sort((a, b) => b.dispatchDatetime.localeCompare(a.dispatchDatetime));
+  await ensureSchema();
+  const db = sql();
+  const year = currentChicagoYear();
+  const rows = await db`
+    SELECT * FROM cad_calls
+    WHERE source_year = ${year}
+    ORDER BY dispatch_datetime DESC
+  `;
+  return (rows as Record<string, unknown>[]).map(rowToCall);
 }
 
-/** Admin: return failed parse log (never expose via public API) */
 export async function getFailedParses(): Promise<FailedParse[]> {
-  return readFailed();
+  await ensureSchema();
+  const db = sql();
+  const rows = await db`
+    SELECT * FROM cad_failed ORDER BY created_at DESC LIMIT 500
+  `;
+  return (rows as Record<string, unknown>[]).map(row => ({
+    id:             String(row.id),
+    gmailMessageId: String(row.gmail_message_id),
+    subject:        String(row.subject ?? ""),
+    receivedAt:     row.received_at instanceof Date
+      ? row.received_at.toISOString()
+      : String(row.received_at ?? ""),
+    errorMessage:   String(row.error_message ?? ""),
+    rawSnippet:     String(row.raw_snippet ?? ""),
+  }));
 }
