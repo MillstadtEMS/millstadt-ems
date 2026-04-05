@@ -75,33 +75,13 @@ export default function Nav() {
               className="relative flex flex-col items-center outline-none focus:outline-none"
               aria-label="Toggle menu"
             >
-              <div
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/millstadt-ems/cartoon-ambo.png"
+                alt=""
                 className={mobileOpen || dispatchFlash ? "ambo-img-active" : ""}
-                style={{ position: "relative", width: "clamp(36px, 5vw, 52px)" }}
-              >
-                {/* invisible spacer sets container height */}
-                <img src="/images/millstadt-ems/ambo-56-nobg.png" alt="" style={{ width: "100%", display: "block", visibility: "hidden" }} />
-                {/* TOP HALF — black */}
-                <img
-                  src="/images/millstadt-ems/ambo-56-nobg.png"
-                  alt=""
-                  style={{
-                    position: "absolute", top: 0, left: 0, width: "100%", display: "block",
-                    clipPath: "inset(0 0 50% 0)",
-                    filter: "grayscale(1) contrast(3) brightness(0.2)",
-                  }}
-                />
-                {/* BOTTOM HALF — clean yellow, no red */}
-                <img
-                  src="/images/millstadt-ems/ambo-56-nobg.png"
-                  alt=""
-                  style={{
-                    position: "absolute", top: 0, left: 0, width: "100%", display: "block",
-                    clipPath: "inset(50% 0 0 0)",
-                    filter: "grayscale(1) sepia(1) hue-rotate(10deg) saturate(12) contrast(1.3) brightness(1.1)",
-                  }}
-                />
-              </div>
+                style={{ height: "clamp(30px, 4vw, 44px)", width: "auto", display: "block" }}
+              />
               <div className="text-center text-[9px] text-slate-300 uppercase tracking-widest font-black mt-0.5">menu</div>
             </button>
           </div>
