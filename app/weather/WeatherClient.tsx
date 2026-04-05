@@ -90,10 +90,26 @@ interface CurrentConditions {
   wmoCode: number | null;
 }
 
+// METAR data from aviationweather.gov
+interface MetarData {
+  icaoId: string;
+  name: string;
+  rawOb: string;
+  reportTime: string;
+  flightCategory: "VFR" | "MVFR" | "IFR" | "LIFR" | null;
+  visib: number | null;       // statute miles
+  wspd: number | null;        // knots
+  wgst: number | null;        // knots
+  wdir: number | null;        // degrees
+  clouds: Array<{ cover: string; base: number | null }> | null; // base in hundreds of feet AGL
+  vertVis: number | null;     // hundreds of feet (obscured sky)
+}
+
 interface WeatherData {
   alerts: Alert[];
   current: CurrentConditions;
-  observation: Observation | null; // NWS — used only for cloudLayers/ceiling
+  observation: Observation | null;
+  metar: MetarData | null;
   periods: Period[];
   fetchedAt: Date;
 }
@@ -190,11 +206,30 @@ function getCeilingFt(layers?: Observation["cloudLayers"]): number | null {
   for (const layer of layers) {
     const amt = layer.amount?.toUpperCase();
     if ((amt === "BKN" || amt === "OVC") && layer.base?.value != null) {
-      return Math.round(layer.base.value * 3.281); // meters → feet
+      return Math.round(layer.base.value * 3.281);
     }
   }
-  return null; // clear or broken layers not found
+  return null;
 }
+
+/** Extract ceiling from METAR cloud layers. Base is in hundreds of feet. */
+function getMetarCeilingFt(m: MetarData | null): number | null {
+  if (!m) return null;
+  // Obscured sky (VV) counts as ceiling
+  if (m.vertVis != null) return m.vertVis * 100;
+  if (!m.clouds?.length) return null;
+  for (const { cover, base } of m.clouds) {
+    if ((cover === "BKN" || cover === "OVC") && base != null) return base * 100;
+  }
+  return null; // CLR / SKC / FEW / SCT = no ceiling
+}
+
+const FLIGHT_CAT_CONFIG = {
+  VFR:  { label: "VFR",  color: "text-emerald-400", bg: "bg-emerald-500/15", border: "border-emerald-500/30", desc: "Visual Flight Rules — Favorable for helicopter operations" },
+  MVFR: { label: "MVFR", color: "text-blue-400",    bg: "bg-blue-500/15",    border: "border-blue-500/30",    desc: "Marginal VFR — Helicopter may operate with caution" },
+  IFR:  { label: "IFR",  color: "text-red-400",     bg: "bg-red-500/15",     border: "border-red-500/30",     desc: "Instrument Flight Rules — Helicopters unlikely to fly" },
+  LIFR: { label: "LIFR", color: "text-fuchsia-400", bg: "bg-fuchsia-500/15", border: "border-fuchsia-500/30", desc: "Low IFR — Helicopter operations not expected" },
+};
 
 interface FlyabilityResult {
   status: "flying" | "not-flying";
@@ -209,11 +244,12 @@ function evaluateFlyability(params: {
   windMph: number | null;
   gustMph: number | null;
   ceilingFt: number | null;
+  ceilingDataAvailable: boolean;
   conditionText: string;
   alerts: Alert[];
   forecastText: string;
 }): FlyabilityResult {
-  const { visibilityMiles, windMph, gustMph, ceilingFt, conditionText, alerts, forecastText } = params;
+  const { visibilityMiles, windMph, gustMph, ceilingFt, ceilingDataAvailable, conditionText, alerts, forecastText } = params;
   const T = FLYABILITY_THRESHOLDS;
   const cond = conditionText.toLowerCase();
   const fcst = forecastText.toLowerCase();
@@ -251,8 +287,9 @@ function evaluateFlyability(params: {
   // ── Details chips ──
   const details: string[] = [];
   if (visibilityMiles != null) details.push(`Visibility ${visibilityMiles} mi`);
-  if (ceilingFt != null)       details.push(`Ceiling ${ceilingFt.toLocaleString()} ft`);
-  else                         details.push("Ceiling data unavailable");
+  if (ceilingFt != null)          details.push(`Ceiling ${ceilingFt.toLocaleString()} ft`);
+  else if (ceilingDataAvailable)  details.push("Ceiling: Unlimited (Clear Sky)");
+  else                            details.push("Ceiling data unavailable");
   if (windMph != null)         details.push(`Wind ${windMph} mph${gustMph ? ` (gust ${gustMph})` : ""}`);
   if (alerts.length > 0)       details.push(`${alerts.length} active alert${alerts.length > 1 ? "s" : ""}`);
   else                         details.push("No active severe alerts");
@@ -285,6 +322,99 @@ function evaluateFlyability(params: {
     details,
     minimums: [`Visibility minimum: ${T.minVisibilityFlying} mi`, `Ceiling minimum: ${T.minCeilingFlying.toLocaleString()} ft AGL`],
   };
+}
+
+function AviationCeilingCard({ metar }: { metar: MetarData | null }) {
+  if (!metar) return null;
+
+  const cat = metar.flightCategory ? FLIGHT_CAT_CONFIG[metar.flightCategory] : null;
+  const ceilingFt = getMetarCeilingFt(metar);
+
+  // Build cloud layer string
+  const significantLayers = (metar.clouds ?? []).filter(
+    l => l.cover && l.cover !== "CLR" && l.cover !== "SKC" && l.cover !== "CAVOK"
+  );
+  const hasClearSky = (metar.clouds ?? []).some(l => l.cover === "CLR" || l.cover === "SKC");
+
+  const layerStr = significantLayers.length > 0
+    ? significantLayers.map(l => `${l.cover}${l.base != null ? ` ${(l.base * 100).toLocaleString()} ft` : ""}`).join("  ·  ")
+    : (hasClearSky || !metar.clouds?.length ? "Sky Clear" : "No cloud data");
+
+  // Parse report time to local
+  const reportedAt = metar.reportTime
+    ? new Date(metar.reportTime + "Z").toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" })
+    : null;
+
+  return (
+    <section className="wrap mb-20">
+      <div className="flex items-center gap-3 mb-6">
+        <span className="h-px w-8 bg-[#f0b429]" />
+        <span className="text-[#f0b429] text-sm font-black tracking-[0.2em] uppercase">Aviation Ceiling & Flight Category</span>
+        <span className="text-slate-600 text-xs ml-auto">{metar.icaoId} METAR{reportedAt ? ` · ${reportedAt}` : ""}</span>
+      </div>
+
+      <div className="rounded-2xl bg-[#071428] border border-white/8 overflow-hidden">
+
+        {/* Flight category banner */}
+        {cat && (
+          <div className={`${cat.bg} border-b ${cat.border} px-8 py-5 flex items-center gap-5`}>
+            <span className={`${cat.color} font-black text-3xl tracking-widest`}>{cat.label}</span>
+            <div className="h-6 w-px bg-white/10" />
+            <span className="text-slate-300 text-sm leading-snug">{cat.desc}</span>
+          </div>
+        )}
+
+        <div className="p-8 grid sm:grid-cols-3 gap-6">
+
+          {/* Ceiling */}
+          <div className="bg-[#040d1a] rounded-xl p-5 border border-white/5">
+            <div className="text-slate-500 text-xs uppercase tracking-wider mb-2">Ceiling</div>
+            <div className={`font-black text-2xl ${
+              ceilingFt == null ? "text-slate-500" :
+              ceilingFt < 500  ? "text-fuchsia-400" :
+              ceilingFt < 1000 ? "text-red-400" :
+              ceilingFt < 3000 ? "text-blue-400" : "text-emerald-400"
+            }`}>
+              {ceilingFt != null ? `${ceilingFt.toLocaleString()} ft` : "Unlimited"}
+            </div>
+            <div className="text-slate-500 text-xs mt-1">AGL</div>
+          </div>
+
+          {/* Cloud layers */}
+          <div className="bg-[#040d1a] rounded-xl p-5 border border-white/5">
+            <div className="text-slate-500 text-xs uppercase tracking-wider mb-2">Cloud Layers</div>
+            <div className="text-white font-bold text-sm leading-relaxed">{layerStr}</div>
+          </div>
+
+          {/* Visibility from METAR */}
+          <div className="bg-[#040d1a] rounded-xl p-5 border border-white/5">
+            <div className="text-slate-500 text-xs uppercase tracking-wider mb-2">Visibility (METAR)</div>
+            <div className={`font-black text-2xl ${
+              metar.visib == null ? "text-slate-500" :
+              metar.visib < 1   ? "text-fuchsia-400" :
+              metar.visib < 3   ? "text-red-400" :
+              metar.visib < 5   ? "text-blue-400" : "text-emerald-400"
+            }`}>
+              {metar.visib != null ? `${metar.visib} mi` : "—"}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Raw METAR */}
+        <div className="px-8 pb-6">
+          <div className="text-slate-500 text-xs uppercase tracking-wider mb-2">Raw METAR</div>
+          <code className="text-slate-400 text-xs font-mono break-all">{metar.rawOb || "—"}</code>
+        </div>
+
+        <div className="px-8 pb-6">
+          <p className="text-slate-700 text-[10px]">
+            Source: KALN (Southwestern Illinois Airport, Cahokia) — ~5 miles from Millstadt. BKN/OVC layers establish the ceiling. CLR/SKC indicates no ceiling. Ceiling and visibility determine flight category.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function HelicopterFlyabilityCard({ result }: { result: FlyabilityResult }) {
@@ -381,12 +511,12 @@ export default function WeatherClient() {
         "&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America/Chicago";
 
       // Step 2: parallel fetches
-      const [forecastRes, alertsRes, openMeteoRes, obsRes] = await Promise.all([
+      const [forecastRes, alertsRes, openMeteoRes, obsRes, metarRes] = await Promise.all([
         fetch(forecastUrl, { headers: NWS_HEADERS }),
         fetch("https://api.weather.gov/alerts/active?zone=ILC163", { headers: NWS_HEADERS }),
         fetch(OPEN_METEO_URL),
-        // NWS observation kept only for cloudLayers (ceiling data)
         fetch("https://api.weather.gov/stations/KCPS/observations/latest", { headers: NWS_HEADERS }),
+        fetch("/api/metar"),
       ]);
 
       const [forecastData, alertsData, openMeteoData] = await Promise.all([
@@ -410,17 +540,40 @@ export default function WeatherClient() {
         wmoCode:         om.weather_code           ?? null,
       };
 
-      // NWS observation — only for cloudLayers/ceiling
+      // NWS observation — cloudLayers fallback
       let observation: Observation | null = null;
       if (obsRes.ok) {
         const obsData = await obsRes.json();
         observation = obsData.properties ?? null;
       }
 
+      // METAR — primary ceiling source
+      let metar: MetarData | null = null;
+      if (metarRes.ok) {
+        const metarArr = await metarRes.json();
+        const m = Array.isArray(metarArr) ? metarArr[0] : null;
+        if (m) {
+          metar = {
+            icaoId:         m.icaoId ?? "KALN",
+            name:           m.name ?? "Southwestern Illinois Airport",
+            rawOb:          m.rawOb ?? "",
+            reportTime:     m.reportTime ?? "",
+            flightCategory: m.flightCategory ?? null,
+            visib:          m.visib ?? null,
+            wspd:           m.wspd ?? null,
+            wgst:           m.wgst ?? null,
+            wdir:           m.wdir ?? null,
+            clouds:         Array.isArray(m.clouds) ? m.clouds : null,
+            vertVis:        m.vertVis ?? null,
+          };
+        }
+      }
+
       setData({
         alerts: alertsData.features ?? [],
         current,
         observation,
+        metar,
         periods: forecastData.properties?.periods ?? [],
         fetchedAt: new Date(),
       });
@@ -454,7 +607,7 @@ export default function WeatherClient() {
 
   if (!data) return null;
 
-  const { alerts, current, observation, periods } = data;
+  const { alerts, current, observation, metar, periods } = data;
   const tempF        = current.tempF         != null ? Math.round(current.tempF)        : null;
   const feelsLikeF   = current.feelsLikeF    != null ? Math.round(current.feelsLikeF)   : null;
   const dewF         = current.dewpointF      != null ? Math.round(current.dewpointF)    : null;
@@ -601,12 +754,16 @@ export default function WeatherClient() {
         )}
       </section>
 
+      {/* ── Aviation Ceiling ── */}
+      <AviationCeilingCard metar={metar} />
+
       {/* ── Helicopter Flyability ── */}
       <HelicopterFlyabilityCard result={evaluateFlyability({
         visibilityMiles: visibMiles,
         windMph,
         gustMph,
-        ceilingFt: getCeilingFt(observation?.cloudLayers),
+        ceilingFt: getMetarCeilingFt(metar) ?? getCeilingFt(observation?.cloudLayers),
+        ceilingDataAvailable: metar != null || observation?.cloudLayers != null,
         conditionText: condition,
         alerts,
         forecastText: periods[0]?.detailedForecast ?? periods[0]?.shortForecast ?? "",
