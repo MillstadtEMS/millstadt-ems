@@ -171,7 +171,7 @@ function buildDatetime(date: Date, hours: number, minutes: number): { iso: strin
  */
 function extractFreeformNature(body: string): string | null {
   const ADDRESS_RE  = /^\d+\s+\w+\s+(?:St|Street|Ave|Avenue|Blvd|Boulevard|Dr|Drive|Rd|Road|Ln|Lane|Ct|Court|Way|Pl|Place|Hwy|Highway|Pkwy|Parkway)\b/i;
-  const DATETIME_RE = /^\d{1,2}:\d{2}|^(?:January|February|March|April|May|June|July|August|September|October|November|December)/i;
+  const DATETIME_RE = /^\d{1,2}:\d{2}|^\d{1,2}\/\d{1,2}\/\d{2,4}|^\d{4}-\d{2}-\d{2}|^(?:January|February|March|April|May|June|July|August|September|October|November|December)/i;
   const SIGNATURE_RE = /^(?:respectfully|sent from|regards|sincerely|thank|--)/i;
 
   const lines = body.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
