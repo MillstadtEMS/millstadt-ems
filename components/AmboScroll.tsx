@@ -44,14 +44,14 @@ export default function AmboScroll() {
       {triggered && (
         <div
           className="fixed bottom-16 md:bottom-2 left-0 right-0 pointer-events-none z-40 overflow-hidden"
-          style={{ height: "80px" }}
+          style={{ height: "100px" }}
         >
           {/* Wrapper flips image so ambulance faces left (driving right→left) */}
           <div
             style={{
               position: "absolute",
               bottom: "4px",
-              width: "270px",
+              width: "160px",
               transform: "scaleX(-1)", // flip to face left
               animation: driving
                 ? `ambo-drive 4s linear forwards, ambo-bounce 0.45s ease-in-out infinite, ambo-img-lights 0.55s linear infinite`
