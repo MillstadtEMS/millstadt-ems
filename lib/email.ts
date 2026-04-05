@@ -23,6 +23,7 @@ export async function sendApprovalEmail(t: Testimonial) {
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://millstadtems.org";
   const approveUrl = `${base}/api/testimonials/approve?id=${t.id}&action=approve&sig=${signToken(t.id, "approve")}`;
   const denyUrl    = `${base}/api/testimonials/approve?id=${t.id}&action=deny&sig=${signToken(t.id, "deny")}`;
+  const deleteUrl  = `${base}/api/testimonials/approve?id=${t.id}&action=delete&sig=${signToken(t.id, "delete")}`;
   const displayName = t.anonymous ? "Anonymous" : (t.name || "Anonymous");
 
   const from    = process.env.GMAIL_USER ?? "millstadtcad@gmail.com";
@@ -48,6 +49,11 @@ export async function sendApprovalEmail(t: Testimonial) {
           </td>
           <td style="padding-left:8px;">
             <a href="${denyUrl}" style="display:block;text-align:center;background:#ef4444;color:#fff;font-weight:900;font-size:16px;padding:18px;border-radius:12px;text-decoration:none;">✕ &nbsp;Deny</a>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2" style="padding-top:8px;">
+            <a href="${deleteUrl}" style="display:block;text-align:center;background:#1e293b;color:#94a3b8;font-weight:700;font-size:14px;padding:14px;border-radius:12px;text-decoration:none;border:1px solid rgba(255,255,255,0.08);">🗑 &nbsp;Permanently Delete</a>
           </td>
         </tr>
       </table>

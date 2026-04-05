@@ -66,6 +66,13 @@ export async function setStatus(
   return (r as unknown as { count: number }).count > 0;
 }
 
+export async function deleteTestimonial(id: string): Promise<boolean> {
+  await ensureSchema();
+  const db = sql();
+  const r = await db`DELETE FROM testimonials WHERE id = ${id}`;
+  return (r as unknown as { count: number }).count > 0;
+}
+
 export async function getApproved(): Promise<Testimonial[]> {
   await ensureSchema();
   const db = sql();
