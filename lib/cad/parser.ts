@@ -257,6 +257,57 @@ export function parseDispatchEmail(
   };
 }
 
+// ── Closeout email detection & parsing ────────────────────────────────────
+
+export interface ParsedCloseout {
+  dispatchDate: string;  // "04/04/2026"
+  dispatchTime: string;  // "17:30"
+  closedAt: string;      // ISO-8601
+  nature: string;        // from subject "EVENT CLOSEOUT ACCIDENT W/ INJURIES"
+}
+
+/** Returns true if this email is a St. Clair County closeout report */
+export function isCloseoutEmail(subject: string): boolean {
+  return /event\s+closeout/i.test(subject);
+}
+
+/**
+ * Parse a closeout email from cencom@omnigo.com.
+ * Extracts dispatch time (to match existing call) and closed time.
+ *
+ * Relevant lines in body:
+ *   Dispatch:  04/04/2026 17:30:34
+ *   Closed:    04/04/2026 18:37:35
+ */
+export function parseCloseoutEmail(subject: string, body: string): ParsedCloseout | null {
+  // Extract nature from subject: "EVENT CLOSEOUT ACCIDENT W/ INJURIES" → "ACCIDENT W/ INJURIES"
+  const natureMatch = subject.match(/event\s+closeout\s+(.+)/i);
+  const nature = natureMatch ? natureMatch[1].trim().toUpperCase() : "UNKNOWN";
+
+  // MM/DD/YYYY HH:MM:SS format
+  const DATETIME_RE = /(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2}:\d{2})/;
+
+  const dispatchMatch = body.match(/^dispatch\s*[:\-]?\s*(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2})/im);
+  const closedMatch   = body.match(/^closed\s*[:\-]?\s*(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2}:\d{2})/im)
+                     || body.match(new RegExp(`closed[^\\n]*?(${DATETIME_RE.source})`, "im"));
+
+  if (!dispatchMatch) return null;
+
+  const dispatchDate = dispatchMatch[1]; // "04/04/2026"
+  const dispatchTime = dispatchMatch[2]; // "17:30"
+
+  let closedIso = new Date().toISOString();
+  if (closedMatch) {
+    const [, d, t] = closedMatch;
+    // Build as local Chicago time approximation
+    const [mo, dy, yr] = d.split("/");
+    const [hh, mm, ss] = t.split(":");
+    closedIso = new Date(`${yr}-${mo.padStart(2,"0")}-${dy.padStart(2,"0")}T${hh.padStart(2,"0")}:${mm}:${ss ?? "00"}`).toISOString();
+  }
+
+  return { dispatchDate, dispatchTime, closedAt: closedIso, nature };
+}
+
 /** Strip HTML tags from an email body for plain-text parsing */
 export function stripHtml(html: string): string {
   return html

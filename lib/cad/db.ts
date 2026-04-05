@@ -22,6 +22,7 @@ export interface Call {
   dispatchNature: string;
   sourceYear: number;
   parseStatus: "ok" | "partial";
+  completedAt: string | null;
   createdAt: string;
 }
 
@@ -48,9 +49,12 @@ async function ensureSchema() {
       dispatch_nature  TEXT NOT NULL,
       source_year      INTEGER NOT NULL,
       parse_status     TEXT NOT NULL,
+      completed_at     TIMESTAMPTZ DEFAULT NULL,
       created_at       TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+  // Migrate existing tables that don't have completed_at yet
+  await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ DEFAULT NULL`;
   await db`
     CREATE TABLE IF NOT EXISTS cad_failed (
       id               TEXT PRIMARY KEY,
@@ -90,10 +94,32 @@ function rowToCall(row: Record<string, unknown>): Call {
     dispatchNature:   String(row.dispatch_nature),
     sourceYear:       Number(row.source_year),
     parseStatus:      String(row.parse_status) as "ok" | "partial",
+    completedAt:      row.completed_at
+      ? (row.completed_at instanceof Date ? row.completed_at.toISOString() : String(row.completed_at))
+      : null,
     createdAt:        row.created_at instanceof Date
       ? row.created_at.toISOString()
       : String(row.created_at),
   };
+}
+
+/**
+ * Mark a call as complete by matching dispatch date + time.
+ * The closeout email contains the original dispatch time (MM/DD/YYYY HH:MM:SS).
+ */
+export async function markCallComplete(dispatchDate: string, dispatchTime: string, closedAt: string): Promise<boolean> {
+  await ensureSchema();
+  const db = sql();
+  // Match on dispatch_date and dispatch_time (first 5 chars HH:MM)
+  const timePrefix = dispatchTime.slice(0, 5);
+  const result = await db`
+    UPDATE cad_calls
+    SET completed_at = ${closedAt}
+    WHERE dispatch_date = ${dispatchDate}
+      AND dispatch_time = ${timePrefix}
+      AND completed_at IS NULL
+  `;
+  return (result as unknown as { count: number }).count > 0;
 }
 
 // ── Public API ─────────────────────────────────────────────────────────────

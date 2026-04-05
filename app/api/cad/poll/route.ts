@@ -11,8 +11,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { fetchUnreadDispatchEmails, markAsRead } from "@/lib/cad/gmail";
-import { parseDispatchEmail } from "@/lib/cad/parser";
-import { isDuplicate, saveCall, saveFailedParse } from "@/lib/cad/db";
+import { parseDispatchEmail, isCloseoutEmail, parseCloseoutEmail } from "@/lib/cad/parser";
+import { isDuplicate, saveCall, saveFailedParse, markCallComplete } from "@/lib/cad/db";
 
 export const runtime = "nodejs"; // needs fs access
 
@@ -45,12 +45,24 @@ async function handlePoll(req: NextRequest): Promise<NextResponse> {
         // ── Deduplication ────────────────────────────────────────────────
         if (await isDuplicate(email.id)) {
           results.duplicates++;
-          // Still mark as read in case a previous run marked it processed
           await markAsRead(email.id).catch(() => {});
           continue;
         }
 
-        // ── Parse ────────────────────────────────────────────────────────
+        // ── Closeout email (cencom@omnigo.com "EVENT CLOSEOUT ...") ──────
+        if (isCloseoutEmail(email.subject)) {
+          const closeout = parseCloseoutEmail(email.subject, email.body);
+          if (closeout) {
+            await markCallComplete(closeout.dispatchDate, closeout.dispatchTime, closeout.closedAt);
+            results.processed++;
+          } else {
+            results.failed++;
+          }
+          await markAsRead(email.id);
+          continue;
+        }
+
+        // ── Parse dispatch email ─────────────────────────────────────────
         const parsed = parseDispatchEmail(email.subject, email.body, email.received);
 
         if (parsed.status === "failed") {
@@ -72,6 +84,7 @@ async function handlePoll(req: NextRequest): Promise<NextResponse> {
             dispatchNature:  parsed.dispatchNature,
             sourceYear:      parsed.sourceYear,
             parseStatus:     parsed.status,
+            completedAt:     null,
           });
           results.processed++;
         }

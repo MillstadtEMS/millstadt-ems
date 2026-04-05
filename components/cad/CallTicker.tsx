@@ -9,12 +9,14 @@ interface Call {
   dispatchNature: string;
   dispatchDatetime: string;
   sourceYear: number;
+  completedAt: string | null;
 }
 
 const ACTIVE_MINUTES = 20;
 const POLL_INTERVAL  = 60_000;
 
 function isActive(call: Call): boolean {
+  if (call.completedAt) return false; // closeout received
   const dispatched = new Date(call.dispatchDatetime).getTime();
   return Date.now() - dispatched < ACTIVE_MINUTES * 60 * 1000;
 }
