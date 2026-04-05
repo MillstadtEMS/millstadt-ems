@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import ContactFormWrapper from "@/components/ContactFormWrapper";
 
 export const metadata: Metadata = {
   title: "Event / Visit Request",
@@ -77,7 +78,10 @@ export default function EventRequestPage() {
       {/* Form */}
       <section className="pb-40 bg-[#040d1a]">
         <div className="wrap max-w-3xl">
-          <form action="mailto:millstadtems@gmail.com" method="POST" encType="text/plain">
+          <ContactFormWrapper
+            formType="Event / Visit Request"
+            disclaimer="Requests are subject to unit and crew availability. We will contact you to confirm."
+          >
 
             {/* ── Contact Information ── */}
             <div className="p-16 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
@@ -166,24 +170,7 @@ export default function EventRequestPage() {
               </label>
             </div>
 
-            {/* ── VOID ── */}
-            <div className="h-16" />
-
-            {/* Submit */}
-            <div className="flex flex-col gap-4 max-w-sm">
-              <button type="submit" className="flex items-center justify-center w-full py-6 bg-[#f0b429] hover:bg-[#d9a320] text-[#040d1a] font-black text-lg rounded-2xl transition-colors">
-                Submit Request
-              </button>
-              <Link href="/forms" className="flex items-center justify-center w-full py-6 border-2 border-white/20 hover:border-[#f0b429]/50 hover:text-[#f0b429] text-white font-black text-lg rounded-2xl transition-colors">
-                Back to Forms
-              </Link>
-            </div>
-
-            <p className="text-slate-600 text-sm pt-6">
-              Requests are sent to millstadtems@gmail.com. All submissions are subject to unit and crew availability.
-            </p>
-
-          </form>
+          </ContactFormWrapper>
         </div>
       </section>
 
