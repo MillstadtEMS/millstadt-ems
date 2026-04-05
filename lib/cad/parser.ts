@@ -335,8 +335,26 @@ export interface ParsedCloseout {
 }
 
 /** Returns true if this email is a St. Clair County closeout report */
-export function isCloseoutEmail(subject: string): boolean {
-  return /event\s+closeout/i.test(subject);
+export function isCloseoutEmail(subject: string, body: string): boolean {
+  if (/event\s+closeout/i.test(subject)) return true;
+  // Forwarded closeout: subject changed by Gmail but body still has "EVENT CLOSEOUT" or "Closed:" timestamp
+  if (/fwd?:.*closeout/i.test(subject)) return true;
+  if (/\bClosed\s*:\s*\d{1,2}\/\d{1,2}\/\d{4}/i.test(body)) return true;
+  return false;
+}
+
+/**
+ * Returns true if this is a cfmsg status update (Enroute, On Scene, etc.)
+ * that should NOT create a new call record — it's not a new dispatch.
+ */
+export function isStatusUpdateEmail(subject: string, body: string): boolean {
+  // cfmsg Event Report with Status: Enroute / On Scene / Cleared (not Dispatched)
+  const statusMatch = body.match(/\bstatus\s*[:\-]\s*(\w+)/i);
+  if (statusMatch) {
+    const s = statusMatch[1].toLowerCase();
+    if (s === "enroute" || s === "on scene" || s === "onscene" || s === "cleared" || s === "available") return true;
+  }
+  return false;
 }
 
 /**

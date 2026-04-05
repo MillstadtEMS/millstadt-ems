@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { fetchUnreadDispatchEmails, markAsRead } from "@/lib/cad/gmail";
-import { parseDispatchEmail, isCloseoutEmail, parseCloseoutEmail } from "@/lib/cad/parser";
+import { parseDispatchEmail, isCloseoutEmail, isStatusUpdateEmail, parseCloseoutEmail } from "@/lib/cad/parser";
 import { isDuplicate, saveCall, saveFailedParse, markCallComplete, isEventNumberDuplicate } from "@/lib/cad/db";
 import { transcribeAudio, extractNatureFromTranscript } from "@/lib/cad/whisper";
 
@@ -50,8 +50,14 @@ async function handlePoll(req: NextRequest): Promise<NextResponse> {
           continue;
         }
 
-        // ── Closeout email (cencom@omnigo.com "EVENT CLOSEOUT ...") ──────
-        if (isCloseoutEmail(email.subject)) {
+        // ── Status update (Enroute, On Scene, etc.) — skip, not a new call ──
+        if (isStatusUpdateEmail(email.subject, email.body)) {
+          await markAsRead(email.id);
+          continue;
+        }
+
+        // ── Closeout email ────────────────────────────────────────────────
+        if (isCloseoutEmail(email.subject, email.body)) {
           const closeout = parseCloseoutEmail(email.subject, email.body);
           if (closeout) {
             await markCallComplete(

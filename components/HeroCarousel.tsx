@@ -13,7 +13,7 @@ const IMAGES: { src: string; brightness: number }[] = [
   { src: "/images/millstadt-ems/hero/IMG_8516.jpeg",                             brightness: 0.32 },
   { src: "/images/millstadt-ems/hero/IMG_2072.JPG",                              brightness: 0.32 },
   { src: "/images/millstadt-ems/hero/7A8662CA-9125-4252-8E4C-F029CE247079.jpeg", brightness: 0.32 },
-  { src: "/images/millstadt-ems/hero/811D6F5D-4DD7-4E6C-B758-7B4167F03B38.jpeg", brightness: 0.32 },
+  { src: "/images/millstadt-ems/hero/811D6F5D-4DD7-4E6C-B758-7B4167F03B38.jpeg", brightness: 0.6  }, // northern lights night
   { src: "/images/millstadt-ems/hero/6A3DE69E-2C3E-4E0E-90FA-FF42A7320338.png",  brightness: 0.32 },
 ];
 
