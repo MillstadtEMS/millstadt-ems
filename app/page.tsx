@@ -72,10 +72,12 @@ export default function Home() {
         </div>
       </div>
 
+      <div className="h-24 bg-[#040d1a]" />
+
       {/* ════════════════════════════════
           QUICK ACTION CARDS
       ════════════════════════════════ */}
-      <section className="py-20 mt-16 bg-[#040d1a]">
+      <section className="pb-20 bg-[#040d1a]">
         <div className="wrap flex justify-center">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 w-full max-w-4xl">
             {[
