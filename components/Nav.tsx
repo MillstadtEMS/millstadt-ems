@@ -253,16 +253,46 @@ function getAlertLevel(event: string, severity: string, headline = "", descripti
 }
 
 function WeatherTicker() {
-  const span1 = useRef<HTMLSpanElement>(null);
-  const span2 = useRef<HTMLSpanElement>(null);
+  const trackRef  = useRef<HTMLDivElement>(null);
+  const posRef    = useRef(0);
+  const rafRef    = useRef<number>(0);
+  const colorRef  = useRef("#34d399");
+  const textRef   = useRef("NO ACTIVE WEATHER ALERTS FOR MILLSTADT, ILLINOIS");
+
+  // JS-driven animation — never resets on content updates
+  useEffect(() => {
+    function animate() {
+      const track = trackRef.current;
+      if (!track) { rafRef.current = requestAnimationFrame(animate); return; }
+      const halfW = track.scrollWidth / 2;
+      if (halfW <= 0)  { rafRef.current = requestAnimationFrame(animate); return; }
+      posRef.current -= 0.6; // px per frame (~36px/s at 60fps)
+      if (posRef.current <= -halfW) posRef.current = 0;
+      track.style.transform = `translateX(${posRef.current}px)`;
+      rafRef.current = requestAnimationFrame(animate);
+    }
+    rafRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  function applyUpdate(text: string, color: string) {
+    textRef.current  = text;
+    colorRef.current = color;
+    const padded = text + "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0";
+    const track = trackRef.current;
+    if (!track) return;
+    track.querySelectorAll("span").forEach((s) => {
+      s.textContent = padded;
+      (s as HTMLElement).style.color = color;
+    });
+  }
 
   useEffect(() => {
     function update(alerts: NWSAlert[]) {
       let text: string;
       let color: string;
-
       if (alerts.length === 0) {
-        text = "NO ACTIVE WEATHER ALERTS FOR MILLSTADT, ILLINOIS";
+        text  = "NO ACTIVE WEATHER ALERTS FOR MILLSTADT, ILLINOIS";
         color = "#34d399";
       } else {
         const top = alerts.reduce<"red" | "yellow" | "green">((acc, a) => {
@@ -272,7 +302,7 @@ function WeatherTicker() {
           return acc;
         }, "green");
         color = top === "red" ? "#f87171" : top === "yellow" ? "#facc15" : "#34d399";
-        text = alerts.map((a) => {
+        text  = alerts.map((a) => {
           const h = (a.properties.headline + " " + (a.properties.description ?? "")).toLowerCase();
           const e = a.properties.event.toLowerCase();
           let label = a.properties.event.toUpperCase();
@@ -281,20 +311,12 @@ function WeatherTicker() {
           return `${label} \u2014 ${a.properties.headline.toUpperCase()}`;
         }).join("     \u00b7     ");
       }
-
-      // pad end so the loop gap is invisible
-      const padded = text + "\u00a0".repeat(20);
-      [span1, span2].forEach((ref) => {
-        if (ref.current) {
-          ref.current.textContent = padded;
-          ref.current.style.color = color;
-        }
-      });
+      applyUpdate(text, color);
     }
 
     async function fetchAlerts() {
       try {
-        const res = await fetch("https://api.weather.gov/alerts/active?zone=ILC163", {
+        const res  = await fetch("https://api.weather.gov/alerts/active?zone=ILC163", {
           headers: { "User-Agent": "(millstadtems.org, millstadtems@gmail.com)", Accept: "application/geo+json" },
         });
         const data = await res.json();
@@ -307,7 +329,6 @@ function WeatherTicker() {
     fetchAlerts();
     const id = setInterval(fetchAlerts, 5 * 60 * 1000);
 
-    // Dev simulation — mirrors test events from /weather-test page
     const MOCK_ALERTS: Record<string, { event: string; headline: string; description: string; severity: string }[]> = {
       thunderstorm_watch:   [{ event: "Severe Thunderstorm Watch",   headline: "Severe Thunderstorm Watch issued for St. Clair County until 10:00 PM CDT.",          description: "", severity: "Moderate" }],
       thunderstorm_warning: [{ event: "Severe Thunderstorm Warning", headline: "Severe Thunderstorm Warning issued for St. Clair County.",                            description: "", severity: "Severe"  }],
@@ -322,30 +343,25 @@ function WeatherTicker() {
       update((MOCK_ALERTS[scenario] ?? []).map((a) => ({ properties: a })));
     }
     window.addEventListener("weather-test-scenario", handleTest);
-
-    return () => {
-      clearInterval(id);
-      window.removeEventListener("weather-test-scenario", handleTest);
-    };
+    return () => { clearInterval(id); window.removeEventListener("weather-test-scenario", handleTest); };
   }, []);
 
   const spanStyle: React.CSSProperties = {
     color: "#34d399",
-    fontSize: "0.7rem",
+    fontSize: "0.82rem",
     fontWeight: 700,
     whiteSpace: "nowrap",
     textTransform: "uppercase",
+    paddingRight: "0",
   };
+
+  const padded = textRef.current + "\u00a0".repeat(20);
 
   return (
     <div style={{ overflow: "hidden", width: "100%" }}>
-      <div className="ticker-scroll">
-        <span ref={span1} style={spanStyle}>
-          NO ACTIVE WEATHER ALERTS FOR MILLSTADT, ILLINOIS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        </span>
-        <span ref={span2} aria-hidden style={spanStyle}>
-          NO ACTIVE WEATHER ALERTS FOR MILLSTADT, ILLINOIS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        </span>
+      <div ref={trackRef} style={{ display: "flex", willChange: "transform" }}>
+        <span style={spanStyle}>{padded}</span>
+        <span style={spanStyle} aria-hidden>{padded}</span>
       </div>
     </div>
   );

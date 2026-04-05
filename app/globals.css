@@ -19,16 +19,7 @@ body {
   overflow-x: hidden;
 }
 
-@keyframes ticker-scroll {
-  0%   { transform: translateX(-50%); }
-  100% { transform: translateX(0); }
-}
-.ticker-scroll {
-  animation: ticker-scroll 30s linear infinite;
-  display: flex;
-  white-space: nowrap;
-  will-change: transform;
-}
+/* ticker animation handled in JS (Nav.tsx WeatherTicker) */
 
 /* ── Guaranteed centered container ── */
 .wrap {
