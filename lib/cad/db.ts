@@ -134,7 +134,7 @@ export async function markCallComplete(
     if ((r as unknown as { count: number }).count > 0) return true;
   }
 
-  // Fallback: match by dispatch date + time
+  // Fallback: match by dispatch date + time (within 10 minutes)
   if (dispatchDate && dispatchTime) {
     const timePrefix = dispatchTime.slice(0, 5);
     const r = nature
@@ -149,6 +149,33 @@ export async function markCallComplete(
           WHERE dispatch_date = ${dispatchDate}
             AND dispatch_time = ${timePrefix}
             AND completed_at IS NULL
+        `;
+    if ((r as unknown as { count: number }).count > 0) return true;
+  }
+
+  // Last resort: match most recent open call on the same date
+  // (handles cases where call was saved with received time, not CAD dispatch time)
+  if (dispatchDate) {
+    const r = nature
+      ? await db`
+          UPDATE cad_calls SET completed_at = ${closedAt}, dispatch_nature = ${nature}
+          WHERE id = (
+            SELECT id FROM cad_calls
+            WHERE dispatch_date = ${dispatchDate}
+              AND completed_at IS NULL
+            ORDER BY dispatch_datetime DESC
+            LIMIT 1
+          )
+        `
+      : await db`
+          UPDATE cad_calls SET completed_at = ${closedAt}
+          WHERE id = (
+            SELECT id FROM cad_calls
+            WHERE dispatch_date = ${dispatchDate}
+              AND completed_at IS NULL
+            ORDER BY dispatch_datetime DESC
+            LIMIT 1
+          )
         `;
     return (r as unknown as { count: number }).count > 0;
   }

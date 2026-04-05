@@ -92,13 +92,8 @@ async function handlePoll(req: NextRequest): Promise<NextResponse> {
           });
           results.failed++;
         } else {
-          // Skip status-update emails (Enroute = unit moving, not a new call)
-          if (parsed.dispatchStatus === "enroute") {
-            await markAsRead(email.id);
-            continue;
-          }
-
-          // Skip if this event number is already saved (duplicate from paired emails)
+          // Skip if this event number is already saved (duplicate from paired cfmsg emails)
+          // Note: we do NOT skip Enroute emails — they carry the event number needed for closeout matching
           if (parsed.eventNumber && await isEventNumberDuplicate(parsed.eventNumber)) {
             results.duplicates++;
             await markAsRead(email.id);

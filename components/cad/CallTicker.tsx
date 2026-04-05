@@ -202,14 +202,14 @@ export default function CallTicker() {
           {/* ── Call status info ── */}
           <div className="flex-1 min-w-0 flex items-center">
             {onARun ? (
-              // Active call — nature shown once closeout updates it; until then just "responding"
-              <span className="text-emerald-300 text-[10px] font-bold tracking-wide truncate">
-                Responding
+              // Active call — date/time bold white, Responding in green
+              <span className="text-[10px] truncate flex items-center gap-1.5">
                 {activeCall && (
-                  <span className="text-slate-500 font-normal ml-2">
-                    {shortDate(activeCall.dispatchDate)} @ {activeCall.dispatchTime}
+                  <span className="text-white font-bold tabular-nums font-mono">
+                    {activeCall.dispatchDate} @ {activeCall.dispatchTime}
                   </span>
                 )}
+                <span className="text-emerald-300 font-bold tracking-wide">Responding</span>
               </span>
             ) : lastRun ? (
               // Completed — show last run with nature
