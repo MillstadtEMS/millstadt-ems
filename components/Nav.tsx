@@ -49,8 +49,8 @@ export default function Nav() {
     <header className="fixed top-10 left-0 right-0 z-50">
 
       {/* ── Single unified bar: logo | weather ticker | menu ── */}
-      <div className="bg-[#020912] border-b border-white/8">
-        <div className="wrap flex items-center justify-between gap-4 py-1">
+      <div className="bg-[#020912] border-b border-white/8" style={{ overflow: "visible" }}>
+        <div className="wrap flex items-center justify-between gap-4 py-1" style={{ overflow: "visible" }}>
 
           {/* Logo */}
           <Link href="/" className="shrink-0 group">
@@ -64,7 +64,7 @@ export default function Nav() {
           </Link>
 
           {/* Weather ticker — centered, fills remaining space */}
-          <div className="flex-1 overflow-hidden flex items-center justify-center min-w-0">
+          <div className="flex-1 flex items-center justify-center min-w-0" style={{ overflow: "hidden" }}>
             <WeatherTicker />
           </div>
 
