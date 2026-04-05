@@ -14,7 +14,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-t from-[#040d1a] via-transparent to-transparent" style={{ zIndex: 2 }} />
         <HolidayOverlay />
 
-        <div className="relative z-10 w-full flex flex-col items-center text-center px-6 pb-40 pt-20">
+        <div className="relative z-10 w-full flex flex-col items-center text-center px-6 pb-16 pt-20">
 
           <div className="flex items-center justify-center gap-3 mb-10">
             <span className="h-px w-12 bg-[#f0b429]" />
@@ -53,26 +53,24 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Stats bar — z-10 keeps it above carousel images always */}
-        <div className="absolute bottom-0 left-0 right-0 bg-[#040d1a]/90 backdrop-blur-sm border-t border-white/5" style={{ zIndex: 10 }}>
-          <div className="wrap py-10 grid grid-cols-2 md:grid-cols-4 divide-x divide-white/5">
-            {[
-              { num: "1980",      label: "Established" },
-              { num: "ALS / BLS", label: "Level of Care" },
-              { num: "24 / 7",    label: "Emergency Response" },
-              { num: "Millstadt", label: "Service Area" },
-            ].map((s) => (
-              <div key={s.label} className="text-center px-6">
-                <div className="text-[#f0b429] font-black text-3xl tracking-tight">{s.num}</div>
-                <div className="text-slate-400 text-sm uppercase tracking-widest mt-2">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-40 bg-[#040d1a]" />
+      {/* Stats bar — below carousel, always fully visible */}
+      <div className="bg-[#040d1a] border-t border-white/5 border-b border-b-white/5">
+        <div className="wrap py-8 grid grid-cols-2 md:grid-cols-4 divide-x divide-white/5">
+          {[
+            { num: "1980",      label: "Established" },
+            { num: "ALS / BLS", label: "Level of Care" },
+            { num: "24 / 7",    label: "Emergency Response" },
+            { num: "Millstadt", label: "Service Area" },
+          ].map((s) => (
+            <div key={s.label} className="text-center px-6 py-2">
+              <div className="text-[#f0b429] font-black text-3xl tracking-tight">{s.num}</div>
+              <div className="text-slate-400 text-sm uppercase tracking-widest mt-2">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* ════════════════════════════════
           QUICK ACTION CARDS
