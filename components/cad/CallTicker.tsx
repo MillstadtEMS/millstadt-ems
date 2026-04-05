@@ -226,7 +226,7 @@ export default function CallTicker() {
 
           {/* ── Date & Time ── */}
           <div className="shrink-0 items-center gap-1.5 hidden md:flex">
-            <span className="text-slate-400 text-[10px] tabular-nums font-mono">{formatDate(now)}</span>
+            <span className="text-white text-[10px] tabular-nums font-mono font-bold">{formatDate(now)}</span>
             <span className="text-white text-[10px] tabular-nums font-mono font-bold">{formatClock(now)}</span>
           </div>
 
