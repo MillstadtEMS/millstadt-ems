@@ -238,7 +238,7 @@ export default function HolidayOverlay() {
       });
 
       // Update & draw firework sparks
-      if (holiday.style === "fireworks") {
+      if (holiday?.style === "fireworks") {
         fireworkTimer++;
         if (fireworkTimer % 50 === 0) {
           sparks = [...sparks, ...spawnFirework(canvas!, holiday.colors)];
