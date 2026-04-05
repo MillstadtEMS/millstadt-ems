@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Star of Life — 3 bars rotated 60° apart -->
+  <rect x="42" y="8"  width="16" height="84" rx="5" fill="#1565c0"/>
+  <rect x="42" y="8"  width="16" height="84" rx="5" fill="#1565c0" transform="rotate(60 50 50)"/>
+  <rect x="42" y="8"  width="16" height="84" rx="5" fill="#1565c0" transform="rotate(-60 50 50)"/>
+  <!-- Rod of Asclepius -->
+  <rect x="47.5" y="22" width="5" height="56" rx="2.5" fill="white"/>
+  <!-- Snake body -->
+  <path d="M50 30 Q59 35 53 41 Q44 47 53 53 Q62 59 53 65" stroke="white" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <!-- Snake head -->
+  <ellipse cx="52" cy="28" rx="4" ry="3" fill="white"/>
+</svg>
