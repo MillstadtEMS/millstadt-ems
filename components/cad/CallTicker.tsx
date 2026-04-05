@@ -12,7 +12,7 @@ interface Call {
   completedAt: string | null;
 }
 
-const ACTIVE_MINUTES = 20;
+const ACTIVE_MINUTES = 120;
 const POLL_INTERVAL  = 60_000;
 
 function isActive(call: Call): boolean {
