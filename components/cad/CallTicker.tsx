@@ -229,8 +229,7 @@ export default function CallTicker() {
 
           {/* ── Moon phase — desktop only ── */}
           <div className="shrink-0 items-center gap-1 hidden lg:flex" title={moon.name}>
-            <span className="text-sm leading-none">{moon.symbol}</span>
-            <span className="text-slate-500 text-[10px] font-bold tracking-wider uppercase">{moon.name}</span>
+            <span className="text-slate-500 text-[10px] font-bold tracking-wider uppercase">{moon.symbol} {moon.name}</span>
           </div>
 
           <span className="h-3 w-px bg-white/15 shrink-0 hidden lg:block" />
