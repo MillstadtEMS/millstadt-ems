@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchUnreadDispatchEmails, markAsRead } from "@/lib/cad/gmail";
 import { parseDispatchEmail, isCloseoutEmail, parseCloseoutEmail } from "@/lib/cad/parser";
-import { isDuplicate, saveCall, saveFailedParse, markCallComplete } from "@/lib/cad/db";
+import { isDuplicate, saveCall, saveFailedParse, markCallComplete, isEventNumberDuplicate } from "@/lib/cad/db";
 import { transcribeAudio, extractNatureFromTranscript } from "@/lib/cad/whisper";
 
 export const runtime = "nodejs"; // needs fs access
@@ -54,7 +54,9 @@ async function handlePoll(req: NextRequest): Promise<NextResponse> {
         if (isCloseoutEmail(email.subject)) {
           const closeout = parseCloseoutEmail(email.subject, email.body);
           if (closeout) {
-            await markCallComplete(closeout.closedAt, closeout.eventNumber, closeout.dispatchDate, closeout.dispatchTime);
+            // Pass nature from closeout so the call record gets the real complaint
+            const closeoutNature = closeout.nature !== "UNKNOWN" ? closeout.nature : null;
+            await markCallComplete(closeout.closedAt, closeout.eventNumber, closeout.dispatchDate, closeout.dispatchTime, closeoutNature);
             results.processed++;
           } else {
             results.failed++;
@@ -90,6 +92,19 @@ async function handlePoll(req: NextRequest): Promise<NextResponse> {
           });
           results.failed++;
         } else {
+          // Skip status-update emails (Enroute = unit moving, not a new call)
+          if (parsed.dispatchStatus === "enroute") {
+            await markAsRead(email.id);
+            continue;
+          }
+
+          // Skip if this event number is already saved (duplicate from paired emails)
+          if (parsed.eventNumber && await isEventNumberDuplicate(parsed.eventNumber)) {
+            results.duplicates++;
+            await markAsRead(email.id);
+            continue;
+          }
+
           await saveCall({
             gmailMessageId:   email.id,
             eventNumber:      parsed.eventNumber,

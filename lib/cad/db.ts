@@ -115,32 +115,53 @@ export async function markCallComplete(
   eventNumber?: string | null,
   dispatchDate?: string,
   dispatchTime?: string,
+  nature?: string | null,
 ): Promise<boolean> {
   await ensureSchema();
   const db = sql();
 
   // Prefer matching by event number (most reliable)
   if (eventNumber) {
-    const r = await db`
-      UPDATE cad_calls SET completed_at = ${closedAt}
-      WHERE event_number = ${eventNumber} AND completed_at IS NULL
-    `;
+    const r = nature
+      ? await db`
+          UPDATE cad_calls SET completed_at = ${closedAt}, dispatch_nature = ${nature}
+          WHERE event_number = ${eventNumber} AND completed_at IS NULL
+        `
+      : await db`
+          UPDATE cad_calls SET completed_at = ${closedAt}
+          WHERE event_number = ${eventNumber} AND completed_at IS NULL
+        `;
     if ((r as unknown as { count: number }).count > 0) return true;
   }
 
   // Fallback: match by dispatch date + time
   if (dispatchDate && dispatchTime) {
     const timePrefix = dispatchTime.slice(0, 5);
-    const r = await db`
-      UPDATE cad_calls SET completed_at = ${closedAt}
-      WHERE dispatch_date = ${dispatchDate}
-        AND dispatch_time = ${timePrefix}
-        AND completed_at IS NULL
-    `;
+    const r = nature
+      ? await db`
+          UPDATE cad_calls SET completed_at = ${closedAt}, dispatch_nature = ${nature}
+          WHERE dispatch_date = ${dispatchDate}
+            AND dispatch_time = ${timePrefix}
+            AND completed_at IS NULL
+        `
+      : await db`
+          UPDATE cad_calls SET completed_at = ${closedAt}
+          WHERE dispatch_date = ${dispatchDate}
+            AND dispatch_time = ${timePrefix}
+            AND completed_at IS NULL
+        `;
     return (r as unknown as { count: number }).count > 0;
   }
 
   return false;
+}
+
+/** True if a call with this event number already exists (prevents duplicate saves) */
+export async function isEventNumberDuplicate(eventNumber: string): Promise<boolean> {
+  await ensureSchema();
+  const db = sql();
+  const rows = await db`SELECT 1 FROM cad_calls WHERE event_number = ${eventNumber} LIMIT 1`;
+  return rows.length > 0;
 }
 
 // ── Public API ─────────────────────────────────────────────────────────────

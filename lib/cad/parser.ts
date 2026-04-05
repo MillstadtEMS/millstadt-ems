@@ -25,6 +25,8 @@ const PATTERNS = {
     /^incident\s*type\s*[:\-]\s*(.+)/im,
     /^type\s*[:\-]\s*(.+)/im,
     /^dispatch\s*type\s*[:\-]\s*(.+)/im,
+    // Chief 360 Event Report: "Category: MEDICAL-FIRST RESPONDER"
+    /^category\s*[:\-]\s*(.+)/im,
   ],
 
   // Date patterns
@@ -47,9 +49,16 @@ const PATTERNS = {
 
   // Subject line patterns — used as fallback if body parsing fails
   subject: [
+    // Chief 360: "[39 EMS CAD] MEDICAL-FIRST RESPONDER -- 353 Shad Ln..."
+    /^\[[\w\s]+EMS\s+CAD\]\s+([^-–]+)/i,
     /CAD\s*Alert\s*[:\-]\s*(.+)/i,
     /Dispatch\s*[:\-]\s*(.+)/i,
     /Incident\s*[:\-]\s*(.+)/i,
+  ],
+
+  // Dispatch status — used to skip non-new-call updates (e.g. Enroute)
+  status: [
+    /\bstatus\s*[:\-]\s*(\w+)/i,
   ],
 
   // Event / run number patterns
@@ -69,9 +78,10 @@ const PATTERNS = {
 export interface ParsedCall {
   status: "ok" | "partial";
   eventNumber: string | null; // "2026-40118"
+  dispatchStatus: string;     // "dispatched" | "enroute" | "unknown"
   dispatchDate: string;       // "04/04/2026"
   dispatchTime: string;       // "17:29"
-  dispatchNature: string;     // "ACCIDENT W/ INJURIES"
+  dispatchNature: string;     // "Medical First Responder"
   dispatchDatetime: string;   // ISO-8601 UTC
   sourceYear: number;
 }
@@ -93,14 +103,49 @@ function extractFirst(text: string, patterns: RegExp[]): string | null {
   return null;
 }
 
-/** Normalize a nature string — uppercase, trim whitespace */
-function normalizeNature(raw: string): string {
-  const stripped = raw
-    .replace(/[-–]\s*\d+\s+\w.*$/, "") // trailing "- 123 Main St..."
+// Acronyms that should stay fully uppercase
+const KEEP_UPPER = new Set([
+  "MVA","MVC","CPR","ALS","BLS","EMS","DOA","CVA","GSW","AED","IV","MCI",
+  "HAZMAT","STEMI","COPD","CHF","DNR","LUCAS","CO","OB","OD",
+]);
+
+// Nature strings that should be simplified
+const NATURE_ALIASES: Record<string, string> = {
+  "MEDICAL FIRST RESPONDER": "Medical",
+  "MEDICAL-FIRST RESPONDER": "Medical",
+  "MFR": "Medical",
+  "MEDICAL": "Medical",
+  "EMS CALL": "Medical",
+  "MOTOR VEHICLE ACCIDENT": "MVA",
+  "MOTOR VEHICLE CRASH": "MVA",
+  "VEHICLE ACCIDENT": "MVA",
+  "TRAFFIC ACCIDENT": "MVA",
+};
+
+/** Format a nature string in title case, preserving known acronyms */
+export function formatNature(raw: string): string {
+  const cleaned = raw
+    .replace(/[-–]\s*\d+\s+\w.*$/, "") // strip trailing address
+    .replace(/-/g, " ")                  // MEDICAL-FIRST → MEDICAL FIRST
     .replace(/\s{2,}/g, " ")
     .trim()
     .toUpperCase();
-  return stripped;
+
+  // Check aliases first (e.g. MEDICAL FIRST RESPONDER → Medical)
+  if (NATURE_ALIASES[cleaned]) return NATURE_ALIASES[cleaned];
+
+  return cleaned
+    .split(" ")
+    .map(w => {
+      if (KEEP_UPPER.has(w)) return w;
+      return w.charAt(0) + w.slice(1).toLowerCase();
+    })
+    .join(" ");
+}
+
+/** Normalize a nature string — title case */
+function normalizeNature(raw: string): string {
+  return formatNature(raw);
 }
 
 const MONTH_MAP: Record<string, number> = {
@@ -234,6 +279,10 @@ export function parseDispatchEmail(
     return { status: "failed", reason: "Dispatch nature extracted but too short to be valid" };
   }
 
+  // ── Extract dispatch status (Dispatched / Enroute / etc.) ──────────────
+  const rawStatus = extractFirst(text, PATTERNS.status);
+  const dispatchStatus = rawStatus ? rawStatus.toLowerCase() : "unknown";
+
   // ── Extract event number ────────────────────────────────────────────────
   const eventNumber = extractFirst(text, PATTERNS.eventNumber) ?? null;
 
@@ -250,6 +299,7 @@ export function parseDispatchEmail(
     return {
       status: "ok",
       eventNumber,
+      dispatchStatus,
       dispatchDate: parsedDate.display,
       dispatchTime: parsedTime.display,
       dispatchNature,
@@ -266,6 +316,7 @@ export function parseDispatchEmail(
   return {
     status: "partial",
     eventNumber,
+    dispatchStatus,
     dispatchDate: parsedDate?.display ?? fallbackDate,
     dispatchTime: parsedTime?.display ?? fallbackTime,
     dispatchNature,
@@ -298,9 +349,9 @@ export function isCloseoutEmail(subject: string): boolean {
  *   Closed:    04/04/2026 18:37:35
  */
 export function parseCloseoutEmail(subject: string, body: string): ParsedCloseout | null {
-  // Extract nature from subject: "EVENT CLOSEOUT ACCIDENT W/ INJURIES" → "ACCIDENT W/ INJURIES"
+  // Extract nature from subject: "EVENT CLOSEOUT ACCIDENT W/ INJURIES" → "Accident W/ Injuries"
   const natureMatch = subject.match(/event\s+closeout\s+(.+)/i);
-  const nature = natureMatch ? natureMatch[1].trim().toUpperCase() : "UNKNOWN";
+  const nature = natureMatch ? formatNature(natureMatch[1].trim()) : "UNKNOWN";
 
   // MM/DD/YYYY HH:MM:SS format
   const DATETIME_RE = /(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2}:\d{2})/;

@@ -16,17 +16,16 @@ const ACTIVE_MINUTES = 120;
 const POLL_INTERVAL  = 30_000;
 
 function isActive(call: Call): boolean {
-  if (call.completedAt) return false; // closeout received
+  if (call.completedAt) return false;
   const dispatched = new Date(call.dispatchDatetime).getTime();
   return Date.now() - dispatched < ACTIVE_MINUTES * 60 * 1000;
 }
 
 function shortDate(date: string): string {
-  return date.slice(0, 5);
+  return date.slice(0, 5); // "04/04"
 }
 
 // ── Moon phase ─────────────────────────────────────────────────────────────
-// Reference new moon: January 6, 2000 18:14 UTC (Julian date 2451550.1)
 const KNOWN_NEW_MOON = new Date("2000-01-06T18:14:00Z").getTime();
 const CYCLE_MS = 29.53058867 * 24 * 60 * 60 * 1000;
 
@@ -43,17 +42,16 @@ const MOON_PHASES = [
 
 function getMoonPhase(): { name: string; symbol: string } {
   const elapsed = ((Date.now() - KNOWN_NEW_MOON) % CYCLE_MS + CYCLE_MS) % CYCLE_MS;
-  const fraction = elapsed / CYCLE_MS; // 0–1
-  // Map to 8 phases with slightly wider windows for primary phases
+  const fraction = elapsed / CYCLE_MS;
   let idx: number;
-  if (fraction < 0.025 || fraction >= 0.975) idx = 0; // New Moon
-  else if (fraction < 0.235) idx = 1; // Waxing Crescent
-  else if (fraction < 0.265) idx = 2; // First Quarter
-  else if (fraction < 0.485) idx = 3; // Waxing Gibbous
-  else if (fraction < 0.515) idx = 4; // Full Moon
-  else if (fraction < 0.735) idx = 5; // Waning Gibbous
-  else if (fraction < 0.765) idx = 6; // Last Quarter
-  else idx = 7; // Waning Crescent
+  if (fraction < 0.025 || fraction >= 0.975) idx = 0;
+  else if (fraction < 0.235) idx = 1;
+  else if (fraction < 0.265) idx = 2;
+  else if (fraction < 0.485) idx = 3;
+  else if (fraction < 0.515) idx = 4;
+  else if (fraction < 0.735) idx = 5;
+  else if (fraction < 0.765) idx = 6;
+  else idx = 7;
   return MOON_PHASES[idx];
 }
 
@@ -69,21 +67,19 @@ function formatDate(date: Date): string {
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function CallTicker() {
-  const [latest, setLatest]   = useState<Call[]>([]);
+  const [latest, setLatest]     = useState<Call[]>([]);
   const [allCalls, setAllCalls] = useState<Call[]>([]);
   const [expanded, setExpanded] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [now, setNow]         = useState<Date>(new Date());
-  const wrapperRef            = useRef<HTMLDivElement>(null);
-
-  const prevIdsRef = useRef<Set<string>>(new Set());
+  const [loading, setLoading]   = useState(true);
+  const [now, setNow]           = useState<Date>(new Date());
+  const wrapperRef              = useRef<HTMLDivElement>(null);
+  const prevIdsRef              = useRef<Set<string>>(new Set());
 
   const fetchLatest = useCallback(async () => {
     try {
       const res = await fetch("/api/cad/latest", { cache: "no-store" });
       if (res.ok) {
         const calls: Call[] = await res.json();
-        // Detect new calls and fire event for Nav ambulance lights
         const newIds = calls.map(c => c.id);
         const isFirstLoad = prevIdsRef.current.size === 0 && calls.length > 0;
         if (!isFirstLoad) {
@@ -110,7 +106,6 @@ export default function CallTicker() {
     return () => clearInterval(pollId);
   }, [fetchLatest]);
 
-  // Live clock — tick every second
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
@@ -131,9 +126,12 @@ export default function CallTicker() {
 
   if (loading) return null;
 
-  const moon = getMoonPhase();
+  const moon        = getMoonPhase();
   const currentYear = now.getFullYear();
-  const onARun = latest.some(isActive);
+  const activeCall  = latest.find(isActive) ?? null;
+  const onARun      = activeCall !== null;
+  // Most recently completed call — shown as "Last Run"
+  const lastRun     = latest.find(c => c.completedAt) ?? null;
 
   return (
     <div ref={wrapperRef} className="fixed top-0 left-0 right-0 z-[60]">
@@ -188,18 +186,43 @@ export default function CallTicker() {
       <div className="bg-[#020912] border-b border-white/10 select-none" style={{ height: "40px" }}>
         <div className="wrap h-full flex items-center gap-3 px-4">
 
-          {/* ── In Service / On A Run ── */}
+          {/* ── Status indicator ── */}
           <div className="shrink-0 flex items-center gap-1.5">
             <span className="relative flex w-2 h-2">
               <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${onARun ? "bg-red-400" : "bg-emerald-400"}`} />
               <span className={`relative inline-flex rounded-full h-2 w-2 ${onARun ? "bg-red-400" : "bg-emerald-400"}`} />
             </span>
-            <span className={`text-[9px] font-black tracking-wider uppercase hidden sm:block ${onARun ? "text-red-400" : "text-emerald-400"}`}>
+            <span className={`text-[9px] font-black tracking-wider uppercase ${onARun ? "text-red-400" : "text-emerald-400"}`}>
               {onARun ? "On A Run" : "In Service"}
             </span>
           </div>
 
           <span className="h-2.5 w-px bg-white/15 shrink-0" />
+
+          {/* ── Call status info ── */}
+          <div className="flex-1 min-w-0 flex items-center">
+            {onARun ? (
+              // Active call — nature shown once closeout updates it; until then just "responding"
+              <span className="text-emerald-300 text-[10px] font-bold tracking-wide truncate">
+                Responding
+                {activeCall && (
+                  <span className="text-slate-500 font-normal ml-2">
+                    {shortDate(activeCall.dispatchDate)} @ {activeCall.dispatchTime}
+                  </span>
+                )}
+              </span>
+            ) : lastRun ? (
+              // Completed — show last run with nature
+              <span className="text-[10px] truncate">
+                <span className="text-slate-500">Last Run </span>
+                <span className="text-slate-400 tabular-nums font-mono">{shortDate(lastRun.dispatchDate)} @ {lastRun.dispatchTime}</span>
+                <span className="text-white/30 mx-1.5">—</span>
+                <span className="text-[#f0b429] font-bold">{lastRun.dispatchNature}</span>
+              </span>
+            ) : (
+              <span className="text-slate-600 text-[10px]">No calls logged yet this year.</span>
+            )}
+          </div>
 
           {/* ── Date & Time ── */}
           <div className="shrink-0 items-center gap-1.5 hidden md:flex">
@@ -216,33 +239,6 @@ export default function CallTicker() {
           </div>
 
           <span className="h-2.5 w-px bg-white/15 shrink-0 hidden lg:block" />
-
-          {/* ── Dispatch label ── */}
-          <span className="text-[#f0b429] text-[9px] font-black tracking-[0.2em] uppercase shrink-0 hidden sm:block">Dispatch</span>
-          <span className="h-2.5 w-px bg-white/15 shrink-0 hidden sm:block" />
-
-          {/* ── Latest calls ── */}
-          <div className="flex-1 flex items-center gap-3 overflow-hidden min-w-0">
-            {latest.length === 0 ? (
-              <span className="text-slate-600 text-[10px]">No calls logged yet for this year.</span>
-            ) : (
-              latest.map((call, i) => {
-                const active = isActive(call);
-                return (
-                  <div key={call.id} className={`flex items-center gap-1.5 shrink-0 ${i > 0 && !active ? "hidden lg:flex" : ""}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${active ? "bg-emerald-400" : "bg-red-500/70"}`} />
-                    <span className={`text-[10px] tabular-nums shrink-0 font-mono ${active ? "text-emerald-300 font-bold" : "text-slate-500"}`}>
-                      {shortDate(call.dispatchDate)} {call.dispatchTime}
-                    </span>
-                    <span className={`text-[10px] font-bold uppercase tracking-wide truncate max-w-[160px] ${active ? "text-emerald-300" : "text-red-400"}`}>
-                      {call.dispatchNature}
-                    </span>
-                    {i < latest.length - 1 && <span className="text-white/15 text-[10px] shrink-0 hidden lg:block">·</span>}
-                  </div>
-                );
-              })
-            )}
-          </div>
 
           {/* ── Expand toggle ── */}
           <button
