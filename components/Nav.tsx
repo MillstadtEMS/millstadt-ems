@@ -31,9 +31,19 @@ const moreLinks = [
 export default function Nav() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [dispatchFlash, setDispatchFlash] = useState(false);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  useEffect(() => {
+    function onNewDispatch() {
+      setDispatchFlash(true);
+      setTimeout(() => setDispatchFlash(false), 5000);
+    }
+    window.addEventListener("new-dispatch", onNewDispatch);
+    return () => window.removeEventListener("new-dispatch", onNewDispatch);
+  }, []);
 
   return (
     <header className="fixed top-10 left-0 right-0 z-50">
@@ -65,9 +75,9 @@ export default function Nav() {
               className="relative flex flex-col items-center outline-none focus:outline-none"
               aria-label="Toggle menu"
             >
-              {/* Ambulance — top half black, bottom half yellow, lights flash on open */}
+              {/* Ambulance — top half black, bottom half yellow, lights flash on open or new dispatch */}
               <div
-                className={mobileOpen ? "ambo-img-active" : ""}
+                className={mobileOpen || dispatchFlash ? "ambo-img-active" : ""}
                 style={{ position: "relative", width: "52px" }}
               >
                 {/* invisible spacer sets container height */}

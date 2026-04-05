@@ -22,8 +22,8 @@ body {
 /* ticker animation handled in JS (Nav.tsx WeatherTicker) */
 
 @keyframes ambo-drive {
-  0%   { left: -110px; }
-  100% { left: calc(100vw + 20px); }
+  0%   { right: -300px; }
+  100% { right: calc(100vw + 20px); }
 }
 
 /* ── Guaranteed centered container ── */

@@ -46,16 +46,18 @@ export default function AmboScroll() {
           className="fixed bottom-16 md:bottom-2 left-0 right-0 pointer-events-none z-40 overflow-hidden"
           style={{ height: "80px" }}
         >
+          {/* Wrapper flips image so ambulance faces left (driving right→left) */}
           <div
-            className={driving ? "ambo-img-active" : ""}
             style={{
               position: "absolute",
               bottom: "4px",
-              width: "90px",
+              width: "270px",
+              transform: "scaleX(-1)", // flip to face left
               animation: driving
-                ? `ambo-drive 3.6s linear forwards, ambo-bounce 0.45s ease-in-out infinite, ambo-img-lights 0.55s linear infinite`
+                ? `ambo-drive 4s linear forwards, ambo-bounce 0.45s ease-in-out infinite, ambo-img-lights 0.55s linear infinite`
                 : undefined,
             }}
+            className={driving ? "ambo-img-active" : ""}
           >
             {/* Invisible spacer */}
             <img src="/images/millstadt-ems/ambo-56-nobg.png" alt="" style={{ width: "100%", display: "block", visibility: "hidden" }} />

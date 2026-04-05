@@ -76,10 +76,23 @@ export default function CallTicker() {
   const [now, setNow]         = useState<Date>(new Date());
   const wrapperRef            = useRef<HTMLDivElement>(null);
 
+  const prevIdsRef = useRef<Set<string>>(new Set());
+
   const fetchLatest = useCallback(async () => {
     try {
       const res = await fetch("/api/cad/latest", { cache: "no-store" });
-      if (res.ok) setLatest(await res.json());
+      if (res.ok) {
+        const calls: Call[] = await res.json();
+        // Detect new calls and fire event for Nav ambulance lights
+        const newIds = calls.map(c => c.id);
+        const isFirstLoad = prevIdsRef.current.size === 0 && calls.length > 0;
+        if (!isFirstLoad) {
+          const hasNew = newIds.some(id => !prevIdsRef.current.has(id));
+          if (hasNew) window.dispatchEvent(new CustomEvent("new-dispatch"));
+        }
+        prevIdsRef.current = new Set(newIds);
+        setLatest(calls);
+      }
     } catch { /* silent */ }
     setLoading(false);
   }, []);
