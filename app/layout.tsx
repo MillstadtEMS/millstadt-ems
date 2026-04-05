@@ -5,6 +5,7 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import WeatherAlertOverlay from "@/components/WeatherAlertOverlay";
 import CallTicker from "@/components/cad/CallTicker";
+import AmboScroll from "@/components/AmboScroll";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -33,7 +34,10 @@ export default function RootLayout({
         <CallTicker />
         <Nav />
         <WeatherAlertOverlay />
-        <main className="flex-1 w-full overflow-x-hidden" style={{ paddingTop: "106px" }}>{children}</main>
+        <main className="flex-1 w-full overflow-x-hidden" style={{ paddingTop: "106px" }}>
+          {children}
+          <AmboScroll />
+        </main>
         <Footer />
       </body>
     </html>
