@@ -203,12 +203,12 @@ export default function CallTicker() {
           <div className="flex-1 min-w-0 flex items-center">
             {onARun && activeCall ? (
               <span className="flex items-center gap-2 min-w-0">
-                <span className="text-white font-bold tabular-nums font-mono text-[12px]">
-                  {activeCall.dispatchDate} @ {activeCall.dispatchTime}
+                <span className="text-emerald-300 font-black text-[13px] tracking-widest uppercase">
+                  Responding
                 </span>
                 <span className="text-white/20">·</span>
-                <span className="text-emerald-300 font-bold text-[12px] tracking-wide truncate">
-                  Responding: {activeCall.dispatchNature}
+                <span className="text-white font-bold text-[12px] truncate">
+                  {activeCall.dispatchNature}
                 </span>
               </span>
             ) : lastRun ? (
