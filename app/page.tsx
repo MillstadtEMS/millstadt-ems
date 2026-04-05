@@ -125,14 +125,12 @@ export default function Home() {
               <Link
                 key={card.label}
                 href={card.href}
-                className="group flex flex-col items-center text-center pt-16 pb-12 px-10 rounded-2xl bg-[#071428] border border-white/8 hover:bg-[#0c1e3d] hover:border-[#f0b429]/50 transition-all duration-200 cursor-pointer"
+                className="group flex flex-col items-center text-center gap-10 pt-24 pb-12 px-10 rounded-2xl bg-[#071428] border border-white/8 hover:bg-[#0c1e3d] hover:border-[#f0b429]/50 transition-all duration-200 cursor-pointer"
               >
-                <div className="flex-1 flex items-center justify-center mb-8">
-                  <div className="w-24 h-24 min-w-[6rem] min-h-[6rem] rounded-2xl bg-[#1a3a6e]/70 border border-[#2563eb]/25 flex items-center justify-center text-[#f0b429] group-hover:border-[#2563eb]/60 group-hover:bg-[#1a3a6e] transition-all duration-200">
-                    {card.icon}
-                  </div>
+                <div className="w-24 h-24 min-w-[6rem] min-h-[6rem] rounded-2xl bg-[#1a3a6e]/70 border border-[#2563eb]/25 flex items-center justify-center self-center mx-auto text-[#f0b429] group-hover:border-[#2563eb]/60 group-hover:bg-[#1a3a6e] transition-all duration-200">
+                  {card.icon}
                 </div>
-                <div>
+                <div className="flex-1">
                   <div className="text-white font-black text-2xl leading-snug mb-3 group-hover:text-[#f0b429] transition-colors duration-200">
                     {card.label}
                   </div>
@@ -140,7 +138,7 @@ export default function Home() {
                     {card.sub}
                   </div>
                 </div>
-                <div className="flex items-center justify-center gap-6 w-full mt-8 py-6 bg-[#f0b429]/10 border border-[#f0b429]/30 group-hover:bg-[#f0b429] group-hover:border-[#f0b429] rounded-2xl transition-all duration-200">
+                <div className="flex items-center justify-center gap-6 w-full py-6 bg-[#f0b429]/10 border border-[#f0b429]/30 group-hover:bg-[#f0b429] group-hover:border-[#f0b429] rounded-2xl transition-all duration-200">
                   <span className="text-[#f0b429] group-hover:text-[#040d1a] font-black text-lg transition-colors duration-200 whitespace-nowrap">
                     Get Started
                   </span>
