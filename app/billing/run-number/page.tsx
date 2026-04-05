@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import ContactFormWrapper from "@/components/ContactFormWrapper";
 
 export const metadata: Metadata = {
   title: "Request Run Number",
@@ -68,7 +69,11 @@ export default function RunNumberPage() {
       {/* Form */}
       <section className="pb-40 bg-[#040d1a]">
         <div className="wrap max-w-3xl">
-          <form action="mailto:millstadtems@gmail.com" method="POST" encType="text/plain">
+          <ContactFormWrapper
+            formType="Run Number Request"
+            backHref="/billing"
+            disclaimer="A member of our team will respond with your run number as soon as possible. Do not submit this form on behalf of another person without proper legal authorization."
+          >
 
             {/* ── Patient Information ── */}
             <div className="p-16 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
@@ -173,24 +178,7 @@ export default function RunNumberPage() {
               </label>
             </div>
 
-            {/* ── VOID ── */}
-            <div className="h-16" />
-
-            {/* Submit */}
-            <div className="flex flex-col gap-4 max-w-sm">
-              <button type="submit" className="flex items-center justify-center w-full py-6 bg-[#f0b429] hover:bg-[#d9a320] text-[#040d1a] font-black text-lg rounded-2xl transition-colors">
-                Submit Request
-              </button>
-              <Link href="/billing" className="flex items-center justify-center w-full py-6 border-2 border-white/20 hover:border-[#f0b429]/50 hover:text-[#f0b429] text-white font-black text-lg rounded-2xl transition-colors">
-                Back to Billing
-              </Link>
-            </div>
-
-            <p className="text-slate-600 text-sm pt-6">
-              Requests are sent to millstadtems@gmail.com. A member of our team will respond with your run number as soon as possible. Do not submit this form on behalf of another person without proper legal authorization.
-            </p>
-
-          </form>
+          </ContactFormWrapper>
         </div>
       </section>
 
