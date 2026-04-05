@@ -48,15 +48,17 @@ export default function ContactFormWrapper({
 
   if (status === "done") {
     return (
-      <div className="p-16 rounded-2xl bg-[#071428] border border-white/8 text-center space-y-6">
-        <div className="text-[#34d399] text-6xl font-black">✓</div>
-        <h3 className="text-white font-black text-2xl">Submitted Successfully</h3>
-        <p className="text-slate-400 text-lg leading-relaxed">
-          We received your request and will reach out soon.
-        </p>
+      <div className="rounded-2xl bg-[#071428] border border-white/8 overflow-hidden text-center">
+        <div className="p-16 space-y-6">
+          <div className="text-[#34d399] text-6xl font-black">✓</div>
+          <h3 className="text-white font-black text-2xl">Submitted Successfully</h3>
+          <p className="text-slate-400 text-lg leading-relaxed">
+            We received your request and will reach out soon.
+          </p>
+        </div>
         <Link
           href={backHref}
-          className={`${btnClass} bg-[#f0b429] hover:bg-[#d9a320] text-[#040d1a] mt-6 w-full`}
+          className="flex items-center justify-center w-full py-6 bg-[#f0b429] hover:bg-[#d9a320] text-[#040d1a] font-black text-lg transition-colors"
         >
           Back to Forms
         </Link>
