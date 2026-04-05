@@ -18,44 +18,55 @@ const IMAGES = [
 
 export default function HeroCarousel() {
   const [current, setCurrent] = useState(0);
-  const [prev, setPrev]       = useState<number | null>(null);
-  const [fading, setFading]   = useState(false);
+  const [next, setNext]       = useState<number | null>(null);
+  const [transitioning, setTransitioning] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => {
-      setPrev(current);
-      setFading(true);
-      setCurrent(c => (c + 1) % IMAGES.length);
-      // Clear prev after fade completes
-      setTimeout(() => { setPrev(null); setFading(false); }, 1200);
+      const nextIdx = (current + 1) % IMAGES.length;
+      setNext(nextIdx);
+      setTransitioning(false);
+      // Small tick lets the new image mount before we start fading it in
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setTransitioning(true));
+      });
+      // After fade completes, promote next → current
+      setTimeout(() => {
+        setCurrent(nextIdx);
+        setNext(null);
+        setTransitioning(false);
+      }, 2000);
     }, 10_000);
     return () => clearInterval(id);
   }, [current]);
 
   return (
     <>
-      {/* Previous image — fades out */}
-      {prev !== null && (
-        <Image
-          key={`prev-${prev}`}
-          src={IMAGES[prev]}
-          alt=""
-          fill
-          className="object-cover object-center"
-          style={{ opacity: fading ? 0 : 1, transition: "opacity 1.2s ease", zIndex: 0 }}
-          aria-hidden
-        />
-      )}
-      {/* Current image — fades in */}
+      {/* Current image — always fully visible underneath */}
       <Image
-        key={`cur-${current}`}
         src={IMAGES[current]}
         alt="Millstadt EMS"
         fill
         className="object-cover object-center"
-        style={{ opacity: 1, transition: "opacity 1.2s ease", zIndex: 1 }}
+        style={{ zIndex: 0 }}
         priority={current === 0}
       />
+      {/* Next image — fades in on top, no gap ever */}
+      {next !== null && (
+        <Image
+          key={next}
+          src={IMAGES[next]}
+          alt=""
+          fill
+          className="object-cover object-center"
+          style={{
+            zIndex: 1,
+            opacity: transitioning ? 1 : 0,
+            transition: "opacity 2s ease-in-out",
+          }}
+          aria-hidden
+        />
+      )}
     </>
   );
 }

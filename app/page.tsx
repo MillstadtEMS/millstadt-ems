@@ -11,8 +11,8 @@ export default function Home() {
       ════════════════════════════════ */}
       <section className="relative min-h-screen flex items-center overflow-hidden" style={{ marginTop: "-96px" }}>
         <HeroCarousel />
-        <div className="absolute inset-0 bg-[#040d1a]/80" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#040d1a] via-[#040d1a]/40 to-[#040d1a]/30" />
+        <div className="absolute inset-0 bg-[#040d1a]/88" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#040d1a] via-[#040d1a]/60 to-[#040d1a]/40" />
         <HolidayOverlay />
 
         <div className="relative z-10 w-full flex flex-col items-center text-center px-6 pb-40 pt-20">
