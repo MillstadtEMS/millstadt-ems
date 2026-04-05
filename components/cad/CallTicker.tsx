@@ -13,7 +13,7 @@ interface Call {
 }
 
 const ACTIVE_MINUTES = 120;
-const POLL_INTERVAL  = 60_000;
+const POLL_INTERVAL  = 30_000;
 
 function isActive(call: Call): boolean {
   if (call.completedAt) return false; // closeout received
