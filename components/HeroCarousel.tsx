@@ -16,55 +16,56 @@ const IMAGES = [
   "/images/millstadt-ems/hero/6A3DE69E-2C3E-4E0E-90FA-FF42A7320338.png",
 ];
 
+const IMAGE_STYLE: React.CSSProperties = {
+  filter: "brightness(0.32)",
+  objectFit: "cover",
+  objectPosition: "center",
+};
+
 export default function HeroCarousel() {
   const [current, setCurrent] = useState(0);
   const [next, setNext]       = useState<number | null>(null);
-  const [transitioning, setTransitioning] = useState(false);
+  const [fadeIn, setFadeIn]   = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => {
       const nextIdx = (current + 1) % IMAGES.length;
       setNext(nextIdx);
-      setTransitioning(false);
-      // Small tick lets the new image mount before we start fading it in
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setTransitioning(true));
-      });
-      // After fade completes, promote next → current
+      setFadeIn(false);
+      requestAnimationFrame(() => requestAnimationFrame(() => setFadeIn(true)));
       setTimeout(() => {
         setCurrent(nextIdx);
         setNext(null);
-        setTransitioning(false);
-      }, 2000);
+        setFadeIn(false);
+      }, 2500);
     }, 10_000);
     return () => clearInterval(id);
   }, [current]);
 
   return (
     <>
-      {/* Current image — always fully visible underneath */}
+      {/* Current — always fully visible underneath */}
       <Image
         src={IMAGES[current]}
         alt="Millstadt EMS"
         fill
-        className="object-cover object-center"
-        style={{ zIndex: 0 }}
+        style={{ ...IMAGE_STYLE, zIndex: 0 }}
         priority={current === 0}
       />
-      {/* Next image — fades in on top, no gap ever */}
+      {/* Next — crossfades in on top, already dark from frame 1 */}
       {next !== null && (
         <Image
           key={next}
           src={IMAGES[next]}
           alt=""
           fill
-          className="object-cover object-center"
-          style={{
-            zIndex: 1,
-            opacity: transitioning ? 1 : 0,
-            transition: "opacity 2s ease-in-out",
-          }}
           aria-hidden
+          style={{
+            ...IMAGE_STYLE,
+            zIndex: 1,
+            opacity: fadeIn ? 1 : 0,
+            transition: "opacity 2.5s ease-in-out",
+          }}
         />
       )}
     </>
