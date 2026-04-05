@@ -9,12 +9,12 @@ export default function Home() {
       {/* ════════════════════════════════
           HERO
       ════════════════════════════════ */}
-      <section className="relative min-h-screen flex items-start md:items-center overflow-hidden" style={{ marginTop: "-96px" }}>
+      <section className="relative min-h-screen flex items-center overflow-hidden" style={{ marginTop: "-96px" }}>
         <HeroCarousel />
         <div className="absolute inset-0 bg-gradient-to-t from-[#040d1a] via-transparent to-transparent" style={{ zIndex: 2 }} />
         <HolidayOverlay />
 
-        <div className="relative z-10 w-full flex flex-col items-center text-center px-6 pb-28 sm:pb-16 pt-28 sm:pt-24 md:pt-20">
+        <div className="relative z-10 w-full flex flex-col items-center text-center px-6 pt-32 pb-28 md:py-20">
 
           <div className="flex items-center justify-center gap-3 mb-6 sm:mb-10">
             <span className="h-px w-12 bg-[#f0b429]" />
