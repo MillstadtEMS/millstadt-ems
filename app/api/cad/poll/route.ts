@@ -53,7 +53,7 @@ async function handlePoll(req: NextRequest): Promise<NextResponse> {
         if (isCloseoutEmail(email.subject)) {
           const closeout = parseCloseoutEmail(email.subject, email.body);
           if (closeout) {
-            await markCallComplete(closeout.dispatchDate, closeout.dispatchTime, closeout.closedAt);
+            await markCallComplete(closeout.closedAt, closeout.eventNumber, closeout.dispatchDate, closeout.dispatchTime);
             results.processed++;
           } else {
             results.failed++;
@@ -77,14 +77,15 @@ async function handlePoll(req: NextRequest): Promise<NextResponse> {
           results.failed++;
         } else {
           await saveCall({
-            gmailMessageId:  email.id,
+            gmailMessageId:   email.id,
+            eventNumber:      parsed.eventNumber,
             dispatchDatetime: parsed.dispatchDatetime,
-            dispatchDate:    parsed.dispatchDate,
-            dispatchTime:    parsed.dispatchTime,
-            dispatchNature:  parsed.dispatchNature,
-            sourceYear:      parsed.sourceYear,
-            parseStatus:     parsed.status,
-            completedAt:     null,
+            dispatchDate:     parsed.dispatchDate,
+            dispatchTime:     parsed.dispatchTime,
+            dispatchNature:   parsed.dispatchNature,
+            sourceYear:       parsed.sourceYear,
+            parseStatus:      parsed.status,
+            completedAt:      null,
           });
           results.processed++;
         }

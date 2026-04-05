@@ -280,7 +280,7 @@ export default function HolidayOverlay() {
   return (
     <div
       className="absolute inset-0 z-20 pointer-events-none overflow-hidden"
-      style={{ opacity, transition: "opacity 0.3s ease" }}
+      style={{ opacity, transition: "opacity 0.3s ease", background: "rgba(2,9,18,0.82)" }}
     >
       {/* Canvas for particles/fireworks */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
@@ -293,7 +293,7 @@ export default function HolidayOverlay() {
         >
           {holiday.greeting}
         </div>
-        <div className="text-white/60 text-sm font-bold tracking-[0.3em] uppercase">
+        <div className="text-white text-sm font-bold tracking-[0.3em] uppercase">
           From Millstadt Ambulance Service
         </div>
       </div>

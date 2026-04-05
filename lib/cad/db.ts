@@ -16,6 +16,7 @@ function sql() {
 export interface Call {
   id: string;
   gmailMessageId: string;
+  eventNumber: string | null;
   dispatchDatetime: string;
   dispatchDate: string;
   dispatchTime: string;
@@ -43,6 +44,7 @@ async function ensureSchema() {
     CREATE TABLE IF NOT EXISTS cad_calls (
       id               TEXT PRIMARY KEY,
       gmail_message_id TEXT UNIQUE NOT NULL,
+      event_number     TEXT DEFAULT NULL,
       dispatch_datetime TIMESTAMPTZ NOT NULL,
       dispatch_date    TEXT NOT NULL,
       dispatch_time    TEXT NOT NULL,
@@ -53,8 +55,8 @@ async function ensureSchema() {
       created_at       TIMESTAMPTZ DEFAULT NOW()
     )
   `;
-  // Migrate existing tables that don't have completed_at yet
   await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ DEFAULT NULL`;
+  await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS event_number TEXT DEFAULT NULL`;
   await db`
     CREATE TABLE IF NOT EXISTS cad_failed (
       id               TEXT PRIMARY KEY,
@@ -86,6 +88,7 @@ function rowToCall(row: Record<string, unknown>): Call {
   return {
     id:               String(row.id),
     gmailMessageId:   String(row.gmail_message_id),
+    eventNumber:      row.event_number ? String(row.event_number) : null,
     dispatchDatetime: row.dispatch_datetime instanceof Date
       ? row.dispatch_datetime.toISOString()
       : String(row.dispatch_datetime),
@@ -107,19 +110,37 @@ function rowToCall(row: Record<string, unknown>): Call {
  * Mark a call as complete by matching dispatch date + time.
  * The closeout email contains the original dispatch time (MM/DD/YYYY HH:MM:SS).
  */
-export async function markCallComplete(dispatchDate: string, dispatchTime: string, closedAt: string): Promise<boolean> {
+export async function markCallComplete(
+  closedAt: string,
+  eventNumber?: string | null,
+  dispatchDate?: string,
+  dispatchTime?: string,
+): Promise<boolean> {
   await ensureSchema();
   const db = sql();
-  // Match on dispatch_date and dispatch_time (first 5 chars HH:MM)
-  const timePrefix = dispatchTime.slice(0, 5);
-  const result = await db`
-    UPDATE cad_calls
-    SET completed_at = ${closedAt}
-    WHERE dispatch_date = ${dispatchDate}
-      AND dispatch_time = ${timePrefix}
-      AND completed_at IS NULL
-  `;
-  return (result as unknown as { count: number }).count > 0;
+
+  // Prefer matching by event number (most reliable)
+  if (eventNumber) {
+    const r = await db`
+      UPDATE cad_calls SET completed_at = ${closedAt}
+      WHERE event_number = ${eventNumber} AND completed_at IS NULL
+    `;
+    if ((r as unknown as { count: number }).count > 0) return true;
+  }
+
+  // Fallback: match by dispatch date + time
+  if (dispatchDate && dispatchTime) {
+    const timePrefix = dispatchTime.slice(0, 5);
+    const r = await db`
+      UPDATE cad_calls SET completed_at = ${closedAt}
+      WHERE dispatch_date = ${dispatchDate}
+        AND dispatch_time = ${timePrefix}
+        AND completed_at IS NULL
+    `;
+    return (r as unknown as { count: number }).count > 0;
+  }
+
+  return false;
 }
 
 // ── Public API ─────────────────────────────────────────────────────────────
@@ -140,9 +161,9 @@ export async function saveCall(data: Omit<Call, "id" | "createdAt">): Promise<Ca
   const id = uid();
   await db`
     INSERT INTO cad_calls
-      (id, gmail_message_id, dispatch_datetime, dispatch_date, dispatch_time, dispatch_nature, source_year, parse_status)
+      (id, gmail_message_id, event_number, dispatch_datetime, dispatch_date, dispatch_time, dispatch_nature, source_year, parse_status)
     VALUES
-      (${id}, ${data.gmailMessageId}, ${data.dispatchDatetime}, ${data.dispatchDate},
+      (${id}, ${data.gmailMessageId}, ${data.eventNumber ?? null}, ${data.dispatchDatetime}, ${data.dispatchDate},
        ${data.dispatchTime}, ${data.dispatchNature}, ${data.sourceYear}, ${data.parseStatus})
     ON CONFLICT (gmail_message_id) DO NOTHING
   `;

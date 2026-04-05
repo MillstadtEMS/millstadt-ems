@@ -51,16 +51,28 @@ const PATTERNS = {
     /Dispatch\s*[:\-]\s*(.+)/i,
     /Incident\s*[:\-]\s*(.+)/i,
   ],
+
+  // Event / run number patterns
+  // Examples: "Event No: 2026-40118"  "Event #: 2026-40118"  "Run #: 2026-843"
+  eventNumber: [
+    /^event\s*(?:no|number|#|num)\s*[:\-]?\s*(\S+)/im,
+    /^run\s*(?:no|number|#|num)\s*[:\-]?\s*(\S+)/im,
+    /^incident\s*(?:no|number|#|num)\s*[:\-]?\s*(\S+)/im,
+    /^complaint\s*(?:no|number|#|num)\s*[:\-]?\s*(\S+)/im,
+    /\bevent\s+no\b[:\s]+(\S+)/i,
+    /\brun\s+#\s*[:\s]*(\S+)/i,
+  ],
 };
 
 // ── Result types ───────────────────────────────────────────────────────────
 
 export interface ParsedCall {
   status: "ok" | "partial";
-  dispatchDate: string;      // "04/04/2026"
-  dispatchTime: string;      // "17:29"
-  dispatchNature: string;    // "ACCIDENT W/ INJURIES"
-  dispatchDatetime: string;  // ISO-8601 UTC
+  eventNumber: string | null; // "2026-40118"
+  dispatchDate: string;       // "04/04/2026"
+  dispatchTime: string;       // "17:29"
+  dispatchNature: string;     // "ACCIDENT W/ INJURIES"
+  dispatchDatetime: string;   // ISO-8601 UTC
   sourceYear: number;
 }
 
@@ -222,6 +234,9 @@ export function parseDispatchEmail(
     return { status: "failed", reason: "Dispatch nature extracted but too short to be valid" };
   }
 
+  // ── Extract event number ────────────────────────────────────────────────
+  const eventNumber = extractFirst(text, PATTERNS.eventNumber) ?? null;
+
   // ── Extract date and time ───────────────────────────────────────────────
   const rawDate = extractFirst(text, PATTERNS.date);
   const rawTime = extractFirst(text, PATTERNS.time);
@@ -234,6 +249,7 @@ export function parseDispatchEmail(
     const { iso, year } = buildDatetime(parsedDate.date, parsedTime.hours, parsedTime.minutes);
     return {
       status: "ok",
+      eventNumber,
       dispatchDate: parsedDate.display,
       dispatchTime: parsedTime.display,
       dispatchNature,
@@ -249,6 +265,7 @@ export function parseDispatchEmail(
 
   return {
     status: "partial",
+    eventNumber,
     dispatchDate: parsedDate?.display ?? fallbackDate,
     dispatchTime: parsedTime?.display ?? fallbackTime,
     dispatchNature,
@@ -260,10 +277,11 @@ export function parseDispatchEmail(
 // ── Closeout email detection & parsing ────────────────────────────────────
 
 export interface ParsedCloseout {
-  dispatchDate: string;  // "04/04/2026"
-  dispatchTime: string;  // "17:30"
-  closedAt: string;      // ISO-8601
-  nature: string;        // from subject "EVENT CLOSEOUT ACCIDENT W/ INJURIES"
+  eventNumber: string | null;
+  dispatchDate: string;
+  dispatchTime: string;
+  closedAt: string;
+  nature: string;
 }
 
 /** Returns true if this email is a St. Clair County closeout report */
@@ -293,19 +311,19 @@ export function parseCloseoutEmail(subject: string, body: string): ParsedCloseou
 
   if (!dispatchMatch) return null;
 
-  const dispatchDate = dispatchMatch[1]; // "04/04/2026"
-  const dispatchTime = dispatchMatch[2]; // "17:30"
+  const eventNumber = extractFirst(body + "\n" + subject, PATTERNS.eventNumber);
+  const dispatchDate = dispatchMatch[1];
+  const dispatchTime = dispatchMatch[2];
 
   let closedIso = new Date().toISOString();
   if (closedMatch) {
     const [, d, t] = closedMatch;
-    // Build as local Chicago time approximation
     const [mo, dy, yr] = d.split("/");
     const [hh, mm, ss] = t.split(":");
     closedIso = new Date(`${yr}-${mo.padStart(2,"0")}-${dy.padStart(2,"0")}T${hh.padStart(2,"0")}:${mm}:${ss ?? "00"}`).toISOString();
   }
 
-  return { dispatchDate, dispatchTime, closedAt: closedIso, nature };
+  return { eventNumber: eventNumber ?? null, dispatchDate, dispatchTime, closedAt: closedIso, nature };
 }
 
 /** Strip HTML tags from an email body for plain-text parsing */
