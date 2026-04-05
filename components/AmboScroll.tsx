@@ -53,7 +53,7 @@ export default function AmboScroll() {
               height:    "165px",
               width:     "auto",
               display:   "block",
-              animation: `ambo-drive ${DRIVE_MS}ms linear forwards`,
+              animation: `ambo-drive ${DRIVE_MS}ms linear forwards, ambo-lights 0.4s step-start infinite`,
             }}
           />
         </div>
@@ -63,6 +63,10 @@ export default function AmboScroll() {
         @keyframes ambo-drive {
           from { transform: translateX(calc(100vw + 300px)); }
           to   { transform: translateX(-300px); }
+        }
+        @keyframes ambo-lights {
+          0%,  49% { filter: drop-shadow(0 0 18px #ff2020) drop-shadow(0 0 40px #ff0000); }
+          50%, 100% { filter: drop-shadow(0 0 18px #2060ff) drop-shadow(0 0 40px #0040ff); }
         }
       `}</style>
     </>
