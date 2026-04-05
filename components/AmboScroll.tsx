@@ -2,86 +2,145 @@
 
 import { useEffect, useRef, useState } from "react";
 
+/*
+  AmboScroll — cartoon ambulance drives right→left across the bottom of the page
+  when the user scrolls near the end. Triggers once per page load.
+  The cartoon image faces LEFT already — no flip needed.
+*/
+
+const DRIVE_DURATION = 4200; // ms to cross the full screen
+
 export default function AmboScroll() {
-  const [triggered, setTriggered] = useState(false);
-  const [driving, setDriving]     = useState(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const cooldownRef = useRef(false);
+  const [active, setActive] = useState(false);
+  const sentinelRef         = useRef<HTMLDivElement>(null);
+  const firedRef            = useRef(false);
 
   useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+    const el = sentinelRef.current;
+    if (!el) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !cooldownRef.current) {
-          cooldownRef.current = true;
-          setTriggered(true);
-          setDriving(true);
-          // After animation completes, unmount immediately (no snap-back)
-          setTimeout(() => {
-            setTriggered(false);
-            setDriving(false);
-            cooldownRef.current = false;
-          }, 4000);
+        if (entries[0].isIntersecting && !firedRef.current) {
+          firedRef.current = true;
+          setActive(true);
+          setTimeout(() => setActive(false), DRIVE_DURATION + 600);
         }
       },
       { threshold: 0.5 }
     );
 
-    observer.observe(sentinel);
+    observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
   return (
     <>
-      {/* Sentinel div at bottom of page — invisible trigger */}
+      {/* Invisible sentinel at the very bottom of page content */}
       <div ref={sentinelRef} style={{ height: "1px", pointerEvents: "none" }} />
 
-      {/* Ambulance */}
-      {triggered && (
+      {active && (
         <div
-          className="fixed bottom-16 md:bottom-2 left-0 right-0 pointer-events-none z-40 overflow-hidden"
-          style={{ height: "100px" }}
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: "170px",
+            pointerEvents: "none",
+            zIndex: 999,
+            overflow: "hidden",
+          }}
         >
-          {/* Wrapper flips image so ambulance faces left (driving right→left) */}
+          {/* Drive: translateX from off-screen right → off-screen left */}
           <div
             style={{
               position: "absolute",
-              bottom: "4px",
-              width: "120px",
-              transform: "scaleX(-1)", // flip to face left
-              animation: driving
-                ? `ambo-drive 4s linear forwards, ambo-bounce 0.45s ease-in-out infinite, ambo-img-lights 0.55s linear infinite`
-                : undefined,
+              bottom: "8px",
+              animation: `ambo-scroll-drive ${DRIVE_DURATION}ms cubic-bezier(0.25,0.1,0.25,1) forwards`,
             }}
-            className={driving ? "ambo-img-active" : ""}
           >
-            {/* Invisible spacer */}
-            <img src="/images/millstadt-ems/ambo-56-nobg.png" alt="" style={{ width: "100%", display: "block", visibility: "hidden" }} />
-            {/* Top half — dark */}
-            <img
-              src="/images/millstadt-ems/ambo-56-nobg.png"
-              alt=""
-              style={{
-                position: "absolute", top: 0, left: 0, width: "100%", display: "block",
-                clipPath: "inset(0 0 50% 0)",
-                filter: "grayscale(1) contrast(3) brightness(0.2)",
-              }}
-            />
-            {/* Bottom half — yellow */}
-            <img
-              src="/images/millstadt-ems/ambo-56-nobg.png"
-              alt="Millstadt EMS Ambulance"
-              style={{
-                position: "absolute", top: 0, left: 0, width: "100%", display: "block",
-                clipPath: "inset(50% 0 0 0)",
-                filter: "grayscale(1) sepia(1) hue-rotate(10deg) saturate(12) contrast(1.3) brightness(1.1)",
-              }}
-            />
+            {/* Bounce: simulates rolling wheels */}
+            <div style={{ animation: "ambo-scroll-bounce 0.36s ease-in-out infinite" }}>
+
+              <div style={{ position: "relative", display: "inline-block" }}>
+
+                {/* The cartoon ambulance */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/millstadt-ems/cartoon-ambo.png"
+                  alt=""
+                  draggable={false}
+                  style={{
+                    height: "150px",
+                    width: "auto",
+                    display: "block",
+                    userSelect: "none",
+                  }}
+                />
+
+                {/* Red glow — front lightbar left side + side reds */}
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background:
+                      "radial-gradient(ellipse 22% 18% at 12% 8%, rgba(255,30,30,0.9) 0%, transparent 100%)," +
+                      "radial-gradient(ellipse 14% 12% at 88% 8%, rgba(255,30,30,0.8) 0%, transparent 100%)",
+                    mixBlendMode: "screen",
+                    animation: "ambo-scroll-red 0.4s step-start infinite",
+                    borderRadius: "4px",
+                    pointerEvents: "none",
+                  }}
+                />
+
+                {/* Blue glow — center and right of lightbar */}
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background:
+                      "radial-gradient(ellipse 30% 18% at 52% 6%, rgba(30,100,255,0.9) 0%, transparent 100%)," +
+                      "radial-gradient(ellipse 16% 12% at 75% 8%, rgba(30,100,255,0.8) 0%, transparent 100%)",
+                    mixBlendMode: "screen",
+                    animation: "ambo-scroll-blue 0.4s step-start infinite",
+                    borderRadius: "4px",
+                    pointerEvents: "none",
+                  }}
+                />
+
+              </div>
+            </div>
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes ambo-scroll-drive {
+          from { transform: translateX(calc(100vw + 300px)); }
+          to   { transform: translateX(-300px); }
+        }
+
+        @keyframes ambo-scroll-bounce {
+          0%   { transform: translateY(0px) rotate(0deg); }
+          20%  { transform: translateY(-4px) rotate(-0.4deg); }
+          40%  { transform: translateY(-1px) rotate(0.2deg); }
+          60%  { transform: translateY(-3px) rotate(-0.3deg); }
+          80%  { transform: translateY(-1px) rotate(0.2deg); }
+          100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        @keyframes ambo-scroll-red {
+          0%  { opacity: 1; }
+          50% { opacity: 0; }
+        }
+
+        @keyframes ambo-scroll-blue {
+          0%  { opacity: 0; }
+          50% { opacity: 1; }
+        }
+      `}</style>
     </>
   );
 }
