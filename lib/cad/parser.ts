@@ -10,6 +10,8 @@
  * Everything else (address, cross streets, units, notes) is discarded.
  */
 
+const MONTH_NAMES = "January|February|March|April|May|June|July|August|September|October|November|December";
+
 // ── Configuration — update these patterns once real emails arrive ──────────
 
 const PATTERNS = {
@@ -26,18 +28,21 @@ const PATTERNS = {
   ],
 
   // Date patterns
-  // Examples: "Date: 04/04/2026"  "Dispatch Date: April 4, 2026"
+  // Examples: "Date: 04/04/2026"  "Dispatch Date: April 4, 2026"  "April 4,2026"
   date: [
     /^date\s*[:\-]\s*(\d{1,2}\/\d{1,2}\/\d{4})/im,
     /^dispatch\s*date\s*[:\-]\s*(\d{1,2}\/\d{1,2}\/\d{4})/im,
     /^date\s*[:\-]\s*(\d{4}-\d{2}-\d{2})/im,
+    new RegExp(`((?:${MONTH_NAMES})\\s+\\d{1,2},?\\s*\\d{4})`, "im"),
   ],
 
   // Time patterns
-  // Examples: "Time: 17:29:00"  "Dispatch Time: 5:29 PM"
+  // Examples: "Time: 17:29:00"  "Dispatch Time: 5:29 PM"  "23:12 April 4,2026"
   time: [
     /^time\s*[:\-]\s*(\d{1,2}:\d{2})(?::\d{2})?/im,
     /^dispatch\s*time\s*[:\-]\s*(\d{1,2}:\d{2})/im,
+    new RegExp(`^(\\d{1,2}:\\d{2})(?::\\d{2})?\\s+(?:${MONTH_NAMES})`, "im"),
+    /\b(\d{1,2}:\d{2})\s*(?:AM|PM|hrs?)\b/i,
   ],
 
   // Subject line patterns — used as fallback if body parsing fails
@@ -78,8 +83,6 @@ function extractFirst(text: string, patterns: RegExp[]): string | null {
 
 /** Normalize a nature string — uppercase, trim whitespace */
 function normalizeNature(raw: string): string {
-  // Strip anything that looks like an address sneaking in
-  // e.g. "ACCIDENT W/ INJURIES - 123 Main St" → "ACCIDENT W/ INJURIES"
   const stripped = raw
     .replace(/[-–]\s*\d+\s+\w.*$/, "") // trailing "- 123 Main St..."
     .replace(/\s{2,}/g, " ")
@@ -88,7 +91,12 @@ function normalizeNature(raw: string): string {
   return stripped;
 }
 
-/** Parse "04/04/2026" or "2026-04-04" into a display date string and a Date */
+const MONTH_MAP: Record<string, number> = {
+  january:1,february:2,march:3,april:4,may:5,june:6,
+  july:7,august:8,september:9,october:10,november:11,december:12,
+};
+
+/** Parse various date formats into a display date string and a Date */
 function parseDate(raw: string): { display: string; date: Date } | null {
   // MM/DD/YYYY
   const mdy = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
@@ -108,17 +116,31 @@ function parseDate(raw: string): { display: string; date: Date } | null {
       date: new Date(Number(y), Number(m) - 1, Number(d)),
     };
   }
+  // "April 4,2026" or "April 4, 2026"
+  const mon = raw.match(/^(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s*(\d{4})$/i);
+  if (mon) {
+    const m = MONTH_MAP[mon[1].toLowerCase()];
+    const d = Number(mon[2]);
+    const y = Number(mon[3]);
+    return {
+      display: `${String(m).padStart(2,"0")}/${String(d).padStart(2,"0")}/${y}`,
+      date: new Date(y, m - 1, d),
+    };
+  }
   return null;
 }
 
 /** Parse "17:29" or "5:29 PM" → "17:29" (24-hour display) */
 function parseTime(raw: string): { display: string; hours: number; minutes: number } | null {
-  const t24 = raw.match(/^(\d{1,2}):(\d{2})$/);
+  // Strip trailing month name (e.g. "23:12 April 4,2026" → "23:12")
+  const cleaned = raw.replace(/\s+(?:January|February|March|April|May|June|July|August|September|October|November|December).*/i, "").trim();
+
+  const t24 = cleaned.match(/^(\d{1,2}):(\d{2})$/);
   if (t24) {
     const h = Number(t24[1]), m = Number(t24[2]);
     return { display: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`, hours: h, minutes: m };
   }
-  const t12 = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  const t12 = cleaned.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
   if (t12) {
     let h = Number(t12[1]);
     const m = Number(t12[2]);
@@ -132,16 +154,9 @@ function parseTime(raw: string): { display: string; hours: number; minutes: numb
 
 /**
  * Build a UTC ISO datetime from date+time parsed in America/Chicago.
- * Uses the simple offset approach: Chicago is UTC-6 (CST) or UTC-5 (CDT).
- * We approximate by constructing the local time and using JS Date internals.
  */
 function buildDatetime(date: Date, hours: number, minutes: number): { iso: string; year: number } {
-  // Create a date string that looks like Chicago local time and parse it
   const localStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00`;
-
-  // Use Intl to figure out Chicago offset at this moment
-  // We construct the ISO by treating the local time as-is (UTC approx)
-  // For display purposes this is sufficient; the 20-min check uses wall-clock diff
   const dt = new Date(localStr);
   return {
     iso: dt.toISOString(),
@@ -149,14 +164,34 @@ function buildDatetime(date: Date, hours: number, minutes: number): { iso: strin
   };
 }
 
+/**
+ * Freeform body parser — used when no labeled fields are found.
+ * Looks at body lines and picks the first one that reads like a call nature
+ * (not an address, not a date/time line, not a signature line).
+ */
+function extractFreeformNature(body: string): string | null {
+  const ADDRESS_RE  = /^\d+\s+\w+\s+(?:St|Street|Ave|Avenue|Blvd|Boulevard|Dr|Drive|Rd|Road|Ln|Lane|Ct|Court|Way|Pl|Place|Hwy|Highway|Pkwy|Parkway)\b/i;
+  const DATETIME_RE = /^\d{1,2}:\d{2}|^(?:January|February|March|April|May|June|July|August|September|October|November|December)/i;
+  const SIGNATURE_RE = /^(?:respectfully|sent from|regards|sincerely|thank|--)/i;
+
+  const lines = body.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+  for (const line of lines) {
+    if (ADDRESS_RE.test(line))   continue;
+    if (DATETIME_RE.test(line))  continue;
+    if (SIGNATURE_RE.test(line)) continue;
+    if (line.length < 4)         continue;
+    // Skip lines that look like email headers or disclaimers
+    if (line.startsWith("*") || line.includes("CONFIDENTIALITY")) continue;
+    return line;
+  }
+  return null;
+}
+
 // ── Main parse function ────────────────────────────────────────────────────
 
 /**
- * Parse a Chief 360 dispatch email into public-safe call data.
- *
- * @param subject  Email subject line
- * @param body     Plain text body (strip HTML before passing in)
- * @param received Date the email was received (used as fallback datetime)
+ * Parse a dispatch email into public-safe call data.
  */
 export function parseDispatchEmail(
   subject: string,
@@ -168,9 +203,14 @@ export function parseDispatchEmail(
   // ── Extract nature ──────────────────────────────────────────────────────
   let rawNature = extractFirst(text, PATTERNS.nature);
 
-  // Fallback: try subject line patterns
+  // Fallback: try subject line patterns (e.g. "Dispatch: CHEST PAIN")
   if (!rawNature) {
     rawNature = extractFirst(subject, PATTERNS.subject);
+  }
+
+  // Fallback: freeform body parsing
+  if (!rawNature) {
+    rawNature = extractFreeformNature(body);
   }
 
   if (!rawNature) {
