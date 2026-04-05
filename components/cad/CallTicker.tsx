@@ -118,6 +118,7 @@ export default function CallTicker() {
 
   const moon = getMoonPhase();
   const currentYear = now.getFullYear();
+  const onARun = latest.length > 0 && isActive(latest[0]);
 
   return (
     <div ref={wrapperRef} className="fixed top-0 left-0 right-0 z-[60]">
@@ -172,13 +173,15 @@ export default function CallTicker() {
       <div className="bg-[#020912] border-b border-white/10 select-none" style={{ height: "40px" }}>
         <div className="wrap h-full flex items-center gap-3 px-4">
 
-          {/* ── In Service ── */}
+          {/* ── In Service / On A Run ── */}
           <div className="shrink-0 flex items-center gap-1.5">
             <span className="relative flex w-2 h-2">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+              <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${onARun ? "bg-red-400" : "bg-emerald-400"}`} />
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${onARun ? "bg-red-400" : "bg-emerald-400"}`} />
             </span>
-            <span className="text-emerald-400 text-[9px] font-black tracking-wider uppercase hidden sm:block">In Service</span>
+            <span className={`text-[9px] font-black tracking-wider uppercase hidden sm:block ${onARun ? "text-red-400" : "text-emerald-400"}`}>
+              {onARun ? "On A Run" : "In Service"}
+            </span>
           </div>
 
           <span className="h-2.5 w-px bg-white/15 shrink-0" />
@@ -213,7 +216,7 @@ export default function CallTicker() {
                 return (
                   <div key={call.id} className={`flex items-center gap-1.5 shrink-0 ${i > 0 ? "hidden lg:flex" : ""}`}>
                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${active ? "bg-emerald-400" : "bg-red-500/70"}`} />
-                    <span className="text-slate-500 text-[10px] tabular-nums shrink-0 font-mono">
+                    <span className={`text-[10px] tabular-nums shrink-0 font-mono ${active ? "text-emerald-300 font-bold" : "text-slate-500"}`}>
                       {shortDate(call.dispatchDate)} {call.dispatchTime}
                     </span>
                     <span className={`text-[10px] font-bold uppercase tracking-wide truncate max-w-[160px] ${active ? "text-emerald-300" : "text-red-400"}`}>
