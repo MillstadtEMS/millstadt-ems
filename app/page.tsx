@@ -75,7 +75,7 @@ export default function Home() {
       {/* ════════════════════════════════
           QUICK ACTION CARDS
       ════════════════════════════════ */}
-      <section className="py-20 bg-[#040d1a]">
+      <section className="py-20 mt-16 bg-[#040d1a]">
         <div className="wrap flex justify-center">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 w-full max-w-4xl">
             {[
@@ -156,9 +156,9 @@ export default function Home() {
       {/* ════════════════════════════════
           WHO WE ARE — Preview
       ════════════════════════════════ */}
-      <section className="py-24 bg-[#071428]">
+      <section className="pb-52 bg-[#071428]">
         <div className="wrap">
-          <div className="grid md:grid-cols-2 gap-24 items-center">
+          <div className="grid md:grid-cols-2 gap-20 items-center">
             <div>
               <div className="flex items-center gap-3 mb-8">
                 <span className="h-px w-8 bg-[#f0b429]" />
@@ -215,9 +215,10 @@ export default function Home() {
       {/* ════════════════════════════════
           COMMUNITY — Preview
       ════════════════════════════════ */}
-      <section className="py-24 bg-[#040d1a]">
+      <div className="h-40 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <section className="pb-52 bg-[#040d1a]">
         <div className="wrap">
-          <div className="grid md:grid-cols-2 gap-24 items-center">
+          <div className="grid md:grid-cols-2 gap-20 items-center">
             <div className="relative h-[460px] rounded-2xl overflow-hidden">
               <Image
                 src="/images/millstadt-ems/IMG_3130.jpeg"
@@ -260,9 +261,10 @@ export default function Home() {
       {/* ════════════════════════════════
           SUPPORT / DONATE CTA
       ════════════════════════════════ */}
-      <section className="py-24 bg-[#071428]">
+      <div className="h-40 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <section className="pb-52 bg-[#071428]">
         <div className="wrap">
-          <div className="grid md:grid-cols-2 gap-24 items-center">
+          <div className="grid md:grid-cols-2 gap-20 items-center">
             <div>
               <div className="flex items-center gap-3 mb-8">
                 <span className="h-px w-8 bg-[#f0b429]" />
@@ -304,7 +306,7 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="h-16 bg-[#040d1a]" />
+      <div className="h-32 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
     </>
   );
 }
