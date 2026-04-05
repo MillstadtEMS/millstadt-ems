@@ -30,11 +30,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
       <body className="min-h-full flex flex-col bg-[#040d1a] text-slate-100 antialiased overflow-x-hidden">
+        <CallTicker />
         <Nav />
         <WeatherAlertOverlay />
-        <main className="flex-1 w-full overflow-x-hidden pb-20 md:pb-11" style={{ paddingTop: "96px" }}>{children}</main>
+        <main className="flex-1 w-full overflow-x-hidden" style={{ paddingTop: "106px" }}>{children}</main>
         <Footer />
-        <CallTicker />
       </body>
     </html>
   );

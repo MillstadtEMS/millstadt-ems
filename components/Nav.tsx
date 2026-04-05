@@ -36,20 +36,20 @@ export default function Nav() {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50">
+    <header className="fixed top-10 left-0 right-0 z-50">
 
       {/* ── Single unified bar: logo | weather ticker | menu ── */}
       <div className="bg-[#020912] border-b border-white/8">
-        <div className="wrap flex items-center justify-between gap-4 py-2">
+        <div className="wrap flex items-center justify-between gap-4 py-1">
 
           {/* Logo */}
           <Link href="/" className="shrink-0 group">
             <Image
               src="/images/millstadt-ems/logo.png"
               alt="Millstadt EMS"
-              width={180}
-              height={80}
-              className="h-20 w-auto object-contain group-hover:opacity-80 transition-opacity"
+              width={140}
+              height={60}
+              className="h-14 w-auto object-contain group-hover:opacity-80 transition-opacity"
             />
           </Link>
 
@@ -68,7 +68,7 @@ export default function Nav() {
               {/* Ambulance — top half black, bottom half yellow, lights flash on open */}
               <div
                 className={mobileOpen ? "ambo-img-active" : ""}
-                style={{ position: "relative", width: "72px" }}
+                style={{ position: "relative", width: "52px" }}
               >
                 {/* invisible spacer sets container height */}
                 <img src="/images/millstadt-ems/ambo-56-nobg.png" alt="" style={{ width: "100%", display: "block", visibility: "hidden" }} />
@@ -93,7 +93,7 @@ export default function Nav() {
                   }}
                 />
               </div>
-              <div className="text-center text-xs text-slate-300 uppercase tracking-widest font-black mt-1">menu</div>
+              <div className="text-center text-[10px] text-slate-300 uppercase tracking-widest font-black mt-0.5">menu</div>
             </button>
           </div>
 
@@ -331,7 +331,7 @@ function WeatherTicker() {
 
   const spanStyle: React.CSSProperties = {
     color: "#34d399",
-    fontSize: "1.25rem",
+    fontSize: "0.7rem",
     fontWeight: 700,
     whiteSpace: "nowrap",
     textTransform: "uppercase",

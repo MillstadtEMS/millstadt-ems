@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import HolidayOverlay from "@/components/HolidayOverlay";
 
 export default function Home() {
   return (
@@ -17,6 +18,7 @@ export default function Home() {
         />
         <div className="absolute inset-0 bg-[#040d1a]/65" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#040d1a] via-transparent to-[#040d1a]/20" />
+        <HolidayOverlay />
 
         <div className="relative z-10 w-full flex flex-col items-center text-center px-6 pb-40 pt-20">
 

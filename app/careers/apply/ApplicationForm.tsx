@@ -90,6 +90,7 @@ export default function ApplicationForm() {
   const [employers, setEmployers] = useState<Employer[]>([defaultEmployer(), defaultEmployer(), defaultEmployer()]);
   const [references, setReferences] = useState<Reference[]>([defaultReference(), defaultReference(), defaultReference()]);
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState<string>("");
   const formRef = useRef<HTMLFormElement>(null);
 
   function addCert() {
@@ -156,9 +157,11 @@ export default function ApplicationForm() {
       if (data.success) {
         setStatus("sent");
       } else {
+        setErrorMsg(data.error || "Something went wrong. Please try again.");
         setStatus("error");
       }
     } catch {
+      setErrorMsg("Network error — could not reach the server. Check your connection and try again.");
       setStatus("error");
     }
   }
@@ -236,15 +239,24 @@ export default function ApplicationForm() {
         <div className="wrap">
           <SectionHeader title="Personal Information" />
           <div className="space-y-20">
+          <div>
+            <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">Legal Name</div>
+            <div className="grid sm:grid-cols-3 gap-10">
+              <div>
+                <label className={labelClass}>First Name *</label>
+                <input type="text" name="first_name" required className={inputClass} placeholder="First" />
+              </div>
+              <div>
+                <label className={labelClass}>Last Name *</label>
+                <input type="text" name="last_name" required className={inputClass} placeholder="Last" />
+              </div>
+              <div>
+                <label className={labelClass}>Middle Name</label>
+                <input type="text" name="middle_name" className={inputClass} placeholder="Middle" />
+              </div>
+            </div>
+          </div>
           <div className="grid sm:grid-cols-2 gap-10">
-            <div>
-              <label className={labelClass}>Full Legal Name *</label>
-              <input type="text" name="full_name" required className={inputClass} placeholder="First Middle Last" />
-            </div>
-            <div>
-              <label className={labelClass}>Preferred Name</label>
-              <input type="text" name="preferred_name" className={inputClass} placeholder="Goes by..." />
-            </div>
             <div>
               <label className={labelClass}>Date of Birth *</label>
               <input type="date" name="dob" required className={inputClass} />
@@ -387,146 +399,145 @@ export default function ApplicationForm() {
       <div className="py-28 bg-[#040d1a]">
         <div className="wrap">
           <SectionHeader title="Licensure & Certifications" />
-          <div className="space-y-20">
+          <div className="flex flex-col gap-6">
 
-          {/* Primary License */}
-          <div>
-            <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">Primary License</div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
-              <div>
-                <label className={labelClass}>License Type</label>
-                <input type="text" name="primary_license_type" className={inputClass} placeholder="EMT / Paramedic / RN / PA / MD" />
+            {/* ── Primary License ── */}
+            <div className="p-10 bg-[#071428] rounded-2xl border border-white/8">
+              <div className="flex items-center gap-3 mb-8">
+                <span className="h-px w-6 bg-[#f0b429]" />
+                <span className="text-[#f0b429] text-xs font-black tracking-[0.2em] uppercase">Primary License</span>
               </div>
-              <div>
-                <label className={labelClass}>State</label>
-                <input type="text" name="primary_license_state" className={inputClass} placeholder="IL" maxLength={2} />
-              </div>
-              <div>
-                <label className={labelClass}>License Number</label>
-                <input type="text" name="primary_license_number" className={inputClass} placeholder="IL-P-12345" />
-              </div>
-              <div>
-                <label className={labelClass}>Expiration Date</label>
-                <input type="date" name="primary_license_expiry" className={inputClass} />
-              </div>
-            </div>
-          </div>
-
-          {/* Additional License */}
-          <div>
-            <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">Additional License (if applicable)</div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
-              <div>
-                <label className={labelClass}>License Type</label>
-                <input type="text" name="add_license_type" className={inputClass} placeholder="e.g. NREMT" />
-              </div>
-              <div>
-                <label className={labelClass}>State</label>
-                <input type="text" name="add_license_state" className={inputClass} placeholder="IL" maxLength={2} />
-              </div>
-              <div>
-                <label className={labelClass}>License Number</label>
-                <input type="text" name="add_license_number" className={inputClass} placeholder="" />
-              </div>
-              <div>
-                <label className={labelClass}>Expiration Date</label>
-                <input type="date" name="add_license_expiry" className={inputClass} />
-              </div>
-            </div>
-          </div>
-
-          {/* NREMT */}
-          <div>
-            <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">NREMT (if applicable)</div>
-            <div className="grid sm:grid-cols-3 gap-10">
-              <div>
-                <label className={labelClass}>NREMT Level</label>
-                <input type="text" name="nremt_level" className={inputClass} placeholder="e.g. NRP, NREMT" />
-              </div>
-              <div>
-                <label className={labelClass}>NREMT Number</label>
-                <input type="text" name="nremt_number" className={inputClass} placeholder="" />
-              </div>
-              <div>
-                <label className={labelClass}>Expiration Date</label>
-                <input type="date" name="nremt_expiry" className={inputClass} />
-              </div>
-            </div>
-          </div>
-
-          {/* DEA */}
-          <div>
-            <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">DEA (PA / APRN / MD only)</div>
-            <div className="grid sm:grid-cols-2 gap-10">
-              <div>
-                <label className={labelClass}>DEA Number</label>
-                <input type="text" name="dea_number" className={inputClass} placeholder="AB1234567" />
-              </div>
-              <div>
-                <label className={labelClass}>Expiration Date</label>
-                <input type="date" name="dea_expiry" className={inputClass} />
-              </div>
-            </div>
-          </div>
-
-          {/* Certifications Table */}
-          <div>
-            <div className="flex items-center justify-between mb-8">
-              <div className="text-slate-500 text-xs font-black tracking-widest uppercase">Certifications</div>
-              <button type="button" onClick={addCert} className="flex items-center gap-2 text-[#f0b429] text-xs font-black tracking-wider hover:text-[#d9a320] transition-colors">
-                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" /></svg>
-                ADD CERTIFICATION
-              </button>
-            </div>
-            <div className="space-y-3">
-              <div className="grid grid-cols-12 gap-4 px-4 pb-2">
-                <div className="col-span-5 text-slate-600 text-xs font-bold uppercase tracking-wider">Certification</div>
-                <div className="col-span-3 text-slate-600 text-xs font-bold uppercase tracking-wider">Number</div>
-                <div className="col-span-3 text-slate-600 text-xs font-bold uppercase tracking-wider">Expiration</div>
-              </div>
-              {certs.map((cert, i) => (
-                <div key={i} className="grid grid-cols-12 gap-4 items-center p-4 bg-[#071428] border border-white/8 rounded-2xl">
-                  <div className="col-span-5">
-                    {i < defaultCerts.length ? (
-                      <span className="text-slate-300 text-sm px-2">{cert.name}</span>
-                    ) : (
-                      <input
-                        type="text"
-                        value={cert.name}
-                        onChange={(e) => updateCert(i, "name", e.target.value)}
-                        className={`${inputClass} py-3 text-sm`}
-                        placeholder="Certification name"
-                      />
-                    )}
-                  </div>
-                  <div className="col-span-3">
-                    <input
-                      type="text"
-                      value={cert.number}
-                      onChange={(e) => updateCert(i, "number", e.target.value)}
-                      className={`${inputClass} py-3 text-sm`}
-                      placeholder="Number"
-                    />
-                  </div>
-                  <div className="col-span-3">
-                    <input
-                      type="date"
-                      value={cert.expiry}
-                      onChange={(e) => updateCert(i, "expiry", e.target.value)}
-                      className={`${inputClass} py-3 text-sm`}
-                    />
-                  </div>
-                  <div className="col-span-1 flex justify-center">
-                    {i >= defaultCerts.length && (
-                      <button type="button" onClick={() => removeCert(i)} className="text-slate-600 hover:text-red-400 transition-colors">
-                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
-                      </button>
-                    )}
-                  </div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div>
+                  <label className={labelClass}>License Type</label>
+                  <input type="text" name="primary_license_type" className={inputClass} placeholder="EMT / Paramedic / RN / PA / MD" />
                 </div>
-              ))}
+                <div>
+                  <label className={labelClass}>Issuing State</label>
+                  <input type="text" name="primary_license_state" className={inputClass} placeholder="IL" maxLength={2} />
+                </div>
+                <div>
+                  <label className={labelClass}>License Number</label>
+                  <input type="text" name="primary_license_number" className={inputClass} placeholder="IL-P-12345" />
+                </div>
+                <div>
+                  <label className={labelClass}>Expiration Date</label>
+                  <input type="date" name="primary_license_expiry" className={inputClass} />
+                </div>
+              </div>
             </div>
-          </div>
+
+            {/* ── Additional License ── */}
+            <div className="p-10 bg-[#071428] rounded-2xl border border-white/8">
+              <div className="flex items-center gap-3 mb-8">
+                <span className="h-px w-6 bg-[#f0b429]" />
+                <span className="text-[#f0b429] text-xs font-black tracking-[0.2em] uppercase">Additional License <span className="text-slate-500 normal-case tracking-normal font-normal">(if applicable)</span></span>
+              </div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div>
+                  <label className={labelClass}>License Type</label>
+                  <input type="text" name="add_license_type" className={inputClass} placeholder="e.g. NREMT" />
+                </div>
+                <div>
+                  <label className={labelClass}>Issuing State</label>
+                  <input type="text" name="add_license_state" className={inputClass} placeholder="IL" maxLength={2} />
+                </div>
+                <div>
+                  <label className={labelClass}>License Number</label>
+                  <input type="text" name="add_license_number" className={inputClass} placeholder="" />
+                </div>
+                <div>
+                  <label className={labelClass}>Expiration Date</label>
+                  <input type="date" name="add_license_expiry" className={inputClass} />
+                </div>
+              </div>
+            </div>
+
+            {/* ── NREMT ── */}
+            <div className="p-10 bg-[#071428] rounded-2xl border border-white/8">
+              <div className="flex items-center gap-3 mb-8">
+                <span className="h-px w-6 bg-[#f0b429]" />
+                <span className="text-[#f0b429] text-xs font-black tracking-[0.2em] uppercase">NREMT <span className="text-slate-500 normal-case tracking-normal font-normal">(if applicable)</span></span>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-8">
+                <div>
+                  <label className={labelClass}>Level</label>
+                  <input type="text" name="nremt_level" className={inputClass} placeholder="e.g. NRP, NREMT" />
+                </div>
+                <div>
+                  <label className={labelClass}>Registry Number</label>
+                  <input type="text" name="nremt_number" className={inputClass} placeholder="" />
+                </div>
+                <div>
+                  <label className={labelClass}>Expiration Date</label>
+                  <input type="date" name="nremt_expiry" className={inputClass} />
+                </div>
+              </div>
+            </div>
+
+            {/* ── DEA ── */}
+            <div className="p-10 bg-[#071428] rounded-2xl border border-white/8">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="h-px w-6 bg-[#f0b429]" />
+                <span className="text-[#f0b429] text-xs font-black tracking-[0.2em] uppercase">DEA Registration</span>
+              </div>
+              <p className="text-slate-500 text-xs mb-8 ml-9">PA / APRN / MD only</p>
+              <div className="grid sm:grid-cols-2 gap-8">
+                <div>
+                  <label className={labelClass}>Registration Number</label>
+                  <input type="text" name="dea_number" className={inputClass} placeholder="AB1234567" />
+                </div>
+                <div>
+                  <label className={labelClass}>Expiration Date</label>
+                  <input type="date" name="dea_expiry" className={inputClass} />
+                </div>
+              </div>
+            </div>
+
+            {/* ── Certifications ── */}
+            <div className="p-10 bg-[#071428] rounded-2xl border border-white/8">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <span className="h-px w-6 bg-[#f0b429]" />
+                  <span className="text-[#f0b429] text-xs font-black tracking-[0.2em] uppercase">Certifications</span>
+                </div>
+                <button type="button" onClick={addCert} className="flex items-center gap-2 text-[#f0b429] text-xs font-black tracking-wider hover:text-[#d9a320] transition-colors">
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" /></svg>
+                  ADD
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div className="grid grid-cols-12 gap-4 px-4 pb-2 border-b border-white/8">
+                  <div className="col-span-5 text-slate-500 text-[10px] font-black uppercase tracking-widest">Name</div>
+                  <div className="col-span-3 text-slate-500 text-[10px] font-black uppercase tracking-widest">Card #</div>
+                  <div className="col-span-3 text-slate-500 text-[10px] font-black uppercase tracking-widest">Expires</div>
+                </div>
+                {certs.map((cert, i) => (
+                  <div key={i} className="grid grid-cols-12 gap-4 items-center py-3 px-4 border-b border-white/5">
+                    <div className="col-span-5">
+                      {i < defaultCerts.length ? (
+                        <span className="text-slate-200 text-sm font-semibold">{cert.name}</span>
+                      ) : (
+                        <input type="text" value={cert.name} onChange={(e) => updateCert(i, "name", e.target.value)} className={`${inputClass} py-2.5 text-sm`} placeholder="Certification name" />
+                      )}
+                    </div>
+                    <div className="col-span-3">
+                      <input type="text" value={cert.number} onChange={(e) => updateCert(i, "number", e.target.value)} className={`${inputClass} py-2.5 text-sm`} placeholder="———" />
+                    </div>
+                    <div className="col-span-3">
+                      <input type="date" value={cert.expiry} onChange={(e) => updateCert(i, "expiry", e.target.value)} className={`${inputClass} py-2.5 text-sm`} />
+                    </div>
+                    <div className="col-span-1 flex justify-center">
+                      {i >= defaultCerts.length && (
+                        <button type="button" onClick={() => removeCert(i)} className="text-slate-600 hover:text-red-400 transition-colors">
+                          <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
           </div>
         </div>
@@ -794,7 +805,16 @@ export default function ApplicationForm() {
             </Link>
           </div>
           {status === "error" && (
-            <p className="text-red-400 text-sm mt-8">Something went wrong. Please try again or email millstadtems@gmail.com directly.</p>
+            <div className="mt-8 p-8 bg-red-900/20 border border-red-500/30 rounded-2xl">
+              <div className="flex items-start gap-4">
+                <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current text-red-400 shrink-0 mt-0.5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <div>
+                  <div className="text-red-300 font-bold text-base mb-2">Submission Failed</div>
+                  <p className="text-red-200/80 text-sm leading-relaxed">{errorMsg}</p>
+                  <p className="text-slate-500 text-xs mt-3">You can also email your application directly to <span className="text-[#f0b429]">millstadtems@gmail.com</span></p>
+                </div>
+              </div>
+            </div>
           )}
           <p className="text-slate-600 text-sm mt-6">
             Applications are sent to millstadtems@gmail.com and reviewed by Millstadt EMS leadership.

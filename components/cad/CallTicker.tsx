@@ -4,15 +4,15 @@ import { useEffect, useState, useCallback, useRef } from "react";
 
 interface Call {
   id: string;
-  dispatchDate: string;    // "04/04/2026"
-  dispatchTime: string;    // "17:29"
-  dispatchNature: string;  // "ACCIDENT W/ INJURIES"
-  dispatchDatetime: string; // ISO-8601
+  dispatchDate: string;
+  dispatchTime: string;
+  dispatchNature: string;
+  dispatchDatetime: string;
   sourceYear: number;
 }
 
 const ACTIVE_MINUTES = 20;
-const POLL_INTERVAL  = 60_000; // refresh every 60s
+const POLL_INTERVAL  = 60_000;
 
 function isActive(call: Call): boolean {
   const dispatched = new Date(call.dispatchDatetime).getTime();
@@ -20,16 +20,59 @@ function isActive(call: Call): boolean {
 }
 
 function shortDate(date: string): string {
-  // "04/04/2026" → "04/04"
   return date.slice(0, 5);
 }
 
+// ── Moon phase ─────────────────────────────────────────────────────────────
+// Reference new moon: January 6, 2000 18:14 UTC (Julian date 2451550.1)
+const KNOWN_NEW_MOON = new Date("2000-01-06T18:14:00Z").getTime();
+const CYCLE_MS = 29.53058867 * 24 * 60 * 60 * 1000;
+
+const MOON_PHASES = [
+  { name: "New Moon",        symbol: "🌑" },
+  { name: "Waxing Crescent", symbol: "🌒" },
+  { name: "First Quarter",   symbol: "🌓" },
+  { name: "Waxing Gibbous",  symbol: "🌔" },
+  { name: "Full Moon",       symbol: "🌕" },
+  { name: "Waning Gibbous",  symbol: "🌖" },
+  { name: "Last Quarter",    symbol: "🌗" },
+  { name: "Waning Crescent", symbol: "🌘" },
+];
+
+function getMoonPhase(): { name: string; symbol: string } {
+  const elapsed = ((Date.now() - KNOWN_NEW_MOON) % CYCLE_MS + CYCLE_MS) % CYCLE_MS;
+  const fraction = elapsed / CYCLE_MS; // 0–1
+  // Map to 8 phases with slightly wider windows for primary phases
+  let idx: number;
+  if (fraction < 0.025 || fraction >= 0.975) idx = 0; // New Moon
+  else if (fraction < 0.235) idx = 1; // Waxing Crescent
+  else if (fraction < 0.265) idx = 2; // First Quarter
+  else if (fraction < 0.485) idx = 3; // Waxing Gibbous
+  else if (fraction < 0.515) idx = 4; // Full Moon
+  else if (fraction < 0.735) idx = 5; // Waning Gibbous
+  else if (fraction < 0.765) idx = 6; // Last Quarter
+  else idx = 7; // Waning Crescent
+  return MOON_PHASES[idx];
+}
+
+// ── Live clock ─────────────────────────────────────────────────────────────
+function formatClock(date: Date): string {
+  return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
+}
+
+function formatDate(date: Date): string {
+  return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+// ── Component ──────────────────────────────────────────────────────────────
+
 export default function CallTicker() {
-  const [latest, setLatest]     = useState<Call[]>([]);
+  const [latest, setLatest]   = useState<Call[]>([]);
   const [allCalls, setAllCalls] = useState<Call[]>([]);
   const [expanded, setExpanded] = useState(false);
-  const [loading, setLoading]   = useState(true);
-  const wrapperRef              = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(true);
+  const [now, setNow]         = useState<Date>(new Date());
+  const wrapperRef            = useRef<HTMLDivElement>(null);
 
   const fetchLatest = useCallback(async () => {
     try {
@@ -48,43 +91,44 @@ export default function CallTicker() {
 
   useEffect(() => {
     fetchLatest();
-    const id = setInterval(fetchLatest, POLL_INTERVAL);
-    return () => clearInterval(id);
+    const pollId = setInterval(fetchLatest, POLL_INTERVAL);
+    return () => clearInterval(pollId);
   }, [fetchLatest]);
+
+  // Live clock — tick every second
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     if (expanded) fetchAll();
   }, [expanded, fetchAll]);
 
-  // Close expanded log on outside click
   useEffect(() => {
     if (!expanded) return;
     const handler = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setExpanded(false);
-      }
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setExpanded(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [expanded]);
 
-  // Don't render until initial fetch completes
   if (loading) return null;
 
-  const currentYear = new Date().getFullYear();
+  const moon = getMoonPhase();
+  const currentYear = now.getFullYear();
 
   return (
-    <div ref={wrapperRef} className="fixed bottom-16 md:bottom-0 left-0 right-0 z-[48]">
+    <div ref={wrapperRef} className="fixed top-0 left-0 right-0 z-[60]">
 
-      {/* ── Expanded call log panel (slides up from ticker) ── */}
+      {/* ── Expanded call log panel ── */}
       {expanded && (
         <div
-          className="bg-[#020912]/98 backdrop-blur-md border-t border-white/10
-                     shadow-2xl shadow-black/60"
+          className="bg-[#020912]/98 backdrop-blur-md border-b border-white/10 shadow-2xl shadow-black/60"
           style={{ maxHeight: "60vh", overflowY: "auto" }}
         >
           <div className="px-4 md:px-6 py-4">
-            {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <span className="h-px w-5 bg-[#f0b429]" />
@@ -97,38 +141,18 @@ export default function CallTicker() {
               </span>
             </div>
 
-            {/* Call rows */}
             {allCalls.length === 0 ? (
-              <div className="py-8 text-center text-slate-500 text-sm">
-                No calls logged yet for this year.
-              </div>
+              <div className="py-8 text-center text-slate-500 text-sm">No calls logged yet for this year.</div>
             ) : (
-              <div className="space-y-0 divide-y divide-white/5">
+              <div className="divide-y divide-white/5">
                 {allCalls.map((call) => {
                   const active = isActive(call);
                   return (
-                    <div
-                      key={call.id}
-                      className="flex items-center gap-3 py-3 px-1"
-                    >
-                      {/* Status dot */}
-                      <span
-                        className={`w-2 h-2 rounded-full shrink-0 ${
-                          active ? "bg-emerald-400" : "bg-red-500/70"
-                        }`}
-                      />
-                      {/* Date */}
-                      <span className="text-slate-500 text-xs tabular-nums w-20 shrink-0">
-                        {call.dispatchDate}
-                      </span>
-                      {/* Time */}
-                      <span className="text-slate-400 text-xs tabular-nums w-12 shrink-0 font-mono">
-                        {call.dispatchTime}
-                      </span>
-                      {/* Nature */}
-                      <span className={`text-xs font-bold uppercase tracking-wide truncate ${
-                        active ? "text-emerald-300" : "text-slate-300"
-                      }`}>
+                    <div key={call.id} className="flex items-center gap-3 py-3 px-1">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${active ? "bg-emerald-400" : "bg-red-500/70"}`} />
+                      <span className="text-slate-500 text-xs tabular-nums w-20 shrink-0">{call.dispatchDate}</span>
+                      <span className="text-slate-400 text-xs tabular-nums w-12 shrink-0 font-mono">{call.dispatchTime}</span>
+                      <span className={`text-xs font-bold uppercase tracking-wide truncate ${active ? "text-emerald-300" : "text-slate-300"}`}>
                         {call.dispatchNature}
                       </span>
                     </div>
@@ -138,71 +162,78 @@ export default function CallTicker() {
             )}
 
             <p className="text-slate-700 text-[10px] mt-4 pt-3 border-t border-white/5">
-              Displaying dispatch nature only. Times shown in local time. Log resets January 1.
+              Displaying dispatch nature only. Times in local time. Log resets January 1.
             </p>
           </div>
         </div>
       )}
 
       {/* ── Ticker strip ── */}
-      <div
-        className="bg-[#020912]/95 backdrop-blur-sm border-t border-white/8 select-none"
-        style={{ minHeight: "56px" }}
-      >
-        <div className="wrap h-full flex items-center gap-3 py-2.5">
+      <div className="bg-[#020912] border-b border-white/10 select-none" style={{ height: "40px" }}>
+        <div className="wrap h-full flex items-center gap-3 px-4">
 
-          {/* Label */}
-          <span className="text-[#f0b429] text-[11px] font-black tracking-[0.2em] uppercase shrink-0 hidden sm:block">
-            Dispatch
-          </span>
-          <span className="h-3 w-px bg-white/15 shrink-0 hidden sm:block" />
+          {/* ── In Service ── */}
+          <div className="shrink-0 flex items-center gap-1.5">
+            <span className="relative flex w-2 h-2">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+            </span>
+            <span className="text-emerald-400 text-[9px] font-black tracking-wider uppercase hidden sm:block">In Service</span>
+          </div>
 
-          {/* Latest calls */}
-          <div className="flex-1 flex items-center gap-4 overflow-hidden min-w-0">
+          <span className="h-2.5 w-px bg-white/15 shrink-0" />
+
+          {/* ── Date & Time ── */}
+          <div className="shrink-0 items-center gap-1.5 hidden md:flex">
+            <span className="text-slate-400 text-[10px] tabular-nums font-mono">{formatDate(now)}</span>
+            <span className="text-white text-[10px] tabular-nums font-mono font-bold">{formatClock(now)}</span>
+          </div>
+
+          <span className="h-2.5 w-px bg-white/15 shrink-0 hidden md:block" />
+
+          {/* ── Moon phase ── */}
+          <div className="shrink-0 items-center gap-1 hidden lg:flex" title={moon.name}>
+            <span className="text-sm leading-none">{moon.symbol}</span>
+            <span className="text-slate-500 text-[9px] font-bold tracking-wider uppercase">{moon.name}</span>
+          </div>
+
+          <span className="h-2.5 w-px bg-white/15 shrink-0 hidden lg:block" />
+
+          {/* ── Dispatch label ── */}
+          <span className="text-[#f0b429] text-[9px] font-black tracking-[0.2em] uppercase shrink-0 hidden sm:block">Dispatch</span>
+          <span className="h-2.5 w-px bg-white/15 shrink-0 hidden sm:block" />
+
+          {/* ── Latest calls ── */}
+          <div className="flex-1 flex items-center gap-3 overflow-hidden min-w-0">
             {latest.length === 0 ? (
-              <span className="text-slate-600 text-xs">No calls logged yet for this year.</span>
+              <span className="text-slate-600 text-[10px]">No calls logged yet for this year.</span>
             ) : (
               latest.map((call, i) => {
                 const active = isActive(call);
                 return (
-                  <div key={call.id} className={`flex items-center gap-2 shrink-0 ${i > 0 ? "hidden lg:flex" : ""}`}>
-                    {/* Dot */}
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${
-                      active ? "bg-emerald-400" : "bg-red-500/70"
-                    }`} />
-                    {/* Date/time */}
-                    <span className="text-slate-500 text-xs tabular-nums shrink-0 font-mono">
+                  <div key={call.id} className={`flex items-center gap-1.5 shrink-0 ${i > 0 ? "hidden lg:flex" : ""}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${active ? "bg-emerald-400" : "bg-red-500/70"}`} />
+                    <span className="text-slate-500 text-[10px] tabular-nums shrink-0 font-mono">
                       {shortDate(call.dispatchDate)} {call.dispatchTime}
                     </span>
-                    {/* Nature */}
-                    <span className={`text-xs font-bold uppercase tracking-wide truncate max-w-[180px] ${
-                      active ? "text-emerald-300" : "text-red-400"
-                    }`}>
+                    <span className={`text-[10px] font-bold uppercase tracking-wide truncate max-w-[160px] ${active ? "text-emerald-300" : "text-red-400"}`}>
                       {call.dispatchNature}
                     </span>
-                    {/* Separator */}
-                    {i < latest.length - 1 && (
-                      <span className="text-white/15 text-xs shrink-0 hidden lg:block">·</span>
-                    )}
+                    {i < latest.length - 1 && <span className="text-white/15 text-[10px] shrink-0 hidden lg:block">·</span>}
                   </div>
                 );
               })
             )}
           </div>
 
-          {/* Expand toggle */}
+          {/* ── Expand toggle ── */}
           <button
             onClick={() => setExpanded(v => !v)}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-                       bg-white/5 hover:bg-white/10 border border-white/10
-                       text-slate-400 hover:text-white transition-colors text-xs font-bold tracking-wide"
+            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-white transition-colors text-[10px] font-bold tracking-wide"
             aria-label={expanded ? "Collapse call log" : "View full call log"}
           >
-            <span className="hidden sm:inline">{expanded ? "Close" : "View Log"}</span>
-            <svg
-              viewBox="0 0 24 24"
-              className={`w-3.5 h-3.5 fill-current transition-transform ${expanded ? "rotate-180" : ""}`}
-            >
+            <span className="hidden sm:inline">{expanded ? "Close" : "Log"}</span>
+            <svg viewBox="0 0 24 24" className={`w-3 h-3 fill-current transition-transform ${expanded ? "rotate-180" : ""}`}>
               <path d="M7 14l5-5 5 5H7z" />
             </svg>
           </button>
