@@ -51,7 +51,7 @@ export default function AmboScroll() {
             style={{
               position: "absolute",
               bottom: "4px",
-              width: "160px",
+              width: "120px",
               transform: "scaleX(-1)", // flip to face left
               animation: driving
                 ? `ambo-drive 4s linear forwards, ambo-bounce 0.45s ease-in-out infinite, ambo-img-lights 0.55s linear infinite`
