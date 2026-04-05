@@ -1,7 +1,10 @@
-import { readFile, writeFile, mkdir } from "fs/promises";
-import { join } from "path";
+import { neon } from "@neondatabase/serverless";
 
-const DB = join(process.cwd(), "data", "testimonials.json");
+function sql() {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL not set");
+  return neon(url);
+}
 
 export type Testimonial = {
   id: string;
@@ -12,50 +15,64 @@ export type Testimonial = {
   submittedAt: string;
 };
 
-export async function readAll(): Promise<Testimonial[]> {
-  try {
-    const raw = await readFile(DB, "utf-8");
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
+async function ensureSchema() {
+  const db = sql();
+  await db`
+    CREATE TABLE IF NOT EXISTS testimonials (
+      id           TEXT PRIMARY KEY,
+      name         TEXT DEFAULT NULL,
+      anonymous    BOOLEAN NOT NULL DEFAULT FALSE,
+      message      TEXT NOT NULL,
+      status       TEXT NOT NULL DEFAULT 'pending',
+      submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
 }
 
-async function writeAll(items: Testimonial[]): Promise<void> {
-  await mkdir(join(process.cwd(), "data"), { recursive: true });
-  await writeFile(DB, JSON.stringify(items, null, 2));
+function rowToTestimonial(row: Record<string, unknown>): Testimonial {
+  return {
+    id:          String(row.id),
+    name:        row.name ? String(row.name) : null,
+    anonymous:   Boolean(row.anonymous),
+    message:     String(row.message),
+    status:      String(row.status) as Testimonial["status"],
+    submittedAt: row.submitted_at instanceof Date
+      ? row.submitted_at.toISOString()
+      : String(row.submitted_at),
+  };
 }
 
 export async function addTestimonial(
   data: Pick<Testimonial, "name" | "anonymous" | "message">
 ): Promise<Testimonial> {
-  const items = await readAll();
-  const entry: Testimonial = {
-    ...data,
-    id: crypto.randomUUID(),
-    status: "pending",
-    submittedAt: new Date().toISOString(),
-  };
-  items.push(entry);
-  await writeAll(items);
-  return entry;
+  await ensureSchema();
+  const db = sql();
+  const id = crypto.randomUUID();
+  await db`
+    INSERT INTO testimonials (id, name, anonymous, message, status)
+    VALUES (${id}, ${data.name ?? null}, ${data.anonymous}, ${data.message}, 'pending')
+  `;
+  const rows = await db`SELECT * FROM testimonials WHERE id = ${id}`;
+  return rowToTestimonial(rows[0] as Record<string, unknown>);
 }
 
 export async function setStatus(
   id: string,
   status: "approved" | "denied"
 ): Promise<boolean> {
-  const items = await readAll();
-  const idx = items.findIndex((t) => t.id === id);
-  if (idx === -1) return false;
-  items[idx].status = status;
-  await writeAll(items);
-  return true;
+  await ensureSchema();
+  const db = sql();
+  const r = await db`UPDATE testimonials SET status = ${status} WHERE id = ${id}`;
+  return (r as unknown as { count: number }).count > 0;
 }
 
 export async function getApproved(): Promise<Testimonial[]> {
-  const items = await readAll();
-  return items
-    .filter((t) => t.status === "approved")
-    .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+  await ensureSchema();
+  const db = sql();
+  const rows = await db`
+    SELECT * FROM testimonials
+    WHERE status = 'approved'
+    ORDER BY submitted_at DESC
+  `;
+  return (rows as Record<string, unknown>[]).map(rowToTestimonial);
 }
