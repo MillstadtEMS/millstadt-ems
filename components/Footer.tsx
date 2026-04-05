@@ -3,6 +3,8 @@ import Link from "next/link";
 const footerNav = {
   agency: [
     { href: "/about", label: "Who We Are" },
+    { href: "/weather", label: "Local Weather" },
+    { href: "/traffic", label: "Traffic" },
     { href: "/fleet", label: "Our Fleet" },
     { href: "/medical-control", label: "Medical Control" },
     { href: "/community-education", label: "Community Education" },

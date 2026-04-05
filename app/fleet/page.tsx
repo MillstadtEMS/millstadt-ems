@@ -136,45 +136,6 @@ export default function FleetPage() {
       ))}
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
-
-      {/* Equipment Gallery */}
-      <section className="py-24 bg-[#040d1a]">
-        <div className="wrap">
-          <div className="flex items-center gap-3 mb-5">
-            <span className="h-px w-8 bg-[#f0b429]" />
-            <span className="text-[#f0b429] text-sm font-black tracking-[0.2em] uppercase">Gallery</span>
-          </div>
-          <h2 className="text-4xl font-black text-white mb-12">Unit Photography</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {[
-              "/images/millstadt-ems/gallery1.jpg",
-              "/images/millstadt-ems/gallery2.jpg",
-              "/images/millstadt-ems/gallery3.jpg",
-              "/images/millstadt-ems/gallery4.jpg",
-              "/images/millstadt-ems/gallery5.jpg",
-              "/images/millstadt-ems/gallery6.jpg",
-              "/images/millstadt-ems/IMG_7771.jpeg",
-              "/images/millstadt-ems/IMG_7773.jpeg",
-              "/images/millstadt-ems/IMG_7774.jpeg",
-              "/images/millstadt-ems/IMG_7775.jpeg",
-              "/images/millstadt-ems/IMG_7777.jpeg",
-              "/images/millstadt-ems/IMG_7779.jpeg",
-            ].map((src, i) => (
-              <div key={i} className="relative h-56 rounded-xl overflow-hidden">
-                <Image
-                  src={src}
-                  alt={`Millstadt EMS fleet photo ${i + 1}`}
-                  fill
-                  className="object-cover hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── VOID ── */}
       <div className="h-40 bg-[#040d1a]" />
     </>
   );

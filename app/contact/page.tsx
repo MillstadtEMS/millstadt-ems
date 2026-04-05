@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import EmbedSection from "../EmbedSection";
 
 export const metadata: Metadata = {
   title: "Contact Us",
@@ -142,28 +143,6 @@ export default function ContactPage() {
             </p>
           </div>
 
-          {/* Community */}
-          <div className="p-16 rounded-2xl bg-[#071428] border border-white/8 space-y-8">
-            <div className="flex items-center gap-4">
-              <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={30} height={30} style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 4px #f0b429)" }} />
-              <span className="text-[#f0b429] text-2xl font-black tracking-[0.15em] uppercase">Community</span>
-            </div>
-            <p className="text-slate-300 text-lg leading-relaxed">
-              Whether it&apos;s a 911 emergency or a community event, our team is ready to respond and serve. From emergency calls to school visits and safety demonstrations, we are committed to protecting and educating our community.
-            </p>
-            <p className="text-slate-400 text-lg leading-relaxed">
-              Our crews are available for community events, school visits, and public safety programs across the Millstadt area. Station tours and birthday visits may also be scheduled when staff are available.
-            </p>
-            <p className="text-[#f0b429] font-black text-lg">A safer community starts with education.</p>
-            <div className="flex flex-col gap-4 max-w-sm pt-4">
-              <Link
-                href="/forms/event-request"
-                className="flex items-center justify-center w-full py-6 bg-[#f0b429] hover:bg-[#d9a320] text-[#040d1a] font-black text-lg rounded-2xl transition-colors"
-              >
-                Request a Visit
-              </Link>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -199,7 +178,12 @@ export default function ContactPage() {
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-64 bg-[#071428]" />
+      <div className="h-20 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+
+      {/* Embed */}
+      <EmbedSection />
+
+      <div className="h-20 bg-[#040d1a]" />
     </>
   );
 }

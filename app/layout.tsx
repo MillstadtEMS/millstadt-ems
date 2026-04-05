@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import WeatherAlertOverlay from "@/components/WeatherAlertOverlay";
+import CallTicker from "@/components/cad/CallTicker";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -29,8 +31,10 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} h-full`}>
       <body className="min-h-full flex flex-col bg-[#040d1a] text-slate-100 antialiased overflow-x-hidden">
         <Nav />
-        <main className="flex-1 w-full overflow-x-hidden" style={{ paddingTop: "96px" }}>{children}</main>
+        <WeatherAlertOverlay />
+        <main className="flex-1 w-full overflow-x-hidden pb-20 md:pb-11" style={{ paddingTop: "96px" }}>{children}</main>
         <Footer />
+        <CallTicker />
       </body>
     </html>
   );

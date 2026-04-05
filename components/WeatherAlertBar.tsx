@@ -20,8 +20,11 @@ const REFRESH_MS = 5 * 60 * 1000;
 
 function getColorLevel(event: string, severity: string): "red" | "yellow" | "blue" {
   const lower = event.toLowerCase();
-  if (lower.includes("warning") || severity === "Extreme" || severity === "Severe") return "red";
-  if (lower.includes("watch") || severity === "Moderate") return "yellow";
+  // Event name takes priority — "Tornado Watch" has severity="Severe" from NWS
+  if (lower.includes("warning")) return "red";
+  if (lower.includes("watch") || lower.includes("advisory")) return "yellow";
+  if (severity === "Extreme" || severity === "Severe") return "red";
+  if (severity === "Moderate") return "yellow";
   return "blue";
 }
 

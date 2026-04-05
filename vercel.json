@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cad/poll",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
