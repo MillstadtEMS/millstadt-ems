@@ -5,16 +5,16 @@ import Image from "next/image";
 
 // brightness: 0.32 for daytime, 0.55 for night shots already taken in the dark
 const IMAGES: { src: string; brightness: number }[] = [
-  { src: "/images/millstadt-ems/IMG_7771.jpeg",                                  brightness: 0.32 },
-  { src: "/images/millstadt-ems/hero/IMG_5333.jpeg",                             brightness: 0.55 }, // HSHS hospital night
-  { src: "/images/millstadt-ems/hero/IMG_7773.jpeg",                             brightness: 0.32 },
-  { src: "/images/millstadt-ems/hero/IMG_8392.jpeg",                             brightness: 0.55 }, // fireworks night
-  { src: "/images/millstadt-ems/hero/IMG_8467.JPG",                              brightness: 0.32 },
-  { src: "/images/millstadt-ems/hero/IMG_8516.jpeg",                             brightness: 0.32 },
-  { src: "/images/millstadt-ems/hero/IMG_2072.JPG",                              brightness: 0.32 },
-  { src: "/images/millstadt-ems/hero/7A8662CA-9125-4252-8E4C-F029CE247079.jpeg", brightness: 0.32 },
-  { src: "/images/millstadt-ems/hero/811D6F5D-4DD7-4E6C-B758-7B4167F03B38.jpeg", brightness: 0.6  }, // northern lights night
-  { src: "/images/millstadt-ems/hero/6A3DE69E-2C3E-4E0E-90FA-FF42A7320338.png",  brightness: 0.32 },
+  { src: "/images/millstadt-ems/IMG_7771.jpeg",                                  brightness: 0.45 },
+  { src: "/images/millstadt-ems/hero/IMG_5333.jpeg",                             brightness: 0.65 }, // HSHS hospital night
+  { src: "/images/millstadt-ems/hero/IMG_7773.jpeg",                             brightness: 0.45 },
+  { src: "/images/millstadt-ems/hero/IMG_8392.jpeg",                             brightness: 0.65 }, // fireworks night
+  { src: "/images/millstadt-ems/hero/IMG_8467.JPG",                              brightness: 0.45 },
+  { src: "/images/millstadt-ems/hero/IMG_8516.jpeg",                             brightness: 0.45 },
+  { src: "/images/millstadt-ems/hero/IMG_2072.JPG",                              brightness: 0.45 },
+  { src: "/images/millstadt-ems/hero/7A8662CA-9125-4252-8E4C-F029CE247079.jpeg", brightness: 0.45 },
+  { src: "/images/millstadt-ems/hero/811D6F5D-4DD7-4E6C-B758-7B4167F03B38.jpeg", brightness: 0.7  }, // northern lights night
+  { src: "/images/millstadt-ems/hero/6A3DE69E-2C3E-4E0E-90FA-FF42A7320338.png",  brightness: 0.45 },
 ];
 
 export default function HeroCarousel() {

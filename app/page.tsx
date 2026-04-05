@@ -11,7 +11,7 @@ export default function Home() {
       ════════════════════════════════ */}
       <section className="relative min-h-screen flex items-center overflow-hidden" style={{ marginTop: "-96px" }}>
         <HeroCarousel />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#040d1a] via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#040d1a] via-transparent to-transparent" style={{ zIndex: 2 }} />
         <HolidayOverlay />
 
         <div className="relative z-10 w-full flex flex-col items-center text-center px-6 pb-40 pt-20">
@@ -53,8 +53,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Stats bar */}
-        <div className="absolute bottom-0 left-0 right-0 bg-[#040d1a]/85 backdrop-blur-sm border-t border-white/5">
+        {/* Stats bar — z-10 keeps it above carousel images always */}
+        <div className="absolute bottom-0 left-0 right-0 bg-[#040d1a]/90 backdrop-blur-sm border-t border-white/5" style={{ zIndex: 10 }}>
           <div className="wrap py-10 grid grid-cols-2 md:grid-cols-4 divide-x divide-white/5">
             {[
               { num: "1980",      label: "Established" },
