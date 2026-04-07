@@ -56,6 +56,18 @@ async function handlePoll(req: NextRequest): Promise<NextResponse> {
           continue;
         }
 
+        // ── cencom (omnigo) emails: ONLY process closeouts ────────────────
+        // cencom sends both 911 dispatch notifications AND closeouts.
+        // We only want the EMS CAD email (from cfmsg) for new calls —
+        // cencom 911 notifications double-count the same incident.
+        if (email.from.includes("cencom") || email.from.includes("omnigo")) {
+          if (!isCloseoutEmail(email.subject, email.body)) {
+            // Not a closeout — skip the cencom 911 notification entirely
+            await markAsRead(email.id);
+            continue;
+          }
+        }
+
         // ── Closeout email ────────────────────────────────────────────────
         if (isCloseoutEmail(email.subject, email.body)) {
           const closeout = parseCloseoutEmail(email.subject, email.body);

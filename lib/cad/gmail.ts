@@ -35,6 +35,7 @@ function getOAuthClient() {
 
 export interface RawEmail {
   id: string;        // Gmail message ID (deduplication key)
+  from: string;      // Sender email address (lowercase)
   subject: string;
   body: string;      // Plain text (HTML stripped)
   received: Date;    // Date the email was delivered
@@ -87,6 +88,10 @@ export async function fetchUnreadDispatchEmails(): Promise<RawEmail[]> {
     const subject  = headers.find(h => h.name === "Subject")?.value ?? "(no subject)";
     const dateHdr  = headers.find(h => h.name === "Date")?.value;
     const received = dateHdr ? new Date(dateHdr) : new Date();
+    const fromHdr  = headers.find(h => h.name === "From")?.value ?? "";
+    // Extract bare email address from "Display Name <email@domain.com>"
+    const fromMatch = fromHdr.match(/<([^>]+)>/) ?? fromHdr.match(/(\S+@\S+)/);
+    const from = (fromMatch?.[1] ?? fromHdr).toLowerCase().trim();
 
     // Extract plain text body
     const body = extractPlainText(payload);
@@ -94,7 +99,7 @@ export async function fetchUnreadDispatchEmails(): Promise<RawEmail[]> {
     // Extract audio attachment if present (pager tone)
     const audioAttachment = extractAudioAttachment(payload);
 
-    emails.push({ id: msg.id, subject, body, received, audioAttachment });
+    emails.push({ id: msg.id, from, subject, body, received, audioAttachment });
   }
 
   return emails;

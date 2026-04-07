@@ -10,7 +10,7 @@ const mainLinks = [
   { href: "/about", label: "Who We Are" },
   { href: "/weather", label: "Weather" },
   { href: "/fleet", label: "Fleet" },
-  { href: "/community-education", label: "Community" },
+  { href: "/community-education", label: "Community Education" },
   { href: "/contact", label: "Contact" },
 ];
 

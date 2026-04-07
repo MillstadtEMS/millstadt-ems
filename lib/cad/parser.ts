@@ -295,6 +295,14 @@ export function parseDispatchEmail(
     return { status: "failed", reason: "Extracted nature looks like email metadata, not a call type" };
   }
 
+  // Reject natures that are PSAP/agency names rather than actual call types.
+  // These come from cencom 911 notification emails that slip through — they
+  // duplicate the same incident already logged from the EMS CAD email.
+  const AGENCY_NAME_RE = /^st\.?\s*clair\s+county|^madison\s+county|^\d+-?1-?1$|^911\s+(dispatch|center)?$|county\s+911$/i;
+  if (AGENCY_NAME_RE.test(dispatchNature.trim())) {
+    return { status: "failed", reason: "Nature resolved to a PSAP agency name, not a call type — skipping to prevent duplicate" };
+  }
+
   // ── Extract dispatch status (Dispatched / Enroute / etc.) ──────────────
   const rawStatus = extractFirst(text, PATTERNS.status);
   const dispatchStatus = rawStatus ? rawStatus.toLowerCase() : "unknown";
