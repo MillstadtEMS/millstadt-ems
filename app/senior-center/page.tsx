@@ -78,18 +78,7 @@ export default function SeniorCenterPage() {
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="text-center px-4">
               <div className="inline-block bg-[#040d1a]/80 backdrop-blur-sm rounded-2xl px-8 py-7 border border-white/10">
-                {/* Millstadt star-of-life logo in gold */}
-                <div className="flex items-center justify-center mb-4">
-                  <svg viewBox="0 0 32 32" className="w-10 h-10" fill="none">
-                    <rect x="14" y="2" width="4" height="28" rx="2" fill="#f0b429" opacity="0.95"/>
-                    <rect x="14" y="2" width="4" height="28" rx="2" fill="#f0b429" opacity="0.95" transform="rotate(60 16 16)"/>
-                    <rect x="14" y="2" width="4" height="28" rx="2" fill="#f0b429" opacity="0.95" transform="rotate(120 16 16)"/>
-                    <line x1="16" y1="8" x2="16" y2="24" stroke="#040d1a" strokeWidth="1.5" strokeLinecap="round"/>
-                    <path d="M18 9.5 C20 11 18 13 16 13.5 C14 14 12 15.5 13.5 17.5 C15 19.5 18 20 17 23" stroke="#040d1a" strokeWidth="1.1" fill="none" strokeLinecap="round"/>
-                    <circle cx="17" cy="23.2" r="1.1" fill="#040d1a"/>
-                  </svg>
-                </div>
-                <h1 className="text-4xl md:text-5xl font-black leading-tight">
+<h1 className="text-4xl md:text-5xl font-black leading-tight">
                   <span className="text-[#f0b429]">Millstadt</span>
                   <br />
                   <span className="text-white">Senior Center</span>
