@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getContent } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Careers",
@@ -173,7 +176,18 @@ const positions = [
   },
 ];
 
-export default function CareersPage() {
+export default async function CareersPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const isPreview = params?.preview === "ve";
+  const [pageTitle, subtitle] = await Promise.all([
+    getContent("careers.header.title", "Careers at Millstadt EMS", isPreview),
+    getContent("careers.header.subtitle", "We are always looking for dedicated prehospital providers at every level — EMT through PHMD. Millstadt EMS offers a progressive clinical environment with physician medical direction through Dr. Leo Hsu.", isPreview),
+  ]);
+
   return (
     <>
       {/* Page Header */}
@@ -186,11 +200,9 @@ export default function CareersPage() {
             <span className="text-[#f0b429] text-sm font-black tracking-[0.25em] uppercase">Join the Team</span>
           </div>
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6">
-            Careers at<br />Millstadt EMS
+            {pageTitle}
           </h1>
-          <p className="text-slate-400 text-xl max-w-2xl leading-relaxed">
-            We are always looking for dedicated prehospital providers at every level — EMT through PHMD. Millstadt EMS offers a progressive clinical environment with physician medical direction through Dr. Leo Hsu.
-          </p>
+          <p className="text-slate-400 text-xl max-w-2xl leading-relaxed">{subtitle}</p>
         </div>
       </section>
 

@@ -1,6 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { getContent } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Who We Are",
@@ -42,7 +45,20 @@ const timeline = [
   { year: "Today", event: "Serving Millstadt and surrounding areas with ALS, critical care-capable personnel, and a growing, modernizing fleet." },
 ];
 
-export default function AboutPage() {
+export default async function AboutPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const isPreview = params?.preview === "ve";
+
+  const [headerTitle, mission, vision] = await Promise.all([
+    getContent("about.header.title", "Who We Are", isPreview),
+    getContent("about.mission.body", "At Millstadt EMS, our mission is to provide exceptional, compassionate, and timely emergency medical care to our diverse community. We are dedicated to advancing health and safety through highly trained professionals, cutting-edge technology, and a commitment to continuous improvement, ensuring the well-being of every person we serve.", isPreview),
+    getContent("about.vision.body", "Our vision is to be a leader in pre-hospital care, setting the standard for emergency medical services through innovation, education, and collaboration. We strive to enhance the quality of life in our region by delivering the highest level of care, fostering community partnerships, and preparing for the challenges of tomorrow with excellence and integrity.", isPreview),
+  ]);
+
   return (
     <>
       {/* Page Header */}
@@ -55,7 +71,7 @@ export default function AboutPage() {
             <span className="text-[#f0b429] text-sm font-black tracking-[0.25em] uppercase">About Us</span>
           </div>
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-8">
-            Who We Are
+            {headerTitle}
           </h1>
           <ul className="space-y-5 max-w-2xl">
             {[
@@ -90,12 +106,7 @@ export default function AboutPage() {
               />
               <span className="text-[#f0b429] text-2xl font-black tracking-[0.15em] uppercase">Mission</span>
             </div>
-            <p className="text-slate-300 text-lg leading-relaxed">
-              At Millstadt EMS, our mission is to provide exceptional, compassionate, and timely
-              emergency medical care to our diverse community. We are dedicated to advancing health
-              and safety through highly trained professionals, cutting-edge technology, and a
-              commitment to continuous improvement, ensuring the well-being of every person we serve.
-            </p>
+            <p className="text-slate-300 text-lg leading-relaxed">{mission}</p>
           </div>
 
           {/* Vision */}
@@ -110,13 +121,7 @@ export default function AboutPage() {
               />
               <span className="text-[#2563eb] text-2xl font-black tracking-[0.15em] uppercase">Vision</span>
             </div>
-            <p className="text-slate-300 text-lg leading-relaxed">
-              Our vision is to be a leader in pre-hospital care, setting the standard for emergency
-              medical services through innovation, education, and collaboration. We strive to enhance
-              the quality of life in our region by delivering the highest level of care, fostering
-              community partnerships, and preparing for the challenges of tomorrow with excellence
-              and integrity.
-            </p>
+            <p className="text-slate-300 text-lg leading-relaxed">{vision}</p>
           </div>
 
         </div>

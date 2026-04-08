@@ -1,5 +1,8 @@
 import Image from "next/image";
 import type { Metadata } from "next";
+import { getContent } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Our Fleet",
@@ -69,7 +72,18 @@ const units = [
   },
 ];
 
-export default function FleetPage() {
+export default async function FleetPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const isPreview = params?.preview === "ve";
+  const [fleetTitle, fleetSubtitle] = await Promise.all([
+    getContent("fleet.header.title", "The Fleet", isPreview),
+    getContent("fleet.header.subtitle", "Advanced and basic life support units maintained to the highest standards — ready to respond 24 hours a day, every day of the year.", isPreview),
+  ]);
+
   return (
     <>
       {/* Page Header */}
@@ -82,11 +96,9 @@ export default function FleetPage() {
             <span className="text-[#f0b429] text-sm font-black tracking-[0.2em] uppercase">Our Equipment</span>
           </div>
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6">
-            The Fleet
+            {fleetTitle}
           </h1>
-          <p className="text-slate-300 text-xl max-w-2xl leading-relaxed mt-8">
-            Advanced and basic life support units maintained to the highest standards — ready to respond 24 hours a day, every day of the year.
-          </p>
+          <p className="text-slate-300 text-xl max-w-2xl leading-relaxed mt-8">{fleetSubtitle}</p>
         </div>
       </section>
 

@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import EmbedSection from "../EmbedSection";
+import { getContent } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Contact Us",
@@ -19,7 +22,20 @@ const localContacts = [
   { label: "St. James Catholic School", number: "618-476-3510" },
 ];
 
-export default function ContactPage() {
+export default async function ContactPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const isPreview = params?.preview === "ve";
+
+  const [phone, address, email] = await Promise.all([
+    getContent("contact.phone", "(618) 476-1201", isPreview),
+    getContent("contact.address", "100 East Laurel Street, Millstadt, Illinois 62260", isPreview),
+    getContent("contact.email", "millstadtems@gmail.com", isPreview),
+  ]);
+
   return (
     <>
       {/* Page Header */}
@@ -80,7 +96,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <div className="text-slate-500 text-[10px] uppercase tracking-widest mb-1">Address</div>
-                  <address className="text-slate-300 text-base not-italic">100 East Laurel Street, Millstadt, Illinois 62260</address>
+                  <address className="text-slate-300 text-base not-italic">{address}</address>
                 </div>
               </li>
 
@@ -94,7 +110,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <div className="text-slate-500 text-[10px] uppercase tracking-widest mb-1">Non-Emergency Phone</div>
-                    <div className="text-slate-300 text-base font-semibold group-hover:text-[#f0b429] transition-colors">(618) 476-1201</div>
+                    <div className="text-slate-300 text-base font-semibold group-hover:text-[#f0b429] transition-colors">{phone}</div>
                   </div>
                 </a>
               </li>
@@ -109,7 +125,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <div className="text-slate-500 text-[10px] uppercase tracking-widest mb-1">Email</div>
-                    <div className="text-slate-300 text-base group-hover:text-[#f0b429] transition-colors">millstadtems@gmail.com</div>
+                    <div className="text-slate-300 text-base group-hover:text-[#f0b429] transition-colors">{email}</div>
                   </div>
                 </a>
               </li>

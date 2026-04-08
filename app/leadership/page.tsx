@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { getContent } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Leadership",
@@ -41,7 +44,35 @@ const leaders = [
   },
 ];
 
-export default function LeadershipPage() {
+export default async function LeadershipPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const isPreview = params?.preview === "ve";
+
+  const [
+    leadershipTitle, leadershipSubtitle,
+    chiefName, chiefTitle, chiefSince,
+    asstName, asstTitle, asstSince,
+  ] = await Promise.all([
+    getContent("leadership.header.title",    "Leadership",                      isPreview),
+    getContent("leadership.header.subtitle", "The people guiding Millstadt Ambulance Service — bringing decades of clinical experience, operational expertise, and a commitment to the community.", isPreview),
+    getContent("leadership.chief.name",      "Jennifer Goetz",                  isPreview),
+    getContent("leadership.chief.title",     "EMS Chief",                       isPreview),
+    getContent("leadership.chief.since",     "Serving since 2024",              isPreview),
+    getContent("leadership.asst-chief.name", "Kenneth James",                   isPreview),
+    getContent("leadership.asst-chief.title","Assistant Chief of Operations",   isPreview),
+    getContent("leadership.asst-chief.since","Serving since 2015",              isPreview),
+  ]);
+
+  // Merge DB values into leaders array
+  const resolvedLeaders = [
+    { ...leaders[0], name: chiefName,  title: chiefTitle,  since: chiefSince  },
+    { ...leaders[1], name: asstName,   title: asstTitle,   since: asstSince   },
+  ];
+
   return (
     <>
       {/* Page Header */}
@@ -54,16 +85,14 @@ export default function LeadershipPage() {
             <span className="text-[#f0b429] text-sm font-black tracking-[0.25em] uppercase">Millstadt Ambulance Service</span>
           </div>
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6">
-            Leadership
+            {leadershipTitle}
           </h1>
-          <p className="text-slate-400 text-xl max-w-2xl leading-relaxed">
-            The people guiding Millstadt Ambulance Service — bringing decades of clinical experience, operational expertise, and a commitment to the community.
-          </p>
+          <p className="text-slate-400 text-xl max-w-2xl leading-relaxed">{leadershipSubtitle}</p>
         </div>
       </section>
 
       {/* Leaders */}
-      {leaders.map((leader, index) => (
+      {resolvedLeaders.map((leader, index) => (
         <div key={leader.name}>
           {index > 0 && (
             <div className="h-40 bg-gradient-to-b from-[#040d1a] to-[#071428]" />

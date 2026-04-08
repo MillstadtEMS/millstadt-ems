@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { getContent } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Donate",
@@ -8,7 +11,18 @@ export const metadata: Metadata = {
     "Support Millstadt Ambulance Service with a donation via Venmo, cash, or check. Your contribution funds equipment, training, and community readiness.",
 };
 
-export default function DonatePage() {
+export default async function DonatePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const isPreview = params?.preview === "ve";
+  const [pageTitle, venmoHandle] = await Promise.all([
+    getContent("donate.header.title", "Support Your Local EMS", isPreview),
+    getContent("donate.venmo.handle", "@Millstadt-Ambulance", isPreview),
+  ]);
+
   return (
     <>
       {/* Page Header */}
@@ -21,7 +35,7 @@ export default function DonatePage() {
             <span className="text-[#f0b429] text-sm font-black tracking-[0.25em] uppercase">Community Support</span>
           </div>
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-10">
-            Support Your<br />Local EMS
+            {pageTitle}
           </h1>
           <ul className="space-y-5 max-w-2xl">
             {[
@@ -56,8 +70,8 @@ export default function DonatePage() {
               />
             </div>
             <div className="mt-8 text-center space-y-2">
-              <div className="text-white font-black text-2xl">Millstadt-Ambulance</div>
-              <div className="text-[#f0b429] font-bold text-lg">@Millstadt-Ambulance</div>
+              <div className="text-white font-black text-2xl">{venmoHandle.replace(/^@/, "")}</div>
+              <div className="text-[#f0b429] font-bold text-lg">{venmoHandle.startsWith("@") ? venmoHandle : `@${venmoHandle}`}</div>
               <div className="text-slate-500 text-sm">Venmo · Scan or search to donate</div>
             </div>
           </div>
