@@ -84,7 +84,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <div className="min-h-screen bg-[#020810] flex">
+    <div className="fixed inset-0 z-[200] bg-[#020810] flex overflow-hidden">
       {/* ── Sidebar ── */}
       <aside className={`fixed inset-y-0 left-0 z-40 w-60 bg-[#030c1a] border-r border-white/5 flex flex-col transition-transform duration-300 ${sideOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
         {/* Logo */}
@@ -169,7 +169,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           </div>
         </header>
 
-        <main className="flex-1 p-5 md:p-8">
+        <main className="flex-1 p-5 md:p-8 overflow-y-auto">
           {children}
         </main>
       </div>
