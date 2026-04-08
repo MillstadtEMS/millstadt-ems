@@ -121,8 +121,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="fixed inset-0 z-[200] bg-[#010c1e] flex overflow-hidden">
-      {/* ── Sidebar ── fixed on mobile, flex-item on desktop */}
-      <aside className={`fixed inset-y-0 left-0 z-40 w-56 bg-[#020f24] border-r border-white/8 flex flex-col transition-transform duration-300 ${sideOpen ? "translate-x-0" : "-translate-x-full"} lg:relative lg:translate-x-0 lg:shrink-0`}>
+      {/* Desktop sidebar spacer — reserves 224px so flex layout pushes content right */}
+      <div className="hidden lg:block w-56 shrink-0" />
+      {/* ── Sidebar — fixed on top of the spacer ── */}
+      <aside className={`fixed inset-y-0 left-0 z-40 w-56 bg-[#020f24] border-r border-white/8 flex flex-col transition-transform duration-300 ${sideOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
         {/* Logo */}
         <div className="px-5 pt-6 pb-5 border-b border-white/8">
           <div className="flex items-center gap-3">
