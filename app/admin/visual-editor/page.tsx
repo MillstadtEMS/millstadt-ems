@@ -76,6 +76,89 @@ const PAGES: EditablePage[] = [
           { key: "about.header.subtitle",  label: "Subtitle",      type: "textarea", fallback: "Serving Millstadt and the surrounding area with Advanced Life Support since 1980." },
         ],
       },
+      {
+        title: "Mission Statement",
+        fields: [
+          { key: "about.mission.body", label: "Mission Text", type: "textarea", fallback: "At Millstadt EMS, our mission is to provide exceptional, compassionate, and timely emergency medical care to our diverse community. We are dedicated to advancing health and safety through highly trained professionals, cutting-edge technology, and a commitment to continuous improvement, ensuring the well-being of every person we serve." },
+        ],
+      },
+      {
+        title: "Vision Statement",
+        fields: [
+          { key: "about.vision.body", label: "Vision Text", type: "textarea", fallback: "Our vision is to be a leader in pre-hospital care, setting the standard for emergency medical services through innovation, education, and collaboration. We strive to enhance the quality of life in our region by delivering the highest level of care, fostering community partnerships, and preparing for the challenges of tomorrow with excellence and integrity." },
+        ],
+      },
+    ],
+  },
+  {
+    id: "leadership",
+    label: "Leadership",
+    path: "/leadership",
+    sections: [
+      {
+        title: "Page Header",
+        fields: [
+          { key: "leadership.header.title",    label: "Page Title", type: "text",     fallback: "Leadership" },
+          { key: "leadership.header.subtitle", label: "Subtitle",   type: "textarea", fallback: "The people guiding Millstadt Ambulance Service — bringing decades of clinical experience, operational expertise, and a commitment to the community." },
+        ],
+      },
+      {
+        title: "EMS Chief",
+        fields: [
+          { key: "leadership.chief.name",  label: "Chief Name",   type: "text", fallback: "Jennifer Goetz" },
+          { key: "leadership.chief.title", label: "Title",        type: "text", fallback: "EMS Chief" },
+          { key: "leadership.chief.since", label: "Tenure Line",  type: "text", fallback: "Serving since 2024" },
+        ],
+      },
+      {
+        title: "Assistant Chief",
+        fields: [
+          { key: "leadership.asst-chief.name",  label: "Name",   type: "text", fallback: "Kenneth James" },
+          { key: "leadership.asst-chief.title", label: "Title",  type: "text", fallback: "Assistant Chief of Operations" },
+          { key: "leadership.asst-chief.since", label: "Tenure", type: "text", fallback: "Serving since 2015" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "fleet",
+    label: "Fleet",
+    path: "/fleet",
+    sections: [
+      {
+        title: "Page Header",
+        fields: [
+          { key: "fleet.header.title",    label: "Page Title", type: "text",     fallback: "The Fleet" },
+          { key: "fleet.header.subtitle", label: "Subtitle",   type: "textarea", fallback: "Advanced and basic life support units maintained to the highest standards — ready to respond 24 hours a day, every day of the year." },
+        ],
+      },
+      {
+        title: "Unit M3935",
+        fields: [
+          { key: "fleet.unit3935.badge",       label: "Badge",       type: "text",     fallback: "Paramedic Unit" },
+          { key: "fleet.unit3935.headline",    label: "Unit Name",   type: "text",     fallback: "M3935" },
+          { key: "fleet.unit3935.subhead",     label: "Model",       type: "text",     fallback: "Demers E450" },
+          { key: "fleet.unit3935.description", label: "Description", type: "textarea", fallback: "M3935 serves as the primary paramedic response unit for Millstadt Ambulance Service. Built on a 2025 Ford E450 Demers chassis, it represents the highest standard in advanced life support — equipped to manage cardiac, respiratory, and multi-system emergencies in the field." },
+        ],
+      },
+      {
+        title: "Unit M3926",
+        fields: [
+          { key: "fleet.unit3926.badge",       label: "Badge",       type: "text",     fallback: "ALS Upgradeable" },
+          { key: "fleet.unit3926.headline",    label: "Unit Name",   type: "text",     fallback: "M3926" },
+          { key: "fleet.unit3926.subhead",     label: "Model",       type: "text",     fallback: "Demers F350" },
+          { key: "fleet.unit3926.description", label: "Description", type: "textarea", fallback: "M3926 serves as a versatile response unit for Millstadt Ambulance Service, supporting both daily operations and regional coverage." },
+        ],
+      },
+      {
+        title: "Unit M3925",
+        fields: [
+          { key: "fleet.unit3925.badge",       label: "Badge",       type: "text",     fallback: "Reserve Unit" },
+          { key: "fleet.unit3925.headline",    label: "Unit Name",   type: "text",     fallback: "M3925" },
+          { key: "fleet.unit3925.subhead",     label: "Model",       type: "text",     fallback: "Demers Sprinter Van" },
+          { key: "fleet.unit3925.description", label: "Description", type: "textarea", fallback: "Unit M3925 is the reserve response unit for Millstadt Ambulance Service. Maintained in ready status, it serves as backup during maintenance cycles." },
+        ],
+      },
     ],
   },
   {
@@ -119,6 +202,34 @@ const PAGES: EditablePage[] = [
           { key: "donate.header.title",    label: "Page Title",   type: "text",     fallback: "Support Millstadt EMS" },
           { key: "donate.header.subtitle", label: "Subtitle",     type: "textarea", fallback: "Your donation directly supports our ability to serve the community." },
           { key: "donate.venmo.handle",    label: "Venmo Handle", type: "text",     fallback: "@MillstadtEMS", hint: "Used in the donation page Venmo section" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "community-education",
+    label: "Community Ed",
+    path: "/community-education",
+    sections: [
+      {
+        title: "Page Header",
+        fields: [
+          { key: "community-ed.header.title",    label: "Page Title", type: "text",     fallback: "Community Education" },
+          { key: "community-ed.header.subtitle", label: "Subtitle",   type: "textarea", fallback: "Millstadt Ambulance Service is committed to keeping our community safe and informed through education and outreach." },
+        ],
+      },
+    ],
+  },
+  {
+    id: "links",
+    label: "Links",
+    path: "/links",
+    sections: [
+      {
+        title: "Page Header",
+        fields: [
+          { key: "links.header.title",    label: "Page Title", type: "text",     fallback: "Important Links" },
+          { key: "links.header.subtitle", label: "Subtitle",   type: "textarea", fallback: "Community resources, EMS education, and public safety links for Millstadt and the surrounding area." },
         ],
       },
     ],
@@ -212,7 +323,7 @@ export default function VisualEditorPage() {
     setPublishing(false);
     setSaveMsg("Published — site updated"); setTimeout(() => setSaveMsg(""), 5000);
     // Refresh preview iframe
-    if (iframeRef.current) iframeRef.current.src = iframeRef.current.src;
+    if (iframeRef.current) iframeRef.current.src = `${selectedPage.path}?preview=ve&t=${Date.now()}`;
   }
 
   const inp  = "w-full bg-[#040d1a] border border-white/15 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#f0b429]/50 placeholder:text-slate-600 transition-colors";
@@ -292,14 +403,14 @@ export default function VisualEditorPage() {
       <div className="flex-1 flex flex-col bg-[#010c1e] overflow-hidden">
         <div className="h-10 border-b border-white/8 flex items-center px-4 gap-3 shrink-0">
           <span className="text-slate-500 text-xs font-mono">{selectedPage.path}</span>
-          <span className="text-slate-700 text-xs">— Live preview</span>
-          <button onClick={() => { if (iframeRef.current) iframeRef.current.src = iframeRef.current.src; }} className="ml-auto text-slate-600 hover:text-slate-300 transition-colors" title="Refresh preview">
+          <span className="text-[#f0b429]/60 text-xs">— Draft preview</span>
+          <button onClick={() => { if (iframeRef.current) iframeRef.current.src = `${selectedPage.path}?preview=ve&t=${Date.now()}`; }} className="ml-auto text-slate-600 hover:text-slate-300 transition-colors" title="Refresh preview">
             <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
           </button>
         </div>
         <iframe
           ref={iframeRef}
-          src={selectedPage.path}
+          src={`${selectedPage.path}?preview=ve`}
           className="flex-1 w-full border-none"
           title="Page preview"
         />

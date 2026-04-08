@@ -2,8 +2,50 @@ import Image from "next/image";
 import Link from "next/link";
 import HolidayOverlay from "@/components/HolidayOverlay";
 import HeroCarousel from "@/components/HeroCarousel";
+import { getContent } from "@/lib/db";
 
-export default function Home() {
+// Always SSR so ?preview=ve shows fresh draft content
+export const dynamic = "force-dynamic";
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const isPreview = params?.preview === "ve";
+
+  const [
+    eyebrow,
+    titleLine1, titleLine2, titleLine3,
+    subtitle, subtitle2,
+    primaryBtnText, primaryBtnHref,
+    secondaryBtnText, secondaryBtnHref,
+    stat0Num, stat0Label,
+    stat1Num, stat1Label,
+    stat2Num, stat2Label,
+    stat3Num, stat3Label,
+  ] = await Promise.all([
+    getContent("homepage.hero.eyebrow",          "Millstadt, Illinois · Est. 1980",             isPreview),
+    getContent("homepage.hero.title.line1",       "Millstadt",                                   isPreview),
+    getContent("homepage.hero.title.line2",       "Ambulance",                                   isPreview),
+    getContent("homepage.hero.title.line3",       "Service",                                     isPreview),
+    getContent("homepage.hero.subtitle",          "Advanced Life Support When it Matters Most.", isPreview),
+    getContent("homepage.hero.subtitle2",         "24 hours a day, every day.",                  isPreview),
+    getContent("homepage.hero.primaryBtn.text",   "Pay Your Bill",                               isPreview),
+    getContent("homepage.hero.primaryBtn.href",   "https://emsecurepay.emsbilling.com/",         isPreview),
+    getContent("homepage.hero.secondaryBtn.text", "Donate",                                      isPreview),
+    getContent("homepage.hero.secondaryBtn.href", "/donate",                                     isPreview),
+    getContent("homepage.stats.0.num",   "1980",               isPreview),
+    getContent("homepage.stats.0.label", "Established",        isPreview),
+    getContent("homepage.stats.1.num",   "ALS / BLS",          isPreview),
+    getContent("homepage.stats.1.label", "Level of Care",      isPreview),
+    getContent("homepage.stats.2.num",   "24 / 7",             isPreview),
+    getContent("homepage.stats.2.label", "Emergency Response", isPreview),
+    getContent("homepage.stats.3.num",   "Millstadt",          isPreview),
+    getContent("homepage.stats.3.label", "Service Area",       isPreview),
+  ]);
+
   return (
     <>
       {/* ════════════════════════════════
@@ -19,36 +61,36 @@ export default function Home() {
           <div className="flex items-center justify-center gap-3 mb-6 sm:mb-10">
             <span className="h-px w-12 bg-[#f0b429]" />
             <span className="text-[#f0b429] text-xs font-bold tracking-[0.35em] uppercase">
-              Millstadt, Illinois · Est. 1980
+              {eyebrow}
             </span>
             <span className="h-px w-12 bg-[#f0b429]" />
           </div>
 
           <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-white leading-[0.88] tracking-tight mb-6 sm:mb-10">
-            Millstadt<br />
-            <span className="text-[#f0b429]">Ambulance</span><br />
-            Service
+            {titleLine1}<br />
+            <span className="text-[#f0b429]">{titleLine2}</span><br />
+            {titleLine3}
           </h1>
 
           <p className="text-slate-300 text-lg md:text-2xl leading-relaxed mb-8 sm:mb-14 max-w-xl">
-            Advanced Life Support When it Matters Most.<br />
-            24 hours a day, every day.
+            {subtitle}<br />
+            {subtitle2}
           </p>
 
           <div className="flex flex-wrap justify-center gap-5">
             <a
-              href="https://emsecurepay.emsbilling.com/"
+              href={primaryBtnHref}
               target="_blank"
               rel="noopener noreferrer"
               className="px-10 py-5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-black text-lg rounded-2xl transition-colors min-w-[200px]"
             >
-              Pay Your Bill
+              {primaryBtnText}
             </a>
             <Link
-              href="/donate"
+              href={secondaryBtnHref}
               className="px-10 py-5 border-2 border-[#f0b429]/60 hover:border-[#f0b429] text-[#f0b429] hover:bg-[#f0b429]/10 font-black text-lg rounded-2xl transition-colors min-w-[200px] text-center"
             >
-              Donate
+              {secondaryBtnText}
             </Link>
           </div>
         </div>
@@ -59,10 +101,10 @@ export default function Home() {
       <div className="bg-[#040d1a] border-t border-white/5 border-b border-b-white/5">
         <div className="wrap py-8 grid grid-cols-2 md:grid-cols-4 divide-x divide-white/5">
           {[
-            { num: "1980",      label: "Established" },
-            { num: "ALS / BLS", label: "Level of Care" },
-            { num: "24 / 7",    label: "Emergency Response" },
-            { num: "Millstadt", label: "Service Area" },
+            { num: stat0Num, label: stat0Label },
+            { num: stat1Num, label: stat1Label },
+            { num: stat2Num, label: stat2Label },
+            { num: stat3Num, label: stat3Label },
           ].map((s) => (
             <div key={s.label} className="text-center px-6 py-2">
               <div className="text-[#f0b429] font-black text-3xl tracking-tight">{s.num}</div>

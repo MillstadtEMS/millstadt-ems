@@ -10,14 +10,30 @@ export default function CommercialClubPage() {
   const [year,  setYear]  = useState(String(now.getFullYear()));
   const [url,   setUrl]   = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [latestLoaded, setLatestLoaded] = useState(false);
+
+  // On first mount, find the latest uploaded month and default to it
+  useEffect(() => {
+    fetch("/api/commercial-club/latest")
+      .then(r => r.json())
+      .then(d => {
+        if (d.month && d.year) {
+          setMonth(d.month);
+          setYear(d.year);
+        }
+        setLatestLoaded(true);
+      })
+      .catch(() => setLatestLoaded(true));
+  }, []);
 
   useEffect(() => {
+    if (!latestLoaded) return;
     setLoading(true);
     fetch(`/api/commercial-club/docs?month=${month}&year=${year}`)
       .then(r => r.json())
       .then(d => { setUrl(d.url ?? null); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [month, year]);
+  }, [month, year, latestLoaded]);
 
   const displayMonth = month.charAt(0).toUpperCase() + month.slice(1);
 

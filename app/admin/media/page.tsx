@@ -14,15 +14,45 @@ interface Slot {
 }
 
 const SLOTS: Slot[] = [
-  // Homepage
-  { key: "homepage.ambulance", label: "Homepage — Ambulance Feature", description: "Large ambulance image on the homepage feature section", fallback: "/images/millstadt-ems/ambo-56.png", category: "Homepage" },
-  // About
-  { key: "about.header", label: "About — Page Header", description: "Background for the About Us page header section", fallback: "/images/millstadt-ems/IMG_7771.jpeg", category: "About" },
-  { key: "about.station", label: "About — Station Photo", description: "Station exterior or interior photo on the About page", fallback: "/images/millstadt-ems/IMG_3128.jpg", category: "About" },
-  // Community
-  { key: "community.header", label: "Community — Page Header", description: "Hero image for the Community Education page", fallback: "/images/millstadt-ems/community24.jpg", category: "Community" },
-  // Donate
-  { key: "donate.header", label: "Donate — Page Header", description: "Header image for the Donate page", fallback: "/images/millstadt-ems/IMG_0855.jpeg", category: "Donate" },
+  // ── Homepage ──────────────────────────────────────────────────────────────
+  { key: "homepage.ambulance",        label: "Homepage — Ambulance Feature",    description: "Large ambulance image used in homepage feature sections",             fallback: "/images/millstadt-ems/ambo-56.png",          category: "Homepage" },
+  { key: "homepage.who-we-are-image", label: "Homepage — Who We Are Photo",     description: "Photo shown in the 'Who We Are' / Your Community's Lifeline section", fallback: "/images/millstadt-ems/lifeline.jpg",          category: "Homepage" },
+  { key: "homepage.community-image",  label: "Homepage — Community Section",    description: "Photo shown in the 'Building a Safer Millstadt' community section",   fallback: "/images/millstadt-ems/IMG_3130.jpeg",         category: "Homepage" },
+  { key: "homepage.cta-image",        label: "Homepage — Support/Donate CTA",   description: "Photo shown in the 'Support Your Local EMS' / Donate section",       fallback: "/images/millstadt-ems/pr.jpg",               category: "Homepage" },
+
+  // ── About ─────────────────────────────────────────────────────────────────
+  { key: "about.header",              label: "About — Page Header Image",       description: "Background image for the About Us page header",                       fallback: "/images/millstadt-ems/IMG_7771.jpeg",         category: "About" },
+  { key: "about.station",             label: "About — Station Photo",           description: "Station exterior or interior photo on the About page",                 fallback: "/images/millstadt-ems/IMG_3128.jpg",          category: "About" },
+  { key: "about.service-area",        label: "About — Service Area Photo",      description: "Ambulance/truck photo in the Service Area section",                   fallback: "/images/millstadt-ems/truck1.jpg",            category: "About" },
+  { key: "about.history.1",           label: "About — History Photo 1",         description: "Historic photo in the Our History 2×2 grid (top-left)",               fallback: "/images/millstadt-ems/oldies1.jpg",           category: "About" },
+  { key: "about.history.2",           label: "About — History Photo 2",         description: "Historic photo in the Our History 2×2 grid (top-right)",              fallback: "/images/millstadt-ems/oldies2.jpg",           category: "About" },
+  { key: "about.history.3",           label: "About — History Photo 3",         description: "Historic photo in the Our History 2×2 grid (bottom-left)",            fallback: "/images/millstadt-ems/oldies3.jpg",           category: "About" },
+  { key: "about.history.4",           label: "About — History Photo 4",         description: "Historic photo in the Our History 2×2 grid (bottom-right)",           fallback: "/images/millstadt-ems/oldies4.jpg",           category: "About" },
+  { key: "about.crew.1",              label: "About — Crew Strip Photo 1",      description: "Crew photo strip at the bottom of the About page (slot 1 of 5)",      fallback: "/images/millstadt-ems/heli.jpg",              category: "About" },
+  { key: "about.crew.2",              label: "About — Crew Strip Photo 2",      description: "Crew photo strip at the bottom of the About page (slot 2 of 5)",      fallback: "/images/millstadt-ems/IMG_3145.jpeg",         category: "About" },
+  { key: "about.crew.3",              label: "About — Crew Strip Photo 3",      description: "Crew photo strip at the bottom of the About page (slot 3 of 5)",      fallback: "/images/millstadt-ems/award.jpg",             category: "About" },
+  { key: "about.crew.4",              label: "About — Crew Strip Photo 4",      description: "Crew photo strip at the bottom of the About page (slot 4 of 5)",      fallback: "/images/millstadt-ems/fair.jpg",              category: "About" },
+  { key: "about.crew.5",              label: "About — Crew Strip Photo 5",      description: "Crew photo strip at the bottom of the About page (slot 5 of 5)",      fallback: "/images/millstadt-ems/pr.jpg",                category: "About" },
+
+  // ── Fleet ──────────────────────────────────────────────────────────────────
+  { key: "fleet.unit-3935",           label: "Fleet — Unit M3935",              description: "Primary Paramedic Unit M3935 (Demers E450)",                          fallback: "/images/millstadt-ems/IMG_7770.jpeg",         category: "Fleet" },
+  { key: "fleet.unit-3926",           label: "Fleet — Unit M3926",              description: "ALS Upgradeable Unit M3926 (Demers F350)",                            fallback: "/images/millstadt-ems/IMG_0263.jpeg",         category: "Fleet" },
+  { key: "fleet.unit-3925",           label: "Fleet — Unit M3925",              description: "Reserve Unit M3925 (Demers Sprinter Van)",                            fallback: "/images/millstadt-ems/3925.jpg",              category: "Fleet" },
+
+  // ── Leadership ─────────────────────────────────────────────────────────────
+  { key: "leadership.chief.photo",    label: "Leadership — Chief Jennifer Goetz",      description: "Portrait photo of EMS Chief Jennifer Goetz",                    fallback: "/images/millstadt-ems/jennifer-goetz.png",    category: "Leadership" },
+  { key: "leadership.asst-chief.photo", label: "Leadership — Asst. Chief Kenneth James", description: "Portrait photo of Assistant Chief Kenneth James",             fallback: "/images/millstadt-ems/kenneth-james.png",     category: "Leadership" },
+
+  // ── Medical Control ────────────────────────────────────────────────────────
+  { key: "medical-control.physician.photo", label: "Medical Control — Dr. Leo Hsu",   description: "Portrait photo of Medical Director Dr. Leo Hsu",                fallback: "/images/millstadt-ems/leo-hsu.jpg",           category: "Medical Control" },
+
+  // ── Community ─────────────────────────────────────────────────────────────
+  { key: "community.header",          label: "Community Ed — Page Header",      description: "Hero image for the Community Education page header",                  fallback: "/images/millstadt-ems/community24.jpg",       category: "Community" },
+  { key: "community-ed.feature",      label: "Community Ed — Feature Image",    description: "Feature image used in the Community Education content sections",      fallback: "/images/millstadt-ems/lifeline.jpg",          category: "Community" },
+
+  // ── Donate ────────────────────────────────────────────────────────────────
+  { key: "donate.header",             label: "Donate — Page Header",            description: "Header image for the Donate page",                                    fallback: "/images/millstadt-ems/IMG_0855.jpeg",         category: "Donate" },
+  { key: "donate.venmo-qr",           label: "Donate — Venmo QR Code",          description: "Venmo QR code image shown on the Donate page",                       fallback: "/images/millstadt-ems/venmo-qr.png",          category: "Donate" },
 ];
 
 const CATEGORIES = [...new Set(SLOTS.map(s => s.category))];
