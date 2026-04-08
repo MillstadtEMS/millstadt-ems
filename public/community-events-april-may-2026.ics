@@ -1,0 +1,85 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Millstadt Ambulance Service//Community Events//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-TIMEZONE:America/Chicago
+BEGIN:VTIMEZONE
+TZID:America/Chicago
+BEGIN:STANDARD
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0600
+TZNAME:CST
+DTSTART:19671029T020000
+END:STANDARD
+BEGIN:DAYLIGHT
+TZOFFSETFROM:-0600
+TZOFFSETTO:-0500
+TZNAME:CDT
+DTSTART:19870405T020000
+END:DAYLIGHT
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:st-james-luncheon-20260409@millstadtems.org
+DTSTART;TZID=America/Chicago:20260409T120000
+DTEND;TZID=America/Chicago:20260409T143000
+SUMMARY:St. James Council of Catholic Women – Take Me Out to the Ballgame Noon Luncheon
+LOCATION:St. James Parish Center
+END:VEVENT
+BEGIN:VEVENT
+UID:optimist-membership-20260409@millstadtems.org
+DTSTART;TZID=America/Chicago:20260409T180000
+DTEND;TZID=America/Chicago:20260409T190000
+SUMMARY:Millstadt Optimist Club Spring Membership Drive
+LOCATION:Millpond Brewing
+END:VEVENT
+BEGIN:VEVENT
+UID:autism-walk-20260418@millstadtems.org
+DTSTART;VALUE=DATE:20260418
+DTEND;VALUE=DATE:20260419
+SUMMARY:2026 Millstadt Autism Walk – It's a Small World
+LOCATION:Millstadt, IL
+END:VEVENT
+BEGIN:VEVENT
+UID:bike-rodeo-20260425@millstadtems.org
+DTSTART;TZID=America/Chicago:20260425T090000
+DTEND;TZID=America/Chicago:20260425T120000
+SUMMARY:Millstadt Optimist Club 3rd Annual Bike Rodeo
+LOCATION:Millstadt, IL
+END:VEVENT
+BEGIN:VEVENT
+UID:wurstmarkt-20260426@millstadtems.org
+DTSTART;TZID=America/Chicago:20260426T110000
+DTEND;TZID=America/Chicago:20260426T160000
+SUMMARY:Quail Club Ladies Auxiliary Wurstmarkt
+LOCATION:Quail Club, Millstadt, IL
+END:VEVENT
+BEGIN:VEVENT
+UID:yard-sale-20260502@millstadtems.org
+DTSTART;TZID=America/Chicago:20260502T080000
+DTEND;TZID=America/Chicago:20260502T130000
+SUMMARY:Millstadt Village-Wide Yard Sale
+LOCATION:Millstadt, IL
+END:VEVENT
+BEGIN:VEVENT
+UID:zion-luncheon-20260506@millstadtems.org
+DTSTART;TZID=America/Chicago:20260506T120000
+DTEND;TZID=America/Chicago:20260506T140000
+SUMMARY:Zion's Annual Spring Luncheon
+LOCATION:Zion Evangelical Church, Millstadt, IL
+END:VEVENT
+BEGIN:VEVENT
+UID:taste-of-millstadt-20260509@millstadtems.org
+DTSTART;TZID=America/Chicago:20260509T190000
+DTEND;TZID=America/Chicago:20260509T220000
+SUMMARY:Millstadt Optimist Club Taste of Millstadt 2026
+LOCATION:Quail Club, Millstadt, IL
+END:VEVENT
+BEGIN:VEVENT
+UID:ems-open-house-20260516@millstadtems.org
+DTSTART;TZID=America/Chicago:20260516T130000
+DTEND;TZID=America/Chicago:20260516T160000
+SUMMARY:Millstadt EMS 2nd Annual Open House
+LOCATION:Millstadt EMS, Millstadt, IL
+END:VEVENT
+END:VCALENDAR
