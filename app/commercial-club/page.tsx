@@ -33,7 +33,7 @@ export default function CommercialClubPage() {
             Commercial Club<br />
             <span className="text-[#f0b429]">Newsletter</span>
           </h1>
-          <p className="text-slate-400 text-lg">The latest news and updates from the Millstadt Commercial Club.</p>
+          <p className="text-slate-400 text-lg">Monthly newsletter from the Millstadt Commercial Club.</p>
         </div>
       </section>
 

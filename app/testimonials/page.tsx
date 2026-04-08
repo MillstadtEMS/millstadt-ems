@@ -35,9 +35,7 @@ export default async function TestimonialsPage() {
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6">
             Testimonials
           </h1>
-          <p className="text-slate-400 text-xl max-w-2xl leading-relaxed">
-            Real experiences from the people we serve. Share yours below — all submissions are reviewed before publishing.
-          </p>
+          <p className="text-slate-400 text-xl">Real stories from the people we serve in Millstadt.</p>
         </div>
       </section>
 

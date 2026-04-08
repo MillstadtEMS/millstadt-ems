@@ -72,8 +72,7 @@ export default function DonatePage() {
               Every Dollar<br />Stays Local
             </h2>
             <p className="text-slate-400 text-lg leading-relaxed mb-12">
-              Donations to Millstadt Ambulance Service go directly toward the equipment,
-              supplies, training, and resources that keep our community safe.
+              Every dollar goes directly toward equipment, supplies, training, and resources that keep Millstadt safe.
             </p>
 
             <div className="space-y-5">

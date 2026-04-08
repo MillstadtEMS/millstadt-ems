@@ -64,10 +64,7 @@ export default function LinksPage() {
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6">
             Important Links
           </h1>
-          <p className="text-slate-400 text-lg max-w-2xl leading-relaxed">
-            Community resources, EMS education, public safety information, and billing links
-            for the Millstadt area.
-          </p>
+          <p className="text-slate-400 text-lg">Community resources, EMS education, and public safety links.</p>
         </div>
       </section>
 

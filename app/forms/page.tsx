@@ -73,10 +73,7 @@ export default function FormsPage() {
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6">
             Forms
           </h1>
-          <p className="text-slate-400 text-lg max-w-2xl leading-relaxed">
-            Submit a request or application to Millstadt Ambulance Service. All submissions are
-            reviewed by our staff.
-          </p>
+          <p className="text-slate-400 text-lg">Submit forms directly to Millstadt Ambulance Service.</p>
         </div>
       </section>
 

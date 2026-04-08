@@ -41,7 +41,7 @@ export default function BulletinPage() {
             <span className="text-[#f0b429] text-sm font-black tracking-[0.25em] uppercase">Community</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-black text-white leading-tight">Bulletin Board</h1>
-          <p className="text-slate-400 mt-3 max-w-lg">Community updates and announcements from Millstadt Ambulance Service.</p>
+          <p className="text-slate-400 mt-3">Posts and updates from Millstadt Ambulance Service.</p>
         </div>
       </section>
 

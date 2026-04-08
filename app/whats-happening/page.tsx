@@ -35,7 +35,7 @@ const cards = [
     href: "/bulletin",
     emoji: "📌",
     title: "Bulletin Board",
-    desc: "Community updates and announcements posted by Millstadt Ambulance Service.",
+    desc: "Posts and updates from Millstadt Ambulance Service.",
     color: "border-purple-500/20 bg-purple-500/5 hover:border-purple-400/40",
     label: "View Posts",
   },

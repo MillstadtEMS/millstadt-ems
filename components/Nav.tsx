@@ -12,21 +12,14 @@ const MENU_GROUPS = [
     heading: "About Us",
     color: "text-blue-400",
     links: [
-      { href: "/about",        label: "Who We Are" },
-      { href: "/leadership",   label: "Leadership" },
-      { href: "/testimonials", label: "Testimonials" },
-      { href: "/careers",      label: "Careers" },
-      { href: "/gallery",      label: "Photo Gallery" },
-    ],
-  },
-  {
-    heading: "Our Services",
-    color: "text-emerald-400",
-    links: [
-      { href: "/community-education", label: "Community Education" },
-      { href: "/medical-control",     label: "Medical Control" },
+      { href: "/about",               label: "Who We Are" },
+      { href: "/leadership",          label: "Leadership" },
       { href: "/fleet",               label: "Our Fleet" },
-      { href: "/movies",              label: "EMS in Crisis" },
+      { href: "/medical-control",     label: "Medical Control" },
+      { href: "/community-education", label: "Community Education" },
+      { href: "/testimonials",        label: "Testimonials" },
+      { href: "/careers",             label: "Careers" },
+      { href: "/gallery",             label: "Photo Gallery" },
     ],
   },
   {
@@ -34,10 +27,11 @@ const MENU_GROUPS = [
     color: "text-[#f0b429]",
     featured: true,
     links: [
-      { href: "/events",           label: "📅  Events Calendar" },
-      { href: "/senior-center",    label: "🏠  Senior Center" },
-      { href: "/commercial-club",  label: "📰  Commercial Club" },
-      { href: "/bulletin",         label: "📌  Bulletin Board" },
+      { href: "/events",          label: "Events Calendar" },
+      { href: "/senior-center",   label: "Senior Center" },
+      { href: "/commercial-club", label: "Commercial Club" },
+      { href: "/bulletin",        label: "Bulletin Board" },
+      { href: "/news",            label: "Millstadt News" },
     ],
   },
   {
@@ -49,6 +43,8 @@ const MENU_GROUPS = [
       { href: "/donate",   label: "Donate" },
       { href: "/billing",  label: "Pay My Bill" },
       { href: "/forms",    label: "Forms" },
+      { href: "/links",    label: "Important Links" },
+      { href: "/movies",   label: "EMS in Crisis" },
     ],
   },
 ];
@@ -148,7 +144,7 @@ export default function Nav() {
             </div>
 
             {/* Group grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
               {MENU_GROUPS.map(group => (
                 <div key={group.heading} className={group.featured ? "col-span-2 md:col-span-1" : ""}>
                   {/* Section heading */}
