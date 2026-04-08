@@ -120,7 +120,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <div className="fixed inset-0 z-[200] bg-[#010c1e] overflow-hidden lg:pl-56">
+    <div className="fixed inset-0 z-[200] bg-[#010c1e] flex overflow-hidden">
+      {/* Desktop sidebar spacer — reserves 224px so flex layout pushes content right */}
+      <div className="hidden lg:block w-56 shrink-0" />
       {/* ── Sidebar ── */}
       <aside className={`fixed inset-y-0 left-0 z-40 w-56 bg-[#020f24] border-r border-white/8 flex flex-col transition-transform duration-300 ${sideOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
         {/* Logo */}
@@ -189,7 +191,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       {sideOpen && <div className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setSideOpen(false)} />}
 
       {/* ── Main content ── */}
-      <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden h-full">
         {/* Top bar */}
         <header className="sticky top-0 z-20 h-14 bg-[#010c1e]/95 backdrop-blur border-b border-white/8 flex items-center px-6 gap-4 shrink-0">
           <button
