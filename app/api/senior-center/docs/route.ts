@@ -14,12 +14,22 @@ export async function GET(req: NextRequest) {
 
   const prefix = `senior-center/${year}/${month}_`;
 
+  // Static fallbacks — files already committed to public/senior-center/
+  const STATIC: Record<string, Record<string, string>> = {
+    "april-2026": {
+      menu:         "/senior-center/april_menu.pdf",
+      activities:   "/senior-center/april_activities.pdf",
+      newsletter:   "/senior-center/april_newsletter.pdf",
+    },
+  };
+  const staticKey = `${month}-${year}`;
+
   try {
     const { blobs } = await list({ prefix });
 
-    const docs: Record<string, string> = {};
+    const docs: Record<string, string> = { ...(STATIC[staticKey] ?? {}) };
     for (const blob of blobs) {
-      // filename: senior-center/2026/april_menu.pdf → type = "menu"
+      // Blob always wins over static fallback
       const name = blob.pathname.split("/").pop() ?? "";
       const type = name.replace(`${month}_`, "").replace(".pdf", "");
       docs[type] = blob.url;
@@ -27,7 +37,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ month, year, docs });
   } catch {
-    return NextResponse.json({ month, year, docs: {} });
+    // Blob not configured yet — serve static files only
+    return NextResponse.json({ month, year, docs: STATIC[staticKey] ?? {} });
   }
 }
 
