@@ -189,7 +189,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       {sideOpen && <div className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setSideOpen(false)} />}
 
       {/* ── Main content ── */}
-      <div className="flex-1 lg:pl-56 flex flex-col min-h-screen overflow-hidden">
+      <div className="flex-1 lg:pl-56 flex flex-col overflow-hidden h-full">
         {/* Top bar */}
         <header className="sticky top-0 z-20 h-14 bg-[#010c1e]/95 backdrop-blur border-b border-white/8 flex items-center px-6 gap-4 shrink-0">
           <button
