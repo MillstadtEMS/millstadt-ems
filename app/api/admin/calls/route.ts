@@ -4,6 +4,15 @@ import { neon } from "@neondatabase/serverless";
 
 export const runtime = "nodejs";
 
+export async function PATCH(req: NextRequest) {
+  if (!(await isAdminAuthed())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { id, dispatchNature } = await req.json();
+  if (!id || typeof dispatchNature !== "string") return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  const db = neon(process.env.DATABASE_URL!);
+  await db`UPDATE cad_calls SET dispatch_nature = ${dispatchNature.trim()} WHERE id = ${id}`;
+  return NextResponse.json({ ok: true });
+}
+
 export async function DELETE(req: NextRequest) {
   if (!(await isAdminAuthed())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await req.json();
