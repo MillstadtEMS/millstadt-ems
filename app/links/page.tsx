@@ -108,9 +108,10 @@ export default function LinksPage() {
           </p>
           <Link
             href="/contact"
-            className="mt-4 flex items-center justify-center px-14 py-6 bg-[#f0b429] hover:bg-[#d9a320] text-[#040d1a] font-black text-xl rounded-2xl transition-colors"
+            className="mt-6 flex items-center justify-center gap-3 px-16 py-7 bg-[#f0b429] hover:bg-[#d9a320] text-[#040d1a] font-black text-2xl rounded-2xl transition-colors min-w-[280px]"
           >
             Contact Us
+            <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
           </Link>
         </div>
       </section>

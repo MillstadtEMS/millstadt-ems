@@ -14,6 +14,8 @@ import { fetchUnreadDispatchEmails, markAsRead } from "@/lib/cad/gmail";
 import { parseDispatchEmail, isCloseoutEmail, isStatusUpdateEmail, parseCloseoutEmail } from "@/lib/cad/parser";
 import { isDuplicate, saveCall, saveFailedParse, markCallComplete, isEventNumberDuplicate } from "@/lib/cad/db";
 import { transcribeAudio, extractNatureFromTranscript } from "@/lib/cad/whisper";
+import { sendSms, shouldSendNatureSms } from "@/lib/sms";
+import { createSmsPending } from "@/lib/db";
 
 export const runtime = "nodejs"; // needs fs access
 
@@ -121,19 +123,28 @@ async function handlePoll(req: NextRequest): Promise<NextResponse> {
             continue;
           }
 
-          await saveCall({
+          const finalNature = audioNature ?? parsed.dispatchNature;
+          const savedCall = await saveCall({
             gmailMessageId:   email.id,
             eventNumber:      parsed.eventNumber,
             dispatchDatetime: parsed.dispatchDatetime,
             dispatchDate:     parsed.dispatchDate,
             dispatchTime:     parsed.dispatchTime,
-            // Whisper transcript takes priority over text parsing
-            dispatchNature:   audioNature ?? parsed.dispatchNature,
+            dispatchNature:   finalNature,
             sourceYear:       parsed.sourceYear,
             parseStatus:      parsed.status,
             completedAt:      null,
           });
           results.processed++;
+
+          // SMS: ask admin for chief complaint on Medical First Responder calls
+          if (shouldSendNatureSms(finalNature)) {
+            const smsBody = `New call: ${finalNature}\nWould you like to add the chief complaint? Reply with the complaint (e.g. "Chest Pain"), or reply SKIP to leave as-is.`;
+            const sent = await sendSms(smsBody).catch(() => false);
+            if (sent) {
+              await createSmsPending(savedCall.id, finalNature).catch(() => {});
+            }
+          }
         }
 
         // ── Mark as read ─────────────────────────────────────────────────

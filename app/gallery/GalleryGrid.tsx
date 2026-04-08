@@ -162,6 +162,15 @@ function getStart(i: number): { x: number; y: number; rot: number } {
 export default function GalleryGrid() {
   const [visible, setVisible] = useState(false);
   const [active, setActive] = useState<string | null>(null);
+  const [photoList, setPhotoList] = useState(photos);
+
+  useEffect(() => {
+    // Try to load custom gallery images from admin image manager
+    fetch("/api/admin/media?collection=gallery")
+      .then(r => r.ok ? r.json() : [])
+      .then((data: { url: string }[]) => { if (Array.isArray(data) && data.length > 0) setPhotoList(data.map(d => d.url)); })
+      .catch(() => { /* keep static fallback */ });
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 80);
@@ -182,7 +191,7 @@ export default function GalleryGrid() {
   return (
     <>
       <div className="columns-2 md:columns-3 lg:columns-4 gap-3 lg:gap-4">
-        {photos.map((src, i) => {
+        {photoList.map((src, i) => {
           const { x, y, rot } = getStart(i);
           const delay = Math.min(i * 22, 900);
           return (

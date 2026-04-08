@@ -42,6 +42,15 @@ const NAV = [
     ),
   },
   {
+    label: "Form Submissions",
+    href: "/admin/submissions",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+        <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+      </svg>
+    ),
+  },
+  {
     label: "Senior Center",
     href: "/admin/senior-center",
     icon: (
@@ -55,7 +64,7 @@ const NAV = [
     href: "/admin/commercial-club",
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
-        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/>
+        <path d="M20 6h-2.18c.07-.44.18-.88.18-1 0-2.21-1.79-4-4-4s-4 1.79-4 4c0 .12.11.56.18 1H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6-3c1.1 0 2 .9 2 2 0 .12-.11.56-.18 1h-3.64c-.07-.44-.18-.88-.18-1 0-1.1.9-2 2-2zm6 17H8V8h12v12zm-10-8v6l5-3-5-3z"/>
       </svg>
     ),
   },
@@ -68,6 +77,34 @@ const NAV = [
       </svg>
     ),
   },
+  {
+    label: "Image Manager",
+    href: "/admin/media",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+      </svg>
+    ),
+  },
+  {
+    label: "Change Log",
+    href: "/admin/changelog",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+        <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+      </svg>
+    ),
+  },
+  {
+    label: "Visual Editor",
+    href: "/admin/visual-editor",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+      </svg>
+    ),
+    gold: true,
+  },
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
@@ -75,7 +112,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const router   = useRouter();
   const [sideOpen, setSideOpen] = useState(false);
 
-  // Don't render shell on login page
   if (pathname === "/admin/login") return <>{children}</>;
 
   async function logout() {
@@ -84,11 +120,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <div className="fixed inset-0 z-[200] bg-[#020810] flex overflow-hidden">
+    <div className="fixed inset-0 z-[200] bg-[#010c1e] flex overflow-hidden">
       {/* ── Sidebar ── */}
-      <aside className={`fixed inset-y-0 left-0 z-40 w-60 bg-[#030c1a] border-r border-white/5 flex flex-col transition-transform duration-300 ${sideOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 w-56 bg-[#020f24] border-r border-white/8 flex flex-col transition-transform duration-300 ${sideOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
         {/* Logo */}
-        <div className="px-5 py-6 border-b border-white/5">
+        <div className="px-5 pt-6 pb-5 border-b border-white/8">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-[#f0b429]/10 border border-[#f0b429]/20 flex items-center justify-center shrink-0">
               <svg viewBox="0 0 32 32" className="w-5 h-5" fill="none">
@@ -106,7 +142,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+        <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
           {NAV.map(item => {
             const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
             return (
@@ -114,13 +150,15 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 key={item.href}
                 href={item.href}
                 onClick={() => setSideOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${
                   active
-                    ? "bg-[#f0b429]/10 text-[#f0b429] border border-[#f0b429]/20"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                    ? "bg-[#f0b429]/15 text-[#f0b429] border border-[#f0b429]/25"
+                    : item.gold
+                    ? "text-[#f0b429]/70 hover:text-[#f0b429] hover:bg-[#f0b429]/5 border border-transparent"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent"
                 }`}
               >
-                <span className={active ? "text-[#f0b429]" : "text-slate-500"}>{item.icon}</span>
+                <span className={active ? "text-[#f0b429]" : item.gold ? "text-[#f0b429]/60" : "text-slate-500"}>{item.icon}</span>
                 {item.label}
               </Link>
             );
@@ -128,18 +166,18 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         </nav>
 
         {/* Bottom */}
-        <div className="px-3 py-4 border-t border-white/5 space-y-1">
+        <div className="px-2 py-4 border-t border-white/8 space-y-0.5">
           <Link
             href="/"
             target="_blank"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-500 hover:text-white hover:bg-white/5 transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-colors"
           >
-            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current text-slate-600"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
             View Site
           </Link>
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-500 hover:text-red-400 hover:bg-red-400/5 transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:text-red-400 hover:bg-red-400/5 transition-colors"
           >
             <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
             Sign Out
@@ -151,25 +189,25 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       {sideOpen && <div className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setSideOpen(false)} />}
 
       {/* ── Main content ── */}
-      <div className="flex-1 lg:pl-60 flex flex-col min-h-screen">
+      <div className="flex-1 lg:pl-56 flex flex-col min-h-screen overflow-hidden">
         {/* Top bar */}
-        <header className="sticky top-0 z-20 h-14 bg-[#020810]/90 backdrop-blur border-b border-white/5 flex items-center px-5 gap-4">
+        <header className="sticky top-0 z-20 h-14 bg-[#010c1e]/95 backdrop-blur border-b border-white/8 flex items-center px-6 gap-4 shrink-0">
           <button
             onClick={() => setSideOpen(v => !v)}
             className="lg:hidden text-slate-400 hover:text-white transition-colors"
           >
             <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
           </button>
-          <span className="text-slate-400 text-sm font-medium flex-1 truncate">
+          <span className="text-slate-300 text-sm font-semibold flex-1 truncate">
             {NAV.find(n => n.href === pathname || (n.href !== "/admin" && pathname.startsWith(n.href)))?.label ?? "Admin"}
           </span>
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span className="text-slate-500 text-xs">Signed in</span>
           </div>
         </header>
 
-        <main className="flex-1 p-5 md:p-8 overflow-y-auto">
+        <main className="flex-1 p-6 md:p-8 overflow-y-auto">
           {children}
         </main>
       </div>

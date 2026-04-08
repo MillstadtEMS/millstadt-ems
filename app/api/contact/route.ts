@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { createFormSubmission } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -26,6 +27,9 @@ export async function POST(req: NextRequest) {
     if (!formType || typeof formType !== "string") {
       return NextResponse.json({ error: "Missing formType" }, { status: 400 });
     }
+
+    // Store in database (fire-and-forget — don't block email on DB failure)
+    createFormSubmission(formType, fields).catch(e => console.error("[contact] DB store failed:", e));
 
     // Build a readable plain-text email body from form fields
     const lines = Object.entries(fields).map(([key, val]) => {

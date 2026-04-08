@@ -1,6 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
+
+function StorySeparator() {
+  return (
+    <div className="flex items-center gap-4 py-2">
+      <span className="flex-1 h-px bg-gradient-to-r from-transparent to-white/8" />
+      <Image
+        src="/images/millstadt-ems/star-of-life.png"
+        alt=""
+        width={16}
+        height={16}
+        className="shrink-0 opacity-30"
+        style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.2)" }}
+      />
+      <span className="flex-1 h-px bg-gradient-to-l from-transparent to-white/8" />
+    </div>
+  );
+}
 
 interface NewsItem {
   title: string;
@@ -88,41 +106,43 @@ export default function NewsPage() {
           )}
 
           {!loading && !error && items.length > 0 && (
-            <div className="space-y-4">
+            <div>
               {items.map((item, i) => (
-                <a
-                  key={i}
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex gap-5 bg-white/3 hover:bg-white/6 border border-white/6 hover:border-white/12 rounded-2xl p-5 transition-all duration-200"
-                >
-                  {item.image && (
-                    <img
-                      src={item.image}
-                      alt=""
-                      className="w-28 h-20 object-cover rounded-xl shrink-0 bg-white/5"
-                      onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-                    />
-                  )}
-                  <div className="flex flex-col justify-between min-w-0">
-                    <div>
-                      <h2 className="text-white font-black text-base leading-snug mb-1.5 group-hover:text-[#f0b429] transition-colors line-clamp-2">
-                        {item.title}
-                      </h2>
-                      {item.description && (
-                        <p className="text-slate-500 text-sm leading-relaxed line-clamp-2">{item.description}</p>
-                      )}
+                <div key={i}>
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex gap-5 bg-[#071428] hover:bg-[#0a1c38] border border-white/8 hover:border-white/14 rounded-2xl p-5 transition-all duration-200"
+                  >
+                    {item.image && (
+                      <img
+                        src={item.image}
+                        alt=""
+                        className="w-28 h-20 object-cover rounded-xl shrink-0 bg-white/5"
+                        onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                    )}
+                    <div className="flex flex-col justify-between min-w-0">
+                      <div>
+                        <h2 className="text-white font-black text-base leading-snug mb-1.5 group-hover:text-[#f0b429] transition-colors line-clamp-2">
+                          {item.title}
+                        </h2>
+                        {item.description && (
+                          <p className="text-slate-400 text-sm leading-relaxed line-clamp-2">{item.description}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between mt-3">
+                        <span className="text-slate-500 text-xs">{timeAgo(item.pubDate)}</span>
+                        <span className="flex items-center gap-1 text-slate-500 group-hover:text-[#f0b429] text-xs font-bold transition-colors">
+                          Read more
+                          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current group-hover:translate-x-0.5 transition-transform"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between mt-3">
-                      <span className="text-slate-600 text-xs">{timeAgo(item.pubDate)}</span>
-                      <span className="flex items-center gap-1 text-slate-500 group-hover:text-[#f0b429] text-xs font-bold transition-colors">
-                        Read more
-                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current group-hover:translate-x-0.5 transition-transform"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
-                      </span>
-                    </div>
-                  </div>
-                </a>
+                  </a>
+                  {i < items.length - 1 && <StorySeparator />}
+                </div>
               ))}
             </div>
           )}

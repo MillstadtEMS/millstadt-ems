@@ -231,6 +231,19 @@ export async function getCallsForCurrentYear(): Promise<Call[]> {
   return (rows as Record<string, unknown>[]).map(rowToCall);
 }
 
+export async function updateCallNature(callId: string, newNature: string): Promise<void> {
+  await ensureSchema();
+  const db = sql();
+  await db`UPDATE cad_calls SET dispatch_nature = ${newNature} WHERE id = ${callId}`;
+}
+
+export async function getMostRecentCallId(): Promise<string | null> {
+  await ensureSchema();
+  const db = sql();
+  const rows = await db`SELECT id FROM cad_calls ORDER BY created_at DESC LIMIT 1`;
+  return (rows as Record<string, unknown>[])[0]?.id as string | null ?? null;
+}
+
 export async function getFailedParses(): Promise<FailedParse[]> {
   await ensureSchema();
   const db = sql();
