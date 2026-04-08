@@ -96,178 +96,199 @@ export default function EmploymentPage() {
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-24 bg-[#040d1a]" />
-
-      {/* Form */}
+      {/* Body */}
       <section className="pb-40 bg-[#040d1a]">
-        <div className="wrap max-w-3xl">
-          <ContactFormWrapper
-            formType="Employment Application"
-            disclaimer="Received by Millstadt EMS leadership. You will be contacted within 5–7 business days."
-          >
+        <div className="wrap">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 pt-16">
 
-            {/* ── Personal Information ── */}
-            <div className="p-16 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
-              <SectionHeader title="Personal Information" />
-              <div className="grid sm:grid-cols-2 gap-8">
-                <div>
-                  <label className={labelClass}>First Name *</label>
-                  <input type="text" name="first_name" required className={inputClass} placeholder="First name" />
-                </div>
-                <div>
-                  <label className={labelClass}>Last Name *</label>
-                  <input type="text" name="last_name" required className={inputClass} placeholder="Last name" />
-                </div>
-                <div>
-                  <label className={labelClass}>Phone Number *</label>
-                  <input type="tel" name="phone" required className={inputClass} placeholder="(618) 000-0000" />
-                </div>
-                <div>
-                  <label className={labelClass}>Email Address *</label>
-                  <input type="email" name="email" required className={inputClass} placeholder="you@email.com" />
+            {/* Sidebar */}
+            <aside>
+              <div className="sticky top-28 bg-[#071428] border border-white/8 rounded-2xl p-6">
+                <div className="h-0.5 bg-gradient-to-r from-[#f0b429] to-transparent mb-5" />
+                <h3 className="text-white font-black text-sm uppercase tracking-widest mb-4">About the Process</h3>
+                <ul className="space-y-3 mb-6">
+                  {[
+                    "Fill out this form and we'll send a full application when positions open",
+                    "All requests are reviewed by EMS leadership",
+                    "You'll be contacted within 5–7 business days",
+                    "Valid IL EMS license required for all clinical positions",
+                    "BLS certification must be current at time of hire",
+                  ].map(r => (
+                    <li key={r} className="flex items-start gap-2.5 text-slate-400 text-sm leading-snug">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#f0b429] shrink-0 mt-1.5" />
+                      {r}
+                    </li>
+                  ))}
+                </ul>
+                <div className="pt-5 border-t border-white/6">
+                  <p className="text-slate-600 text-xs leading-relaxed">
+                    Questions? Contact us at<br />
+                    <a href="tel:6182342021" className="text-[#f0b429] hover:text-[#f5c842] transition-colors">(618) 234-2021</a>
+                  </p>
                 </div>
               </div>
-              <div>
-                <label className={labelClass}>Address</label>
-                <input type="text" name="address" className={inputClass} placeholder="Street address, City, State, ZIP" />
-              </div>
-            </div>
+            </aside>
 
-            {/* ── VOID ── */}
-            <div className="h-16" />
+            {/* Form */}
+            <div className="lg:col-span-2">
+              <ContactFormWrapper
+                formType="Employment Application"
+                disclaimer="Received by Millstadt EMS leadership. You will be contacted within 5–7 business days."
+              >
 
-            {/* ── Position of Interest ── */}
-            <div className="p-16 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
-              <SectionHeader title="Position of Interest" />
-              <div className="grid sm:grid-cols-2 gap-5">
-                {positions.map((pos) => (
-                  <label key={pos} className="flex items-center gap-5 p-6 bg-[#040d1a] border border-white/8 rounded-2xl cursor-pointer hover:border-[#f0b429]/30 transition-colors">
-                    <input type="radio" name="position" value={pos} required className="accent-[#f0b429] w-5 h-5 shrink-0" />
-                    <span className="text-slate-300 text-base leading-snug">{pos}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* ── VOID ── */}
-            <div className="h-16" />
-
-            {/* ── Credentials & Experience ── */}
-            <div className="p-16 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
-              <SectionHeader title="Credentials &amp; Experience" />
-
-              {/* Certification cards */}
-              <div>
-                <p className={labelClass}>Certifications Held</p>
-                <div className="space-y-5">
-
-                  {/* Illinois License */}
-                  <div className="p-6 bg-[#040d1a] border border-white/8 rounded-2xl">
-                    <div className="flex items-center justify-between mb-5">
-                      <span className="text-white font-bold text-base">Illinois EMS License</span>
+                {/* Personal Information */}
+                <div className="p-10 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
+                  <SectionHeader title="Personal Information" />
+                  <div className="grid sm:grid-cols-2 gap-8">
+                    <div>
+                      <label className={labelClass}>First Name *</label>
+                      <input type="text" name="first_name" required className={inputClass} placeholder="First name" />
                     </div>
-                    <div className="grid sm:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-slate-500 text-xs font-bold tracking-wide mb-3">License Number</label>
-                        <input type="text" name="il_license" className={inputClass} placeholder="e.g. IL-P-12345" />
+                    <div>
+                      <label className={labelClass}>Last Name *</label>
+                      <input type="text" name="last_name" required className={inputClass} placeholder="Last name" />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Phone Number *</label>
+                      <input type="tel" name="phone" required className={inputClass} placeholder="(618) 000-0000" />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Email Address *</label>
+                      <input type="email" name="email" required className={inputClass} placeholder="you@email.com" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Address</label>
+                    <input type="text" name="address" className={inputClass} placeholder="Street address, City, State, ZIP" />
+                  </div>
+                </div>
+
+                <div className="h-8" />
+
+                {/* Position of Interest */}
+                <div className="p-10 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
+                  <SectionHeader title="Position of Interest" />
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {positions.map((pos) => (
+                      <label key={pos} className="flex items-center gap-5 p-5 bg-[#040d1a] border border-white/8 rounded-2xl cursor-pointer hover:border-[#f0b429]/30 transition-colors">
+                        <input type="radio" name="position" value={pos} required className="accent-[#f0b429] w-5 h-5 shrink-0" />
+                        <span className="text-slate-300 text-base leading-snug">{pos}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="h-8" />
+
+                {/* Credentials & Experience */}
+                <div className="p-10 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
+                  <SectionHeader title="Credentials &amp; Experience" />
+
+                  <div>
+                    <p className={labelClass}>Certifications Held</p>
+                    <div className="space-y-4">
+
+                      <div className="p-6 bg-[#040d1a] border border-white/8 rounded-2xl">
+                        <div className="flex items-center justify-between mb-5">
+                          <span className="text-white font-bold text-base">Illinois EMS License</span>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-6">
+                          <div>
+                            <label className="block text-slate-500 text-xs font-bold tracking-wide mb-3">License Number</label>
+                            <input type="text" name="il_license" className={inputClass} placeholder="e.g. IL-P-12345" />
+                          </div>
+                          <div>
+                            <label className="block text-slate-500 text-xs font-bold tracking-wide mb-3">Expiration Date</label>
+                            <input type="date" name="il_license_expiry" className={inputClass} />
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-slate-500 text-xs font-bold tracking-wide mb-3">Expiration Date</label>
-                        <input type="date" name="il_license_expiry" className={inputClass} />
+
+                      <div className="p-6 bg-[#040d1a] border border-white/8 rounded-2xl">
+                        <div className="flex items-center justify-between mb-5">
+                          <span className="text-white font-bold text-base">BLS Card</span>
+                        </div>
+                        <div>
+                          <label className="block text-slate-500 text-xs font-bold tracking-wide mb-3">Expiration Date</label>
+                          <input type="date" name="bls_expiry" className={inputClass} />
+                        </div>
                       </div>
+
+                      <div className="p-6 bg-[#040d1a] border border-white/8 rounded-2xl">
+                        <div className="flex items-center gap-3 mb-5">
+                          <span className="text-white font-bold text-base">ACLS</span>
+                          <ALSBadge />
+                        </div>
+                        <div>
+                          <label className="block text-slate-500 text-xs font-bold tracking-wide mb-3">Expiration Date</label>
+                          <input type="date" name="acls_expiry" className={inputClass} />
+                        </div>
+                      </div>
+
+                      <div className="p-6 bg-[#040d1a] border border-white/8 rounded-2xl">
+                        <div className="flex items-center gap-3 mb-5">
+                          <span className="text-white font-bold text-base">ITLS</span>
+                          <ALSBadge />
+                        </div>
+                        <div>
+                          <label className="block text-slate-500 text-xs font-bold tracking-wide mb-3">Expiration Date</label>
+                          <input type="date" name="itls_expiry" className={inputClass} />
+                        </div>
+                      </div>
+
+                      <div className="p-6 bg-[#040d1a] border border-white/8 rounded-2xl">
+                        <div className="flex items-center gap-3 mb-5">
+                          <span className="text-white font-bold text-base">PALS</span>
+                          <ALSBadge />
+                        </div>
+                        <div>
+                          <label className="block text-slate-500 text-xs font-bold tracking-wide mb-3">Expiration Date</label>
+                          <input type="date" name="pals_expiry" className={inputClass} />
+                        </div>
+                      </div>
+
                     </div>
                   </div>
 
-                  {/* BLS */}
-                  <div className="p-6 bg-[#040d1a] border border-white/8 rounded-2xl">
-                    <div className="flex items-center justify-between mb-5">
-                      <span className="text-white font-bold text-base">BLS Card</span>
+                  <div className="grid sm:grid-cols-2 gap-8">
+                    <div>
+                      <label className={labelClass}>Other Certification / License</label>
+                      <input type="text" name="certification" className={inputClass} placeholder="e.g. Illinois Paramedic #12345" />
                     </div>
                     <div>
-                      <label className="block text-slate-500 text-xs font-bold tracking-wide mb-3">Expiration Date</label>
-                      <input type="date" name="bls_expiry" className={inputClass} />
+                      <label className={labelClass}>Years of EMS Experience</label>
+                      <input type="number" name="years_experience" min="0" className={inputClass} placeholder="0" />
                     </div>
                   </div>
 
-                  {/* ACLS */}
-                  <div className="p-6 bg-[#040d1a] border border-white/8 rounded-2xl">
-                    <div className="flex items-center gap-3 mb-5">
-                      <span className="text-white font-bold text-base">ACLS</span>
-                      <ALSBadge />
-                    </div>
-                    <div>
-                      <label className="block text-slate-500 text-xs font-bold tracking-wide mb-3">Expiration Date</label>
-                      <input type="date" name="acls_expiry" className={inputClass} />
-                    </div>
+                  <div>
+                    <label className={labelClass}>Tell us about yourself / additional notes</label>
+                    <textarea name="notes" rows={6} className={`${inputClass} resize-none`} placeholder="Previous experience, why you want to join Millstadt EMS, etc." />
                   </div>
-
-                  {/* ITLS */}
-                  <div className="p-6 bg-[#040d1a] border border-white/8 rounded-2xl">
-                    <div className="flex items-center gap-3 mb-5">
-                      <span className="text-white font-bold text-base">ITLS</span>
-                      <ALSBadge />
-                    </div>
-                    <div>
-                      <label className="block text-slate-500 text-xs font-bold tracking-wide mb-3">Expiration Date</label>
-                      <input type="date" name="itls_expiry" className={inputClass} />
-                    </div>
-                  </div>
-
-                  {/* PALS */}
-                  <div className="p-6 bg-[#040d1a] border border-white/8 rounded-2xl">
-                    <div className="flex items-center gap-3 mb-5">
-                      <span className="text-white font-bold text-base">PALS</span>
-                      <ALSBadge />
-                    </div>
-                    <div>
-                      <label className="block text-slate-500 text-xs font-bold tracking-wide mb-3">Expiration Date</label>
-                      <input type="date" name="pals_expiry" className={inputClass} />
-                    </div>
-                  </div>
-
                 </div>
-              </div>
 
-              {/* Other cert + experience */}
-              <div className="grid sm:grid-cols-2 gap-8">
-                <div>
-                  <label className={labelClass}>Other Certification / License</label>
-                  <input type="text" name="certification" className={inputClass} placeholder="e.g. Illinois Paramedic #12345" />
-                </div>
-                <div>
-                  <label className={labelClass}>Years of EMS Experience</label>
-                  <input type="number" name="years_experience" min="0" className={inputClass} placeholder="0" />
-                </div>
-              </div>
+                <div className="h-8" />
 
-              <div>
-                <label className={labelClass}>Tell us about yourself / additional notes</label>
-                <textarea name="notes" rows={7} className={`${inputClass} resize-none`} placeholder="Previous experience, why you want to join Millstadt EMS, etc." />
-              </div>
+                {/* Availability */}
+                <div className="p-10 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
+                  <SectionHeader title="I Am Willing To Work" />
+                  <div className="grid sm:grid-cols-3 gap-4">
+                    {availability.map((item) => (
+                      <label key={item} className="flex items-center gap-4 p-5 bg-[#040d1a] border border-white/8 rounded-2xl cursor-pointer hover:border-[#f0b429]/30 transition-colors">
+                        <input type="checkbox" name="availability" value={item} className="accent-[#f0b429] w-5 h-5 shrink-0" />
+                        <span className="text-slate-300 text-base">{item}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+              </ContactFormWrapper>
             </div>
 
-            {/* ── VOID ── */}
-            <div className="h-16" />
-
-            {/* ── I Am Willing To Work ── */}
-            <div className="p-16 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
-              <SectionHeader title="I Am Willing To Work" />
-              <div className="grid sm:grid-cols-3 gap-5">
-                {availability.map((item) => (
-                  <label key={item} className="flex items-center gap-5 p-6 bg-[#040d1a] border border-white/8 rounded-2xl cursor-pointer hover:border-[#f0b429]/30 transition-colors">
-                    <input type="checkbox" name="availability" value={item} className="accent-[#f0b429] w-5 h-5 shrink-0" />
-                    <span className="text-slate-300 text-base">{item}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-          </ContactFormWrapper>
+          </div>
         </div>
       </section>
 
-      {/* ── VOID ── */}
       <div className="h-40 bg-[#040d1a]" />
     </>
   );

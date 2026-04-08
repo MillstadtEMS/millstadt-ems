@@ -25,7 +25,6 @@ const MENU_GROUPS = [
   {
     heading: "What's Happening",
     color: "text-[#f0b429]",
-    featured: true,
     links: [
       { href: "/events",          label: "Events Calendar" },
       { href: "/senior-center",   label: "Senior Center" },
@@ -146,48 +145,28 @@ export default function Nav() {
             {/* Group grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
               {MENU_GROUPS.map(group => (
-                <div key={group.heading} className={group.featured ? "col-span-2 md:col-span-1" : ""}>
+                <div key={group.heading}>
                   {/* Section heading */}
                   <div className={`text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${group.color}`}>
                     {group.heading}
                   </div>
 
-                  {/* Featured "What's Happening" gets a highlighted card */}
-                  {group.featured ? (
-                    <div className="bg-[#f0b429]/5 border border-[#f0b429]/15 rounded-2xl p-3 space-y-1">
-                      {group.links.map(l => (
-                        <Link
-                          key={l.href}
-                          href={l.href}
-                          onClick={() => setOpen(false)}
-                          className={`flex items-center gap-2 px-3 py-2.5 rounded-xl font-bold text-sm transition-colors ${
-                            isActive(l.href)
-                              ? "bg-[#f0b429]/15 text-[#f0b429]"
-                              : "text-slate-200 hover:text-white hover:bg-white/5"
-                          }`}
-                        >
-                          {l.label}
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="space-y-0.5">
-                      {group.links.map(l => (
-                        <Link
-                          key={l.href}
-                          href={l.href}
-                          onClick={() => setOpen(false)}
-                          className={`flex items-center px-3 py-2.5 rounded-xl font-semibold text-sm transition-colors ${
-                            isActive(l.href)
-                              ? "text-[#f0b429] bg-[#f0b429]/8"
-                              : "text-slate-400 hover:text-white hover:bg-white/5"
-                          }`}
-                        >
-                          {l.label}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+                  <div className="space-y-0.5">
+                    {group.links.map(l => (
+                      <Link
+                        key={l.href}
+                        href={l.href}
+                        onClick={() => setOpen(false)}
+                        className={`flex items-center px-3 py-2.5 rounded-xl font-semibold text-sm transition-colors ${
+                          isActive(l.href)
+                            ? "text-[#f0b429] bg-[#f0b429]/8"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        }`}
+                      >
+                        {l.label}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

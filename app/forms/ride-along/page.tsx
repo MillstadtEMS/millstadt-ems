@@ -71,89 +71,119 @@ export default function RideAlongPage() {
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-24 bg-[#040d1a]" />
-
-      {/* Form */}
+      {/* Body */}
       <section className="pb-40 bg-[#040d1a]">
-        <div className="wrap max-w-3xl">
-          <ContactFormWrapper
-            formType="Ride-Along Request"
-            disclaimer="Requests are reviewed by Millstadt EMS leadership. All submissions are subject to availability, background check requirements, and leadership approval."
-          >
+        <div className="wrap">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 pt-16">
 
-            {/* ── Personal Information ── */}
-            <div className="p-16 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
-              <SectionHeader title="Personal Information" />
-              <div className="grid sm:grid-cols-2 gap-8">
-                <div>
-                  <label className={labelClass}>First Name *</label>
-                  <input type="text" name="first_name" required className={inputClass} placeholder="First name" />
-                </div>
-                <div>
-                  <label className={labelClass}>Last Name *</label>
-                  <input type="text" name="last_name" required className={inputClass} placeholder="Last name" />
-                </div>
-                <div>
-                  <label className={labelClass}>Phone *</label>
-                  <input type="tel" name="phone" required className={inputClass} placeholder="(618) 000-0000" />
-                </div>
-                <div>
-                  <label className={labelClass}>Email *</label>
-                  <input type="email" name="email" required className={inputClass} placeholder="you@email.com" />
-                </div>
-                <div>
-                  <label className={labelClass}>Date of Birth *</label>
-                  <input type="date" name="dob" required className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>School / Organization</label>
-                  <input type="text" name="school" className={inputClass} placeholder="e.g. SWIC, SIU School of Medicine" />
-                </div>
-              </div>
-            </div>
-
-            {/* ── VOID ── */}
-            <div className="h-16" />
-
-            {/* ── Request Details ── */}
-            <div className="p-16 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
-              <SectionHeader title="Request Details" />
-
-              <div>
-                <label className={labelClass}>Purpose of Ride-Along *</label>
-                <div className="flex flex-col gap-5">
-                  {requestTypes.map((type) => (
-                    <label key={type} className="flex items-center gap-5 p-6 bg-[#040d1a] border border-white/8 rounded-2xl cursor-pointer hover:border-[#f0b429]/30 transition-colors">
-                      <input type="radio" name="purpose" value={type} required className="accent-[#f0b429] w-5 h-5 shrink-0" />
-                      <span className="text-slate-300 text-base">{type}</span>
-                    </label>
+            {/* Sidebar */}
+            <aside>
+              <div className="sticky top-28 bg-[#071428] border border-white/8 rounded-2xl p-6">
+                <div className="h-0.5 bg-gradient-to-r from-[#f0b429] to-transparent mb-5" />
+                <h3 className="text-white font-black text-sm uppercase tracking-widest mb-4">Requirements</h3>
+                <ul className="space-y-3 mb-6">
+                  {[
+                    "Must be 18 years of age or older",
+                    "Valid government-issued photo ID required",
+                    "Subject to background check",
+                    "All requests require leadership approval",
+                    "Subject to unit and crew availability",
+                  ].map(r => (
+                    <li key={r} className="flex items-start gap-2.5 text-slate-400 text-sm leading-snug">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#f0b429] shrink-0 mt-1.5" />
+                      {r}
+                    </li>
                   ))}
+                </ul>
+                <div className="pt-5 border-t border-white/6">
+                  <p className="text-slate-600 text-xs leading-relaxed">
+                    Questions? Contact us at<br />
+                    <a href="tel:6182342021" className="text-[#f0b429] hover:text-[#f5c842] transition-colors">(618) 234-2021</a>
+                  </p>
                 </div>
               </div>
+            </aside>
 
-              <div className="grid sm:grid-cols-2 gap-8">
-                <div>
-                  <label className={labelClass}>Preferred Date</label>
-                  <input type="date" name="preferred_date" className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Hours Needed</label>
-                  <input type="number" name="hours" min="1" className={inputClass} placeholder="e.g. 8" />
-                </div>
-              </div>
+            {/* Form */}
+            <div className="lg:col-span-2">
+              <ContactFormWrapper
+                formType="Ride-Along Request"
+                disclaimer="Requests are reviewed by Millstadt EMS leadership. All submissions are subject to availability, background check requirements, and leadership approval."
+              >
 
-              <div>
-                <label className={labelClass}>Additional Information</label>
-                <textarea name="notes" rows={7} className={`${inputClass} resize-none`} placeholder="Any additional context about your request..." />
-              </div>
+                {/* Personal Information */}
+                <div className="p-10 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
+                  <SectionHeader title="Personal Information" />
+                  <div className="grid sm:grid-cols-2 gap-8">
+                    <div>
+                      <label className={labelClass}>First Name *</label>
+                      <input type="text" name="first_name" required className={inputClass} placeholder="First name" />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Last Name *</label>
+                      <input type="text" name="last_name" required className={inputClass} placeholder="Last name" />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Phone *</label>
+                      <input type="tel" name="phone" required className={inputClass} placeholder="(618) 000-0000" />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Email *</label>
+                      <input type="email" name="email" required className={inputClass} placeholder="you@email.com" />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Date of Birth *</label>
+                      <input type="date" name="dob" required className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>School / Organization</label>
+                      <input type="text" name="school" className={inputClass} placeholder="e.g. SWIC, SIU School of Medicine" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-8" />
+
+                {/* Request Details */}
+                <div className="p-10 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
+                  <SectionHeader title="Request Details" />
+
+                  <div>
+                    <label className={labelClass}>Purpose of Ride-Along *</label>
+                    <div className="flex flex-col gap-4">
+                      {requestTypes.map((type) => (
+                        <label key={type} className="flex items-center gap-5 p-5 bg-[#040d1a] border border-white/8 rounded-2xl cursor-pointer hover:border-[#f0b429]/30 transition-colors">
+                          <input type="radio" name="purpose" value={type} required className="accent-[#f0b429] w-5 h-5 shrink-0" />
+                          <span className="text-slate-300 text-base">{type}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-8">
+                    <div>
+                      <label className={labelClass}>Preferred Date</label>
+                      <input type="date" name="preferred_date" className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Hours Needed</label>
+                      <input type="number" name="hours" min="1" className={inputClass} placeholder="e.g. 8" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Additional Information</label>
+                    <textarea name="notes" rows={6} className={`${inputClass} resize-none`} placeholder="Any additional context about your request..." />
+                  </div>
+                </div>
+
+              </ContactFormWrapper>
             </div>
 
-          </ContactFormWrapper>
+          </div>
         </div>
       </section>
 
-      {/* ── VOID ── */}
       <div className="h-40 bg-[#040d1a]" />
     </>
   );

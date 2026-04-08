@@ -25,7 +25,6 @@ export default function ContactFormWrapper({
     e.preventDefault();
     setStatus("sending");
 
-    // Collect all form data — getAll handles multi-value fields (checkboxes)
     const fd = new FormData(e.currentTarget);
     const fields: Record<string, string | string[]> = {};
     for (const key of new Set(fd.keys())) {

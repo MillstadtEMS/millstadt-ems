@@ -7,6 +7,8 @@ interface Post {
   category: string; approved: boolean; createdAt: string;
 }
 
+const CATEGORIES = ["General","Events","Safety","Lost & Found","For Sale","Volunteer"];
+
 const CAT_COLORS: Record<string, string> = {
   General:      "text-slate-400 bg-slate-400/10 border-slate-400/20",
   Events:       "text-blue-400 bg-blue-400/10 border-blue-400/20",
@@ -16,10 +18,14 @@ const CAT_COLORS: Record<string, string> = {
   Volunteer:    "text-purple-400 bg-purple-400/10 border-purple-400/20",
 };
 
+const blankPost = { author: "Millstadt EMS", title: "", body: "", category: "General" };
+
 export default function BulletinAdmin() {
   const [items, setItems]   = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter]   = useState<"all"|"pending"|"approved">("pending");
+  const [form,    setForm]    = useState(blankPost);
+  const [saving,  setSaving]  = useState(false);
 
   async function load() {
     const r = await fetch("/api/admin/bulletin");
@@ -38,6 +44,20 @@ export default function BulletinAdmin() {
     await load();
   }
 
+  async function createPost() {
+    if (!form.title || !form.body) return;
+    setSaving(true);
+    await fetch("/api/admin/bulletin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...form, approved: true }),
+    });
+    setForm(blankPost);
+    setFilter("approved");
+    await load();
+    setSaving(false);
+  }
+
   const pending  = items.filter(p => !p.approved);
   const approved = items.filter(p => p.approved);
   const shown    = filter === "all" ? items : filter === "pending" ? pending : approved;
@@ -47,7 +67,7 @@ export default function BulletinAdmin() {
       <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-black text-white">Bulletin Board</h1>
-          <p className="text-slate-500 text-sm mt-1">Review and approve community posts.</p>
+          <p className="text-slate-500 text-sm mt-1">Review community posts or publish staff announcements.</p>
         </div>
         {pending.length > 0 && (
           <div className="flex items-center gap-2 bg-amber-400/10 border border-amber-400/20 rounded-xl px-4 py-2">
@@ -55,6 +75,34 @@ export default function BulletinAdmin() {
             <span className="text-amber-400 text-sm font-bold">{pending.length} pending review</span>
           </div>
         )}
+      </div>
+
+      {/* Create staff post */}
+      <div className="bg-white/3 border border-white/8 rounded-2xl p-6 mb-8">
+        <h2 className="text-white font-bold mb-5 text-sm uppercase tracking-widest">Post as Staff</h2>
+        <div className="grid sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="text-slate-500 text-xs uppercase tracking-widest font-bold block mb-1.5">Author</label>
+            <input value={form.author} onChange={e => setForm(f => ({...f, author: e.target.value}))} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-[#f0b429]/40 text-sm" placeholder="Millstadt EMS" />
+          </div>
+          <div>
+            <label className="text-slate-500 text-xs uppercase tracking-widest font-bold block mb-1.5">Category</label>
+            <select value={form.category} onChange={e => setForm(f => ({...f, category: e.target.value}))} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-[#f0b429]/40 text-sm">
+              {CATEGORIES.map(c => <option key={c} value={c} className="bg-[#020810]">{c}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="mb-4">
+          <label className="text-slate-500 text-xs uppercase tracking-widest font-bold block mb-1.5">Title</label>
+          <input value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-[#f0b429]/40 text-sm" placeholder="Blood drive this Saturday…" />
+        </div>
+        <div className="mb-4">
+          <label className="text-slate-500 text-xs uppercase tracking-widest font-bold block mb-1.5">Message</label>
+          <textarea value={form.body} onChange={e => setForm(f => ({...f, body: e.target.value}))} rows={3} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-[#f0b429]/40 text-sm resize-none" placeholder="Details…" />
+        </div>
+        <button onClick={createPost} disabled={saving || !form.title || !form.body} className="bg-[#f0b429] hover:bg-[#f5c842] disabled:opacity-40 text-[#020810] font-black px-6 py-2.5 rounded-lg text-sm transition-colors">
+          {saving ? "Posting…" : "Publish Post"}
+        </button>
       </div>
 
       {/* Filter tabs */}

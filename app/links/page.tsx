@@ -11,40 +11,44 @@ const linkGroups = [
   {
     category: "EMS & Medical",
     links: [
-      { label: "Southwestern Illinois EMS System", url: null, note: "Regional EMS medical oversight" },
-      { label: "SWIC EMT Program", url: null, note: "Southwestern Illinois College — EMT certification" },
-      { label: "SWIC Paramedic Program", url: null, note: "Southwestern Illinois College — Paramedic certification" },
-      { label: "Illinois Department of Public Health — EMS", url: null, note: "State EMS licensing and regulations" },
+      { label: "Southwestern Illinois EMS System", url: "https://www.bjc.org/locations/southwestern-illinois-ems-system", note: "Regional EMS medical oversight — BJC Memorial Hospital" },
+      { label: "SWIC EMT Program", url: "https://www.swic.edu/academics/career-certificates/emergency-services/emergency-medical-technician/", note: "Southwestern Illinois College — EMT certification" },
+      { label: "SWIC Paramedic Program", url: "https://www.swic.edu/academics/career-degrees/emergency-services/paramedic/", note: "Southwestern Illinois College — Paramedic certification" },
+      { label: "Illinois Department of Public Health — EMS", url: "https://dph.illinois.gov/topics-services/emergency-preparedness-response/ems.html", note: "State EMS licensing and regulations" },
     ],
   },
   {
     category: "Millstadt Community",
     links: [
       {
+        label: "Village of Millstadt",
+        url: "https://www.villageofmillstadt.org/",
+        note: "Village government and public resources",
+      },
+      {
         label: "Village of Millstadt — Municipal Code",
         url: "https://codelibrary.amlegal.com/codes/millstadt/latest/overview",
         note: "Millstadt village ordinances and municipal code",
       },
-      { label: "Millstadt CCSD #160", url: null, note: "Community Consolidated School District #160" },
-      { label: "St. James Catholic School", url: null, note: "Millstadt K–8 parochial school" },
-      { label: "Village of Millstadt", url: null, note: "Village government and public resources" },
+      { label: "Millstadt CCSD #160", url: "https://www.mccsd160.com/", note: "Community Consolidated School District #160" },
+      { label: "St. James Catholic School", url: "https://www.stjmillstadt.org/st-james-school/", note: "Millstadt K–8 parochial school" },
     ],
   },
   {
     category: "Public Safety",
     links: [
-      { label: "Illinois Emergency Management Agency (IEMA)", url: null, note: "State emergency preparedness and response" },
-      { label: "St. Clair County Emergency Management", url: null, note: "County-level emergency coordination" },
-      { label: "National Weather Service — St. Louis", url: null, note: "Official weather alerts and forecasts for the Millstadt area" },
-      { label: "Illinois State Police", url: null, note: "ISP Troop 11 — Collinsville District" },
+      { label: "Illinois Emergency Management Agency (IEMA)", url: "https://iemaohs.illinois.gov/", note: "State emergency preparedness and response" },
+      { label: "St. Clair County Emergency Management", url: "https://www.co.st-clair.il.us/departments/emergency-management-agency", note: "County-level emergency coordination" },
+      { label: "National Weather Service — St. Louis", url: "https://www.weather.gov/lsx/", note: "Official weather alerts and forecasts for the Millstadt area" },
+      { label: "Illinois State Police", url: "https://isp.illinois.gov/", note: "ISP Troop 8 MetroEast — Collinsville District" },
     ],
   },
   {
     category: "Billing & Insurance",
     links: [
       { label: "EMS Secure Pay — Pay Your Bill", url: "https://emsecurepay.emsbilling.com/", note: "Online ambulance bill payment portal" },
-      { label: "Medicare — Ambulance Services", url: null, note: "Medicare coverage information for ambulance transport" },
-      { label: "Illinois Medicaid", url: null, note: "State Medicaid program information" },
+      { label: "Medicare — Ambulance Services", url: "https://www.medicare.gov/coverage/ambulance-services", note: "Medicare coverage information for ambulance transport" },
+      { label: "Illinois Medicaid (HFS)", url: "https://hfs.illinois.gov/", note: "Illinois Department of Healthcare and Family Services" },
     ],
   },
 ];

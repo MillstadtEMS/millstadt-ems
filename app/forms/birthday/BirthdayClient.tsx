@@ -182,83 +182,113 @@ export default function BirthdayClient() {
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-24 bg-[#040d1a]" />
-
-      {/* Form */}
+      {/* Body */}
       <section className="pb-40 bg-[#040d1a]">
-        <div className="wrap max-w-3xl">
-          <ContactFormWrapper
-            formType="Birthday Party Appearance Request"
-            disclaimer="All submissions are subject to unit and crew availability. There is no fee for this service."
-          >
+        <div className="wrap">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 pt-16">
 
-            {/* ── Contact Information ── */}
-            <div className="p-16 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
-              <SectionHeader title="Contact Information" />
-              <div className="grid sm:grid-cols-2 gap-8">
-                <div>
-                  <label className={labelClass}>Your First Name *</label>
-                  <input type="text" name="first_name" required className={inputClass} placeholder="First name" />
-                </div>
-                <div>
-                  <label className={labelClass}>Last Name *</label>
-                  <input type="text" name="last_name" required className={inputClass} placeholder="Last name" />
-                </div>
-                <div>
-                  <label className={labelClass}>Phone *</label>
-                  <input type="tel" name="phone" required className={inputClass} placeholder="(618) 000-0000" />
-                </div>
-                <div>
-                  <label className={labelClass}>Email *</label>
-                  <input type="email" name="email" required className={inputClass} placeholder="you@email.com" />
+            {/* Sidebar */}
+            <aside>
+              <div className="sticky top-28 bg-[#071428] border border-white/8 rounded-2xl p-6">
+                <div className="h-0.5 bg-gradient-to-r from-[#f0b429] to-transparent mb-5" />
+                <h3 className="text-white font-black text-sm uppercase tracking-widest mb-4">About This Request</h3>
+                <ul className="space-y-3 mb-6">
+                  {[
+                    "Millstadt EMS brings the ambulance right to your party",
+                    "Kids get to explore the rig and meet the crew",
+                    "Absolutely no fee for this service",
+                    "Subject to unit and crew availability",
+                    "We will call to confirm your request",
+                  ].map(r => (
+                    <li key={r} className="flex items-start gap-2.5 text-slate-400 text-sm leading-snug">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#f0b429] shrink-0 mt-1.5" />
+                      {r}
+                    </li>
+                  ))}
+                </ul>
+                <div className="pt-5 border-t border-white/6">
+                  <p className="text-slate-600 text-xs leading-relaxed">
+                    Questions? Contact us at<br />
+                    <a href="tel:6182342021" className="text-[#f0b429] hover:text-[#f5c842] transition-colors">(618) 234-2021</a>
+                  </p>
                 </div>
               </div>
+            </aside>
+
+            {/* Form */}
+            <div className="lg:col-span-2">
+              <ContactFormWrapper
+                formType="Birthday Party Appearance Request"
+                disclaimer="All submissions are subject to unit and crew availability. There is no fee for this service."
+              >
+
+                {/* Contact Information */}
+                <div className="p-10 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
+                  <SectionHeader title="Contact Information" />
+                  <div className="grid sm:grid-cols-2 gap-8">
+                    <div>
+                      <label className={labelClass}>Your First Name *</label>
+                      <input type="text" name="first_name" required className={inputClass} placeholder="First name" />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Last Name *</label>
+                      <input type="text" name="last_name" required className={inputClass} placeholder="Last name" />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Phone *</label>
+                      <input type="tel" name="phone" required className={inputClass} placeholder="(618) 000-0000" />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Email *</label>
+                      <input type="email" name="email" required className={inputClass} placeholder="you@email.com" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-8" />
+
+                {/* Party Details */}
+                <div className="p-10 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
+                  <SectionHeader title="Party Details" />
+                  <div className="grid sm:grid-cols-2 gap-8">
+                    <div>
+                      <label className={labelClass}>Birthday Child&apos;s Name *</label>
+                      <input type="text" name="child_name" required className={inputClass} placeholder="Child's first name" />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Age Turning</label>
+                      <input type="number" name="age" min="1" max="18" className={inputClass} placeholder="e.g. 6" />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Party Date *</label>
+                      <input type="date" name="party_date" required className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Preferred Time</label>
+                      <input type="time" name="party_time" className={inputClass} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Party Address *</label>
+                    <input type="text" name="address" required className={inputClass} placeholder="Full party address" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Approx. Number of Kids</label>
+                    <input type="number" name="num_kids" min="1" className={inputClass} placeholder="e.g. 15" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Special Requests or Notes</label>
+                    <textarea name="notes" rows={6} className={`${inputClass} resize-none`} placeholder="Any special requests, themes, or other details..." />
+                  </div>
+                </div>
+
+              </ContactFormWrapper>
             </div>
 
-            {/* ── VOID ── */}
-            <div className="h-16" />
-
-            {/* ── Party Details ── */}
-            <div className="p-16 rounded-2xl bg-[#071428] border border-white/8 space-y-10">
-              <SectionHeader title="Party Details" />
-              <div className="grid sm:grid-cols-2 gap-8">
-                <div>
-                  <label className={labelClass}>Birthday Child&apos;s Name *</label>
-                  <input type="text" name="child_name" required className={inputClass} placeholder="Child's first name" />
-                </div>
-                <div>
-                  <label className={labelClass}>Age Turning</label>
-                  <input type="number" name="age" min="1" max="18" className={inputClass} placeholder="e.g. 6" />
-                </div>
-                <div>
-                  <label className={labelClass}>Party Date *</label>
-                  <input type="date" name="party_date" required className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Preferred Time</label>
-                  <input type="time" name="party_time" className={inputClass} />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>Party Address *</label>
-                <input type="text" name="address" required className={inputClass} placeholder="Full party address" />
-              </div>
-              <div>
-                <label className={labelClass}>Approx. Number of Kids</label>
-                <input type="number" name="num_kids" min="1" className={inputClass} placeholder="e.g. 15" />
-              </div>
-              <div>
-                <label className={labelClass}>Special Requests or Notes</label>
-                <textarea name="notes" rows={7} className={`${inputClass} resize-none`} placeholder="Any special requests, themes, or other details..." />
-              </div>
-            </div>
-
-          </ContactFormWrapper>
+          </div>
         </div>
       </section>
 
-      {/* ── VOID ── */}
       <div className="h-40 bg-[#040d1a]" />
     </>
   );
