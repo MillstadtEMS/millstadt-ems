@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { getContent } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Community Education",
@@ -225,7 +228,18 @@ const safetyTopics = [
   },
 ];
 
-export default function CommunityEducationPage() {
+export default async function CommunityEducationPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const isPreview = params?.preview === "ve";
+  const [pageTitle, pageSubtitle] = await Promise.all([
+    getContent("community-ed.header.title", "Community Education", isPreview),
+    getContent("community-ed.header.subtitle", "Millstadt Ambulance Service is committed to building a safer, more prepared community through education, outreach, and direct engagement.", isPreview),
+  ]);
+
   return (
     <>
       {/* Page Header */}
@@ -238,11 +252,10 @@ export default function CommunityEducationPage() {
             <span className="text-[#f0b429] text-sm font-black tracking-[0.2em] uppercase">Outreach &amp; Education</span>
           </div>
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6">
-            Community<br />Education
+            {pageTitle}
           </h1>
           <p className="text-slate-400 text-lg max-w-2xl leading-relaxed">
-            Millstadt Ambulance Service is committed to building a safer, more prepared community
-            through education, outreach, and direct engagement.
+            {pageSubtitle}
           </p>
         </div>
       </section>

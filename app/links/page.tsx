@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getContent } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Important Links",
@@ -45,7 +48,18 @@ const linkGroups = [
   },
 ];
 
-export default function LinksPage() {
+export default async function LinksPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const isPreview = params?.preview === "ve";
+  const [pageTitle, pageSubtitle] = await Promise.all([
+    getContent("links.header.title", "Important Links", isPreview),
+    getContent("links.header.subtitle", "Community resources, EMS education, and public safety links for Millstadt and the surrounding area.", isPreview),
+  ]);
+
   return (
     <>
       {/* Page Header */}
@@ -58,10 +72,10 @@ export default function LinksPage() {
             <span className="text-[#f0b429] text-sm font-black tracking-[0.25em] uppercase">Resources</span>
           </div>
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-8">
-            Important Links
+            {pageTitle}
           </h1>
           <p className="text-slate-300 text-xl leading-relaxed max-w-2xl">
-            Community resources, EMS education, and public safety links for Millstadt and the surrounding area.
+            {pageSubtitle}
           </p>
         </div>
       </section>

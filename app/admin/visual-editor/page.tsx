@@ -169,10 +169,49 @@ const PAGES: EditablePage[] = [
       {
         title: "Contact Info",
         fields: [
-          { key: "contact.phone",    label: "Phone Number", type: "tel",   fallback: "(618) 234-2021",        hint: "Used in contact page and footer" },
-          { key: "contact.address",  label: "Address",      type: "text",  fallback: "101 N Forest St, Millstadt, IL 62260" },
+          { key: "contact.phone",    label: "Phone Number", type: "tel",   fallback: "(618) 476-1201",                              hint: "Used in contact page and footer" },
+          { key: "contact.address",  label: "Address",      type: "text",  fallback: "100 East Laurel Street, Millstadt, Illinois 62260" },
           { key: "contact.email",    label: "Email",        type: "email", fallback: "millstadtems@gmail.com" },
           { key: "contact.hours",    label: "Hours",        type: "text",  fallback: "24 Hours / 7 Days a Week" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "medical-control",
+    label: "Medical Control",
+    path: "/medical-control",
+    sections: [
+      {
+        title: "Page Header",
+        fields: [
+          { key: "medical-control.header.title", label: "Page Title", type: "text", fallback: "Medical Control" },
+        ],
+      },
+      {
+        title: "Medical Director",
+        fields: [
+          { key: "medical-control.director.name",        label: "Director Name",        type: "text", fallback: "Dr. Leo Hsu" },
+          { key: "medical-control.director.credentials", label: "Credentials / Degrees", type: "text", fallback: "MD, MBA, MDiv, FACEP, FAEMS" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "billing",
+    label: "Billing",
+    path: "/billing",
+    sections: [
+      {
+        title: "Page Header",
+        fields: [
+          { key: "billing.header.title", label: "Page Title", type: "text", fallback: "Billing Information" },
+        ],
+      },
+      {
+        title: "Payment Portal",
+        fields: [
+          { key: "billing.portal.url", label: "Pay Bill Online URL", type: "url", fallback: "https://emsecurepay.emsbilling.com/", hint: "The external billing portal link" },
         ],
       },
     ],

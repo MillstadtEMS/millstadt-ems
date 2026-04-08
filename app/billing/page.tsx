@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { getContent } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Billing Information",
@@ -8,7 +11,18 @@ export const metadata: Metadata = {
     "Pay your Millstadt Ambulance Service bill securely online via EMSMC Secure Pay, or contact us for billing assistance.",
 };
 
-export default function BillingPage() {
+export default async function BillingPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const isPreview = params?.preview === "ve";
+  const [pageTitle, billingUrl] = await Promise.all([
+    getContent("billing.header.title", "Billing Information", isPreview),
+    getContent("billing.portal.url", "https://emsecurepay.emsbilling.com/", isPreview),
+  ]);
+
   return (
     <>
       {/* Page Header */}
@@ -21,7 +35,7 @@ export default function BillingPage() {
             <span className="text-[#f0b429] text-sm font-black tracking-[0.25em] uppercase">Patient Services</span>
           </div>
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-10">
-            Billing Information
+            {pageTitle}
           </h1>
           <ul className="space-y-5 max-w-2xl">
             {[
@@ -55,7 +69,7 @@ export default function BillingPage() {
           </p>
           <div className="flex flex-col gap-4 max-w-sm">
             <a
-              href="https://emsecurepay.emsbilling.com/"
+              href={billingUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-3 w-full py-6 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-black text-lg rounded-2xl transition-colors"

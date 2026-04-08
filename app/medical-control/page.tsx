@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { getContent } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Medical Control",
@@ -8,7 +11,19 @@ export const metadata: Metadata = {
     "Medical oversight for Millstadt Ambulance Service provided by Dr. Leo Hsu, MD, MBA, MDiv, FACEP, FAEMS — Medical Director for the Southwestern Illinois EMS System.",
 };
 
-export default function MedicalControlPage() {
+export default async function MedicalControlPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const isPreview = params?.preview === "ve";
+  const [pageTitle, directorName, directorCredentials] = await Promise.all([
+    getContent("medical-control.header.title", "Medical Control", isPreview),
+    getContent("medical-control.director.name", "Dr. Leo Hsu", isPreview),
+    getContent("medical-control.director.credentials", "MD, MBA, MDiv, FACEP, FAEMS", isPreview),
+  ]);
+
   return (
     <>
       {/* Page Header */}
@@ -21,7 +36,7 @@ export default function MedicalControlPage() {
             <span className="text-[#f0b429] text-sm font-black tracking-[0.25em] uppercase">Leadership</span>
           </div>
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-10">
-            Medical Control
+            {pageTitle}
           </h1>
           <ul className="space-y-5 max-w-2xl">
             {[
@@ -60,8 +75,8 @@ export default function MedicalControlPage() {
             {/* Name + bio */}
             <div className="md:col-span-8">
               <div className="text-[#f0b429] text-sm font-bold tracking-[0.25em] uppercase mb-3">Medical Director</div>
-              <h2 className="text-white font-black text-5xl mb-3 leading-tight">Dr. Leo Hsu</h2>
-              <p className="text-slate-400 text-xl mb-8 tracking-wide">MD, MBA, MDiv, FACEP, FAEMS</p>
+              <h2 className="text-white font-black text-5xl mb-3 leading-tight">{directorName}</h2>
+              <p className="text-slate-400 text-xl mb-8 tracking-wide">{directorCredentials}</p>
 
               <div className="text-slate-400 text-lg leading-relaxed">
                 <div className="flex items-start gap-5 mb-8">
