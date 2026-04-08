@@ -16,8 +16,11 @@ export async function POST(req: NextRequest) {
   }
   const id = uid();
   const gmailMessageId = `manual-${id}`;
+  // dispatchDate comes in as YYYY-MM-DD from the date input; convert to MM/DD/YYYY to match CAD format
+  const [year, month, day] = dispatchDate.split("-");
+  const formattedDate = `${month}/${day}/${year}`;
   const dispatchDatetime = `${dispatchDate}T${dispatchTime}:00`;
-  const sourceYear = parseInt(dispatchDate.slice(0, 4), 10);
+  const sourceYear = parseInt(year, 10);
   const db = neon(process.env.DATABASE_URL!);
   await db`
     INSERT INTO cad_calls
@@ -25,7 +28,7 @@ export async function POST(req: NextRequest) {
        dispatch_nature, source_year, parse_status, completed_at)
     VALUES
       (${id}, ${gmailMessageId}, ${eventNumber?.trim() || null}, ${dispatchDatetime},
-       ${dispatchDate}, ${dispatchTime}, ${dispatchNature.trim()}, ${sourceYear}, 'manual', NOW())
+       ${formattedDate}, ${dispatchTime}, ${dispatchNature.trim()}, ${sourceYear}, 'manual', NOW())
   `;
   return NextResponse.json({ ok: true });
 }
