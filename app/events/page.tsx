@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 // 4. Replace YOUR_CALENDAR_ID_HERE below with that ID.
 // 5. To make events public: Settings → Access permissions → check "Make available to public".
 // ────────────────────────────────────────────────────────────────────────────
-const GOOGLE_CALENDAR_ID = "memscommunityevents@gmail.com";
+const GOOGLE_CALENDAR_ID = "10235a6f36b714b6c4670bc575e228e67be3024e97feb44585a33e4171fecc86@group.calendar.google.com";
 const CALENDAR_EMBED_URL = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(GOOGLE_CALENDAR_ID)}&ctz=America%2FChicago&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0&mode=MONTH&bgcolor=%23040d1a&color=%23F0B429`;
 
 export default function EventsPage() {
