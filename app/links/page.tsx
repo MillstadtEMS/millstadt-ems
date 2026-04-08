@@ -68,14 +68,21 @@ export default function LinksPage() {
 
       {/* Link Groups */}
       <section className="py-28 bg-[#040d1a]">
-        <div className="wrap space-y-24">
-          {linkGroups.map((group) => (
+        <div className="wrap">
+          {linkGroups.map((group, gi) => (
             <div key={group.category}>
+              {/* Top border separator between groups */}
+              {gi > 0 && (
+                <div className="flex items-center gap-4 mb-16 mt-4">
+                  <span className="flex-1 h-px bg-gradient-to-r from-[#f0b429]/20 to-transparent" />
+                  <span className="flex-1 h-px bg-gradient-to-l from-[#f0b429]/20 to-transparent" />
+                </div>
+              )}
               <div className="flex items-center gap-4 mb-10">
                 <span className="h-px w-8 bg-[#f0b429]" />
                 <span className="text-[#f0b429] text-sm font-black tracking-[0.25em] uppercase">{group.category}</span>
               </div>
-              <div className="grid md:grid-cols-2 gap-5">
+              <div className="grid md:grid-cols-2 gap-5 mb-20">
                 {group.links.map((link) => (
                   <a
                     key={link.label}
@@ -86,7 +93,7 @@ export default function LinksPage() {
                   >
                     <div>
                       <div className="text-white font-bold text-lg mb-2 group-hover:text-[#f0b429] transition-colors leading-snug">{link.label}</div>
-                      <div className="text-slate-500 text-sm leading-relaxed">{link.note}</div>
+                      <div className="text-slate-400 text-sm leading-relaxed">{link.note}</div>
                     </div>
                     <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current text-slate-700 group-hover:text-[#f0b429] transition-colors shrink-0 mt-1">
                       <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
