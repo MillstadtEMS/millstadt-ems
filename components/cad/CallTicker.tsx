@@ -255,12 +255,14 @@ export default function CallTicker() {
         </div>
       </div>
 
-      {/* ── Disclaimer bar ── */}
-      <div className="bg-[#010710] border-b border-white/5 py-0.5 text-center select-none">
-        <span className="text-slate-600 text-[9px] tracking-wide">
-          <span className="font-bold text-slate-500">{callCount ?? "—"}</span> calls logged {currentYear} &nbsp;·&nbsp; Data collection began 4/5/{currentYear} — prior calls not included
-        </span>
-      </div>
+      {/* ── Disclaimer bar — only visible when log is expanded ── */}
+      {expanded && (
+        <div className="bg-[#010710] border-b border-white/5 py-0.5 text-center select-none">
+          <span className="text-slate-600 text-[9px] tracking-wide">
+            <span className="font-bold text-slate-500">{callCount ?? "—"}</span> calls logged {currentYear} &nbsp;·&nbsp; Data collection began 4/5/{currentYear} — prior calls not included
+          </span>
+        </div>
+      )}
 
     </div>
   );
