@@ -21,6 +21,7 @@ const moreLinks = [
   { href: "/gallery", label: "Photo Gallery" },
   { href: "/traffic", label: "Traffic" },
   { href: "/events", label: "Events" },
+  { href: "/bulletin", label: "Bulletin Board" },
   { href: "/senior-center", label: "Millstadt Senior Center" },
   { href: "/forms", label: "Forms" },
   { href: "/donate", label: "Donate" },
