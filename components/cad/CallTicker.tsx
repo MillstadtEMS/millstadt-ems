@@ -67,10 +67,11 @@ function formatDate(date: Date): string {
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function CallTicker() {
-  const [latest, setLatest]     = useState<Call[]>([]);
-  const [allCalls, setAllCalls] = useState<Call[]>([]);
-  const [expanded, setExpanded] = useState(false);
-  const [loading, setLoading]   = useState(true);
+  const [latest, setLatest]       = useState<Call[]>([]);
+  const [allCalls, setAllCalls]   = useState<Call[]>([]);
+  const [callCount, setCallCount] = useState<number | null>(null);
+  const [expanded, setExpanded]   = useState(false);
+  const [loading, setLoading]     = useState(true);
   const [now, setNow]           = useState<Date>(new Date());
   const wrapperRef              = useRef<HTMLDivElement>(null);
   const prevIdsRef              = useRef<Set<string>>(new Set());
@@ -96,15 +97,20 @@ export default function CallTicker() {
   const fetchAll = useCallback(async () => {
     try {
       const res = await fetch("/api/cad/log", { cache: "no-store" });
-      if (res.ok) setAllCalls(await res.json());
+      if (res.ok) {
+        const calls: Call[] = await res.json();
+        setAllCalls(calls);
+        setCallCount(calls.length);
+      }
     } catch { /* silent */ }
   }, []);
 
   useEffect(() => {
     fetchLatest();
+    fetchAll();
     const pollId = setInterval(fetchLatest, POLL_INTERVAL);
     return () => clearInterval(pollId);
-  }, [fetchLatest]);
+  }, [fetchLatest, fetchAll]);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -248,6 +254,14 @@ export default function CallTicker() {
 
         </div>
       </div>
+
+      {/* ── Disclaimer bar ── */}
+      <div className="bg-[#010710] border-b border-white/5 py-0.5 text-center select-none">
+        <span className="text-slate-600 text-[9px] tracking-wide">
+          <span className="font-bold text-slate-500">{callCount ?? "—"}</span> calls logged {currentYear} &nbsp;·&nbsp; Data collection began 4/5/{currentYear} — prior calls not included
+        </span>
+      </div>
+
     </div>
   );
 }
