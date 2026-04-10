@@ -1,77 +1,53 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 
 export default function BudgetDocumentsAdmin() {
-  const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<"idle" | "uploading" | "done" | "error">("idle");
-  const [msg, setMsg] = useState("");
-  const [currentUrl, setCurrentUrl] = useState<string | null>(null);
-  const [currentMeta, setCurrentMeta] = useState<{ size?: number; uploadedAt?: string } | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [viewing, setViewing] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/admin/budget-documents")
-      .then(r => r.json())
-      .then(data => {
-        if (data.url) {
-          setCurrentUrl(data.url);
-          setCurrentMeta({ size: data.size, uploadedAt: data.uploadedAt });
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  function handleFile(f: File | null) {
-    if (!f) return;
-    if (f.type !== "application/pdf") {
-      setStatus("error");
-      setMsg("File must be a PDF.");
-      return;
-    }
-    setFile(f);
-    setStatus("idle");
-    setMsg("");
-  }
-
-  async function upload() {
-    if (!file) return;
-    setStatus("uploading");
-    setMsg("");
-
-    const form = new FormData();
-    form.append("file", file);
-
-    try {
-      const res = await fetch("/api/admin/budget-documents", {
-        method: "POST",
-        body: form,
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setStatus("error");
-        setMsg(json.error ?? "Upload failed.");
-      } else {
-        setStatus("done");
-        setMsg("Document uploaded successfully.");
-        setCurrentUrl(json.url);
-        setFile(null);
-      }
-    } catch {
-      setStatus("error");
-      setMsg("Network error. Try again.");
-    }
-  }
-
-  function formatBytes(bytes: number) {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / 1048576).toFixed(1) + " MB";
+  if (viewing) {
+    return (
+      <div className="fixed inset-0 z-[300] bg-white flex flex-col">
+        <div className="bg-[#0f1b2d] px-6 py-3 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current text-[#f0b429]">
+              <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zm-2-8H8v-2h8v2zm0 4H8v-2h8v2z"/>
+            </svg>
+            <span className="text-white font-bold text-sm">
+              Draft Annual Budget &amp; Strategic Overview — FY 2025–2026
+            </span>
+            <span className="text-[#f0b429] text-xs font-black tracking-widest uppercase ml-2 bg-[#f0b429]/10 px-2 py-0.5 rounded">
+              DRAFT
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <a
+              href="/_internal/budget-draft/index.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-white text-xs font-bold transition-colors"
+            >
+              Open in New Tab ↗
+            </a>
+            <button
+              onClick={() => setViewing(false)}
+              className="bg-white/10 hover:bg-white/20 text-white font-bold px-4 py-1.5 rounded-lg text-sm transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+        <iframe
+          src="/_internal/budget-draft/index.html"
+          className="flex-1 w-full border-none"
+          title="Budget Document"
+        />
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-xl">
+    <div className="max-w-2xl">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <span className="h-px w-8 bg-[#f0b429]" />
@@ -83,125 +59,75 @@ export default function BudgetDocumentsAdmin() {
           Draft Annual Budget &amp; Strategic Overview
         </h1>
         <p className="text-slate-400 text-sm mt-1.5">
-          Upload and manage the draft budget document. This page is only visible to
-          admin users and is <strong className="text-slate-300">not published</strong> on the
-          public website.
+          FY 2025–2026 (May 1, 2025 — April 30, 2026). This document is only visible
+          in the admin panel and is <strong className="text-slate-300">not published</strong> on
+          the public website.
         </p>
       </div>
 
-      {/* Current document */}
-      {currentUrl && (
-        <div className="bg-[#071428] border border-white/10 rounded-2xl p-7 mb-6">
-          <h2 className="text-white font-black text-lg mb-4">Current Document</h2>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#f0b429]/10 border border-[#f0b429]/20 flex items-center justify-center shrink-0">
-              <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current text-[#f0b429]">
-                <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z" />
-              </svg>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-white font-bold text-sm truncate">
-                Millstadt EMS — FY 2025–2026 Budget (DRAFT)
-              </p>
-              {currentMeta?.size && (
-                <p className="text-slate-500 text-xs mt-0.5">
-                  {formatBytes(currentMeta.size)}
-                  {currentMeta.uploadedAt &&
-                    ` · Uploaded ${new Date(currentMeta.uploadedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}`}
-                </p>
-              )}
-            </div>
-            <a
-              href={currentUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0 bg-[#f0b429] hover:bg-[#f5c842] text-[#040d1a] font-black px-5 py-2.5 rounded-xl transition-colors text-sm"
-            >
-              View PDF
-            </a>
-          </div>
-        </div>
-      )}
-
-      {/* Upload */}
-      <div className="bg-[#071428] border border-white/10 rounded-2xl p-7">
-        <h2 className="text-white font-black text-lg mb-6">
-          {currentUrl ? "Replace Document" : "Upload Document"}
-        </h2>
-
-        <div
-          className={`rounded-2xl border-2 border-dashed p-10 text-center transition-all duration-200 cursor-pointer mb-6 ${
-            dragging
-              ? "border-[#f0b429]/80 bg-[#f0b429]/10 scale-[1.01]"
-              : file
-              ? "border-[#f0b429]/40 bg-[#f0b429]/5"
-              : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/5"
-          }`}
-          onClick={() => inputRef.current?.click()}
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0] ?? null); }}
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
-          />
-          {file ? (
-            <>
-              <svg viewBox="0 0 24 24" className="w-12 h-12 fill-current text-[#f0b429] mx-auto mb-3">
-                <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z" />
-              </svg>
-              <p className="text-[#f0b429] font-bold mb-1">{file.name}</p>
-              <p className="text-slate-500 text-sm">
-                {formatBytes(file.size)} · Click to change
-              </p>
-            </>
-          ) : (
-            <>
-              <svg viewBox="0 0 24 24" className="w-12 h-12 fill-current text-slate-600 mx-auto mb-3">
-                <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
-              </svg>
-              <p className="text-white font-bold mb-1">Drop PDF here</p>
-              <p className="text-slate-500 text-sm">or click to browse</p>
-            </>
-          )}
-        </div>
-
-        {file && status === "idle" && (
-          <button
-            onClick={upload}
-            className="w-full bg-[#f0b429] hover:bg-[#f5c842] text-[#040d1a] font-black py-3.5 rounded-xl transition-colors text-sm mb-4"
-          >
-            Upload PDF
-          </button>
-        )}
-
-        {status === "uploading" && (
-          <div className="w-full py-3.5 rounded-xl bg-white/5 text-slate-400 text-sm font-bold text-center animate-pulse mb-4">
-            Uploading…
-          </div>
-        )}
-
-        {status === "done" && (
-          <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm justify-center py-2 mb-4">
-            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+      {/* Document card */}
+      <div className="bg-[#071428] border border-white/10 rounded-2xl p-7 mb-6">
+        <div className="flex items-start gap-5">
+          <div className="w-14 h-14 rounded-xl bg-[#f0b429]/10 border border-[#f0b429]/20 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" className="w-7 h-7 fill-current text-[#f0b429]">
+              <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zm-2-8H8v-2h8v2zm0 4H8v-2h8v2z"/>
             </svg>
-            {msg}
           </div>
-        )}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-white font-black text-lg mb-1">
+              Millstadt Ambulance Service
+            </h2>
+            <p className="text-slate-400 text-sm mb-1">
+              Annual Budget &amp; Strategic Overview — Fiscal Year 2025–2026
+            </p>
+            <div className="flex items-center gap-3 mt-3">
+              <span className="text-[#f0b429] text-xs font-black tracking-widest uppercase bg-[#f0b429]/10 px-2.5 py-1 rounded">
+                DRAFT
+              </span>
+              <span className="text-slate-600 text-xs">
+                Live HTML Document · 20 Sections · All Photos &amp; Charts
+              </span>
+            </div>
+          </div>
+        </div>
 
-        {status === "error" && (
-          <p className="text-red-400 text-sm text-center font-bold mb-4">{msg}</p>
-        )}
+        <div className="mt-6 flex gap-3">
+          <button
+            onClick={() => setViewing(true)}
+            className="flex-1 bg-[#f0b429] hover:bg-[#f5c842] text-[#040d1a] font-black py-3.5 rounded-xl transition-colors text-sm"
+          >
+            View Document
+          </button>
+          <a
+            href="/_internal/budget-draft/index.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3.5 rounded-xl transition-colors text-sm text-center"
+          >
+            Open in New Tab
+          </a>
+        </div>
       </div>
 
-      <p className="text-slate-700 text-xs text-center mt-6">
-        This document is only accessible through the admin panel. It is not linked
-        from any public-facing page on millstadtems.org.
+      {/* Quick stats */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="bg-[#071428] border border-white/10 rounded-xl p-4 text-center">
+          <p className="text-[#f0b429] text-2xl font-black">879</p>
+          <p className="text-slate-500 text-xs mt-1">Calls (2025)</p>
+        </div>
+        <div className="bg-[#071428] border border-white/10 rounded-xl p-4 text-center">
+          <p className="text-red-400 text-2xl font-black">-$157K</p>
+          <p className="text-slate-500 text-xs mt-1">Projected Deficit</p>
+        </div>
+        <div className="bg-[#071428] border border-white/10 rounded-xl p-4 text-center">
+          <p className="text-emerald-400 text-2xl font-black">35%</p>
+          <p className="text-slate-500 text-xs mt-1">Levy Utilization</p>
+        </div>
+      </div>
+
+      <p className="text-slate-700 text-xs text-center">
+        This document is not linked from any public-facing page on millstadtems.org.
+        To print, open in a new tab and use File → Print → Save as PDF.
       </p>
     </div>
   );
