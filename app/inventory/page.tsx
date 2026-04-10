@@ -249,9 +249,9 @@ export default function InventoryDashboard() {
 
       {/* ══ COLUMN HEADERS (desktop only) ══ */}
       <div className="shrink-0 hidden md:block bg-slate-800/50 border-b border-slate-700">
-        <div className="max-w-[1200px] mx-auto px-8">
-          <div className="grid grid-cols-[1fr_60px_90px_60px_80px] gap-2 py-2 text-[10px] text-slate-500 uppercase tracking-wider font-bold">
-            <div className="pl-2">Item</div>
+        <div className="max-w-[1000px] mx-auto px-10 lg:px-16">
+          <div className="grid grid-cols-[1fr_60px_90px_60px_80px] gap-2 py-2 text-[10px] text-slate-500 uppercase tracking-wider font-bold px-10">
+            <div className="pl-4">Item</div>
             <div className="text-center">PAR</div>
             <div className="text-center">Stock</div>
             <div className="text-center">Need</div>
@@ -262,7 +262,7 @@ export default function InventoryDashboard() {
 
       {/* ══ ITEMS ══ */}
       <div className="flex-1 overflow-y-auto overscroll-contain">
-        <div className="max-w-[1200px] mx-auto px-3 sm:px-8 py-2 pb-20">
+        <div className="max-w-[1000px] mx-auto px-5 sm:px-10 lg:px-16 py-2 pb-20">
           {(() => {
             let gIdx = 0;
             return groups.map((g, gi) => (
@@ -395,8 +395,8 @@ function ItemRow({ item, isSaving, onSave, even, focused }: {
       </div>
 
       {/* ── DESKTOP layout (single grid row) ── */}
-      <div className="hidden md:grid grid-cols-[1fr_60px_90px_60px_80px] gap-2 items-center px-8 py-3">
-        <div className="pr-4 min-w-0">
+      <div className="hidden md:grid grid-cols-[1fr_60px_90px_60px_80px] gap-2 items-center px-10 py-3">
+        <div className="pl-4 pr-4 min-w-0">
           <button onClick={() => setShowNotes(!showNotes)} className="text-left w-full group">
             <div className={`text-sm font-medium leading-snug break-words group-hover:underline decoration-slate-600 ${needsOrder ? "text-amber-300" : "text-white"}`}>{item.name}</div>
             {item.vendorSource && <div className="text-[11px] text-slate-500 mt-0.5">{item.vendorSource}</div>}
@@ -426,7 +426,7 @@ function ItemRow({ item, isSaving, onSave, even, focused }: {
 
       {/* Notes */}
       {showNotes && (
-        <div className="px-4 md:px-8 pb-3">
+        <div className="px-4 md:px-14 pb-3">
           <input type="text" value={notes} onChange={e => setNotes(e.target.value)} onBlur={commitNotes}
             onKeyDown={e => e.key === "Enter" && commitNotes()} placeholder="Add notes..."
             className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-800 text-sm text-slate-300 placeholder-slate-500 focus:outline-none focus:border-yellow-500/40" />
