@@ -11,13 +11,14 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category");
   const since = searchParams.get("since");
+  const type = searchParams.get("type");
 
   // Polling for updates since a timestamp
   if (since) {
-    const items = await getItemsSince(since);
+    const items = await getItemsSince(since, type ?? undefined);
     return NextResponse.json(items);
   }
 
-  const items = await getItems(category ?? undefined);
+  const items = await getItems(category ?? undefined, type ?? undefined);
   return NextResponse.json(items);
 }

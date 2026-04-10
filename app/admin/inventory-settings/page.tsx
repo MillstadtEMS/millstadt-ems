@@ -26,7 +26,7 @@ interface Item {
 }
 
 export default function InventorySettingsPage() {
-  const [tab, setTab] = useState<"password" | "qr" | "seed">("password");
+  const [tab, setTab] = useState<"password" | "qr" | "seed" | "seed-state">("password");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pwMsg, setPwMsg] = useState("");
@@ -43,6 +43,9 @@ export default function InventorySettingsPage() {
 
   const [seedLoading, setSeedLoading] = useState(false);
   const [seedResult, setSeedResult] = useState("");
+
+  const [stateSeedLoading, setStateSeedLoading] = useState(false);
+  const [stateSeedResult, setStateSeedResult] = useState("");
 
   useEffect(() => {
     loadQrTokens();
@@ -214,8 +217,8 @@ export default function InventorySettingsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-[#071428] rounded-xl p-1 w-fit">
-        {(["password", "qr", "seed"] as const).map(t => (
+      <div className="flex gap-1 mb-6 bg-[#071428] rounded-xl p-1 w-fit flex-wrap">
+        {(["password", "qr", "seed", "seed-state"] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -223,7 +226,7 @@ export default function InventorySettingsPage() {
               tab === t ? "bg-[#f0b429]/15 text-[#f0b429]" : "text-slate-400 hover:text-white"
             }`}
           >
-            {t === "password" ? "Password" : t === "qr" ? "QR Codes" : "Seed Data"}
+            {t === "password" ? "Password" : t === "qr" ? "QR Codes" : t === "seed" ? "Seed Data" : "State Inventory"}
           </button>
         ))}
       </div>
@@ -435,6 +438,57 @@ export default function InventorySettingsPage() {
           </div>
         </div>
       )}
+
+      {/* State Inventory Seed tab */}
+      {tab === "seed-state" && (
+        <div className="max-w-md">
+          <div className="bg-[#071428] border border-white/10 rounded-2xl p-6">
+            <h3 className="text-white font-bold mb-1">Seed State / System Inventory</h3>
+            <p className="text-slate-500 text-xs mb-4">
+              Import the SWIL & Illinois state-required equipment checklist (160+ items across 13 categories).
+              This populates the State / System Inventory section.
+            </p>
+
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-amber-400 text-xs mb-4">
+              Warning: This replaces all existing state inventory items. Backstock data is not affected.
+            </div>
+
+            {stateSeedResult && (
+              <div className={`mb-4 text-sm font-medium ${stateSeedResult.startsWith("Success") ? "text-emerald-400" : "text-red-400"}`}>
+                {stateSeedResult}
+              </div>
+            )}
+
+            <button
+              onClick={seedStateInventory}
+              disabled={stateSeedLoading}
+              className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl disabled:opacity-50"
+            >
+              {stateSeedLoading ? "Seeding..." : "Import State Inventory"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
+
+  async function seedStateInventory() {
+    if (!confirm("This will clear existing state inventory data and re-seed with the SWIL & Illinois equipment checklist. Backstock items are NOT affected. Continue?")) return;
+    setStateSeedLoading(true);
+    setStateSeedResult("");
+    try {
+      const res = await fetch("/api/inventory/seed-state", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setStateSeedResult(`Success: ${data.message}`);
+      } else {
+        setStateSeedResult(`Error: ${data.error}`);
+      }
+    } catch {
+      setStateSeedResult("Connection error");
+    }
+    setStateSeedLoading(false);
+  }
 }

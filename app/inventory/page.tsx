@@ -15,6 +15,16 @@ const LOCATIONS = [
     ),
   },
   {
+    id: "state",
+    name: "State / System Inventory",
+    desc: "SWIL & Illinois required equipment — ALS meds, airway, PPE, transport",
+    href: "/inventory/state",
+    ready: true,
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-7 h-7 fill-current"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+    ),
+  },
+  {
     id: "m3935",
     name: "M3935",
     desc: "Paramedic Unit — 2025 Ford E450 Demers",

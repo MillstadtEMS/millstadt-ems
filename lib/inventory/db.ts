@@ -23,13 +23,22 @@ export async function ensureInventorySchema() {
 
   await db`
     CREATE TABLE IF NOT EXISTS inventory_categories (
-      id          TEXT PRIMARY KEY,
-      name        TEXT NOT NULL UNIQUE,
-      slug        TEXT NOT NULL UNIQUE,
-      sort_order  INTEGER NOT NULL DEFAULT 0,
-      has_expiry  BOOLEAN NOT NULL DEFAULT FALSE,
-      created_at  TIMESTAMPTZ DEFAULT NOW()
+      id              TEXT PRIMARY KEY,
+      name            TEXT NOT NULL UNIQUE,
+      slug            TEXT NOT NULL UNIQUE,
+      sort_order      INTEGER NOT NULL DEFAULT 0,
+      has_expiry      BOOLEAN NOT NULL DEFAULT FALSE,
+      inventory_type  TEXT NOT NULL DEFAULT 'backstock',
+      created_at      TIMESTAMPTZ DEFAULT NOW()
     )
+  `;
+
+  // Migration: add inventory_type column if missing (existing DBs)
+  await db`
+    DO $$ BEGIN
+      ALTER TABLE inventory_categories ADD COLUMN IF NOT EXISTS inventory_type TEXT NOT NULL DEFAULT 'backstock';
+    EXCEPTION WHEN others THEN NULL;
+    END $$
   `;
 
   await db`
@@ -105,6 +114,7 @@ export interface InventoryCategory {
   slug: string;
   sortOrder: number;
   hasExpiry: boolean;
+  inventoryType: string;
 }
 
 export interface InventoryItem {
@@ -167,6 +177,7 @@ function toCategory(r: any): InventoryCategory {
     slug: r.slug,
     sortOrder: Number(r.sort_order),
     hasExpiry: Boolean(r.has_expiry),
+    inventoryType: r.inventory_type ?? "backstock",
   };
 }
 
@@ -245,11 +256,12 @@ export async function getCategories(): Promise<InventoryCategory[]> {
   return (rows as any[]).map(toCategory);
 }
 
-export async function createCategory(data: { name: string; slug: string; sortOrder: number; hasExpiry: boolean }): Promise<InventoryCategory> {
+export async function createCategory(data: { name: string; slug: string; sortOrder: number; hasExpiry: boolean; inventoryType?: string }): Promise<InventoryCategory> {
   await ensureInventorySchema();
   const db = sql();
   const id = uid();
-  await db`INSERT INTO inventory_categories (id, name, slug, sort_order, has_expiry) VALUES (${id}, ${data.name}, ${data.slug}, ${data.sortOrder}, ${data.hasExpiry})`;
+  const invType = data.inventoryType ?? "backstock";
+  await db`INSERT INTO inventory_categories (id, name, slug, sort_order, has_expiry, inventory_type) VALUES (${id}, ${data.name}, ${data.slug}, ${data.sortOrder}, ${data.hasExpiry}, ${invType})`;
   const rows = await db`SELECT * FROM inventory_categories WHERE id = ${id}`;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return toCategory((rows as any[])[0]);
@@ -257,7 +269,7 @@ export async function createCategory(data: { name: string; slug: string; sortOrd
 
 // ── Items ──────────────────────────────────────────────────────────────────
 
-export async function getItems(categorySlug?: string): Promise<InventoryItem[]> {
+export async function getItems(categorySlug?: string, inventoryType?: string): Promise<InventoryItem[]> {
   await ensureInventorySchema();
   const db = sql();
   if (categorySlug) {
@@ -267,6 +279,17 @@ export async function getItems(categorySlug?: string): Promise<InventoryItem[]> 
       JOIN inventory_categories c ON i.category_id = c.id
       WHERE c.slug = ${categorySlug}
       ORDER BY i.sort_order ASC
+    `;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (rows as any[]).map(toItem);
+  }
+  if (inventoryType) {
+    const rows = await db`
+      SELECT i.*, c.name AS category_name, c.slug AS category_slug
+      FROM inventory_items i
+      JOIN inventory_categories c ON i.category_id = c.id
+      WHERE c.inventory_type = ${inventoryType}
+      ORDER BY c.sort_order ASC, i.sort_order ASC
     `;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (rows as any[]).map(toItem);
@@ -313,9 +336,20 @@ export async function getItemByQrToken(token: string): Promise<(InventoryItem & 
   return { ...toItem(r), qrTokenId: r.qr_token_id };
 }
 
-export async function getItemsSince(since: string): Promise<InventoryItem[]> {
+export async function getItemsSince(since: string, inventoryType?: string): Promise<InventoryItem[]> {
   await ensureInventorySchema();
   const db = sql();
+  if (inventoryType) {
+    const rows = await db`
+      SELECT i.*, c.name AS category_name, c.slug AS category_slug
+      FROM inventory_items i
+      JOIN inventory_categories c ON i.category_id = c.id
+      WHERE i.updated_at > ${since} AND c.inventory_type = ${inventoryType}
+      ORDER BY c.sort_order ASC, i.sort_order ASC
+    `;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (rows as any[]).map(toItem);
+  }
   const rows = await db`
     SELECT i.*, c.name AS category_name, c.slug AS category_slug
     FROM inventory_items i
@@ -582,4 +616,14 @@ export async function clearInventoryData(): Promise<void> {
   await db`DELETE FROM inventory_items`;
   await db`DELETE FROM inventory_categories`;
   await db`DELETE FROM inventory_submissions`;
+}
+
+export async function clearInventoryDataByType(inventoryType: string): Promise<void> {
+  await ensureInventorySchema();
+  const db = sql();
+  // Delete items and related data for categories of a specific type
+  await db`DELETE FROM inventory_audit_log WHERE item_id IN (SELECT i.id FROM inventory_items i JOIN inventory_categories c ON i.category_id = c.id WHERE c.inventory_type = ${inventoryType})`;
+  await db`DELETE FROM inventory_qr_tokens WHERE item_id IN (SELECT i.id FROM inventory_items i JOIN inventory_categories c ON i.category_id = c.id WHERE c.inventory_type = ${inventoryType})`;
+  await db`DELETE FROM inventory_items WHERE category_id IN (SELECT id FROM inventory_categories WHERE inventory_type = ${inventoryType})`;
+  await db`DELETE FROM inventory_categories WHERE inventory_type = ${inventoryType}`;
 }

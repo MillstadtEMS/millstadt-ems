@@ -125,7 +125,7 @@ function useSpeech(onResult: (t: string) => void) {
 
 /* ── Main ───────────────────────────────────────────────────────────────── */
 
-export default function InventoryDashboard() {
+export default function StateInventoryDashboard() {
   const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
   const [activeCat, setActiveCat] = useState("");
@@ -154,7 +154,7 @@ export default function InventoryDashboard() {
 
   const fetchData = useCallback(async () => {
     try {
-      const r = await fetch("/api/inventory/items?type=backstock");
+      const r = await fetch("/api/inventory/items?type=state");
       if (!r.ok) { router.push("/inventory/login"); return; }
       const data = await r.json() as Item[];
       setItems(data); lastPoll.current = new Date().toISOString();
@@ -167,7 +167,7 @@ export default function InventoryDashboard() {
   useEffect(() => {
     const iv = setInterval(async () => {
       try {
-        const r = await fetch(`/api/inventory/items?type=backstock&since=${encodeURIComponent(lastPoll.current)}`);
+        const r = await fetch(`/api/inventory/items?type=state&since=${encodeURIComponent(lastPoll.current)}`);
         if (!r.ok) return;
         const upd = (await r.json()) as Item[];
         if (upd.length) {
@@ -292,7 +292,7 @@ export default function InventoryDashboard() {
     setSubmitting(true);
     try {
       await fetch("/api/inventory/submit", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ categorySlug: activeCat, itemsUpdated: editedCount.current, notes: submitNotes || null, submittedBy: "Inventory User" }) });
+        body: JSON.stringify({ categorySlug: activeCat, itemsUpdated: editedCount.current, notes: submitNotes || null, submittedBy: "State Inventory" }) });
       msg("Submitted!"); setShowSubmit(false); setSubmitNotes(""); editedCount.current = 0;
     } catch { msg("Failed"); } finally { setSubmitting(false); }
   }
@@ -309,10 +309,10 @@ export default function InventoryDashboard() {
         <div className="max-w-[1200px] mx-auto px-4 sm:px-8 py-2.5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 shrink-0">
             <div className="w-8 h-8 rounded-lg bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-yellow-400"><path d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/></svg>
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-yellow-400"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
             </div>
             <div className="hidden sm:block">
-              <div className="text-white font-black text-sm leading-none">Inventory</div>
+              <div className="text-white font-black text-sm leading-none">State Inventory</div>
               <div className="text-yellow-400/60 text-[9px] font-bold uppercase tracking-widest mt-0.5">Millstadt EMS</div>
             </div>
           </div>
@@ -340,7 +340,7 @@ export default function InventoryDashboard() {
           {categories.map(c => (
             <button key={c.slug} onClick={() => { setActiveCat(c.slug); setFocusedIdx(0); }}
               className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${activeCat === c.slug ? "bg-yellow-500 text-slate-900" : "bg-slate-800 text-slate-300 active:bg-slate-700"}`}>
-              {c.name.replace(" Backstock", "").replace(" Supplies", "")}
+              {c.name}
               {c.low > 0 && <span className="ml-1.5 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{c.low}</span>}
             </button>
           ))}
@@ -378,10 +378,10 @@ export default function InventoryDashboard() {
             let gIdx = 0;
             return groups.map((g, gi) => (
               <div key={gi} className="mb-3">
-                {/* Shelf header */}
+                {/* Section header */}
                 <div className="sticky top-0 z-10 bg-slate-950/95 backdrop-blur-sm py-1.5">
                   <div className="bg-slate-800 border-l-4 border-yellow-400 rounded-r-lg px-4 py-2 flex items-center gap-2">
-                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-yellow-400 shrink-0"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-yellow-400 shrink-0"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
                     <span className="text-yellow-400 text-[11px] font-bold uppercase tracking-wide flex-1">{g.loc}</span>
                     <span className="text-slate-500 text-[10px]">{g.items.length}</span>
                   </div>
