@@ -24,7 +24,7 @@ interface Item {
   updatedAt: string;
 }
 
-// ── Speech ──────────────────────────────────────────────────────────────────
+/* ── Speech hook ─────────────────────────────────────────────────────────── */
 
 function useSpeech(onResult: (t: string) => void) {
   const [listening, setListening] = useState(false);
@@ -37,13 +37,11 @@ function useSpeech(onResult: (t: string) => void) {
     setSupported(!!SR);
     if (SR) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rec = new (SR as any)();
-      rec.continuous = false; rec.interimResults = false; rec.lang = "en-US";
+      const r = new (SR as any)(); r.continuous = false; r.interimResults = false; r.lang = "en-US";
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      rec.onresult = (e: any) => { const t = e.results[0]?.[0]?.transcript?.trim(); if (t) onResult(t); };
-      rec.onend = () => setListening(false);
-      rec.onerror = () => setListening(false);
-      recRef.current = rec;
+      r.onresult = (e: any) => { const t = e.results[0]?.[0]?.transcript?.trim(); if (t) onResult(t); };
+      r.onend = () => setListening(false); r.onerror = () => setListening(false);
+      recRef.current = r;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -54,20 +52,7 @@ function useSpeech(onResult: (t: string) => void) {
   return { listening, supported, toggle };
 }
 
-function parseSpeech(text: string): { cmd: string; value?: string | number } | null {
-  const l = text.toLowerCase().trim();
-  if (l === "next" || l === "next item") return { cmd: "next" };
-  const qm = l.match(/(?:quantity|stock|count|set)\s+(?:to\s+)?(\d+)/); if (qm) return { cmd: "quantity", value: parseInt(qm[1]) };
-  const em = l.match(/expired\s+(\d+)/); if (em) return { cmd: "expired", value: parseInt(em[1]) };
-  const nm = l.match(/^note\s+(.+)/); if (nm) return { cmd: "note", value: nm[1] };
-  const sm = l.match(/^(?:item|find|search)\s+(.+)/); if (sm) return { cmd: "search", value: sm[1] };
-  const pn = l.match(/^(\d+)$/); if (pn) return { cmd: "quantity", value: parseInt(pn[1]) };
-  const wn: Record<string, number> = { zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,fifteen:15,twenty:20 };
-  if (wn[l] !== undefined) return { cmd: "quantity", value: wn[l] };
-  return null;
-}
-
-// ── Main ────────────────────────────────────────────────────────────────────
+/* ── Main ────────────────────────────────────────────────────────────────── */
 
 export default function InventoryDashboard() {
   const router = useRouter();
@@ -76,7 +61,6 @@ export default function InventoryDashboard() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
-  const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [showSubmit, setShowSubmit] = useState(false);
   const [submitNotes, setSubmitNotes] = useState("");
@@ -84,56 +68,37 @@ export default function InventoryDashboard() {
   const lastPoll = useRef(new Date().toISOString());
   const editedCount = useRef(0);
 
-  // ── Categories derived from items ──────────────────────────────────────
-
+  /* categories from items */
   const categories = (() => {
-    const map = new Map<string, { name: string; slug: string; count: number; low: number }>();
+    const m = new Map<string, { name: string; slug: string; count: number; low: number }>();
     for (const i of items) {
-      const slug = i.categorySlug ?? "unknown";
-      const existing = map.get(slug);
-      if (existing) {
-        existing.count++;
-        if (i.qtyToOrder > 0 && !i.skipOrder) existing.low++;
-      } else {
-        map.set(slug, { name: i.categoryName ?? slug, slug, count: 1, low: i.qtyToOrder > 0 && !i.skipOrder ? 1 : 0 });
-      }
+      const s = i.categorySlug ?? "unknown";
+      const e = m.get(s);
+      if (e) { e.count++; if (i.qtyToOrder > 0 && !i.skipOrder) e.low++; }
+      else m.set(s, { name: i.categoryName ?? s, slug: s, count: 1, low: i.qtyToOrder > 0 && !i.skipOrder ? 1 : 0 });
     }
-    return Array.from(map.values());
+    return Array.from(m.values());
   })();
 
-  // ── Fetch ──────────────────────────────────────────────────────────────
-
+  /* fetch */
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch("/api/inventory/items");
-      if (!res.ok) { router.push("/inventory/login"); return; }
-      setItems(await res.json());
-      lastPoll.current = new Date().toISOString();
-    } catch { router.push("/inventory/login"); }
-    finally { setLoading(false); }
+      const r = await fetch("/api/inventory/items");
+      if (!r.ok) { router.push("/inventory/login"); return; }
+      setItems(await r.json()); lastPoll.current = new Date().toISOString();
+    } catch { router.push("/inventory/login"); } finally { setLoading(false); }
   }, [router]);
-
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // ── Polling ────────────────────────────────────────────────────────────
-
+  /* polling */
   useEffect(() => {
     const iv = setInterval(async () => {
       try {
-        const res = await fetch(`/api/inventory/items?since=${encodeURIComponent(lastPoll.current)}`);
-        if (!res.ok) return;
-        const updated = (await res.json()) as Item[];
-        if (updated.length > 0) {
-          setItems(prev => {
-            const m = new Map(prev.map(i => [i.id, i]));
-            for (const u of updated) if (!saving[u.id]) m.set(u.id, u);
-            return Array.from(m.values()).sort((a, b) => {
-              const ca = categories.findIndex(c => c.slug === a.categorySlug);
-              const cb = categories.findIndex(c => c.slug === b.categorySlug);
-              if (ca !== cb) return ca - cb;
-              return a.sortOrder - b.sortOrder;
-            });
-          });
+        const r = await fetch(`/api/inventory/items?since=${encodeURIComponent(lastPoll.current)}`);
+        if (!r.ok) return;
+        const upd = (await r.json()) as Item[];
+        if (upd.length) {
+          setItems(p => { const mp = new Map(p.map(i => [i.id, i])); for (const u of upd) if (!saving[u.id]) mp.set(u.id, u); return Array.from(mp.values()); });
           lastPoll.current = new Date().toISOString();
         }
       } catch {}
@@ -142,201 +107,168 @@ export default function InventoryDashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saving]);
 
-  // ── Save ───────────────────────────────────────────────────────────────
-
+  /* save */
   const saveItem = useCallback(async (item: Item, updates: { currentStock?: number; expiredQty?: number; notes?: string }) => {
     setSaving(s => ({ ...s, [item.id]: true }));
     try {
-      const res = await fetch(`/api/inventory/items/${item.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+      const r = await fetch(`/api/inventory/items/${item.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ version: item.version, ...updates }),
       });
-      if (res.status === 409) {
-        const d = await res.json();
-        if (d.item) setItems(p => p.map(i => i.id === item.id ? d.item : i));
-        showMsg("Conflict — refreshed from server");
-        return;
+      if (r.status === 409) {
+        const d = await r.json(); if (d.item) setItems(p => p.map(i => i.id === item.id ? d.item : i));
+        msg("Conflict — refreshed"); return;
       }
-      if (res.ok) {
-        const updated = await res.json();
-        setItems(p => p.map(i => i.id === item.id ? updated : i));
-        editedCount.current++;
-      }
-    } catch { showMsg("Save failed"); }
-    finally { setSaving(s => ({ ...s, [item.id]: false })); }
+      if (r.ok) { const u = await r.json(); setItems(p => p.map(i => i.id === item.id ? u : i)); editedCount.current++; }
+    } catch { msg("Save failed"); } finally { setSaving(s => ({ ...s, [item.id]: false })); }
   }, []);
 
-  function showMsg(m: string) { setToast(m); setTimeout(() => setToast(null), 2500); }
+  function msg(t: string) { setToast(t); setTimeout(() => setToast(null), 2500); }
 
-  // ── Speech ─────────────────────────────────────────────────────────────
-
+  /* speech */
+  const [focusedIdx, setFocusedIdx] = useState(0);
   const handleSpeech = useCallback((transcript: string) => {
-    const cmd = parseSpeech(transcript);
-    if (!cmd) { showMsg(`"${transcript}" — not understood`); return; }
-    if (cmd.cmd === "search" && typeof cmd.value === "string") { setSearch(cmd.value); return; }
-    if (cmd.cmd === "next") {
-      const filtered = getFiltered();
-      const idx = filtered.findIndex(i => i.id === activeItemId);
-      if (idx >= 0 && idx < filtered.length - 1) setActiveItemId(filtered[idx + 1].id);
-      return;
-    }
-    const item = items.find(i => i.id === activeItemId);
-    if (!item) { showMsg("Select an item first"); return; }
-    if (cmd.cmd === "quantity" && typeof cmd.value === "number") { saveItem(item, { currentStock: cmd.value }); showMsg(`Stock → ${cmd.value}`); }
-    if (cmd.cmd === "expired" && typeof cmd.value === "number") { saveItem(item, { expiredQty: cmd.value }); showMsg(`Expired → ${cmd.value}`); }
-    if (cmd.cmd === "note" && typeof cmd.value === "string") { saveItem(item, { notes: cmd.value }); showMsg("Note saved"); }
+    const l = transcript.toLowerCase().trim();
+    const filtered = getFiltered();
+    if (l === "next" || l === "next item") { setFocusedIdx(i => Math.min(i + 1, filtered.length - 1)); msg("Next"); return; }
+    const qm = l.match(/(?:quantity|stock|count|set)\s+(?:to\s+)?(\d+)/);
+    const num = qm ? parseInt(qm[1]) : l.match(/^(\d+)$/) ? parseInt(l) : null;
+    if (num !== null && filtered[focusedIdx]) { saveItem(filtered[focusedIdx], { currentStock: num }); msg(`Stock → ${num}`); return; }
+    const em = l.match(/expired\s+(\d+)/);
+    if (em && filtered[focusedIdx]) { saveItem(filtered[focusedIdx], { expiredQty: parseInt(em[1]) }); msg(`Expired → ${em[1]}`); return; }
+    if (l.startsWith("note ") && filtered[focusedIdx]) { saveItem(filtered[focusedIdx], { notes: l.slice(5) }); msg("Note saved"); return; }
+    if (l.startsWith("search ") || l.startsWith("find ") || l.startsWith("item ")) { setSearch(l.replace(/^(search|find|item)\s+/, "")); return; }
+    msg(`"${transcript}" — ?`);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeItemId, items, saveItem]);
-
+  }, [focusedIdx, saveItem]);
   const { listening, supported, toggle: toggleSpeech } = useSpeech(handleSpeech);
 
-  // ── Filter ─────────────────────────────────────────────────────────────
-
+  /* filter */
   function getFiltered() {
     return items.filter(i => {
       if (activeCat !== "all" && i.categorySlug !== activeCat) return false;
-      if (search) {
-        const s = search.toLowerCase();
-        return i.name.toLowerCase().includes(s) || (i.location ?? "").toLowerCase().includes(s) || (i.notes ?? "").toLowerCase().includes(s);
-      }
+      if (search) { const s = search.toLowerCase(); return i.name.toLowerCase().includes(s) || (i.location ?? "").toLowerCase().includes(s); }
       return true;
     });
   }
   const filtered = getFiltered();
 
-  // Group by location
-  const groups: { location: string; items: Item[] }[] = [];
-  let lastLoc = "__NONE__";
+  /* group by location */
+  const groups: { loc: string; items: Item[] }[] = [];
+  let lastLoc = "___";
   for (const item of filtered) {
     const loc = item.location ?? "Other";
-    if (loc !== lastLoc) {
-      groups.push({ location: loc, items: [] });
-      lastLoc = loc;
-    }
+    if (loc !== lastLoc) { groups.push({ loc, items: [] }); lastLoc = loc; }
     groups[groups.length - 1].items.push(item);
   }
 
-  // ── Submit ─────────────────────────────────────────────────────────────
-
+  /* submit */
   async function handleSubmit() {
     setSubmitting(true);
     try {
-      await fetch("/api/inventory/submit", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ categorySlug: activeCat === "all" ? null : activeCat, itemsUpdated: editedCount.current, notes: submitNotes || null, submittedBy: "Inventory User" }),
-      });
-      showMsg("Inventory submitted"); setShowSubmit(false); setSubmitNotes(""); editedCount.current = 0;
-    } catch { showMsg("Submit failed"); }
-    finally { setSubmitting(false); }
+      await fetch("/api/inventory/submit", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categorySlug: activeCat === "all" ? null : activeCat, itemsUpdated: editedCount.current, notes: submitNotes || null, submittedBy: "Inventory User" }) });
+      msg("Submitted!"); setShowSubmit(false); setSubmitNotes(""); editedCount.current = 0;
+    } catch { msg("Failed"); } finally { setSubmitting(false); }
   }
 
   async function logout() { await fetch("/api/inventory/logout", { method: "POST" }); router.push("/inventory/login"); }
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#040d1a]">
-      <div className="text-slate-500 text-lg animate-pulse">Loading inventory...</div>
-    </div>
-  );
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#040d1a]"><div className="text-slate-500 animate-pulse">Loading...</div></div>;
 
   return (
     <div className="min-h-screen bg-[#040d1a]">
-      {/* ── Top Bar ── */}
+      {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-[#020e1f]/95 backdrop-blur border-b border-white/8">
-        {/* Brand + actions */}
-        <div className="flex items-center gap-3 px-4 h-12">
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="w-7 h-7 rounded-lg bg-[#f0b429]/10 border border-[#f0b429]/20 flex items-center justify-center">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-[#f0b429]"><path d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/></svg>
+        <div className="max-w-2xl mx-auto">
+          {/* Top row */}
+          <div className="flex items-center gap-2 px-4 h-11">
+            <div className="w-6 h-6 rounded-md bg-[#f0b429]/15 flex items-center justify-center shrink-0">
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#f0b429]"><path d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/></svg>
             </div>
-            <span className="text-white font-black text-sm hidden sm:block">Inventory</span>
+            <span className="text-white font-black text-sm">Inventory</span>
+            <div className="flex-1" />
+            {supported && (
+              <button onClick={toggleSpeech} className={`p-1.5 rounded-lg ${listening ? "bg-red-500/20 text-red-400 animate-pulse" : "text-slate-600 hover:text-white"}`}>
+                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+              </button>
+            )}
+            <button onClick={() => setShowSubmit(true)} className="p-1.5 rounded-lg text-emerald-400 hover:bg-emerald-400/10">
+              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+            </button>
+            <button onClick={logout} className="p-1.5 rounded-lg text-slate-600 hover:text-red-400">
+              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+            </button>
           </div>
 
-          <div className="flex-1 relative">
-            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-slate-500 absolute left-3 top-1/2 -translate-y-1/2"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..."
-              className="w-full pl-9 pr-3 py-1.5 bg-[#071428] border border-white/10 rounded-lg text-white text-sm placeholder-slate-600 focus:outline-none focus:border-[#f0b429]/40" />
+          {/* Search */}
+          <div className="px-4 pb-2">
+            <div className="relative">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-slate-600 absolute left-3 top-1/2 -translate-y-1/2"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search items..."
+                className="w-full pl-9 pr-3 py-2 bg-[#071428] border border-white/8 rounded-xl text-white text-sm placeholder-slate-600 focus:outline-none focus:border-[#f0b429]/30" />
+            </div>
           </div>
 
-          {supported && (
-            <button onClick={toggleSpeech} className={`p-2 rounded-lg shrink-0 ${listening ? "bg-red-500/20 text-red-400 animate-pulse" : "text-slate-500 hover:text-white hover:bg-white/5"}`}>
-              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+          {/* Category tabs */}
+          <div className="flex gap-1.5 px-4 pb-2.5 overflow-x-auto" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
+            <button onClick={() => setActiveCat("all")}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold ${activeCat === "all" ? "bg-[#f0b429] text-[#040d1a]" : "bg-white/5 text-slate-500"}`}>
+              All
             </button>
-          )}
-
-          <button onClick={() => setShowSubmit(true)} className="p-2 rounded-lg text-emerald-400 hover:bg-emerald-400/10 shrink-0" title="Submit count">
-            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
-          </button>
-
-          <button onClick={logout} className="p-2 rounded-lg text-slate-500 hover:text-red-400 shrink-0" title="Sign out">
-            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
-          </button>
-        </div>
-
-        {/* Category tabs — horizontal scroll */}
-        <div className="flex gap-1 px-3 pb-2 overflow-x-auto scrollbar-none">
-          <button onClick={() => setActiveCat("all")}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${activeCat === "all" ? "bg-[#f0b429] text-[#040d1a]" : "bg-white/5 text-slate-400 hover:text-white"}`}>
-            All ({items.length})
-          </button>
-          {categories.map(c => (
-            <button key={c.slug} onClick={() => { setActiveCat(c.slug); setActiveItemId(null); }}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap ${activeCat === c.slug ? "bg-[#f0b429] text-[#040d1a]" : "bg-white/5 text-slate-400 hover:text-white"}`}>
-              {c.name.replace(" Backstock", "").replace(" Supplies", "")}
-              {c.low > 0 && <span className="ml-1.5 bg-red-500/80 text-white text-[10px] px-1.5 py-0.5 rounded-full">{c.low}</span>}
-            </button>
-          ))}
+            {categories.map(c => (
+              <button key={c.slug} onClick={() => { setActiveCat(c.slug); setFocusedIdx(0); }}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${activeCat === c.slug ? "bg-[#f0b429] text-[#040d1a]" : "bg-white/5 text-slate-500"}`}>
+                {c.name.replace(" Backstock", "").replace(" Supplies", "")}
+                {c.low > 0 && <span className="ml-1 text-[10px] bg-red-500 text-white px-1 rounded-full">{c.low}</span>}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
       {/* ── Items ── */}
-      <div className="px-3 pb-24 pt-2 max-w-3xl mx-auto">
-        {groups.map((group, gi) => (
-          <div key={gi} className="mb-4">
-            {/* Location header */}
-            <div className="sticky top-[88px] z-20 bg-[#040d1a]/95 backdrop-blur-sm py-2 px-1 mb-1">
-              <div className="flex items-center gap-2">
-                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#f0b429] shrink-0"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                <span className="text-[#f0b429] text-xs font-black uppercase tracking-wider">{group.location}</span>
-                <span className="text-slate-600 text-[10px]">({group.items.length})</span>
+      <div className="max-w-2xl mx-auto px-4 pt-3 pb-28">
+        {/* Column headers */}
+        <div className="flex items-center gap-2 px-2 pb-1 text-[10px] text-slate-600 uppercase tracking-wider font-bold">
+          <span className="flex-1">Item</span>
+          <span className="w-12 text-center">PAR</span>
+          <span className="w-16 text-center">Stock</span>
+          <span className="w-12 text-center">Need</span>
+          <span className="w-14 text-center">Exp</span>
+        </div>
+
+        {groups.map((g, gi) => (
+          <div key={gi} className="mb-5">
+            {/* Location section header */}
+            <div className="sticky top-[130px] z-10 bg-[#040d1a] pt-2 pb-1 mb-1">
+              <div className="bg-[#0a1e3d] border border-[#f0b429]/20 rounded-lg px-3 py-1.5 flex items-center gap-2">
+                <svg viewBox="0 0 24 24" className="w-3 h-3 fill-[#f0b429] shrink-0"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+                <span className="text-[#f0b429] text-[11px] font-black uppercase tracking-wide">{g.loc}</span>
+                <span className="text-slate-600 text-[10px] ml-auto">{g.items.length}</span>
               </div>
             </div>
 
-            {/* Items in this location */}
-            <div className="space-y-1">
-              {group.items.map(item => (
-                <ItemCard
-                  key={item.id}
-                  item={item}
-                  isActive={item.id === activeItemId}
-                  isSaving={!!saving[item.id]}
-                  onTap={() => setActiveItemId(item.id === activeItemId ? null : item.id)}
-                  onSave={(u) => saveItem(item, u)}
-                />
-              ))}
-            </div>
+            {/* Items */}
+            {g.items.map(item => (
+              <ItemRow key={item.id} item={item} isSaving={!!saving[item.id]} onSave={u => saveItem(item, u)} />
+            ))}
           </div>
         ))}
 
         {filtered.length === 0 && (
-          <div className="text-center py-20 text-slate-600">
-            {search ? "No items match your search" : "No items. Seed inventory from admin settings."}
-          </div>
+          <div className="text-center py-20 text-slate-600">{search ? "No matches" : "No items"}</div>
         )}
       </div>
 
-      {/* ── Submit Modal ── */}
+      {/* Submit modal */}
       {showSubmit && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-4 pb-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4">
           <div className="bg-[#071428] border border-white/10 rounded-2xl p-5 w-full max-w-sm">
-            <h2 className="text-lg font-black text-white mb-1">Submit Inventory Count</h2>
-            <p className="text-slate-500 text-xs mb-3">This notifies the team and creates a record.</p>
-            <div className="text-sm text-slate-400 mb-3">
-              <span className="text-[#f0b429] font-bold">{editedCount.current}</span> items edited
-              {activeCat !== "all" && <span> in <strong className="text-white">{categories.find(c => c.slug === activeCat)?.name}</strong></span>}
-            </div>
+            <h2 className="text-lg font-black text-white mb-1">Submit Count</h2>
+            <p className="text-slate-500 text-xs mb-3">{editedCount.current} items edited</p>
             <textarea value={submitNotes} onChange={e => setSubmitNotes(e.target.value)} placeholder="Notes (optional)" rows={2}
-              className="w-full px-3 py-2 bg-[#040d1a] border border-white/10 rounded-xl text-white text-sm placeholder-slate-600 focus:outline-none focus:border-[#f0b429]/40 mb-3" />
+              className="w-full px-3 py-2 bg-[#040d1a] border border-white/10 rounded-xl text-white text-sm placeholder-slate-600 focus:outline-none mb-3" />
             <div className="flex gap-2">
               <button onClick={() => setShowSubmit(false)} className="flex-1 py-2.5 border border-white/10 rounded-xl text-slate-400 font-semibold text-sm">Cancel</button>
               <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-2.5 bg-emerald-500 text-white font-bold text-sm rounded-xl disabled:opacity-50">{submitting ? "..." : "Submit"}</button>
@@ -345,99 +277,105 @@ export default function InventoryDashboard() {
         </div>
       )}
 
-      {/* Toast */}
-      {toast && <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-[#071428] border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white font-medium shadow-xl">{toast}</div>}
+      {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#071428] border border-white/15 rounded-xl px-4 py-2 text-sm text-white shadow-xl">{toast}</div>}
     </div>
   );
 }
 
-// ── Item Card ───────────────────────────────────────────────────────────────
+/* ── Item Row ────────────────────────────────────────────────────────────── */
 
-function ItemCard({ item, isActive, isSaving, onTap, onSave }: {
-  item: Item; isActive: boolean; isSaving: boolean;
-  onTap: () => void;
+function ItemRow({ item, isSaving, onSave }: {
+  item: Item; isSaving: boolean;
   onSave: (u: { currentStock?: number; expiredQty?: number; notes?: string }) => void;
 }) {
-  const [stock, setStock] = useState(String(item.currentStock));
-  const [expired, setExpired] = useState(String(item.expiredQty));
+  const [stock, setStock] = useState(item.currentStock === 0 ? "" : String(item.currentStock));
+  const [expired, setExpired] = useState(item.expiredQty === 0 ? "" : String(item.expiredQty));
+  const [showNotes, setShowNotes] = useState(false);
   const [notes, setNotes] = useState(item.notes ?? "");
 
-  useEffect(() => { setStock(String(item.currentStock)); setExpired(String(item.expiredQty)); setNotes(item.notes ?? ""); }, [item.currentStock, item.expiredQty, item.notes]);
+  useEffect(() => {
+    setStock(item.currentStock === 0 ? "" : String(item.currentStock));
+    setExpired(item.expiredQty === 0 ? "" : String(item.expiredQty));
+    setNotes(item.notes ?? "");
+  }, [item.currentStock, item.expiredQty, item.notes]);
 
-  function commitStock() { const v = parseInt(stock); if (!isNaN(v) && v !== item.currentStock) onSave({ currentStock: v }); }
-  function commitExpired() { const v = parseInt(expired); if (!isNaN(v) && v !== item.expiredQty) onSave({ expiredQty: v }); }
+  function commitStock() {
+    const v = stock === "" ? 0 : parseInt(stock);
+    if (!isNaN(v) && v !== item.currentStock) onSave({ currentStock: v });
+  }
+  function commitExpired() {
+    const v = expired === "" ? 0 : parseInt(expired);
+    if (!isNaN(v) && v !== item.expiredQty) onSave({ expiredQty: v });
+  }
   function commitNotes() { if (notes !== (item.notes ?? "")) onSave({ notes }); }
 
   const needsOrder = item.qtyToOrder > 0 && !item.skipOrder;
 
   return (
-    <div onClick={onTap} className={`rounded-xl border transition-all ${isActive ? "bg-[#0a1e3d] border-[#f0b429]/30" : "bg-[#071428] border-white/6 hover:border-white/12"}`}>
-      {/* Main row — always visible */}
-      <div className="flex items-center gap-3 px-3 py-2.5">
-        {/* Saving indicator */}
-        {isSaving && <div className="w-1.5 h-1.5 rounded-full bg-[#f0b429] animate-pulse shrink-0" />}
-
-        {/* Name */}
-        <div className="flex-1 min-w-0">
-          <div className={`text-sm font-semibold truncate ${needsOrder ? "text-amber-300" : "text-white"}`}>{item.name}</div>
-          {item.vendorSource && <div className="text-[10px] text-slate-600 truncate">{item.vendorSource}</div>}
+    <div className={`border-b border-white/5 py-1.5 ${isSaving ? "opacity-70" : ""}`}>
+      <div className="flex items-center gap-2 px-2">
+        {/* Item name — wraps, never truncates */}
+        <div className="flex-1 min-w-0 pr-1">
+          <button onClick={() => setShowNotes(!showNotes)} className="text-left w-full">
+            <div className={`text-[13px] leading-tight font-medium break-words ${needsOrder ? "text-amber-300" : "text-slate-200"}`}>
+              {item.name}
+            </div>
+          </button>
         </div>
 
-        {/* Quick stats */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="text-center">
-            <div className="text-[10px] text-slate-600 uppercase">PAR</div>
-            <div className="text-xs text-slate-400 font-bold">{item.par}</div>
-          </div>
-          <div className="text-center min-w-[36px]">
-            <div className="text-[10px] text-slate-600 uppercase">Stock</div>
-            <div className={`text-xs font-black ${needsOrder ? "text-amber-400" : "text-emerald-400"}`}>{item.currentStock}</div>
-          </div>
-          {needsOrder && (
-            <div className="text-center">
-              <div className="text-[10px] text-slate-600 uppercase">Need</div>
-              <div className="text-xs font-black text-red-400">{item.qtyToOrder}</div>
-            </div>
+        {/* PAR */}
+        <div className="w-12 text-center text-xs text-slate-500 font-mono shrink-0">{item.par}</div>
+
+        {/* Stock input — ALWAYS visible */}
+        <div className="w-16 shrink-0">
+          <input
+            type="number"
+            inputMode="numeric"
+            value={stock}
+            onChange={e => setStock(e.target.value)}
+            onBlur={commitStock}
+            onKeyDown={e => e.key === "Enter" && commitStock()}
+            placeholder="—"
+            className={`w-full px-1 py-1.5 text-center rounded-lg border text-sm font-bold bg-[#040d1a] focus:outline-none focus:ring-1 focus:ring-[#f0b429]/50 focus:border-[#f0b429]/50 ${
+              needsOrder ? "border-amber-500/40 text-amber-300" : item.currentStock > 0 ? "border-emerald-500/30 text-emerald-400" : "border-white/10 text-slate-500"
+            }`}
+          />
+        </div>
+
+        {/* Need to order */}
+        <div className="w-12 text-center shrink-0">
+          {item.skipOrder ? (
+            <span className="text-[9px] text-slate-700 font-bold">SKIP</span>
+          ) : needsOrder ? (
+            <span className="text-sm font-black text-red-400">{item.qtyToOrder}</span>
+          ) : (
+            <span className="text-xs text-emerald-500/40">0</span>
           )}
-          {item.skipOrder && (
-            <span className="text-[9px] text-slate-600 font-bold uppercase bg-white/5 px-1.5 py-0.5 rounded">Skip</span>
-          )}
+        </div>
+
+        {/* Expired input — ALWAYS visible */}
+        <div className="w-14 shrink-0">
+          <input
+            type="number"
+            inputMode="numeric"
+            value={expired}
+            onChange={e => setExpired(e.target.value)}
+            onBlur={commitExpired}
+            onKeyDown={e => e.key === "Enter" && commitExpired()}
+            placeholder="—"
+            className={`w-full px-1 py-1.5 text-center rounded-lg border text-xs bg-[#040d1a] focus:outline-none focus:ring-1 focus:ring-[#f0b429]/50 ${
+              item.expiredQty > 0 ? "border-red-500/30 text-red-400 font-bold" : "border-white/10 text-slate-600"
+            }`}
+          />
         </div>
       </div>
 
-      {/* Expanded edit row — shown when active */}
-      {isActive && (
-        <div className="px-3 pb-3 pt-1 border-t border-white/5">
-          <div className="grid grid-cols-3 gap-2 mb-2">
-            <div>
-              <label className="text-[10px] text-slate-500 uppercase block mb-0.5">Stock</label>
-              <input type="number" inputMode="numeric" value={stock} onChange={e => setStock(e.target.value)}
-                onBlur={commitStock} onKeyDown={e => e.key === "Enter" && commitStock()}
-                className={`w-full px-2 py-1.5 text-center rounded-lg border text-sm font-bold bg-[#040d1a] focus:outline-none focus:border-[#f0b429]/50 ${needsOrder ? "border-amber-500/30 text-amber-300" : "border-white/10 text-white"}`} />
-            </div>
-            <div>
-              <label className="text-[10px] text-slate-500 uppercase block mb-0.5">Expired</label>
-              <input type="number" inputMode="numeric" value={expired} onChange={e => setExpired(e.target.value)}
-                onBlur={commitExpired} onKeyDown={e => e.key === "Enter" && commitExpired()}
-                className={`w-full px-2 py-1.5 text-center rounded-lg border text-sm bg-[#040d1a] focus:outline-none focus:border-[#f0b429]/50 ${item.expiredQty > 0 ? "border-red-500/30 text-red-400 font-bold" : "border-white/10 text-slate-500"}`} />
-            </div>
-            <div>
-              <label className="text-[10px] text-slate-500 uppercase block mb-0.5">Delta</label>
-              <div className={`w-full px-2 py-1.5 text-center rounded-lg border border-white/5 text-sm bg-[#040d1a] ${item.delta != null ? (item.delta > 0 ? "text-emerald-400" : item.delta < 0 ? "text-red-400" : "text-slate-600") : "text-slate-700"}`}>
-                {item.delta != null ? (item.delta > 0 ? `+${item.delta}` : item.delta) : "—"}
-              </div>
-            </div>
-          </div>
-          <div>
-            <label className="text-[10px] text-slate-500 uppercase block mb-0.5">Notes</label>
-            <input type="text" value={notes} onChange={e => setNotes(e.target.value)}
-              onBlur={commitNotes} onKeyDown={e => e.key === "Enter" && commitNotes()}
-              placeholder="Add notes..."
-              className="w-full px-2 py-1.5 rounded-lg border border-white/10 text-sm text-slate-300 bg-[#040d1a] placeholder-slate-700 focus:outline-none focus:border-[#f0b429]/50" />
-          </div>
-          {item.priorStock != null && (
-            <div className="mt-1.5 text-[10px] text-slate-600">Prior count: {item.priorStock}</div>
-          )}
+      {/* Notes row — toggle on tap of name */}
+      {showNotes && (
+        <div className="px-2 pt-1 pb-0.5">
+          <input type="text" value={notes} onChange={e => setNotes(e.target.value)} onBlur={commitNotes}
+            onKeyDown={e => e.key === "Enter" && commitNotes()} placeholder="Add notes..."
+            className="w-full px-2 py-1 rounded-lg border border-white/8 text-xs text-slate-400 bg-[#040d1a] placeholder-slate-700 focus:outline-none focus:border-[#f0b429]/30" />
         </div>
       )}
     </div>
