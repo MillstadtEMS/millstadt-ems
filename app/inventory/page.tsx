@@ -60,7 +60,7 @@ function useSpeech(onResult: (t: string) => void) {
 export default function InventoryDashboard() {
   const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
-  const [activeCat, setActiveCat] = useState("all");
+  const [activeCat, setActiveCat] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
@@ -88,7 +88,13 @@ export default function InventoryDashboard() {
     try {
       const r = await fetch("/api/inventory/items");
       if (!r.ok) { router.push("/inventory/login"); return; }
-      setItems(await r.json()); lastPoll.current = new Date().toISOString();
+      const data = await r.json() as Item[];
+      setItems(data); lastPoll.current = new Date().toISOString();
+      // Default to first category
+      if (!activeCat && data.length > 0) {
+        const firstSlug = data[0].categorySlug ?? "unknown";
+        setActiveCat(firstSlug);
+      }
     } catch { router.push("/inventory/login"); } finally { setLoading(false); }
   }, [router]);
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -144,7 +150,7 @@ export default function InventoryDashboard() {
 
   function getFiltered() {
     return items.filter(i => {
-      if (activeCat !== "all" && i.categorySlug !== activeCat) return false;
+      if (i.categorySlug !== activeCat) return false;
       if (search) { const s = search.toLowerCase(); return i.name.toLowerCase().includes(s) || (i.location ?? "").toLowerCase().includes(s); }
       return true;
     });
@@ -163,7 +169,7 @@ export default function InventoryDashboard() {
     setSubmitting(true);
     try {
       await fetch("/api/inventory/submit", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ categorySlug: activeCat === "all" ? null : activeCat, itemsUpdated: editedCount.current, notes: submitNotes || null, submittedBy: "Inventory User" }) });
+        body: JSON.stringify({ categorySlug: activeCat, itemsUpdated: editedCount.current, notes: submitNotes || null, submittedBy: "Inventory User" }) });
       msg("Submitted!"); setShowSubmit(false); setSubmitNotes(""); editedCount.current = 0;
     } catch { msg("Failed"); } finally { setSubmitting(false); }
   }
@@ -214,10 +220,6 @@ export default function InventoryDashboard() {
                 className="w-full pl-11 pr-4 py-2 bg-slate-800 border border-slate-600 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/25" />
             </div>
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => setActiveCat("all")}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${activeCat === "all" ? "bg-yellow-500 text-slate-900" : "bg-slate-700 text-slate-300 hover:bg-slate-600"}`}>
-                All ({items.length})
-              </button>
               {categories.map(c => (
                 <button key={c.slug} onClick={() => { setActiveCat(c.slug); setFocusedIdx(0); }}
                   className={`px-4 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${activeCat === c.slug ? "bg-yellow-500 text-slate-900" : "bg-slate-700 text-slate-300 hover:bg-slate-600"}`}>
