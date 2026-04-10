@@ -34,26 +34,64 @@ function calcNeed(item: Item): number {
 function useSpeech(onResult: (t: string) => void) {
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(false);
+  const activeRef = useRef(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recRef = useRef<any>(null);
+  const onResultRef = useRef(onResult);
+  onResultRef.current = onResult;
+
   useEffect(() => {
     const SR = (window as unknown as Record<string, unknown>).SpeechRecognition ||
                (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
     setSupported(!!SR);
     if (SR) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const r = new (SR as any)(); r.continuous = false; r.interimResults = false; r.lang = "en-US";
+      const r = new (SR as any)();
+      r.continuous = true;
+      r.interimResults = false;
+      r.lang = "en-US";
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      r.onresult = (e: any) => { const t = e.results[0]?.[0]?.transcript?.trim(); if (t) onResult(t); };
-      r.onend = () => setListening(false); r.onerror = () => setListening(false);
+      r.onresult = (e: any) => {
+        // Process only the latest result
+        const last = e.results[e.results.length - 1];
+        if (last?.isFinal) {
+          const t = last[0]?.transcript?.trim();
+          if (t) onResultRef.current(t);
+        }
+      };
+      r.onend = () => {
+        // Auto-restart if still active (continuous hands-free mode)
+        if (activeRef.current) {
+          try { r.start(); } catch { /* already started */ }
+        } else {
+          setListening(false);
+        }
+      };
+      r.onerror = (ev: { error: string }) => {
+        // Restart on non-fatal errors, stop on permission denial
+        if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
+          activeRef.current = false;
+          setListening(false);
+        }
+        // "no-speech" and "aborted" are normal — onend will auto-restart
+      };
       recRef.current = r;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
   const toggle = useCallback(() => {
     if (!recRef.current) return;
-    if (listening) recRef.current.stop(); else { recRef.current.start(); setListening(true); }
-  }, [listening]);
+    if (activeRef.current) {
+      activeRef.current = false;
+      recRef.current.stop();
+      setListening(false);
+    } else {
+      activeRef.current = true;
+      recRef.current.start();
+      setListening(true);
+    }
+  }, []);
+
   return { listening, supported, toggle };
 }
 
@@ -132,20 +170,75 @@ export default function InventoryDashboard() {
 
   function msg(t: string) { setToast(t); setTimeout(() => setToast(null), 2500); }
 
+  // Word-to-number map for speech
+  const wordNums: Record<string, number> = {
+    zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,
+    ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,
+    seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,
+  };
+
+  function parseNumber(s: string): number | null {
+    const n = parseInt(s);
+    if (!isNaN(n)) return n;
+    if (wordNums[s] !== undefined) return wordNums[s];
+    return null;
+  }
+
   const handleSpeech = useCallback((transcript: string) => {
     const l = transcript.toLowerCase().trim();
     const filtered = getFiltered();
-    if (l === "next" || l === "next item") { setFocusedIdx(i => Math.min(i + 1, filtered.length - 1)); msg("Next"); return; }
-    const qm = l.match(/(?:quantity|stock|count|set)\s+(?:to\s+)?(\d+)/);
-    const num = qm ? parseInt(qm[1]) : l.match(/^(\d+)$/) ? parseInt(l) : null;
-    if (num !== null && filtered[focusedIdx]) { saveItem(filtered[focusedIdx], { currentStock: num }); msg(`Stock → ${num}`); return; }
-    const em = l.match(/expired\s+(\d+)/);
-    if (em && filtered[focusedIdx]) { saveItem(filtered[focusedIdx], { expiredQty: parseInt(em[1]) }); msg(`Expired → ${em[1]}`); return; }
-    if (l.startsWith("note ") && filtered[focusedIdx]) { saveItem(filtered[focusedIdx], { notes: l.slice(5) }); msg("Note saved"); return; }
-    if (l.startsWith("search ") || l.startsWith("find ")) { setSearch(l.replace(/^(search|find)\s+/, "")); return; }
+    const current = filtered[focusedIdx];
+
+    // "next" — advance to next row
+    if (l === "next" || l === "next item" || l === "next one" || l === "go next") {
+      const newIdx = Math.min(focusedIdx + 1, filtered.length - 1);
+      setFocusedIdx(newIdx);
+      msg(`→ ${filtered[newIdx]?.name?.slice(0, 30) ?? "Next"}`);
+      return;
+    }
+
+    // "back" / "previous"
+    if (l === "back" || l === "previous" || l === "go back") {
+      const newIdx = Math.max(focusedIdx - 1, 0);
+      setFocusedIdx(newIdx);
+      msg(`← ${filtered[newIdx]?.name?.slice(0, 30) ?? "Back"}`);
+      return;
+    }
+
+    // "skip" — set 0 and advance
+    if (l === "skip") {
+      if (current) saveItem(current, { currentStock: 0 });
+      setFocusedIdx(i => Math.min(i + 1, filtered.length - 1));
+      msg("Skipped → next");
+      return;
+    }
+
+    // "expired N"
+    const em = l.match(/expired?\s+(\w+)/);
+    if (em && current) {
+      const n = parseNumber(em[1]);
+      if (n !== null) { saveItem(current, { expiredQty: n }); msg(`Expired → ${n}`); return; }
+    }
+
+    // "note ..."
+    if (l.startsWith("note ") && current) { saveItem(current, { notes: l.slice(5) }); msg("Note saved"); return; }
+
+    // Plain number or "quantity/stock/count N" — set stock and auto-advance
+    const qm = l.match(/(?:quantity|stock|count|set)\s+(?:to\s+)?(\w+)/);
+    const numStr = qm ? qm[1] : l;
+    const num = parseNumber(numStr);
+    if (num !== null && current) {
+      saveItem(current, { currentStock: num });
+      // Auto-advance to next item after setting stock
+      const newIdx = Math.min(focusedIdx + 1, filtered.length - 1);
+      setTimeout(() => setFocusedIdx(newIdx), 300);
+      msg(`${current.name.slice(0, 20)}: ${num} → next`);
+      return;
+    }
+
     msg(`"${transcript}" — ?`);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusedIdx, saveItem]);
+  }, [focusedIdx, saveItem, items, activeCat, search]);
   const { listening, supported, toggle: toggleSpeech } = useSpeech(handleSpeech);
 
   function getFiltered() {
@@ -196,8 +289,9 @@ export default function InventoryDashboard() {
           </div>
           <div className="flex items-center gap-2">
             {supported && (
-              <button onClick={toggleSpeech} className={`w-9 h-9 rounded-xl flex items-center justify-center transition ${listening ? "bg-red-500/20 text-red-400 animate-pulse" : "bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"}`} title="Voice">
-                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+              <button onClick={toggleSpeech} className={`h-9 rounded-xl flex items-center justify-center gap-2 transition px-3 ${listening ? "bg-red-500/20 text-red-400 ring-2 ring-red-500/40" : "bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"}`} title={listening ? "Stop voice mode" : "Start hands-free voice mode"}>
+                <svg viewBox="0 0 24 24" className={`w-5 h-5 fill-current ${listening ? "animate-pulse" : ""}`}><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                {listening && <span className="text-xs font-bold">LIVE</span>}
               </button>
             )}
             <button onClick={() => setShowSubmit(true)} className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 flex items-center justify-center transition" title="Submit count">
@@ -246,20 +340,24 @@ export default function InventoryDashboard() {
               <div className="text-center">Expired</div>
             </div>
 
-            {groups.map((g, gi) => (
-              <div key={gi}>
-                <div className="bg-slate-800/80 border-l-4 border-yellow-400 px-8 py-2.5 flex items-center gap-3">
-                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-yellow-400 shrink-0"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
-                  <span className="text-yellow-400 text-xs font-bold uppercase tracking-wide">{g.loc}</span>
-                  <span className="text-slate-500 text-[11px] ml-auto">{g.items.length} items</span>
+            {(() => {
+              let globalIdx = 0;
+              return groups.map((g, gi) => (
+                <div key={gi}>
+                  <div className="bg-slate-800/80 border-l-4 border-yellow-400 px-8 py-2.5 flex items-center gap-3">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-yellow-400 shrink-0"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+                    <span className="text-yellow-400 text-xs font-bold uppercase tracking-wide">{g.loc}</span>
+                    <span className="text-slate-500 text-[11px] ml-auto">{g.items.length} items</span>
+                  </div>
+                  <div className="divide-y divide-slate-800">
+                    {g.items.map((item, idx) => {
+                      const thisIdx = globalIdx++;
+                      return <ItemRow key={item.id} item={item} isSaving={!!saving[item.id]} onSave={u => saveItem(item, u)} even={idx % 2 === 0} focused={listening && thisIdx === focusedIdx} />;
+                    })}
+                  </div>
                 </div>
-                <div className="divide-y divide-slate-800">
-                  {g.items.map((item, idx) => (
-                    <ItemRow key={item.id} item={item} isSaving={!!saving[item.id]} onSave={u => saveItem(item, u)} even={idx % 2 === 0} />
-                  ))}
-                </div>
-              </div>
-            ))}
+              ));
+            })()}
 
             {filtered.length === 0 && (
               <div className="text-center py-20 text-slate-500 text-sm">{search ? "No items match your search." : "No items found."}</div>
@@ -289,10 +387,16 @@ export default function InventoryDashboard() {
   );
 }
 
-function ItemRow({ item, isSaving, onSave, even }: {
-  item: Item; isSaving: boolean; even: boolean;
+function ItemRow({ item, isSaving, onSave, even, focused }: {
+  item: Item; isSaving: boolean; even: boolean; focused?: boolean;
   onSave: (u: { currentStock?: number; expiredQty?: number; notes?: string }) => void;
 }) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (focused && rowRef.current) {
+      rowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [focused]);
   const [stock, setStock] = useState(item.currentStock === 0 ? "" : String(item.currentStock));
   const [expired, setExpired] = useState(item.expiredQty === 0 ? "" : String(item.expiredQty));
   const [showNotes, setShowNotes] = useState(false);
@@ -313,7 +417,7 @@ function ItemRow({ item, isSaving, onSave, even }: {
   const needsOrder = need > 0;
 
   return (
-    <div className={`${even ? "bg-slate-900" : "bg-slate-900/60"} hover:bg-slate-800 transition-colors ${isSaving ? "opacity-60" : ""}`}>
+    <div ref={rowRef} className={`${focused ? "bg-yellow-500/10 border-l-4 border-yellow-400" : even ? "bg-slate-900 border-l-4 border-transparent" : "bg-slate-900/60 border-l-4 border-transparent"} hover:bg-slate-800 transition-colors ${isSaving ? "opacity-60" : ""}`}>
       <div className="grid grid-cols-[1fr_70px_100px_70px_90px] gap-2 items-center px-8 py-3">
 
         {/* Item name */}
