@@ -194,6 +194,27 @@ export default function InventoryDashboard() {
 
   function msg(t: string) { setToast(t); setTimeout(() => setToast(null), 2500); }
 
+  /** Speak item name aloud using text-to-speech */
+  function speak(text: string) {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel(); // stop any current speech
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.1;
+    u.pitch = 1;
+    u.volume = 1;
+    u.lang = "en-US";
+    window.speechSynthesis.speak(u);
+  }
+
+  /** Move to an item and read its name aloud */
+  function goToItem(idx: number) {
+    const fil = getFiltered();
+    const clamped = Math.max(0, Math.min(idx, fil.length - 1));
+    setFocusedIdx(clamped);
+    const item = fil[clamped];
+    if (item) speak(item.name);
+  }
+
   const wordNums: Record<string, number> = { zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50 };
   function parseNum(s: string): number | null { const n = parseInt(s); if (!isNaN(n)) return n; return wordNums[s] ?? null; }
 
@@ -201,15 +222,54 @@ export default function InventoryDashboard() {
     const l = transcript.toLowerCase().trim();
     const fil = getFiltered();
     const cur = fil[focusedIdx];
-    if (l === "next" || l === "next item" || l === "next one") { const i = Math.min(focusedIdx + 1, fil.length - 1); setFocusedIdx(i); msg(`→ ${fil[i]?.name?.slice(0, 25) ?? ""}`); return; }
-    if (l === "back" || l === "previous") { const i = Math.max(focusedIdx - 1, 0); setFocusedIdx(i); msg(`← ${fil[i]?.name?.slice(0, 25) ?? ""}`); return; }
-    if (l === "skip") { if (cur) saveItem(cur, { currentStock: 0 }); setFocusedIdx(i => Math.min(i + 1, fil.length - 1)); msg("Skipped"); return; }
+
+    // "next" — advance and read next item name
+    if (l === "next" || l === "next item" || l === "next one") {
+      goToItem(focusedIdx + 1);
+      return;
+    }
+
+    // "go back" / "back" / "previous" / "redo" — go back one and read it
+    if (l === "back" || l === "go back" || l === "previous" || l === "redo" || l === "go back one") {
+      goToItem(focusedIdx - 1);
+      return;
+    }
+
+    // "erase" / "clear" — wipe current line (stock=0, expired=0, notes="")
+    if (l === "erase" || l === "clear" || l === "delete" || l === "remove") {
+      if (cur) {
+        saveItem(cur, { currentStock: 0, expiredQty: 0, notes: "" });
+        msg("Erased");
+        speak("Erased");
+      }
+      return;
+    }
+
+    // "skip" — set 0 and advance, read next name
+    if (l === "skip") {
+      if (cur) saveItem(cur, { currentStock: 0 });
+      goToItem(focusedIdx + 1);
+      return;
+    }
+
+    // "expired N"
     const em = l.match(/expired?\s+(\w+)/);
-    if (em && cur) { const n = parseNum(em[1]); if (n !== null) { saveItem(cur, { expiredQty: n }); msg(`Exp → ${n}`); return; } }
-    if (l.startsWith("note ") && cur) { saveItem(cur, { notes: l.slice(5) }); msg("Note saved"); return; }
+    if (em && cur) { const n = parseNum(em[1]); if (n !== null) { saveItem(cur, { expiredQty: n }); msg(`Exp → ${n}`); speak(`Expired ${n}`); return; } }
+
+    // "note ..."
+    if (l.startsWith("note ") && cur) { saveItem(cur, { notes: l.slice(5) }); msg("Note saved"); speak("Note saved"); return; }
+
+    // Plain number — set stock, auto-advance, read next item name
     const qm = l.match(/(?:quantity|stock|count|set)\s+(?:to\s+)?(\w+)/);
     const num = parseNum(qm ? qm[1] : l);
-    if (num !== null && cur) { saveItem(cur, { currentStock: num }); const i = Math.min(focusedIdx + 1, fil.length - 1); setTimeout(() => setFocusedIdx(i), 300); msg(`${num} → next`); return; }
+    if (num !== null && cur) {
+      saveItem(cur, { currentStock: num });
+      // Brief delay then advance and read next
+      setTimeout(() => goToItem(focusedIdx + 1), 400);
+      msg(`${num} → next`);
+      return;
+    }
+
     msg(`"${transcript}" ?`);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusedIdx, saveItem, items, activeCat, search]);
@@ -259,7 +319,7 @@ export default function InventoryDashboard() {
 
           <div className="flex items-center gap-1.5">
             {supported && (
-              <button onClick={toggleSpeech} className={`h-9 rounded-xl flex items-center gap-1.5 px-3 text-sm font-bold transition ${listening ? "bg-red-500/25 text-red-400 ring-2 ring-red-500/50" : "bg-slate-800 text-slate-400 active:bg-slate-700"}`}>
+              <button onClick={() => { toggleSpeech(); if (!listening) { const fil = getFiltered(); const item = fil[focusedIdx]; if (item) setTimeout(() => speak(item.name), 500); } }} className={`h-9 rounded-xl flex items-center gap-1.5 px-3 text-sm font-bold transition ${listening ? "bg-red-500/25 text-red-400 ring-2 ring-red-500/50" : "bg-slate-800 text-slate-400 active:bg-slate-700"}`}>
                 <svg viewBox="0 0 24 24" className={`w-5 h-5 fill-current ${listening ? "animate-pulse" : ""}`}><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
                 {listening ? "LIVE" : "Mic"}
               </button>
@@ -373,7 +433,7 @@ export default function InventoryDashboard() {
                   {filtered[focusedIdx]?.name ?? "No item selected"}
                 </div>
                 <div className="text-slate-400 text-xs truncate">
-                  {lastHeard || "Say a number, \"next\", \"skip\", or \"expired 2\""}
+                  {lastHeard || "Say a number · next · go back · erase · skip · expired 2"}
                 </div>
               </div>
               {/* Stop button */}
