@@ -180,11 +180,15 @@ export default function InventorySettingsPage() {
   }
 
   async function seedInventory() {
-    if (!confirm("This will clear all existing inventory data and re-import from the Excel file. Continue?")) return;
+    if (!confirm("This will clear all existing inventory data and re-seed. Use the local script (scripts/seed.ts) to parse Excel first. Continue?")) return;
     setSeedLoading(true);
     setSeedResult("");
     try {
-      const res = await fetch("/api/inventory/seed", { method: "POST" });
+      const res = await fetch("/api/inventory/seed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categories: [] }),
+      });
       const data = await res.json();
       if (res.ok) {
         setSeedResult(`Success: ${data.message}`);

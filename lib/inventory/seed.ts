@@ -3,9 +3,8 @@
  * Handles section headers, skip rows, vendor extraction, and location metadata.
  */
 
-import * as XLSX from "xlsx";
-import path from "path";
-import fs from "fs";
+import path from "node:path";
+import fs from "node:fs";
 import { createCategory, createItem, clearInventoryData, ensureInventorySchema } from "./db";
 
 interface ParsedItem {
@@ -103,7 +102,8 @@ function isSkipRow(name: string): boolean {
   return lower.includes("skip") || lower.includes("do not order") || lower.includes("empty at the moment");
 }
 
-export function parseWorkbook(filePath?: string): ParsedCategory[] {
+export async function parseWorkbook(filePath?: string): Promise<ParsedCategory[]> {
+  const XLSX = await import("xlsx");
   const resolvedPath = filePath ?? path.join(/*turbopackIgnore: true*/ process.cwd(), "data", "2026 Millstadt EMS Order _ Inv Form.xlsx");
 
   if (!fs.existsSync(resolvedPath)) {
@@ -181,7 +181,7 @@ export async function seedFromWorkbook(filePath?: string): Promise<{ categories:
   await ensureInventorySchema();
   await clearInventoryData();
 
-  const parsed = parseWorkbook(filePath);
+  const parsed = await parseWorkbook(filePath);
   let totalItems = 0;
 
   for (const cat of parsed) {
