@@ -9,6 +9,9 @@ interface Stats {
   activeAnnouncements: number;
   callsThisYear: number;
   unreadSubmissions: number;
+  inventoryItems: number;
+  lowStock: number;
+  expiredItems: number;
 }
 
 const SECTIONS = [
@@ -84,6 +87,22 @@ const SECTIONS = [
     iconColor: "text-[#f0b429]",
     icon: <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>,
   },
+  {
+    label: "Inventory Reports",
+    href: "/admin/inventory-reports",
+    desc: "Generate PDF reports, view audit log & history",
+    accent: "border-cyan-500/40 bg-cyan-500/8",
+    iconColor: "text-cyan-400",
+    icon: <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/></svg>,
+  },
+  {
+    label: "Inventory Settings",
+    href: "/admin/inventory-settings",
+    desc: "Manage password, QR codes, and seed inventory data",
+    accent: "border-cyan-500/40 bg-cyan-500/8",
+    iconColor: "text-cyan-400",
+    icon: <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>,
+  },
 ];
 
 export default function AdminDashboard() {
@@ -96,13 +115,18 @@ export default function AdminDashboard() {
       fetch("/api/admin/announcements").then(r => r.json()).catch(() => []),
       fetch("/api/cad/log").then(r => r.json()).catch(() => []),
       fetch("/api/admin/submissions").then(r => r.json()).catch(() => []),
-    ]).then(([t, b, a, c, s]) => {
+      fetch("/api/inventory/items").then(r => r.ok ? r.json() : []).catch(() => []),
+    ]).then(([t, b, a, c, s, inv]) => {
+      const invItems = Array.isArray(inv) ? inv : [];
       setStats({
         testimonials: Array.isArray(t) ? t.length : 0,
         pendingBulletin: Array.isArray(b) ? b.filter((p: { approved: boolean }) => !p.approved).length : 0,
         activeAnnouncements: Array.isArray(a) ? a.filter((x: { active: boolean }) => x.active).length : 0,
         callsThisYear: Array.isArray(c) ? c.length : 0,
         unreadSubmissions: Array.isArray(s) ? s.reduce((n: number, cat: { unread: number }) => n + cat.unread, 0) : 0,
+        inventoryItems: invItems.length,
+        lowStock: invItems.filter((i: { qtyToOrder: number; skipOrder: boolean }) => i.qtyToOrder > 0 && !i.skipOrder).length,
+        expiredItems: invItems.filter((i: { expiredQty: number }) => i.expiredQty > 0).length,
       });
     });
   }, []);
@@ -121,13 +145,16 @@ export default function AdminDashboard() {
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-10">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
           {[
             { label: "Testimonials",     value: stats.testimonials,        color: "text-purple-300" },
             { label: "Pending Posts",    value: stats.pendingBulletin,     color: stats.pendingBulletin > 0 ? "text-amber-300" : "text-slate-300" },
             { label: "Active Alerts",    value: stats.activeAnnouncements, color: stats.activeAnnouncements > 0 ? "text-red-300" : "text-slate-300" },
             { label: "Unread Forms",     value: stats.unreadSubmissions,   color: stats.unreadSubmissions > 0 ? "text-[#f0b429]" : "text-slate-300" },
             { label: `Calls ${new Date().getFullYear()}`, value: stats.callsThisYear, color: "text-emerald-300" },
+            { label: "Inventory Items", value: stats.inventoryItems, color: "text-cyan-300" },
+            { label: "Low Stock", value: stats.lowStock, color: stats.lowStock > 0 ? "text-amber-300" : "text-slate-300" },
+            { label: "Expired", value: stats.expiredItems, color: stats.expiredItems > 0 ? "text-red-300" : "text-slate-300" },
           ].map(s => (
             <div key={s.label} className="bg-[#071428] border border-white/10 rounded-2xl p-5">
               <div className={`text-3xl font-black ${s.color}`}>{s.value}</div>

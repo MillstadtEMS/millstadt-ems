@@ -37,14 +37,31 @@
 
   /* ===== PRINT ===== */
   @media print {
-    body { font-size: 11pt; }
+    body { font-size: 11pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .page-break { page-break-before: always; }
     .no-print { display: none; }
     .cover-page { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .cover-page, section { page-break-inside: avoid; }
+    section { page-break-inside: avoid; }
     table { page-break-inside: auto; }
     tr { page-break-inside: avoid; }
-    .photo-block img { max-height: 300px; }
+    /* Remove box outlines from photos for clean print */
+    .photo-block { box-shadow: none; border: none; border-radius: 0; margin-left: -30px; margin-right: -30px; }
+    .photo-block img { border-radius: 0; max-height: none; width: 100%; }
+    .photo-block.hero, .photo-block.medium, .photo-block.full { page-break-before: auto; }
+    .photo-block.hero img, .photo-block.full img { max-height: none; width: 100%; }
+    .photo-caption { border-radius: 0; }
+    /* Full bleed cover */
+    .cover-page { min-height: 100vh; }
+    /* Clean stat boxes */
+    .stat-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .value-card { border-radius: 0; }
+    .section-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .callout, .callout.warning, .callout.success { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    /* Ensure charts print with color */
+    .bar-fill, .gauge-fill, .dual-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .pillar-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .fleet-card { border-radius: 0; }
+    .district-map-full img { box-shadow: none; border: none; border-radius: 0; }
   }
 
   /* ===== DRAFT WATERMARK ===== */
