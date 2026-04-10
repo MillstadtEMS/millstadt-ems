@@ -2,2241 +2,778 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Millstadt Ambulance Service — Annual Budget &amp; Strategic Overview</title>
 <style>
-  /* ===== RESET & BASE ===== */
+  @page { size: letter; margin: 0.6in 0.7in; }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html { font-size: 15px; }
   body {
     font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-    color: #1a1a1a;
-    background: #fff;
-    line-height: 1.65;
-    -webkit-font-smoothing: antialiased;
+    font-size: 10.5pt; color: #1a1a1a; line-height: 1.6;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
-
-  /* ===== COLOR PALETTE ===== */
-  :root {
-    --navy: #0f1b2d;
-    --navy-light: #1a2d4a;
-    --red: #9b1b30;
-    --red-dark: #7a1525;
-    --red-light: #c4324a;
-    --gold: #c8a84e;
-    --gray-100: #f7f8fa;
-    --gray-200: #e9ecef;
-    --gray-300: #dee2e6;
-    --gray-500: #6c757d;
-    --gray-700: #495057;
-    --gray-900: #212529;
-    --green: #1a7a3a;
-    --green-light: #d4edda;
-    --red-bg: #f8d7da;
-  }
-
-  /* ===== PRINT ===== */
-  @media print {
-    body { font-size: 11pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .page-break { page-break-before: always; }
-    .no-print { display: none; }
-    .cover-page { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    section { page-break-inside: avoid; }
-    table { page-break-inside: auto; }
-    tr { page-break-inside: avoid; }
-    /* Remove box outlines from photos for clean print */
-    .photo-block { box-shadow: none; border: none; border-radius: 0; margin-left: -30px; margin-right: -30px; }
-    .photo-block img { border-radius: 0; max-height: none; width: 100%; }
-    .photo-block.hero, .photo-block.medium, .photo-block.full { page-break-before: auto; }
-    .photo-block.hero img, .photo-block.full img { max-height: none; width: 100%; }
-    .photo-caption { border-radius: 0; }
-    /* Full bleed cover - force gradient and layout for print */
-    .cover-page {
-      height: 100vh;
-      min-height: 0;
-      justify-content: flex-start !important;
-      padding-top: 40px;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .cover-page::before {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-      background: linear-gradient(
-        to bottom,
-        rgba(15, 27, 45, 0.30) 0%,
-        rgba(15, 27, 45, 0.50) 30%,
-        rgba(15, 27, 45, 0.80) 55%,
-        rgba(15, 27, 45, 0.95) 75%,
-        rgba(15, 27, 45, 1.0) 100%
-      ) !important;
-    }
-    .cover-top-bar { margin-bottom: 0 !important; background: transparent; }
-    .cover-content {
-      margin-top: auto;
-      padding: 40px 60px 50px;
-      background: rgba(15, 27, 45, 0.95) !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .cover-content, .cover-top-bar {
-      position: relative;
-      z-index: 2;
-    }
-    .cover-title, .cover-subtitle, .cover-meta-value, .cover-meta-label, .cover-established, .cover-accent-line {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    /* Smaller draft watermark for PDF */
-    body::after { font-size: 10rem !important; color: rgba(155, 27, 48, 0.06) !important; }
-    /* Prevent orphaned section headers at page bottom */
-    .section-header { page-break-after: avoid; }
-    h3 { page-break-after: avoid; }
-    h4 { page-break-after: avoid; }
-    /* Hide the CSS cover page, show the print-only cover */
-    .cover-page { display: none !important; }
-    .print-cover { display: block !important; }
-    /* Fix core values — keep each value card together, don't split across pages */
-    .values-grid { display: grid; grid-template-columns: 1fr 1fr; page-break-inside: auto; }
-    .value-card { page-break-inside: avoid; }
-    /* Clean stat boxes */
-    .stat-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .value-card { border-radius: 0; }
-    .section-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .callout, .callout.warning, .callout.success { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    /* Ensure charts print with color */
-    .bar-fill, .gauge-fill, .dual-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .pillar-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .fleet-card { border-radius: 0; }
-    .district-map-full img { box-shadow: none; border: none; border-radius: 0; }
-  }
-
-  /* ===== DRAFT WATERMARK ===== */
   body::after {
-    content: 'DRAFT';
-    position: fixed;
-    top: 50%;
-    left: 50%;
+    content: 'DRAFT'; position: fixed; top: 50%; left: 50%;
     transform: translate(-50%, -50%) rotate(-35deg);
-    font-size: 20rem;
-    font-weight: 900;
-    color: rgba(155, 27, 48, 0.10);
-    letter-spacing: 40px;
-    pointer-events: none;
-    z-index: 9999;
-    white-space: nowrap;
+    font-size: 8rem; font-weight: 900; color: rgba(155,27,48,0.05);
+    letter-spacing: 20px; pointer-events: none; z-index: 9999;
   }
-  @media print {
-    body::after {
-      position: fixed;
-      color: rgba(155, 27, 48, 0.05);
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
+  :root {
+    --navy: #0f1b2d; --red: #9b1b30; --gold: #c8a84e; --green: #1a7a3a;
+    --g100: #f7f8fa; --g200: #e9ecef; --g500: #6c757d; --g700: #495057;
   }
+  .pb { page-break-before: always; }
+  .nb { page-break-inside: avoid; }
+  h2, h3, h4 { page-break-after: avoid; }
 
-  /* ===== LAYOUT ===== */
-  .container { max-width: 900px; margin: 0 auto; padding: 0 30px; }
+  /* COVER */
+  .cover { page-break-after: always; margin: -0.6in -0.7in; }
+  .cover-logo { text-align: center; padding: 30px 0 10px; background: #fff; }
+  .cover-logo img { height: 120px; }
+  .cover-photo { width: 100%; display: block; max-height: 440px; object-fit: cover; }
+  .cover-bar { background: var(--navy); color: #fff; padding: 40px 50px; }
+  .cover-accent { width: 60px; height: 3px; background: var(--red); margin-bottom: 18px; }
+  .cover-title { font-size: 28pt; font-weight: 200; text-transform: uppercase; letter-spacing: 3px; line-height: 1.1; }
+  .cover-title strong { font-weight: 800; display: block; }
+  .cover-sub { font-size: 11pt; color: var(--gold); letter-spacing: 4px; text-transform: uppercase; margin: 6px 0 24px; }
+  .cover-line { border-top: 1px solid rgba(255,255,255,0.15); padding-top: 18px; display: flex; gap: 36px; flex-wrap: wrap; }
+  .cover-ml { font-size: 6pt; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.4); margin-bottom: 2px; }
+  .cover-mv { font-size: 9pt; color: rgba(255,255,255,0.85); }
+  .cover-est { text-align: right; padding: 8px 50px; font-size: 9pt; font-weight: 800; color: var(--gold); background: var(--navy); letter-spacing: 3px; }
 
-  /* ===== COVER PAGE ===== */
-  .cover-page {
-    min-height: 100vh;
-    background: url('/_internal/budget-draft/images/6.jpg') center center / cover no-repeat;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    align-items: stretch;
-    text-align: left;
-    color: #fff;
-    padding: 0;
-    position: relative;
-    overflow: hidden;
-  }
-  .cover-page::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to bottom,
-      rgba(15, 27, 45, 0.25) 0%,
-      rgba(15, 27, 45, 0.40) 30%,
-      rgba(15, 27, 45, 0.75) 60%,
-      rgba(15, 27, 45, 0.92) 80%,
-      rgba(15, 27, 45, 0.97) 100%
-    );
-    z-index: 1;
-  }
-  .cover-content {
-    position: relative;
-    z-index: 2;
-    padding: 0 60px 60px;
-  }
-  .cover-top-bar {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 30px 60px;
-    margin-bottom: auto;
-  }
-  .cover-logo {
-    height: 180px;
-    width: auto;
-    filter: drop-shadow(0 4px 16px rgba(0,0,0,0.6));
-  }
-  .cover-established {
-    font-size: 1.8rem;
-    font-weight: 800;
-    letter-spacing: 5px;
-    text-transform: uppercase;
-    color: var(--gold);
-    background: rgba(15, 27, 45, 0.6);
-    backdrop-filter: blur(4px);
-    padding: 18px 32px;
-    border: 2px solid rgba(200, 168, 78, 0.4);
-    border-radius: 6px;
-    filter: drop-shadow(0 4px 16px rgba(0,0,0,0.6));
-  }
-  .cover-accent-line {
-    width: 80px;
-    height: 3px;
-    background: var(--red);
-    margin-bottom: 24px;
-  }
-  .cover-title {
-    font-size: 3.4rem;
-    font-weight: 200;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    line-height: 1.1;
-    margin-bottom: 6px;
-  }
-  .cover-title strong {
-    font-weight: 800;
-    display: block;
-  }
-  .cover-subtitle {
-    font-size: 1.15rem;
-    font-weight: 400;
-    color: var(--gold);
-    letter-spacing: 5px;
-    text-transform: uppercase;
-    margin-bottom: 36px;
-  }
-  .cover-divider {
-    width: 100%;
-    height: 1px;
-    background: rgba(255,255,255,0.15);
-    margin-bottom: 28px;
-  }
-  .cover-meta {
-    display: flex;
-    gap: 50px;
-    align-items: flex-end;
-  }
-  .cover-meta-block {}
-  .cover-meta-label {
-    font-size: 0.65rem;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: rgba(255,255,255,0.45);
-    margin-bottom: 4px;
-  }
-  .cover-meta-value {
-    font-size: 1rem;
-    font-weight: 400;
-    letter-spacing: 1px;
-    color: rgba(255,255,255,0.85);
-  }
-  .cover-year {
-    font-size: 1.6rem;
-    font-weight: 300;
-    letter-spacing: 4px;
-  }
-  .cover-fiscal {
-    font-size: 0.95rem;
-    color: rgba(255,255,255,0.7);
-    letter-spacing: 2px;
-  }
-  .cover-address {
-    font-size: 0.85rem;
-    color: rgba(255,255,255,0.5);
-    letter-spacing: 1px;
-  }
+  /* SECTION HEADER */
+  .sh { background: var(--navy); color: #fff; padding: 10px 14px; margin: 0 0 18px; font-size: 13pt; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; border-left: 4px solid var(--red); }
+  .sn { color: var(--gold); margin-right: 10px; font-weight: 400; }
 
-  /* ===== SECTION HEADERS ===== */
-  .section-header {
-    background: var(--navy);
-    color: #fff;
-    padding: 18px 30px;
-    margin: 0 -30px 30px -30px;
-    font-size: 1.4rem;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    border-left: 5px solid var(--red);
-  }
-  .section-number {
-    color: var(--gold);
-    margin-right: 12px;
-    font-weight: 400;
-  }
-  section { padding: 40px 0 50px; }
-  section + section { border-top: 1px solid var(--gray-200); }
+  h3 { font-size: 11pt; color: var(--navy); margin: 20px 0 8px; font-weight: 600; border-bottom: 2px solid var(--red); padding-bottom: 4px; display: inline-block; }
+  h4 { font-size: 10pt; color: var(--g700); margin: 14px 0 6px; font-weight: 600; }
+  p { margin-bottom: 10px; }
 
-  h3 {
-    font-size: 1.15rem;
-    color: var(--navy);
-    margin: 30px 0 12px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    border-bottom: 2px solid var(--red);
-    padding-bottom: 6px;
-    display: inline-block;
-  }
-  h4 {
-    font-size: 1rem;
-    color: var(--gray-700);
-    margin: 20px 0 8px;
-    font-weight: 600;
-  }
-  p { margin-bottom: 14px; }
+  /* TABLES */
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 16px; font-size: 9pt; }
+  thead th { background: var(--navy); color: #fff; padding: 7px 10px; text-align: left; font-size: 8pt; letter-spacing: 0.5px; text-transform: uppercase; }
+  thead th:not(:first-child) { text-align: right; }
+  tbody td { padding: 5px 10px; border-bottom: 1px solid var(--g200); }
+  tbody td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr:nth-child(even) { background: var(--g100); }
+  .tr-total { font-weight: 700; background: var(--g200) !important; border-top: 2px solid var(--navy); }
+  .pos { color: var(--green); font-weight: 600; }
+  .neg { color: var(--red); font-weight: 600; }
 
-  /* ===== TABLES ===== */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 16px 0 24px;
-    font-size: 0.92rem;
-  }
-  table thead th {
-    background: var(--navy);
-    color: #fff;
-    padding: 10px 14px;
-    text-align: left;
-    font-weight: 600;
-    font-size: 0.85rem;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-  table thead th:not(:first-child) { text-align: right; }
-  table tbody td {
-    padding: 8px 14px;
-    border-bottom: 1px solid var(--gray-200);
-  }
-  table tbody td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
-  table tbody tr:nth-child(even) { background: var(--gray-100); }
-  table tbody tr:hover { background: #eef2f7; }
-  table tbody tr.total-row {
-    font-weight: 700;
-    background: var(--gray-200) !important;
-    border-top: 2px solid var(--navy);
-  }
-  table tbody tr.total-row td { padding: 10px 14px; }
-  .positive { color: var(--green); font-weight: 600; }
-  .negative { color: var(--red); font-weight: 600; }
+  /* STATS */
+  .stats { display: flex; gap: 10px; margin: 14px 0; }
+  .stat { flex: 1; text-align: center; padding: 14px 8px; background: var(--navy); color: #fff; border-radius: 4px; }
+  .stat-n { font-size: 18pt; font-weight: 700; color: var(--gold); display: block; }
+  .stat-l { font-size: 7pt; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+  .stat.red { background: var(--red); }
+  .stat.green { background: var(--green); }
 
-  /* ===== INFO CARDS ===== */
-  .card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin: 20px 0;
-  }
-  .card {
-    background: var(--gray-100);
-    border: 1px solid var(--gray-200);
-    border-left: 4px solid var(--red);
-    padding: 16px 18px;
-    border-radius: 4px;
-  }
-  .card-label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--gray-500);
-    margin-bottom: 4px;
-  }
-  .card-value {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--navy);
-  }
-  .card-note {
-    font-size: 0.8rem;
-    color: var(--gray-500);
-    margin-top: 4px;
-  }
+  /* PHOTOS */
+  .photo { margin: 12px 0; }
+  .photo img { width: 100%; display: block; max-height: 340px; object-fit: cover; }
+  .photo-cap { background: var(--navy); color: rgba(255,255,255,0.8); padding: 7px 12px; font-size: 8pt; font-style: italic; }
 
-  /* ===== STAT HIGHLIGHT ===== */
-  .stat-row {
-    display: flex;
-    gap: 20px;
-    margin: 20px 0;
-    flex-wrap: wrap;
-  }
-  .stat-box {
-    flex: 1;
-    min-width: 160px;
-    text-align: center;
-    padding: 20px;
-    background: var(--navy);
-    color: #fff;
-    border-radius: 6px;
-  }
-  .stat-box .stat-number {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--gold);
-    display: block;
-  }
-  .stat-box .stat-label {
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-top: 4px;
-    color: rgba(255,255,255,0.8);
-  }
+  /* CARDS */
+  .cards { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .card { flex: 1; min-width: 120px; background: var(--g100); border-left: 3px solid var(--red); padding: 8px 10px; font-size: 9pt; font-weight: 600; color: var(--navy); }
 
-  /* ===== BAR CHARTS (CSS) ===== */
-  .chart-container { margin: 20px 0 30px; }
-  .chart-title {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--navy);
-    margin-bottom: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .bar-group { margin-bottom: 14px; }
-  .bar-label {
-    font-size: 0.82rem;
-    color: var(--gray-700);
-    margin-bottom: 4px;
-    font-weight: 500;
-  }
-  .bar-track {
-    background: var(--gray-200);
-    border-radius: 4px;
-    height: 28px;
-    position: relative;
-    overflow: hidden;
-  }
-  .bar-fill {
-    height: 100%;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    padding: 0 10px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #fff;
-    transition: width 0.5s ease;
-  }
+  /* VALUES */
+  .val-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--g200); margin: 12px 0; }
+  .val-card { padding: 14px 16px; border-bottom: 1px solid var(--g200); border-right: 1px solid var(--g200); page-break-inside: avoid; }
+  .val-card:nth-child(even) { border-right: none; }
+  .val-card:nth-last-child(-n+2) { border-bottom: none; }
+  .val-name { font-size: 10pt; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .val-desc { font-size: 8.5pt; color: var(--g700); line-height: 1.55; }
+
+  /* OFFICIALS */
+  .off-grid { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--g200); margin: 10px 0; border-radius: 4px; overflow: hidden; }
+  .off { padding: 8px 12px; border-bottom: 1px solid var(--g200); border-right: 1px solid var(--g200); }
+  .off:nth-child(even) { border-right: none; }
+  .off-n { font-weight: 600; color: var(--navy); font-size: 9.5pt; }
+  .off-t { font-size: 8pt; color: var(--g500); }
+
+  /* FACTS */
+  .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+  .fact { display: flex; gap: 8px; padding: 8px 10px; background: var(--g100); border-left: 3px solid var(--navy); font-size: 9pt; }
+  .fact-l { font-size: 7pt; text-transform: uppercase; letter-spacing: 0.5px; color: var(--g500); }
+  .fact-v { font-weight: 600; color: var(--navy); }
+
+  /* TIMELINE */
+  .tl { padding-left: 20px; border-left: 3px solid var(--red); margin: 12px 0; }
+  .tl-item { margin-bottom: 12px; page-break-inside: avoid; }
+  .tl-year { font-weight: 700; color: var(--navy); font-size: 10pt; }
+  .tl-text { font-size: 9pt; color: var(--g700); }
+
+  /* BARS */
+  .bar-chart { margin: 12px 0; }
+  .bar-row { margin-bottom: 8px; }
+  .bar-label { font-size: 8pt; color: var(--g700); margin-bottom: 2px; }
+  .bar-track { background: var(--g200); height: 20px; border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; display: flex; align-items: center; padding: 0 8px; font-size: 7pt; font-weight: 600; color: #fff; }
   .bar-fill.navy { background: var(--navy); }
   .bar-fill.red { background: var(--red); }
   .bar-fill.gold { background: var(--gold); color: var(--navy); }
   .bar-fill.green { background: var(--green); }
 
-  /* ===== DUAL BAR ===== */
-  .dual-bar-row { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; }
-  .dual-bar-year { width: 50px; font-size: 0.82rem; font-weight: 600; color: var(--gray-700); }
-  .dual-bar-container { flex: 1; display: flex; gap: 4px; }
-  .dual-bar { height: 24px; border-radius: 3px; display: flex; align-items: center; padding: 0 8px; font-size: 0.72rem; font-weight: 600; color: #fff; }
-  .dual-bar.revenue { background: var(--navy); }
-  .dual-bar.expense { background: var(--red); }
-  .dual-bar-value { margin-left: auto; }
+  /* GAUGE */
+  .gauge { margin: 12px auto; max-width: 420px; }
+  .gauge-track { height: 28px; background: var(--g200); border-radius: 14px; overflow: hidden; }
+  .gauge-fill { height: 100%; background: linear-gradient(90deg, var(--green), var(--gold)); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 8pt; font-weight: 700; color: #fff; }
+  .gauge-labels { display: flex; justify-content: space-between; font-size: 7pt; color: var(--g500); margin-top: 3px; }
 
-  /* ===== GAUGE ===== */
-  .gauge-container { margin: 20px 0; text-align: center; }
-  .gauge-track {
-    width: 100%;
-    max-width: 500px;
-    height: 36px;
-    background: var(--gray-200);
-    border-radius: 18px;
-    margin: 10px auto;
-    position: relative;
-    overflow: hidden;
-  }
-  .gauge-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--green), var(--gold));
-    border-radius: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.82rem;
-    font-weight: 700;
-    color: #fff;
-  }
-  .gauge-labels { display: flex; justify-content: space-between; max-width: 500px; margin: 4px auto 0; font-size: 0.78rem; color: var(--gray-500); }
+  /* CALLOUT */
+  .callout { border-left: 4px solid var(--red); background: var(--g100); padding: 10px 14px; margin: 12px 0; page-break-inside: avoid; }
+  .callout.warn { border-left-color: #e67e22; background: #fef9e7; }
+  .callout.ok { border-left-color: var(--green); background: #d4edda; }
+  .callout-t { font-weight: 700; color: var(--navy); margin-bottom: 4px; font-size: 9.5pt; }
 
-  /* ===== TIMELINE ===== */
-  .timeline { position: relative; padding-left: 30px; margin: 20px 0; }
-  .timeline::before {
-    content: '';
-    position: absolute;
-    left: 8px;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--red);
-  }
-  .timeline-item { position: relative; margin-bottom: 20px; }
-  .timeline-item::before {
-    content: '';
-    position: absolute;
-    left: -26px;
-    top: 6px;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--red);
-    border: 2px solid #fff;
-    box-shadow: 0 0 0 2px var(--red);
-  }
-  .timeline-year { font-weight: 700; color: var(--navy); font-size: 1rem; }
-  .timeline-text { color: var(--gray-700); font-size: 0.92rem; }
+  /* PILLARS */
+  .pill { border: 1px solid var(--g200); border-top: 3px solid var(--red); padding: 12px 14px; page-break-inside: avoid; margin-bottom: 10px; }
+  .pill-num { font-size: 14pt; font-weight: 800; color: var(--gold); line-height: 1; margin-bottom: 2px; }
+  .pill-title { font-size: 10pt; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .pill-text { font-size: 8.5pt; color: var(--g700); line-height: 1.5; }
 
-  /* ===== OFFICIALS TABLE ===== */
-  .officials-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
-    margin: 16px 0 24px;
-    border: 1px solid var(--gray-200);
-    border-radius: 6px;
-    overflow: hidden;
-  }
-  .official-item {
-    padding: 12px 18px;
-    border-bottom: 1px solid var(--gray-200);
-    border-right: 1px solid var(--gray-200);
-  }
-  .official-item:nth-child(even) { border-right: none; }
-  .official-name { font-weight: 600; color: var(--navy); font-size: 0.95rem; }
-  .official-title { font-size: 0.82rem; color: var(--gray-500); }
+  /* FLEET */
+  .fleet { display: flex; gap: 10px; margin: 12px 0; }
+  .fleet-card { flex: 1; text-align: center; padding: 14px; border: 2px solid var(--g200); }
+  .fleet-type { font-size: 7pt; text-transform: uppercase; letter-spacing: 1px; color: var(--red); }
+  .fleet-name { font-size: 10pt; font-weight: 700; color: var(--navy); }
+  .fleet-det { font-size: 8pt; color: var(--g500); margin-top: 2px; }
 
-  /* ===== VALUES GRID ===== */
-  .values-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0;
-    margin: 24px 0;
-    border: 1px solid var(--gray-200);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  .value-card {
-    padding: 28px 26px;
-    background: #fff;
-    border-bottom: 1px solid var(--gray-200);
-    border-right: 1px solid var(--gray-200);
-    position: relative;
-    transition: background 0.2s;
-  }
-  .value-card:nth-child(even) { border-right: none; }
-  .value-card:nth-last-child(-n+2) { border-bottom: none; }
-  .value-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: var(--red);
-  }
-  .value-card:hover { background: var(--gray-100); }
-  .value-name {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--navy);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-bottom: 8px;
-  }
-  .value-meaning {
-    font-size: 0.88rem;
-    color: var(--gray-700);
-    line-height: 1.65;
-  }
+  /* TOC */
+  .toc { list-style: none; margin: 12px 0; }
+  .toc li { display: flex; padding: 5px 0; border-bottom: 1px dotted var(--g200); font-size: 9.5pt; }
+  .toc-n { color: var(--red); font-weight: 700; width: 24px; }
+  .toc-t { flex: 1; color: var(--navy); }
+  .toc-h { font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 8pt; color: var(--g500); padding: 10px 0 3px; border-bottom: none !important; }
 
-  /* ===== PILLARS ===== */
-  .pillar-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin: 24px 0;
-  }
-  .pillar-card {
-    background: #fff;
-    border: 1px solid var(--gray-200);
-    border-top: 4px solid var(--red);
-    border-radius: 0 0 8px 8px;
-    padding: 24px 20px;
-  }
-  .pillar-number {
-    font-size: 2rem;
-    font-weight: 800;
-    color: var(--gold);
-    line-height: 1;
-    margin-bottom: 8px;
-  }
-  .pillar-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--navy);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 10px;
-  }
-  .pillar-text {
-    font-size: 0.88rem;
-    color: var(--gray-700);
-    line-height: 1.6;
-  }
+  /* GEO */
+  .geo { display: flex; gap: 20px; margin: 14px 0; align-items: flex-start; }
+  .geo-panel { flex: 1; text-align: center; }
+  .geo-panel img { width: 100%; max-height: 360px; object-fit: contain; }
+  .geo-lbl { font-size: 8pt; font-weight: 600; color: var(--navy); text-transform: uppercase; letter-spacing: 1px; margin-top: 6px; }
+  .geo-sub { font-size: 7pt; color: var(--g500); }
 
-  /* ===== FAST FACTS ===== */
-  .facts-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin: 20px 0;
-  }
-  .fact-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 14px;
-    background: var(--gray-100);
-    border-radius: 6px;
-    border-left: 3px solid var(--navy);
-  }
-  .fact-icon {
-    width: 36px;
-    height: 36px;
-    background: var(--navy);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--gold);
-    font-weight: 700;
-    font-size: 0.9rem;
-    flex-shrink: 0;
-  }
-  .fact-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-500); }
-  .fact-value { font-weight: 600; color: var(--navy); font-size: 0.95rem; }
+  .map-full { margin: 10px 0; text-align: center; }
+  .map-full img { width: 100%; max-height: 580px; object-fit: contain; }
+  .map-legend { display: flex; gap: 16px; justify-content: center; margin-top: 8px; font-size: 8pt; color: var(--g700); }
 
-  /* ===== TOC ===== */
-  .toc-list { list-style: none; margin: 20px 0; }
-  .toc-list li {
-    display: flex;
-    align-items: baseline;
-    padding: 8px 0;
-    border-bottom: 1px dotted var(--gray-300);
-    font-size: 0.95rem;
-  }
-  .toc-number { color: var(--red); font-weight: 700; width: 30px; flex-shrink: 0; }
-  .toc-title { flex: 1; color: var(--navy); }
-  .toc-section-header {
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 0.82rem;
-    color: var(--gray-500);
-    padding: 16px 0 6px;
-    border-bottom: none !important;
-  }
+  .doc-footer { text-align: center; padding: 20px; background: var(--navy); color: rgba(255,255,255,0.5); font-size: 7pt; margin: 20px -0.7in -0.6in; }
 
-  /* ===== CALLOUT ===== */
-  .callout {
-    border-left: 4px solid var(--red);
-    background: var(--gray-100);
-    padding: 16px 20px;
-    margin: 20px 0;
-    border-radius: 0 6px 6px 0;
-  }
-  .callout.warning { border-left-color: #e67e22; background: #fef9e7; }
-  .callout.success { border-left-color: var(--green); background: var(--green-light); }
-  .callout-title { font-weight: 700; color: var(--navy); margin-bottom: 6px; }
-
-  /* ===== FLEET VISUAL ===== */
-  .fleet-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 20px 0; }
-  .fleet-card {
-    text-align: center;
-    padding: 20px;
-    border: 2px solid var(--gray-200);
-    border-radius: 8px;
-    background: #fff;
-  }
-  .fleet-card .fleet-type { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--red); margin-bottom: 4px; }
-  .fleet-card .fleet-name { font-size: 1rem; font-weight: 700; color: var(--navy); }
-  .fleet-card .fleet-detail { font-size: 0.82rem; color: var(--gray-500); margin-top: 4px; }
-
-  /* ===== MAP PLACEHOLDER ===== */
-  .map-placeholder {
-    border: 2px dashed var(--gray-300);
-    border-radius: 8px;
-    padding: 40px;
-    text-align: center;
-    background: var(--gray-100);
-    margin: 20px 0;
-  }
-  .map-placeholder p { color: var(--gray-500); font-size: 0.9rem; margin: 0; }
-  .map-note { font-size: 0.82rem; color: var(--red); font-weight: 600; margin-top: 8px; }
-
-  /* ===== EXECUTIVE SUMMARY HIGHLIGHT ===== */
-  .exec-highlight {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px;
-    margin: 24px 0;
-  }
-  .exec-stat {
-    text-align: center;
-    padding: 22px 14px;
-    border-radius: 8px;
-    border: 1px solid var(--gray-200);
-  }
-  .exec-stat .es-number {
-    font-size: 1.8rem;
-    font-weight: 800;
-    display: block;
-    line-height: 1.1;
-    margin-bottom: 6px;
-  }
-  .exec-stat .es-label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--gray-500);
-  }
-
-  /* ===== CLOSING ===== */
-  .closing-banner {
-    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
-    color: #fff;
-    padding: 50px 40px;
-    text-align: center;
-    margin: 0 -30px;
-    border-radius: 0;
-  }
-  .closing-banner h3 {
-    color: var(--gold);
-    border: none;
-    font-size: 1.4rem;
-    display: block;
-    margin-bottom: 20px;
-    letter-spacing: 2px;
-  }
-  .closing-banner p {
-    color: rgba(255,255,255,0.85);
-    max-width: 700px;
-    margin: 0 auto 16px;
-    font-size: 1rem;
-    line-height: 1.7;
-  }
-
-  /* ===== GEO / MAP LAYOUT ===== */
-  .geo-grid {
-    display: grid;
-    grid-template-columns: 1fr 1.4fr;
-    gap: 30px;
-    margin: 24px 0;
-    align-items: start;
-  }
-  .geo-panel {
-    text-align: center;
-  }
-  .geo-panel img {
-    width: 100%;
-    max-height: 480px;
-    object-fit: contain;
-    border-radius: 6px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-  }
-  .geo-label {
-    margin-top: 10px;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--navy);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-  .geo-sublabel {
-    font-size: 0.78rem;
-    color: var(--gray-500);
-    margin-top: 2px;
-  }
-  .geo-arrow {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    color: var(--red);
-    align-self: center;
-  }
-  .district-map-full {
-    margin: 20px 0;
-    text-align: center;
-  }
-  .district-map-full img {
-    width: 100%;
-    max-height: none;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    border: 1px solid var(--gray-200);
-  }
-  .map-legend {
-    display: flex;
-    gap: 24px;
-    justify-content: center;
-    margin-top: 14px;
-    flex-wrap: wrap;
-  }
-  .map-legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.82rem;
-    color: var(--gray-700);
-  }
-  .map-legend-swatch {
-    width: 20px;
-    height: 4px;
-    border-radius: 2px;
-  }
-
-  /* ===== PHOTOS ===== */
-  .photo-block {
-    margin: 24px 0;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-  }
-  .photo-block img {
-    width: 100%;
-    height: auto;
-    display: block;
-    object-fit: cover;
-  }
-  .photo-block.hero img { max-height: 400px; }
-  .photo-block.medium img { max-height: 320px; }
-  .photo-block.small img { max-height: 240px; }
-  .photo-block.full img { max-height: none; width: 100%; }
-  .photo-caption {
-    background: var(--navy);
-    color: rgba(255,255,255,0.85);
-    padding: 10px 16px;
-    font-size: 0.82rem;
-    font-style: italic;
-    letter-spacing: 0.3px;
-  }
-  .photo-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin: 24px 0;
-  }
-  .photo-row .photo-block { margin: 0; }
-
-  /* ===== FOOTER ===== */
-  .doc-footer {
-    text-align: center;
-    padding: 30px;
-    background: var(--navy);
-    color: rgba(255,255,255,0.6);
-    font-size: 0.8rem;
-    letter-spacing: 0.5px;
-    margin-top: 40px;
-  }
+  ul.bullet { margin: 8px 0 12px 18px; color: var(--g700); font-size: 9.5pt; }
+  ul.bullet li { margin-bottom: 5px; }
 </style>
 </head>
 <body>
 
-<!-- ============================================================ -->
-<!-- COVER PAGE -->
-<!-- ============================================================ -->
-<!-- Print-only cover (hidden in browser, shown in PDF) -->
-<div class="print-cover" style="display:none; page-break-after:always;">
-  <div style="text-align:center; padding: 40px 40px 20px;">
-    <img src="/_internal/budget-draft/images/logo.png" alt="Millstadt EMS" style="height:140px; margin-bottom:20px;">
-  </div>
-  <div style="overflow:hidden; border-radius:0;">
-    <img src="/_internal/budget-draft/images/6.jpg" alt="Millstadt EMS" style="width:100%; max-height:420px; object-fit:cover; display:block;">
-  </div>
-  <div style="background:#0f1b2d; color:#fff; padding:50px 60px; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
-    <div style="width:60px; height:3px; background:#9b1b30; margin-bottom:20px;"></div>
-    <div style="font-size:2.8rem; font-weight:200; text-transform:uppercase; letter-spacing:3px; line-height:1.1;">
-      <strong style="font-weight:800; display:block;">Millstadt</strong> Ambulance Service
-    </div>
-    <div style="font-size:1.1rem; color:#c8a84e; letter-spacing:5px; text-transform:uppercase; margin:8px 0 30px;">Annual Budget &amp; Strategic Overview</div>
-    <div style="border-top:1px solid rgba(255,255,255,0.15); padding-top:20px; display:flex; gap:40px; flex-wrap:wrap;">
-      <div><div style="font-size:0.6rem; text-transform:uppercase; letter-spacing:2px; color:rgba(255,255,255,0.4); margin-bottom:3px;">Fiscal Year</div><div style="font-size:0.95rem; color:rgba(255,255,255,0.85);">2025 – 2026</div></div>
-      <div><div style="font-size:0.6rem; text-transform:uppercase; letter-spacing:2px; color:rgba(255,255,255,0.4); margin-bottom:3px;">Period</div><div style="font-size:0.95rem; color:rgba(255,255,255,0.85);">May 1, 2025 — April 30, 2026</div></div>
-      <div><div style="font-size:0.6rem; text-transform:uppercase; letter-spacing:2px; color:rgba(255,255,255,0.4); margin-bottom:3px;">Headquarters</div><div style="font-size:0.95rem; color:rgba(255,255,255,0.85);">100 E. Laurel St. · Millstadt, IL 62260</div></div>
-      <div><div style="font-size:0.6rem; text-transform:uppercase; letter-spacing:2px; color:rgba(255,255,255,0.4); margin-bottom:3px;">Service Area</div><div style="font-size:0.95rem; color:rgba(255,255,255,0.85);">107 Square Miles · St. Clair County</div></div>
-    </div>
-  </div>
-  <div style="text-align:right; padding:10px 60px; font-size:0.7rem; color:#6c757d;">Est. 1980</div>
-</div>
-
-<div class="cover-page">
-  <div class="cover-top-bar">
-    <img src="/_internal/budget-draft/images/logo.png" alt="Millstadt EMS" class="cover-logo">
-    <div class="cover-established">Est. 1980</div>
-  </div>
-
-  <div class="cover-content">
-    <div class="cover-accent-line"></div>
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-logo"><img src="/_internal/budget-draft/images/logo.png" alt="Millstadt EMS"></div>
+  <img src="/_internal/budget-draft/images/6.jpg" alt="Millstadt EMS" class="cover-photo">
+  <div class="cover-bar">
+    <div class="cover-accent"></div>
     <div class="cover-title"><strong>Millstadt</strong> Ambulance Service</div>
-    <div class="cover-subtitle">Annual Budget &amp; Strategic Overview</div>
-    <div class="cover-divider"></div>
-    <div class="cover-meta">
-      <div class="cover-meta-block">
-        <div class="cover-meta-label">Fiscal Year</div>
-        <div class="cover-meta-value">2025 &ndash; 2026</div>
-      </div>
-      <div class="cover-meta-block">
-        <div class="cover-meta-label">Period</div>
-        <div class="cover-meta-value">May 1, 2025 &mdash; April 30, 2026</div>
-      </div>
-      <div class="cover-meta-block">
-        <div class="cover-meta-label">Headquarters</div>
-        <div class="cover-meta-value">100 E. Laurel St. &bull; Millstadt, IL 62260</div>
-      </div>
-      <div class="cover-meta-block">
-        <div class="cover-meta-label">Service Area</div>
-        <div class="cover-meta-value">107 Square Miles &bull; St. Clair County</div>
-      </div>
+    <div class="cover-sub">Annual Budget &amp; Strategic Overview</div>
+    <div class="cover-line">
+      <div><div class="cover-ml">Fiscal Year</div><div class="cover-mv">2025 – 2026</div></div>
+      <div><div class="cover-ml">Period</div><div class="cover-mv">May 1, 2025 — April 30, 2026</div></div>
+      <div><div class="cover-ml">Headquarters</div><div class="cover-mv">100 E. Laurel St. · Millstadt, IL 62260</div></div>
+      <div><div class="cover-ml">Service Area</div><div class="cover-mv">107 Square Miles · St. Clair County</div></div>
     </div>
   </div>
+  <div class="cover-est">EST. 1980</div>
 </div>
 
-<!-- ============================================================ -->
-<!-- TABLE OF CONTENTS -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<div class="container">
-  <section>
-    <div class="section-header"><span class="section-number"></span>Table of Contents</div>
-
-    <ul class="toc-list">
-      <li class="toc-section-header">Overview</li>
-      <li><span class="toc-number">1</span><span class="toc-title">Executive Summary</span></li>
-
-      <li class="toc-section-header">Introduction &amp; Profile</li>
-      <li><span class="toc-number">2</span><span class="toc-title">Leadership &amp; Governance</span></li>
-      <li><span class="toc-number">3</span><span class="toc-title">Mission, Vision &amp; Core Values</span></li>
-      <li><span class="toc-number">4</span><span class="toc-title">Pillars of Excellence</span></li>
-      <li><span class="toc-number">5</span><span class="toc-title">District Overview &amp; History</span></li>
-      <li><span class="toc-number">6</span><span class="toc-title">Service Area &amp; District Map</span></li>
-      <li><span class="toc-number">7</span><span class="toc-title">Fast Facts</span></li>
-
-      <li class="toc-section-header">Operations &amp; Demand</li>
-      <li><span class="toc-number">8</span><span class="toc-title">Call Volume &amp; Demand Analysis</span></li>
-      <li><span class="toc-number">9</span><span class="toc-title">Operational Impact of Growth</span></li>
-
-      <li class="toc-section-header">Financial Overview</li>
-      <li><span class="toc-number">10</span><span class="toc-title">Financial Summary</span></li>
-      <li><span class="toc-number">11</span><span class="toc-title">Revenue Analysis</span></li>
-      <li><span class="toc-number">12</span><span class="toc-title">Expense Analysis</span></li>
-      <li><span class="toc-number">13</span><span class="toc-title">Financial Narrative: Deficit to Surplus to New Challenges</span></li>
-
-      <li class="toc-section-header">Capital, Debt &amp; Revenue Capacity</li>
-      <li><span class="toc-number">14</span><span class="toc-title">Capital Needs &amp; Fleet Assessment</span></li>
-      <li><span class="toc-number">15</span><span class="toc-title">Debt Service</span></li>
-      <li><span class="toc-number">16</span><span class="toc-title">Tax Levy &amp; Revenue Capacity</span></li>
-
-      <li class="toc-section-header">Looking Ahead</li>
-      <li><span class="toc-number">17</span><span class="toc-title">Grants &amp; Clinical Advancements</span></li>
-      <li><span class="toc-number">18</span><span class="toc-title">Future Outlook</span></li>
-      <li><span class="toc-number">19</span><span class="toc-title">Budget Detail &mdash; FY 2025&ndash;2026</span></li>
-      <li><span class="toc-number">20</span><span class="toc-title">Commitment to the Community</span></li>
-    </ul>
-  </section>
-
-<!-- ============================================================ -->
-<!-- SECTION 1: EXECUTIVE SUMMARY (NEW) -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">01</span>Executive Summary</div>
-
-  <p>Millstadt Ambulance Service is a 501(c)(3) nonprofit Advanced Life Support provider that has served the residents of Southwestern St. Clair County since 1980. Operating three ambulances from a single station at 100 East Laurel Street, the Service covers approximately 107 square miles of mixed rural and suburban terrain&mdash;responding to every 911 call in its district, 24 hours a day, 365 days a year.</p>
-
-  <p>This document presents the organization&rsquo;s financial position, operational performance, and strategic outlook for Fiscal Year 2025&ndash;2026 (May 1, 2025 through April 30, 2026). All historical financial data is drawn from audited annual reports prepared by Scheffel Boyle, CPAs, Belleville, Illinois. Current-year projections are based on the Service&rsquo;s internal working budget, anchored to six months of actual operating data.</p>
-
-  <div class="exec-highlight">
-    <div class="exec-stat" style="background: var(--navy); color: #fff;">
-      <span class="es-number" style="color: var(--gold);">879</span>
-      <span class="es-label" style="color: rgba(255,255,255,0.8);">Calls for Service (2025)</span>
-    </div>
-    <div class="exec-stat" style="background: var(--green-light);">
-      <span class="es-number" style="color: var(--green);">+18.15%</span>
-      <span class="es-label">Call Growth (2-Year)</span>
-    </div>
-    <div class="exec-stat" style="background: var(--red-bg);">
-      <span class="es-number" style="color: var(--red);">($157,723)</span>
-      <span class="es-label">Projected FY25-26 Deficit</span>
-    </div>
-    <div class="exec-stat">
-      <span class="es-number" style="color: var(--navy);">35%</span>
-      <span class="es-label">Tax Levy Utilization</span>
-    </div>
-  </div>
-
-  <h3>The Financial Story in Three Acts</h3>
-
-  <p><strong>Act 1 &mdash; Deficits (FY 2022&ndash;2023).</strong> The Service operated at a loss for at least two consecutive years. In FY2022, expenses exceeded revenue by $17,270. In FY2023, the gap narrowed to $12,912, but the trend was unsustainable. Patient fee collections could not keep pace with operating costs, and the property tax levy&mdash;while stable&mdash;was insufficient to close the difference.</p>
-
-  <p><strong>Act 2 &mdash; Breakthrough (FY 2024).</strong> Patient fee revenue surged 53% to $481,243, pushing total revenue to $702,726 and producing the first surplus in multiple years: $90,037. The Service used this window to invest in critical equipment, including two Zoll X Series defibrillators ($88,895 combined).</p>
-
-  <p><strong>Act 3 &mdash; New Pressure (FY 2025&ndash;2026).</strong> Call volume jumped to 879&mdash;an 18% increase in just two years. The FY 2025&ndash;2026 budget projects total revenue of $947,845 against total expenses of $1,105,568, resulting in a projected deficit of $157,723. Salaries alone are projected at $685,472, reflecting the labor market reality of staffing ambulances around the clock. Fuel, vehicle maintenance, and billing costs have all risen in lockstep with demand.</p>
-
-  <h3>The Core Challenge</h3>
-
-  <p>The community is calling 911 more often. The Service is answering those calls. But the cost of answering them is outpacing the revenue generated from doing so. The current property tax levy&mdash;set at approximately $0.09 per $100 of assessed valuation&mdash;represents just 35% of the authorized maximum of $0.25. That gap is the single largest untapped resource available to the organization. Even a modest increase to $0.15 would generate an additional $166,000 per year, enough to offset the projected deficit entirely.</p>
-
-  <p>This document lays out the facts: the demand, the costs, the revenue structure, the capital needs, and the options. The numbers come from audits and operating records, not projections built on assumptions. The intent is straightforward&mdash;to give the Board, stakeholders, and the public a clear picture of where Millstadt Ambulance Service stands and what it will take to keep it standing.</p>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 2: LEADERSHIP -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">02</span>Leadership &amp; Governance</div>
-
-  <p>Millstadt Ambulance Service is governed by a six-member Board of Directors that operates under the authority of the Millstadt Fire Protection District. The Board provides fiduciary oversight, sets organizational policy, and ensures that the Service meets its obligations to the residents of the district. Day-to-day operations are managed by two EMS Chiefs who oversee all clinical, administrative, and logistical functions.</p>
-
-  <h3>Board of Directors</h3>
-  <div class="officials-grid">
-    <div class="official-item">
-      <div class="official-name">Joseph Wagner</div>
-      <div class="official-title">President</div>
-    </div>
-    <div class="official-item">
-      <div class="official-name">Philip Acker</div>
-      <div class="official-title">Vice President</div>
-    </div>
-    <div class="official-item">
-      <div class="official-name">Suzanne Alberter</div>
-      <div class="official-title">Director</div>
-    </div>
-    <div class="official-item">
-      <div class="official-name">Michael Kempf</div>
-      <div class="official-title">Director</div>
-    </div>
-    <div class="official-item">
-      <div class="official-name">Jeannine Kochmann</div>
-      <div class="official-title">Director</div>
-    </div>
-    <div class="official-item">
-      <div class="official-name">Linda Lehr</div>
-      <div class="official-title">Director</div>
-    </div>
-  </div>
-
-  <h3>Administrative Staff</h3>
-  <div class="officials-grid">
-    <div class="official-item">
-      <div class="official-name">Jennifer Goetz</div>
-      <div class="official-title">EMS Chief 1</div>
-    </div>
-    <div class="official-item">
-      <div class="official-name">Kenneth L. James Jr.</div>
-      <div class="official-title">EMS Chief 2</div>
-    </div>
-  </div>
-
-  <h3>Organizational Chart</h3>
-  <div class="photo-block" style="box-shadow:none;">
-    <img src="/_internal/budget-draft/images/org_chart.png" alt="Millstadt Ambulance Service Organizational Chart" style="max-height:none;">
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 3: MISSION / VISION / VALUES -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">03</span>Mission, Vision &amp; Core Values</div>
-
-  <h3>Mission</h3>
-  <p style="font-size:1.05rem; line-height:1.75; color: var(--navy); font-style:italic; border-left: 4px solid var(--red); padding-left: 18px; margin: 16px 0 24px;">At Millstadt EMS, our mission is to provide exceptional, compassionate, and timely emergency medical care to our diverse community. We are dedicated to advancing health and safety through highly trained professionals, cutting-edge technology, and a commitment to continuous improvement, ensuring the well-being of every person we serve.</p>
-
-  <h3>Vision</h3>
-  <p style="font-size:1.05rem; line-height:1.75; color: var(--navy); font-style:italic; border-left: 4px solid var(--gold); padding-left: 18px; margin: 16px 0 24px;">Our vision is to be a leader in pre-hospital care, setting the standard for emergency medical services through innovation, education, and collaboration. We strive to enhance the quality of life in our region by delivering the highest level of care, fostering community partnerships, and preparing for the challenges of tomorrow with excellence and integrity.</p>
-
-  <h3>Core Values</h3>
-  <div class="values-grid">
-    <div class="value-card">
-      <div class="value-name">Excellence</div>
-      <div class="value-meaning">We hold ourselves to the highest clinical and operational standards&mdash;not because it is required, but because the people we serve deserve nothing less. Excellence is measured at the patient&rsquo;s side, in every protocol followed and every second that counts.</div>
-    </div>
-    <div class="value-card">
-      <div class="value-name">Compassion</div>
-      <div class="value-meaning">Every call begins with someone in crisis. We respond not just with training and equipment, but with genuine concern for the person in front of us. Compassion is the foundation of patient care&mdash;it cannot be taught in a textbook, but it must be present on every call.</div>
-    </div>
-    <div class="value-card">
-      <div class="value-name">Integrity</div>
-      <div class="value-meaning">We do what is right even when no one is watching. Our financial records are audited. Our clinical decisions are documented. Our commitments to the community are kept. Trust is earned through consistent, honest action&mdash;not through words alone.</div>
-    </div>
-    <div class="value-card">
-      <div class="value-name">Accountability</div>
-      <div class="value-meaning">Every dollar spent, every decision made, and every patient outcome is owned. When we fall short, we identify the cause and fix it. Accountability is not about assigning blame&mdash;it is about taking responsibility for results and being transparent about them.</div>
-    </div>
-    <div class="value-card">
-      <div class="value-name">Collaboration</div>
-      <div class="value-meaning">No ambulance service operates alone. We work alongside fire departments, law enforcement, hospitals, mutual aid agencies, and the community itself. Collaboration multiplies what a small service can accomplish and ensures that no gap in coverage goes unaddressed.</div>
-    </div>
-    <div class="value-card">
-      <div class="value-name">Preparedness</div>
-      <div class="value-meaning">Emergencies do not wait for convenient timing. Our ambulances are stocked, our crews are trained, and our equipment is maintained before the call comes in. Preparedness is the discipline of being ready every hour of every day&mdash;because the next call could be the one that matters most.</div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 4: PILLARS OF EXCELLENCE (NEW) -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">04</span>Pillars of Excellence</div>
-
-  <div class="photo-block medium">
-    <img src="/_internal/budget-draft/images/6.jpg" alt="Millstadt EMS ambulance at a community event">
-    <div class="photo-caption">Millstadt EMS at a community event &mdash; the Service maintains a visible presence beyond emergency response, reinforcing its role as a community partner.</div>
-  </div>
-
-  <p>Five operational pillars define how Millstadt Ambulance Service delivers on its mission. Each pillar represents a non-negotiable commitment&mdash;not a future goal, but a current standard that the organization maintains every day it puts ambulances on the road.</p>
-
-  <div class="pillar-grid">
-    <div class="pillar-card">
-      <div class="pillar-number">I</div>
-      <div class="pillar-title">Clinical Excellence</div>
-      <div class="pillar-text">The Service operates at the Advanced Life Support level with Zoll X Series cardiac monitors, Stryker Power Load patient handling systems, and ESO electronic documentation. Providers carry a full complement of ALS medications&mdash;from cardiac interventions to advanced airway management&mdash;capabilities that directly affect patient outcomes in the critical minutes before hospital arrival.</div>
-    </div>
-    <div class="pillar-card">
-      <div class="pillar-number">II</div>
-      <div class="pillar-title">Operational Readiness</div>
-      <div class="pillar-text">Three ambulances cover 107 square miles, 24 hours a day, with no scheduled downtime. Mutual aid agreements with seven neighboring EMS agencies provide a safety net during simultaneous calls, but the goal is to handle every incident within the district using district resources. Readiness is not a policy&mdash;it is the product of staffing, maintenance, and supply chain discipline.</div>
-    </div>
-    <div class="pillar-card">
-      <div class="pillar-number">III</div>
-      <div class="pillar-title">Financial Stewardship</div>
-      <div class="pillar-text">Every dollar of public funding is tracked, audited, and reported. Annual financial reports are prepared by an independent CPA firm. The Board reviews monthly expenditures line by line. When the Service ran deficits in FY2022 and FY2023, it did not defer the problem&mdash;it identified the revenue shortfall, improved billing processes, and produced a surplus in FY2024. Transparency is the standard, not the exception.</div>
-    </div>
-    <div class="pillar-card">
-      <div class="pillar-number">IV</div>
-      <div class="pillar-title">Community Partnership</div>
-      <div class="pillar-text">Millstadt Ambulance Service exists because the community created it in 1980. It answers to the residents it serves through a publicly appointed Board, open financial reporting, and a commitment to respond to every call regardless of the patient&rsquo;s ability to pay. The relationship is not transactional&mdash;it is foundational.</div>
-    </div>
-    <div class="pillar-card">
-      <div class="pillar-number">V</div>
-      <div class="pillar-title">Workforce Investment</div>
-      <div class="pillar-text">Recruiting and retaining qualified paramedics and EMTs is the single most important operational challenge in EMS. The Service competes for talent in a regional labor market that includes larger, better-funded agencies. Competitive wages, structured scheduling through W2W, and investments in training and equipment are not perks&mdash;they are the baseline requirements for keeping ambulances staffed and crews capable.</div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 5: DISTRICT OVERVIEW & HISTORY -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">05</span>District Overview &amp; History</div>
-
-  <div class="photo-block hero">
-    <img src="/_internal/budget-draft/images/fleet_station.png" alt="Millstadt EMS fleet and station at 100 E. Laurel Street">
-    <div class="photo-caption">The 2025 Millstadt Ambulance Service Open House &mdash; Millstadt EMS units alongside response partners from the community.</div>
-  </div>
-
-  <p>Millstadt Ambulance Service has served the residents of Southwestern St. Clair County since 1980. Originally established to address the emergency medical needs of a growing rural and suburban community, the Service has evolved over more than four decades into a capable ALS-level provider operating around the clock, 365 days a year.</p>
-
-  <p>The Service is organized as a 501(c)(3) nonprofit organization and was annexed into the Millstadt Fire Protection District. While it operates independently of the Fire District in its day-to-day functions, it receives a portion of its funding through a property tax levy administered by the District. The Service is exempt from federal and state income taxes under Section 501(c)(3) of the Internal Revenue Code.</p>
-
-  <p>Headquartered at 100 East Laurel Street in the Village of Millstadt, the Service provides emergency ambulance coverage to the Village of Millstadt, Millstadt Township, and the western portion of Stookey Township. It also provides and receives mutual aid with seven neighboring EMS agencies&mdash;Monroe County EMS, Columbia EMS, Abbott EMS, Medstar EMS, Dupo EMS, Mascoutah EMS, and O&rsquo;Fallon EMS&mdash;extending the safety net across a wide section of the Metro East region.</p>
-
-  <h3>Timeline</h3>
-
-  <div class="photo-block full">
-    <img src="/_internal/budget-draft/images/vintage_ambulance.jpg" alt="Early Millstadt Ambulance Service unit in a community parade">
-    <div class="photo-caption">An early Millstadt Ambulance Service unit &mdash; the Service has been a fixture of the community since its founding in 1980.</div>
-  </div>
-
-  <div class="timeline">
-    <div class="timeline-item">
-      <div class="timeline-year">1980</div>
-      <div class="timeline-text">Millstadt Ambulance Service is founded to provide Basic Life Support emergency medical services to the Millstadt area.</div>
-    </div>
-    <div class="timeline-item">
-      <div class="timeline-year">2013</div>
-      <div class="timeline-text">The Service transitions from Basic Life Support (BLS) to Advanced Life Support (ALS), a landmark upgrade that enables paramedic-level interventions in the field&mdash;including cardiac monitoring, advanced airway management, IV medications, and drug-assisted intubation. This transformation fundamentally changes the level of care available to district residents before they reach the hospital.</div>
-    </div>
-    <div class="timeline-item">
-      <div class="timeline-year">2014</div>
-      <div class="timeline-text">The Service acquires its first 12 Lead Monitor, advancing cardiac diagnostic capabilities in the field.</div>
-    </div>
-    <div class="timeline-item">
-      <div class="timeline-year">2015</div>
-      <div class="timeline-text">A new Ford ambulance is placed in service, representing the largest single capital investment to date ($133,311).</div>
-    </div>
-    <div class="timeline-item">
-      <div class="timeline-year">2018</div>
-      <div class="timeline-text">The Service purchases the building at 100 E. Laurel Street ($286,607), establishing a permanent headquarters. A second ambulance is also acquired ($85,598).</div>
-    </div>
-    <div class="timeline-item">
-      <div class="timeline-year">2023</div>
-      <div class="timeline-text">Major equipment investments: Stryker MTS Power Load system ($25,976) and 6507 Power Pro 2 stretcher ($26,799), improving crew safety and patient handling.</div>
-    </div>
-    <div class="timeline-item">
-      <div class="timeline-year">2024</div>
-      <div class="timeline-text">Two Zoll X Series Monitor/Defibrillators are acquired ($88,895 combined), bringing state-of-the-art cardiac monitoring and defibrillation to every frontline unit. The Service achieves its first financial surplus in multiple years.</div>
-    </div>
-    <div class="timeline-item">
-      <div class="timeline-year">2025</div>
-      <div class="timeline-text">Call volume reaches 879&mdash;an 18% increase in just two years&mdash;placing unprecedented demand on crews, equipment, and the operating budget. A new ambulance is acquired with a $25,000 down payment from reserves.</div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 6: GEOGRAPHICAL LOCATION -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">06</span>Geographical Location</div>
-
-  <p>Millstadt Ambulance Service is located in <strong>St. Clair County</strong>, in the southwestern corner of Illinois, directly across the Mississippi River from St. Louis, Missouri. The county is part of the Metro East region&mdash;one of the most populated areas in downstate Illinois.</p>
-
-  <div class="geo-grid">
-    <div class="geo-panel">
-      <img src="/_internal/budget-draft/images/illinois_map.webp" alt="State of Illinois with St. Clair County highlighted">
-      <div class="geo-label">State of Illinois</div>
-      <div class="geo-sublabel">St. Clair County highlighted in red</div>
-    </div>
-    <div class="geo-panel">
-      <img src="/_internal/budget-draft/images/county_map.jpg" alt="St. Clair County boundary showing Millstadt and surrounding communities">
-      <div class="geo-label">St. Clair County</div>
-      <div class="geo-sublabel">County boundary with Millstadt and surrounding communities</div>
-    </div>
-  </div>
-
-  <p>The district sits in the southwestern quadrant of the county, bounded by Columbia to the west, Belleville to the east, and extending south toward Smithton and Hecker. Interstate 255 and several state routes pass through or border the service area, creating both transportation corridors and motor vehicle accident exposure.</p>
-
-  <p>Millstadt Ambulance Service covers approximately 107 square miles of mixed rural, suburban, agricultural, and industrial terrain. The district spans the Village of Millstadt, Millstadt Township, and the western portion of Stookey Township. Long transport distances in rural zones, higher call frequency in residential clusters, and variable road conditions across agricultural parcels all shape operational planning.</p>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 6B: DISTRICT MAP (PAGE 2) -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">06</span>Service Area &amp; District Boundary</div>
-
-  <div class="district-map-full">
-    <img src="/_internal/budget-draft/images/district_map.png" alt="Millstadt EMS District Boundary Map — blue outline shows the service area">
-  </div>
-
-  <div class="map-legend">
-    <div class="map-legend-item">
-      <div class="map-legend-swatch" style="background: #2563eb;"></div>
-      <span><strong>Millstadt EMS District</strong> (primary service area)</span>
-    </div>
-  </div>
-
-  <p style="margin-top: 20px;">The blue boundary defines the Millstadt Ambulance Service district. Adjacent boundaries visible on this map (Smithton Fire, Hecker Fire zones) are shown for geographic reference only and are <strong>not</strong> part of the Millstadt EMS service area.</p>
-
-  <h3>Mutual Aid Partners</h3>
-  <p>Millstadt Ambulance Service maintains mutual aid agreements with seven neighboring agencies, providing and receiving emergency support as call volume and incident complexity demand:</p>
-  <div class="card-grid">
-    <div class="card"><div class="card-value" style="font-size:1rem;">Monroe County EMS</div></div>
-    <div class="card"><div class="card-value" style="font-size:1rem;">Columbia EMS</div></div>
-    <div class="card"><div class="card-value" style="font-size:1rem;">Abbott EMS</div></div>
-    <div class="card"><div class="card-value" style="font-size:1rem;">Medstar EMS</div></div>
-    <div class="card"><div class="card-value" style="font-size:1rem;">Dupo EMS</div></div>
-    <div class="card"><div class="card-value" style="font-size:1rem;">Mascoutah EMS</div></div>
-    <div class="card"><div class="card-value" style="font-size:1rem;">O&rsquo;Fallon EMS</div></div>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 7: FAST FACTS -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">07</span>Fast Facts</div>
-
-  <div class="facts-grid">
-    <div class="fact-item">
-      <div class="fact-icon">F</div>
-      <div>
-        <div class="fact-label">Founded</div>
-        <div class="fact-value">1980</div>
-      </div>
-    </div>
-    <div class="fact-item">
-      <div class="fact-icon">A</div>
-      <div>
-        <div class="fact-label">Area Served</div>
-        <div class="fact-value">~107 Square Miles</div>
-      </div>
-    </div>
-    <div class="fact-item">
-      <div class="fact-icon">C</div>
-      <div>
-        <div class="fact-label">Calls for Service (2025)</div>
-        <div class="fact-value">879</div>
-      </div>
-    </div>
-    <div class="fact-item">
-      <div class="fact-icon">T</div>
-      <div>
-        <div class="fact-label">Service Type</div>
-        <div class="fact-value">Emergency 911 &mdash; ALS</div>
-      </div>
-    </div>
-    <div class="fact-item">
-      <div class="fact-icon">V</div>
-      <div>
-        <div class="fact-label">Fleet</div>
-        <div class="fact-value">3 Ambulances</div>
-        <div class="fact-label" style="margin-top:2px;">1 ALS &bull; 1 ALS Upgradable &bull; 1 BLS (ALS capable)</div>
-      </div>
-    </div>
-    <div class="fact-item">
-      <div class="fact-icon">G</div>
-      <div>
-        <div class="fact-label">Governance</div>
-        <div class="fact-value">6-Member Board + 2 EMS Chiefs</div>
-      </div>
-    </div>
-    <div class="fact-item">
-      <div class="fact-icon">$</div>
-      <div>
-        <div class="fact-label">Tax Rate</div>
-        <div class="fact-value">$0.09 / $100 EAV</div>
-        <div class="fact-label" style="margin-top:2px;">Max authorized: $0.25</div>
-      </div>
-    </div>
-    <div class="fact-item">
-      <div class="fact-icon">M</div>
-      <div>
-        <div class="fact-label">Mutual Aid Partners</div>
-        <div class="fact-value">7 EMS Agencies</div>
-      </div>
-    </div>
-    <div class="fact-item">
-      <div class="fact-icon">S</div>
-      <div>
-        <div class="fact-label">Station</div>
-        <div class="fact-value">100 E. Laurel St., Millstadt, IL</div>
-      </div>
-    </div>
-    <div class="fact-item">
-      <div class="fact-icon">O</div>
-      <div>
-        <div class="fact-label">Organization Type</div>
-        <div class="fact-value">501(c)(3) Nonprofit</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 8: CALL VOLUME -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">08</span>Call Volume &amp; Demand Analysis</div>
-
-  <p>Demand for emergency medical services in the Millstadt district has grown sharply over the past three years. Between 2023 and 2025, total calls for service increased by 135&mdash;a cumulative rise of 18.15%. The acceleration is notable: the 2024&ndash;2025 period alone saw a 13.71% jump, more than triple the growth rate of the prior year.</p>
-
-  <div class="stat-row">
-    <div class="stat-box">
-      <span class="stat-number">744</span>
-      <span class="stat-label">Calls &mdash; 2023</span>
-    </div>
-    <div class="stat-box">
-      <span class="stat-number">773</span>
-      <span class="stat-label">Calls &mdash; 2024</span>
-    </div>
-    <div class="stat-box">
-      <span class="stat-number">879</span>
-      <span class="stat-label">Calls &mdash; 2025</span>
-    </div>
-    <div class="stat-box" style="background: var(--red);">
-      <span class="stat-number">+18.15%</span>
-      <span class="stat-label">Total Increase</span>
-    </div>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Year</th>
-        <th>Total Calls</th>
-        <th>Year-over-Year Change</th>
-        <th>Percent Change</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>2023</td>
-        <td>744</td>
-        <td>&mdash;</td>
-        <td>&mdash;</td>
-      </tr>
-      <tr>
-        <td>2024</td>
-        <td>773</td>
-        <td>+29</td>
-        <td>+3.90%</td>
-      </tr>
-      <tr>
-        <td>2025</td>
-        <td>879</td>
-        <td>+106</td>
-        <td>+13.71%</td>
-      </tr>
-      <tr class="total-row">
-        <td>Cumulative Change (2023&ndash;2025)</td>
-        <td></td>
-        <td>+135</td>
-        <td>+18.15%</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h3>Calculation Detail</h3>
-  <table>
-    <thead>
-      <tr><th>Metric</th><th>Formula</th><th>Result</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>2023 &rarr; 2024 change</td><td>(773 &minus; 744) &divide; 744</td><td>+3.90%</td></tr>
-      <tr><td>2024 &rarr; 2025 change</td><td>(879 &minus; 773) &divide; 773</td><td>+13.71%</td></tr>
-      <tr><td>2023 &rarr; 2025 cumulative</td><td>(879 &minus; 744) &divide; 744</td><td>+18.15%</td></tr>
-    </tbody>
-  </table>
-
-  <div class="chart-container">
-    <div class="chart-title">Annual Call Volume Trend</div>
-    <div class="bar-group">
-      <div class="bar-label">2023 &mdash; 744 calls</div>
-      <div class="bar-track"><div class="bar-fill navy" style="width: 84.6%;">744</div></div>
-    </div>
-    <div class="bar-group">
-      <div class="bar-label">2024 &mdash; 773 calls (+3.90%)</div>
-      <div class="bar-track"><div class="bar-fill navy" style="width: 87.9%;">773</div></div>
-    </div>
-    <div class="bar-group">
-      <div class="bar-label">2025 &mdash; 879 calls (+13.71%)</div>
-      <div class="bar-track"><div class="bar-fill red" style="width: 100%;">879</div></div>
-    </div>
-  </div>
-
-  <h3>What the Trend Means</h3>
-
-  <p>This trajectory has significant implications for every aspect of the operation:</p>
-  <ul style="margin: 12px 0 16px 24px; color: var(--gray-700);">
-    <li style="margin-bottom: 8px;"><strong>Staffing pressure:</strong> Each call requires a minimum two-person crew. As volume climbs, the probability of simultaneous calls rises&mdash;stretching a lean roster and increasing reliance on mutual aid.</li>
-    <li style="margin-bottom: 8px;"><strong>Fleet utilization:</strong> More calls mean more miles, more engine hours, and faster wear on vehicles already past their recommended service life.</li>
-    <li style="margin-bottom: 8px;"><strong>Supply consumption:</strong> Every patient contact consumes medical supplies&mdash;from IV catheters to cardiac medications. A 135-call increase is not marginal; it is a measurable draw on the supply chain.</li>
-    <li style="margin-bottom: 8px;"><strong>Operational strain:</strong> At 879 calls per year across three ambulances, each unit averages nearly 293 responses annually&mdash;approaching the practical ceiling for a service of this size without additional capacity.</li>
-  </ul>
-
-  <p>Each additional call represents fuel consumed, medical supplies used, wear on vehicles, and hours worked by personnel who are already stretched thin. When call volume rises by nearly a fifth in two years, the strain is not theoretical&mdash;it is felt on every shift.</p>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 9: OPERATIONAL IMPACT -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">09</span>Operational Impact of Growth</div>
-
-  <div class="photo-block medium">
-    <img src="/_internal/budget-draft/images/Lifeline.jpg" alt="Millstadt EMS Unit 3926 responding to a motor vehicle accident">
-    <div class="photo-caption">Unit 3926 on scene of a motor vehicle accident &mdash; each of the 879 calls in 2025 represents a real incident requiring personnel, equipment, and supplies.</div>
-  </div>
-
-  <p>An 18% increase in call volume over two years does not arrive in isolation. It cascades through every operational layer of a small ambulance service, compounding costs and compressing the margin for error.</p>
-
-  <h3>Staffing Pressure</h3>
-  <p>With only three ambulances and a lean crew roster, Millstadt EMS is absorbing 135 additional calls per year compared to 2023. Every call requires a minimum two-person crew. As volume climbs, so does the probability of simultaneous calls&mdash;situations where the district must rely on mutual aid because no local unit is available. Crew fatigue accumulates in ways that are not immediately visible on a balance sheet but carry real consequences for patient care and provider safety.</p>
-
-  <h3>Fleet Wear &amp; Maintenance</h3>
-  <p>More calls mean more miles. The Service&rsquo;s motor fuel expenses have risen from $5,446 in FY2022 to $9,228 in FY2024&mdash;a 69% increase. Repair and maintenance costs fluctuate with the age and condition of the fleet, but the trend line is clear: vehicles that are running more often require more frequent service. In February 2026, a single transmission and turbo repair on one unit cost $13,712&mdash;underscoring the unpredictable nature of maintaining an aging fleet under heavy use.</p>
-
-  <h3>Medical Supply Consumption</h3>
-  <p>Medical supply and paramedic assistance costs more than doubled over two years, rising from $6,714 in FY2022 to $14,797 in FY2024. This is a direct function of call volume: more patients treated means more supplies consumed. Every patient contact draws from the Service&rsquo;s inventory of ALS medications and medical supplies&mdash;IV catheters, cardiac drugs, airway equipment&mdash;all of which must be restocked after use.</p>
-
-  <h3>Response Coverage</h3>
-  <p>With three ambulances covering 107 square miles, the probability of a coverage gap during a multi-call period grows with every percentage point of volume increase. When one or two units are committed to active calls, the remaining unit may be positioned at the far end of the district. Response times in those moments extend, and the Service must depend on mutual aid partners who face their own workload pressures.</p>
-
-  <div class="callout warning">
-    <div class="callout-title">The Compounding Effect</div>
-    <p>Each additional call does not carry a fixed marginal cost. At low volumes, the existing infrastructure absorbs incremental demand. But as volume approaches the system&rsquo;s practical capacity, the cost curve steepens&mdash;overtime increases, equipment breaks down faster, supplies need emergency restocking, and the risk of a call going unanswered rises. Millstadt EMS is operating in the steep part of that curve.</p>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 10: FINANCIAL SUMMARY -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">10</span>Financial Summary</div>
-
-  <p>The following table presents three fiscal years of audited financial results for Millstadt Ambulance Service, drawn from annual financial reports prepared by Scheffel Boyle, Certified Public Accountants, Belleville, Illinois. All figures are for the fiscal years ending April 30.</p>
-
-  <table>
-    <thead>
-      <tr>
-        <th></th>
-        <th>FY 2022</th>
-        <th>FY 2023</th>
-        <th>FY 2024</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>Total Revenue</strong></td>
-        <td>$498,276</td>
-        <td>$533,967</td>
-        <td>$702,726</td>
-      </tr>
-      <tr>
-        <td><strong>Total Expenses</strong></td>
-        <td>$515,546</td>
-        <td>$546,879</td>
-        <td>$612,689</td>
-      </tr>
-      <tr class="total-row">
-        <td><strong>Change in Net Assets</strong></td>
-        <td class="negative">($17,270)</td>
-        <td class="negative">($12,912)</td>
-        <td class="positive">$90,037</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div class="stat-row">
-    <div class="stat-box">
-      <span class="stat-number">+41%</span>
-      <span class="stat-label">Revenue Growth (FY22&ndash;24)</span>
-    </div>
-    <div class="stat-box">
-      <span class="stat-number">+19%</span>
-      <span class="stat-label">Expense Growth (FY22&ndash;24)</span>
-    </div>
-    <div class="stat-box" style="background: var(--green);">
-      <span class="stat-number">$90,037</span>
-      <span class="stat-label">FY 2024 Surplus</span>
-    </div>
-  </div>
-
-  <div class="chart-container">
-    <div class="chart-title">Revenue vs. Expenses &mdash; Three-Year Comparison</div>
-    <div class="dual-bar-row">
-      <div class="dual-bar-year">FY22</div>
-      <div class="dual-bar-container">
-        <div class="dual-bar revenue" style="width: 71%;">Revenue: $498K</div>
-        <div class="dual-bar expense" style="width: 73%;">Expenses: $516K</div>
-      </div>
-    </div>
-    <div class="dual-bar-row">
-      <div class="dual-bar-year">FY23</div>
-      <div class="dual-bar-container">
-        <div class="dual-bar revenue" style="width: 76%;">Revenue: $534K</div>
-        <div class="dual-bar expense" style="width: 78%;">Expenses: $547K</div>
-      </div>
-    </div>
-    <div class="dual-bar-row">
-      <div class="dual-bar-year">FY24</div>
-      <div class="dual-bar-container">
-        <div class="dual-bar revenue" style="width: 100%;">Revenue: $703K</div>
-        <div class="dual-bar expense" style="width: 87%;">Expenses: $613K</div>
-      </div>
-    </div>
-    <div style="display:flex; gap:20px; margin-top:8px; font-size:0.78rem;">
-      <div><span style="display:inline-block;width:12px;height:12px;background:var(--navy);border-radius:2px;margin-right:4px;vertical-align:middle;"></span> Revenue</div>
-      <div><span style="display:inline-block;width:12px;height:12px;background:var(--red);border-radius:2px;margin-right:4px;vertical-align:middle;"></span> Expenses</div>
-    </div>
-  </div>
-
-  <h3>Balance Sheet Position (April 30, 2024)</h3>
-  <table>
-    <thead>
-      <tr><th>Category</th><th>FY 2024</th><th>FY 2023</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>Total Assets</td><td>$816,281</td><td>$676,338</td></tr>
-      <tr><td>Total Liabilities</td><td>$295,261</td><td>$245,355</td></tr>
-      <tr class="total-row"><td><strong>Total Net Assets</strong></td><td><strong>$521,020</strong></td><td><strong>$430,983</strong></td></tr>
-    </tbody>
-  </table>
-  <p>Net assets increased by $90,037 in FY2024, bringing the total to $521,020. This represents the accumulated equity of the organization&mdash;a combination of physical assets (building, land, vehicles, equipment) and available cash. Of the total, $2,543 remains restricted by the EMS Association for designated EMS expenses.</p>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 11: REVENUE ANALYSIS -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">11</span>Revenue Analysis</div>
-
-  <p>Millstadt Ambulance Service generates revenue from two primary sources: patient billing fees and contracted service fees (property tax levy). Together, these two streams account for more than 99% of total revenue. The balance comes from interest, donations, grants, and miscellaneous income.</p>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Revenue Source</th>
-        <th>FY 2022</th>
-        <th>FY 2023</th>
-        <th>FY 2024</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Patient Fees</td>
-        <td>$276,649</td>
-        <td>$314,666</td>
-        <td>$481,243</td>
-      </tr>
-      <tr>
-        <td>Contracted Service Fees (Property Tax)</td>
-        <td>$207,046</td>
-        <td>$207,316</td>
-        <td>$217,454</td>
-      </tr>
-      <tr>
-        <td>Interest Earned</td>
-        <td>$962</td>
-        <td>$528</td>
-        <td>$403</td>
-      </tr>
-      <tr>
-        <td>Donations</td>
-        <td>$5,618</td>
-        <td>$3,490</td>
-        <td>$16</td>
-      </tr>
-      <tr>
-        <td>Grants</td>
-        <td>$7,318</td>
-        <td>&mdash;</td>
-        <td>&mdash;</td>
-      </tr>
-      <tr>
-        <td>Miscellaneous Income</td>
-        <td>$683</td>
-        <td>$7,967</td>
-        <td>$3,610</td>
-      </tr>
-      <tr class="total-row">
-        <td><strong>Total Revenue</strong></td>
-        <td><strong>$498,276</strong></td>
-        <td><strong>$533,967</strong></td>
-        <td><strong>$702,726</strong></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h3>Patient Fees &mdash; The Growth Engine</h3>
-  <p>Patient fee revenue increased from $276,649 in FY2022 to $481,243 in FY2024&mdash;a gain of $204,594, or 74%, over two years. This growth was driven by two factors: rising call volume (more patients transported) and improved billing and collection processes. By FY2024, patient fees represented 68% of total revenue, up from 56% in FY2022.</p>
-
-  <p>Patient billing in EMS is inherently challenging. The Service provides care regardless of a patient&rsquo;s ability to pay, insurance status, or coverage level. Medicare and Medicaid reimburse at fixed rates that often fall below the cost of providing the service. The allowance for uncollectible accounts stood at $33,127 (approximately 10% of gross receivables) as of April 30, 2024. The Board discontinues collection attempts on accounts with no activity for six months.</p>
-
-  <h3>FY 2025&ndash;2026 Revenue Projection</h3>
-  <p>Based on six months of actual data (May&ndash;October 2025), the FY 2025&ndash;2026 revenue projection is:</p>
-  <table>
-    <thead><tr><th>Source</th><th>6-Month Actual</th><th>FY Projected</th></tr></thead>
-    <tbody>
-      <tr><td>Patient Fees</td><td>$359,855</td><td>$719,711</td></tr>
-      <tr><td>Property Taxes</td><td>$144,453</td><td>$228,134</td></tr>
-      <tr class="total-row"><td><strong>Total Revenue</strong></td><td><strong>$504,308</strong></td><td><strong>$947,845</strong></td></tr>
-    </tbody>
-  </table>
-
-  <h3>Property Tax Revenue &mdash; Stable but Constrained</h3>
-  <p>Contracted service fees&mdash;the revenue generated by the property tax levy administered through the Millstadt Fire Protection District&mdash;have provided a stable foundation, growing modestly from $207,046 to $217,454 over the three-year period. This 5% increase largely reflects growth in the Equalized Assessed Valuation (EAV) of property within the district, not an increase in the tax rate.</p>
-
-  <div class="callout">
-    <div class="callout-title">Revenue Composition Shift</div>
-    <p>In FY2022, the revenue split was roughly 56% patient fees / 42% property tax. By FY2024, patient fees had grown to 68% of revenue while property tax held at 31%. This shift means the Service has become more dependent on patient billing&mdash;a revenue source that is inherently less predictable than tax revenue. Any disruption in collections, payer mix, or billing processes would disproportionately affect the bottom line.</p>
-  </div>
-
-  <h3>Tax Rate Context</h3>
-  <table>
-    <thead>
-      <tr><th></th><th>2022 Levy</th><th>2023 Levy</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>Tax Rate Limit</td><td>$0.2500</td><td>$0.2500</td></tr>
-      <tr><td>Actual Rate Levied</td><td>$0.0913</td><td>$0.0868</td></tr>
-      <tr><td>Total EAV</td><td>$247,032,303</td><td>$272,303,978</td></tr>
-      <tr><td>Rate Setting EAV</td><td>$239,424,502</td><td>$263,025,919</td></tr>
-      <tr><td>Total Extension After TIF</td><td>$218,595</td><td>$228,307</td></tr>
-      <tr class="total-row"><td>Amount Received by Service</td><td>$207,316</td><td>$217,454</td></tr>
-    </tbody>
-  </table>
-  <p>The district is currently levying at approximately 35% of its maximum authorized tax rate. This gap represents significant untapped revenue capacity&mdash;a point explored in detail in Section 16.</p>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 12: EXPENSE ANALYSIS -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">12</span>Expense Analysis</div>
-
-  <p>Total expenses grew from $515,546 in FY2022 to $612,689 in FY2024&mdash;an increase of $97,143, or 18.8%. While this growth rate is significant, it tracks closely with the 18.15% increase in call volume over a similar period, confirming that most expense growth is demand-driven rather than the result of discretionary spending.</p>
-
-  <h3>Detailed Expense Comparison</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>Expense Category</th>
-        <th>FY 2022</th>
-        <th>FY 2023</th>
-        <th>FY 2024</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td>Salaries</td><td>$332,960</td><td>$336,282</td><td>$374,166</td></tr>
-      <tr><td>Payroll Taxes</td><td>$26,531</td><td>$27,505</td><td>$31,518</td></tr>
-      <tr><td>Insurance</td><td>$36,641</td><td>$40,512</td><td>$41,313</td></tr>
-      <tr><td>Depreciation</td><td>$33,531</td><td>$33,497</td><td>$60,246</td></tr>
-      <tr><td>Billing Service</td><td>$25,120</td><td>$29,788</td><td>$29,976</td></tr>
-      <tr><td>Prof. &amp; Contractual Fees</td><td>$16,880</td><td>$17,779</td><td>$14,107</td></tr>
-      <tr><td>Medical Supplies &amp; Paramedic</td><td>$6,714</td><td>$7,248</td><td>$14,797</td></tr>
-      <tr><td>Interest Expense</td><td>$8,063</td><td>$7,488</td><td>$11,224</td></tr>
-      <tr><td>Motor Fuel</td><td>$5,446</td><td>$7,662</td><td>$9,228</td></tr>
-      <tr><td>Radio &amp; Equipment Maint.</td><td>$1,304</td><td>$14,936</td><td>$7,161</td></tr>
-      <tr><td>Repairs &amp; Maintenance</td><td>$4,460</td><td>$6,116</td><td>$4,410</td></tr>
-      <tr><td>Telephone</td><td>$1,119</td><td>$2,171</td><td>$4,349</td></tr>
-      <tr><td>Office Supplies</td><td>$4,398</td><td>$4,989</td><td>$1,381</td></tr>
-      <tr><td>Continuing Education</td><td>$4,483</td><td>$2,500</td><td>$247</td></tr>
-      <tr><td>Electricity</td><td>$3,264</td><td>$3,650</td><td>$3,985</td></tr>
-      <tr><td>Uniforms</td><td>$50</td><td>$1,086</td><td>$2,166</td></tr>
-      <tr><td>Miscellaneous</td><td>$4,582</td><td>$3,670</td><td>$2,415</td></tr>
-      <tr class="total-row">
-        <td><strong>Total Expenses</strong></td>
-        <td><strong>$515,546</strong></td>
-        <td><strong>$546,879</strong></td>
-        <td><strong>$612,689</strong></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h3>Key Expense Drivers</h3>
-
-  <h4>Salaries &amp; Payroll Taxes (66% of total expenses)</h4>
-  <p>Personnel costs are the single largest expense category, totaling $405,684 in FY2024 (salaries $374,166 plus payroll taxes $31,518). This represents a 12.9% increase from $359,491 in FY2022. For an organization that operates ambulances around the clock, wages are not a discretionary line item&mdash;they are the cost of keeping units staffed and available.</p>
-
-  <h4>Depreciation (+80% over two years)</h4>
-  <p>Depreciation nearly doubled from $33,531 in FY2022 to $60,246 in FY2024, reflecting the capital investments made in recent years: the X Series defibrillators, Power Load system, Power Pro stretcher, and other equipment. While depreciation is a non-cash expense, it represents the real consumption of asset value and signals future replacement needs.</p>
-
-  <h4>Medical Supplies (+120% over two years)</h4>
-  <p>Supplies and paramedic assistance costs rose from $6,714 to $14,797&mdash;a direct consequence of treating more patients with a full ALS medication and supply inventory.</p>
-
-  <h4>Motor Fuel (+69% over two years)</h4>
-  <p>Fuel costs climbed from $5,446 to $9,228, driven by both higher call volume (more miles driven) and elevated fuel prices during the period.</p>
-
-  <h3>Budget vs. Actual (FY 2024 &mdash; Budget Basis)</h3>
-  <table>
-    <thead>
-      <tr><th></th><th>Budget</th><th>Actual</th><th>Variance</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>Total Ambulance (Program)</td><td>$582,370</td><td>$521,808</td><td class="positive">$60,562 under</td></tr>
-      <tr><td>Management &amp; General (Support)</td><td>$50,130</td><td>$68,592</td><td class="negative">$18,462 over</td></tr>
-      <tr class="total-row"><td><strong>Total Expenses (Budget Basis)</strong></td><td><strong>$632,500</strong></td><td><strong>$590,400</strong></td><td class="positive"><strong>$42,100 under</strong></td></tr>
-    </tbody>
-  </table>
-  <p>On a budget basis (which includes loan payments and equipment purchases but excludes depreciation), the Service came in $42,100 under its FY2024 budget. Program service spending was well-controlled; the overage in management and general was driven primarily by higher-than-anticipated interest expense ($11,224 actual vs. not budgeted) and increased loan payments ($37,957 vs. $23,130 budgeted).</p>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 13: FINANCIAL NARRATIVE -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">13</span>Financial Narrative: Deficit to Surplus to New Challenges</div>
-
-  <h3>The Deficit Years (FY 2022 &ndash; FY 2023)</h3>
-  <p>For at least two consecutive fiscal years, Millstadt Ambulance Service spent more than it earned. In FY2022, expenses exceeded revenue by $17,270. In FY2023, the gap narrowed to $12,912, but the Service was still drawing down its net assets to cover operations. The core problem was structural: patient fee collections were not keeping pace with the cost of running the ambulances, and property tax revenue&mdash;while stable&mdash;was not sufficient to close the gap.</p>
-
-  <p>During these years, the Service did not have the financial room to invest meaningfully in equipment replacement, training, or staffing improvements. Capital decisions were reactive rather than strategic. The organization was, in effect, deferring costs that would inevitably come due.</p>
-
-  <h3>The Breakthrough (FY 2024)</h3>
-  <p>FY2024 marked a turning point. Total revenue jumped to $702,726&mdash;an increase of $168,759, or 31.6%, over the prior year. The driver was patient fee collections, which surged from $314,666 to $481,243. This $166,577 increase (53%) reflected both higher call volume (more patients transported and billed) and what appears to be improved billing and collection activity.</p>
-
-  <p>Expenses grew more modestly, rising $65,810 (12%) to $612,689. The result was a surplus of $90,037&mdash;the first positive net position in at least three years. The Service used this window to make critical capital investments, including two Zoll X Series defibrillators ($88,895 combined) and to begin addressing deferred equipment needs.</p>
-
-  <h3>The Current Reality (FY 2025&ndash;2026)</h3>
-  <p>The surplus of FY2024 provided breathing room, but it did not resolve the underlying financial challenges facing the Service. The FY 2025&ndash;2026 budget projects total revenue of $947,845 against total expenses of $1,105,568&mdash;a projected deficit of approximately $157,723.</p>
-
-  <p>Several factors are driving this renewed pressure:</p>
-  <ul style="margin: 12px 0 16px 24px; color: var(--gray-700);">
-    <li style="margin-bottom: 8px;"><strong>Salary growth:</strong> Projected at $685,472 for FY25-26&mdash;nearly double FY2022 levels&mdash;reflecting the labor market reality of recruiting and retaining qualified EMS personnel.</li>
-    <li style="margin-bottom: 8px;"><strong>Billing and insurance costs:</strong> At $70,382 projected, billing service fees have more than doubled as revenue (and the complexity of collections) has grown.</li>
-    <li style="margin-bottom: 8px;"><strong>Fuel and vehicle costs:</strong> Motor fuel ($47,410) and ambulance repairs ($42,179) reflect both higher utilization and an aging fleet.</li>
-    <li style="margin-bottom: 8px;"><strong>New debt service:</strong> Truck payments ($36,000) and mortgage ($25,696) consume capital that might otherwise support operations.</li>
-  </ul>
-
-  <div class="callout">
-    <div class="callout-title">The Central Tension</div>
-    <p>Call volume is rising. The community is calling 911 more often. The Service is answering those calls. But the cost of answering them is outpacing the revenue generated from doing so. The FY2024 surplus was real, but it was not a permanent fix. Without a structural adjustment to the revenue base&mdash;whether through the property tax levy, grant funding, or other mechanisms&mdash;the Service will return to deficit operations.</p>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 14: CAPITAL NEEDS -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">14</span>Capital Needs &amp; Fleet Assessment</div>
-
-  <div class="photo-block medium">
-    <img src="/_internal/budget-draft/images/ambulance_side.jpg" alt="Millstadt Ambulance Service Unit 3926">
-    <div class="photo-caption">Unit 3926 &mdash; the Service&rsquo;s primary ALS ambulance, a Ford F-350 chassis. The Millstadt water tower is visible in the background.</div>
-  </div>
-
-  <h3>Current Fleet</h3>
-  <div class="fleet-grid">
-    <div class="fleet-card">
-      <div class="fleet-type">Primary Unit</div>
-      <div class="fleet-name">ALS Ambulance</div>
-      <div class="fleet-detail">Advanced Life Support equipped</div>
-    </div>
-    <div class="fleet-card">
-      <div class="fleet-type">Secondary Unit</div>
-      <div class="fleet-name">ALS Upgradable</div>
-      <div class="fleet-detail">Can be upgraded to ALS as needed</div>
-    </div>
-    <div class="fleet-card">
-      <div class="fleet-type">Reserve / BLS</div>
-      <div class="fleet-name">BLS Ambulance</div>
-      <div class="fleet-detail">Emergency ALS upgrade capable</div>
-    </div>
-  </div>
-
-  <h3>Key Capital Assets</h3>
-  <table>
-    <thead><tr><th>Asset</th><th>Year Acquired</th><th>Original Cost</th></tr></thead>
-    <tbody>
-      <tr><td>Ford Ambulance</td><td>2015</td><td>$133,311</td></tr>
-      <tr><td>Ambulance</td><td>2018</td><td>$85,598</td></tr>
-      <tr><td>Building &mdash; 100 E. Laurel St.</td><td>2018</td><td>$286,607</td></tr>
-      <tr><td>Land</td><td>2018</td><td>$31,845</td></tr>
-      <tr><td>MTS Power Load System</td><td>2023</td><td>$25,976</td></tr>
-      <tr><td>6507 Power Pro 2 Stretcher</td><td>2023</td><td>$26,799</td></tr>
-      <tr><td>X Series Monitor/Defibrillator (x2)</td><td>2024</td><td>$88,895</td></tr>
-      <tr class="total-row"><td><strong>Total Gross Fixed Assets</strong></td><td></td><td><strong>$855,290</strong></td></tr>
-      <tr><td>Less: Accumulated Depreciation</td><td></td><td>($455,413)</td></tr>
-      <tr class="total-row"><td><strong>Net Book Value</strong></td><td></td><td><strong>$399,877</strong></td></tr>
-    </tbody>
-  </table>
-
-  <h3>Fleet Age Concern</h3>
-  <p>The 2015 Ford ambulance is now over ten years old. In the EMS industry, frontline ambulances typically have a useful service life of 7&ndash;10 years under normal utilization. With call volume surging, this unit is being used harder and more frequently than ever. Replacement costs for a new Type I or Type III ambulance now range from $250,000 to $400,000 depending on configuration and build time&mdash;a capital expenditure that must be planned for, not absorbed reactively.</p>
-
-  <h3>4th Ambulance Analysis</h3>
-  <p>An analysis of the incremental cost of adding a fourth ambulance, staffed 24/7/365, was prepared as part of the FY25-26 budget process:</p>
-
-  <table>
-    <thead><tr><th>Cost Component</th><th>Annual Cost</th></tr></thead>
-    <tbody>
-      <tr><td>Medic wages (24/7 coverage @ $20/hr)</td><td>$175,200</td></tr>
-      <tr><td>EMT wages (24/7 coverage @ $16/hr)</td><td>$140,160</td></tr>
-      <tr><td>Employer burden (taxes, benefits @ 20%)</td><td>$63,072</td></tr>
-      <tr class="total-row"><td><strong>Total Incremental Staffing Cost</strong></td><td><strong>$378,432</strong></td></tr>
-    </tbody>
-  </table>
-  <p>This figure represents staffing alone and does not include vehicle acquisition, fuel, insurance, or maintenance. The full annual cost of a fourth ambulance would be substantially higher. The analysis underscores the scale of investment required to expand capacity and provides context for discussions about levy adjustments.</p>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 15: DEBT SERVICE -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">15</span>Debt Service</div>
-
-  <p>Millstadt Ambulance Service carries three notes payable as of April 30, 2024, totaling $267,788. The debt load is manageable relative to the organization&rsquo;s revenue base and is entirely related to capital investments in infrastructure and equipment.</p>
-
-  <table>
-    <thead><tr><th>Obligation</th><th>Balance</th><th>Terms</th></tr></thead>
-    <tbody>
-      <tr>
-        <td>Building Loan (100 E. Laurel St.)</td>
-        <td>$177,019</td>
-        <td>3.75% through April 2023, then 6.125%<br>119 payments of $2,141.30<br>Matures April 25, 2033</td>
-      </tr>
-      <tr>
-        <td>Vendor Note #1</td>
-        <td>$19,653</td>
-        <td>60 monthly payments of $446.65<br>No interest</td>
-      </tr>
-      <tr>
-        <td>Vendor Note #2</td>
-        <td>$71,116</td>
-        <td>5 annual payments of $17,779<br>No interest, started Sept. 2023</td>
-      </tr>
-      <tr class="total-row">
-        <td><strong>Total Notes Payable</strong></td>
-        <td><strong>$267,788</strong></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td>Less: Current Portion</td>
-        <td>($38,416)</td>
-        <td></td>
-      </tr>
-      <tr class="total-row">
-        <td><strong>Long-Term Portion</strong></td>
-        <td><strong>$229,372</strong></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h3>Future Scheduled Maturities</h3>
-  <table>
-    <thead><tr><th>Fiscal Year Ending April 30</th><th>Payment Due</th></tr></thead>
-    <tbody>
-      <tr><td>2025</td><td>$38,416</td></tr>
-      <tr><td>2026</td><td>$39,379</td></tr>
-      <tr><td>2027</td><td>$49,402</td></tr>
-      <tr><td>2028</td><td>$39,703</td></tr>
-      <tr><td>2029</td><td>$19,506</td></tr>
-      <tr><td>2030&ndash;2034</td><td>$81,382</td></tr>
-      <tr class="total-row"><td><strong>Total</strong></td><td><strong>$267,788</strong></td></tr>
-    </tbody>
-  </table>
-
-  <p>The building loan is collateralized by the property at 100 E. Laurel Street and represents the largest single obligation. The two vendor notes are interest-free, reducing the effective borrowing cost. Interest expense totaled $11,224 in FY2024, up from $8,063 in FY2022, driven by the higher balance on the building loan as the rate increased from 3.75% to 6.125%.</p>
-
-  <p>By 2029, all vendor notes will be retired, and the annual debt burden will drop to building loan payments only. This scheduled decline in debt service creates modest budget relief in future years. A new truck loan ($3,000/month) was added in FY 2025&ndash;2026, increasing near-term obligations but addressing a critical fleet need.</p>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 16: TAX LEVY -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">16</span>Tax Levy &amp; Revenue Capacity</div>
-
-  <p>Millstadt Ambulance Service receives its property tax revenue through the Millstadt Fire Protection District, which levies a rate on the Equalized Assessed Valuation (EAV) of real property within the district. The maximum authorized tax rate for ambulance service is <strong>$0.2500 per $100 of assessed valuation</strong>.</p>
-
-  <p>The district is currently levying at approximately <strong>$0.09 per $100 EAV</strong>&mdash;roughly 35% of its authorized maximum. This is not a cap imposed by external constraints; it is a rate the district has historically chosen to levy.</p>
-
-  <div class="gauge-container">
-    <div class="chart-title">Current Tax Rate vs. Maximum Authorized</div>
-    <div class="gauge-track">
-      <div class="gauge-fill" style="width: 35%;">$0.09 (35%)</div>
-    </div>
-    <div class="gauge-labels">
-      <span>$0.00</span>
-      <span>Current: ~$0.09</span>
-      <span>Maximum: $0.2500</span>
-    </div>
-  </div>
-
-  <h3>What the Gap Means</h3>
-  <p>Using the most recent Rate Setting EAV of $263,025,919 (2023 levy year), the revenue implications of different tax rate scenarios are significant:</p>
-
-  <table>
-    <thead><tr><th>Scenario</th><th>Rate / $100 EAV</th><th>Estimated Revenue</th><th>Increase Over Current</th></tr></thead>
-    <tbody>
-      <tr><td>Current Rate</td><td>$0.0868</td><td>$228,307</td><td>&mdash;</td></tr>
-      <tr><td>Modest Increase</td><td>$0.1500</td><td>$394,539</td><td>+$166,232</td></tr>
-      <tr><td>Moderate Increase</td><td>$0.2000</td><td>$526,052</td><td>+$297,745</td></tr>
-      <tr><td>Maximum Authorized</td><td>$0.2500</td><td>$657,565</td><td>+$429,258</td></tr>
-    </tbody>
-  </table>
-
-  <div class="chart-container">
-    <div class="chart-title">Potential Tax Revenue by Rate Scenario</div>
-    <div class="bar-group">
-      <div class="bar-label">Current ($0.0868) &mdash; $228K</div>
-      <div class="bar-track"><div class="bar-fill navy" style="width: 34.7%;">$228K</div></div>
-    </div>
-    <div class="bar-group">
-      <div class="bar-label">$0.15 &mdash; $395K</div>
-      <div class="bar-track"><div class="bar-fill gold" style="width: 60%;">$395K</div></div>
-    </div>
-    <div class="bar-group">
-      <div class="bar-label">$0.20 &mdash; $526K</div>
-      <div class="bar-track"><div class="bar-fill gold" style="width: 80%;">$526K</div></div>
-    </div>
-    <div class="bar-group">
-      <div class="bar-label">$0.25 (Max) &mdash; $658K</div>
-      <div class="bar-track"><div class="bar-fill green" style="width: 100%;">$658K</div></div>
-    </div>
-  </div>
-
-  <div class="callout success">
-    <div class="callout-title">Key Takeaway</div>
-    <p>At the maximum authorized rate, property tax revenue alone could generate approximately $658,000 annually&mdash;nearly three times the current amount. Even a modest increase to $0.15 per $100 EAV would generate an additional $166,000 per year, enough to meaningfully offset the projected FY25-26 deficit of $157,723. A rate near $0.20 would generate sufficient revenue to fund a fourth ambulance staffing model ($378,432/year) on tax revenue alone.</p>
-  </div>
-
-  <h3>Impact on Property Owners</h3>
-  <p>For a property with a market value of $200,000 (assessed at approximately $66,667 in Illinois at the 33.33% assessment ratio), the annual ambulance tax at the current rate of $0.0868 is approximately <strong>$58 per year</strong>. At the maximum rate of $0.2500, that same property owner would pay approximately <strong>$167 per year</strong>&mdash;an increase of roughly $109 annually, or about $9 per month.</p>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 17: GRANTS & ADVANCEMENTS -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">17</span>Grants &amp; Clinical Advancements</div>
-
-  <h3>Grant History</h3>
-  <p>Grant revenue has been minimal in recent years. The Service received $7,318 in grant funding in FY2022, but no grant revenue was recorded in FY2023 or FY2024. Given the financial pressures the organization faces, pursuing federal and state grant opportunities represents a meaningful area for growth.</p>
-
-  <p>Potential grant sources relevant to a rural/suburban EMS service in Illinois include:</p>
-  <ul style="margin: 12px 0 16px 24px; color: var(--gray-700);">
-    <li style="margin-bottom: 8px;"><strong>FEMA Assistance to Firefighters Grant (AFG):</strong> Funds equipment, vehicles, and training for fire and EMS organizations.</li>
-    <li style="margin-bottom: 8px;"><strong>FEMA Staffing for Adequate Fire and Emergency Response (SAFER):</strong> Supports hiring and retention of first responders.</li>
-    <li style="margin-bottom: 8px;"><strong>HRSA Rural EMS Programs:</strong> Targets EMS capacity in rural communities.</li>
-    <li style="margin-bottom: 8px;"><strong>Illinois IDPH EMS Grants:</strong> State-level support for training, equipment, and system development.</li>
-  </ul>
-
-  <h3>Clinical Capabilities</h3>
-  <p>Despite its modest size, Millstadt Ambulance Service operates at a clinical level that matches or exceeds many larger services. Recent investments demonstrate a commitment to patient care quality:</p>
-
-  <div class="card-grid">
-    <div class="card">
-      <div class="card-label">Cardiac Monitoring</div>
-      <div class="card-value" style="font-size:1rem;">Zoll X Series</div>
-      <div class="card-note">2 units acquired in 2024 ($88,895)</div>
-    </div>
-    <div class="card">
-      <div class="card-label">Patient Handling</div>
-      <div class="card-value" style="font-size:1rem;">Stryker Power Load</div>
-      <div class="card-note">MTS system + Power Pro 2 stretcher (2023)</div>
-    </div>
-    <div class="card">
-      <div class="card-label">Clinical Inventory</div>
-      <div class="card-value" style="font-size:1rem;">Full ALS Capability</div>
-      <div class="card-note">Comprehensive medication and supply inventory</div>
-    </div>
-    <div class="card">
-      <div class="card-label">Documentation</div>
-      <div class="card-value" style="font-size:1rem;">ESO ePCR</div>
-      <div class="card-note">Electronic patient care reporting system</div>
-    </div>
-  </div>
-
-  <p>The Service carries a full range of ALS-level medications&mdash;cardiac drugs (epinephrine, amiodarone, adenosine), pain management (fentanyl, ketamine, morphine), sedation (midazolam, etomidate), and specialized agents (tranexamic acid, norepinephrine). This clinical capability requires ongoing training, controlled substance management, and supply chain logistics&mdash;none of which are free.</p>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 18: FUTURE OUTLOOK -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">18</span>Future Outlook</div>
-
-  <p>The trajectory facing Millstadt Ambulance Service is clear. Call volume is growing. Operating costs are rising. The current revenue structure&mdash;heavily dependent on patient fee collections with a property tax levy set well below its authorized ceiling&mdash;is not keeping pace.</p>
-
-  <h3>What the Data Tells Us</h3>
-  <ul style="margin: 12px 0 16px 24px; color: var(--gray-700);">
-    <li style="margin-bottom: 10px;"><strong>Call volume grew 18.15% in two years</strong> and shows no sign of leveling off. Population trends, an aging demographic, and increased healthcare utilization in the region all point to continued demand growth.</li>
-    <li style="margin-bottom: 10px;"><strong>Revenue has been volatile:</strong> FY2024 saw a 32% revenue jump driven by patient billing, but FY22 and FY23 both ran deficits. Patient fee revenue is inherently unpredictable and should not be the primary funding source for essential public safety infrastructure.</li>
-    <li style="margin-bottom: 10px;"><strong>The fleet is aging:</strong> The 2015 ambulance has crossed the 10-year threshold. Replacement costs will be substantial, and deferring that decision only increases the risk of an unplanned service interruption.</li>
-    <li style="margin-bottom: 10px;"><strong>Staffing costs will continue to rise:</strong> The EMS labor market is competitive. Retaining qualified paramedics and EMTs requires compensation that reflects the skill, risk, and demands of the profession.</li>
-    <li style="margin-bottom: 10px;"><strong>Tax capacity exists:</strong> The district is using only 35% of its authorized levy. There is room to increase revenue without requiring voter approval for a rate above the existing cap.</li>
-  </ul>
-
-  <h3>Strategic Priorities</h3>
-  <div class="card-grid">
-    <div class="card">
-      <div class="card-label">Priority 1</div>
-      <div class="card-value" style="font-size:0.95rem;">Revenue Stabilization</div>
-      <div class="card-note">Address the gap between the current levy rate and the authorized maximum to reduce dependence on patient fee volatility.</div>
-    </div>
-    <div class="card">
-      <div class="card-label">Priority 2</div>
-      <div class="card-value" style="font-size:0.95rem;">Fleet Replacement Planning</div>
-      <div class="card-note">Develop a capital replacement schedule that avoids reactive purchasing and spreads costs over multiple budget cycles.</div>
-    </div>
-    <div class="card">
-      <div class="card-label">Priority 3</div>
-      <div class="card-value" style="font-size:0.95rem;">Staffing &amp; Capacity</div>
-      <div class="card-note">Evaluate the feasibility and timeline for a fourth ambulance unit as call volume approaches the practical ceiling of the current three-unit model.</div>
-    </div>
-    <div class="card">
-      <div class="card-label">Priority 4</div>
-      <div class="card-value" style="font-size:0.95rem;">Grant Pursuit</div>
-      <div class="card-note">Actively apply for federal and state EMS grants to offset capital and training costs that the operating budget cannot absorb.</div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 19: FY 2025-2026 BUDGET DETAIL -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">19</span>Budget Detail &mdash; FY 2025&ndash;2026</div>
-
-  <p>The following budget reflects projected revenues and expenses for the fiscal year May 1, 2025 through April 30, 2026. Revenue projections are based on annualized data from the first six months of operations (May&ndash;October 2025). Expense projections incorporate known obligations, contractual commitments, and annualized spending trends.</p>
-
-  <div class="callout warning">
-    <div class="callout-title">Projected Deficit: $157,723</div>
-    <p>The FY 2025&ndash;2026 budget projects expenses exceeding revenues by approximately $157,723. This shortfall reflects the compounding effect of rising call volume, increased staffing costs, and essential capital expenditures on a revenue base that has not grown proportionally.</p>
-  </div>
-
-  <h3>Revenue</h3>
-  <table>
-    <thead><tr><th>Revenue Source</th><th>6-Month Actual</th><th>FY Projected</th></tr></thead>
-    <tbody>
-      <tr><td>Patient Fees</td><td>$359,855</td><td>$719,711</td></tr>
-      <tr><td>Property Taxes</td><td>$144,453</td><td>$228,134</td></tr>
-      <tr class="total-row"><td><strong>Total Revenue</strong></td><td><strong>$504,308</strong></td><td><strong>$947,845</strong></td></tr>
-    </tbody>
-  </table>
-
-  <h3>Expenses</h3>
-  <table>
-    <thead><tr><th>Expense Category</th><th>6-Month Actual</th><th>FY Projected</th></tr></thead>
-    <tbody>
-      <tr><td>Salaries &amp; Wages</td><td>$342,736</td><td>$685,472</td></tr>
-      <tr><td>Billing Service</td><td>$35,191</td><td>$70,382</td></tr>
-      <tr><td>Insurance Expense</td><td>$33,687</td><td>$67,375</td></tr>
-      <tr><td>Motor Fuel</td><td>$15,803</td><td>$47,410</td></tr>
-      <tr><td>Ambulance Repairs &amp; Maintenance</td><td>$21,090</td><td>$42,179</td></tr>
-      <tr><td>Truck Payment</td><td>$18,000</td><td>$36,000</td></tr>
-      <tr><td>Mortgage</td><td>$12,848</td><td>$25,696</td></tr>
-      <tr><td>Miscellaneous Expense</td><td>$11,249</td><td>$22,499</td></tr>
-      <tr><td>Operating Equipment Purchased</td><td>$13,607</td><td>$22,214</td></tr>
-      <tr><td>Dispatch Fees</td><td>$10,150</td><td>$20,300</td></tr>
-      <tr><td>Oxygen</td><td>$7,562</td><td>$15,125</td></tr>
-      <tr><td>Legal Fees</td><td>$4,849</td><td>$14,548</td></tr>
-      <tr><td>Office Supplies</td><td>$6,972</td><td>$13,945</td></tr>
-      <tr><td>Electric</td><td>$2,844</td><td>$5,687</td></tr>
-      <tr><td>Verizon (Communications)</td><td>$2,800</td><td>$5,599</td></tr>
-      <tr><td>Hamilton Yearly Service</td><td>$2,691</td><td>$2,691</td></tr>
-      <tr><td>Professional Fees</td><td>$675</td><td>$1,350</td></tr>
-      <tr><td>Cable / Internet</td><td>$720</td><td>$1,440</td></tr>
-      <tr><td>Village Social Media</td><td>$1,099</td><td>$1,099</td></tr>
-      <tr><td>Medical Waste Disposal</td><td>$485</td><td>$970</td></tr>
-      <tr><td>Chief 360</td><td>$948</td><td>$948</td></tr>
-      <tr><td>Security Cameras</td><td>$720</td><td>$840</td></tr>
-      <tr><td>Village Water</td><td>$410</td><td>$819</td></tr>
-      <tr><td>W2W Scheduling</td><td>$715</td><td>$715</td></tr>
-      <tr><td>Culligan Water</td><td>$132</td><td>$264</td></tr>
-      <tr class="total-row">
-        <td><strong>Total Expenses</strong></td>
-        <td><strong>$547,983</strong></td>
-        <td><strong>$1,105,568</strong></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <table>
-    <thead><tr><th></th><th>6-Month Actual</th><th>FY Projected</th></tr></thead>
-    <tbody>
-      <tr><td>Total Revenue</td><td>$504,308</td><td>$947,845</td></tr>
-      <tr><td>Total Expenses</td><td>$547,983</td><td>$1,105,568</td></tr>
-      <tr class="total-row">
-        <td><strong>Net Position</strong></td>
-        <td class="negative"><strong>($43,675)</strong></td>
-        <td class="negative"><strong>($157,723)</strong></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h3>Expense Composition &mdash; FY 2025&ndash;2026</h3>
-  <div class="chart-container">
-    <div class="chart-title">Where the Money Goes</div>
-    <div class="bar-group">
-      <div class="bar-label">Salaries &amp; Wages &mdash; $685,472 (62.0%)</div>
-      <div class="bar-track"><div class="bar-fill navy" style="width: 62%;">62.0%</div></div>
-    </div>
-    <div class="bar-group">
-      <div class="bar-label">Billing Service &mdash; $70,382 (6.4%)</div>
-      <div class="bar-track"><div class="bar-fill red" style="width: 6.4%;min-width:50px;">6.4%</div></div>
-    </div>
-    <div class="bar-group">
-      <div class="bar-label">Insurance &mdash; $67,375 (6.1%)</div>
-      <div class="bar-track"><div class="bar-fill red" style="width: 6.1%;min-width:50px;">6.1%</div></div>
-    </div>
-    <div class="bar-group">
-      <div class="bar-label">Motor Fuel &mdash; $47,410 (4.3%)</div>
-      <div class="bar-track"><div class="bar-fill gold" style="width: 4.3%;min-width:50px;">4.3%</div></div>
-    </div>
-    <div class="bar-group">
-      <div class="bar-label">Ambulance Repairs &mdash; $42,179 (3.8%)</div>
-      <div class="bar-track"><div class="bar-fill gold" style="width: 3.8%;min-width:50px;">3.8%</div></div>
-    </div>
-    <div class="bar-group">
-      <div class="bar-label">All Other &mdash; $192,750 (17.4%)</div>
-      <div class="bar-track"><div class="bar-fill navy" style="width: 17.4%;min-width:50px;">17.4%</div></div>
-    </div>
-  </div>
-
-  <h3>Year-to-Date Update (Through March 2026)</h3>
-  <p>As the fiscal year approaches its close, actual spending data through March 2026 reveals several notable variances against the original projections:</p>
-  <ul style="margin: 12px 0 16px 24px; color: var(--gray-700);">
-    <li style="margin-bottom: 8px;"><strong>Vehicle maintenance exceeded projections:</strong> A transmission and turbo repair in February 2026 ($13,712), plus ongoing maintenance across the fleet, pushed repair costs well above the annualized estimate.</li>
-    <li style="margin-bottom: 8px;"><strong>Equipment installments tracking as planned:</strong> Stryker ($446.65/month and $2,306.59/month) and Zoll ($17,779 periodic) payments are continuing on schedule.</li>
-    <li style="margin-bottom: 8px;"><strong>New truck loan payments:</strong> The $3,000/month truck payment to FNB Waterloo began in June 2025 and has continued through the fiscal year, adding $36,000 annualized to the debt service load.</li>
-    <li style="margin-bottom: 8px;"><strong>Capital purchases:</strong> Two government laptops ($9,867 combined), radios ($8,724), and a power loader installation ($2,400) were among unplanned but necessary expenditures.</li>
-  </ul>
-
-  <h3>Reserve Position</h3>
-  <p>As of May 1, 2025, the Service held approximately $80,000 in its money market account. Through the first six months of the fiscal year, $25,000 was used as a down payment on a new truck, $20,000 was transferred to cover payroll, and $18,000 was moved to pay billing service fees (with $18,000 subsequently returned). The ending money market balance as of October 31, 2025 was approximately $52,000.</p>
-
-  <p>These reserve movements illustrate the cash flow challenges the Service faces even during normal operations. Without adequate operating revenue, reserves intended for capital needs and contingencies are instead used to smooth cash flow gaps&mdash;a practice that, if sustained, will erode the financial cushion entirely.</p>
-</section>
-
-<!-- ============================================================ -->
-<!-- SECTION 20: CLOSING (NEW) -->
-<!-- ============================================================ -->
-<div class="page-break"></div>
-<section>
-  <div class="section-header"><span class="section-number">20</span>Commitment to the Community</div>
-
-  <div class="closing-banner">
-    <h3>Serving Millstadt Since 1980</h3>
-    <p>Forty-five years ago, the residents of this district decided they needed their own ambulance service. That decision has been validated every year since&mdash;most recently, 879 times in 2025 alone.</p>
-  </div>
-
-  <p style="margin-top: 30px;">This document was prepared to provide the Board of Directors, elected officials, and the public with a transparent and complete picture of the financial and operational position of Millstadt Ambulance Service. Every financial figure is traceable to an audited report or a recorded transaction. Nothing has been estimated for convenience, and no projections have been made without supporting data.</p>
-
-  <p>The facts are straightforward. The community&rsquo;s demand for emergency medical services is growing. The Service is meeting that demand with three ambulances, a dedicated crew, and clinical capabilities that exceed what most agencies of this size can offer. But the revenue structure has not kept pace with the cost of delivering that service. The property tax levy&mdash;the one revenue source the district directly controls&mdash;remains at 35% of its authorized capacity.</p>
-
-  <p>The purpose of this document is not to advocate for a specific course of action. It is to lay the groundwork for an informed decision. Whether the path forward involves a levy adjustment, grant funding, operational restructuring, or some combination of all three, the Board and the community now have the numbers to evaluate the options clearly.</p>
-
-  <p>Millstadt Ambulance Service does not operate for profit. It does not have shareholders. It does not have a marketing budget. It has ambulances, medics, and a responsibility to answer when someone calls 911. The question this budget addresses is not whether that work should continue&mdash;it is how it will be funded.</p>
-
-  <div style="text-align: center; margin: 40px 0 20px; padding: 30px; border-top: 2px solid var(--gray-200); border-bottom: 2px solid var(--gray-200);">
-    <p style="font-size: 1rem; color: var(--navy); font-weight: 600; margin-bottom: 8px;">Prepared for the Board of Directors</p>
-    <p style="font-size: 0.9rem; color: var(--gray-500); margin-bottom: 4px;">Millstadt Ambulance Service</p>
-    <p style="font-size: 0.9rem; color: var(--gray-500); margin-bottom: 4px;">Fiscal Year 2025&ndash;2026</p>
-    <p style="font-size: 0.85rem; color: var(--gray-500);">100 East Laurel Street &bull; Millstadt, Illinois 62260</p>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<!-- FOOTER -->
-<!-- ============================================================ -->
-</div><!-- end .container -->
+<!-- TOC -->
+<div class="sh"><span class="sn"></span>Table of Contents</div>
+<ul class="toc">
+  <li class="toc-h">Overview</li>
+  <li><span class="toc-n">1</span><span class="toc-t">Executive Summary</span></li>
+  <li class="toc-h">Introduction &amp; Profile</li>
+  <li><span class="toc-n">2</span><span class="toc-t">Leadership &amp; Governance</span></li>
+  <li><span class="toc-n">3</span><span class="toc-t">Mission, Vision &amp; Core Values</span></li>
+  <li><span class="toc-n">4</span><span class="toc-t">Pillars of Excellence</span></li>
+  <li><span class="toc-n">5</span><span class="toc-t">District Overview &amp; History</span></li>
+  <li><span class="toc-n">6</span><span class="toc-t">Geographical Location &amp; District Map</span></li>
+  <li><span class="toc-n">7</span><span class="toc-t">Fast Facts</span></li>
+  <li class="toc-h">Operations &amp; Demand</li>
+  <li><span class="toc-n">8</span><span class="toc-t">Call Volume &amp; Demand Analysis</span></li>
+  <li><span class="toc-n">9</span><span class="toc-t">Operational Impact of Growth</span></li>
+  <li class="toc-h">Financial Overview</li>
+  <li><span class="toc-n">10</span><span class="toc-t">Financial Summary</span></li>
+  <li><span class="toc-n">11</span><span class="toc-t">Revenue Analysis</span></li>
+  <li><span class="toc-n">12</span><span class="toc-t">Expense Analysis</span></li>
+  <li><span class="toc-n">13</span><span class="toc-t">Financial Narrative</span></li>
+  <li class="toc-h">Capital, Debt &amp; Revenue Capacity</li>
+  <li><span class="toc-n">14</span><span class="toc-t">Capital Needs &amp; Fleet Assessment</span></li>
+  <li><span class="toc-n">15</span><span class="toc-t">Debt Service</span></li>
+  <li><span class="toc-n">16</span><span class="toc-t">Tax Levy &amp; Revenue Capacity</span></li>
+  <li class="toc-h">Looking Ahead</li>
+  <li><span class="toc-n">17</span><span class="toc-t">Grants &amp; Clinical Advancements</span></li>
+  <li><span class="toc-n">18</span><span class="toc-t">Future Outlook</span></li>
+  <li><span class="toc-n">19</span><span class="toc-t">FY 2025–2026 Operating Expenses</span></li>
+  <li><span class="toc-n">20</span><span class="toc-t">Commitment to the Community</span></li>
+</ul>
+
+<!-- 01: EXECUTIVE SUMMARY -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">01</span>Executive Summary</div>
+
+<p>Millstadt Ambulance Service is a 501(c)(3) nonprofit Advanced Life Support provider serving approximately 107 square miles of Southwestern St. Clair County from a single station at 100 East Laurel Street. Three ambulances, two EMS Chiefs, and a roster of paramedics and EMTs answer every 911 call in the district around the clock.</p>
+
+<p>This document presents the Service's financial position, operational performance, and strategic outlook for Fiscal Year 2025–2026. Historical data draws from audited financial reports prepared by Scheffel Boyle, CPAs, Belleville, Illinois. Current-year figures come from the Millstadt Ambulance Financial Master workbook, which tracks every vendor payment and expense transaction by month and account.</p>
+
+<div class="stats">
+  <div class="stat"><span class="stat-n">879</span><span class="stat-l">Calls for Service (2025)</span></div>
+  <div class="stat green"><span class="stat-n">+18.15%</span><span class="stat-l">Call Growth (2-Year)</span></div>
+  <div class="stat red"><span class="stat-n">$651,553</span><span class="stat-l">FY25-26 Expenses (8 Mo.)</span></div>
+  <div class="stat"><span class="stat-n">35%</span><span class="stat-l">Tax Levy Utilization</span></div>
+</div>
+
+<h3>Three Fiscal Years, Three Realities</h3>
+
+<p><strong>FY 2023 — Deficit.</strong> Revenue of $533,967 fell short of $546,879 in expenses, producing a loss of $12,912. Patient collections lagged behind operating costs. The property tax levy, while stable, could not close the gap.</p>
+
+<p><strong>FY 2024 — Surplus.</strong> Patient fee revenue surged 53% to $481,243, driven by higher call volume and improved billing. Total revenue reached $702,726 against $612,689 in expenses, yielding a surplus of $90,037. The Service invested in two Zoll X Series cardiac monitor/defibrillators ($88,895) during this window.</p>
+
+<p><strong>FY 2025–2026 — Renewed Pressure.</strong> Through eight months of the current fiscal year, the Service has recorded $651,553 in operating expenses — already exceeding the full prior-year total of $583,854. Vehicle costs have tripled. Medical equipment spending is up 51%. Payroll and benefits continue to climb. Call volume hit 879 in calendar year 2025, an 18% increase in two years, and every additional call compounds the cost structure.</p>
+
+<h3>The Central Question</h3>
+<p>The district's property tax levy sits at roughly $0.09 per $100 of assessed valuation — 35% of its authorized ceiling of $0.25. That unused capacity represents the single largest revenue tool available. A modest adjustment to $0.15 would generate an additional $166,000 annually. Whether and how to use that tool is the decision this document is built to inform.</p>
+
+<!-- 02: LEADERSHIP -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">02</span>Leadership &amp; Governance</div>
+
+<p>The Service is governed by a six-member Board of Directors operating under the authority of the Millstadt Fire Protection District. Two EMS Chiefs manage day-to-day operations across all clinical, administrative, and logistical functions.</p>
+
+<h3>Board of Directors</h3>
+<div class="off-grid">
+  <div class="off"><div class="off-n">Joseph Wagner</div><div class="off-t">President</div></div>
+  <div class="off"><div class="off-n">Philip Acker</div><div class="off-t">Vice President</div></div>
+  <div class="off"><div class="off-n">Suzanne Alberter</div><div class="off-t">Director</div></div>
+  <div class="off"><div class="off-n">Michael Kempf</div><div class="off-t">Director</div></div>
+  <div class="off"><div class="off-n">Jeannine Kochmann</div><div class="off-t">Director</div></div>
+  <div class="off"><div class="off-n">Linda Lehr</div><div class="off-t">Director</div></div>
+</div>
+
+<h3>Administrative Staff</h3>
+<div class="off-grid">
+  <div class="off"><div class="off-n">Jennifer Goetz</div><div class="off-t">EMS Chief 1</div></div>
+  <div class="off"><div class="off-n">Kenneth L. James Jr.</div><div class="off-t">EMS Chief 2</div></div>
+</div>
+
+<h3>Organizational Chart</h3>
+<div class="photo"><img src="/_internal/budget-draft/images/org_chart.png" alt="Org Chart" style="max-height:460px; object-fit:contain;"></div>
+
+<!-- 03: MISSION / VISION / VALUES -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">03</span>Mission, Vision &amp; Core Values</div>
+
+<h3>Mission</h3>
+<p style="border-left:3px solid var(--red); padding-left:14px; font-style:italic; color:var(--navy);">At Millstadt EMS, our mission is to provide exceptional, compassionate, and timely emergency medical care to our diverse community. We are dedicated to advancing health and safety through highly trained professionals, cutting-edge technology, and a commitment to continuous improvement, ensuring the well-being of every person we serve.</p>
+
+<h3>Vision</h3>
+<p style="border-left:3px solid var(--gold); padding-left:14px; font-style:italic; color:var(--navy);">Our vision is to be a leader in pre-hospital care, setting the standard for emergency medical services through innovation, education, and collaboration. We strive to enhance the quality of life in our region by delivering the highest level of care, fostering community partnerships, and preparing for the challenges of tomorrow with excellence and integrity.</p>
+
+<h3>Core Values</h3>
+<div class="val-grid">
+  <div class="val-card"><div class="val-name">Excellence</div><div class="val-desc">We hold ourselves to the highest clinical and operational standards — not because regulation demands it, but because the person on the stretcher deserves nothing less.</div></div>
+  <div class="val-card"><div class="val-name">Compassion</div><div class="val-desc">Every call starts with someone in distress. We respond with skill, but we lead with empathy. Technical competence without human concern is not emergency medicine.</div></div>
+  <div class="val-card"><div class="val-name">Integrity</div><div class="val-desc">Our finances are audited. Our clinical decisions are documented. Our commitments are kept. The public does not need to take our word for it — the records are open.</div></div>
+  <div class="val-card"><div class="val-name">Accountability</div><div class="val-desc">Every dollar, every decision, every patient outcome is owned. When something falls short, we find out why and fix it. That is what accountability looks like in practice.</div></div>
+  <div class="val-card"><div class="val-name">Collaboration</div><div class="val-desc">We operate within a regional EMS system — alongside hospitals, fire departments, law enforcement, and seven mutual aid agencies. No single service succeeds alone.</div></div>
+  <div class="val-card"><div class="val-name">Preparedness</div><div class="val-desc">Emergencies do not schedule themselves. Ambulances are stocked, crews are trained, and equipment is maintained before the tones drop — because the next call could be the worst one.</div></div>
+</div>
+
+<!-- 04: PILLARS OF EXCELLENCE -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">04</span>Pillars of Excellence</div>
+
+<p>Six pillars define how Millstadt Ambulance Service operates. Each reflects a commitment that the organization maintains on every shift, not an aspiration it hopes to reach someday. These pillars are defensible in a public meeting because they describe what the Service actually does.</p>
+
+<div class="pill nb"><div class="pill-num">I</div><div class="pill-title">Clinical Excellence</div><div class="pill-text">The Service operates at the ALS level with Zoll X Series cardiac monitors, Stryker Power Load patient handling, and a full medication inventory covering cardiac, respiratory, pain management, and critical care interventions. Clinical protocols are governed by the Southwestern Illinois EMS System Medical Director. The standard is not "adequate" — it is the same level of field care available in larger metro systems.</div></div>
+
+<div class="pill nb"><div class="pill-num">II</div><div class="pill-title">Operational Readiness</div><div class="pill-text">Three ambulances staff 107 square miles, 24 hours a day, 365 days a year. There is no scheduled downtime, no seasonal reduction, and no hours where a call goes unanswered. When a unit is committed, the remaining fleet covers the district. Readiness is not a policy document — it is the daily product of scheduling, maintenance, supply chain discipline, and crew availability.</div></div>
+
+<div class="pill nb"><div class="pill-num">III</div><div class="pill-title">Workforce Sustainability</div><div class="pill-text">Recruiting and retaining paramedics and EMTs is the defining operational challenge in EMS nationwide. Millstadt competes for the same labor pool as larger, better-funded agencies in the Metro East. Wages must be competitive. Scheduling must be sustainable. Training must be ongoing. The alternative — chronic understaffing — is not a theoretical risk; it is what happens when workforce investment falls behind.</div></div>
+
+<div class="pill nb"><div class="pill-num">IV</div><div class="pill-title">Community Trust &amp; Accountability</div><div class="pill-text">The Service is a 501(c)(3) nonprofit funded by public tax dollars and patient fees. Its financial records are audited annually by an independent CPA firm. Board meetings are open. This budget document exists because the public has a right to see exactly where the money goes and why. Transparency is not optional for an organization that depends on community support to operate.</div></div>
+
+<div class="pill nb"><div class="pill-num">V</div><div class="pill-title">System Capacity &amp; Response Reliability</div><div class="pill-text">At 879 calls per year across three units, the Service averages 293 responses per ambulance. As volume rises, so does the probability of simultaneous calls — events where every available unit is committed and the district must depend on mutual aid. Capacity planning is not about expansion for its own sake; it is about ensuring that the next 911 caller gets an ambulance from their own district, not a neighboring agency 20 minutes away.</div></div>
+
+<div class="pill nb"><div class="pill-num">VI</div><div class="pill-title">Regional Integration</div><div class="pill-text">Millstadt operates within a network of seven mutual aid partners: Monroe County EMS, Columbia EMS, Abbott EMS, Medstar EMS, Dupo EMS, Mascoutah EMS, and O'Fallon EMS. The Service also operates under the clinical governance of the Southwestern Illinois EMS System. Regional coordination is not a courtesy — it is a structural requirement for covering 107 square miles with three ambulances.</div></div>
+
+<!-- 05: DISTRICT OVERVIEW & HISTORY -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">05</span>District Overview &amp; History</div>
+
+<div class="photo"><img src="/_internal/budget-draft/images/fleet_station.png" alt="Fleet"><div class="photo-cap">The 2025 Millstadt Ambulance Service Open House — Millstadt EMS units alongside response partners from the community.</div></div>
+
+<p>Millstadt Ambulance Service has operated continuously since 1980. It is organized as a 501(c)(3) nonprofit annexed into the Millstadt Fire Protection District, receiving a portion of its funding through a property tax levy. The Service is exempt from federal and state income taxes.</p>
+
+<p>The district covers the Village of Millstadt, Millstadt Township, and the western portion of Stookey Township — approximately 107 square miles of rural, suburban, agricultural, and light industrial terrain in St. Clair County, Illinois.</p>
+
+<h3>Timeline</h3>
+<div class="photo"><img src="/_internal/budget-draft/images/vintage_ambulance.jpg" alt="Early ambulance" style="max-height:240px; object-position:center 40%;"><div class="photo-cap">An early Millstadt Ambulance Service unit — serving the community since 1980.</div></div>
+
+<div class="tl">
+  <div class="tl-item"><div class="tl-year">1980</div><div class="tl-text">Millstadt Ambulance Service founded to provide Basic Life Support emergency medical services.</div></div>
+  <div class="tl-item"><div class="tl-year">2013</div><div class="tl-text">Transition from BLS to Advanced Life Support — enabling paramedic-level cardiac monitoring, IV medications, advanced airway management, and drug-assisted intubation.</div></div>
+  <div class="tl-item"><div class="tl-year">2014</div><div class="tl-text">First 12 Lead cardiac monitor acquired.</div></div>
+  <div class="tl-item"><div class="tl-year">2015</div><div class="tl-text">New Ford ambulance placed in service ($133,311).</div></div>
+  <div class="tl-item"><div class="tl-year">2018</div><div class="tl-text">Permanent headquarters purchased at 100 E. Laurel Street ($286,607). Second ambulance acquired ($85,598).</div></div>
+  <div class="tl-item"><div class="tl-year">2023</div><div class="tl-text">Stryker MTS Power Load system ($25,976) and Power Pro 2 stretcher ($26,799) improve crew safety.</div></div>
+  <div class="tl-item"><div class="tl-year">2024</div><div class="tl-text">Two Zoll X Series Monitor/Defibrillators ($88,895 combined). First financial surplus in multiple years.</div></div>
+  <div class="tl-item"><div class="tl-year">2025</div><div class="tl-text">Call volume reaches 879 — an 18% increase in two years.</div></div>
+</div>
+
+<!-- 06: GEOGRAPHIC LOCATION -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">06</span>Geographical Location</div>
+
+<p>The district sits in the southwestern quadrant of St. Clair County, Illinois — directly across the Mississippi River from St. Louis, Missouri, within the Metro East region.</p>
+
+<div class="geo">
+  <div class="geo-panel"><img src="/_internal/budget-draft/images/illinois_map.webp" alt="Illinois"><div class="geo-lbl">State of Illinois</div><div class="geo-sub">St. Clair County highlighted</div></div>
+  <div class="geo-panel"><img src="/_internal/budget-draft/images/county_map.jpg" alt="County"><div class="geo-lbl">St. Clair County</div><div class="geo-sub">Millstadt and surrounding communities</div></div>
+</div>
+
+<div class="sh"><span class="sn">06</span>Service Area &amp; District Boundary</div>
+<div class="map-full"><img src="/_internal/budget-draft/images/district_map.png" alt="District Map"></div>
+<div class="map-legend"><div><span style="display:inline-block;width:16px;height:3px;background:#2563eb;vertical-align:middle;margin-right:4px;"></span><strong>Millstadt EMS District</strong> (primary service area)</div></div>
+<p style="font-size:8.5pt; color:var(--g500); text-align:center; margin-top:6px;">Adjacent boundaries shown for geographic context only — not part of the Millstadt EMS service area.</p>
+
+<h3>Mutual Aid Partners</h3>
+<div class="cards">
+  <div class="card">Monroe County EMS</div><div class="card">Columbia EMS</div><div class="card">Abbott EMS</div><div class="card">Medstar EMS</div><div class="card">Dupo EMS</div><div class="card">Mascoutah EMS</div><div class="card">O'Fallon EMS</div>
+</div>
+
+<!-- 07: FAST FACTS -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">07</span>Fast Facts</div>
+<div class="facts">
+  <div class="fact"><div><div class="fact-l">Founded</div><div class="fact-v">1980</div></div></div>
+  <div class="fact"><div><div class="fact-l">Area Served</div><div class="fact-v">~107 Square Miles</div></div></div>
+  <div class="fact"><div><div class="fact-l">Calls (2025)</div><div class="fact-v">879</div></div></div>
+  <div class="fact"><div><div class="fact-l">Service Type</div><div class="fact-v">Emergency 911 — ALS</div></div></div>
+  <div class="fact"><div><div class="fact-l">Fleet</div><div class="fact-v">3 Ambulances</div><div class="fact-l">1 ALS · 1 ALS Upgradable · 1 BLS/ALS</div></div></div>
+  <div class="fact"><div><div class="fact-l">Governance</div><div class="fact-v">6-Member Board + 2 EMS Chiefs</div></div></div>
+  <div class="fact"><div><div class="fact-l">Tax Rate</div><div class="fact-v">~$0.09 / $100 EAV</div><div class="fact-l">Max authorized: $0.25</div></div></div>
+  <div class="fact"><div><div class="fact-l">Mutual Aid</div><div class="fact-v">7 EMS Agencies</div></div></div>
+  <div class="fact"><div><div class="fact-l">Station</div><div class="fact-v">100 E. Laurel St., Millstadt, IL</div></div></div>
+  <div class="fact"><div><div class="fact-l">Organization</div><div class="fact-v">501(c)(3) Nonprofit</div></div></div>
+</div>
+
+<!-- 08: CALL VOLUME -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">08</span>Call Volume &amp; Demand Analysis</div>
+
+<p>Demand for service has accelerated sharply. The 2024–2025 period saw a 13.71% jump — more than triple the growth rate of the prior year.</p>
+
+<div class="stats">
+  <div class="stat"><span class="stat-n">744</span><span class="stat-l">2023</span></div>
+  <div class="stat"><span class="stat-n">773</span><span class="stat-l">2024</span></div>
+  <div class="stat"><span class="stat-n">879</span><span class="stat-l">2025</span></div>
+  <div class="stat red"><span class="stat-n">+18.15%</span><span class="stat-l">2-Year Growth</span></div>
+</div>
+
+<table>
+  <thead><tr><th>Year</th><th>Total Calls</th><th>Change</th><th>% Change</th></tr></thead>
+  <tbody>
+    <tr><td>2023</td><td>744</td><td>—</td><td>—</td></tr>
+    <tr><td>2024</td><td>773</td><td>+29</td><td>+3.90%</td></tr>
+    <tr><td>2025</td><td>879</td><td>+106</td><td>+13.71%</td></tr>
+    <tr class="tr-total"><td>Cumulative (2023–2025)</td><td></td><td>+135</td><td>+18.15%</td></tr>
+  </tbody>
+</table>
+
+<h3>Calculation</h3>
+<table>
+  <thead><tr><th>Period</th><th>Formula</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr><td>2023 → 2024</td><td>(773 − 744) ÷ 744</td><td>+3.90%</td></tr>
+    <tr><td>2024 → 2025</td><td>(879 − 773) ÷ 773</td><td>+13.71%</td></tr>
+    <tr><td>2023 → 2025</td><td>(879 − 744) ÷ 744</td><td>+18.15%</td></tr>
+  </tbody>
+</table>
+
+<div class="bar-chart">
+  <div class="bar-row"><div class="bar-label">2023 — 744 calls</div><div class="bar-track"><div class="bar-fill navy" style="width:84.6%;">744</div></div></div>
+  <div class="bar-row"><div class="bar-label">2024 — 773 calls (+3.90%)</div><div class="bar-track"><div class="bar-fill navy" style="width:87.9%;">773</div></div></div>
+  <div class="bar-row"><div class="bar-label">2025 — 879 calls (+13.71%)</div><div class="bar-track"><div class="bar-fill red" style="width:100%;">879</div></div></div>
+</div>
+
+<h3>Operational Consequences</h3>
+<ul class="bullet">
+  <li><strong>Staffing:</strong> Each call requires a two-person crew minimum. At 879 calls, crews are running significantly more responses per shift than two years ago. Fatigue compounds over time and directly affects provider safety and patient care quality.</li>
+  <li><strong>Fleet wear:</strong> More responses mean more miles, more engine hours, and shorter intervals between required maintenance. The 2015 ambulance is past its recommended service life and absorbing heavier use than ever.</li>
+  <li><strong>Supply consumption:</strong> Every patient contact depletes the medication and supply inventory. A 135-call increase is not marginal — it is a measurable draw that tracks directly to the medical supply budget line.</li>
+  <li><strong>Simultaneous call exposure:</strong> At 879 calls across three units, the statistical probability of overlapping calls — where every ambulance is committed — has increased meaningfully. When that happens, the district depends on mutual aid.</li>
+</ul>
+
+<!-- 09: OPERATIONAL IMPACT -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">09</span>Operational Impact of Growth</div>
+
+<div class="photo"><img src="/_internal/budget-draft/images/Lifeline.jpg" alt="Accident scene" style="max-height:260px;"><div class="photo-cap">Unit 3926 on scene — each of the 879 calls in 2025 requires personnel, equipment, fuel, and medical supplies.</div></div>
+
+<p>The master spreadsheet confirms what the call volume data predicts: costs are rising across every operational category.</p>
+
+<h4>Vehicle Costs — Up 299%</h4>
+<p>Vehicle expenses jumped from $13,023 in FY 2024-25 to $51,920 through eight months of FY 2025-26. The largest drivers: a new truck loan ($3,000/month starting June 2025, totaling $15,000 so far) and vehicle maintenance that spiked from $4,186 to $23,690. One transmission and turbo repair alone cost $13,712 in February 2026. Aging vehicles under heavier use break down more often and cost more to fix.</p>
+
+<h4>Medical Operations — Up 57%</h4>
+<p>Medical equipment and supply spending rose from $44,341 to $69,469. The bulk is equipment payments to Stryker and Zoll — the Power Load system and cardiac monitors that are financed over time. Medical gas (Airgas) costs rose 18% on volume alone.</p>
+
+<h4>Personnel — Up 6%</h4>
+<p>Wages, payroll taxes, 401(k) contributions, and payroll processing grew from $373,084 to $395,954. This is the single largest expense category at 61% of total spending. The increase reflects both staffing needs and labor market pressure — the same market conditions every EMS agency in the region is navigating.</p>
+
+<div class="callout warn">
+  <div class="callout-t">Eight Months, Already Over Last Year</div>
+  <p style="font-size:9pt;">FY 2025-26 expenses through March 2026 total $651,553 — exceeding the entire FY 2024-25 by $67,699, with one month still remaining. The run rate is not sustainable at the current revenue level.</p>
+</div>
+
+<!-- 10: FINANCIAL SUMMARY -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">10</span>Financial Summary</div>
+
+<p>Historical data from audited financial reports (Scheffel Boyle, CPAs). Current-year actuals from the Millstadt Ambulance Financial Master workbook.</p>
+
+<h3>Audited Results (Fiscal Years Ending April 30)</h3>
+<table>
+  <thead><tr><th></th><th>FY 2022</th><th>FY 2023</th><th>FY 2024</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Total Revenue</strong></td><td>$498,276</td><td>$533,967</td><td>$702,726</td></tr>
+    <tr><td><strong>Total Expenses</strong></td><td>$515,546</td><td>$546,879</td><td>$612,689</td></tr>
+    <tr class="tr-total"><td><strong>Change in Net Assets</strong></td><td class="neg">($17,270)</td><td class="neg">($12,912)</td><td class="pos">$90,037</td></tr>
+  </tbody>
+</table>
+
+<h3>Current Operating Expenses (from Financial Master)</h3>
+<table>
+  <thead><tr><th>Category</th><th>FY 2024-25<br>(Full Year)</th><th>FY 2025-26<br>(8 Months)</th><th>$ Change</th><th>% Change</th></tr></thead>
+  <tbody>
+    <tr><td>Personnel</td><td>$373,084</td><td>$395,954</td><td class="neg">+$22,870</td><td>+6.1%</td></tr>
+    <tr><td>Facility</td><td>$31,210</td><td>$37,972</td><td class="neg">+$6,762</td><td>+21.7%</td></tr>
+    <tr><td>Vehicle</td><td>$13,023</td><td>$51,920</td><td class="neg">+$38,897</td><td>+298.7%</td></tr>
+    <tr><td>Medical Operations</td><td>$44,341</td><td>$69,469</td><td class="neg">+$25,128</td><td>+56.7%</td></tr>
+    <tr><td>Administrative</td><td>$122,196</td><td>$96,238</td><td class="pos">−$25,958</td><td>−21.2%</td></tr>
+    <tr class="tr-total"><td><strong>Total Operating Expenses</strong></td><td><strong>$583,854</strong></td><td><strong>$651,553</strong></td><td class="neg"><strong>+$67,699</strong></td><td><strong>+11.6%</strong></td></tr>
+  </tbody>
+</table>
+<p style="font-size:8pt; color:var(--g500);">Note: FY 2025-26 reflects 8 of 12 months (through March 2026). One month (April 2026) remains in the fiscal year. FY 2025-26 totals already exceed FY 2024-25 full-year actuals.</p>
+
+<h3>Balance Sheet (April 30, 2024 — Most Recent Audit)</h3>
+<table>
+  <thead><tr><th></th><th>FY 2024</th><th>FY 2023</th></tr></thead>
+  <tbody>
+    <tr><td>Total Assets</td><td>$816,281</td><td>$676,338</td></tr>
+    <tr><td>Total Liabilities</td><td>$295,261</td><td>$245,355</td></tr>
+    <tr class="tr-total"><td><strong>Total Net Assets</strong></td><td><strong>$521,020</strong></td><td><strong>$430,983</strong></td></tr>
+  </tbody>
+</table>
+
+<!-- 11: REVENUE ANALYSIS -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">11</span>Revenue Analysis</div>
+
+<p>Revenue data comes from audited financial reports. The Financial Master workbook tracks expenses only; revenue is recorded separately through the billing system and tax levy process.</p>
+
+<table>
+  <thead><tr><th>Revenue Source</th><th>FY 2022</th><th>FY 2023</th><th>FY 2024</th></tr></thead>
+  <tbody>
+    <tr><td>Patient Fees</td><td>$276,649</td><td>$314,666</td><td>$481,243</td></tr>
+    <tr><td>Contracted Service (Tax)</td><td>$207,046</td><td>$207,316</td><td>$217,454</td></tr>
+    <tr><td>Interest</td><td>$962</td><td>$528</td><td>$403</td></tr>
+    <tr><td>Donations</td><td>$5,618</td><td>$3,490</td><td>$16</td></tr>
+    <tr><td>Grants</td><td>$7,318</td><td>—</td><td>—</td></tr>
+    <tr><td>Miscellaneous</td><td>$683</td><td>$7,967</td><td>$3,610</td></tr>
+    <tr class="tr-total"><td><strong>Total</strong></td><td><strong>$498,276</strong></td><td><strong>$533,967</strong></td><td><strong>$702,726</strong></td></tr>
+  </tbody>
+</table>
+
+<p>Patient fees grew 74% over two years and now represent 68% of total revenue. Property tax revenue grew 5%, constrained by the levy rate — not the tax base. The Equalized Assessed Valuation rose from $247M to $272M over the same period.</p>
+
+<table>
+  <thead><tr><th></th><th>2022 Levy</th><th>2023 Levy</th></tr></thead>
+  <tbody>
+    <tr><td>Rate Limit</td><td>$0.2500</td><td>$0.2500</td></tr>
+    <tr><td>Actual Rate</td><td>$0.0913</td><td>$0.0868</td></tr>
+    <tr><td>Total EAV</td><td>$247,032,303</td><td>$272,303,978</td></tr>
+    <tr><td>Rate Setting EAV</td><td>$239,424,502</td><td>$263,025,919</td></tr>
+    <tr class="tr-total"><td>Amount Received</td><td>$207,316</td><td>$217,454</td></tr>
+  </tbody>
+</table>
+
+<!-- 12: EXPENSE ANALYSIS -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">12</span>Expense Analysis</div>
+
+<p>The following detail comes from the Financial Master workbook, which tracks every vendor payment by account and month.</p>
+
+<h3>FY 2025-26 Expense Detail (8 Months Through March 2026)</h3>
+<table>
+  <thead><tr><th>Account</th><th>Description</th><th>FY 2024-25</th><th>FY 2025-26</th><th>Change</th></tr></thead>
+  <tbody>
+    <tr style="background:rgba(15,27,45,0.04);"><td colspan="5"><strong>PERSONNEL</strong></td></tr>
+    <tr><td>5100</td><td>Wages &amp; Salaries</td><td>$271,029</td><td>$280,803</td><td>+3.6%</td></tr>
+    <tr><td>5200</td><td>Payroll Taxes (FICA/FUTA)</td><td>$91,752</td><td>$102,044</td><td>+11.2%</td></tr>
+    <tr><td>5310</td><td>401(k) Contributions</td><td>$6,145</td><td>$8,382</td><td>+36.4%</td></tr>
+    <tr><td>5400</td><td>ADP Payroll Processing</td><td>$4,158</td><td>$4,726</td><td>+13.7%</td></tr>
+    <tr class="tr-total"><td></td><td><strong>Subtotal Personnel</strong></td><td><strong>$373,084</strong></td><td><strong>$395,954</strong></td><td><strong>+6.1%</strong></td></tr>
+
+    <tr style="background:rgba(15,27,45,0.04);"><td colspan="5"><strong>FACILITY</strong></td></tr>
+    <tr><td>6100</td><td>Mortgage / Building Loan</td><td>$17,130</td><td>$17,851</td><td>+4.2%</td></tr>
+    <tr><td>6110</td><td>Electric (Ameren)</td><td>$3,949</td><td>$3,968</td><td>+0.5%</td></tr>
+    <tr><td>6120</td><td>Internet / Cable</td><td>$810</td><td>$1,053</td><td>+30.0%</td></tr>
+    <tr><td>6130</td><td>Water / Sewer</td><td>$514</td><td>$6,553</td><td>*</td></tr>
+    <tr><td>6140</td><td>Building Maintenance</td><td>$8,806</td><td>$8,211</td><td>−6.8%</td></tr>
+    <tr><td>6150</td><td>Generator / Electrical</td><td>$0</td><td>$335</td><td>N/A</td></tr>
+    <tr class="tr-total"><td></td><td><strong>Subtotal Facility</strong></td><td><strong>$31,210</strong></td><td><strong>$37,972</strong></td><td><strong>+21.7%</strong></td></tr>
+
+    <tr style="background:rgba(15,27,45,0.04);"><td colspan="5"><strong>VEHICLE</strong></td></tr>
+    <tr><td>7100</td><td>Fuel (WEX Fleet)</td><td>$8,714</td><td>$13,148</td><td>+50.9%</td></tr>
+    <tr><td>7110</td><td>Maintenance &amp; Repair</td><td>$4,186</td><td>$23,690</td><td>+465.9%</td></tr>
+    <tr><td>7120</td><td>Vehicle Loan Payment</td><td>$0</td><td>$15,000</td><td>N/A</td></tr>
+    <tr><td>7130</td><td>Vehicle Transport</td><td>$123</td><td>$82</td><td>−33.3%</td></tr>
+    <tr class="tr-total"><td></td><td><strong>Subtotal Vehicle</strong></td><td><strong>$13,023</strong></td><td><strong>$51,920</strong></td><td><strong>+298.7%</strong></td></tr>
+
+    <tr style="background:rgba(15,27,45,0.04);"><td colspan="5"><strong>MEDICAL OPERATIONS</strong></td></tr>
+    <tr><td>8100</td><td>Medical Supplies</td><td>$22</td><td>$1,578</td><td>—</td></tr>
+    <tr><td>8110</td><td>Medical Equipment (Stryker/Zoll)</td><td>$38,345</td><td>$57,968</td><td>+51.2%</td></tr>
+    <tr><td>8120</td><td>Medical Gas (Airgas)</td><td>$5,663</td><td>$6,708</td><td>+18.5%</td></tr>
+    <tr><td>8130</td><td>Medical Waste (Stericycle)</td><td>$311</td><td>$736</td><td>+136.4%</td></tr>
+    <tr><td>8200</td><td>EMS Training</td><td>$0</td><td>$79</td><td>N/A</td></tr>
+    <tr><td>8210</td><td>Equipment Maintenance</td><td>$0</td><td>$2,400</td><td>N/A</td></tr>
+    <tr class="tr-total"><td></td><td><strong>Subtotal Medical</strong></td><td><strong>$44,341</strong></td><td><strong>$69,469</strong></td><td><strong>+56.7%</strong></td></tr>
+
+    <tr style="background:rgba(15,27,45,0.04);"><td colspan="5"><strong>ADMINISTRATIVE</strong></td></tr>
+    <tr><td>9100</td><td>Billing Services (Mediclaims)</td><td>$40,149</td><td>$18,905</td><td>−52.9%</td></tr>
+    <tr><td>9110</td><td>Legal &amp; Professional</td><td>$3,906</td><td>$9,078</td><td>+132.4%</td></tr>
+    <tr><td>9120</td><td>Insurance (IPRF/Bankers)</td><td>$34,652</td><td>$12,677</td><td>−63.4%</td></tr>
+    <tr><td>9130</td><td>Communications</td><td>$270</td><td>$360</td><td>+33.3%</td></tr>
+    <tr><td>9140</td><td>Technology</td><td>$1,412</td><td>$1,896</td><td>+34.3%</td></tr>
+    <tr><td>9150</td><td>Cellular (Verizon)</td><td>$1,618</td><td>$3,040</td><td>+87.9%</td></tr>
+    <tr><td>9160</td><td>Office Supplies</td><td>$132</td><td>$280</td><td>+112.9%</td></tr>
+    <tr><td>9170</td><td>Uniforms</td><td>$4,557</td><td>$0</td><td>−100%</td></tr>
+    <tr><td>9180</td><td>Credit Card Charges</td><td>$21,273</td><td>$16,626</td><td>−21.8%</td></tr>
+    <tr><td>9190</td><td>Culligan Water</td><td>$168</td><td>$222</td><td>+31.9%</td></tr>
+    <tr><td>9900</td><td>Miscellaneous</td><td>$14,059</td><td>$33,154</td><td>+135.8%</td></tr>
+    <tr class="tr-total"><td></td><td><strong>Subtotal Administrative</strong></td><td><strong>$122,196</strong></td><td><strong>$96,238</strong></td><td><strong>−21.2%</strong></td></tr>
+  </tbody>
+</table>
+<table>
+  <tbody><tr class="tr-total"><td><strong>GRAND TOTAL</strong></td><td style="text-align:right;"><strong>$583,854</strong></td><td style="text-align:right;"><strong>$651,553</strong></td><td style="text-align:right;"><strong>+$67,699 (+11.6%)</strong></td></tr></tbody>
+</table>
+<p style="font-size:8pt; color:var(--g500);">* Water/Sewer variance includes entries that appear to be miscoded vehicle payments. Source: Millstadt Ambulance Financial Master workbook.</p>
+
+<!-- 13: FINANCIAL NARRATIVE -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">13</span>Financial Narrative</div>
+
+<h3>The Deficit Period (FY 2022–2023)</h3>
+<p>The Service operated at a loss for at least two consecutive years. FY2022 produced a $17,270 shortfall; FY2023 narrowed the gap to $12,912 but remained negative. Patient fee collections were not growing fast enough to cover a cost structure driven by 24/7 staffing, vehicle maintenance, and medical supply requirements.</p>
+
+<h3>The Surplus Window (FY 2024)</h3>
+<p>Patient fees surged from $314,666 to $481,243 — a 53% jump — while expenses grew a more controlled 12%. The $90,037 surplus allowed the Service to invest in two Zoll X Series defibrillators and begin addressing deferred capital needs.</p>
+
+<h3>The Current Fiscal Year (FY 2025-26)</h3>
+<p>Eight months into the fiscal year, expenses total $651,553. That is already $67,699 more than the full 12 months of FY 2024-25. The drivers are not discretionary spending. Vehicle maintenance hit $23,690 after a series of mechanical failures on aging units. A new truck loan added $3,000/month. Medical equipment financing for the Stryker and Zoll systems totals $57,968 year-to-date. Personnel costs — the largest category at 61% of total expenses — rose 6.1% on payroll and benefits alone.</p>
+
+<p>Revenue data for FY 2025-26 is not yet available in audited form. Based on the FY 2024 revenue trajectory ($702,726), the current expense pace would require comparable or higher revenue to avoid a deficit. Whether that materializes depends on patient fee collections, payer mix, and the timing of tax distributions.</p>
+
+<div class="callout">
+  <div class="callout-t">The Structural Issue</div>
+  <p style="font-size:9pt;">The FY 2024 surplus was driven primarily by a one-time surge in patient fee collections. Patient fees are inherently unpredictable — dependent on call mix, payer type, insurance reimbursement rates, and collection success. Building a sustainable operation on the most volatile revenue source is a structural risk. The property tax levy — the most stable and controllable revenue stream — remains at 35% of its authorized capacity.</p>
+</div>
+
+<!-- 14: CAPITAL NEEDS -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">14</span>Capital Needs &amp; Fleet Assessment</div>
+
+<div class="photo"><img src="/_internal/budget-draft/images/ambulance_side.jpg" alt="Unit 3926" style="max-height:260px;"><div class="photo-cap">Unit 3926 — the Service's primary ALS ambulance.</div></div>
+
+<h3>Current Fleet</h3>
+<div class="fleet">
+  <div class="fleet-card"><div class="fleet-type">Primary</div><div class="fleet-name">ALS Ambulance</div><div class="fleet-det">Advanced Life Support</div></div>
+  <div class="fleet-card"><div class="fleet-type">Secondary</div><div class="fleet-name">ALS Upgradable</div><div class="fleet-det">Upgradable as needed</div></div>
+  <div class="fleet-card"><div class="fleet-type">Reserve</div><div class="fleet-name">BLS Ambulance</div><div class="fleet-det">Emergency ALS capable</div></div>
+</div>
+
+<h3>Capital Assets (from FY 2024 Audit)</h3>
+<table>
+  <thead><tr><th>Asset</th><th>Year</th><th>Cost</th></tr></thead>
+  <tbody>
+    <tr><td>Ford Ambulance</td><td>2015</td><td>$133,311</td></tr>
+    <tr><td>Ambulance</td><td>2018</td><td>$85,598</td></tr>
+    <tr><td>Building — 100 E. Laurel St.</td><td>2018</td><td>$286,607</td></tr>
+    <tr><td>Land</td><td>2018</td><td>$31,845</td></tr>
+    <tr><td>MTS Power Load</td><td>2023</td><td>$25,976</td></tr>
+    <tr><td>Power Pro 2 Stretcher</td><td>2023</td><td>$26,799</td></tr>
+    <tr><td>X Series Monitor/Defib (×2)</td><td>2024</td><td>$88,895</td></tr>
+    <tr class="tr-total"><td><strong>Total Gross</strong></td><td></td><td><strong>$855,290</strong></td></tr>
+    <tr><td>Less: Depreciation</td><td></td><td>($455,413)</td></tr>
+    <tr class="tr-total"><td><strong>Net Book Value</strong></td><td></td><td><strong>$399,877</strong></td></tr>
+  </tbody>
+</table>
+
+<h3>4th Ambulance Cost Analysis</h3>
+<table>
+  <thead><tr><th>Component</th><th>Annual Cost</th></tr></thead>
+  <tbody>
+    <tr><td>Medic wages (24/7 @ $20/hr)</td><td>$175,200</td></tr>
+    <tr><td>EMT wages (24/7 @ $16/hr)</td><td>$140,160</td></tr>
+    <tr><td>Employer burden (20%)</td><td>$63,072</td></tr>
+    <tr class="tr-total"><td><strong>Total Staffing</strong></td><td><strong>$378,432</strong></td></tr>
+  </tbody>
+</table>
+<p>This represents staffing cost only. Vehicle acquisition, fuel, insurance, and maintenance would add substantially to this figure.</p>
+
+<!-- 15: DEBT SERVICE -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">15</span>Debt Service</div>
+
+<table>
+  <thead><tr><th>Obligation</th><th>Balance (FY24 Audit)</th><th>Terms</th></tr></thead>
+  <tbody>
+    <tr><td>Building (100 E. Laurel St.)</td><td>$177,019</td><td>6.125%, matures 2033, $2,141.30/mo</td></tr>
+    <tr><td>Vendor Note #1</td><td>$19,653</td><td>$446.65/mo, no interest</td></tr>
+    <tr><td>Vendor Note #2</td><td>$71,116</td><td>$17,779/yr × 5, no interest</td></tr>
+    <tr class="tr-total"><td><strong>Total</strong></td><td><strong>$267,788</strong></td><td></td></tr>
+    <tr><td>Current Portion</td><td>($38,416)</td><td></td></tr>
+    <tr class="tr-total"><td><strong>Long-Term</strong></td><td><strong>$229,372</strong></td><td></td></tr>
+  </tbody>
+</table>
+
+<p>Additionally, the Financial Master shows a new vehicle loan beginning June 2025 at $3,000/month to FNB Waterloo, totaling $15,000 through March 2026.</p>
+
+<h3>Future Maturities (from FY 2024 Audit)</h3>
+<table>
+  <thead><tr><th>FY Ending April 30</th><th>Payment</th></tr></thead>
+  <tbody>
+    <tr><td>2025</td><td>$38,416</td></tr><tr><td>2026</td><td>$39,379</td></tr><tr><td>2027</td><td>$49,402</td></tr><tr><td>2028</td><td>$39,703</td></tr><tr><td>2029</td><td>$19,506</td></tr><tr><td>2030–2034</td><td>$81,382</td></tr>
+    <tr class="tr-total"><td><strong>Total</strong></td><td><strong>$267,788</strong></td></tr>
+  </tbody>
+</table>
+
+<!-- 16: TAX LEVY -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">16</span>Tax Levy &amp; Revenue Capacity</div>
+
+<p>Maximum authorized rate: <strong>$0.2500 per $100 EAV</strong>. Current rate: approximately <strong>$0.09</strong> — 35% of capacity.</p>
+
+<div class="gauge">
+  <div style="font-size:8pt; font-weight:600; color:var(--navy); text-align:center; margin-bottom:4px;">Current Rate vs. Maximum</div>
+  <div class="gauge-track"><div class="gauge-fill" style="width:35%;">$0.09 (35%)</div></div>
+  <div class="gauge-labels"><span>$0.00</span><span>Current</span><span>Max: $0.2500</span></div>
+</div>
+
+<table>
+  <thead><tr><th>Scenario</th><th>Rate</th><th>Est. Revenue</th><th>Increase</th></tr></thead>
+  <tbody>
+    <tr><td>Current</td><td>$0.0868</td><td>$228,307</td><td>—</td></tr>
+    <tr><td>Modest</td><td>$0.1500</td><td>$394,539</td><td>+$166,232</td></tr>
+    <tr><td>Moderate</td><td>$0.2000</td><td>$526,052</td><td>+$297,745</td></tr>
+    <tr><td>Maximum</td><td>$0.2500</td><td>$657,565</td><td>+$429,258</td></tr>
+  </tbody>
+</table>
+
+<div class="callout ok">
+  <div class="callout-t">The Takeaway</div>
+  <p style="font-size:9pt;">A rate of $0.15 would generate an additional $166,232/year. A rate of $0.20 would generate enough to fund a fourth ambulance's staffing costs ($378,432). For a $200,000 home, the difference between the current rate and the maximum is approximately $9/month.</p>
+</div>
+
+<!-- 17: GRANTS -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">17</span>Grants &amp; Clinical Advancements</div>
+
+<p>Grant revenue: $7,318 in FY2022, zero in FY2023 and FY2024. Potential sources include FEMA AFG, FEMA SAFER, HRSA Rural EMS, and Illinois IDPH EMS grants.</p>
+
+<h3>Clinical Capabilities</h3>
+<div class="cards">
+  <div class="card" style="min-width:180px;"><strong>Cardiac:</strong> Zoll X Series (×2, 2024)</div>
+  <div class="card" style="min-width:180px;"><strong>Patient Handling:</strong> Stryker Power Load + Pro 2</div>
+  <div class="card" style="min-width:180px;"><strong>Documentation:</strong> ESO ePCR</div>
+  <div class="card" style="min-width:180px;"><strong>Medications:</strong> Full ALS formulary</div>
+</div>
+
+<p>The Service carries ALS-level medications including epinephrine, amiodarone, adenosine, fentanyl, ketamine, morphine, midazolam, etomidate, tranexamic acid, and norepinephrine — a clinical capability set that requires ongoing training, controlled substance protocols, and supply chain management.</p>
+
+<!-- 18: FUTURE OUTLOOK -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">18</span>Future Outlook</div>
+
+<h3>Strategic Priorities</h3>
+<div class="cards" style="flex-direction:column;">
+  <div class="card" style="min-width:100%;"><strong>1. Revenue Stabilization:</strong> The gap between the current levy rate and the authorized maximum is the most direct path to sustainable funding. Continued reliance on patient fee volatility is a structural risk.</div>
+  <div class="card" style="min-width:100%;"><strong>2. Fleet Replacement:</strong> The 2015 ambulance is past its recommended service life. A replacement plan that avoids emergency purchasing and spreads cost over multiple years is overdue.</div>
+  <div class="card" style="min-width:100%;"><strong>3. Capacity Planning:</strong> At 879 calls and rising, the three-unit model is approaching its practical limit. The fourth ambulance analysis ($378,432/year in staffing alone) quantifies what expansion would require.</div>
+  <div class="card" style="min-width:100%;"><strong>4. Grant Pursuit:</strong> Two consecutive years of zero grant revenue represents a missed opportunity. Federal and state programs exist specifically for rural and suburban EMS agencies facing the pressures this district is experiencing.</div>
+</div>
+
+<!-- 19: FY25-26 EXPENSE SUMMARY -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">19</span>FY 2025–2026 Operating Expenses</div>
+
+<p>The following represents actual operating expenses recorded in the Financial Master workbook through March 2026 — eight of twelve months in the fiscal year. One month (April 2026) remains.</p>
+
+<h3>Top 10 Vendors by Total Spend (All Periods)</h3>
+<table>
+  <thead><tr><th>Vendor</th><th>Total Paid</th><th>% of Total</th></tr></thead>
+  <tbody>
+    <tr><td>Payroll</td><td>$551,832</td><td>44.7%</td></tr>
+    <tr><td>Payroll Tax</td><td>$193,796</td><td>15.7%</td></tr>
+    <tr><td>Mediclaims (Billing)</td><td>$52,540</td><td>4.3%</td></tr>
+    <tr><td>Credit Card</td><td>$37,899</td><td>3.1%</td></tr>
+    <tr><td>Hamilton Medical</td><td>$37,717</td><td>3.1%</td></tr>
+    <tr><td>Zoll</td><td>$35,558</td><td>2.9%</td></tr>
+    <tr><td>Mortgage</td><td>$29,978</td><td>2.4%</td></tr>
+    <tr><td>IPRF (Insurance)</td><td>$27,737</td><td>2.2%</td></tr>
+    <tr><td>WEX Fleet (Fuel)</td><td>$21,862</td><td>1.8%</td></tr>
+    <tr><td>Burr Insurance</td><td>$19,533</td><td>1.6%</td></tr>
+  </tbody>
+</table>
+<p style="font-size:8pt; color:var(--g500);">Vendor totals span both FY 2024-25 and FY 2025-26. Source: Financial Master Vendor Register.</p>
+
+<h3>Monthly Expense Trend — FY 2025-26</h3>
+<table>
+  <thead><tr><th>Month</th><th>Total Expenses</th></tr></thead>
+  <tbody>
+    <tr><td>May 2025</td><td>$72,214</td></tr>
+    <tr><td>June 2025</td><td>$69,182</td></tr>
+    <tr><td>September 2025</td><td>$121,794</td></tr>
+    <tr><td>October 2025</td><td>$92,329</td></tr>
+    <tr><td>November 2025</td><td>$64,799</td></tr>
+    <tr><td>December 2025</td><td>$97,641</td></tr>
+    <tr><td>February 2026</td><td>$74,884</td></tr>
+    <tr><td>March 2026</td><td>$58,709</td></tr>
+    <tr class="tr-total"><td><strong>8-Month Total</strong></td><td><strong>$651,553</strong></td></tr>
+  </tbody>
+</table>
+<p style="font-size:8pt; color:var(--g500);">Months without dedicated worksheets (Jul, Aug 2025; Jan 2026) may have transactions recorded in the Monthly Detail tab. April 2026 data not yet available.</p>
+
+<!-- 20: CLOSING -->
+<div class="pb"></div>
+<div class="sh"><span class="sn">20</span>Commitment to the Community</div>
+
+<p>Forty-five years ago, the residents of this district decided they needed their own ambulance service. That decision has been validated every year since — most recently, 879 times in 2025.</p>
+
+<p>Every figure in this document traces to an audited financial report or a recorded transaction in the operating ledger. Nothing has been estimated for convenience. Where data is not yet available — such as FY 2025-26 revenue — that limitation is stated directly rather than filled with assumptions.</p>
+
+<p>The facts are straightforward. Call volume is growing. Costs are rising across every category. The fleet is aging under heavier use. The revenue base — stable on the tax side, volatile on the billing side — has not kept pace. The property tax levy remains at 35% of its authorized capacity.</p>
+
+<p>This is not an organization in crisis. It is an organization facing a decision. The demand is real. The costs are documented. The revenue tools exist. What remains is the will to use them.</p>
+
+<div style="text-align:center; margin:30px 0 10px; padding:20px; border-top:2px solid var(--g200); border-bottom:2px solid var(--g200);">
+  <p style="font-size:10pt; color:var(--navy); font-weight:600; margin-bottom:4px;">Prepared for the Board of Directors</p>
+  <p style="font-size:9pt; color:var(--g500);">Millstadt Ambulance Service · Fiscal Year 2025–2026</p>
+  <p style="font-size:8pt; color:var(--g500);">100 East Laurel Street · Millstadt, Illinois 62260</p>
+</div>
 
 <div class="doc-footer">
-  <p><strong>Millstadt Ambulance Service</strong> &bull; 100 East Laurel Street &bull; Millstadt, Illinois 62260</p>
-  <p>A 501(c)(3) Nonprofit Organization &bull; Annexed into the Millstadt Fire Protection District</p>
-  <p style="margin-top: 10px; font-size: 0.75rem;">Financial data sourced from audited financial reports prepared by Scheffel Boyle, CPAs, Belleville, Illinois.<br>FY 2022 &amp; FY 2023 data: Annual Financial Report, Years Ended April 30, 2023 and 2022.<br>FY 2024 data: Annual Financial Report, Years Ended April 30, 2024 and 2023.<br>FY 2025&ndash;2026 budget data: Millstadt Ambulance Service internal working budget.<br>FY 2025&ndash;2026 year-to-date actuals: Monthly expense records (May 2025 &ndash; March 2026).</p>
+  <p><strong>Millstadt Ambulance Service</strong> · 100 East Laurel Street · Millstadt, Illinois 62260</p>
+  <p>A 501(c)(3) Nonprofit Organization · Annexed into the Millstadt Fire Protection District</p>
+  <p style="margin-top:6px;">Historical data: Scheffel Boyle, CPAs, Belleville, IL (Annual Reports, FY 2022–2024).<br>Current-year data: Millstadt Ambulance Financial Master workbook (FY 2024-25 and FY 2025-26 actuals).</p>
 </div>
 
 </body>
