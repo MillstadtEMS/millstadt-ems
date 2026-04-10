@@ -50,8 +50,55 @@
     .photo-block.hero, .photo-block.medium, .photo-block.full { page-break-before: auto; }
     .photo-block.hero img, .photo-block.full img { max-height: none; width: 100%; }
     .photo-caption { border-radius: 0; }
-    /* Full bleed cover */
-    .cover-page { min-height: 100vh; }
+    /* Full bleed cover - force gradient and layout for print */
+    .cover-page {
+      height: 100vh;
+      min-height: 0;
+      justify-content: flex-start !important;
+      padding-top: 40px;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cover-page::before {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      background: linear-gradient(
+        to bottom,
+        rgba(15, 27, 45, 0.30) 0%,
+        rgba(15, 27, 45, 0.50) 30%,
+        rgba(15, 27, 45, 0.80) 55%,
+        rgba(15, 27, 45, 0.95) 75%,
+        rgba(15, 27, 45, 1.0) 100%
+      ) !important;
+    }
+    .cover-top-bar { margin-bottom: 0 !important; background: transparent; }
+    .cover-content {
+      margin-top: auto;
+      padding: 40px 60px 50px;
+      background: rgba(15, 27, 45, 0.95) !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cover-content, .cover-top-bar {
+      position: relative;
+      z-index: 2;
+    }
+    .cover-title, .cover-subtitle, .cover-meta-value, .cover-meta-label, .cover-established, .cover-accent-line {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    /* Smaller draft watermark for PDF */
+    body::after { font-size: 10rem !important; color: rgba(155, 27, 48, 0.06) !important; }
+    /* Prevent orphaned section headers at page bottom */
+    .section-header { page-break-after: avoid; }
+    h3 { page-break-after: avoid; }
+    h4 { page-break-after: avoid; }
+    /* Hide the CSS cover page, show the print-only cover */
+    .cover-page { display: none !important; }
+    .print-cover { display: block !important; }
+    /* Fix core values — keep each value card together, don't split across pages */
+    .values-grid { display: grid; grid-template-columns: 1fr 1fr; page-break-inside: auto; }
+    .value-card { page-break-inside: avoid; }
     /* Clean stat boxes */
     .stat-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .value-card { border-radius: 0; }
@@ -813,6 +860,30 @@
 <!-- ============================================================ -->
 <!-- COVER PAGE -->
 <!-- ============================================================ -->
+<!-- Print-only cover (hidden in browser, shown in PDF) -->
+<div class="print-cover" style="display:none; page-break-after:always;">
+  <div style="text-align:center; padding: 40px 40px 20px;">
+    <img src="/_internal/budget-draft/images/logo.png" alt="Millstadt EMS" style="height:140px; margin-bottom:20px;">
+  </div>
+  <div style="overflow:hidden; border-radius:0;">
+    <img src="/_internal/budget-draft/images/6.jpg" alt="Millstadt EMS" style="width:100%; max-height:420px; object-fit:cover; display:block;">
+  </div>
+  <div style="background:#0f1b2d; color:#fff; padding:50px 60px; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
+    <div style="width:60px; height:3px; background:#9b1b30; margin-bottom:20px;"></div>
+    <div style="font-size:2.8rem; font-weight:200; text-transform:uppercase; letter-spacing:3px; line-height:1.1;">
+      <strong style="font-weight:800; display:block;">Millstadt</strong> Ambulance Service
+    </div>
+    <div style="font-size:1.1rem; color:#c8a84e; letter-spacing:5px; text-transform:uppercase; margin:8px 0 30px;">Annual Budget &amp; Strategic Overview</div>
+    <div style="border-top:1px solid rgba(255,255,255,0.15); padding-top:20px; display:flex; gap:40px; flex-wrap:wrap;">
+      <div><div style="font-size:0.6rem; text-transform:uppercase; letter-spacing:2px; color:rgba(255,255,255,0.4); margin-bottom:3px;">Fiscal Year</div><div style="font-size:0.95rem; color:rgba(255,255,255,0.85);">2025 – 2026</div></div>
+      <div><div style="font-size:0.6rem; text-transform:uppercase; letter-spacing:2px; color:rgba(255,255,255,0.4); margin-bottom:3px;">Period</div><div style="font-size:0.95rem; color:rgba(255,255,255,0.85);">May 1, 2025 — April 30, 2026</div></div>
+      <div><div style="font-size:0.6rem; text-transform:uppercase; letter-spacing:2px; color:rgba(255,255,255,0.4); margin-bottom:3px;">Headquarters</div><div style="font-size:0.95rem; color:rgba(255,255,255,0.85);">100 E. Laurel St. · Millstadt, IL 62260</div></div>
+      <div><div style="font-size:0.6rem; text-transform:uppercase; letter-spacing:2px; color:rgba(255,255,255,0.4); margin-bottom:3px;">Service Area</div><div style="font-size:0.95rem; color:rgba(255,255,255,0.85);">107 Square Miles · St. Clair County</div></div>
+    </div>
+  </div>
+  <div style="text-align:right; padding:10px 60px; font-size:0.7rem; color:#6c757d;">Est. 1980</div>
+</div>
+
 <div class="cover-page">
   <div class="cover-top-bar">
     <img src="/_internal/budget-draft/images/logo.png" alt="Millstadt EMS" class="cover-logo">
@@ -983,9 +1054,8 @@
   </div>
 
   <h3>Organizational Chart</h3>
-  <div class="photo-block">
+  <div class="photo-block" style="box-shadow:none;">
     <img src="/_internal/budget-draft/images/org_chart.png" alt="Millstadt Ambulance Service Organizational Chart" style="max-height:none;">
-    <div class="photo-caption">Millstadt Ambulance Service organizational structure &mdash; prepared April 2026. EMS Chief 1 and EMS Chief 2 share equal authority. Medical oversight is provided by the EMS Medical Director through the Southwestern Illinois EMS System.</div>
   </div>
 </section>
 

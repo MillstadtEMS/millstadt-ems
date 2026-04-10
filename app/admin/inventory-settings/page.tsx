@@ -146,6 +146,30 @@ export default function InventorySettingsPage() {
     setQrLoading(false);
   }
 
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfCat, setPdfCat] = useState("");
+
+  async function downloadQrPdf() {
+    setPdfLoading(true);
+    try {
+      const res = await fetch("/api/admin/inventory/qr-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categorySlug: pdfCat || null }),
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `QR_Codes_${pdfCat || "all"}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch { /* ignore */ }
+    setPdfLoading(false);
+  }
+
   async function revokeToken(id: string) {
     await fetch("/api/admin/inventory/qr", {
       method: "DELETE",
@@ -321,6 +345,34 @@ export default function InventorySettingsPage() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Print QR Sheet */}
+          <div className="bg-[#071428] border border-white/10 rounded-2xl p-6">
+            <h3 className="text-white font-bold mb-3">Print QR Code Sheet (PDF)</h3>
+            <p className="text-slate-500 text-xs mb-3">
+              Generate a printable PDF with QR codes for all items in a category. Creates QR tokens for any items that don't have them yet.
+            </p>
+            <div className="flex gap-3 mb-3">
+              <select
+                value={pdfCat}
+                onChange={e => setPdfCat(e.target.value)}
+                className="flex-1 px-3 py-2.5 bg-[#040d1a] border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-[#f0b429]/40"
+              >
+                <option value="">All Categories</option>
+                {categories.map(c => (
+                  <option key={c.slug} value={c.slug}>{c.name}</option>
+                ))}
+              </select>
+              <button
+                onClick={downloadQrPdf}
+                disabled={pdfLoading}
+                className="px-5 py-2.5 bg-[#f0b429] hover:bg-[#d4a127] text-[#040d1a] font-bold text-sm rounded-xl disabled:opacity-50 flex items-center gap-2"
+              >
+                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+                {pdfLoading ? "Generating..." : "Download PDF"}
+              </button>
+            </div>
           </div>
 
           {/* Active tokens */}
