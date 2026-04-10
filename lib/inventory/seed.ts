@@ -103,7 +103,8 @@ function isSkipRow(name: string): boolean {
 }
 
 export async function parseWorkbook(filePath?: string): Promise<ParsedCategory[]> {
-  const XLSX = await import("xlsx");
+  const xlsxModule = await import("xlsx");
+  const XLSX = xlsxModule.default ?? xlsxModule;
   const resolvedPath = filePath ?? path.join(/*turbopackIgnore: true*/ process.cwd(), "data", "2026 Millstadt EMS Order _ Inv Form.xlsx");
 
   if (!fs.existsSync(resolvedPath)) {
@@ -134,8 +135,29 @@ export async function parseWorkbook(filePath?: string): Promise<ParsedCategory[]
       items: [],
     };
 
-    let currentLocation: string | null = null;
+    let currentShelf: string | null = null;
+    let currentRow: string | null = null;
     let sortOrder = 0;
+
+    // Patterns that represent shelf-level (top-level) location headers
+    const shelfPatterns = [
+      /^shelf\s+[a-z]/i,
+      /^ppe\s+shelf/i,
+      /^top\s+shelving/i,
+      /^hanging\s+on/i,
+      /^bottom\s+shelf/i,
+      /^general\s+housekeeping/i,
+      /^maintenance$/i,
+      /^building\s*\/?\s*grounds/i,
+    ];
+
+    // Patterns that represent row-level (sub-level) location headers
+    const rowPatterns = [
+      /^row\s+\d/i,
+      /^medication\s+drawer/i,
+      /^black\s+stacked/i,
+      /^oxygen\s+tanks/i,
+    ];
 
     for (const row of rows) {
       const rawName = String(row["Item Name"] ?? "").trim();
@@ -143,7 +165,19 @@ export async function parseWorkbook(filePath?: string): Promise<ParsedCategory[]
 
       // Check if this is a section header (location marker)
       if (isSectionHeader(row)) {
-        currentLocation = rawName;
+        const isShelf = shelfPatterns.some((p) => p.test(rawName));
+        const isRow = rowPatterns.some((p) => p.test(rawName));
+
+        if (isShelf) {
+          currentShelf = rawName;
+          currentRow = null; // reset row when a new shelf is encountered
+        } else if (isRow) {
+          currentRow = rawName;
+        } else {
+          // Fallback: treat unknown section headers as shelf-level
+          currentShelf = rawName;
+          currentRow = null;
+        }
         continue;
       }
 
@@ -156,9 +190,19 @@ export async function parseWorkbook(filePath?: string): Promise<ParsedCategory[]
       const par = Number(row["PAR"]) || 0;
       const stock = Number(row["Current Stock"]) || 0;
 
+      // Build location from shelf + row context
+      let location: string | null = null;
+      if (currentShelf && currentRow) {
+        location = `${currentShelf} — ${currentRow}`;
+      } else if (currentShelf) {
+        location = currentShelf;
+      } else if (currentRow) {
+        location = currentRow;
+      }
+
       category.items.push({
         name: cleanName,
-        location: currentLocation,
+        location,
         par,
         currentStock: stock,
         vendorSource: vendor,
