@@ -35,41 +35,92 @@ function calcNeed(item: Item): number {
 function useSpeech(onResult: (t: string) => void) {
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(false);
+  const [lastHeard, setLastHeard] = useState("");
   const activeRef = useRef(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recRef = useRef<any>(null);
   const cbRef = useRef(onResult);
   cbRef.current = onResult;
 
+  // Detect iOS — continuous mode doesn't work there
+  const isIOS = useRef(false);
+
   useEffect(() => {
+    isIOS.current = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
     const SR = (window as unknown as Record<string, unknown>).SpeechRecognition ||
                (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
     setSupported(!!SR);
     if (!SR) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const r = new (SR as any)();
-    r.continuous = true;
+    // iOS: single-shot mode only. Android/Desktop: continuous.
+    r.continuous = !isIOS.current;
     r.interimResults = false;
     r.lang = "en-US";
+    r.maxAlternatives = 1;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     r.onresult = (e: any) => {
-      const last = e.results[e.results.length - 1];
-      if (last?.isFinal) { const t = last[0]?.transcript?.trim(); if (t) cbRef.current(t); }
+      // Get the latest final result
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          const t = e.results[i][0]?.transcript?.trim();
+          if (t) {
+            setLastHeard(t);
+            cbRef.current(t);
+          }
+        }
+      }
     };
-    r.onend = () => { if (activeRef.current) { try { r.start(); } catch {} } else setListening(false); };
+    r.onend = () => {
+      // Auto-restart if still active
+      if (activeRef.current) {
+        // Small delay before restart to prevent rapid cycling
+        setTimeout(() => {
+          if (activeRef.current) {
+            try { r.start(); } catch { /* already running or denied */ }
+          }
+        }, 300);
+      } else {
+        setListening(false);
+      }
+    };
     r.onerror = (ev: { error: string }) => {
-      if (ev.error === "not-allowed" || ev.error === "service-not-allowed") { activeRef.current = false; setListening(false); }
+      if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
+        activeRef.current = false;
+        setListening(false);
+        setLastHeard("Microphone access denied");
+      }
+      // "no-speech", "aborted", "network" — onend will auto-restart
     };
     recRef.current = r;
   }, []);
 
   const toggle = useCallback(() => {
     if (!recRef.current) return;
-    if (activeRef.current) { activeRef.current = false; recRef.current.stop(); setListening(false); }
-    else { activeRef.current = true; recRef.current.start(); setListening(true); }
+    if (activeRef.current) {
+      activeRef.current = false;
+      try { recRef.current.stop(); } catch {}
+      setListening(false);
+      setLastHeard("");
+    } else {
+      activeRef.current = true;
+      setLastHeard("Listening...");
+      try {
+        recRef.current.start();
+        setListening(true);
+      } catch {
+        // Might already be started, try stop then start
+        try { recRef.current.stop(); } catch {}
+        setTimeout(() => {
+          try { recRef.current.start(); setListening(true); } catch { activeRef.current = false; setLastHeard("Could not start mic"); }
+        }, 200);
+      }
+    }
   }, []);
 
-  return { listening, supported, toggle };
+  return { listening, supported, toggle, lastHeard };
 }
 
 /* ── Main ───────────────────────────────────────────────────────────────── */
@@ -162,7 +213,7 @@ export default function InventoryDashboard() {
     msg(`"${transcript}" ?`);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusedIdx, saveItem, items, activeCat, search]);
-  const { listening, supported, toggle: toggleSpeech } = useSpeech(handleSpeech);
+  const { listening, supported, toggle: toggleSpeech, lastHeard } = useSpeech(handleSpeech);
 
   function getFiltered() {
     return items.filter(i => {
@@ -307,7 +358,34 @@ export default function InventoryDashboard() {
         </div>
       )}
 
-      {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-slate-800 border border-slate-600 rounded-xl px-4 py-2.5 text-sm text-white shadow-2xl">{toast}</div>}
+      {/* ══ VOICE PANEL — shows when mic is active ══ */}
+      {listening && (
+        <div className="fixed bottom-0 left-0 right-0 z-[10000] bg-slate-900 border-t border-red-500/30 shadow-2xl" style={{ paddingBottom: "env(safe-area-inset-bottom, 8px)" }}>
+          <div className="max-w-[1000px] mx-auto px-4 py-3">
+            <div className="flex items-center gap-3">
+              {/* Pulsing mic indicator */}
+              <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+                <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+              </div>
+              {/* Current item + last heard */}
+              <div className="flex-1 min-w-0">
+                <div className="text-white text-sm font-bold truncate">
+                  {filtered[focusedIdx]?.name ?? "No item selected"}
+                </div>
+                <div className="text-slate-400 text-xs truncate">
+                  {lastHeard || "Say a number, \"next\", \"skip\", or \"expired 2\""}
+                </div>
+              </div>
+              {/* Stop button */}
+              <button onClick={toggleSpeech} className="shrink-0 px-4 py-2 rounded-xl bg-red-500/20 text-red-400 text-sm font-bold active:bg-red-500/30">
+                Stop
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && !listening && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-slate-800 border border-slate-600 rounded-xl px-4 py-2.5 text-sm text-white shadow-2xl">{toast}</div>}
     </div>
   );
 }
