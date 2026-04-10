@@ -24,8 +24,6 @@ interface Item {
   updatedAt: string;
 }
 
-/* ── Speech hook ─────────────────────────────────────────────────────────── */
-
 function useSpeech(onResult: (t: string) => void) {
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(false);
@@ -52,8 +50,6 @@ function useSpeech(onResult: (t: string) => void) {
   return { listening, supported, toggle };
 }
 
-/* ── Main ────────────────────────────────────────────────────────────────── */
-
 export default function InventoryDashboard() {
   const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
@@ -67,8 +63,8 @@ export default function InventoryDashboard() {
   const [submitting, setSubmitting] = useState(false);
   const lastPoll = useRef(new Date().toISOString());
   const editedCount = useRef(0);
+  const [focusedIdx, setFocusedIdx] = useState(0);
 
-  /* categories from items */
   const categories = (() => {
     const m = new Map<string, { name: string; slug: string; count: number; low: number }>();
     for (const i of items) {
@@ -80,7 +76,6 @@ export default function InventoryDashboard() {
     return Array.from(m.values());
   })();
 
-  /* fetch */
   const fetchData = useCallback(async () => {
     try {
       const r = await fetch("/api/inventory/items");
@@ -90,7 +85,6 @@ export default function InventoryDashboard() {
   }, [router]);
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  /* polling */
   useEffect(() => {
     const iv = setInterval(async () => {
       try {
@@ -107,7 +101,6 @@ export default function InventoryDashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saving]);
 
-  /* save */
   const saveItem = useCallback(async (item: Item, updates: { currentStock?: number; expiredQty?: number; notes?: string }) => {
     setSaving(s => ({ ...s, [item.id]: true }));
     try {
@@ -125,8 +118,6 @@ export default function InventoryDashboard() {
 
   function msg(t: string) { setToast(t); setTimeout(() => setToast(null), 2500); }
 
-  /* speech */
-  const [focusedIdx, setFocusedIdx] = useState(0);
   const handleSpeech = useCallback((transcript: string) => {
     const l = transcript.toLowerCase().trim();
     const filtered = getFiltered();
@@ -137,13 +128,12 @@ export default function InventoryDashboard() {
     const em = l.match(/expired\s+(\d+)/);
     if (em && filtered[focusedIdx]) { saveItem(filtered[focusedIdx], { expiredQty: parseInt(em[1]) }); msg(`Expired → ${em[1]}`); return; }
     if (l.startsWith("note ") && filtered[focusedIdx]) { saveItem(filtered[focusedIdx], { notes: l.slice(5) }); msg("Note saved"); return; }
-    if (l.startsWith("search ") || l.startsWith("find ") || l.startsWith("item ")) { setSearch(l.replace(/^(search|find|item)\s+/, "")); return; }
+    if (l.startsWith("search ") || l.startsWith("find ")) { setSearch(l.replace(/^(search|find)\s+/, "")); return; }
     msg(`"${transcript}" — ?`);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusedIdx, saveItem]);
   const { listening, supported, toggle: toggleSpeech } = useSpeech(handleSpeech);
 
-  /* filter */
   function getFiltered() {
     return items.filter(i => {
       if (activeCat !== "all" && i.categorySlug !== activeCat) return false;
@@ -153,7 +143,6 @@ export default function InventoryDashboard() {
   }
   const filtered = getFiltered();
 
-  /* group by location */
   const groups: { loc: string; items: Item[] }[] = [];
   let lastLoc = "___";
   for (const item of filtered) {
@@ -162,7 +151,6 @@ export default function InventoryDashboard() {
     groups[groups.length - 1].items.push(item);
   }
 
-  /* submit */
   async function handleSubmit() {
     setSubmitting(true);
     try {
@@ -174,118 +162,137 @@ export default function InventoryDashboard() {
 
   async function logout() { await fetch("/api/inventory/logout", { method: "POST" }); router.push("/inventory/login"); }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#040d1a]"><div className="text-slate-500 animate-pulse">Loading...</div></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-950"><div className="text-slate-400 animate-pulse text-lg">Loading inventory...</div></div>;
 
   return (
-    <div className="min-h-screen bg-[#040d1a]">
-      {/* ── Header ── */}
-      <header className="sticky top-0 z-30 bg-[#020e1f]/95 backdrop-blur border-b border-white/8">
-        <div className="max-w-2xl mx-auto">
-          {/* Top row */}
-          <div className="flex items-center gap-2 px-4 h-11">
-            <div className="w-6 h-6 rounded-md bg-[#f0b429]/15 flex items-center justify-center shrink-0">
-              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#f0b429]"><path d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/></svg>
+    <div className="min-h-screen bg-slate-950">
+
+      {/* ══════════ HEADER ══════════ */}
+      <header className="sticky top-0 z-30 bg-slate-900 border-b border-slate-700 shadow-lg">
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-3 flex items-center justify-between gap-4">
+          {/* Left: brand */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-yellow-400"><path d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/></svg>
             </div>
-            <span className="text-white font-black text-sm">Inventory</span>
-            <div className="flex-1" />
+            <div>
+              <div className="text-white font-black text-base leading-none">Inventory</div>
+              <div className="text-yellow-400/70 text-[10px] font-bold uppercase tracking-[0.15em] mt-0.5">Millstadt EMS</div>
+            </div>
+          </div>
+
+          {/* Right: actions */}
+          <div className="flex items-center gap-2">
             {supported && (
-              <button onClick={toggleSpeech} className={`p-1.5 rounded-lg ${listening ? "bg-red-500/20 text-red-400 animate-pulse" : "text-slate-600 hover:text-white"}`}>
+              <button onClick={toggleSpeech} className={`w-9 h-9 rounded-xl flex items-center justify-center transition ${listening ? "bg-red-500/20 text-red-400 animate-pulse" : "bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"}`} title="Voice">
                 <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
               </button>
             )}
-            <button onClick={() => setShowSubmit(true)} className="p-1.5 rounded-lg text-emerald-400 hover:bg-emerald-400/10">
+            <button onClick={() => setShowSubmit(true)} className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 flex items-center justify-center transition" title="Submit count">
               <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
             </button>
-            <button onClick={logout} className="p-1.5 rounded-lg text-slate-600 hover:text-red-400">
+            <button onClick={logout} className="w-9 h-9 rounded-xl bg-slate-800 text-slate-400 hover:text-red-400 hover:bg-slate-700 flex items-center justify-center transition" title="Sign out">
               <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
             </button>
-          </div>
-
-          {/* Search */}
-          <div className="px-4 pb-2">
-            <div className="relative">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-slate-600 absolute left-3 top-1/2 -translate-y-1/2"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search items..."
-                className="w-full pl-9 pr-3 py-2 bg-[#071428] border border-white/8 rounded-xl text-white text-sm placeholder-slate-600 focus:outline-none focus:border-[#f0b429]/30" />
-            </div>
-          </div>
-
-          {/* Category tabs */}
-          <div className="flex gap-1.5 px-4 pb-2.5 overflow-x-auto" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
-            <button onClick={() => setActiveCat("all")}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold ${activeCat === "all" ? "bg-[#f0b429] text-[#040d1a]" : "bg-white/5 text-slate-500"}`}>
-              All
-            </button>
-            {categories.map(c => (
-              <button key={c.slug} onClick={() => { setActiveCat(c.slug); setFocusedIdx(0); }}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${activeCat === c.slug ? "bg-[#f0b429] text-[#040d1a]" : "bg-white/5 text-slate-500"}`}>
-                {c.name.replace(" Backstock", "").replace(" Supplies", "")}
-                {c.low > 0 && <span className="ml-1 text-[10px] bg-red-500 text-white px-1 rounded-full">{c.low}</span>}
-              </button>
-            ))}
           </div>
         </div>
       </header>
 
-      {/* ── Items ── */}
-      <div className="max-w-2xl mx-auto px-4 pt-3 pb-28">
-        {/* Column headers */}
-        <div className="flex items-center gap-2 px-2 pb-1 text-[10px] text-slate-600 uppercase tracking-wider font-bold">
-          <span className="flex-1">Item</span>
-          <span className="w-12 text-center">PAR</span>
-          <span className="w-16 text-center">Stock</span>
-          <span className="w-12 text-center">Need</span>
-          <span className="w-14 text-center">Exp</span>
-        </div>
+      {/* ══════════ MAIN CONTAINER ══════════ */}
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-6 space-y-5">
 
-        {groups.map((g, gi) => (
-          <div key={gi} className="mb-5">
-            {/* Location section header */}
-            <div className="sticky top-[130px] z-10 bg-[#040d1a] pt-2 pb-1 mb-1">
-              <div className="bg-[#0a1e3d] border border-[#f0b429]/20 rounded-lg px-3 py-1.5 flex items-center gap-2">
-                <svg viewBox="0 0 24 24" className="w-3 h-3 fill-[#f0b429] shrink-0"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
-                <span className="text-[#f0b429] text-[11px] font-black uppercase tracking-wide">{g.loc}</span>
-                <span className="text-slate-600 text-[10px] ml-auto">{g.items.length}</span>
-              </div>
+        {/* ══════════ SEARCH + FILTERS CARD ══════════ */}
+        <div className="bg-slate-900 rounded-2xl border border-slate-700 shadow-lg p-4">
+          <div className="flex flex-wrap gap-3 items-center">
+            {/* Search */}
+            <div className="relative w-full md:w-96">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-slate-500 absolute left-4 top-1/2 -translate-y-1/2"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search items..."
+                className="w-full pl-11 pr-4 py-2.5 bg-slate-800 border border-slate-600 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/25" />
             </div>
 
-            {/* Items */}
-            {g.items.map(item => (
-              <ItemRow key={item.id} item={item} isSaving={!!saving[item.id]} onSave={u => saveItem(item, u)} />
-            ))}
+            {/* Category pills */}
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setActiveCat("all")}
+                className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${activeCat === "all" ? "bg-yellow-500 text-slate-900" : "bg-slate-700 text-slate-300 hover:bg-slate-600"}`}>
+                All ({items.length})
+              </button>
+              {categories.map(c => (
+                <button key={c.slug} onClick={() => { setActiveCat(c.slug); setFocusedIdx(0); }}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${activeCat === c.slug ? "bg-yellow-500 text-slate-900" : "bg-slate-700 text-slate-300 hover:bg-slate-600"}`}>
+                  {c.name.replace(" Backstock", "").replace(" Supplies", "")}
+                  {c.low > 0 && <span className="ml-1.5 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{c.low}</span>}
+                </button>
+              ))}
+            </div>
           </div>
-        ))}
+        </div>
 
-        {filtered.length === 0 && (
-          <div className="text-center py-20 text-slate-600">{search ? "No matches" : "No items"}</div>
-        )}
+        {/* ══════════ INVENTORY TABLE ══════════ */}
+        <div className="bg-slate-900 rounded-2xl border border-slate-700 shadow-lg overflow-hidden">
+
+          {/* Column header */}
+          <div className="grid grid-cols-[1fr_70px_90px_70px_80px] gap-2 px-6 py-3 bg-slate-800 border-b border-slate-700 text-[11px] text-slate-400 uppercase tracking-wider font-bold">
+            <div className="pl-1">Item</div>
+            <div className="text-center">PAR</div>
+            <div className="text-center">Stock</div>
+            <div className="text-center">Need</div>
+            <div className="text-center">Expired</div>
+          </div>
+
+          {/* Rows */}
+          <div>
+            {groups.map((g, gi) => (
+              <div key={gi}>
+                {/* ── Shelf section header ── */}
+                <div className="bg-slate-800/80 border-l-4 border-yellow-400 px-6 py-2.5 flex items-center gap-3">
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-yellow-400 shrink-0"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+                  <span className="text-yellow-400 text-xs font-bold uppercase tracking-wide">{g.loc}</span>
+                  <span className="text-slate-500 text-[11px] ml-auto">{g.items.length} items</span>
+                </div>
+
+                {/* ── Items in this shelf ── */}
+                <div className="divide-y divide-slate-800">
+                  {g.items.map((item, idx) => (
+                    <ItemRow key={item.id} item={item} isSaving={!!saving[item.id]} onSave={u => saveItem(item, u)} even={idx % 2 === 0} />
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {filtered.length === 0 && (
+              <div className="text-center py-20 text-slate-500 text-sm">{search ? "No items match your search." : "No items found."}</div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Submit modal */}
+      {/* ══════════ SUBMIT MODAL ══════════ */}
       {showSubmit && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4">
-          <div className="bg-[#071428] border border-white/10 rounded-2xl p-5 w-full max-w-sm">
-            <h2 className="text-lg font-black text-white mb-1">Submit Count</h2>
-            <p className="text-slate-500 text-xs mb-3">{editedCount.current} items edited</p>
-            <textarea value={submitNotes} onChange={e => setSubmitNotes(e.target.value)} placeholder="Notes (optional)" rows={2}
-              className="w-full px-3 py-2 bg-[#040d1a] border border-white/10 rounded-xl text-white text-sm placeholder-slate-600 focus:outline-none mb-3" />
-            <div className="flex gap-2">
-              <button onClick={() => setShowSubmit(false)} className="flex-1 py-2.5 border border-white/10 rounded-xl text-slate-400 font-semibold text-sm">Cancel</button>
-              <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-2.5 bg-emerald-500 text-white font-bold text-sm rounded-xl disabled:opacity-50">{submitting ? "..." : "Submit"}</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
+          <div className="bg-slate-800 border border-slate-600 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h2 className="text-xl font-black text-white mb-2">Submit Inventory Count</h2>
+            <p className="text-slate-400 text-sm mb-4">{editedCount.current} items edited · {activeCat !== "all" ? categories.find(c => c.slug === activeCat)?.name : "All categories"}</p>
+            <textarea value={submitNotes} onChange={e => setSubmitNotes(e.target.value)} placeholder="Notes (optional)" rows={3}
+              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:border-yellow-500/50 mb-4 resize-none" />
+            <div className="flex gap-3">
+              <button onClick={() => setShowSubmit(false)} className="flex-1 py-3 border border-slate-600 rounded-xl text-slate-300 font-semibold text-sm hover:bg-slate-700 transition">Cancel</button>
+              <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm rounded-xl transition disabled:opacity-50">{submitting ? "Submitting..." : "Submit Count"}</button>
             </div>
           </div>
         </div>
       )}
 
-      {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#071428] border border-white/15 rounded-xl px-4 py-2 text-sm text-white shadow-xl">{toast}</div>}
+      {/* Toast */}
+      {toast && <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-slate-800 border border-slate-600 rounded-xl px-5 py-3 text-sm text-white font-medium shadow-2xl">{toast}</div>}
     </div>
   );
 }
 
-/* ── Item Row ────────────────────────────────────────────────────────────── */
+/* ══════════ ITEM ROW ══════════ */
 
-function ItemRow({ item, isSaving, onSave }: {
-  item: Item; isSaving: boolean;
+function ItemRow({ item, isSaving, onSave, even }: {
+  item: Item; isSaving: boolean; even: boolean;
   onSave: (u: { currentStock?: number; expiredQty?: number; notes?: string }) => void;
 }) {
   const [stock, setStock] = useState(item.currentStock === 0 ? "" : String(item.currentStock));
@@ -299,35 +306,36 @@ function ItemRow({ item, isSaving, onSave }: {
     setNotes(item.notes ?? "");
   }, [item.currentStock, item.expiredQty, item.notes]);
 
-  function commitStock() {
-    const v = stock === "" ? 0 : parseInt(stock);
-    if (!isNaN(v) && v !== item.currentStock) onSave({ currentStock: v });
-  }
-  function commitExpired() {
-    const v = expired === "" ? 0 : parseInt(expired);
-    if (!isNaN(v) && v !== item.expiredQty) onSave({ expiredQty: v });
-  }
+  function commitStock() { const v = stock === "" ? 0 : parseInt(stock); if (!isNaN(v) && v !== item.currentStock) onSave({ currentStock: v }); }
+  function commitExpired() { const v = expired === "" ? 0 : parseInt(expired); if (!isNaN(v) && v !== item.expiredQty) onSave({ expiredQty: v }); }
   function commitNotes() { if (notes !== (item.notes ?? "")) onSave({ notes }); }
 
   const needsOrder = item.qtyToOrder > 0 && !item.skipOrder;
 
   return (
-    <div className={`border-b border-white/5 py-1.5 ${isSaving ? "opacity-70" : ""}`}>
-      <div className="flex items-center gap-2 px-2">
-        {/* Item name — wraps, never truncates */}
-        <div className="flex-1 min-w-0 pr-1">
-          <button onClick={() => setShowNotes(!showNotes)} className="text-left w-full">
-            <div className={`text-[13px] leading-tight font-medium break-words ${needsOrder ? "text-amber-300" : "text-slate-200"}`}>
+    <div className={`${even ? "bg-slate-900" : "bg-slate-900/60"} hover:bg-slate-800 transition-colors ${isSaving ? "opacity-60" : ""}`}>
+      {/* Main grid row */}
+      <div className="grid grid-cols-[1fr_70px_90px_70px_80px] gap-2 items-center px-6 py-3">
+
+        {/* Item name */}
+        <div className="pl-1 pr-3 min-w-0">
+          <button onClick={() => setShowNotes(!showNotes)} className="text-left w-full group">
+            <div className={`text-sm font-medium leading-snug break-words group-hover:underline decoration-slate-600 ${needsOrder ? "text-amber-300" : "text-white"}`}>
               {item.name}
             </div>
+            {item.vendorSource && (
+              <div className="text-[11px] text-slate-500 mt-0.5 break-words">{item.vendorSource}</div>
+            )}
           </button>
         </div>
 
         {/* PAR */}
-        <div className="w-12 text-center text-xs text-slate-500 font-mono shrink-0">{item.par}</div>
+        <div className="text-center">
+          <span className="text-sm text-slate-400 font-mono font-semibold">{item.par}</span>
+        </div>
 
-        {/* Stock input — ALWAYS visible */}
-        <div className="w-16 shrink-0">
+        {/* Stock input */}
+        <div className="flex items-center justify-center">
           <input
             type="number"
             inputMode="numeric"
@@ -336,25 +344,29 @@ function ItemRow({ item, isSaving, onSave }: {
             onBlur={commitStock}
             onKeyDown={e => e.key === "Enter" && commitStock()}
             placeholder="—"
-            className={`w-full px-1 py-1.5 text-center rounded-lg border text-sm font-bold bg-[#040d1a] focus:outline-none focus:ring-1 focus:ring-[#f0b429]/50 focus:border-[#f0b429]/50 ${
-              needsOrder ? "border-amber-500/40 text-amber-300" : item.currentStock > 0 ? "border-emerald-500/30 text-emerald-400" : "border-white/10 text-slate-500"
+            className={`w-16 px-2 py-1.5 text-center rounded-lg border text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500/60 transition ${
+              item.currentStock > 0
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                : needsOrder
+                ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                : "bg-slate-800 border-slate-600 text-slate-400"
             }`}
           />
         </div>
 
         {/* Need to order */}
-        <div className="w-12 text-center shrink-0">
+        <div className="text-center">
           {item.skipOrder ? (
-            <span className="text-[9px] text-slate-700 font-bold">SKIP</span>
+            <span className="text-[10px] text-slate-600 font-bold uppercase">Skip</span>
           ) : needsOrder ? (
-            <span className="text-sm font-black text-red-400">{item.qtyToOrder}</span>
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-500/15 text-red-400 text-sm font-black">{item.qtyToOrder}</span>
           ) : (
-            <span className="text-xs text-emerald-500/40">0</span>
+            <span className="text-sm text-slate-600">—</span>
           )}
         </div>
 
-        {/* Expired input — ALWAYS visible */}
-        <div className="w-14 shrink-0">
+        {/* Expired input */}
+        <div className="flex items-center justify-center">
           <input
             type="number"
             inputMode="numeric"
@@ -363,19 +375,21 @@ function ItemRow({ item, isSaving, onSave }: {
             onBlur={commitExpired}
             onKeyDown={e => e.key === "Enter" && commitExpired()}
             placeholder="—"
-            className={`w-full px-1 py-1.5 text-center rounded-lg border text-xs bg-[#040d1a] focus:outline-none focus:ring-1 focus:ring-[#f0b429]/50 ${
-              item.expiredQty > 0 ? "border-red-500/30 text-red-400 font-bold" : "border-white/10 text-slate-600"
+            className={`w-16 px-2 py-1.5 text-center rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500/60 transition ${
+              item.expiredQty > 0
+                ? "bg-red-500/10 border-red-500/30 text-red-400 font-bold"
+                : "bg-slate-800 border-slate-600 text-slate-500"
             }`}
           />
         </div>
       </div>
 
-      {/* Notes row — toggle on tap of name */}
+      {/* Notes (toggle on name click) */}
       {showNotes && (
-        <div className="px-2 pt-1 pb-0.5">
+        <div className="px-6 pb-3">
           <input type="text" value={notes} onChange={e => setNotes(e.target.value)} onBlur={commitNotes}
             onKeyDown={e => e.key === "Enter" && commitNotes()} placeholder="Add notes..."
-            className="w-full px-2 py-1 rounded-lg border border-white/8 text-xs text-slate-400 bg-[#040d1a] placeholder-slate-700 focus:outline-none focus:border-[#f0b429]/30" />
+            className="w-full px-4 py-2 rounded-lg border border-slate-600 bg-slate-800 text-sm text-slate-300 placeholder-slate-500 focus:outline-none focus:border-yellow-500/50" />
         </div>
       )}
     </div>
