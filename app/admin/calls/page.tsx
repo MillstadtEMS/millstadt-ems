@@ -19,16 +19,17 @@ function nowTimeLocal() {
 
 // Defined OUTSIDE parent so React never remounts it on parent re-render
 function CallRow({
-  c, highlight, isEditing, editValue, saving,
-  onEdit, onSave, onCancel, onDelete, onEditChange,
+  c, highlight, isEditing, editValue, saving, toggling,
+  onEdit, onSave, onCancel, onDelete, onEditChange, onToggleActive,
 }: {
   c: Call; highlight: boolean; isEditing: boolean;
-  editValue: string; saving: boolean;
+  editValue: string; saving: boolean; toggling: boolean;
   onEdit: (c: Call) => void;
   onSave: (id: string) => void;
   onCancel: () => void;
   onDelete: (id: string) => void;
   onEditChange: (v: string) => void;
+  onToggleActive: (c: Call) => void;
 }) {
   return (
     <div className={`border rounded-xl px-5 py-4 ${highlight ? "bg-red-400/5 border-red-400/25" : "bg-white/2 border-white/6"}`}>
@@ -64,9 +65,14 @@ function CallRow({
           <span className="text-slate-400 text-xs tabular-nums font-mono w-12 shrink-0">{c.dispatchTime}</span>
           <span className={`text-sm font-bold flex-1 truncate ${highlight ? "text-red-300" : "text-slate-300"}`}>{c.dispatchNature}</span>
           {c.eventNumber && <span className="text-slate-600 text-xs font-mono shrink-0 hidden sm:block">{c.eventNumber}</span>}
-          <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded border shrink-0 ${highlight ? "text-red-400 bg-red-400/10 border-red-400/20" : "text-slate-600 bg-white/3 border-white/8"}`}>
-            {highlight ? "Active" : "Done"}
-          </span>
+          <button
+            onClick={() => onToggleActive(c)}
+            disabled={toggling}
+            title={highlight ? "Mark as completed (remove from ticker)" : "Mark as active (show on ticker)"}
+            className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded border shrink-0 transition-colors disabled:opacity-50 ${highlight ? "text-red-400 bg-red-400/10 border-red-400/20 hover:bg-red-400/20" : "text-slate-600 bg-white/3 border-white/8 hover:text-[#f0b429] hover:border-[#f0b429]/40"}`}
+          >
+            {toggling ? "…" : highlight ? "Active" : "Done"}
+          </button>
           <button onClick={() => onEdit(c)} title="Edit call description"
             className="text-slate-600 hover:text-[#f0b429] transition-colors p-1 shrink-0">
             <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
@@ -90,6 +96,7 @@ export default function CallsAdmin() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving]   = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   // Add call form
   const [showAdd, setShowAdd] = useState(false);
@@ -119,6 +126,22 @@ export default function CallsAdmin() {
 
   function cancelEdit() { setEditingId(null); setEditValue(""); }
 
+  async function toggleActive(c: Call) {
+    const nextActive = !!c.completedAt; // if currently completed, we want to reactivate
+    const confirmMsg = nextActive
+      ? "Mark this call as ACTIVE? It will appear on the live ticker."
+      : "Mark this call as completed? It will be removed from the live ticker.";
+    if (!confirm(confirmMsg)) return;
+    setTogglingId(c.id);
+    await fetch("/api/admin/calls", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: c.id, active: nextActive }),
+    });
+    setTogglingId(null);
+    await load();
+  }
+
   async function del(id: string) {
     if (!confirm("Remove this call from the log?")) return;
     await fetch("/api/admin/calls", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
@@ -147,6 +170,7 @@ export default function CallsAdmin() {
     onEdit: startEdit, onSave: saveEdit,
     onCancel: cancelEdit, onDelete: del,
     onEditChange: setEditValue,
+    onToggleActive: toggleActive,
   };
 
   return (
@@ -228,7 +252,7 @@ export default function CallsAdmin() {
                 <span className="text-red-400 text-sm font-black uppercase tracking-widest">{active.length} Active</span>
               </div>
               <div className="space-y-2">
-                {active.map(c => <CallRow key={c.id} c={c} highlight={true} isEditing={editingId === c.id} {...rowProps} />)}
+                {active.map(c => <CallRow key={c.id} c={c} highlight={true} isEditing={editingId === c.id} toggling={togglingId === c.id} {...rowProps} />)}
               </div>
               <p className="text-slate-600 text-xs mt-3">Edit the description above — the ticker updates within 30 seconds.</p>
             </div>
@@ -240,7 +264,7 @@ export default function CallsAdmin() {
                 <span className="text-slate-500 text-xs font-semibold uppercase tracking-widest">{complete.length} Completed</span>
               </div>
               <div className="space-y-2">
-                {complete.map(c => <CallRow key={c.id} c={c} highlight={false} isEditing={editingId === c.id} {...rowProps} />)}
+                {complete.map(c => <CallRow key={c.id} c={c} highlight={false} isEditing={editingId === c.id} toggling={togglingId === c.id} {...rowProps} />)}
               </div>
             </div>
           )}

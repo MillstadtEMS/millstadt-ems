@@ -35,10 +35,20 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   if (!(await isAdminAuthed())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { id, dispatchNature } = await req.json();
-  if (!id || typeof dispatchNature !== "string") return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  const body = await req.json();
+  const { id, dispatchNature, active } = body as { id?: string; dispatchNature?: string; active?: boolean };
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
   const db = neon(process.env.DATABASE_URL!);
-  await db`UPDATE cad_calls SET dispatch_nature = ${dispatchNature.trim()} WHERE id = ${id}`;
+  if (typeof dispatchNature === "string") {
+    await db`UPDATE cad_calls SET dispatch_nature = ${dispatchNature.trim()} WHERE id = ${id}`;
+  }
+  if (typeof active === "boolean") {
+    if (active) {
+      await db`UPDATE cad_calls SET completed_at = NULL WHERE id = ${id}`;
+    } else {
+      await db`UPDATE cad_calls SET completed_at = NOW() WHERE id = ${id} AND completed_at IS NULL`;
+    }
+  }
   return NextResponse.json({ ok: true });
 }
 
