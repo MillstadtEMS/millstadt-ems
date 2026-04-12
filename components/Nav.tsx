@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 
@@ -84,7 +83,7 @@ export default function Nav() {
 
           {/* Logo */}
           <Link href="/" className="shrink-0 group">
-            <Image
+            <img
               src="/images/millstadt-ems/logo.png"
               alt="Millstadt EMS"
               width={140}
