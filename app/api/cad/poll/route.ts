@@ -173,5 +173,9 @@ function isAuthorized(req: NextRequest): boolean {
 
   // Manual trigger with bearer token
   const auth = req.headers.get("authorization") ?? "";
-  return auth === `Bearer ${secret}`;
+  if (auth === `Bearer ${secret}`) return true;
+
+  // Query parameter auth (for cron-job.org which supports URL params)
+  const qsSecret = req.nextUrl.searchParams.get("secret");
+  return qsSecret === secret;
 }
