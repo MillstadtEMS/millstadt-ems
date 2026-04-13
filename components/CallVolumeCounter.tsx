@@ -7,7 +7,7 @@ function ScoreboardDigit({ digit }: { digit: string }) {
   const [current, setCurrent] = useState(digit);
   const [prev, setPrev] = useState(digit);
   const [rolling, setRolling] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     if (digit !== current) {
