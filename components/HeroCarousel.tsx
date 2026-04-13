@@ -26,7 +26,7 @@ export default function HeroCarousel() {
   useEffect(() => {
     fetch("/api/admin/media?collection=hero")
       .then(r => r.ok ? r.json() : [])
-      .then((data: { url: string; brightness: number }[]) => {
+      .then((data: { url: string; brightness: number; position?: string }[]) => {
         if (Array.isArray(data) && data.length > 0) {
           setImages(data.map(d => ({ src: d.url, brightness: d.brightness ?? 0.45, position: d.position })));
         }
