@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import HolidayOverlay from "@/components/HolidayOverlay";
 import HeroCarousel from "@/components/HeroCarousel";
+import CallVolumeCounter from "@/components/CallVolumeCounter";
 import { getContent } from "@/lib/db";
 
 // Always SSR so ?preview=ve shows fresh draft content
@@ -114,7 +115,14 @@ export default async function Home({
         </div>
       </div>
 
-      <div className="h-24 bg-[#040d1a]" />
+      {/* ════════════════════════════════
+          CALL VOLUME COUNTER
+      ════════════════════════════════ */}
+      <div className="bg-[#040d1a]">
+        <div className="wrap">
+          <CallVolumeCounter />
+        </div>
+      </div>
 
       {/* ════════════════════════════════
           QUICK ACTION CARDS
