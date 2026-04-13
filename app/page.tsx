@@ -52,77 +52,79 @@ export default async function Home({
       {/* ════════════════════════════════
           HERO
       ════════════════════════════════ */}
-      <section className="relative min-h-screen flex items-center overflow-hidden" style={{ marginTop: "-96px" }}>
+      <section className="relative overflow-hidden" style={{ marginTop: "-96px" }}>
         <HeroCarousel />
         <div className="absolute inset-0 bg-gradient-to-t from-[#040d1a] via-transparent to-transparent" style={{ zIndex: 2 }} />
         <HolidayOverlay />
 
-        <div className="relative z-10 w-full flex flex-col items-center text-center px-6 md:py-20">
+        {/* ── Hero — single flex parent, 3 sections ── */}
+        <div className="hero-content relative z-10 w-full" style={{ paddingTop: "96px" }}>
 
-          <div className="flex items-center justify-center gap-3 mb-6 sm:mb-10">
-            <span className="h-px w-12 bg-[#f0b429]" />
-            <span className="text-[#f0b429] text-xs font-bold tracking-[0.35em] uppercase">
-              {eyebrow}
-            </span>
-            <span className="h-px w-12 bg-[#f0b429]" />
+          {/* ── hero-top: headline, subtext, buttons ── */}
+          <div className="hero-top w-full flex flex-col items-center text-center px-6 pt-8 md:pt-16">
+            <div className="flex items-center justify-center gap-3 mb-6 sm:mb-10">
+              <span className="h-px w-12 bg-[#f0b429]" />
+              <span className="text-[#f0b429] text-xs font-bold tracking-[0.35em] uppercase">
+                {eyebrow}
+              </span>
+              <span className="h-px w-12 bg-[#f0b429]" />
+            </div>
+
+            <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-white leading-[0.88] tracking-tight mb-6 sm:mb-10">
+              {titleLine1}<br />
+              <span className="text-[#f0b429]">{titleLine2}</span><br />
+              {titleLine3}
+            </h1>
+
+            <p className="text-slate-300 text-lg md:text-2xl leading-relaxed mb-8 sm:mb-14 max-w-xl">
+              {subtitle}<br />
+              {subtitle2}
+            </p>
+
+            <div className="flex flex-wrap justify-center gap-5">
+              <a
+                href={primaryBtnHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-10 py-5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-black text-lg rounded-2xl transition-colors min-w-[200px]"
+              >
+                {primaryBtnText}
+              </a>
+              <Link
+                href={secondaryBtnHref}
+                className="px-10 py-5 border-2 border-[#f0b429]/60 hover:border-[#f0b429] text-[#f0b429] hover:bg-[#f0b429]/10 font-black text-lg rounded-2xl transition-colors min-w-[200px] text-center"
+              >
+                {secondaryBtnText}
+              </Link>
+            </div>
           </div>
 
-          <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-white leading-[0.88] tracking-tight mb-6 sm:mb-10">
-            {titleLine1}<br />
-            <span className="text-[#f0b429]">{titleLine2}</span><br />
-            {titleLine3}
-          </h1>
-
-          <p className="text-slate-300 text-lg md:text-2xl leading-relaxed mb-8 sm:mb-14 max-w-xl">
-            {subtitle}<br />
-            {subtitle2}
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-5">
-            <a
-              href={primaryBtnHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-10 py-5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-black text-lg rounded-2xl transition-colors min-w-[200px]"
-            >
-              {primaryBtnText}
-            </a>
-            <Link
-              href={secondaryBtnHref}
-              className="px-10 py-5 border-2 border-[#f0b429]/60 hover:border-[#f0b429] text-[#f0b429] hover:bg-[#f0b429]/10 font-black text-lg rounded-2xl transition-colors min-w-[200px] text-center"
-            >
-              {secondaryBtnText}
-            </Link>
+          {/* ── hero-middle: call volume counter ── */}
+          <div className="hero-middle w-full flex flex-col items-center justify-center text-center">
+            <CallVolumeCounter />
           </div>
+
+          {/* ── hero-bottom: stats bar ── */}
+          <div className="hero-bottom w-full border-t border-white/5 border-b border-b-white/5 bg-[#040d1a]/80 backdrop-blur-sm">
+            <div className="wrap py-8 grid grid-cols-2 md:grid-cols-4 divide-x divide-white/5">
+              {[
+                { num: stat0Num, label: stat0Label },
+                { num: stat1Num, label: stat1Label },
+                { num: stat2Num, label: stat2Label },
+                { num: stat3Num, label: stat3Label },
+              ].map((s) => (
+                <div key={s.label} className="text-center px-6 py-2">
+                  <div className="text-[#f0b429] font-black text-3xl tracking-tight">{s.num}</div>
+                  <div className="text-slate-400 text-sm uppercase tracking-widest mt-2">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
-
       </section>
 
-      {/* Stats bar — below carousel, always fully visible */}
-      <div className="bg-[#040d1a] border-t border-white/5 border-b border-b-white/5">
-        <div className="wrap py-8 grid grid-cols-2 md:grid-cols-4 divide-x divide-white/5">
-          {[
-            { num: stat0Num, label: stat0Label },
-            { num: stat1Num, label: stat1Label },
-            { num: stat2Num, label: stat2Label },
-            { num: stat3Num, label: stat3Label },
-          ].map((s) => (
-            <div key={s.label} className="text-center px-6 py-2">
-              <div className="text-[#f0b429] font-black text-3xl tracking-tight">{s.num}</div>
-              <div className="text-slate-400 text-sm uppercase tracking-widest mt-2">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ════════════════════════════════
-          CALL VOLUME COUNTER
-      ════════════════════════════════ */}
-      <div className="bg-[#040d1a]">
-        <div className="wrap">
-          <CallVolumeCounter />
-        </div>
-      </div>
+      <div className="h-24 bg-[#040d1a]" />
 
       {/* ════════════════════════════════
           QUICK ACTION CARDS

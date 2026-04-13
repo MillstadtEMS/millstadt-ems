@@ -111,6 +111,37 @@ body {
   border-radius: 2px;
 }
 
+/* ── Hero 3-section flex layout ── */
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: 100vh;
+}
+.hero-top {
+  flex: 0 0 auto;
+}
+.hero-middle {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+.hero-bottom {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+/* ── Scoreboard roll animation ── */
+@keyframes roll-in {
+  0%   { transform: translateY(100%); }
+  100% { transform: translateY(0); }
+}
+
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(28px); }
   to   { opacity: 1; transform: translateY(0); }
