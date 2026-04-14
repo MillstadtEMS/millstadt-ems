@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { staticCalls, type StaticCall } from "@/lib/cad/static-calls";
 
 interface Call {
   id: string;
@@ -24,16 +23,6 @@ function isActive(call: Call): boolean {
 
 function shortDate(date: string): string {
   return date.slice(0, 5); // "04/04"
-}
-
-// Format military time "1933" -> "19:33"
-function fmtTime(t: string): string {
-  return t.length === 4 ? `${t.slice(0, 2)}:${t.slice(2)}` : t;
-}
-
-// Format date "04/05/2026" -> "04/05"
-function fmtDate(d: string): string {
-  return d.slice(0, 5);
 }
 
 // ── Moon phase ─────────────────────────────────────────────────────────────
@@ -172,8 +161,7 @@ export default function CallTicker() {
   const onARun      = activeCall !== null;
   const lastRun     = latest.find(c => c.completedAt) ?? null;
 
-  // Total count: API calls + static calls
-  const totalCalls = (callCount ?? 0) + staticCalls.length;
+  const totalCalls = callCount ?? 0;
 
   return (
     <div ref={wrapperRef} className="fixed top-0 left-0 right-0 z-[60]">
@@ -220,19 +208,9 @@ export default function CallTicker() {
                   );
                 })}
 
-                {/* Static calls */}
-                {staticCalls.map((call: StaticCall, i: number) => (
-                  <div key={`static-${i}`} className="flex items-center gap-3 py-2.5 px-1">
-                    <span className="text-white/70 text-sm tabular-nums w-24 shrink-0">{call.date}</span>
-                    <span className="text-white/70 text-sm tabular-nums w-14 shrink-0 font-mono">{fmtTime(call.time)}</span>
-                    <span className="text-sm font-bold uppercase tracking-wide truncate text-white">
-                      <span className={unitColor(call.unit)}>[{call.unit}]</span> {call.nature}
-                    </span>
-                  </div>
-                ))}
               </div>
 
-              {allCalls.length === 0 && staticCalls.length === 0 && (
+              {allCalls.length === 0 && (
                 <div className="py-8 text-center text-slate-500 text-sm">No calls logged yet for this year.</div>
               )}
             </div>

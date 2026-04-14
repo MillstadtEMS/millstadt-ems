@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { staticCalls } from "@/lib/cad/static-calls";
 
 function ScoreboardDigit({ digit }: { digit: string }) {
   const [current, setCurrent] = useState(digit);
@@ -83,7 +82,7 @@ export default function CallVolumeCounter() {
     return () => clearInterval(id);
   }, []);
 
-  const total = apiCount + staticCalls.length;
+  const total = apiCount;
   const year = new Date().getFullYear();
   const digits = loaded ? String(total).split("") : ["—"];
 
