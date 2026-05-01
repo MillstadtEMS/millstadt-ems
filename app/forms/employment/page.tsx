@@ -35,7 +35,7 @@ export default function EmploymentPage() {
         ]}
       />
 
-      <div className="wrap py-16 max-w-[920px]">
+      <div className="wrap pt-16 pb-40 max-w-[920px]">
         <ContactFormWrapper
           formType="Employment Application"
           disclaimer="Received by Millstadt EMS leadership. You will be contacted within 5–7 business days."
