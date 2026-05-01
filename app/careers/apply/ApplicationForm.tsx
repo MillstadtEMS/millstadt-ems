@@ -764,12 +764,9 @@ export default function ApplicationForm() {
               <textarea name="why_millstadt" rows={5} className={`${inputClass} resize-none`} placeholder="Tell us about yourself and why you want to join our team..." />
             </div>
             <div>
-              <label className={labelClass}>Describe a high-acuity patient you managed</label>
-              <textarea name="high_acuity" rows={5} className={`${inputClass} resize-none`} placeholder="Describe the call, your assessment, and the interventions you performed..." />
-            </div>
-            <div>
-              <label className={labelClass}>Describe a time you worked effectively as part of a team</label>
-              <textarea name="teamwork" rows={5} className={`${inputClass} resize-none`} placeholder="Describe the situation and your role on the team..." />
+              <label className={labelClass}>What are 5 goals you have for the next 5 years?</label>
+              <p className="text-slate-500 text-sm mb-3 -mt-1">Personal, professional, educational, financial — anything. List five things you&apos;re working toward.</p>
+              <textarea name="five_year_goals" rows={7} className={`${inputClass} resize-none`} placeholder={"1.\n2.\n3.\n4.\n5."} />
             </div>
           </div>
       </Section>
