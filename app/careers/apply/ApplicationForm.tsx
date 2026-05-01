@@ -728,7 +728,7 @@ export default function ApplicationForm() {
                 { name: "file_resume", label: "Resume / CV" },
                 { name: "file_cover", label: "Cover Letter" },
                 { name: "file_dl", label: "Driver's License Copy" },
-                { name: "file_license", label: "Professional License(s)" },
+                { name: "file_license", label: "Professional Licenses" },
                 { name: "file_certs", label: "Certification Cards" },
                 { name: "file_immunizations", label: "Immunization Records" },
                 { name: "file_other", label: "Additional Documents" },
