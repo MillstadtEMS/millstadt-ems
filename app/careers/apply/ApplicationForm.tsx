@@ -5,22 +5,16 @@ import Image from "next/image";
 import Link from "next/link";
 
 const inputClass =
-  "w-full bg-[#040d1a] border border-white/10 rounded-2xl px-6 py-7 text-white text-base focus:outline-none focus:border-[#f0b429]/50 transition-colors placeholder:text-slate-600";
-const labelClass = "block text-slate-400 text-sm font-bold tracking-wide mb-5";
+  "w-full bg-[#040d1a] border border-white/15 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#f0b429]/60 transition-colors placeholder:text-slate-700";
+const labelClass = "block text-slate-400 text-[11px] font-black uppercase tracking-wider mb-2";
 const selectClass =
-  "w-full bg-[#040d1a] border border-white/10 rounded-2xl px-6 py-5 text-white text-base focus:outline-none focus:border-[#f0b429]/50 transition-colors appearance-none";
+  "w-full bg-[#040d1a] border border-white/15 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#f0b429]/60 transition-colors appearance-none";
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <div className="flex items-center gap-4 pb-14 border-b border-white/8 mb-20">
-      <Image
-        src="/images/millstadt-ems/star-of-life.png"
-        alt=""
-        width={28}
-        height={28}
-        style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 4px #f0b429)" }}
-      />
-      <h2 className="text-white font-black text-2xl">{title}</h2>
+    <div className="flex items-center gap-3 pb-3 border-b border-[#f0b429]/30 mb-5">
+      <span className="h-px w-6 bg-[#f0b429]" />
+      <h2 className="text-white font-black text-base uppercase tracking-[0.18em]">{title}</h2>
     </div>
   );
 }
@@ -30,11 +24,11 @@ function YesNo({ name, label }: { name: string; label: string }) {
     <div>
       <label className={labelClass}>{label}</label>
       <div className="flex gap-4">
-        <label className="flex items-center gap-3 px-6 py-4 bg-[#040d1a] border border-white/10 rounded-2xl cursor-pointer hover:border-[#f0b429]/30 transition-colors">
+        <label className="flex items-center gap-2 px-4 py-2 bg-[#040d1a] border border-white/15 rounded-lg cursor-pointer hover:border-[#f0b429]/40 transition-colors">
           <input type="radio" name={name} value="Yes" className="accent-[#f0b429] w-4 h-4" />
           <span className="text-slate-300 text-sm">Yes</span>
         </label>
-        <label className="flex items-center gap-3 px-6 py-4 bg-[#040d1a] border border-white/10 rounded-2xl cursor-pointer hover:border-[#f0b429]/30 transition-colors">
+        <label className="flex items-center gap-2 px-4 py-2 bg-[#040d1a] border border-white/15 rounded-lg cursor-pointer hover:border-[#f0b429]/40 transition-colors">
           <input type="radio" name={name} value="No" className="accent-[#f0b429] w-4 h-4" />
           <span className="text-slate-300 text-sm">No</span>
         </label>
@@ -209,7 +203,7 @@ export default function ApplicationForm() {
 
   if (status === "sent") {
     return (
-      <div className="wrap max-w-2xl py-40 text-center">
+      <div className="wrap max-w-2xl py-20 text-center">
         <div className="w-20 h-20 rounded-full bg-emerald-400/10 border border-emerald-400/30 flex items-center justify-center mx-auto mb-8">
           <svg viewBox="0 0 24 24" className="w-10 h-10 fill-current text-emerald-400">
             <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
@@ -230,15 +224,15 @@ export default function ApplicationForm() {
     <form ref={formRef} onSubmit={handleSubmit} encType="multipart/form-data">
 
       {/* ── 1. Position Applied For ── */}
-      <div className="py-28 bg-[#040d1a]">
-        <div className="wrap">
+      <div className="py-10 bg-[#040d1a]">
+        <div className="wrap max-w-4xl">
           <SectionHeader title="Position Applied For" />
-          <div className="space-y-20">
+          <div className="space-y-5">
             <div>
               <label className={labelClass}>Position *</label>
               <div className="grid sm:grid-cols-2 gap-4">
                 {positions.map((pos) => (
-                  <label key={pos} className="flex items-center gap-4 p-5 bg-[#071428] border border-white/8 rounded-2xl cursor-pointer hover:border-[#f0b429]/30 transition-colors">
+                  <label key={pos} className="flex items-center gap-4 p-3 bg-[#071428] border border-white/10 rounded-lg cursor-pointer hover:border-[#f0b429]/30 transition-colors">
                     <input type="radio" name="position" value={pos} required className="accent-[#f0b429] w-4 h-4 shrink-0" />
                     <span className="text-slate-300 text-sm leading-snug">{pos}</span>
                   </label>
@@ -249,14 +243,14 @@ export default function ApplicationForm() {
               <label className={labelClass}>Employment Type — Select all that apply *</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {["Full-Time", "Part-Time", "PRN", "Volunteer"].map((t) => (
-                  <label key={t} className="flex items-center gap-4 p-5 bg-[#071428] border border-white/8 rounded-2xl cursor-pointer hover:border-[#f0b429]/30 transition-colors">
+                  <label key={t} className="flex items-center gap-4 p-3 bg-[#071428] border border-white/10 rounded-lg cursor-pointer hover:border-[#f0b429]/30 transition-colors">
                     <input type="checkbox" name="employment_type" value={t} className="accent-[#f0b429] w-4 h-4 shrink-0" />
                     <span className="text-slate-300 text-sm">{t}</span>
                   </label>
                 ))}
               </div>
             </div>
-            <div className="grid sm:grid-cols-3 gap-10">
+            <div className="grid sm:grid-cols-3 gap-4">
               <div>
                 <label className={labelClass}>Days Available</label>
                 <input type="text" name="days_available" className={inputClass} placeholder="e.g. Mon, Wed, Fri" />
@@ -273,16 +267,16 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-20 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-4 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 2. Personal Information ── */}
-      <div className="py-28 bg-[#071428]">
-        <div className="wrap">
+      <div className="py-10 bg-[#071428]">
+        <div className="wrap max-w-4xl">
           <SectionHeader title="Personal Information" />
-          <div className="space-y-20">
+          <div className="space-y-5">
           <div>
             <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">Legal Name</div>
-            <div className="grid sm:grid-cols-3 gap-10">
+            <div className="grid sm:grid-cols-3 gap-4">
               <div>
                 <label className={labelClass}>First Name *</label>
                 <input type="text" name="first_name" required className={inputClass} placeholder="First" />
@@ -297,7 +291,7 @@ export default function ApplicationForm() {
               </div>
             </div>
           </div>
-          <div className="grid sm:grid-cols-2 gap-10">
+          <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className={labelClass}>Date of Birth *</label>
               <input type="date" name="dob" required className={inputClass} />
@@ -315,7 +309,7 @@ export default function ApplicationForm() {
               <input type="email" name="email" required className={inputClass} placeholder="you@email.com" />
             </div>
           </div>
-          <div className="grid sm:grid-cols-2 gap-10">
+          <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className={labelClass}>Street Address</label>
               <input type="text" name="address" className={inputClass} placeholder="123 Main St" />
@@ -325,7 +319,7 @@ export default function ApplicationForm() {
               <input type="text" name="city_state_zip" className={inputClass} placeholder="Millstadt, IL 62260" />
             </div>
           </div>
-          <div className="grid sm:grid-cols-3 gap-10">
+          <div className="grid sm:grid-cols-3 gap-4">
             <div>
               <label className={labelClass}>Driver's License State</label>
               <input type="text" name="dl_state" className={inputClass} placeholder="IL" maxLength={2} />
@@ -342,14 +336,14 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-20 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-4 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 3. Eligibility & Background ── */}
-      <div className="py-28 bg-[#040d1a]">
-        <div className="wrap">
+      <div className="py-10 bg-[#040d1a]">
+        <div className="wrap max-w-4xl">
           <SectionHeader title="Eligibility & Background" />
-          <div className="space-y-20">
-            <div className="grid sm:grid-cols-2 gap-10">
+          <div className="space-y-5">
+            <div className="grid sm:grid-cols-2 gap-4">
               <YesNo name="authorized_us" label="Are you legally authorized to work in the U.S.? *" />
               <YesNo name="felony" label="Have you ever been convicted of a felony?" />
               <YesNo name="excluded_medicare" label="Have you ever been excluded from Medicare/Medicaid?" />
@@ -363,7 +357,7 @@ export default function ApplicationForm() {
               <label className={labelClass}>I consent to the following checks</label>
               <div className="grid sm:grid-cols-3 gap-4">
                 {["Background Check", "Drug Screening", "Driving Record Check"].map((c) => (
-                  <label key={c} className="flex items-center gap-4 p-5 bg-[#071428] border border-white/8 rounded-2xl cursor-pointer hover:border-[#f0b429]/30 transition-colors">
+                  <label key={c} className="flex items-center gap-4 p-3 bg-[#071428] border border-white/10 rounded-lg cursor-pointer hover:border-[#f0b429]/30 transition-colors">
                     <input type="checkbox" name="consents" value={c} className="accent-[#f0b429] w-4 h-4 shrink-0" />
                     <span className="text-slate-300 text-sm">{c}</span>
                   </label>
@@ -373,16 +367,16 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-20 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-4 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 4. Education ── */}
-      <div className="py-28 bg-[#071428]">
-        <div className="wrap">
+      <div className="py-10 bg-[#071428]">
+        <div className="wrap max-w-4xl">
           <SectionHeader title="Education" />
-          <div className="space-y-20">
+          <div className="space-y-5">
             <div>
               <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">High School</div>
-              <div className="grid sm:grid-cols-2 gap-10">
+              <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>School Name</label>
                   <input type="text" name="hs_name" className={inputClass} placeholder="High School Name" />
@@ -395,7 +389,7 @@ export default function ApplicationForm() {
             </div>
             <div>
               <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">College / University</div>
-              <div className="grid sm:grid-cols-2 gap-10">
+              <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Institution</label>
                   <input type="text" name="college_name" className={inputClass} placeholder="University Name" />
@@ -416,7 +410,7 @@ export default function ApplicationForm() {
             </div>
             <div>
               <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">EMS / Medical Training Program</div>
-              <div className="grid sm:grid-cols-3 gap-10">
+              <div className="grid sm:grid-cols-3 gap-4">
                 <div>
                   <label className={labelClass}>Program Name</label>
                   <input type="text" name="ems_program" className={inputClass} placeholder="e.g. SIUE Paramedic" />
@@ -434,16 +428,16 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-20 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-4 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 5. Licensure & Certifications ── */}
-      <div className="py-28 bg-[#040d1a]">
-        <div className="wrap">
+      <div className="py-10 bg-[#040d1a]">
+        <div className="wrap max-w-4xl">
           <SectionHeader title="Licensure & Certifications" />
           <div className="flex flex-col gap-6">
 
             {/* ── Primary License ── */}
-            <div className="p-10 bg-[#071428] rounded-2xl border border-white/8">
+            <div className="p-5 bg-[#071428] rounded-lg border border-white/8">
               <div className="flex items-center gap-3 mb-8">
                 <span className="h-px w-6 bg-[#f0b429]" />
                 <span className="text-[#f0b429] text-xs font-black tracking-[0.2em] uppercase">Primary License</span>
@@ -469,7 +463,7 @@ export default function ApplicationForm() {
             </div>
 
             {/* ── Additional License ── */}
-            <div className="p-10 bg-[#071428] rounded-2xl border border-white/8">
+            <div className="p-5 bg-[#071428] rounded-lg border border-white/8">
               <div className="flex items-center gap-3 mb-8">
                 <span className="h-px w-6 bg-[#f0b429]" />
                 <span className="text-[#f0b429] text-xs font-black tracking-[0.2em] uppercase">Additional License <span className="text-slate-500 normal-case tracking-normal font-normal">(if applicable)</span></span>
@@ -495,7 +489,7 @@ export default function ApplicationForm() {
             </div>
 
             {/* ── NREMT ── */}
-            <div className="p-10 bg-[#071428] rounded-2xl border border-white/8">
+            <div className="p-5 bg-[#071428] rounded-lg border border-white/8">
               <div className="flex items-center gap-3 mb-8">
                 <span className="h-px w-6 bg-[#f0b429]" />
                 <span className="text-[#f0b429] text-xs font-black tracking-[0.2em] uppercase">NREMT <span className="text-slate-500 normal-case tracking-normal font-normal">(if applicable)</span></span>
@@ -517,7 +511,7 @@ export default function ApplicationForm() {
             </div>
 
             {/* ── DEA ── */}
-            <div className="p-10 bg-[#071428] rounded-2xl border border-white/8">
+            <div className="p-5 bg-[#071428] rounded-lg border border-white/8">
               <div className="flex items-center gap-3 mb-2">
                 <span className="h-px w-6 bg-[#f0b429]" />
                 <span className="text-[#f0b429] text-xs font-black tracking-[0.2em] uppercase">DEA Registration</span>
@@ -536,7 +530,7 @@ export default function ApplicationForm() {
             </div>
 
             {/* ── Certifications ── */}
-            <div className="p-10 bg-[#071428] rounded-2xl border border-white/8">
+            <div className="p-5 bg-[#071428] rounded-lg border border-white/8">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
                   <span className="h-px w-6 bg-[#f0b429]" />
@@ -583,16 +577,16 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-20 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-4 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 6. Work History ── */}
-      <div className="py-28 bg-[#071428]">
-        <div className="wrap">
+      <div className="py-10 bg-[#071428]">
+        <div className="wrap max-w-4xl">
           <SectionHeader title="Work History" />
           <p className="text-slate-500 text-sm mb-12">List all relevant EMS/medical employment — most recent first.</p>
-        <div className="space-y-20">
+        <div className="space-y-5">
           {employers.map((em, i) => (
-            <div key={i} className="p-14 bg-[#040d1a] border border-white/8 rounded-2xl">
+            <div key={i} className="p-5 bg-[#040d1a] border border-white/10 rounded-lg">
               <div className="flex items-center justify-between mb-10">
                 <span className="text-white font-bold text-base">Employer #{i + 1}</span>
                 {employers.length > 1 && (
@@ -600,7 +594,7 @@ export default function ApplicationForm() {
                 )}
               </div>
               <div className="space-y-10">
-                <div className="grid sm:grid-cols-2 gap-10">
+                <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className={labelClass}>Agency Name</label>
                     <input type="text" value={em.agency} onChange={(e) => updateEmployer(i, "agency", e.target.value)} className={inputClass} placeholder="Agency / Organization" />
@@ -644,14 +638,14 @@ export default function ApplicationForm() {
         </div>
         </div>
       </div>
-      <div className="h-20 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-4 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 7. EMS Experience & Skills ── */}
-      <div className="py-28 bg-[#040d1a]">
-        <div className="wrap">
+      <div className="py-10 bg-[#040d1a]">
+        <div className="wrap max-w-4xl">
           <SectionHeader title="EMS Experience & Skills" />
-          <div className="space-y-20">
-            <div className="grid sm:grid-cols-3 gap-10">
+          <div className="space-y-5">
+            <div className="grid sm:grid-cols-3 gap-4">
               <div>
                 <label className={labelClass}>Years of EMS Experience</label>
                 <input type="number" name="years_ems" min="0" className={inputClass} placeholder="0" />
@@ -669,7 +663,7 @@ export default function ApplicationForm() {
               <label className={labelClass}>Skills Checklist</label>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {skills.map((s) => (
-                  <label key={s} className="flex items-center gap-4 p-5 bg-[#071428] border border-white/8 rounded-2xl cursor-pointer hover:border-[#f0b429]/30 transition-colors">
+                  <label key={s} className="flex items-center gap-4 p-3 bg-[#071428] border border-white/10 rounded-lg cursor-pointer hover:border-[#f0b429]/30 transition-colors">
                     <input type="checkbox" name="skills" value={s} className="accent-[#f0b429] w-4 h-4 shrink-0" />
                     <span className="text-slate-300 text-sm">{s}</span>
                   </label>
@@ -679,14 +673,14 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-20 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-4 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 8. Driving History ── */}
-      <div className="py-28 bg-[#071428]">
-        <div className="wrap">
+      <div className="py-10 bg-[#071428]">
+        <div className="wrap max-w-4xl">
           <SectionHeader title="Driving History" />
-          <div className="space-y-20">
-            <div className="grid sm:grid-cols-2 gap-10">
+          <div className="space-y-5">
+            <div className="grid sm:grid-cols-2 gap-4">
               <YesNo name="valid_dl" label="Valid Driver's License?" />
               <YesNo name="cdl" label="CDL (if applicable)?" />
               <YesNo name="accidents" label="Accidents in the past 5 years?" />
@@ -700,15 +694,15 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-20 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-4 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 9. I Am Willing To Work ── */}
-      <div className="py-28 bg-[#040d1a]">
-        <div className="wrap">
+      <div className="py-10 bg-[#040d1a]">
+        <div className="wrap max-w-4xl">
           <SectionHeader title="I Am Willing To Work" />
           <div className="grid sm:grid-cols-3 gap-4">
             {availability.map((item) => (
-              <label key={item} className="flex items-center gap-4 p-5 bg-[#071428] border border-white/8 rounded-2xl cursor-pointer hover:border-[#f0b429]/30 transition-colors">
+              <label key={item} className="flex items-center gap-4 p-3 bg-[#071428] border border-white/10 rounded-lg cursor-pointer hover:border-[#f0b429]/30 transition-colors">
                 <input type="checkbox" name="availability" value={item} className="accent-[#f0b429] w-5 h-5 shrink-0" />
                 <span className="text-slate-300 text-base">{item}</span>
               </label>
@@ -716,23 +710,23 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-20 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-4 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 10. Professional References ── */}
-      <div className="py-28 bg-[#071428]">
-        <div className="wrap">
+      <div className="py-10 bg-[#071428]">
+        <div className="wrap max-w-4xl">
           <SectionHeader title="Professional References" />
           <p className="text-slate-500 text-sm mb-12">Minimum of 3 references required.</p>
-          <div className="space-y-20">
+          <div className="space-y-5">
             {references.map((r, i) => (
-              <div key={i} className="p-14 bg-[#040d1a] border border-white/8 rounded-2xl">
+              <div key={i} className="p-5 bg-[#040d1a] border border-white/10 rounded-lg">
                 <div className="flex items-center justify-between mb-10">
                   <span className="text-white font-bold text-base">Reference #{i + 1}</span>
                   {references.length > 3 && (
                     <button type="button" onClick={() => setReferences((p) => p.filter((_, idx) => idx !== i))} className="text-slate-600 hover:text-red-400 text-xs font-bold transition-colors">Remove</button>
                   )}
                 </div>
-                <div className="grid sm:grid-cols-2 gap-10">
+                <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className={labelClass}>Name</label>
                     <input type="text" value={r.name} onChange={(e) => updateReference(i, "name", e.target.value)} className={inputClass} placeholder="Full name" />
@@ -759,13 +753,13 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-20 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-4 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 11. Additional Information ── */}
-      <div className="py-28 bg-[#040d1a]">
-        <div className="wrap">
+      <div className="py-10 bg-[#040d1a]">
+        <div className="wrap max-w-4xl">
           <SectionHeader title="Additional Information" />
-          <div className="space-y-20">
+          <div className="space-y-5">
             <div>
               <label className={labelClass}>Why do you want to work for Millstadt Ambulance Service?</label>
               <textarea name="why_millstadt" rows={5} className={`${inputClass} resize-none`} placeholder="Tell us about yourself and why you want to join our team..." />
@@ -781,11 +775,11 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-20 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-4 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 12. Attachments ── */}
-      <div className="py-28 bg-[#071428]">
-        <div className="wrap">
+      <div className="py-10 bg-[#071428]">
+        <div className="wrap max-w-4xl">
           <SectionHeader title="Attachments" />
           <p className="text-slate-500 text-sm mb-12">Upload copies of your licenses, certifications, and supporting documents. Multiple files accepted. All documents will be attached to your application email.</p>
           <div className="space-y-5">
@@ -798,7 +792,7 @@ export default function ApplicationForm() {
               { name: "file_immunizations", label: "Immunization Records" },
               { name: "file_other", label: "Additional Documents" },
             ].map((f) => (
-              <div key={f.name} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-6 bg-[#040d1a] border border-white/8 rounded-2xl">
+              <div key={f.name} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 bg-[#040d1a] border border-white/10 rounded-lg">
                 <span className="text-slate-300 text-sm font-bold w-52 shrink-0">{f.label}</span>
                 <input
                   type="file"
@@ -811,13 +805,13 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-20 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-4 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 13. Applicant Certification ── */}
-      <div className="py-28 bg-[#040d1a]">
-        <div className="wrap">
+      <div className="py-10 bg-[#040d1a]">
+        <div className="wrap max-w-4xl">
           <SectionHeader title="Applicant Certification" />
-          <p className="text-slate-300 text-base leading-relaxed mb-14">
+          <p className="text-slate-400 text-sm leading-relaxed mb-6">
             I certify that all information provided in this application is true and complete to the best of my knowledge. I understand that falsification or omission of information may result in disqualification from consideration or termination of employment.
           </p>
           <label className="flex items-start gap-5 cursor-pointer">
@@ -828,25 +822,25 @@ export default function ApplicationForm() {
           </label>
         </div>
       </div>
-      <div className="h-20 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-4 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* Submit */}
-      <div className="py-28 bg-[#071428]">
-        <div className="wrap">
+      <div className="py-10 bg-[#071428]">
+        <div className="wrap max-w-4xl">
           <div className="flex flex-col gap-4 max-w-sm">
             <button
               type="submit"
               disabled={status === "sending"}
-              className="flex items-center justify-center w-full py-6 bg-[#f0b429] hover:bg-[#d9a320] text-[#040d1a] font-black text-lg rounded-2xl transition-colors disabled:opacity-60"
+              className="flex items-center justify-center w-full py-3 bg-[#f0b429] hover:bg-[#d9a320] text-[#040d1a] font-black text-sm rounded-lg uppercase tracking-wider transition-colors disabled:opacity-60"
             >
               {status === "sending" ? "Submitting…" : "Submit Application"}
             </button>
-            <Link href="/careers" className="flex items-center justify-center w-full py-6 border-2 border-white/20 hover:border-[#f0b429]/50 hover:text-[#f0b429] text-white font-black text-lg rounded-2xl transition-colors">
+            <Link href="/careers" className="flex items-center justify-center w-full py-3 border-2 border-white/15 hover:border-[#f0b429]/50 hover:text-[#f0b429] text-white font-black text-sm rounded-lg uppercase tracking-wider transition-colors">
               Back to Careers
             </Link>
           </div>
           {status === "error" && (
-            <div className="mt-8 p-8 bg-red-900/20 border border-red-500/30 rounded-2xl">
+            <div className="mt-4 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
               <div className="flex items-start gap-4">
                 <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current text-red-400 shrink-0 mt-0.5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                 <div>
