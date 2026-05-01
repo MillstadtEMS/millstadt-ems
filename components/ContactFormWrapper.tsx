@@ -10,9 +10,6 @@ interface Props {
   children: React.ReactNode;
 }
 
-const btnClass =
-  "flex items-center justify-center w-full py-6 font-black text-lg rounded-2xl transition-colors";
-
 export default function ContactFormWrapper({
   formType,
   disclaimer,
@@ -47,17 +44,15 @@ export default function ContactFormWrapper({
 
   if (status === "done") {
     return (
-      <div className="rounded-2xl bg-[#071428] border border-white/8 overflow-hidden text-center">
-        <div className="p-16 space-y-6">
-          <div className="text-[#34d399] text-6xl font-black">✓</div>
-          <h3 className="text-white font-black text-2xl">Submitted Successfully</h3>
-          <p className="text-slate-400 text-lg leading-relaxed">
-            We received your request and will reach out soon.
-          </p>
-        </div>
+      <div className="p-12 text-center" style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.05)" }}>
+        <div className="text-[#34d399] text-5xl font-black mb-4">✓</div>
+        <h3 className="text-white font-black text-2xl uppercase tracking-wide mb-3">Submitted Successfully</h3>
+        <p className="text-slate-400 text-base leading-relaxed mb-8">
+          We received your request and will reach out soon.
+        </p>
         <Link
           href={backHref}
-          className="flex items-center justify-center w-full py-6 bg-[#f0b429] hover:bg-[#d9a320] text-[#040d1a] font-black text-lg transition-colors"
+          className="inline-block px-10 py-3 bg-[#f0b429] hover:bg-[#d9a320] text-[#040d1a] font-black text-sm uppercase tracking-widest transition-colors"
         >
           Back to Forms
         </Link>
@@ -66,24 +61,32 @@ export default function ContactFormWrapper({
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="space-y-2">
       {children}
 
-      <div className="h-16" />
+      {disclaimer && (
+        <div
+          className="p-4 my-6"
+          style={{ background: "#0d0d0d", border: "1px solid rgba(240,180,41,0.4)", borderLeft: "4px solid #f0b429" }}
+        >
+          <p className="text-xs leading-relaxed text-slate-400">{disclaimer}</p>
+        </div>
+      )}
 
-      <div className="flex flex-col gap-4 max-w-sm">
+      <div className="flex flex-col sm:flex-row gap-3 pt-6">
         <button
           type="submit"
           disabled={status === "sending"}
-          className={`${btnClass} bg-[#f0b429] hover:bg-[#d9a320] disabled:opacity-60 text-[#040d1a]`}
+          className="flex-1 py-4 bg-[#f0b429] hover:bg-[#d9a320] disabled:opacity-60 text-[#040d1a] font-black text-sm uppercase tracking-widest transition-colors"
         >
-          {status === "sending" ? "Sending…" : "Submit Request"}
+          {status === "sending" ? "Submitting…" : "Submit Request"}
         </button>
         <Link
           href={backHref}
-          className={`${btnClass} border-2 border-white/20 hover:border-[#f0b429]/50 hover:text-[#f0b429] text-white`}
+          className="flex items-center justify-center px-8 py-4 text-white font-bold text-sm uppercase tracking-widest transition-colors"
+          style={{ border: "1px solid rgba(255,255,255,0.15)" }}
         >
-          Back to Forms
+          Cancel
         </Link>
       </div>
 
@@ -91,10 +94,6 @@ export default function ContactFormWrapper({
         <p className="text-red-400 text-sm pt-4">
           Something went wrong. Please try again or email us directly at millstadtems@gmail.com.
         </p>
-      )}
-
-      {disclaimer && (
-        <p className="text-slate-600 text-sm pt-6">{disclaimer}</p>
       )}
     </form>
   );
