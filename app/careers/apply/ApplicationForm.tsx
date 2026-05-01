@@ -230,8 +230,7 @@ export default function ApplicationForm() {
       <div className="py-16 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Position Applied For" />
-          <div className="space-y-8">
-            <div>
+          <div className="space-y-24">            <div>
               <label className={labelClass}>Position *</label>
               <div className="grid sm:grid-cols-2 gap-4">
                 {positions.map((pos) => (
@@ -276,8 +275,7 @@ export default function ApplicationForm() {
       <div className="py-16 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Personal Information" />
-          <div className="space-y-8">
-          <div>
+          <div className="space-y-24">          <div>
             <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">Legal Name</div>
             <div className="grid sm:grid-cols-3 gap-4">
               <div>
@@ -345,8 +343,7 @@ export default function ApplicationForm() {
       <div className="py-16 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Eligibility & Background" />
-          <div className="space-y-8">
-            <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-24">            <div className="grid sm:grid-cols-2 gap-4">
               <YesNo name="authorized_us" label="Are you legally authorized to work in the U.S.? *" />
               <YesNo name="felony" label="Have you ever been convicted of a felony?" />
               <YesNo name="excluded_medicare" label="Have you ever been excluded from Medicare/Medicaid?" />
@@ -376,8 +373,7 @@ export default function ApplicationForm() {
       <div className="py-16 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Education" />
-          <div className="space-y-8">
-            <div>
+          <div className="space-y-24">            <div>
               <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">High School</div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
@@ -551,7 +547,7 @@ export default function ApplicationForm() {
                   <div className="col-span-3 text-slate-500 text-[10px] font-black uppercase tracking-widest">Expires</div>
                 </div>
                 {certs.map((cert, i) => (
-                  <div key={i} className="grid grid-cols-12 gap-4 items-center py-3 px-4 border-b border-white/5">
+                  <div key={i} className="grid grid-cols-12 gap-4 items-center py-6 px-4 border-b border-white/8">
                     <div className="col-span-5">
                       {i < defaultCerts.length ? (
                         <span className="text-slate-200 text-sm font-semibold">{cert.name}</span>
@@ -587,9 +583,8 @@ export default function ApplicationForm() {
         <div className="wrap max-w-4xl">
           <SectionHeader title="Work History" />
           <p className="text-slate-500 text-sm mb-12">List all relevant EMS/medical employment — most recent first.</p>
-        <div className="space-y-8">
-          {employers.map((em, i) => (
-            <div key={i} className="p-5 bg-[#040d1a] border border-white/10 rounded-lg">
+        <div className="space-y-24">          {employers.map((em, i) => (
+            <div key={i} className="p-10 bg-[#040d1a] border border-white/10 rounded-lg">
               <div className="flex items-center justify-between mb-10">
                 <span className="text-white font-bold text-base">Employer #{i + 1}</span>
                 {employers.length > 1 && (
@@ -647,8 +642,7 @@ export default function ApplicationForm() {
       <div className="py-16 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="EMS Experience & Skills" />
-          <div className="space-y-8">
-            <div className="grid sm:grid-cols-3 gap-4">
+          <div className="space-y-24">            <div className="grid sm:grid-cols-3 gap-4">
               <div>
                 <label className={labelClass}>Years of EMS Experience</label>
                 <input type="number" name="years_ems" min="0" className={inputClass} placeholder="0" />
@@ -682,8 +676,7 @@ export default function ApplicationForm() {
       <div className="py-16 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Driving History" />
-          <div className="space-y-8">
-            <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-24">            <div className="grid sm:grid-cols-2 gap-4">
               <YesNo name="valid_dl" label="Valid Driver's License?" />
               <YesNo name="cdl" label="CDL (if applicable)?" />
               <YesNo name="accidents" label="Accidents in the past 5 years?" />
@@ -720,9 +713,8 @@ export default function ApplicationForm() {
         <div className="wrap max-w-4xl">
           <SectionHeader title="Professional References" />
           <p className="text-slate-500 text-sm mb-12">Minimum of 3 references required.</p>
-          <div className="space-y-8">
-            {references.map((r, i) => (
-              <div key={i} className="p-5 bg-[#040d1a] border border-white/10 rounded-lg">
+          <div className="space-y-24">            {references.map((r, i) => (
+              <div key={i} className="p-10 bg-[#040d1a] border border-white/10 rounded-lg">
                 <div className="flex items-center justify-between mb-10">
                   <span className="text-white font-bold text-base">Reference #{i + 1}</span>
                   {references.length > 3 && (
@@ -762,8 +754,7 @@ export default function ApplicationForm() {
       <div className="py-16 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Additional Information" />
-          <div className="space-y-8">
-            <div>
+          <div className="space-y-24">            <div>
               <label className={labelClass}>Why do you want to work for Millstadt Ambulance Service?</label>
               <textarea name="why_millstadt" rows={5} className={`${inputClass} resize-none`} placeholder="Tell us about yourself and why you want to join our team..." />
             </div>
@@ -785,8 +776,7 @@ export default function ApplicationForm() {
         <div className="wrap max-w-4xl">
           <SectionHeader title="Attachments" />
           <p className="text-slate-500 text-sm mb-12">Upload copies of your licenses, certifications, and supporting documents. Multiple files accepted. All documents will be attached to your application email.</p>
-          <div className="space-y-8">
-            {[
+          <div className="space-y-24">            {[
               { name: "file_resume", label: "Resume / CV" },
               { name: "file_cover", label: "Cover Letter" },
               { name: "file_dl", label: "Driver's License Copy" },
