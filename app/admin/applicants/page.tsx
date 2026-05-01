@@ -173,7 +173,7 @@ function ApplicantsContent() {
             const lastUpdated = wf?.updatedAt ? timeAgo(wf.updatedAt) : `Submitted ${timeAgo(sub.submittedAt)}`;
 
             return (
-              <Link key={sub.id} href={`/admin/submissions/${sub.id}`}
+              <Link key={sub.id} href={`/admin/applicants/${sub.id}`}
                 className={`group block rounded-xl border-2 px-5 py-5 transition-colors ${
                   flagCount > 0
                     ? "bg-red-950/15 border-red-500/30 hover:border-red-500/60"

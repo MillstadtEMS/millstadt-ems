@@ -81,28 +81,28 @@ export default function ApplicantWorkflowPanel({
         </div>
       )}
 
-      {/* Stage panels — flat layout, always expanded for the relevant status */}
-      <div className="divide-y divide-white/5">
+      {/* Stage panels — distinct cards, all visible at once */}
+      <div className="pb-2">
         {(status === "Interview Process" || status === "Tentative Hire" || status === "Hired") && (
-          <FlatSection title="📋 Interview Process" progress={interviewProgress(workflow.interview)}>
+          <FlatSection title="Interview Process" accent="purple" progress={interviewProgress(workflow.interview)}>
             <InterviewChecklist workflow={workflow} busy={busy} onSave={(patch) => api({ interview: patch })} />
           </FlatSection>
         )}
 
         {(status === "Interview Process" || status === "Tentative Hire" || status === "Hired") && (
-          <FlatSection title="⭐ Interview Evaluation" progress={evaluationProgress(workflow.evaluation)}>
+          <FlatSection title="Interview Evaluation" accent="amber" progress={evaluationProgress(workflow.evaluation)}>
             <EvaluationForm workflow={workflow} busy={busy} onSave={(patch) => api({ evaluation: patch })} onDecision={(decision) => api({ status: decision })} />
           </FlatSection>
         )}
 
         {(status === "Tentative Hire" || status === "Hired") && (
-          <FlatSection title="🧾 New Hire Onboarding" progress={onboardingProgress(workflow.onboarding)}>
+          <FlatSection title="New Hire Onboarding" accent="emerald" progress={onboardingProgress(workflow.onboarding)}>
             <OnboardingChecklist workflow={workflow} busy={busy} onSave={(patch) => api({ onboarding: patch })} onComplete={() => api({ status: "Hired" })} />
           </FlatSection>
         )}
 
         {workflow.statusHistory.length > 0 && (
-          <FlatSection title="📜 Status History">
+          <FlatSection title="Status History" accent="slate">
             <div className="px-6 py-4">
               <ul className="space-y-2">
                 {workflow.statusHistory.slice().reverse().map((h, i) => (
@@ -176,24 +176,34 @@ function StatusActions({
   );
 }
 
-/* ── Flat section header (always expanded, no toggle) ────────────── */
+/* ── Flat distinct card panel — looks like a section, not a drop-down ── */
 function FlatSection({
-  title, progress, children,
+  title, progress, accent = "amber", children,
 }: {
   title: string;
   progress?: { done: number; total: number; pct: number };
+  accent?: "amber" | "purple" | "emerald" | "slate";
   children: React.ReactNode;
 }) {
+  const accentColors: Record<string, { bar: string; text: string }> = {
+    amber: { bar: "bg-[#f0b429]", text: "text-[#f0b429]" },
+    purple: { bar: "bg-purple-500", text: "text-purple-300" },
+    emerald: { bar: "bg-emerald-500", text: "text-emerald-300" },
+    slate: { bar: "bg-slate-400", text: "text-slate-400" },
+  };
+  const c = accentColors[accent];
+
   return (
-    <div>
-      <div className="flex w-full items-center gap-3 px-6 py-4 bg-[#040d1a]/40 border-b border-white/5">
-        <span className="flex-1 font-black text-sm uppercase tracking-wider text-white">{title}</span>
+    <div className="my-6 mx-6 rounded-xl border-2 border-white/10 bg-[#040d1a] overflow-hidden">
+      <div className={`${c.bar} h-1`} />
+      <div className="px-6 py-4 bg-[#071428] border-b-2 border-white/10 flex items-center gap-3">
+        <span className={`flex-1 font-black text-base uppercase tracking-[0.16em] ${c.text}`}>{title}</span>
         {progress && (
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-3">
             <span className="hidden sm:block w-32 h-2 rounded-full bg-white/10 overflow-hidden">
-              <span className="block h-full bg-[#f0b429] transition-all" style={{ width: `${progress.pct}%` }} />
+              <span className={`block h-full ${c.bar} transition-all`} style={{ width: `${progress.pct}%` }} />
             </span>
-            <span className="text-xs font-mono font-bold text-slate-400 tabular-nums">{progress.done}/{progress.total}</span>
+            <span className="text-sm font-mono font-black text-white tabular-nums">{progress.done}/{progress.total}</span>
           </span>
         )}
       </div>
