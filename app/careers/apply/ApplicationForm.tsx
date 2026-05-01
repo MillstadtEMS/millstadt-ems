@@ -733,8 +733,8 @@ export default function ApplicationForm() {
                 { name: "file_immunizations", label: "Immunization Records" },
                 { name: "file_other", label: "Additional Documents" },
               ].map((f) => (
-                <div key={f.name} className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-3 items-center p-4 bg-[#0d0d0d] border border-white/5">
-                  <span className="text-slate-300 text-sm font-bold uppercase tracking-wider">{f.label}</span>
+                <div key={f.name} className="grid grid-cols-1 sm:grid-cols-[260px_1fr] gap-3 items-center p-4 bg-[#0d0d0d] border border-white/5">
+                  <span className="text-slate-300 text-sm font-bold uppercase tracking-wider whitespace-nowrap">{f.label}</span>
                   <input
                     type="file"
                     name={f.name}
