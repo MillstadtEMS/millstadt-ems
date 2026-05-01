@@ -20,25 +20,42 @@ function SectionHeader({ title }: { title: string }) {
 }
 
 function Section({
-  num, title, openSection, setOpenSection, children,
+  num, title, totalSections, openSection, setOpenSection, children,
 }: {
   num: number;
   title: string;
+  totalSections: number;
   openSection: number;
   setOpenSection: (n: number) => void;
   children: React.ReactNode;
 }) {
   const isOpen = openSection === num;
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const isLast = num === totalSections;
+
+  function toggleSection() {
+    setOpenSection(isOpen ? 0 : num);
+  }
+
+  function goNext() {
+    setOpenSection(num + 1);
+    // After state updates, scroll the next section's header into view
+    setTimeout(() => {
+      const next = document.getElementById(`section-${num + 1}`);
+      if (next) next.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
+
   return (
-    <div className="border-b-[4px] sm:border-b-[8px] border-[#f0b429]/30 bg-[#040d1a]">
+    <div id={`section-${num}`} ref={sectionRef} className="border-b-[4px] sm:border-b-[8px] border-[#f0b429]/30 bg-[#040d1a] scroll-mt-4">
       <button
         type="button"
-        onClick={() => setOpenSection(isOpen ? 0 : num)}
-        className={`group w-full flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-4 sm:py-5 text-left transition-colors ${
-          isOpen ? "bg-[#071428]" : "hover:bg-[#071428]/50"
+        onClick={toggleSection}
+        className={`group w-full flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-5 sm:py-5 text-left transition-colors min-h-[64px] ${
+          isOpen ? "bg-[#071428]" : "hover:bg-[#071428]/50 active:bg-[#071428]/70"
         }`}
       >
-        <span className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full font-black text-xs sm:text-sm border-2 transition-colors ${
+        <span className={`flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full font-black text-sm border-2 transition-colors shrink-0 ${
           isOpen
             ? "bg-[#f0b429] border-[#f0b429] text-[#040d1a]"
             : "bg-transparent border-white/20 text-slate-400 group-hover:border-[#f0b429]/40 group-hover:text-[#f0b429]"
@@ -46,6 +63,7 @@ function Section({
         <h2 className={`flex-1 font-black text-sm sm:text-lg uppercase tracking-[0.08em] sm:tracking-[0.16em] transition-colors ${
           isOpen ? "text-[#f0b429]" : "text-white group-hover:text-[#f0b429]"
         }`}>{title}</h2>
+        <span className="hidden sm:block text-xs font-black uppercase tracking-wider text-slate-600 mr-2">{num} / {totalSections}</span>
         <svg viewBox="0 0 24 24" className={`w-5 h-5 sm:w-6 sm:h-6 fill-current transition-transform shrink-0 ${
           isOpen ? "rotate-180 text-[#f0b429]" : "text-slate-500"
         }`}>
@@ -56,6 +74,20 @@ function Section({
           and file uploads aren't lost when navigating between sections. */}
       <div className={`px-4 sm:px-8 lg:px-16 pb-8 sm:pb-10 pt-2 ${isOpen ? "" : "hidden"}`}>
         {children}
+        {/* Next-section navigation (hidden on the last section, which has its own submit button) */}
+        {!isLast && (
+          <div className="mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row gap-3">
+            <button type="button" onClick={goNext}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-[#f0b429] bg-[#f0b429] px-6 py-4 sm:py-3 text-sm font-black uppercase tracking-wider text-[#040d1a] transition hover:bg-[#f7c847] active:bg-[#d9a320] min-h-[52px]">
+              Save &amp; Continue → Section {num + 1}
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+            </button>
+            <button type="button" onClick={() => setOpenSection(0)}
+              className="rounded-xl border-2 border-white/15 bg-white/5 px-6 py-4 sm:py-3 text-sm font-black uppercase tracking-wider text-slate-300 hover:bg-white/10 transition-colors min-h-[52px]">
+              Close
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -372,7 +404,7 @@ export default function ApplicationForm() {
   return (
     <form ref={formRef} onSubmit={handleSubmit} onChange={captureFieldChange} encType="multipart/form-data">
 
-      <Section num={1} title="Position Applied For" openSection={openSection} setOpenSection={setOpenSection}>
+      <Section num={1} totalSections={13} title="Position Applied For" openSection={openSection} setOpenSection={setOpenSection}>
         <SubBlock title="Position">
           <div className="grid sm:grid-cols-2 gap-4">
             {positions.map((pos) => (
@@ -432,7 +464,7 @@ export default function ApplicationForm() {
           <input type="text" name="preferred_shift" className={inputClass} placeholder="Anything else about your preferred schedule" />
         </SubBlock>
       </Section>
-      <Section num={2} title="Personal Information" openSection={openSection} setOpenSection={setOpenSection}>
+      <Section num={2} totalSections={13} title="Personal Information" openSection={openSection} setOpenSection={setOpenSection}>
         <SubBlock title="Legal Name">
           <div className="grid sm:grid-cols-3 gap-4">
             <div>
@@ -506,7 +538,7 @@ export default function ApplicationForm() {
           </div>
         </SubBlock>
       </Section>
-      <Section num={3} title="Eligibility & Background" openSection={openSection} setOpenSection={setOpenSection}>
+      <Section num={3} totalSections={13} title="Eligibility & Background" openSection={openSection} setOpenSection={setOpenSection}>
         <SubBlock title="Eligibility Questions">
           <div className="grid sm:grid-cols-2 gap-4">
             <YesNo name="authorized_us" label="Are you legally authorized to work in the U.S.? *" />
@@ -533,7 +565,7 @@ export default function ApplicationForm() {
           </div>
         </SubBlock>
       </Section>
-      <Section num={4} title="Education" openSection={openSection} setOpenSection={setOpenSection}>
+      <Section num={4} totalSections={13} title="Education" openSection={openSection} setOpenSection={setOpenSection}>
         <SubBlock title="High School">
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
@@ -590,7 +622,7 @@ export default function ApplicationForm() {
           </SubBlock>
         ))}
       </Section>
-      <Section num={5} title="Licensure & Certifications" openSection={openSection} setOpenSection={setOpenSection}>
+      <Section num={5} totalSections={13} title="Licensure & Certifications" openSection={openSection} setOpenSection={setOpenSection}>
           <div className="flex flex-col gap-6">
 
             {/* ── Primary License ── */}
@@ -753,7 +785,7 @@ export default function ApplicationForm() {
 
           </div>
       </Section>
-      <Section num={6} title="Work History" openSection={openSection} setOpenSection={setOpenSection}>
+      <Section num={6} totalSections={13} title="Work History" openSection={openSection} setOpenSection={setOpenSection}>
         <p className="text-slate-400 text-sm mb-2">List all relevant EMS/medical employment — most recent first.</p>
         {employers.map((em, i) => (
           <SubBlock
@@ -808,7 +840,7 @@ export default function ApplicationForm() {
         </SubBlock>
       </Section>
 
-      <Section num={7} title="EMS Experience" openSection={openSection} setOpenSection={setOpenSection}>
+      <Section num={7} totalSections={13} title="EMS Experience" openSection={openSection} setOpenSection={setOpenSection}>
         <SubBlock title="Years of Experience">
           <div className="grid sm:grid-cols-3 gap-4">
             <div>
@@ -827,7 +859,7 @@ export default function ApplicationForm() {
         </SubBlock>
       </Section>
 
-      <Section num={8} title="Driving History" openSection={openSection} setOpenSection={setOpenSection}>
+      <Section num={8} totalSections={13} title="Driving History" openSection={openSection} setOpenSection={setOpenSection}>
         <SubBlock title="Driving Questions">
           <div className="grid sm:grid-cols-2 gap-4">
             <YesNo name="valid_dl" label="Valid Driver's License?" />
@@ -843,7 +875,7 @@ export default function ApplicationForm() {
           <textarea name="driving_explain" rows={3} className={`${inputClass} resize-none`} placeholder="Provide details..." />
         </SubBlock>
       </Section>
-      <Section num={9} title="I Am Willing To Work" openSection={openSection} setOpenSection={setOpenSection}>
+      <Section num={9} totalSections={13} title="I Am Willing To Work" openSection={openSection} setOpenSection={setOpenSection}>
           <div className="grid sm:grid-cols-3 gap-4">
             {availability.map((item) => (
               <label key={item} className="flex items-center gap-4 p-3 bg-[#071428] border border-white/10 rounded-lg cursor-pointer hover:border-[#f0b429]/30 transition-colors">
@@ -853,7 +885,7 @@ export default function ApplicationForm() {
             ))}
           </div>
       </Section>
-      <Section num={10} title="Professional References" openSection={openSection} setOpenSection={setOpenSection}>
+      <Section num={10} totalSections={13} title="Professional References" openSection={openSection} setOpenSection={setOpenSection}>
         <p className="text-slate-400 text-sm mb-2">Minimum of 3 references required.</p>
         {references.map((r, i) => (
           <SubBlock
@@ -892,7 +924,7 @@ export default function ApplicationForm() {
         </SubBlock>
       </Section>
 
-      <Section num={11} title="Additional Information" openSection={openSection} setOpenSection={setOpenSection}>
+      <Section num={11} totalSections={13} title="Additional Information" openSection={openSection} setOpenSection={setOpenSection}>
         <SubBlock title="Why Millstadt EMS?">
           <textarea name="why_millstadt" rows={5} className={`${inputClass} resize-none`} placeholder="Tell us about yourself and why you want to join our team..." />
         </SubBlock>
@@ -903,7 +935,7 @@ export default function ApplicationForm() {
         </SubBlock>
       </Section>
 
-      <Section num={12} title="Attachments" openSection={openSection} setOpenSection={setOpenSection}>
+      <Section num={12} totalSections={13} title="Attachments" openSection={openSection} setOpenSection={setOpenSection}>
         <p className="text-slate-400 text-sm mb-2">Upload your licenses, certifications, and supporting documents. Multiple files accepted.</p>
         {[
           { name: "file_resume", label: "Resume / CV" },
@@ -924,7 +956,7 @@ export default function ApplicationForm() {
           </SubBlock>
         ))}
       </Section>
-      <Section num={13} title="Applicant Certification" openSection={openSection} setOpenSection={setOpenSection}>
+      <Section num={13} totalSections={13} title="Applicant Certification" openSection={openSection} setOpenSection={setOpenSection}>
           <p className="text-slate-400 text-sm leading-relaxed mb-6">
             I certify that all information provided in this application is true and complete to the best of my knowledge. I understand that falsification or omission of information may result in disqualification from consideration or termination of employment.
           </p>

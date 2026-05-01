@@ -3,6 +3,7 @@ import { google } from "googleapis";
 import { jsPDF } from "jspdf";
 import { createFormSubmission } from "@/lib/db";
 import { buildApplicationFlags } from "@/lib/application-flags";
+import { sendSms } from "@/lib/sms";
 
 export const runtime = "nodejs";
 // Multipart uploads + Gmail API can exceed the 10s default timeout
@@ -422,8 +423,10 @@ export async function POST(req: NextRequest) {
 
     // Flag for review: missing consents, missing license info, missing certs,
     // or concerning driving history → generate a red "FLAG FOR REVIEW" PDF.
+    let flagCount = 0;
     try {
       const flags = buildApplicationFlags(fields);
+      flagCount = flags.length;
       if (flags.length > 0) {
         const flagPdfBuffer = buildFlagPdf(fullName, fields.position || "Position Not Specified", flags);
         const flagPdfFilename = `FLAG FOR REVIEW — ${fullName.replace(/[^\w\s-]/g, "").trim() || "Applicant"}.pdf`;
@@ -449,6 +452,16 @@ export async function POST(req: NextRequest) {
     });
 
     await gmail.users.messages.send({ userId: "me", requestBody: { raw } });
+
+    // Send SMS notification to the hiring manager (best-effort — never block
+    // the response on Twilio).
+    try {
+      const flagText = flagCount === 1 ? "1 item" : `${flagCount} items`;
+      const smsBody = `A new employment application has been received at Millstadtems@gmail.com. There are ${flagText} flagged for review in this application.`;
+      await sendSms(smsBody, "+16188064539");
+    } catch (smsErr) {
+      console.error("[apply] SMS notification failed:", smsErr);
+    }
 
     return NextResponse.json({
       success: true,

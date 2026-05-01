@@ -5,11 +5,11 @@
  */
 import Twilio from "twilio";
 
-export async function sendSms(message: string): Promise<boolean> {
+export async function sendSms(message: string, toOverride?: string): Promise<boolean> {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken  = process.env.TWILIO_AUTH_TOKEN;
   const from       = process.env.TWILIO_FROM_NUMBER;
-  const to         = process.env.ADMIN_PHONE_NUMBER;
+  const to         = toOverride ?? process.env.ADMIN_PHONE_NUMBER;
 
   if (!accountSid || !authToken || !from || !to) {
     console.warn("[sms] Twilio not fully configured — skipping SMS");
