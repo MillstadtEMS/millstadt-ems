@@ -204,7 +204,7 @@ export default function ApplicationForm() {
       if (v instanceof File) totalBytes += v.size;
     }
     if (totalBytes > 4 * 1024 * 1024) {
-      setErrorMsg(`Attachments total ${(totalBytes / 1024 / 1024).toFixed(1)}MB — exceeds 4MB limit. Reduce sizes or email millstadtems@gmail.com directly.`);
+      setErrorMsg(`__TOO_LARGE__:${(totalBytes / 1024 / 1024).toFixed(1)}`);
       setStatus("error");
       return;
     }
@@ -233,7 +233,12 @@ export default function ApplicationForm() {
         setStatus("sent");
         return;
       }
-      setErrorMsg(data?.error || `Submission failed (${res.status}). Please try again or email millstadtems@gmail.com.`);
+      // Server rejected for size — show the friendly "email us" panel
+      if (res.status === 413 || /too large|payload/i.test(data?.error || "")) {
+        setErrorMsg(`__TOO_LARGE__:${(totalBytes / 1024 / 1024).toFixed(1)}`);
+      } else {
+        setErrorMsg(data?.error || `Submission failed (${res.status}). Please try again or email millstadtems@gmail.com.`);
+      }
       setStatus("error");
     } catch {
       setErrorMsg("Network error — could not reach the server. Try again or email millstadtems@gmail.com.");
@@ -782,7 +787,36 @@ export default function ApplicationForm() {
             </Link>
           </div>
 
-          {errorMsg && (
+          {errorMsg && errorMsg.startsWith("__TOO_LARGE__") && (
+            <div className="mt-6 p-6 bg-amber-950/30 border-2 border-amber-500/40">
+              <div className="flex items-start gap-3 mb-3">
+                <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current text-amber-400 shrink-0 mt-0.5">
+                  <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+                </svg>
+                <div>
+                  <div className="text-amber-300 font-black text-base uppercase tracking-wider">Files Too Large to Upload</div>
+                  <div className="text-amber-200/70 text-xs mt-1">Your attachments total {errorMsg.split(":")[1]}MB — our online form supports up to 4MB.</div>
+                </div>
+              </div>
+              <div className="bg-[#0d0d0d] border border-amber-500/30 p-5 mt-4">
+                <p className="text-slate-300 text-sm leading-relaxed mb-4">
+                  <span className="font-bold text-white">What to do:</span> please email your supporting documents directly to:
+                </p>
+                <a
+                  href="mailto:millstadtems@gmail.com?subject=Employment Application Documents"
+                  className="inline-block bg-[#f0b429] hover:bg-[#d9a320] text-[#040d1a] font-black text-base px-6 py-3 uppercase tracking-widest transition-colors"
+                >
+                  millstadtems@gmail.com
+                </a>
+                <p className="text-slate-500 text-xs leading-relaxed mt-4">
+                  Include your full name and the position you applied for in the email subject line so we can match it
+                  to your application. You can submit the form below without attachments — we will pair them up on our end.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {errorMsg && !errorMsg.startsWith("__TOO_LARGE__") && (
             <div className="mt-6 p-5 bg-red-900/20 border-l-4 border-red-500">
               <div className="text-red-300 font-bold text-sm mb-1">Submission Failed</div>
               <p className="text-red-200/80 text-sm leading-relaxed">{errorMsg}</p>
