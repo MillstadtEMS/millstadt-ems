@@ -22,12 +22,20 @@ export async function submitTestimonial(
 
   const name = anonymous ? null : (rawName || null);
 
+  let testimonial;
   try {
-    const testimonial = await addTestimonial({ message, name, anonymous });
-    await sendApprovalEmail(testimonial);
-    return { success: true };
+    testimonial = await addTestimonial({ message, name, anonymous });
   } catch (err) {
-    console.error("Testimonial submission error:", err);
-    return { error: "Something went wrong. Please try again or email us directly." };
+    console.error("Testimonial DB save failed:", err);
+    return { error: "Could not save your testimonial right now. Please try again in a moment." };
   }
+
+  // Email is best-effort — testimonial is already saved
+  try {
+    await sendApprovalEmail(testimonial);
+  } catch (err) {
+    console.error("Testimonial email failed (testimonial still saved):", err);
+  }
+
+  return { success: true };
 }

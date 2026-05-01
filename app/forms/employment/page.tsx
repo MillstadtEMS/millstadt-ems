@@ -123,7 +123,7 @@ export default function EmploymentPage() {
                 <div className="pt-5 border-t border-white/6">
                   <p className="text-slate-600 text-xs leading-relaxed">
                     Questions? Contact us at<br />
-                    <a href="tel:6182342021" className="text-[#f0b429] hover:text-[#f5c842] transition-colors">(618) 234-2021</a>
+                    <a href="tel:6184761201" className="text-[#f0b429] hover:text-[#f5c842] transition-colors">(618) 476-1201</a>
                   </p>
                 </div>
               </div>
