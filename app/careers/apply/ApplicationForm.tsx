@@ -5,16 +5,16 @@ import Image from "next/image";
 import Link from "next/link";
 
 const inputClass =
-  "w-full bg-[#040d1a] border border-white/15 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#f0b429]/60 transition-colors placeholder:text-slate-700";
-const labelClass = "block text-slate-400 text-[11px] font-black uppercase tracking-wider mb-2";
+  "w-full bg-[#040d1a] border border-white/20 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-[#f0b429]/70 transition-colors placeholder:text-slate-600";
+const labelClass = "block text-slate-200 text-xs font-black uppercase tracking-[0.14em] mb-3";
 const selectClass =
-  "w-full bg-[#040d1a] border border-white/15 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#f0b429]/60 transition-colors appearance-none";
+  "w-full bg-[#040d1a] border border-white/20 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-[#f0b429]/70 transition-colors appearance-none";
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <div className="flex items-center gap-3 pb-3 border-b border-[#f0b429]/30 mb-5">
+    <div className="flex items-center gap-3 pb-5 border-b border-[#f0b429]/30 mb-10">
       <span className="h-px w-6 bg-[#f0b429]" />
-      <h2 className="text-white font-black text-base uppercase tracking-[0.18em]">{title}</h2>
+      <h2 className="text-white font-black text-lg uppercase tracking-[0.18em]">{title}</h2>
     </div>
   );
 }
@@ -50,7 +50,10 @@ const defaultCerts: Cert[] = [
   { name: "FP-C / CCP-C", number: "", expiry: "" },
   { name: "CPI / De-escalation", number: "", expiry: "" },
   { name: "HazMat Awareness/Ops", number: "", expiry: "" },
-  { name: "FEMA / NIMS (100, 200, 700, 800)", number: "", expiry: "" },
+  { name: "FEMA NIMS IS-100", number: "", expiry: "" },
+  { name: "FEMA NIMS IS-200", number: "", expiry: "" },
+  { name: "FEMA NIMS IS-700", number: "", expiry: "" },
+  { name: "FEMA NIMS IS-800", number: "", expiry: "" },
 ];
 
 const defaultEmployer = (): Employer => ({ agency: "", title: "", from: "", to: "", type: "", supervisor: "", reason: "", duties: "" });
@@ -224,10 +227,10 @@ export default function ApplicationForm() {
     <form ref={formRef} onSubmit={handleSubmit} encType="multipart/form-data">
 
       {/* ── 1. Position Applied For ── */}
-      <div className="py-10 bg-[#040d1a]">
+      <div className="py-16 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Position Applied For" />
-          <div className="space-y-5">
+          <div className="space-y-8">
             <div>
               <label className={labelClass}>Position *</label>
               <div className="grid sm:grid-cols-2 gap-4">
@@ -267,13 +270,13 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-4 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-12 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 2. Personal Information ── */}
-      <div className="py-10 bg-[#071428]">
+      <div className="py-16 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Personal Information" />
-          <div className="space-y-5">
+          <div className="space-y-8">
           <div>
             <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">Legal Name</div>
             <div className="grid sm:grid-cols-3 gap-4">
@@ -336,13 +339,13 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-4 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-12 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 3. Eligibility & Background ── */}
-      <div className="py-10 bg-[#040d1a]">
+      <div className="py-16 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Eligibility & Background" />
-          <div className="space-y-5">
+          <div className="space-y-8">
             <div className="grid sm:grid-cols-2 gap-4">
               <YesNo name="authorized_us" label="Are you legally authorized to work in the U.S.? *" />
               <YesNo name="felony" label="Have you ever been convicted of a felony?" />
@@ -367,13 +370,13 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-4 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-12 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 4. Education ── */}
-      <div className="py-10 bg-[#071428]">
+      <div className="py-16 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Education" />
-          <div className="space-y-5">
+          <div className="space-y-8">
             <div>
               <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">High School</div>
               <div className="grid sm:grid-cols-2 gap-4">
@@ -428,10 +431,10 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-4 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-12 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 5. Licensure & Certifications ── */}
-      <div className="py-10 bg-[#040d1a]">
+      <div className="py-16 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Licensure & Certifications" />
           <div className="flex flex-col gap-6">
@@ -577,14 +580,14 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-4 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-12 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 6. Work History ── */}
-      <div className="py-10 bg-[#071428]">
+      <div className="py-16 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Work History" />
           <p className="text-slate-500 text-sm mb-12">List all relevant EMS/medical employment — most recent first.</p>
-        <div className="space-y-5">
+        <div className="space-y-8">
           {employers.map((em, i) => (
             <div key={i} className="p-5 bg-[#040d1a] border border-white/10 rounded-lg">
               <div className="flex items-center justify-between mb-10">
@@ -638,13 +641,13 @@ export default function ApplicationForm() {
         </div>
         </div>
       </div>
-      <div className="h-4 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-12 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 7. EMS Experience & Skills ── */}
-      <div className="py-10 bg-[#040d1a]">
+      <div className="py-16 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="EMS Experience & Skills" />
-          <div className="space-y-5">
+          <div className="space-y-8">
             <div className="grid sm:grid-cols-3 gap-4">
               <div>
                 <label className={labelClass}>Years of EMS Experience</label>
@@ -673,13 +676,13 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-4 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-12 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 8. Driving History ── */}
-      <div className="py-10 bg-[#071428]">
+      <div className="py-16 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Driving History" />
-          <div className="space-y-5">
+          <div className="space-y-8">
             <div className="grid sm:grid-cols-2 gap-4">
               <YesNo name="valid_dl" label="Valid Driver's License?" />
               <YesNo name="cdl" label="CDL (if applicable)?" />
@@ -694,10 +697,10 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-4 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-12 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 9. I Am Willing To Work ── */}
-      <div className="py-10 bg-[#040d1a]">
+      <div className="py-16 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="I Am Willing To Work" />
           <div className="grid sm:grid-cols-3 gap-4">
@@ -710,14 +713,14 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-4 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-12 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 10. Professional References ── */}
-      <div className="py-10 bg-[#071428]">
+      <div className="py-16 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Professional References" />
           <p className="text-slate-500 text-sm mb-12">Minimum of 3 references required.</p>
-          <div className="space-y-5">
+          <div className="space-y-8">
             {references.map((r, i) => (
               <div key={i} className="p-5 bg-[#040d1a] border border-white/10 rounded-lg">
                 <div className="flex items-center justify-between mb-10">
@@ -753,13 +756,13 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-4 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-12 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 11. Additional Information ── */}
-      <div className="py-10 bg-[#040d1a]">
+      <div className="py-16 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Additional Information" />
-          <div className="space-y-5">
+          <div className="space-y-8">
             <div>
               <label className={labelClass}>Why do you want to work for Millstadt Ambulance Service?</label>
               <textarea name="why_millstadt" rows={5} className={`${inputClass} resize-none`} placeholder="Tell us about yourself and why you want to join our team..." />
@@ -775,14 +778,14 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-4 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-12 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 12. Attachments ── */}
-      <div className="py-10 bg-[#071428]">
+      <div className="py-16 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Attachments" />
           <p className="text-slate-500 text-sm mb-12">Upload copies of your licenses, certifications, and supporting documents. Multiple files accepted. All documents will be attached to your application email.</p>
-          <div className="space-y-5">
+          <div className="space-y-8">
             {[
               { name: "file_resume", label: "Resume / CV" },
               { name: "file_cover", label: "Cover Letter" },
@@ -805,10 +808,10 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-4 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-12 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 13. Applicant Certification ── */}
-      <div className="py-10 bg-[#040d1a]">
+      <div className="py-16 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Applicant Certification" />
           <p className="text-slate-400 text-sm leading-relaxed mb-6">
@@ -822,10 +825,10 @@ export default function ApplicationForm() {
           </label>
         </div>
       </div>
-      <div className="h-4 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-12 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* Submit */}
-      <div className="py-10 bg-[#071428]">
+      <div className="py-16 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <div className="flex flex-col gap-4 max-w-sm">
             <button

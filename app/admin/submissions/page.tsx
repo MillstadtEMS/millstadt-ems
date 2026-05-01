@@ -25,6 +25,14 @@ const TYPE_META: Record<string, { short: string; icon: string; color: string }> 
   "Event Appearance Request":         { short: "Event Appearance",    icon: "📅", color: "text-amber-400 bg-amber-400/10 border-amber-400/20" },
   "Employment Application":           { short: "Employment",          icon: "📋", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
 };
+// Always show these categories on the admin index, even when there are 0 submissions
+const EXPECTED_TYPES = [
+  "Employment Application",
+  "Ride Along Request",
+  "Event Appearance Request",
+  "Birthday Party Appearance Request",
+  "Birthday Party at Station Request",
+];
 function getMeta(t: string) { return TYPE_META[t] ?? { short: t, icon: "📄", color: "text-slate-400 bg-white/5 border-white/10" }; }
 
 // First name from fields
@@ -53,6 +61,14 @@ function SubmissionsContent() {
     }
   }, [filterType]);
 
+  // Merge actual categories (with submissions) with expected categories (zero state)
+  const categoriesByType = new Map(categories.map(c => [c.formType, c]));
+  const allCategories: Category[] = [
+    ...EXPECTED_TYPES.map(t => categoriesByType.get(t) ?? { formType: t, total: 0, unread: 0, latest: null }),
+    // Add any types we got from the DB that aren't in EXPECTED_TYPES (custom/legacy)
+    ...categories.filter(c => !EXPECTED_TYPES.includes(c.formType)),
+  ];
+
   const totalUnread = categories.reduce((n, c) => n + c.unread, 0);
   const meta = filterType ? getMeta(filterType) : null;
 
@@ -68,24 +84,23 @@ function SubmissionsContent() {
           </div>
           <p className="text-slate-400 text-sm mt-2">All website form submissions, grouped by type.</p>
         </div>
-        {loading ? <div className="text-slate-500 text-sm py-12 text-center">Loading…</div> : categories.length === 0 ? (
-          <div className="bg-[#071428] border border-white/10 rounded-2xl p-12 text-center">
-            <p className="text-slate-500 text-sm">No form submissions yet.</p>
-          </div>
-        ) : (
+        {loading ? <div className="text-slate-500 text-sm py-12 text-center">Loading…</div> : (
           <div className="grid sm:grid-cols-2 gap-4">
-            {categories.map(cat => {
+            {allCategories.map(cat => {
               const m = getMeta(cat.formType);
+              const isEmpty = cat.total === 0;
               return (
                 <Link key={cat.formType} href={`/admin/submissions?type=${encodeURIComponent(cat.formType)}`}
-                  className="group bg-[#071428] border border-white/10 hover:border-[#f0b429]/30 rounded-2xl p-6 flex items-start gap-4 transition-colors">
+                  className={`group bg-[#071428] border border-white/10 hover:border-[#f0b429]/30 rounded-2xl p-6 flex items-start gap-4 transition-colors ${isEmpty ? "opacity-60 hover:opacity-100" : ""}`}>
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl border ${m.color}`}>{m.icon}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-white font-bold text-base leading-tight">{m.short}</span>
                       {cat.unread > 0 && <span className="bg-[#f0b429] text-[#020810] text-[10px] font-black px-1.5 py-0.5 rounded-full">{cat.unread}</span>}
                     </div>
-                    <div className="text-slate-500 text-xs">{cat.total} total · latest {timeAgo(cat.latest)}</div>
+                    <div className="text-slate-500 text-xs">
+                      {isEmpty ? "No submissions yet" : `${cat.total} total · latest ${timeAgo(cat.latest)}`}
+                    </div>
                   </div>
                   <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current text-slate-700 group-hover:text-slate-400 transition-colors shrink-0 mt-1"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
                 </Link>
