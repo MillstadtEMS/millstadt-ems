@@ -42,6 +42,15 @@ const NAV = [
     ),
   },
   {
+    label: "Applicants",
+    href: "/admin/applicants",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+        <path d="M9 11.75c-1.24 0-2.25 1.01-2.25 2.25s1.01 2.25 2.25 2.25 2.25-1.01 2.25-2.25S10.24 11.75 9 11.75zM18 11h-4.5c-.83 0-1.5.67-1.5 1.5V18h7v-5.5c0-.83-.67-1.5-1.5-1.5zM18 5h-2V3H6v2H4v16h16V5h-2zm0 14H6V7h12v12zM9 14c0-.55-.45-1-1-1s-1 .45-1 1 .45 1 1 1 1-.45 1-1z"/>
+      </svg>
+    ),
+  },
+  {
     label: "Form Submissions",
     href: "/admin/submissions",
     icon: (
