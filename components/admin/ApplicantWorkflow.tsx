@@ -81,28 +81,28 @@ export default function ApplicantWorkflowPanel({
         </div>
       )}
 
-      {/* Stage panels — show based on current status */}
+      {/* Stage panels — flat layout, always expanded for the relevant status */}
       <div className="divide-y divide-white/5">
         {(status === "Interview Process" || status === "Tentative Hire" || status === "Hired") && (
-          <CollapsibleSection title="📋 Interview Process" defaultOpen={status === "Interview Process"} progress={interviewProgress(workflow.interview)}>
+          <FlatSection title="📋 Interview Process" progress={interviewProgress(workflow.interview)}>
             <InterviewChecklist workflow={workflow} busy={busy} onSave={(patch) => api({ interview: patch })} />
-          </CollapsibleSection>
+          </FlatSection>
         )}
 
         {(status === "Interview Process" || status === "Tentative Hire" || status === "Hired") && (
-          <CollapsibleSection title="⭐ Interview Evaluation" defaultOpen={false} progress={evaluationProgress(workflow.evaluation)}>
+          <FlatSection title="⭐ Interview Evaluation" progress={evaluationProgress(workflow.evaluation)}>
             <EvaluationForm workflow={workflow} busy={busy} onSave={(patch) => api({ evaluation: patch })} onDecision={(decision) => api({ status: decision })} />
-          </CollapsibleSection>
+          </FlatSection>
         )}
 
         {(status === "Tentative Hire" || status === "Hired") && (
-          <CollapsibleSection title="🧾 New Hire Onboarding" defaultOpen={status === "Tentative Hire"} progress={onboardingProgress(workflow.onboarding)}>
+          <FlatSection title="🧾 New Hire Onboarding" progress={onboardingProgress(workflow.onboarding)}>
             <OnboardingChecklist workflow={workflow} busy={busy} onSave={(patch) => api({ onboarding: patch })} onComplete={() => api({ status: "Hired" })} />
-          </CollapsibleSection>
+          </FlatSection>
         )}
 
         {workflow.statusHistory.length > 0 && (
-          <CollapsibleSection title="📜 Status History" defaultOpen={false}>
+          <FlatSection title="📜 Status History">
             <div className="px-6 py-4">
               <ul className="space-y-2">
                 {workflow.statusHistory.slice().reverse().map((h, i) => (
@@ -117,7 +117,7 @@ export default function ApplicantWorkflowPanel({
                 ))}
               </ul>
             </div>
-          </CollapsibleSection>
+          </FlatSection>
         )}
       </div>
     </div>
@@ -176,20 +176,17 @@ function StatusActions({
   );
 }
 
-/* ── Collapsible section ─────────────────────────────────────────── */
-function CollapsibleSection({
-  title, defaultOpen, progress, children,
+/* ── Flat section header (always expanded, no toggle) ────────────── */
+function FlatSection({
+  title, progress, children,
 }: {
   title: string;
-  defaultOpen?: boolean;
   progress?: { done: number; total: number; pct: number };
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(!!defaultOpen);
   return (
     <div>
-      <button type="button" onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-3 px-6 py-4 hover:bg-white/[0.03] transition-colors text-left">
+      <div className="flex w-full items-center gap-3 px-6 py-4 bg-[#040d1a]/40 border-b border-white/5">
         <span className="flex-1 font-black text-sm uppercase tracking-wider text-white">{title}</span>
         {progress && (
           <span className="flex items-center gap-2">
@@ -199,11 +196,8 @@ function CollapsibleSection({
             <span className="text-xs font-mono font-bold text-slate-400 tabular-nums">{progress.done}/{progress.total}</span>
           </span>
         )}
-        <svg viewBox="0 0 24 24" className={`w-5 h-5 fill-current text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}>
-          <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
-        </svg>
-      </button>
-      {open && <div>{children}</div>}
+      </div>
+      <div>{children}</div>
     </div>
   );
 }
