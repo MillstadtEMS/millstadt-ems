@@ -28,10 +28,7 @@ export default function ApplyPage() {
         </div>
       </section>
 
-      {/* Same gap as between form sections */}
-      <div className="h-8 bg-gradient-to-b from-[#040d1a] to-[#040d1a]" />
-
-      {/* Application Form */}
+      {/* Application Form (accordion sections) */}
       <ApplicationForm />
 
       {/* ── VOID ── */}

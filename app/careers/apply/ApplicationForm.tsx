@@ -19,6 +19,48 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
+function Section({
+  num, title, openSection, setOpenSection, children,
+}: {
+  num: number;
+  title: string;
+  openSection: number;
+  setOpenSection: (n: number) => void;
+  children: React.ReactNode;
+}) {
+  const isOpen = openSection === num;
+  return (
+    <div className="border-b border-white/10 bg-[#040d1a]">
+      <button
+        type="button"
+        onClick={() => setOpenSection(isOpen ? 0 : num)}
+        className={`group w-full flex items-center gap-4 px-6 py-5 text-left transition-colors ${
+          isOpen ? "bg-[#071428]" : "hover:bg-[#071428]/50"
+        }`}
+      >
+        <span className={`flex items-center justify-center w-10 h-10 rounded-full font-black text-sm border-2 transition-colors ${
+          isOpen
+            ? "bg-[#f0b429] border-[#f0b429] text-[#040d1a]"
+            : "bg-transparent border-white/20 text-slate-400 group-hover:border-[#f0b429]/40 group-hover:text-[#f0b429]"
+        }`}>{num}</span>
+        <h2 className={`flex-1 font-black text-lg uppercase tracking-[0.16em] transition-colors ${
+          isOpen ? "text-[#f0b429]" : "text-white group-hover:text-[#f0b429]"
+        }`}>{title}</h2>
+        <svg viewBox="0 0 24 24" className={`w-6 h-6 fill-current transition-transform ${
+          isOpen ? "rotate-180 text-[#f0b429]" : "text-slate-500"
+        }`}>
+          <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z" />
+        </svg>
+      </button>
+      {isOpen && (
+        <div className="px-6 pb-10 pt-2 max-w-4xl mx-auto">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function YesNo({ name, label }: { name: string; label: string }) {
   return (
     <div>
@@ -87,6 +129,7 @@ export default function ApplicationForm() {
   const [employers, setEmployers] = useState<Employer[]>([defaultEmployer(), defaultEmployer(), defaultEmployer()]);
   const [references, setReferences] = useState<Reference[]>([defaultReference(), defaultReference(), defaultReference()]);
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [openSection, setOpenSection] = useState(1);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -225,11 +268,7 @@ export default function ApplicationForm() {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} encType="multipart/form-data">
-
-      {/* ── 1. Position Applied For ── */}
-      <div className="py-10 bg-[#040d1a]">
-        <div className="wrap max-w-4xl">
-          <SectionHeader title="Position Applied For" />
+      <Section num={1} title="Position Applied For" openSection={openSection} setOpenSection={setOpenSection}>
           <div className="space-y-24">            <div>
               <label className={labelClass}>Position *</label>
               <div className="grid sm:grid-cols-2 gap-4">
@@ -267,14 +306,8 @@ export default function ApplicationForm() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      <div className="h-8 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
-
-      {/* ── 2. Personal Information ── */}
-      <div className="py-10 bg-[#071428]">
-        <div className="wrap max-w-4xl">
-          <SectionHeader title="Personal Information" />
+      </Section>
+      <Section num={2} title="Personal Information" openSection={openSection} setOpenSection={setOpenSection}>
           <div className="space-y-24">          <div>
             <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">Legal Name</div>
             <div className="grid sm:grid-cols-3 gap-4">
@@ -335,14 +368,8 @@ export default function ApplicationForm() {
             </div>
           </div>
           </div>
-        </div>
-      </div>
-      <div className="h-8 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
-
-      {/* ── 3. Eligibility & Background ── */}
-      <div className="py-10 bg-[#040d1a]">
-        <div className="wrap max-w-4xl">
-          <SectionHeader title="Eligibility & Background" />
+      </Section>
+      <Section num={3} title="Eligibility & Background" openSection={openSection} setOpenSection={setOpenSection}>
           <div className="space-y-24">            <div className="grid sm:grid-cols-2 gap-4">
               <YesNo name="authorized_us" label="Are you legally authorized to work in the U.S.? *" />
               <YesNo name="felony" label="Have you ever been convicted of a felony?" />
@@ -365,14 +392,8 @@ export default function ApplicationForm() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      <div className="h-8 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
-
-      {/* ── 4. Education ── */}
-      <div className="py-10 bg-[#071428]">
-        <div className="wrap max-w-4xl">
-          <SectionHeader title="Education" />
+      </Section>
+      <Section num={4} title="Education" openSection={openSection} setOpenSection={setOpenSection}>
           <div className="space-y-24">            <div>
               <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">High School</div>
               <div className="grid sm:grid-cols-2 gap-4">
@@ -425,14 +446,8 @@ export default function ApplicationForm() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      <div className="h-8 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
-
-      {/* ── 5. Licensure & Certifications ── */}
-      <div className="py-10 bg-[#040d1a]">
-        <div className="wrap max-w-4xl">
-          <SectionHeader title="Licensure & Certifications" />
+      </Section>
+      <Section num={5} title="Licensure & Certifications" openSection={openSection} setOpenSection={setOpenSection}>
           <div className="flex flex-col gap-6">
 
             {/* ── Primary License ── */}
@@ -574,14 +589,8 @@ export default function ApplicationForm() {
             </div>
 
           </div>
-        </div>
-      </div>
-      <div className="h-8 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
-
-      {/* ── 6. Work History ── */}
-      <div className="py-10 bg-[#071428]">
-        <div className="wrap max-w-4xl">
-          <SectionHeader title="Work History" />
+      </Section>
+      <Section num={6} title="Work History" openSection={openSection} setOpenSection={setOpenSection}>
           <p className="text-slate-500 text-sm mb-12">List all relevant EMS/medical employment — most recent first.</p>
         <div className="space-y-24">          {employers.map((em, i) => (
             <div key={i} className="p-10 bg-[#040d1a] border border-white/10 rounded-lg">
@@ -634,14 +643,8 @@ export default function ApplicationForm() {
             ADD ANOTHER EMPLOYER
           </button>
         </div>
-        </div>
-      </div>
-      <div className="h-8 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
-
-      {/* ── 7. EMS Experience & Skills ── */}
-      <div className="py-10 bg-[#040d1a]">
-        <div className="wrap max-w-4xl">
-          <SectionHeader title="EMS Experience & Skills" />
+      </Section>
+      <Section num={7} title="EMS Experience & Skills" openSection={openSection} setOpenSection={setOpenSection}>
           <div className="space-y-24">            <div className="grid sm:grid-cols-3 gap-4">
               <div>
                 <label className={labelClass}>Years of EMS Experience</label>
@@ -668,14 +671,8 @@ export default function ApplicationForm() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      <div className="h-8 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
-
-      {/* ── 8. Driving History ── */}
-      <div className="py-10 bg-[#071428]">
-        <div className="wrap max-w-4xl">
-          <SectionHeader title="Driving History" />
+      </Section>
+      <Section num={8} title="Driving History" openSection={openSection} setOpenSection={setOpenSection}>
           <div className="space-y-24">            <div className="grid sm:grid-cols-2 gap-4">
               <YesNo name="valid_dl" label="Valid Driver's License?" />
               <YesNo name="cdl" label="CDL (if applicable)?" />
@@ -688,14 +685,8 @@ export default function ApplicationForm() {
               <textarea name="driving_explain" rows={3} className={`${inputClass} resize-none`} placeholder="Provide details..." />
             </div>
           </div>
-        </div>
-      </div>
-      <div className="h-8 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
-
-      {/* ── 9. I Am Willing To Work ── */}
-      <div className="py-10 bg-[#040d1a]">
-        <div className="wrap max-w-4xl">
-          <SectionHeader title="I Am Willing To Work" />
+      </Section>
+      <Section num={9} title="I Am Willing To Work" openSection={openSection} setOpenSection={setOpenSection}>
           <div className="grid sm:grid-cols-3 gap-4">
             {availability.map((item) => (
               <label key={item} className="flex items-center gap-4 p-3 bg-[#071428] border border-white/10 rounded-lg cursor-pointer hover:border-[#f0b429]/30 transition-colors">
@@ -704,14 +695,8 @@ export default function ApplicationForm() {
               </label>
             ))}
           </div>
-        </div>
-      </div>
-      <div className="h-8 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
-
-      {/* ── 10. Professional References ── */}
-      <div className="py-10 bg-[#071428]">
-        <div className="wrap max-w-4xl">
-          <SectionHeader title="Professional References" />
+      </Section>
+      <Section num={10} title="Professional References" openSection={openSection} setOpenSection={setOpenSection}>
           <p className="text-slate-500 text-sm mb-12">Minimum of 3 references required.</p>
           <div className="space-y-24">            {references.map((r, i) => (
               <div key={i} className="p-10 bg-[#040d1a] border border-white/10 rounded-lg">
@@ -746,14 +731,8 @@ export default function ApplicationForm() {
               ADD ANOTHER REFERENCE
             </button>
           </div>
-        </div>
-      </div>
-      <div className="h-8 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
-
-      {/* ── 11. Additional Information ── */}
-      <div className="py-10 bg-[#040d1a]">
-        <div className="wrap max-w-4xl">
-          <SectionHeader title="Additional Information" />
+      </Section>
+      <Section num={11} title="Additional Information" openSection={openSection} setOpenSection={setOpenSection}>
           <div className="space-y-24">            <div>
               <label className={labelClass}>Why do you want to work for Millstadt Ambulance Service?</label>
               <textarea name="why_millstadt" rows={5} className={`${inputClass} resize-none`} placeholder="Tell us about yourself and why you want to join our team..." />
@@ -767,14 +746,8 @@ export default function ApplicationForm() {
               <textarea name="teamwork" rows={5} className={`${inputClass} resize-none`} placeholder="Describe the situation and your role on the team..." />
             </div>
           </div>
-        </div>
-      </div>
-      <div className="h-8 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
-
-      {/* ── 12. Attachments ── */}
-      <div className="py-10 bg-[#071428]">
-        <div className="wrap max-w-4xl">
-          <SectionHeader title="Attachments" />
+      </Section>
+      <Section num={12} title="Attachments" openSection={openSection} setOpenSection={setOpenSection}>
           <p className="text-slate-500 text-sm mb-12">Upload copies of your licenses, certifications, and supporting documents. Multiple files accepted. All documents will be attached to your application email.</p>
           <div className="space-y-24">            {[
               { name: "file_resume", label: "Resume / CV" },
@@ -796,14 +769,8 @@ export default function ApplicationForm() {
               </div>
             ))}
           </div>
-        </div>
-      </div>
-      <div className="h-8 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
-
-      {/* ── 13. Applicant Certification ── */}
-      <div className="py-10 bg-[#040d1a]">
-        <div className="wrap max-w-4xl">
-          <SectionHeader title="Applicant Certification" />
+      </Section>
+      <Section num={13} title="Applicant Certification" openSection={openSection} setOpenSection={setOpenSection}>
           <p className="text-slate-400 text-sm leading-relaxed mb-6">
             I certify that all information provided in this application is true and complete to the best of my knowledge. I understand that falsification or omission of information may result in disqualification from consideration or termination of employment.
           </p>
@@ -813,9 +780,7 @@ export default function ApplicationForm() {
               I certify the above and agree that all information is true and complete. I consent to the background, drug, and driving record checks I selected above.
             </span>
           </label>
-        </div>
-      </div>
-      <div className="h-8 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      </Section>
 
       {/* Submit */}
       <div className="py-10 bg-[#071428]">
@@ -849,7 +814,6 @@ export default function ApplicationForm() {
           </p>
         </div>
       </div>
-
     </form>
   );
 }
