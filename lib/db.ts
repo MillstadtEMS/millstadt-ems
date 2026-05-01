@@ -550,3 +550,152 @@ export async function getSubmissionCategories(): Promise<SubmissionCategory[]> {
     latest: r.latest ? (r.latest instanceof Date ? r.latest.toISOString() : String(r.latest)) : null,
   }));
 }
+
+// ── Applicant workflow ────────────────────────────────────────────────────
+import type {
+  ApplicantWorkflow,
+  ApplicantStatus,
+  StatusHistoryEntry,
+  InterviewData,
+  EvaluationData,
+  OnboardingData,
+} from "./applicant-workflow";
+
+function toWorkflow(r: Record<string, unknown>): ApplicantWorkflow {
+  return {
+    submissionId: r.submission_id as string,
+    status: (r.status as string) as ApplicantStatus,
+    statusHistory: (r.status_history as StatusHistoryEntry[]) ?? [],
+    interview: (r.interview as InterviewData) ?? {},
+    evaluation: (r.evaluation as EvaluationData) ?? {},
+    onboarding: (r.onboarding as OnboardingData) ?? {},
+    interviewEmailSentAt: r.interview_email_sent_at
+      ? (r.interview_email_sent_at instanceof Date
+          ? (r.interview_email_sent_at as Date).toISOString()
+          : String(r.interview_email_sent_at))
+      : null,
+    createdAt: r.created_at instanceof Date ? (r.created_at as Date).toISOString() : String(r.created_at),
+    updatedAt: r.updated_at instanceof Date ? (r.updated_at as Date).toISOString() : String(r.updated_at),
+  };
+}
+
+export async function getApplicantWorkflow(submissionId: string): Promise<ApplicantWorkflow | null> {
+  const db = sql();
+  const rows = await db`SELECT * FROM applicant_workflow WHERE submission_id = ${submissionId}`;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (!(rows as any[]).length) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return toWorkflow((rows as any[])[0]);
+}
+
+export async function getOrCreateApplicantWorkflow(submissionId: string): Promise<ApplicantWorkflow> {
+  const existing = await getApplicantWorkflow(submissionId);
+  if (existing) return existing;
+  const db = sql();
+  await db`INSERT INTO applicant_workflow (submission_id) VALUES (${submissionId}) ON CONFLICT DO NOTHING`;
+  const created = await getApplicantWorkflow(submissionId);
+  if (!created) throw new Error("Failed to create applicant workflow");
+  return created;
+}
+
+export async function updateApplicantStatus(
+  submissionId: string,
+  newStatus: ApplicantStatus,
+  actor?: string,
+  note?: string,
+): Promise<ApplicantWorkflow> {
+  const current = await getOrCreateApplicantWorkflow(submissionId);
+  if (current.status === newStatus) return current; // no-op
+
+  const entry: StatusHistoryEntry = {
+    from: current.status,
+    to: newStatus,
+    at: new Date().toISOString(),
+    actor,
+    note,
+  };
+  const newHistory = [...(current.statusHistory ?? []), entry];
+
+  const db = sql();
+  await db`
+    UPDATE applicant_workflow
+    SET status = ${newStatus},
+        status_history = ${JSON.stringify(newHistory)}::jsonb,
+        updated_at = NOW()
+    WHERE submission_id = ${submissionId}
+  `;
+  const updated = await getApplicantWorkflow(submissionId);
+  if (!updated) throw new Error("Workflow disappeared");
+  return updated;
+}
+
+export async function updateApplicantInterview(
+  submissionId: string,
+  patch: Partial<InterviewData>,
+): Promise<ApplicantWorkflow> {
+  const current = await getOrCreateApplicantWorkflow(submissionId);
+  const merged = { ...current.interview, ...patch };
+  const db = sql();
+  await db`
+    UPDATE applicant_workflow
+    SET interview = ${JSON.stringify(merged)}::jsonb,
+        updated_at = NOW()
+    WHERE submission_id = ${submissionId}
+  `;
+  const updated = await getApplicantWorkflow(submissionId);
+  if (!updated) throw new Error("Workflow disappeared");
+  return updated;
+}
+
+export async function updateApplicantEvaluation(
+  submissionId: string,
+  patch: Partial<EvaluationData>,
+): Promise<ApplicantWorkflow> {
+  const current = await getOrCreateApplicantWorkflow(submissionId);
+  const merged = { ...current.evaluation, ...patch };
+  const db = sql();
+  await db`
+    UPDATE applicant_workflow
+    SET evaluation = ${JSON.stringify(merged)}::jsonb,
+        updated_at = NOW()
+    WHERE submission_id = ${submissionId}
+  `;
+  const updated = await getApplicantWorkflow(submissionId);
+  if (!updated) throw new Error("Workflow disappeared");
+  return updated;
+}
+
+export async function updateApplicantOnboarding(
+  submissionId: string,
+  patch: Partial<OnboardingData>,
+): Promise<ApplicantWorkflow> {
+  const current = await getOrCreateApplicantWorkflow(submissionId);
+  const merged = { ...current.onboarding, ...patch };
+  const db = sql();
+  await db`
+    UPDATE applicant_workflow
+    SET onboarding = ${JSON.stringify(merged)}::jsonb,
+        updated_at = NOW()
+    WHERE submission_id = ${submissionId}
+  `;
+  const updated = await getApplicantWorkflow(submissionId);
+  if (!updated) throw new Error("Workflow disappeared");
+  return updated;
+}
+
+export async function markInterviewEmailSent(submissionId: string): Promise<void> {
+  const db = sql();
+  await db`
+    UPDATE applicant_workflow
+    SET interview_email_sent_at = NOW(),
+        updated_at = NOW()
+    WHERE submission_id = ${submissionId}
+  `;
+}
+
+export async function getAllApplicantWorkflows(): Promise<ApplicantWorkflow[]> {
+  const db = sql();
+  const rows = await db`SELECT * FROM applicant_workflow ORDER BY updated_at DESC`;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (rows as any[]).map(toWorkflow);
+}

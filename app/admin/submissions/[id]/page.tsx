@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { buildApplicationFlags } from "@/lib/application-flags";
+import ApplicantWorkflowPanel from "@/components/admin/ApplicantWorkflow";
+import type { ApplicantWorkflow } from "@/lib/applicant-workflow";
 
 interface Submission { id: string; formType: string; fields: Record<string, string | string[]>; submittedAt: string; readAt: string | null; }
 
@@ -18,6 +20,7 @@ function formatKey(key: string) {
 export default function SubmissionDetail() {
   const { id } = useParams<{ id: string }>();
   const [sub, setSub] = useState<Submission | null>(null);
+  const [workflow, setWorkflow] = useState<ApplicantWorkflow | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
 
@@ -30,6 +33,13 @@ export default function SubmissionDetail() {
         // Mark as read
         if (data && !data.readAt) {
           await fetch("/api/admin/submissions", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+        }
+        // Load the applicant workflow if this is an Employment Application
+        if (data?.formType === "Employment Application") {
+          fetch(`/api/admin/applicants/${id}`)
+            .then(r => r.json())
+            .then(d => { if (d?.workflow) setWorkflow(d.workflow); })
+            .catch(() => {});
         }
       })
       .catch(() => setLoading(false));
@@ -486,6 +496,11 @@ export default function SubmissionDetail() {
             </div>
           </div>
         </div>
+
+        {/* ── Hiring Workflow (Employment Applications only) ── */}
+        {workflow && sub.formType === "Employment Application" && (
+          <ApplicantWorkflowPanel initialWorkflow={workflow} submissionId={sub.id} />
+        )}
 
         {/* ── Flag for review banner — prominent at the top ── */}
         {flags.length > 0 && (

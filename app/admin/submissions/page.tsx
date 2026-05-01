@@ -49,13 +49,25 @@ function SubmissionsContent() {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [workflowMap, setWorkflowMap] = useState<Record<string, { status: string }>>({});
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
     if (filterType) {
-      fetch(`/api/admin/submissions?type=${encodeURIComponent(filterType)}`)
-        .then(r => r.json()).then(d => { setSubmissions(Array.isArray(d) ? d : []); setLoading(false); });
+      Promise.all([
+        fetch(`/api/admin/submissions?type=${encodeURIComponent(filterType)}`).then(r => r.json()),
+        filterType === "Employment Application"
+          ? fetch("/api/admin/applicants").then(r => r.json())
+          : Promise.resolve({ byId: {}, counts: {} }),
+      ]).then(([subs, wfData]) => {
+        setSubmissions(Array.isArray(subs) ? subs : []);
+        setWorkflowMap(wfData?.byId ?? {});
+        setStatusCounts(wfData?.counts ?? {});
+        setLoading(false);
+      });
     } else {
       fetch("/api/admin/submissions")
         .then(r => r.json()).then(d => { setCategories(Array.isArray(d) ? d : []); setLoading(false); });
@@ -126,14 +138,49 @@ function SubmissionsContent() {
         <p className="text-slate-400 text-sm mt-1">{submissions.length} submission{submissions.length !== 1 ? "s" : ""}</p>
       </div>
 
+      {/* Status filter pills (Employment Application only) */}
+      {filterType === "Employment Application" && Object.keys(statusCounts).length > 0 && (
+        <div className="mb-6 flex flex-wrap gap-2">
+          {[
+            { key: "all", label: "All" },
+            { key: "Applied", label: "Applied" },
+            { key: "Waitlisted", label: "Waitlisted" },
+            { key: "Interview Process", label: "Interview" },
+            { key: "Tentative Hire", label: "Tentative Hire" },
+            { key: "Hired", label: "Hired" },
+            { key: "Denied", label: "Denied" },
+          ].map(s => {
+            const count = s.key === "all" ? submissions.length : (statusCounts[s.key] ?? 0);
+            const active = statusFilter === s.key;
+            return (
+              <button key={s.key} type="button" onClick={() => setStatusFilter(s.key)}
+                className={`rounded-lg border-2 px-3 py-1.5 text-xs font-black uppercase tracking-wider transition ${
+                  active
+                    ? "border-[#f0b429] bg-[#f0b429] text-[#040d1a]"
+                    : "border-white/15 bg-[#071428] text-slate-300 hover:border-[#f0b429]/40"
+                }`}>
+                {s.label} <span className="ml-1 opacity-70">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {loading ? <div className="text-slate-500 text-sm py-12 text-center">Loading…</div> : submissions.length === 0 ? (
         <div className="bg-[#071428] border border-white/10 rounded-2xl p-12 text-center">
           <p className="text-slate-500 text-sm">No submissions yet.</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {submissions.map(sub => {
+          {submissions
+            .filter((sub) => {
+              if (statusFilter === "all" || filterType !== "Employment Application") return true;
+              const wfStatus = workflowMap[sub.id]?.status ?? "Applied";
+              return wfStatus === statusFilter;
+            })
+            .map(sub => {
             const flagCount = sub.formType === "Employment Application" ? buildApplicationFlags(sub.fields).length : 0;
+            const wfStatus = sub.formType === "Employment Application" ? (workflowMap[sub.id]?.status ?? "Applied") : null;
             return (
             <Link key={sub.id} href={`/admin/submissions/${sub.id}`}
               className={`group flex items-center gap-4 border rounded-2xl px-6 py-5 transition-colors ${
@@ -150,6 +197,16 @@ function SubmissionsContent() {
                       <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
                       {flagCount} Flag{flagCount === 1 ? "" : "s"}
                     </span>
+                  )}
+                  {wfStatus && wfStatus !== "Applied" && (
+                    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wider border ${
+                      wfStatus === "Hired" ? "bg-emerald-600/20 border-emerald-500/40 text-emerald-200"
+                      : wfStatus === "Tentative Hire" ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
+                      : wfStatus === "Interview Process" ? "bg-purple-500/15 border-purple-500/40 text-purple-300"
+                      : wfStatus === "Waitlisted" ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
+                      : wfStatus === "Denied" ? "bg-red-500/15 border-red-500/40 text-red-300"
+                      : "bg-slate-500/15 border-slate-500/40 text-slate-300"
+                    }`}>{wfStatus}</span>
                   )}
                 </div>
                 <div className="text-slate-500 text-xs">{fmtDate(sub.submittedAt)}</div>
