@@ -130,8 +130,30 @@ export default function ApplicationForm() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("sending");
+    setErrorMsg("");
 
     const fd = new FormData(e.currentTarget);
+
+    // Pre-flight: check total file size before sending
+    let totalBytes = 0;
+    const oversizedFiles: string[] = [];
+    for (const [, value] of fd.entries()) {
+      if (value instanceof File && value.size > 0) {
+        totalBytes += value.size;
+        if (value.size > 4 * 1024 * 1024) oversizedFiles.push(`${value.name} (${(value.size / 1024 / 1024).toFixed(1)}MB)`);
+      }
+    }
+
+    const MAX = 4 * 1024 * 1024;
+    if (totalBytes > MAX) {
+      setErrorMsg(
+        `Your attachments total ${(totalBytes / 1024 / 1024).toFixed(1)}MB — that exceeds the 4MB upload limit.${
+          oversizedFiles.length > 0 ? ` Large files: ${oversizedFiles.join(", ")}.` : ""
+        } Please reduce file sizes (PDF compression or smaller images), or submit your application without attachments and email them separately to millstadtems@gmail.com.`
+      );
+      setStatus("error");
+      return;
+    }
 
     // Serialize dynamic employers
     const employerText = employers.map((em, i) =>
@@ -153,15 +175,34 @@ export default function ApplicationForm() {
 
     try {
       const res = await fetch("/api/apply", { method: "POST", body: fd });
-      const data = await res.json();
-      if (data.success) {
+
+      // If the server returned a non-JSON response (e.g. Vercel error page), handle gracefully
+      let data: { success?: boolean; error?: string; warning?: string } | null = null;
+      try { data = await res.json(); } catch { data = null; }
+
+      if (res.ok && data?.success) {
+        if (data.warning) setErrorMsg(data.warning);
         setStatus("sent");
-      } else {
-        setErrorMsg(data.error || "Something went wrong. Please try again.");
-        setStatus("error");
+        return;
       }
-    } catch {
-      setErrorMsg("Network error — could not reach the server. Check your connection and try again.");
+      if (res.status === 413) {
+        setErrorMsg("Your files are too large to upload. Please compress them (under 4MB total) or email millstadtems@gmail.com directly with your application.");
+        setStatus("error");
+        return;
+      }
+      if (res.status === 504 || res.status === 408) {
+        setErrorMsg("The server timed out processing your application. This usually means files are too large. Try reducing attachment sizes, or email millstadtems@gmail.com.");
+        setStatus("error");
+        return;
+      }
+      setErrorMsg(data?.error || `Submission failed (${res.status}). Please try again or email millstadtems@gmail.com directly.`);
+      setStatus("error");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setErrorMsg(
+        `Network error — could not reach the server. This may be caused by large attachments timing out. ` +
+        `Try reducing your attachment sizes or email your application to millstadtems@gmail.com directly. (${msg})`
+      );
       setStatus("error");
     }
   }

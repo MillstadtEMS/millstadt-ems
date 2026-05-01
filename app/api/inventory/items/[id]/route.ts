@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isInventoryAuthed } from "@/lib/inventory/auth";
+import { isInventoryAuthedFromRequest } from "@/lib/inventory/auth";
 import { getItem, updateItem } from "@/lib/inventory/db";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const authed = await isInventoryAuthed();
+  const authed = await isInventoryAuthedFromRequest(req);
   if (!authed) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -22,7 +22,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const authed = await isInventoryAuthed();
+  const authed = await isInventoryAuthedFromRequest(req);
   if (!authed) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

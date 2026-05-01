@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isInventoryAuthed } from "@/lib/inventory/auth";
+import { isInventoryAuthedFromRequest } from "@/lib/inventory/auth";
 import { getItems, getItemsSince } from "@/lib/inventory/db";
 
 export async function GET(req: NextRequest) {
-  const authed = await isInventoryAuthed();
+  const authed = await isInventoryAuthedFromRequest(req);
   if (!authed) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

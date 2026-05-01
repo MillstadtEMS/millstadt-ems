@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 
 export const runtime = "nodejs";
+// Multipart uploads + Gmail API can exceed the 10s default timeout
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
 
 // ── Gmail API client (same pattern as CAD system) ─────────────────────────
 function getGmailClient() {
@@ -114,22 +117,36 @@ function buildHtml(fields: Record<string, string>): string {
 </body></html>`;
 }
 
+// Maximum total attachment size (Vercel body limit is ~4.5MB; leave buffer)
+const MAX_ATTACHMENT_BYTES = 4 * 1024 * 1024;
+
 // ── Route handler ─────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const fields: Record<string, string> = {};
     const attachments: { filename: string; content: Buffer; mimeType: string }[] = [];
+    const skippedFiles: string[] = [];
+    let totalAttachmentBytes = 0;
 
     for (const [key, value] of formData.entries()) {
       if (value instanceof File) {
         if (value.size > 0) {
+          if (totalAttachmentBytes + value.size > MAX_ATTACHMENT_BYTES) {
+            skippedFiles.push(value.name);
+            continue;
+          }
           const bytes = await value.arrayBuffer();
           attachments.push({ filename: value.name, content: Buffer.from(bytes), mimeType: value.type || "application/octet-stream" });
+          totalAttachmentBytes += value.size;
         }
       } else {
         fields[key] = fields[key] ? `${fields[key]}, ${value}` : value;
       }
+    }
+
+    if (skippedFiles.length > 0) {
+      fields.skipped_files_note = `NOTE: Some files were too large and skipped: ${skippedFiles.join(", ")}. Applicant should email them separately.`;
     }
 
     const { gmail, sender } = getGmailClient();
@@ -146,15 +163,24 @@ export async function POST(req: NextRequest) {
 
     await gmail.users.messages.send({ userId: "me", requestBody: { raw } });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      ...(skippedFiles.length > 0
+        ? { warning: `Application sent, but these files were too large and were not attached: ${skippedFiles.join(", ")}. Please email them separately to millstadtems@gmail.com.` }
+        : {}),
+    });
   } catch (err) {
     console.error("Application submit error:", err);
     const msg = err instanceof Error ? err.message : String(err);
-    let friendly = "Failed to send your application. Please try again.";
-    if (msg.includes("credentials") || msg.includes("OAuth") || msg.includes("not set")) {
-      friendly = "Email system is not configured on this server. Please email your application directly to millstadtems@gmail.com.";
+    let friendly = "Failed to send your application. Please try again or email millstadtems@gmail.com directly.";
+    if (msg.includes("invalid_grant") || msg.includes("Token has been expired") || msg.includes("revoked")) {
+      friendly = "Email service is temporarily unavailable. Please email your application directly to millstadtems@gmail.com.";
+    } else if (msg.includes("credentials") || msg.includes("OAuth") || msg.includes("not set")) {
+      friendly = "Email system is not configured. Please email your application directly to millstadtems@gmail.com.";
     } else if (msg.includes("insufficientPermissions") || msg.includes("scope")) {
-      friendly = "Email permission error. Please contact the site administrator or email millstadtems@gmail.com directly.";
+      friendly = "Email permission error. Please email millstadtems@gmail.com directly.";
+    } else if (msg.includes("too large") || msg.includes("PayloadTooLarge") || msg.includes("413")) {
+      friendly = "Your attachments are too large. Please reduce file sizes (under 4MB total) or email them separately.";
     }
     return NextResponse.json({ success: false, error: friendly }, { status: 500 });
   }

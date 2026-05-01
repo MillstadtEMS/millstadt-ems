@@ -12,7 +12,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid password" }, { status: 401 });
     }
     const token = await makeInventorySessionToken();
-    const res = NextResponse.json({ ok: true });
+    // Return token in the JSON body so native clients (Employee Lounge app)
+    // can forward it via Authorization: Bearer <token>. The httpOnly cookie
+    // is still set for the existing web UI — this change is additive.
+    const res = NextResponse.json({ ok: true, token });
     res.cookies.set(inventoryCookieOptions(token));
     return res;
   } catch (e) {

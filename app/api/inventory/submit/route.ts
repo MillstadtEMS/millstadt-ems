@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isInventoryAuthed } from "@/lib/inventory/auth";
+import { isInventoryAuthedFromRequest } from "@/lib/inventory/auth";
 import { createSubmission } from "@/lib/inventory/db";
 import { sendInventoryEmail } from "@/lib/inventory/email";
 
 export async function POST(req: NextRequest) {
-  const authed = await isInventoryAuthed();
+  const authed = await isInventoryAuthedFromRequest(req);
   if (!authed) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

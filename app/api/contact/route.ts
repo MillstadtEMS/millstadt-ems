@@ -9,6 +9,8 @@ import { google } from "googleapis";
 import { createFormSubmission } from "@/lib/db";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
+export const dynamic = "force-dynamic";
 
 function getAuth() {
   const auth = new google.auth.OAuth2(
@@ -28,8 +30,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing formType" }, { status: 400 });
     }
 
-    // Store in database (fire-and-forget — don't block email on DB failure)
-    createFormSubmission(formType, fields).catch(e => console.error("[contact] DB store failed:", e));
+    // Always save to DB FIRST so submissions aren't lost if email fails
+    let dbSaved = false;
+    try {
+      await createFormSubmission(formType, fields);
+      dbSaved = true;
+    } catch (e) {
+      console.error("[contact] DB store failed:", e);
+    }
 
     // Build a readable plain-text email body from form fields
     const lines = Object.entries(fields).map(([key, val]) => {
@@ -58,13 +66,31 @@ export async function POST(req: NextRequest) {
       emailBody
     ).toString("base64url");
 
-    const gmail = google.gmail({ version: "v1", auth: getAuth() });
-    await gmail.users.messages.send({ userId: from, requestBody: { raw } });
-
-    return NextResponse.json({ ok: true });
+    try {
+      const gmail = google.gmail({ version: "v1", auth: getAuth() });
+      await gmail.users.messages.send({ userId: from, requestBody: { raw } });
+      return NextResponse.json({ ok: true });
+    } catch (mailErr) {
+      const msg = mailErr instanceof Error ? mailErr.message : String(mailErr);
+      console.error("[contact] mail send failed:", msg);
+      // Email failed but DB saved → still treat as success since submission is stored
+      if (dbSaved) {
+        return NextResponse.json({
+          ok: true,
+          warning: "Submission received (email notification delayed)",
+        });
+      }
+      // Both failed
+      const friendly = msg.includes("invalid_grant") || msg.includes("revoked")
+        ? "Form system temporarily unavailable. Please call (618) 277-3565 or email millstadtems@gmail.com."
+        : "Could not submit form. Please try again or email millstadtems@gmail.com.";
+      return NextResponse.json({ error: friendly }, { status: 500 });
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[contact] send error:", msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({
+      error: "Could not submit form. Please try again or email millstadtems@gmail.com directly.",
+    }, { status: 500 });
   }
 }
