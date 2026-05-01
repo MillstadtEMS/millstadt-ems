@@ -74,9 +74,10 @@ function Section({
           and file uploads aren't lost when navigating between sections. */}
       <div className={`px-4 sm:px-8 lg:px-16 pb-8 sm:pb-10 pt-2 ${isOpen ? "" : "hidden"}`}>
         {children}
-        {/* Next-section navigation (hidden on the last section, which has its own submit button) */}
+        {/* Next-section navigation — mobile/tablet only (desktop users can click section headers directly).
+            Hidden on the last section since it has its own submit button. */}
         {!isLast && (
-          <div className="mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row gap-3">
+          <div className="lg:hidden mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row gap-3">
             <button type="button" onClick={goNext}
               className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-[#f0b429] bg-[#f0b429] px-6 py-4 sm:py-3 text-sm font-black uppercase tracking-wider text-[#040d1a] transition hover:bg-[#f7c847] active:bg-[#d9a320] min-h-[52px]">
               Save &amp; Continue → Section {num + 1}
