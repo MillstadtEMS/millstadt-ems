@@ -291,19 +291,39 @@ export default function ApplicationForm() {
                 ))}
               </div>
             </div>
-            <div className="grid sm:grid-cols-3 gap-4">
-              <div>
-                <label className={labelClass}>Days Available</label>
-                <input type="text" name="days_available" className={inputClass} placeholder="e.g. Mon, Wed, Fri" />
+            <div>
+              <label className={labelClass}>Days Available — Select all that apply</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((d) => (
+                  <label key={d} className="flex items-center gap-2 px-3 py-2 bg-[#040d1a] border border-white/15 rounded-lg cursor-pointer hover:border-[#f0b429]/40 transition-colors">
+                    <input type="checkbox" name="days_available" value={d} className="accent-[#f0b429] w-4 h-4 shrink-0" />
+                    <span className="text-slate-300 text-sm">{d.slice(0, 3)}</span>
+                  </label>
+                ))}
               </div>
-              <div>
-                <label className={labelClass}>Hours Available</label>
-                <input type="text" name="hours_available" className={inputClass} placeholder="e.g. 6a–6p" />
+            </div>
+            <div>
+              <label className={labelClass}>Hours Available — Select all that apply</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  "Days (911) 0600 – 1800",
+                  "Nights (911) 1800 – 0600",
+                  "24-Hour (911) 0600 – 0600",
+                  "Transfer Truck (variable hours)",
+                  "Standby / Event Coverage",
+                  "On-Call",
+                  "Any / All shifts",
+                ].map((h) => (
+                  <label key={h} className="flex items-center gap-3 px-4 py-3 bg-[#040d1a] border border-white/15 rounded-lg cursor-pointer hover:border-[#f0b429]/40 transition-colors">
+                    <input type="checkbox" name="hours_available" value={h} className="accent-[#f0b429] w-4 h-4 shrink-0" />
+                    <span className="text-slate-300 text-sm leading-snug">{h}</span>
+                  </label>
+                ))}
               </div>
-              <div>
-                <label className={labelClass}>Preferred Shift</label>
-                <input type="text" name="preferred_shift" className={inputClass} placeholder="e.g. Days, Nights" />
-              </div>
+            </div>
+            <div>
+              <label className={labelClass}>Preferred Shift / Notes</label>
+              <input type="text" name="preferred_shift" className={inputClass} placeholder="Anything else about your preferred schedule" />
             </div>
           </div>
       </Section>
