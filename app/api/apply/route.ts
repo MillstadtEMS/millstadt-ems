@@ -298,6 +298,141 @@ function buildHtml(fields: Record<string, string>): string {
 // Maximum total attachment size (Vercel body limit is ~4.5MB; leave buffer)
 const MAX_ATTACHMENT_BYTES = 4 * 1024 * 1024;
 
+// ── Flag-for-review checks ─────────────────────────────────────────────────
+function parseCerts(text: string): Record<string, { hasIt: boolean; raw: string }> {
+  const map: Record<string, { hasIt: boolean; raw: string }> = {};
+  if (!text) return map;
+  for (const line of text.split("\n")) {
+    const colonIdx = line.indexOf(":");
+    if (colonIdx <= 0) continue;
+    const name = line.substring(0, colonIdx).trim();
+    const rest = line.substring(colonIdx + 1).trim();
+    let hasIt = false;
+    if (rest === "Completed") hasIt = true;
+    else if (rest.match(/^NOT COMPLETED/i)) hasIt = false;
+    // Has card # if there's something after # other than nothing/whitespace
+    else {
+      const m = rest.match(/^#(\S+)/);
+      if (m && m[1].length > 0) hasIt = true;
+    }
+    map[name] = { hasIt, raw: rest };
+  }
+  return map;
+}
+
+function buildFlags(fields: Record<string, string>): string[] {
+  const flags: string[] = [];
+
+  // ── Consent checks ──
+  const consents = (fields.consents || "").toLowerCase();
+  if (!consents.includes("background check")) flags.push("Did NOT consent to Background Check");
+  if (!consents.includes("drug screening")) flags.push("Did NOT consent to Drug Screening");
+  if (!consents.includes("driving record check")) flags.push("Did NOT consent to Driving Record Check");
+
+  // ── Driver's license info ──
+  if (
+    !fields.dl_state?.trim() &&
+    !fields.dl_number?.trim() &&
+    !fields.dl_expiry?.trim()
+  ) {
+    flags.push("Driver's License information NOT provided");
+  }
+
+  // ── Primary professional license info ──
+  if (
+    !fields.primary_license_type?.trim() &&
+    !fields.primary_license_number?.trim()
+  ) {
+    flags.push("Primary professional license information NOT provided");
+  }
+
+  // ── Cert checks based on position ──
+  const position = (fields.position || "").toLowerCase();
+  // EMT = "EMT (BLS)" specifically. Everyone else (Paramedic, CCP, PHRN, APHRN, PHPA, PHMD) is ALS.
+  const isEMT = position.startsWith("emt");
+
+  const certMap = parseCerts(fields.additional_certs || "");
+  const required: string[] = isEMT
+    ? ["BLS", "FEMA NIMS IS-100", "FEMA NIMS IS-200", "FEMA NIMS IS-700", "FEMA NIMS IS-800", "HazMat Awareness/Ops"]
+    : ["BLS", "ACLS", "PALS", "ITLS / PHTLS", "FEMA NIMS IS-100", "FEMA NIMS IS-200", "FEMA NIMS IS-700", "FEMA NIMS IS-800", "HazMat Awareness/Ops"];
+
+  for (const cert of required) {
+    if (!certMap[cert]?.hasIt) {
+      flags.push(`Missing required certification: ${cert} (${isEMT ? "EMT" : "ALS"} applicant)`);
+    }
+  }
+
+  // ── Driving history concerns ──
+  if (fields.valid_dl === "No") flags.push("Does NOT have a valid driver's license");
+  if (fields.accidents === "Yes") flags.push("Reports accidents in the past 5 years");
+  if (fields.violations === "Yes") flags.push("Reports traffic violations in the past 5 years");
+  if (fields.dl_suspension === "Yes") flags.push("Reports license suspension in the past 5 years");
+
+  return flags;
+}
+
+function buildFlagPdf(applicantName: string, position: string, flags: string[]): Buffer {
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 40;
+  let y = margin;
+
+  // Red header
+  doc.setFillColor(220, 38, 38);
+  doc.rect(0, 0, pageWidth, 90, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.text("FLAG FOR REVIEW", margin, 32);
+  doc.setFontSize(22);
+  doc.text("Application Requires Attention", margin, 60);
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.text(`${applicantName}  ·  ${position}`, margin, 80);
+  y = 120;
+
+  doc.setTextColor(20, 20, 20);
+  doc.setFontSize(11);
+  doc.text("The following items were flagged on this employment application:", margin, y);
+  y += 24;
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  for (const flag of flags) {
+    if (y > doc.internal.pageSize.getHeight() - margin - 30) {
+      doc.addPage();
+      y = margin;
+    }
+    // Red bullet
+    doc.setFillColor(220, 38, 38);
+    doc.circle(margin + 5, y - 4, 3, "F");
+    doc.setTextColor(20, 20, 20);
+    const lines = doc.splitTextToSize(flag, pageWidth - margin - 30);
+    for (let i = 0; i < lines.length; i++) {
+      doc.text(String(lines[i]), margin + 18, y);
+      if (i < lines.length - 1) y += 14;
+    }
+    y += 22;
+  }
+
+  // Footer
+  y += 20;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(120, 120, 120);
+  const note = "These flags are auto-generated based on missing information or concerning answers in the application. Review before extending an offer or scheduling an interview.";
+  const noteLines = doc.splitTextToSize(note, pageWidth - 2 * margin);
+  for (const line of noteLines) {
+    doc.text(String(line), margin, y);
+    y += 12;
+  }
+
+  doc.setFontSize(8);
+  doc.text(`Generated ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })} CDT`, margin, doc.internal.pageSize.getHeight() - 24);
+
+  return Buffer.from(doc.output("arraybuffer"));
+}
+
 // ── Route handler ─────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
@@ -353,6 +488,25 @@ export async function POST(req: NextRequest) {
       ];
     } catch (pdfErr) {
       console.error("[apply] PDF generation failed (continuing without PDF):", pdfErr);
+    }
+
+    // Flag for review: missing consents, missing license info, missing certs,
+    // or concerning driving history → generate a red "FLAG FOR REVIEW" PDF.
+    try {
+      const flags = buildFlags(fields);
+      if (flags.length > 0) {
+        const flagPdfBuffer = buildFlagPdf(fullName, fields.position || "Position Not Specified", flags);
+        const flagPdfFilename = `FLAG FOR REVIEW — ${fullName.replace(/[^\w\s-]/g, "").trim() || "Applicant"}.pdf`;
+        pdfAttachments = [
+          ...pdfAttachments.slice(0, 1),
+          { filename: flagPdfFilename, content: flagPdfBuffer, mimeType: "application/pdf" },
+          ...pdfAttachments.slice(1),
+        ];
+        // Also note the flag count in DB so admin can see at a glance
+        fields.review_flags = `${flags.length} flag(s): ${flags.join("; ")}`;
+      }
+    } catch (flagErr) {
+      console.error("[apply] Flag PDF generation failed:", flagErr);
     }
 
     const raw = buildRawMime({

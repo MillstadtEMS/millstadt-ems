@@ -106,7 +106,7 @@ function YesNo({ name, label }: { name: string; label: string }) {
   );
 }
 
-type Cert = { name: string; number: string; expiry: string };
+type Cert = { name: string; number: string; expiry: string; noExpiry?: boolean; completed?: boolean };
 type Employer = { agency: string; title: string; from: string; to: string; type: string; supervisor: string; reason: string; duties: string };
 type Reference = { name: string; title: string; relationship: string; contact: string };
 type College = { name: string; degree: string; gradYear: string; honors: string; gpa: string };
@@ -119,11 +119,12 @@ const defaultCerts: Cert[] = [
   { name: "NRP", number: "", expiry: "" },
   { name: "FP-C / CCP-C", number: "", expiry: "" },
   { name: "CPI / De-escalation", number: "", expiry: "" },
-  { name: "HazMat Awareness/Ops", number: "", expiry: "" },
-  { name: "FEMA NIMS IS-100", number: "", expiry: "" },
-  { name: "FEMA NIMS IS-200", number: "", expiry: "" },
-  { name: "FEMA NIMS IS-700", number: "", expiry: "" },
-  { name: "FEMA NIMS IS-800", number: "", expiry: "" },
+  // HazMat + NIMS don't expire — completed/not completed checkbox only
+  { name: "HazMat Awareness/Ops", number: "", expiry: "", noExpiry: true, completed: false },
+  { name: "FEMA NIMS IS-100", number: "", expiry: "", noExpiry: true, completed: false },
+  { name: "FEMA NIMS IS-200", number: "", expiry: "", noExpiry: true, completed: false },
+  { name: "FEMA NIMS IS-700", number: "", expiry: "", noExpiry: true, completed: false },
+  { name: "FEMA NIMS IS-800", number: "", expiry: "", noExpiry: true, completed: false },
 ];
 
 const defaultEmployer = (): Employer => ({ agency: "", title: "", from: "", to: "", type: "", supervisor: "", reason: "", duties: "" });
@@ -234,110 +235,6 @@ export default function ApplicationForm() {
     setColleges((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  // ── TEST DATA PRE-FILL — REMOVE AFTER TESTING ───────────────────────
-  function fillTestData() {
-    // 1. Pre-fill captured field ref (for inputs that may unmount)
-    const test: Record<string, string | string[]> = {
-      position: "Paramedic (ALS)",
-      employment_type: ["Full-Time", "PRN"],
-      days_available: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-      hours_available: ["Days (911) 0600 – 1800", "24-Hour (911) 0600 – 0600"],
-      preferred_shift: "Days preferred, open to 24s",
-      first_name: "Test", middle_name: "Q", last_name: "Applicant",
-      dob: "1990-06-15",
-      ssn_last4: "123-45-6789",
-      phone: "(618) 555-0100",
-      email: "test.applicant@example.com",
-      address: "123 Test Street",
-      city_state_zip: "Millstadt, IL 62260",
-      dl_state: "IL", dl_number: "D12345678", dl_expiry: "2028-06-15",
-      authorized_us: "Yes", felony: "No", excluded_medicare: "No", license_suspended: "No",
-      background_explain: "N/A",
-      consents: ["Background Check", "Drug Screening", "Driving Record Check"],
-      hs_name: "Millstadt High School", hs_grad: "2008",
-      primary_license_type: "Paramedic", primary_license_state: "IL",
-      primary_license_number: "EMTP-123456", primary_license_expiry: "2027-06-30",
-      add_license_type: "RN", add_license_state: "IL",
-      add_license_number: "RN-789012", add_license_expiry: "2028-12-31",
-      nremt_level: "NRP", nremt_number: "P0123456", nremt_expiry: "2027-03-31",
-      dea_number: "BX1234567", dea_expiry: "2028-01-15",
-      years_ems: "10", years_als: "7", years_cc: "3",
-      valid_dl: "Yes", cdl: "No", accidents: "No", violations: "No", dl_suspension: "No",
-      driving_explain: "N/A",
-      availability: ["Day Shifts", "Night Shifts", "Weekends", "Overtime", "Full-Time"],
-      why_millstadt: "I want to serve my home community and I'm a strong fit for the team.",
-      five_year_goals: "1. Earn FP-C certification\n2. Complete BSN\n3. Take on a clinical mentorship role\n4. Buy a house in Millstadt\n5. Stay healthy / run a half-marathon",
-      certified: "on",
-    };
-    fieldValues.current = { ...test };
-
-    // 2. Set state for dynamic items
-    setEmployers([
-      { agency: "MedStar EMS", title: "Paramedic", from: "2018-03", to: "2024-08", type: "Full-Time", supervisor: "Jane Smith — jane@medstar.test", reason: "Career growth", duties: "ALS 911 response, IFT, ventilator transports." },
-      { agency: "Belleville Memorial", title: "EMT-B", from: "2014-06", to: "2018-02", type: "Part-Time", supervisor: "Bob Jones — bob@bmh.test", reason: "Promoted to Paramedic", duties: "BLS response and IFT." },
-      { agency: "Volunteer FD", title: "EMR", from: "2010-01", to: "2014-05", type: "Volunteer", supervisor: "Chief Williams", reason: "Started paramedic school", duties: "First responder, fire support." },
-    ]);
-    setReferences([
-      { name: "Dr. Sarah Reyes", title: "EMS Medical Director", relationship: "Former Supervisor", contact: "(618) 555-0150 — sreyes@example.com" },
-      { name: "Mike Callahan", title: "Captain, MedStar EMS", relationship: "Direct Supervisor", contact: "(618) 555-0151" },
-      { name: "Lisa Nguyen, RN", title: "ED Charge Nurse", relationship: "Clinical Colleague", contact: "lnguyen@example.com" },
-    ]);
-    setColleges([
-      { name: "Southwestern Illinois College", degree: "A.A.S. Paramedicine", gradYear: "2016", honors: "Dean's List", gpa: "3.85" },
-      { name: "Southern Illinois University Edwardsville", degree: "B.S. Health Sciences", gradYear: "2020", honors: "Magna Cum Laude", gpa: "3.78" },
-    ]);
-    setCerts([
-      { name: "BLS", number: "BLS-12345", expiry: "2026-08-31" },
-      { name: "ACLS", number: "ACLS-67890", expiry: "2026-08-31" },
-      { name: "PALS", number: "PALS-11111", expiry: "2026-08-31" },
-      { name: "ITLS / PHTLS", number: "ITLS-22222", expiry: "2027-03-15" },
-      { name: "NRP", number: "NRP-33333", expiry: "2026-12-31" },
-      { name: "FP-C / CCP-C", number: "FPC-44444", expiry: "2027-06-30" },
-      { name: "CPI / De-escalation", number: "CPI-55555", expiry: "2026-09-30" },
-      { name: "HazMat Awareness/Ops", number: "HAZ-66666", expiry: "2026-11-30" },
-      { name: "FEMA NIMS IS-100", number: "FEMA-100", expiry: "" },
-      { name: "FEMA NIMS IS-200", number: "FEMA-200", expiry: "" },
-      { name: "FEMA NIMS IS-700", number: "FEMA-700", expiry: "" },
-      { name: "FEMA NIMS IS-800", number: "FEMA-800", expiry: "" },
-    ]);
-
-    // 3. Apply test values to DOM inputs so the user sees them filled in.
-    //    This needs to run after React has rendered the new state, so use setTimeout.
-    setTimeout(() => {
-      const form = formRef.current;
-      if (!form) return;
-      for (const [name, val] of Object.entries(test)) {
-        const elements = form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`[name="${name}"]`);
-        elements.forEach((el) => {
-          const t = (el as HTMLInputElement).type;
-          if (t === "checkbox") {
-            const cb = el as HTMLInputElement;
-            const list = Array.isArray(val) ? val : [val];
-            cb.checked = list.includes(cb.value);
-          } else if (t === "radio") {
-            const r = el as HTMLInputElement;
-            r.checked = r.value === val;
-          } else {
-            (el as HTMLInputElement).value = String(val);
-          }
-        });
-      }
-      // Attach a tiny test PDF as the resume so we can verify attachments
-      const resumeInput = form.querySelector<HTMLInputElement>('[name="file_resume"]');
-      if (resumeInput) {
-        const blob = new Blob(
-          ["%PDF-1.4\n1 0 obj\n<<>>\nendobj\nxref\n0 1\n0000000000 65535 f\ntrailer\n<<>>\nstartxref\n0\n%%EOF\n"],
-          { type: "application/pdf" },
-        );
-        const file = new File([blob], "test-resume.pdf", { type: "application/pdf" });
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        resumeInput.files = dt.files;
-        fileFields.current["file_resume"] = [file];
-      }
-      setOpenSection(13); // jump to certification so user can submit immediately
-    }, 100);
-  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -403,10 +300,14 @@ export default function ApplicationForm() {
     ).join("\n");
     fd.set("references", refText);
 
-    // Serialize dynamic certs
-    const certText = certs.map((c) =>
-      `${c.name}: #${c.number} Exp: ${c.expiry}`
-    ).join("\n");
+    // Serialize dynamic certs (HazMat / FEMA NIMS use a Completed checkbox
+    // because they don't expire; everything else uses card # + expiry).
+    const certText = certs.map((c) => {
+      if (c.noExpiry) {
+        return `${c.name}: ${c.completed ? "Completed" : "NOT COMPLETED"}`;
+      }
+      return `${c.name}: #${c.number} Exp: ${c.expiry}`;
+    }).join("\n");
     fd.set("additional_certs", certText);
 
     // Serialize dynamic colleges
@@ -470,16 +371,6 @@ export default function ApplicationForm() {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} onChange={captureFieldChange} encType="multipart/form-data">
-
-      {/* ── TEST BUTTON — REMOVE AFTER VERIFYING SUBMISSION ── */}
-      <div className="mx-4 sm:mx-8 lg:mx-16 my-4 rounded-lg border-2 border-amber-500/50 bg-amber-500/10 p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <span className="text-amber-300 text-xs font-black uppercase tracking-wider">⚠ Test Mode</span>
-        <p className="text-amber-200/80 text-sm flex-1">Click to pre-fill the form with realistic test data, then submit to verify the email/PDF/attachments are working.</p>
-        <button type="button" onClick={fillTestData}
-          className="rounded-lg border-2 border-amber-400 bg-amber-400 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-[#040d1a] hover:bg-amber-300 transition-colors">
-          Fill Test Data
-        </button>
-      </div>
 
       <Section num={1} title="Position Applied For" openSection={openSection} setOpenSection={setOpenSection}>
         <SubBlock title="Position">
@@ -810,8 +701,7 @@ export default function ApplicationForm() {
               <div className="space-y-3">
                 <div className="hidden sm:grid grid-cols-12 gap-4 px-4 pb-2 border-b border-white/8">
                   <div className="col-span-5 text-slate-500 text-[10px] font-black uppercase tracking-widest">Name</div>
-                  <div className="col-span-3 text-slate-500 text-[10px] font-black uppercase tracking-widest">Card #</div>
-                  <div className="col-span-3 text-slate-500 text-[10px] font-black uppercase tracking-widest">Expires</div>
+                  <div className="col-span-6 text-slate-500 text-[10px] font-black uppercase tracking-widest">Card # & Expires (or Completed)</div>
                 </div>
                 {certs.map((cert, i) => (
                   <div key={i} className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4 sm:items-center py-4 sm:py-6 px-4 border-b border-white/8">
@@ -823,14 +713,31 @@ export default function ApplicationForm() {
                         <input type="text" value={cert.name} onChange={(e) => updateCert(i, "name", e.target.value)} className={inputClass} placeholder="Certification name" />
                       )}
                     </div>
-                    <div className="sm:col-span-3">
-                      <span className="block sm:hidden text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Card #</span>
-                      <input type="text" value={cert.number} onChange={(e) => updateCert(i, "number", e.target.value)} className={inputClass} placeholder="———" />
-                    </div>
-                    <div className="sm:col-span-3">
-                      <span className="block sm:hidden text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Expires</span>
-                      <input type="date" value={cert.expiry} onChange={(e) => updateCert(i, "expiry", e.target.value)} className={inputClass} />
-                    </div>
+                    {cert.noExpiry ? (
+                      <div className="sm:col-span-6 flex items-center">
+                        <label className="flex items-center gap-3 px-4 py-3 bg-[#040d1a] border border-white/15 rounded-lg cursor-pointer hover:border-[#f0b429]/40 transition-colors w-full">
+                          <input
+                            type="checkbox"
+                            checked={!!cert.completed}
+                            onChange={(e) => setCerts((prev) => prev.map((c, idx) => idx === i ? { ...c, completed: e.target.checked } : c))}
+                            className="accent-[#f0b429] w-5 h-5 shrink-0"
+                          />
+                          <span className="text-slate-300 text-sm font-bold">Completed</span>
+                          <span className="text-slate-500 text-xs ml-auto">no expiration</span>
+                        </label>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="sm:col-span-3">
+                          <span className="block sm:hidden text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Card #</span>
+                          <input type="text" value={cert.number} onChange={(e) => updateCert(i, "number", e.target.value)} className={inputClass} placeholder="———" />
+                        </div>
+                        <div className="sm:col-span-3">
+                          <span className="block sm:hidden text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Expires</span>
+                          <input type="date" value={cert.expiry} onChange={(e) => updateCert(i, "expiry", e.target.value)} className={inputClass} />
+                        </div>
+                      </>
+                    )}
                     <div className="sm:col-span-1 flex justify-end sm:justify-center">
                       {i >= defaultCerts.length && (
                         <button type="button" onClick={() => removeCert(i)} className="text-slate-500 hover:text-red-400 transition-colors text-xs font-black uppercase tracking-wider sm:text-sm">
