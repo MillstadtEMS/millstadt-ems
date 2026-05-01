@@ -227,7 +227,7 @@ export default function ApplicationForm() {
     <form ref={formRef} onSubmit={handleSubmit} encType="multipart/form-data">
 
       {/* ── 1. Position Applied For ── */}
-      <div className="py-16 bg-[#040d1a]">
+      <div className="py-10 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Position Applied For" />
           <div className="space-y-24">            <div>
@@ -269,10 +269,10 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-48 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-8 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 2. Personal Information ── */}
-      <div className="py-16 bg-[#071428]">
+      <div className="py-10 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Personal Information" />
           <div className="space-y-24">          <div>
@@ -337,10 +337,10 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-48 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-8 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 3. Eligibility & Background ── */}
-      <div className="py-16 bg-[#040d1a]">
+      <div className="py-10 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Eligibility & Background" />
           <div className="space-y-24">            <div className="grid sm:grid-cols-2 gap-4">
@@ -367,10 +367,10 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-48 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-8 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 4. Education ── */}
-      <div className="py-16 bg-[#071428]">
+      <div className="py-10 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Education" />
           <div className="space-y-24">            <div>
@@ -427,10 +427,10 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-48 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-8 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 5. Licensure & Certifications ── */}
-      <div className="py-16 bg-[#040d1a]">
+      <div className="py-10 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Licensure & Certifications" />
           <div className="flex flex-col gap-6">
@@ -576,10 +576,10 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-48 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-8 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 6. Work History ── */}
-      <div className="py-16 bg-[#071428]">
+      <div className="py-10 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Work History" />
           <p className="text-slate-500 text-sm mb-12">List all relevant EMS/medical employment — most recent first.</p>
@@ -636,10 +636,10 @@ export default function ApplicationForm() {
         </div>
         </div>
       </div>
-      <div className="h-48 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-8 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 7. EMS Experience & Skills ── */}
-      <div className="py-16 bg-[#040d1a]">
+      <div className="py-10 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="EMS Experience & Skills" />
           <div className="space-y-24">            <div className="grid sm:grid-cols-3 gap-4">
@@ -670,10 +670,10 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-48 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-8 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 8. Driving History ── */}
-      <div className="py-16 bg-[#071428]">
+      <div className="py-10 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Driving History" />
           <div className="space-y-24">            <div className="grid sm:grid-cols-2 gap-4">
@@ -690,10 +690,10 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-48 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-8 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 9. I Am Willing To Work ── */}
-      <div className="py-16 bg-[#040d1a]">
+      <div className="py-10 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="I Am Willing To Work" />
           <div className="grid sm:grid-cols-3 gap-4">
@@ -706,10 +706,10 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-48 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-8 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 10. Professional References ── */}
-      <div className="py-16 bg-[#071428]">
+      <div className="py-10 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Professional References" />
           <p className="text-slate-500 text-sm mb-12">Minimum of 3 references required.</p>
@@ -748,10 +748,10 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-48 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-8 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 11. Additional Information ── */}
-      <div className="py-16 bg-[#040d1a]">
+      <div className="py-10 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Additional Information" />
           <div className="space-y-24">            <div>
@@ -769,10 +769,10 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-48 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-8 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 12. Attachments ── */}
-      <div className="py-16 bg-[#071428]">
+      <div className="py-10 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Attachments" />
           <p className="text-slate-500 text-sm mb-12">Upload copies of your licenses, certifications, and supporting documents. Multiple files accepted. All documents will be attached to your application email.</p>
@@ -798,10 +798,10 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-48 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-8 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 13. Applicant Certification ── */}
-      <div className="py-16 bg-[#040d1a]">
+      <div className="py-10 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
           <SectionHeader title="Applicant Certification" />
           <p className="text-slate-400 text-sm leading-relaxed mb-6">
@@ -815,10 +815,10 @@ export default function ApplicationForm() {
           </label>
         </div>
       </div>
-      <div className="h-48 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-8 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* Submit */}
-      <div className="py-16 bg-[#071428]">
+      <div className="py-10 bg-[#071428]">
         <div className="wrap max-w-4xl">
           <div className="flex flex-col gap-4 max-w-sm">
             <button
