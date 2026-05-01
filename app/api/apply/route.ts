@@ -323,6 +323,12 @@ function parseCerts(text: string): Record<string, { hasIt: boolean; raw: string 
 function buildFlags(fields: Record<string, string>): string[] {
   const flags: string[] = [];
 
+  // ── Eligibility / background concerns ──
+  if (fields.authorized_us === "No") flags.push("NOT authorized to work in the United States");
+  if (fields.felony === "Yes") flags.push("Reports a felony conviction");
+  if (fields.excluded_medicare === "Yes") flags.push("Has been excluded from Medicare / Medicaid");
+  if (fields.license_suspended === "Yes") flags.push("Has had a professional license suspended or revoked");
+
   // ── Consent checks ──
   const consents = (fields.consents || "").toLowerCase();
   if (!consents.includes("background check")) flags.push("Did NOT consent to Background Check");
