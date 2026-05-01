@@ -112,6 +112,7 @@ export default function BirthdayClient() {
           </Section>
         </ContactFormWrapper>
       </div>
+      <div style={{ height: "10rem" }} aria-hidden />
     </main>
   );
 }

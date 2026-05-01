@@ -89,6 +89,7 @@ export default function EventRequestPage() {
           </Section>
         </ContactFormWrapper>
       </div>
+      <div style={{ height: "10rem" }} aria-hidden />
     </main>
   );
 }
