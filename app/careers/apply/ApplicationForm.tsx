@@ -61,6 +61,33 @@ function Section({
   );
 }
 
+/**
+ * Sub-section block within an accordion section.
+ * Renders content with consistent padding and a thick blue separator band
+ * between siblings (no band before the first or after the last).
+ */
+function SubBlock({
+  title, action, children,
+}: {
+  title?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="py-10 border-t-[12px] border-[#0d2138] first:border-t-0 first:pt-2 last:pb-2">
+      {(title || action) && (
+        <div className="flex items-center justify-between mb-6">
+          {title && (
+            <h3 className="text-[#f0b429] text-sm font-black tracking-[0.2em] uppercase">{title}</h3>
+          )}
+          {action}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
 function YesNo({ name, label }: { name: string; label: string }) {
   return (
     <div>
@@ -281,7 +308,7 @@ export default function ApplicationForm() {
   return (
     <form ref={formRef} onSubmit={handleSubmit} encType="multipart/form-data">
       <Section num={1} title="Position Applied For" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div>
+          <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">            <div>
               <label className={labelClass}>Position *</label>
               <div className="grid sm:grid-cols-2 gap-4">
                 {positions.map((pos) => (
@@ -340,7 +367,7 @@ export default function ApplicationForm() {
           </div>
       </Section>
       <Section num={2} title="Personal Information" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">          <div>
+          <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">          <div>
             <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">Legal Name</div>
             <div className="grid sm:grid-cols-3 gap-4">
               <div>
@@ -402,7 +429,7 @@ export default function ApplicationForm() {
           </div>
       </Section>
       <Section num={3} title="Eligibility & Background" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div className="grid sm:grid-cols-2 gap-4">
+          <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">            <div className="grid sm:grid-cols-2 gap-4">
               <YesNo name="authorized_us" label="Are you legally authorized to work in the U.S.? *" />
               <YesNo name="felony" label="Have you ever been convicted of a felony?" />
               <YesNo name="excluded_medicare" label="Have you ever been excluded from Medicare/Medicaid?" />
@@ -426,63 +453,61 @@ export default function ApplicationForm() {
           </div>
       </Section>
       <Section num={4} title="Education" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div>
-              <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">High School</div>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelClass}>School Name</label>
-                  <input type="text" name="hs_name" className={inputClass} placeholder="High School Name" />
-                </div>
-                <div>
-                  <label className={labelClass}>Graduation Year</label>
-                  <input type="text" name="hs_grad" className={inputClass} placeholder="YYYY" maxLength={4} />
-                </div>
-              </div>
+        <SubBlock title="High School">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>School Name</label>
+              <input type="text" name="hs_name" className={inputClass} placeholder="High School Name" />
             </div>
             <div>
-              <div className="flex items-center justify-between mb-6">
-                <div className="text-slate-500 text-xs font-black tracking-widest uppercase">College / University</div>
-                <button type="button" onClick={addCollege}
-                  className="rounded-lg border-2 border-[#f0b429]/50 bg-[#f0b429]/10 px-4 py-2 text-xs font-black uppercase tracking-wider text-[#f0b429] hover:bg-[#f0b429]/20 transition-colors">
-                  + Add another
-                </button>
-              </div>
-              <div className="space-y-6">
-                {colleges.map((c, i) => (
-                  <div key={i} className="p-6 bg-[#040d1a] border border-white/10 rounded-lg">
-                    <div className="flex items-center justify-between mb-5">
-                      <span className="text-white font-bold text-sm">College #{i + 1}</span>
-                      {colleges.length > 1 && (
-                        <button type="button" onClick={() => removeCollege(i)} className="text-slate-600 hover:text-red-400 text-xs font-bold tracking-wider transition-colors">Remove</button>
-                      )}
-                    </div>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className={labelClass}>College / University</label>
-                        <input type="text" value={c.name} onChange={(e) => updateCollege(i, "name", e.target.value)} className={inputClass} placeholder="Institution name" />
-                      </div>
-                      <div>
-                        <label className={labelClass}>Degree</label>
-                        <input type="text" value={c.degree} onChange={(e) => updateCollege(i, "degree", e.target.value)} className={inputClass} placeholder="e.g. B.S., A.A.S." />
-                      </div>
-                      <div>
-                        <label className={labelClass}>Graduation Year</label>
-                        <input type="text" value={c.gradYear} onChange={(e) => updateCollege(i, "gradYear", e.target.value)} className={inputClass} placeholder="YYYY" maxLength={4} />
-                      </div>
-                      <div>
-                        <label className={labelClass}>Cumulative GPA</label>
-                        <input type="text" value={c.gpa} onChange={(e) => updateCollege(i, "gpa", e.target.value)} className={inputClass} placeholder="e.g. 3.85" />
-                      </div>
-                      <div className="sm:col-span-2">
-                        <label className={labelClass}>University Honors</label>
-                        <input type="text" value={c.honors} onChange={(e) => updateCollege(i, "honors", e.target.value)} className={inputClass} placeholder="e.g. Dean's List, Magna Cum Laude, Honors Society" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <label className={labelClass}>Graduation Year</label>
+              <input type="text" name="hs_grad" className={inputClass} placeholder="YYYY" maxLength={4} />
             </div>
           </div>
+        </SubBlock>
+
+        {colleges.map((c, i) => (
+          <SubBlock
+            key={i}
+            title={i === 0 ? "College / University" : `Additional College #${i + 1}`}
+            action={
+              i === 0 ? (
+                <button type="button" onClick={addCollege}
+                  className="rounded-lg border-2 border-[#f0b429]/50 bg-[#f0b429]/10 px-4 py-2 text-xs font-black uppercase tracking-wider text-[#f0b429] hover:bg-[#f0b429]/20 transition-colors">
+                  + Add another college
+                </button>
+              ) : (
+                <button type="button" onClick={() => removeCollege(i)}
+                  className="text-slate-500 hover:text-red-400 text-xs font-black uppercase tracking-wider transition-colors">
+                  Remove
+                </button>
+              )
+            }
+          >
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelClass}>Institution Name</label>
+                <input type="text" value={c.name} onChange={(e) => updateCollege(i, "name", e.target.value)} className={inputClass} placeholder="e.g. Southern Illinois University" />
+              </div>
+              <div>
+                <label className={labelClass}>Degree</label>
+                <input type="text" value={c.degree} onChange={(e) => updateCollege(i, "degree", e.target.value)} className={inputClass} placeholder="e.g. B.S., A.A.S." />
+              </div>
+              <div>
+                <label className={labelClass}>Graduation Year</label>
+                <input type="text" value={c.gradYear} onChange={(e) => updateCollege(i, "gradYear", e.target.value)} className={inputClass} placeholder="YYYY" maxLength={4} />
+              </div>
+              <div>
+                <label className={labelClass}>Cumulative GPA</label>
+                <input type="text" value={c.gpa} onChange={(e) => updateCollege(i, "gpa", e.target.value)} className={inputClass} placeholder="e.g. 3.85" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelClass}>University Honors</label>
+                <input type="text" value={c.honors} onChange={(e) => updateCollege(i, "honors", e.target.value)} className={inputClass} placeholder="e.g. Dean's List, Magna Cum Laude, Honors Society" />
+              </div>
+            </div>
+          </SubBlock>
+        ))}
       </Section>
       <Section num={5} title="Licensure & Certifications" openSection={openSection} setOpenSection={setOpenSection}>
           <div className="flex flex-col gap-6">
@@ -629,7 +654,7 @@ export default function ApplicationForm() {
       </Section>
       <Section num={6} title="Work History" openSection={openSection} setOpenSection={setOpenSection}>
           <p className="text-slate-500 text-sm mb-12">List all relevant EMS/medical employment — most recent first.</p>
-        <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">          {employers.map((em, i) => (
+        <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">          {employers.map((em, i) => (
             <div key={i} className="p-10 bg-[#040d1a] border border-white/10 rounded-lg">
               <div className="flex items-center justify-between mb-10">
                 <span className="text-white font-bold text-base">Employer #{i + 1}</span>
@@ -682,7 +707,7 @@ export default function ApplicationForm() {
         </div>
       </Section>
       <Section num={7} title="EMS Experience & Skills" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div className="grid sm:grid-cols-3 gap-4">
+          <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">            <div className="grid sm:grid-cols-3 gap-4">
               <div>
                 <label className={labelClass}>Years of EMS Experience</label>
                 <input type="number" name="years_ems" min="0" className={inputClass} placeholder="0" />
@@ -699,7 +724,7 @@ export default function ApplicationForm() {
           </div>
       </Section>
       <Section num={8} title="Driving History" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div className="grid sm:grid-cols-2 gap-4">
+          <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">            <div className="grid sm:grid-cols-2 gap-4">
               <YesNo name="valid_dl" label="Valid Driver's License?" />
               <YesNo name="cdl" label="CDL (if applicable)?" />
               <YesNo name="accidents" label="Accidents in the past 5 years?" />
@@ -724,7 +749,7 @@ export default function ApplicationForm() {
       </Section>
       <Section num={10} title="Professional References" openSection={openSection} setOpenSection={setOpenSection}>
           <p className="text-slate-500 text-sm mb-12">Minimum of 3 references required.</p>
-          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            {references.map((r, i) => (
+          <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">            {references.map((r, i) => (
               <div key={i} className="p-10 bg-[#040d1a] border border-white/10 rounded-lg">
                 <div className="flex items-center justify-between mb-10">
                   <span className="text-white font-bold text-base">Reference #{i + 1}</span>
@@ -759,7 +784,7 @@ export default function ApplicationForm() {
           </div>
       </Section>
       <Section num={11} title="Additional Information" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div>
+          <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">            <div>
               <label className={labelClass}>Why do you want to work for Millstadt Ambulance Service?</label>
               <textarea name="why_millstadt" rows={5} className={`${inputClass} resize-none`} placeholder="Tell us about yourself and why you want to join our team..." />
             </div>
@@ -772,7 +797,7 @@ export default function ApplicationForm() {
       </Section>
       <Section num={12} title="Attachments" openSection={openSection} setOpenSection={setOpenSection}>
           <p className="text-slate-500 text-sm mb-12">Upload copies of your licenses, certifications, and supporting documents. Multiple files accepted. All documents will be attached to your application email.</p>
-          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            {[
+          <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">            {[
               { name: "file_resume", label: "Resume / CV" },
               { name: "file_cover", label: "Cover Letter" },
               { name: "file_dl", label: "Driver's License Copy" },
