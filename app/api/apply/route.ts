@@ -3,7 +3,6 @@ import { google } from "googleapis";
 import { jsPDF } from "jspdf";
 import { createFormSubmission } from "@/lib/db";
 import { buildApplicationFlags } from "@/lib/application-flags";
-import { sendSms } from "@/lib/sms";
 
 export const runtime = "nodejs";
 // Multipart uploads + Gmail API can exceed the 10s default timeout
@@ -453,14 +452,22 @@ export async function POST(req: NextRequest) {
 
     await gmail.users.messages.send({ userId: "me", requestBody: { raw } });
 
-    // Send SMS notification to the hiring manager (best-effort — never block
-    // the response on Twilio).
+    // Send SMS notification via Verizon's email-to-SMS gateway (free — uses Gmail).
+    // Best-effort — never block the response on this.
     try {
       const flagText = flagCount === 1 ? "1 item" : `${flagCount} items`;
       const smsBody = `A new employment application has been received at Millstadtems@gmail.com. There are ${flagText} flagged for review in this application.`;
-      await sendSms(smsBody, "+16188064539");
+      const smsRaw = Buffer.from(
+        `From: Millstadt EMS <${sender}>\r\n` +
+        `To: 6188064539@vtext.com\r\n` +
+        `Subject: New Application\r\n` +
+        `Content-Type: text/plain; charset=utf-8\r\n` +
+        `\r\n` +
+        smsBody
+      ).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      await gmail.users.messages.send({ userId: "me", requestBody: { raw: smsRaw } });
     } catch (smsErr) {
-      console.error("[apply] SMS notification failed:", smsErr);
+      console.error("[apply] SMS notification (Verizon email-to-SMS) failed:", smsErr);
     }
 
     return NextResponse.json({
