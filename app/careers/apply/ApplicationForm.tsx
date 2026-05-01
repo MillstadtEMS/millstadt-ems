@@ -52,11 +52,11 @@ function Section({
           <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z" />
         </svg>
       </button>
-      {isOpen && (
-        <div className="px-4 sm:px-8 lg:px-16 pb-8 sm:pb-10 pt-2">
-          {children}
-        </div>
-      )}
+      {/* Keep ALL sections mounted (just hidden when closed) so form values
+          and file uploads aren't lost when navigating between sections. */}
+      <div className={`px-4 sm:px-8 lg:px-16 pb-8 sm:pb-10 pt-2 ${isOpen ? "" : "hidden"}`}>
+        {children}
+      </div>
     </div>
   );
 }

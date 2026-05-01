@@ -1,11 +1,188 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { jsPDF } from "jspdf";
 import { createFormSubmission } from "@/lib/db";
 
 export const runtime = "nodejs";
 // Multipart uploads + Gmail API can exceed the 10s default timeout
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
+
+// ── PDF generation ─────────────────────────────────────────────────────────
+function buildPdf(fields: Record<string, string>): Buffer {
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 40;
+  const lineHeight = 14;
+  let y = margin;
+
+  function checkPageBreak(needed: number) {
+    if (y + needed > pageHeight - margin) {
+      doc.addPage();
+      y = margin;
+    }
+  }
+
+  function writeWrapped(text: string, x: number, maxWidth: number, fontSize: number, color: [number, number, number] = [30, 30, 30]) {
+    doc.setFontSize(fontSize);
+    doc.setTextColor(color[0], color[1], color[2]);
+    const lines = doc.splitTextToSize(text || "—", maxWidth);
+    for (const line of lines) {
+      checkPageBreak(lineHeight);
+      doc.text(String(line), x, y);
+      y += lineHeight;
+    }
+  }
+
+  function sectionHeader(title: string) {
+    checkPageBreak(40);
+    y += 6;
+    doc.setFillColor(240, 180, 41);
+    doc.rect(margin, y, 4, 14, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text(title.toUpperCase(), margin + 12, y + 11);
+    y += 24;
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y - 8, pageWidth - margin, y - 8);
+  }
+
+  function row(label: string, value: string) {
+    checkPageBreak(lineHeight + 4);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text(label.toUpperCase(), margin, y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(20, 20, 20);
+    const valueX = margin + 160;
+    const lines = doc.splitTextToSize(value || "—", pageWidth - valueX - margin);
+    for (let i = 0; i < lines.length; i++) {
+      if (i > 0) checkPageBreak(lineHeight);
+      doc.text(String(lines[i]), valueX, y);
+      if (i < lines.length - 1) y += lineHeight;
+    }
+    y += lineHeight + 2;
+  }
+
+  function blockText(label: string, value: string) {
+    checkPageBreak(lineHeight + 4);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text(label.toUpperCase(), margin, y);
+    y += lineHeight;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(20, 20, 20);
+    writeWrapped(value || "—", margin, pageWidth - 2 * margin, 10);
+    y += 4;
+  }
+
+  // Title
+  doc.setFillColor(4, 13, 26);
+  doc.rect(0, 0, pageWidth, 80, "F");
+  doc.setTextColor(240, 180, 41);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text("MILLSTADT AMBULANCE SERVICE", margin, 32);
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20);
+  doc.text("Employment Application", margin, 56);
+  doc.setFontSize(10);
+  doc.setTextColor(180, 180, 180);
+  const fullName = [fields.first_name, fields.middle_name, fields.last_name].filter(Boolean).join(" ") || "Applicant";
+  doc.text(`${fullName}  ·  ${fields.position || "Position Not Specified"}`, margin, 72);
+  y = 110;
+
+  doc.setTextColor(120, 120, 120);
+  doc.setFontSize(9);
+  doc.text(`Submitted ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })} CDT`, margin, y);
+  y += 24;
+
+  sectionHeader("Position Applied For");
+  row("Position", fields.position);
+  row("Employment Type", fields.employment_type);
+  row("Days Available", fields.days_available);
+  row("Hours Available", fields.hours_available);
+  row("Preferred Shift", fields.preferred_shift);
+
+  sectionHeader("Personal Information");
+  row("First Name", fields.first_name);
+  row("Middle Name", fields.middle_name);
+  row("Last Name", fields.last_name);
+  row("Date of Birth", fields.dob);
+  row("SSN", fields.ssn_last4);
+  row("Phone", fields.phone);
+  row("Email", fields.email);
+  row("Address", [fields.address, fields.city_state_zip].filter(Boolean).join(", "));
+  row("Driver's License", `${fields.dl_state ?? ""} #${fields.dl_number ?? ""} Exp: ${fields.dl_expiry ?? ""}`);
+
+  sectionHeader("Eligibility & Background");
+  row("Authorized to Work in U.S.", fields.authorized_us);
+  row("Felony Conviction", fields.felony);
+  row("Excluded from Medicare/Medicaid", fields.excluded_medicare);
+  row("License Suspended/Revoked", fields.license_suspended);
+  blockText("Background Explanation", fields.background_explain);
+  row("Consents", fields.consents);
+
+  sectionHeader("Education");
+  row("High School", `${fields.hs_name ?? ""} — ${fields.hs_grad ?? ""}`);
+  blockText("College / University", fields.college_education);
+
+  sectionHeader("Licensure");
+  row("Primary License", `${fields.primary_license_type ?? ""} — ${fields.primary_license_state ?? ""} #${fields.primary_license_number ?? ""} Exp: ${fields.primary_license_expiry ?? ""}`);
+  row("Additional License", `${fields.add_license_type ?? ""} — ${fields.add_license_state ?? ""} #${fields.add_license_number ?? ""} Exp: ${fields.add_license_expiry ?? ""}`);
+  row("NREMT", `${fields.nremt_level ?? ""} #${fields.nremt_number ?? ""} Exp: ${fields.nremt_expiry ?? ""}`);
+  row("DEA", `#${fields.dea_number ?? ""} Exp: ${fields.dea_expiry ?? ""}`);
+
+  sectionHeader("Certifications");
+  blockText("Certifications", fields.additional_certs);
+
+  sectionHeader("Work History");
+  blockText("Employment History", fields.work_history);
+
+  sectionHeader("EMS Experience");
+  row("Years of EMS Experience", fields.years_ems);
+  row("Years of ALS Experience", fields.years_als);
+  row("Years of Critical Care", fields.years_cc);
+
+  sectionHeader("Driving History");
+  row("Valid Driver's License", fields.valid_dl);
+  row("CDL", fields.cdl);
+  row("Accidents (5 yrs)", fields.accidents);
+  row("Traffic Violations (5 yrs)", fields.violations);
+  row("License Suspension (5 yrs)", fields.dl_suspension);
+  blockText("Driving Explanation", fields.driving_explain);
+
+  sectionHeader("Availability");
+  row("Willing to Work", fields.availability);
+
+  sectionHeader("Professional References");
+  blockText("References", fields.references);
+
+  sectionHeader("Additional Information");
+  blockText("Why Millstadt EMS?", fields.why_millstadt);
+  blockText("5-Year Goals", fields.five_year_goals);
+
+  if (fields.skipped_files_note) {
+    sectionHeader("Note");
+    blockText("Skipped Files", fields.skipped_files_note);
+  }
+
+  // Footer on last page
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 120);
+  doc.text("Applicant certified all information is true and complete.", margin, pageHeight - 24);
+  doc.text("Millstadt Ambulance Service — Employment Application", pageWidth - margin, pageHeight - 24, { align: "right" });
+
+  const arrayBuffer = doc.output("arraybuffer");
+  return Buffer.from(arrayBuffer);
+}
 
 // ── Gmail API client (same pattern as CAD system) ─────────────────────────
 function getGmailClient() {
@@ -164,13 +341,27 @@ export async function POST(req: NextRequest) {
     const { gmail, sender } = getGmailClient();
     const fullName = [fields.first_name, fields.middle_name, fields.last_name].filter(Boolean).join(" ") || "Applicant";
 
+    // Generate the application PDF and prepend it to attachments so it's the
+    // first thing the reviewer sees.
+    let pdfAttachments = attachments;
+    try {
+      const pdfBuffer = buildPdf(fields);
+      const pdfFilename = `Application — ${fullName.replace(/[^\w\s-]/g, "").trim() || "Applicant"}.pdf`;
+      pdfAttachments = [
+        { filename: pdfFilename, content: pdfBuffer, mimeType: "application/pdf" },
+        ...attachments,
+      ];
+    } catch (pdfErr) {
+      console.error("[apply] PDF generation failed (continuing without PDF):", pdfErr);
+    }
+
     const raw = buildRawMime({
       from: `"Millstadt EMS Careers" <${sender}>`,
       to: "millstadtems@gmail.com",
       replyTo: fields.email || sender,
       subject: `Employment Application — ${fullName} — ${fields.position || "Position Not Specified"}`,
       html: buildHtml(fields),
-      attachments,
+      attachments: pdfAttachments,
     });
 
     await gmail.users.messages.send({ userId: "me", requestBody: { raw } });
