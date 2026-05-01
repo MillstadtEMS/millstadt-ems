@@ -42,6 +42,69 @@ export default function SubmissionDetail() {
     window.location.href = `/admin/submissions?type=${encodeURIComponent(sub?.formType ?? "")}`;
   }
 
+  // Open a clean printable window with just the submission content — no admin
+  // chrome, no dark theme. Reliable across all browsers.
+  function printPdf() {
+    if (!sub) return;
+    const name = String(sub.fields.first_name ?? sub.fields.name ?? "Submission") + " " + String(sub.fields.last_name ?? "");
+    const fieldRows = Object.entries(sub.fields)
+      .filter(([k]) => k !== "formType" && k !== "review_flags")
+      .map(([key, val]) => {
+        const label = formatKey(key);
+        const value = Array.isArray(val) ? val.join(", ") : (val || "—");
+        const escaped = String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\n/g, "<br>");
+        const labelEsc = label.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+        return `<tr><td class="lbl">${labelEsc}</td><td class="val">${escaped}</td></tr>`;
+      }).join("");
+
+    const flagSection = flags.length > 0 ? `
+      <div class="flag-banner">
+        <div class="flag-header">⚠ FLAG FOR REVIEW — ${flags.length} item${flags.length === 1 ? "" : "s"} flagged</div>
+        <ul>${flags.map(f => `<li>${String(f).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</li>`).join("")}</ul>
+      </div>
+    ` : "";
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${name.trim() || "Submission"} — ${sub.formType}</title>
+<style>
+  @page { margin: 0.5in; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; color: #111; margin: 0; padding: 24px; background: #fff; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .meta { color: #555; font-size: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #c9a93a; }
+  .form-type { color: #c9a93a; font-size: 11px; font-weight: 900; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 4px; }
+  .flag-banner { border: 2px solid #dc2626; background: #fef2f2; padding: 16px; margin-bottom: 20px; }
+  .flag-header { color: #b91c1c; font-weight: 900; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+  .flag-banner ul { margin: 0; padding-left: 20px; }
+  .flag-banner li { color: #7f1d1d; font-size: 12px; line-height: 1.5; margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 8px 12px; border-bottom: 1px solid #ddd; vertical-align: top; font-size: 12px; }
+  td.lbl { width: 200px; color: #555; font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
+  td.val { color: #111; line-height: 1.5; }
+  .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #ccc; color: #777; font-size: 10px; display: flex; justify-content: space-between; }
+  @media print { body { padding: 0; } }
+</style></head><body>
+  <div class="form-type">${sub.formType}</div>
+  <h1>${(name.trim() || "Submission").replace(/&/g, "&amp;").replace(/</g, "&lt;")}</h1>
+  <div class="meta">${fmtDate(sub.submittedAt)}</div>
+  ${flagSection}
+  <table><tbody>${fieldRows}</tbody></table>
+  <div class="footer">
+    <span>Submission ID: ${sub.id}</span>
+    <span>Millstadt Ambulance Service</span>
+  </div>
+  <script>window.onload = () => { window.print(); };</script>
+</body></html>`;
+
+    const w = window.open("", "_blank", "width=900,height=1100");
+    if (!w) {
+      alert("Pop-up blocked. Please allow pop-ups for this site to print.");
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  }
+
   if (loading) return <div className="text-slate-500 text-sm py-12">Loading…</div>;
   if (!sub) return <div className="text-slate-500 text-sm py-12">Submission not found.</div>;
 
@@ -97,7 +160,7 @@ export default function SubmissionDetail() {
               <p className="text-slate-400 text-sm mt-1">{fmtDate(sub.submittedAt)}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button onClick={() => window.print()} className="no-print flex items-center gap-2 bg-[#071428] border border-white/10 hover:border-white/20 text-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm transition-colors">
+              <button onClick={printPdf} className="no-print flex items-center gap-2 bg-[#071428] border border-white/10 hover:border-white/20 text-slate-300 font-bold px-4 py-2.5 rounded-xl text-sm transition-colors">
                 <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
                 Print / PDF
               </button>
