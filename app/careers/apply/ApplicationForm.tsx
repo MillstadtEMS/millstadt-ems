@@ -155,6 +155,40 @@ export default function ApplicationForm() {
   const [errorMsg, setErrorMsg] = useState<string>("");
   const formRef = useRef<HTMLFormElement>(null);
 
+  // Capture every field value as the user types, in a ref that survives section
+  // navigation. On submit, we merge this into FormData so values are guaranteed
+  // to be sent even if React unmount/mount cycles wipe DOM input values.
+  const fieldValues = useRef<Record<string, string | string[]>>({});
+  const fileFields = useRef<Record<string, File[]>>({});
+
+  function captureFieldChange(e: React.ChangeEvent<HTMLFormElement>) {
+    const target = e.target as unknown as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+    const name = target.name;
+    if (!name) return;
+    const t = (target as HTMLInputElement).type;
+
+    if (t === "checkbox") {
+      const cb = target as HTMLInputElement;
+      const existing = fieldValues.current[name];
+      const list = Array.isArray(existing) ? [...existing] : (existing ? [existing] : []);
+      if (cb.checked) {
+        if (!list.includes(cb.value)) list.push(cb.value);
+      } else {
+        const idx = list.indexOf(cb.value);
+        if (idx >= 0) list.splice(idx, 1);
+      }
+      fieldValues.current[name] = list;
+    } else if (t === "radio") {
+      const r = target as HTMLInputElement;
+      if (r.checked) fieldValues.current[name] = r.value;
+    } else if (t === "file") {
+      const fi = target as HTMLInputElement;
+      fileFields.current[name] = fi.files ? Array.from(fi.files) : [];
+    } else {
+      fieldValues.current[name] = target.value;
+    }
+  }
+
   function addCert() {
     setCerts((prev) => [...prev, { name: "", number: "", expiry: "" }]);
   }
@@ -205,7 +239,31 @@ export default function ApplicationForm() {
     setStatus("sending");
     setErrorMsg("");
 
-    const fd = new FormData(e.currentTarget);
+    // Build FormData primarily from our captured ref so values survive any
+    // mount/unmount cycles, then merge with any DOM values for safety.
+    const fd = new FormData();
+
+    // 1. Add all captured field values
+    for (const [name, val] of Object.entries(fieldValues.current)) {
+      if (Array.isArray(val)) {
+        for (const v of val) fd.append(name, v);
+      } else {
+        fd.set(name, val);
+      }
+    }
+
+    // 2. Also pull any current DOM values that weren't captured (initial state)
+    const domFd = new FormData(e.currentTarget);
+    for (const [name, val] of domFd.entries()) {
+      if (val instanceof File) continue; // files handled separately
+      if (!fd.has(name)) fd.append(name, val);
+    }
+
+    // 3. Add files from our ref (file inputs unmount on section close, so we
+    //    capture them into a ref and re-attach here).
+    for (const [name, files] of Object.entries(fileFields.current)) {
+      for (const f of files) fd.append(name, f);
+    }
 
     // Pre-flight: check total file size before sending
     let totalBytes = 0;
@@ -306,7 +364,7 @@ export default function ApplicationForm() {
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} encType="multipart/form-data">
+    <form ref={formRef} onSubmit={handleSubmit} onChange={captureFieldChange} encType="multipart/form-data">
       <Section num={1} title="Position Applied For" openSection={openSection} setOpenSection={setOpenSection}>
         <SubBlock title="Position">
           <div className="grid sm:grid-cols-2 gap-4">
