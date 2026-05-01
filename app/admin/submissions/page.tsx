@@ -138,8 +138,16 @@ function SubmissionsContent() {
         <p className="text-slate-400 text-sm mt-1">{submissions.length} submission{submissions.length !== 1 ? "s" : ""}</p>
       </div>
 
-      {/* Status filter pills (Employment Application only) */}
-      {filterType === "Employment Application" && Object.keys(statusCounts).length > 0 && (
+      {/* Status filter pills (Employment Application only) — counts derived
+          from the actual submissions list, treating any submission without
+          a workflow record as "Applied" (the default). */}
+      {filterType === "Employment Application" && submissions.length > 0 && (() => {
+        const livecounts: Record<string, number> = { Applied: 0, Waitlisted: 0, "Interview Process": 0, "Tentative Hire": 0, Hired: 0, Denied: 0 };
+        for (const sub of submissions) {
+          const status = workflowMap[sub.id]?.status ?? "Applied";
+          livecounts[status] = (livecounts[status] ?? 0) + 1;
+        }
+        return (
         <div className="mb-6 flex flex-wrap gap-2">
           {[
             { key: "all", label: "All" },
@@ -150,7 +158,7 @@ function SubmissionsContent() {
             { key: "Hired", label: "Hired" },
             { key: "Denied", label: "Denied" },
           ].map(s => {
-            const count = s.key === "all" ? submissions.length : (statusCounts[s.key] ?? 0);
+            const count = s.key === "all" ? submissions.length : (livecounts[s.key] ?? 0);
             const active = statusFilter === s.key;
             return (
               <button key={s.key} type="button" onClick={() => setStatusFilter(s.key)}
@@ -164,7 +172,8 @@ function SubmissionsContent() {
             );
           })}
         </div>
-      )}
+        );
+      })()}
 
       {loading ? <div className="text-slate-500 text-sm py-12 text-center">Loading…</div> : submissions.length === 0 ? (
         <div className="bg-[#071428] border border-white/10 rounded-2xl p-12 text-center">
