@@ -270,7 +270,7 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-12 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-32 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 2. Personal Information ── */}
       <div className="py-16 bg-[#071428]">
@@ -339,7 +339,7 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-12 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-32 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 3. Eligibility & Background ── */}
       <div className="py-16 bg-[#040d1a]">
@@ -370,7 +370,7 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-12 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-32 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 4. Education ── */}
       <div className="py-16 bg-[#071428]">
@@ -431,7 +431,7 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-12 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-32 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 5. Licensure & Certifications ── */}
       <div className="py-16 bg-[#040d1a]">
@@ -580,7 +580,7 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-12 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-32 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 6. Work History ── */}
       <div className="py-16 bg-[#071428]">
@@ -641,7 +641,7 @@ export default function ApplicationForm() {
         </div>
         </div>
       </div>
-      <div className="h-12 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-32 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 7. EMS Experience & Skills ── */}
       <div className="py-16 bg-[#040d1a]">
@@ -676,7 +676,7 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-12 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-32 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 8. Driving History ── */}
       <div className="py-16 bg-[#071428]">
@@ -697,7 +697,7 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-12 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-32 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 9. I Am Willing To Work ── */}
       <div className="py-16 bg-[#040d1a]">
@@ -713,7 +713,7 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-12 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-32 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 10. Professional References ── */}
       <div className="py-16 bg-[#071428]">
@@ -756,7 +756,7 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-12 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-32 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 11. Additional Information ── */}
       <div className="py-16 bg-[#040d1a]">
@@ -778,7 +778,7 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-12 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-32 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* ── 12. Attachments ── */}
       <div className="py-16 bg-[#071428]">
@@ -808,7 +808,7 @@ export default function ApplicationForm() {
           </div>
         </div>
       </div>
-      <div className="h-12 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <div className="h-32 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
 
       {/* ── 13. Applicant Certification ── */}
       <div className="py-16 bg-[#040d1a]">
@@ -825,7 +825,7 @@ export default function ApplicationForm() {
           </label>
         </div>
       </div>
-      <div className="h-12 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <div className="h-32 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* Submit */}
       <div className="py-16 bg-[#071428]">
