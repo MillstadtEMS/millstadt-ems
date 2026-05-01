@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { buildApplicationFlags } from "@/lib/application-flags";
 
 interface Submission { id: string; formType: string; fields: Record<string, string | string[]>; submittedAt: string; readAt: string | null; }
 
@@ -44,7 +45,9 @@ export default function SubmissionDetail() {
   if (loading) return <div className="text-slate-500 text-sm py-12">Loading…</div>;
   if (!sub) return <div className="text-slate-500 text-sm py-12">Submission not found.</div>;
 
-  const fieldEntries = Object.entries(sub.fields).filter(([k]) => k !== "formType");
+  const fieldEntries = Object.entries(sub.fields).filter(([k]) => k !== "formType" && k !== "review_flags");
+  // Only run flag detection on Employment Application submissions
+  const flags = sub.formType === "Employment Application" ? buildApplicationFlags(sub.fields) : [];
 
   return (
     <>
@@ -86,6 +89,30 @@ export default function SubmissionDetail() {
             </div>
           </div>
         </div>
+
+        {/* ── Flag for review banner — prominent at the top ── */}
+        {flags.length > 0 && (
+          <div className="mb-6 overflow-hidden rounded-2xl border-2 border-red-500/60 bg-red-950/30">
+            <div className="flex items-center gap-3 px-6 py-4 bg-red-600 text-white">
+              <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current shrink-0"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+              <div className="flex-1">
+                <div className="font-black text-base uppercase tracking-wider">Flag for Review</div>
+                <div className="text-sm opacity-90">{flags.length} item{flags.length === 1 ? "" : "s"} flagged on this application</div>
+              </div>
+            </div>
+            <ul className="divide-y divide-red-500/20">
+              {flags.map((flag, i) => (
+                <li key={i} className="flex items-start gap-3 px-6 py-3">
+                  <span className="mt-1.5 w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                  <span className="text-red-100 text-sm leading-relaxed">{flag}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="border-t border-red-500/20 bg-red-950/40 px-6 py-3 text-xs text-red-300/80">
+              Auto-generated based on the applicant&apos;s answers. Review before scheduling an interview or extending an offer.
+            </div>
+          </div>
+        )}
 
         {/* Printable card */}
         <div className="print-area bg-[#071428] border border-white/10 rounded-2xl overflow-hidden">

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { buildApplicationFlags } from "@/lib/application-flags";
 
 interface Category { formType: string; total: number; unread: number; latest: string | null; }
 interface Submission { id: string; formType: string; fields: Record<string, string | string[]>; submittedAt: string; readAt: string | null; }
@@ -131,19 +132,32 @@ function SubmissionsContent() {
         </div>
       ) : (
         <div className="space-y-3">
-          {submissions.map(sub => (
+          {submissions.map(sub => {
+            const flagCount = sub.formType === "Employment Application" ? buildApplicationFlags(sub.fields).length : 0;
+            return (
             <Link key={sub.id} href={`/admin/submissions/${sub.id}`}
-              className="group flex items-center gap-4 bg-[#071428] border border-white/10 hover:border-[#f0b429]/30 rounded-2xl px-6 py-5 transition-colors">
+              className={`group flex items-center gap-4 border rounded-2xl px-6 py-5 transition-colors ${
+                flagCount > 0
+                  ? "bg-red-950/20 border-red-500/40 hover:border-red-500/60"
+                  : "bg-[#071428] border-white/10 hover:border-[#f0b429]/30"
+              }`}>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-1">
+                <div className="flex items-center gap-3 mb-1 flex-wrap">
                   <span className="text-white font-bold text-sm">{nameFromFields(sub.fields)}</span>
                   {!sub.readAt && <span className="w-2 h-2 rounded-full bg-[#f0b429] shrink-0" title="Unread" />}
+                  {flagCount > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-red-500/20 border border-red-500/40 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-red-300">
+                      <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                      {flagCount} Flag{flagCount === 1 ? "" : "s"}
+                    </span>
+                  )}
                 </div>
                 <div className="text-slate-500 text-xs">{fmtDate(sub.submittedAt)}</div>
               </div>
               <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current text-slate-700 group-hover:text-slate-400 transition-colors shrink-0"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
             </Link>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
