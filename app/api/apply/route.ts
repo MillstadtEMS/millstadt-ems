@@ -379,9 +379,9 @@ function buildFlags(fields: Record<string, string>): string[] {
     flags.push(`DEA registration is EXPIRED (${fields.dea_expiry})`);
   }
   // Check expiry on individual certs (BLS, ACLS, etc.) from additional_certs text.
-  // Format per line: "Name: #NUMBER Exp: YYYY-MM-DD"
+  // Format per line: "Name: #NUMBER Exp: YYYY-MM-DD" — the card # may be empty.
   for (const line of (fields.additional_certs || "").split("\n")) {
-    const m = line.match(/^([^:]+):\s*#\S+\s*Exp:\s*(\S+)/);
+    const m = line.match(/^([^:]+):\s*#[^\s]*\s*Exp:\s*(\S+)/);
     if (m) {
       const name = m[1].trim();
       const expDate = m[2].trim();
