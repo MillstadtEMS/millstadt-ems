@@ -5,10 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 
 const inputClass =
-  "w-full bg-[#040d1a] border border-white/20 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-[#f0b429]/70 transition-colors placeholder:text-slate-600";
-const labelClass = "block text-slate-200 text-xs font-black uppercase tracking-[0.14em] mb-3";
+  "w-full bg-[#040d1a] border border-white/20 rounded-lg px-4 py-3 text-white text-base sm:text-sm focus:outline-none focus:border-[#f0b429]/70 transition-colors placeholder:text-slate-600";
+const labelClass = "block text-slate-200 text-xs font-black uppercase tracking-[0.1em] sm:tracking-[0.14em] mb-2 sm:mb-3";
 const selectClass =
-  "w-full bg-[#040d1a] border border-white/20 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-[#f0b429]/70 transition-colors appearance-none";
+  "w-full bg-[#040d1a] border border-white/20 rounded-lg px-4 py-3 text-white text-base sm:text-sm focus:outline-none focus:border-[#f0b429]/70 transition-colors appearance-none";
 
 function SectionHeader({ title }: { title: string }) {
   return (
@@ -30,30 +30,30 @@ function Section({
 }) {
   const isOpen = openSection === num;
   return (
-    <div className="border-b-[8px] border-[#f0b429]/30 bg-[#040d1a]">
+    <div className="border-b-[4px] sm:border-b-[8px] border-[#f0b429]/30 bg-[#040d1a]">
       <button
         type="button"
         onClick={() => setOpenSection(isOpen ? 0 : num)}
-        className={`group w-full flex items-center gap-4 px-6 py-5 text-left transition-colors ${
+        className={`group w-full flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-4 sm:py-5 text-left transition-colors ${
           isOpen ? "bg-[#071428]" : "hover:bg-[#071428]/50"
         }`}
       >
-        <span className={`flex items-center justify-center w-10 h-10 rounded-full font-black text-sm border-2 transition-colors ${
+        <span className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full font-black text-xs sm:text-sm border-2 transition-colors ${
           isOpen
             ? "bg-[#f0b429] border-[#f0b429] text-[#040d1a]"
             : "bg-transparent border-white/20 text-slate-400 group-hover:border-[#f0b429]/40 group-hover:text-[#f0b429]"
         }`}>{num}</span>
-        <h2 className={`flex-1 font-black text-lg uppercase tracking-[0.16em] transition-colors ${
+        <h2 className={`flex-1 font-black text-sm sm:text-lg uppercase tracking-[0.08em] sm:tracking-[0.16em] transition-colors ${
           isOpen ? "text-[#f0b429]" : "text-white group-hover:text-[#f0b429]"
         }`}>{title}</h2>
-        <svg viewBox="0 0 24 24" className={`w-6 h-6 fill-current transition-transform ${
+        <svg viewBox="0 0 24 24" className={`w-5 h-5 sm:w-6 sm:h-6 fill-current transition-transform shrink-0 ${
           isOpen ? "rotate-180 text-[#f0b429]" : "text-slate-500"
         }`}>
           <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z" />
         </svg>
       </button>
       {isOpen && (
-        <div className="px-8 lg:px-16 pb-10 pt-2">
+        <div className="px-4 sm:px-8 lg:px-16 pb-8 sm:pb-10 pt-2">
           {children}
         </div>
       )}
@@ -74,11 +74,11 @@ function SubBlock({
   children: React.ReactNode;
 }) {
   return (
-    <div className="py-10 border-t-[12px] border-[#f0b429]/40 first:border-t-0 first:pt-2 last:pb-2">
+    <div className="py-6 sm:py-10 border-t-[10px] sm:border-t-[12px] border-[#f0b429]/40 first:border-t-0 first:pt-2 last:pb-2">
       {(title || action) && (
         <div className="flex items-center justify-between mb-6">
           {title && (
-            <h3 className="text-[#f0b429] text-sm font-black tracking-[0.2em] uppercase">{title}</h3>
+            <h3 className="text-[#f0b429] text-xs sm:text-sm font-black tracking-[0.12em] sm:tracking-[0.2em] uppercase">{title}</h3>
           )}
           {action}
         </div>
@@ -634,30 +634,34 @@ export default function ApplicationForm() {
                 </button>
               </div>
               <div className="space-y-3">
-                <div className="grid grid-cols-12 gap-4 px-4 pb-2 border-b border-white/8">
+                <div className="hidden sm:grid grid-cols-12 gap-4 px-4 pb-2 border-b border-white/8">
                   <div className="col-span-5 text-slate-500 text-[10px] font-black uppercase tracking-widest">Name</div>
                   <div className="col-span-3 text-slate-500 text-[10px] font-black uppercase tracking-widest">Card #</div>
                   <div className="col-span-3 text-slate-500 text-[10px] font-black uppercase tracking-widest">Expires</div>
                 </div>
                 {certs.map((cert, i) => (
-                  <div key={i} className="grid grid-cols-12 gap-4 items-center py-6 px-4 border-b border-white/8">
-                    <div className="col-span-5">
+                  <div key={i} className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4 sm:items-center py-4 sm:py-6 px-4 border-b border-white/8">
+                    <div className="sm:col-span-5">
+                      <span className="block sm:hidden text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Name</span>
                       {i < defaultCerts.length ? (
-                        <span className="text-slate-200 text-sm font-semibold">{cert.name}</span>
+                        <span className="text-slate-200 text-base sm:text-sm font-semibold">{cert.name}</span>
                       ) : (
-                        <input type="text" value={cert.name} onChange={(e) => updateCert(i, "name", e.target.value)} className={`${inputClass} py-2.5 text-sm`} placeholder="Certification name" />
+                        <input type="text" value={cert.name} onChange={(e) => updateCert(i, "name", e.target.value)} className={inputClass} placeholder="Certification name" />
                       )}
                     </div>
-                    <div className="col-span-3">
-                      <input type="text" value={cert.number} onChange={(e) => updateCert(i, "number", e.target.value)} className={`${inputClass} py-2.5 text-sm`} placeholder="———" />
+                    <div className="sm:col-span-3">
+                      <span className="block sm:hidden text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Card #</span>
+                      <input type="text" value={cert.number} onChange={(e) => updateCert(i, "number", e.target.value)} className={inputClass} placeholder="———" />
                     </div>
-                    <div className="col-span-3">
-                      <input type="date" value={cert.expiry} onChange={(e) => updateCert(i, "expiry", e.target.value)} className={`${inputClass} py-2.5 text-sm`} />
+                    <div className="sm:col-span-3">
+                      <span className="block sm:hidden text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Expires</span>
+                      <input type="date" value={cert.expiry} onChange={(e) => updateCert(i, "expiry", e.target.value)} className={inputClass} />
                     </div>
-                    <div className="col-span-1 flex justify-center">
+                    <div className="sm:col-span-1 flex justify-end sm:justify-center">
                       {i >= defaultCerts.length && (
-                        <button type="button" onClick={() => removeCert(i)} className="text-slate-600 hover:text-red-400 transition-colors">
-                          <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
+                        <button type="button" onClick={() => removeCert(i)} className="text-slate-500 hover:text-red-400 transition-colors text-xs font-black uppercase tracking-wider sm:text-sm">
+                          <span className="sm:hidden">Remove</span>
+                          <svg viewBox="0 0 24 24" className="hidden sm:block w-4 h-4 fill-current"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
                         </button>
                       )}
                     </div>
