@@ -30,7 +30,7 @@ function Section({
 }) {
   const isOpen = openSection === num;
   return (
-    <div className="border-b border-white/10 bg-[#040d1a]">
+    <div className="border-b-[8px] border-[#f0b429]/30 bg-[#040d1a]">
       <button
         type="button"
         onClick={() => setOpenSection(isOpen ? 0 : num)}
