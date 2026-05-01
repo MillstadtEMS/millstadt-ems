@@ -352,6 +352,45 @@ function buildFlags(fields: Record<string, string>): string[] {
     flags.push("Primary professional license information NOT provided");
   }
 
+  // ── Expired license / certification checks ──
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  function isExpired(dateStr: string | undefined): boolean {
+    if (!dateStr || !dateStr.trim()) return false;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return false;
+    return d < today;
+  }
+
+  if (isExpired(fields.dl_expiry)) {
+    flags.push(`Driver's License is EXPIRED (${fields.dl_expiry})`);
+  }
+  if (isExpired(fields.primary_license_expiry)) {
+    flags.push(`Primary professional license is EXPIRED (${fields.primary_license_type ?? "license"} — ${fields.primary_license_expiry})`);
+  }
+  if (isExpired(fields.add_license_expiry)) {
+    flags.push(`Additional license is EXPIRED (${fields.add_license_type ?? "license"} — ${fields.add_license_expiry})`);
+  }
+  if (isExpired(fields.nremt_expiry)) {
+    flags.push(`NREMT certification is EXPIRED (${fields.nremt_expiry})`);
+  }
+  if (isExpired(fields.dea_expiry)) {
+    flags.push(`DEA registration is EXPIRED (${fields.dea_expiry})`);
+  }
+  // Check expiry on individual certs (BLS, ACLS, etc.) from additional_certs text.
+  // Format per line: "Name: #NUMBER Exp: YYYY-MM-DD"
+  for (const line of (fields.additional_certs || "").split("\n")) {
+    const m = line.match(/^([^:]+):\s*#\S+\s*Exp:\s*(\S+)/);
+    if (m) {
+      const name = m[1].trim();
+      const expDate = m[2].trim();
+      if (isExpired(expDate)) {
+        flags.push(`${name} certification is EXPIRED (${expDate})`);
+      }
+    }
+  }
+
   // ── Cert checks based on position ──
   const position = (fields.position || "").toLowerCase();
   // EMT = "EMT (BLS)" specifically. Everyone else (Paramedic, CCP, PHRN, APHRN, PHPA, PHMD) is ALS.
