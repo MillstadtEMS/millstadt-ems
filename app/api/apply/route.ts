@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { createFormSubmission } from "@/lib/db";
 
 export const runtime = "nodejs";
 // Multipart uploads + Gmail API can exceed the 10s default timeout
@@ -147,6 +148,17 @@ export async function POST(req: NextRequest) {
 
     if (skippedFiles.length > 0) {
       fields.skipped_files_note = `NOTE: Some files were too large and skipped: ${skippedFiles.join(", ")}. Applicant should email them separately.`;
+    }
+
+    // Save to DB FIRST so admin can see it even if email fails
+    const dbFields: Record<string, string> = { ...fields };
+    if (attachments.length > 0) {
+      dbFields.attached_files = attachments.map(a => `${a.filename} (${(a.content.length / 1024).toFixed(0)}KB)`).join(", ");
+    }
+    try {
+      await createFormSubmission("Employment Application", dbFields);
+    } catch (e) {
+      console.error("[apply] DB save failed (continuing with email):", e);
     }
 
     const { gmail, sender } = getGmailClient();

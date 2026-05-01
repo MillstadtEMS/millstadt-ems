@@ -107,7 +107,7 @@ export default function RideAlongPage() {
             {/* Form */}
             <div className="lg:col-span-2">
               <ContactFormWrapper
-                formType="Ride-Along Request"
+                formType="Ride Along Request"
                 disclaimer="Requests are reviewed by Millstadt EMS leadership. All submissions are subject to availability, background check requirements, and leadership approval."
               >
 

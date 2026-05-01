@@ -108,7 +108,7 @@ export default function EventRequestPage() {
             {/* Form */}
             <div className="lg:col-span-2">
               <ContactFormWrapper
-                formType="Event / Visit Request"
+                formType="Event Appearance Request"
                 disclaimer="Requests are subject to unit and crew availability. We will contact you to confirm."
               >
 
