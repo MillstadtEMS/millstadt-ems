@@ -74,7 +74,7 @@ function SubBlock({
   children: React.ReactNode;
 }) {
   return (
-    <div className="py-10 border-t-[12px] border-[#0d2138] first:border-t-0 first:pt-2 last:pb-2">
+    <div className="py-10 border-t-[12px] border-[#f0b429]/40 first:border-t-0 first:pt-2 last:pb-2">
       {(title || action) && (
         <div className="flex items-center justify-between mb-6">
           {title && (
@@ -308,82 +308,84 @@ export default function ApplicationForm() {
   return (
     <form ref={formRef} onSubmit={handleSubmit} encType="multipart/form-data">
       <Section num={1} title="Position Applied For" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">            <div>
-              <label className={labelClass}>Position *</label>
-              <div className="grid sm:grid-cols-2 gap-4">
-                {positions.map((pos) => (
-                  <label key={pos} className="flex items-center gap-4 p-3 bg-[#071428] border border-white/10 rounded-lg cursor-pointer hover:border-[#f0b429]/30 transition-colors">
-                    <input type="radio" name="position" value={pos} required className="accent-[#f0b429] w-4 h-4 shrink-0" />
-                    <span className="text-slate-300 text-sm leading-snug">{pos}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className={labelClass}>Employment Type — Select all that apply *</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {["Full-Time", "Part-Time", "PRN", "Volunteer"].map((t) => (
-                  <label key={t} className="flex items-center gap-4 p-3 bg-[#071428] border border-white/10 rounded-lg cursor-pointer hover:border-[#f0b429]/30 transition-colors">
-                    <input type="checkbox" name="employment_type" value={t} className="accent-[#f0b429] w-4 h-4 shrink-0" />
-                    <span className="text-slate-300 text-sm">{t}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className={labelClass}>Days Available — Select all that apply</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-                {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((d) => (
-                  <label key={d} className="flex items-center gap-2 px-3 py-2 bg-[#040d1a] border border-white/15 rounded-lg cursor-pointer hover:border-[#f0b429]/40 transition-colors">
-                    <input type="checkbox" name="days_available" value={d} className="accent-[#f0b429] w-4 h-4 shrink-0" />
-                    <span className="text-slate-300 text-sm">{d.slice(0, 3)}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className={labelClass}>Hours Available — Select all that apply</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[
-                  "Days (911) 0600 – 1800",
-                  "Nights (911) 1800 – 0600",
-                  "24-Hour (911) 0600 – 0600",
-                  "Transfer Truck (variable hours)",
-                  "Standby / Event Coverage",
-                  "On-Call",
-                  "Any / All shifts",
-                ].map((h) => (
-                  <label key={h} className="flex items-center gap-3 px-4 py-3 bg-[#040d1a] border border-white/15 rounded-lg cursor-pointer hover:border-[#f0b429]/40 transition-colors">
-                    <input type="checkbox" name="hours_available" value={h} className="accent-[#f0b429] w-4 h-4 shrink-0" />
-                    <span className="text-slate-300 text-sm leading-snug">{h}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className={labelClass}>Preferred Shift / Notes</label>
-              <input type="text" name="preferred_shift" className={inputClass} placeholder="Anything else about your preferred schedule" />
-            </div>
+        <SubBlock title="Position">
+          <div className="grid sm:grid-cols-2 gap-4">
+            {positions.map((pos) => (
+              <label key={pos} className="flex items-center gap-4 p-3 bg-[#071428] border border-white/10 rounded-lg cursor-pointer hover:border-[#f0b429]/30 transition-colors">
+                <input type="radio" name="position" value={pos} required className="accent-[#f0b429] w-4 h-4 shrink-0" />
+                <span className="text-slate-300 text-sm leading-snug">{pos}</span>
+              </label>
+            ))}
           </div>
+        </SubBlock>
+
+        <SubBlock title="Employment Type">
+          <p className="text-slate-500 text-xs mb-4 -mt-2">Select all that apply</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {["Full-Time", "Part-Time", "PRN", "Volunteer"].map((t) => (
+              <label key={t} className="flex items-center gap-4 p-3 bg-[#071428] border border-white/10 rounded-lg cursor-pointer hover:border-[#f0b429]/30 transition-colors">
+                <input type="checkbox" name="employment_type" value={t} className="accent-[#f0b429] w-4 h-4 shrink-0" />
+                <span className="text-slate-300 text-sm">{t}</span>
+              </label>
+            ))}
+          </div>
+        </SubBlock>
+
+        <SubBlock title="Days Available">
+          <p className="text-slate-500 text-xs mb-4 -mt-2">Select all that apply</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((d) => (
+              <label key={d} className="flex items-center gap-2 px-3 py-2 bg-[#040d1a] border border-white/15 rounded-lg cursor-pointer hover:border-[#f0b429]/40 transition-colors">
+                <input type="checkbox" name="days_available" value={d} className="accent-[#f0b429] w-4 h-4 shrink-0" />
+                <span className="text-slate-300 text-sm">{d.slice(0, 3)}</span>
+              </label>
+            ))}
+          </div>
+        </SubBlock>
+
+        <SubBlock title="Hours Available">
+          <p className="text-slate-500 text-xs mb-4 -mt-2">Select all that apply</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              "Days (911) 0600 – 1800",
+              "Nights (911) 1800 – 0600",
+              "24-Hour (911) 0600 – 0600",
+              "Transfer Truck (variable hours)",
+              "Standby / Event Coverage",
+              "On-Call",
+              "Any / All shifts",
+            ].map((h) => (
+              <label key={h} className="flex items-center gap-3 px-4 py-3 bg-[#040d1a] border border-white/15 rounded-lg cursor-pointer hover:border-[#f0b429]/40 transition-colors">
+                <input type="checkbox" name="hours_available" value={h} className="accent-[#f0b429] w-4 h-4 shrink-0" />
+                <span className="text-slate-300 text-sm leading-snug">{h}</span>
+              </label>
+            ))}
+          </div>
+        </SubBlock>
+
+        <SubBlock title="Preferred Shift / Notes">
+          <input type="text" name="preferred_shift" className={inputClass} placeholder="Anything else about your preferred schedule" />
+        </SubBlock>
       </Section>
       <Section num={2} title="Personal Information" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">          <div>
-            <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">Legal Name</div>
-            <div className="grid sm:grid-cols-3 gap-4">
-              <div>
-                <label className={labelClass}>First Name *</label>
-                <input type="text" name="first_name" required className={inputClass} placeholder="First" />
-              </div>
-              <div>
-                <label className={labelClass}>Last Name *</label>
-                <input type="text" name="last_name" required className={inputClass} placeholder="Last" />
-              </div>
-              <div>
-                <label className={labelClass}>Middle Name</label>
-                <input type="text" name="middle_name" className={inputClass} placeholder="Middle" />
-              </div>
+        <SubBlock title="Legal Name">
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div>
+              <label className={labelClass}>First Name *</label>
+              <input type="text" name="first_name" required className={inputClass} placeholder="First" />
+            </div>
+            <div>
+              <label className={labelClass}>Last Name *</label>
+              <input type="text" name="last_name" required className={inputClass} placeholder="Last" />
+            </div>
+            <div>
+              <label className={labelClass}>Middle Name</label>
+              <input type="text" name="middle_name" className={inputClass} placeholder="Middle" />
             </div>
           </div>
+        </SubBlock>
+
+        <SubBlock title="Date of Birth & SSN">
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className={labelClass}>Date of Birth *</label>
@@ -393,6 +395,11 @@ export default function ApplicationForm() {
               <label className={labelClass}>Social Security Number *</label>
               <input type="text" name="ssn_last4" required maxLength={11} className={inputClass} placeholder="XXX-XX-XXXX" />
             </div>
+          </div>
+        </SubBlock>
+
+        <SubBlock title="Contact Information">
+          <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className={labelClass}>Phone Number *</label>
               <input type="tel" name="phone" required className={inputClass} placeholder="(618) 000-0000" />
@@ -402,6 +409,9 @@ export default function ApplicationForm() {
               <input type="email" name="email" required className={inputClass} placeholder="you@email.com" />
             </div>
           </div>
+        </SubBlock>
+
+        <SubBlock title="Mailing Address">
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className={labelClass}>Street Address</label>
@@ -412,45 +422,51 @@ export default function ApplicationForm() {
               <input type="text" name="city_state_zip" className={inputClass} placeholder="Millstadt, IL 62260" />
             </div>
           </div>
+        </SubBlock>
+
+        <SubBlock title="Driver's License">
           <div className="grid sm:grid-cols-3 gap-4">
             <div>
-              <label className={labelClass}>Driver's License State</label>
+              <label className={labelClass}>State</label>
               <input type="text" name="dl_state" className={inputClass} placeholder="IL" maxLength={2} />
             </div>
             <div>
-              <label className={labelClass}>Driver's License Number</label>
+              <label className={labelClass}>License Number</label>
               <input type="text" name="dl_number" className={inputClass} placeholder="D12345678" />
             </div>
             <div>
-              <label className={labelClass}>DL Expiration Date</label>
+              <label className={labelClass}>Expiration Date</label>
               <input type="date" name="dl_expiry" className={inputClass} />
             </div>
           </div>
-          </div>
+        </SubBlock>
       </Section>
       <Section num={3} title="Eligibility & Background" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">            <div className="grid sm:grid-cols-2 gap-4">
-              <YesNo name="authorized_us" label="Are you legally authorized to work in the U.S.? *" />
-              <YesNo name="felony" label="Have you ever been convicted of a felony?" />
-              <YesNo name="excluded_medicare" label="Have you ever been excluded from Medicare/Medicaid?" />
-              <YesNo name="license_suspended" label="Have you ever had a professional license suspended or revoked?" />
-            </div>
-            <div>
-              <label className={labelClass}>If yes to any above, please explain</label>
-              <textarea name="background_explain" rows={3} className={`${inputClass} resize-none`} placeholder="Provide details..." />
-            </div>
-            <div>
-              <label className={labelClass}>I consent to the following checks</label>
-              <div className="grid sm:grid-cols-3 gap-4">
-                {["Background Check", "Drug Screening", "Driving Record Check"].map((c) => (
-                  <label key={c} className="flex items-center gap-4 p-3 bg-[#071428] border border-white/10 rounded-lg cursor-pointer hover:border-[#f0b429]/30 transition-colors">
-                    <input type="checkbox" name="consents" value={c} className="accent-[#f0b429] w-4 h-4 shrink-0" />
-                    <span className="text-slate-300 text-sm">{c}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+        <SubBlock title="Eligibility Questions">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <YesNo name="authorized_us" label="Are you legally authorized to work in the U.S.? *" />
+            <YesNo name="felony" label="Have you ever been convicted of a felony?" />
+            <YesNo name="excluded_medicare" label="Have you ever been excluded from Medicare/Medicaid?" />
+            <YesNo name="license_suspended" label="Have you ever had a professional license suspended or revoked?" />
           </div>
+        </SubBlock>
+
+        <SubBlock title="Explanation">
+          <label className={labelClass}>If yes to any above, please explain</label>
+          <textarea name="background_explain" rows={3} className={`${inputClass} resize-none`} placeholder="Provide details..." />
+        </SubBlock>
+
+        <SubBlock title="Consents">
+          <label className={labelClass}>I consent to the following checks</label>
+          <div className="grid sm:grid-cols-3 gap-4">
+            {["Background Check", "Drug Screening", "Driving Record Check"].map((c) => (
+              <label key={c} className="flex items-center gap-4 p-3 bg-[#071428] border border-white/10 rounded-lg cursor-pointer hover:border-[#f0b429]/30 transition-colors">
+                <input type="checkbox" name="consents" value={c} className="accent-[#f0b429] w-4 h-4 shrink-0" />
+                <span className="text-slate-300 text-sm">{c}</span>
+              </label>
+            ))}
+          </div>
+        </SubBlock>
       </Section>
       <Section num={4} title="Education" openSection={openSection} setOpenSection={setOpenSection}>
         <SubBlock title="High School">
@@ -653,89 +669,94 @@ export default function ApplicationForm() {
           </div>
       </Section>
       <Section num={6} title="Work History" openSection={openSection} setOpenSection={setOpenSection}>
-          <p className="text-slate-500 text-sm mb-12">List all relevant EMS/medical employment — most recent first.</p>
-        <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">          {employers.map((em, i) => (
-            <div key={i} className="p-10 bg-[#040d1a] border border-white/10 rounded-lg">
-              <div className="flex items-center justify-between mb-10">
-                <span className="text-white font-bold text-base">Employer #{i + 1}</span>
-                {employers.length > 1 && (
-                  <button type="button" onClick={() => removeEmployer(i)} className="text-slate-600 hover:text-red-400 text-xs font-bold tracking-wider transition-colors">Remove</button>
-                )}
+        <p className="text-slate-400 text-sm mb-2">List all relevant EMS/medical employment — most recent first.</p>
+        {employers.map((em, i) => (
+          <SubBlock
+            key={i}
+            title={`Employer #${i + 1}`}
+            action={employers.length > 1 ? (
+              <button type="button" onClick={() => removeEmployer(i)} className="text-slate-500 hover:text-red-400 text-xs font-black uppercase tracking-wider transition-colors">Remove</button>
+            ) : undefined}
+          >
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelClass}>Agency Name</label>
+                <input type="text" value={em.agency} onChange={(e) => updateEmployer(i, "agency", e.target.value)} className={inputClass} placeholder="Agency / Organization" />
               </div>
-              <div className="space-y-10">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className={labelClass}>Agency Name</label>
-                    <input type="text" value={em.agency} onChange={(e) => updateEmployer(i, "agency", e.target.value)} className={inputClass} placeholder="Agency / Organization" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Position Title</label>
-                    <input type="text" value={em.title} onChange={(e) => updateEmployer(i, "title", e.target.value)} className={inputClass} placeholder="e.g. Paramedic" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>From</label>
-                    <input type="month" value={em.from} onChange={(e) => updateEmployer(i, "from", e.target.value)} className={inputClass} />
-                  </div>
-                  <div>
-                    <label className={labelClass}>To</label>
-                    <input type="month" value={em.to} onChange={(e) => updateEmployer(i, "to", e.target.value)} className={inputClass} placeholder="Present" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Full-Time / Part-Time / PRN</label>
-                    <input type="text" value={em.type} onChange={(e) => updateEmployer(i, "type", e.target.value)} className={inputClass} placeholder="e.g. Full-Time" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Supervisor Name & Contact</label>
-                    <input type="text" value={em.supervisor} onChange={(e) => updateEmployer(i, "supervisor", e.target.value)} className={inputClass} placeholder="Name — phone or email" />
-                  </div>
-                </div>
-                <div>
-                  <label className={labelClass}>Reason for Leaving</label>
-                  <input type="text" value={em.reason} onChange={(e) => updateEmployer(i, "reason", e.target.value)} className={inputClass} placeholder="Reason for leaving" />
-                </div>
-                <div>
-                  <label className={labelClass}>Job Duties</label>
-                  <textarea value={em.duties} onChange={(e) => updateEmployer(i, "duties", e.target.value)} rows={3} className={`${inputClass} resize-none`} placeholder="Describe your primary duties..." />
-                </div>
+              <div>
+                <label className={labelClass}>Position Title</label>
+                <input type="text" value={em.title} onChange={(e) => updateEmployer(i, "title", e.target.value)} className={inputClass} placeholder="e.g. Paramedic" />
+              </div>
+              <div>
+                <label className={labelClass}>From</label>
+                <input type="month" value={em.from} onChange={(e) => updateEmployer(i, "from", e.target.value)} className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>To</label>
+                <input type="month" value={em.to} onChange={(e) => updateEmployer(i, "to", e.target.value)} className={inputClass} placeholder="Present" />
+              </div>
+              <div>
+                <label className={labelClass}>Full-Time / Part-Time / PRN</label>
+                <input type="text" value={em.type} onChange={(e) => updateEmployer(i, "type", e.target.value)} className={inputClass} placeholder="e.g. Full-Time" />
+              </div>
+              <div>
+                <label className={labelClass}>Supervisor Name & Contact</label>
+                <input type="text" value={em.supervisor} onChange={(e) => updateEmployer(i, "supervisor", e.target.value)} className={inputClass} placeholder="Name — phone or email" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Reason for Leaving</label>
+                <input type="text" value={em.reason} onChange={(e) => updateEmployer(i, "reason", e.target.value)} className={inputClass} placeholder="Reason for leaving" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Job Duties</label>
+                <textarea value={em.duties} onChange={(e) => updateEmployer(i, "duties", e.target.value)} rows={3} className={`${inputClass} resize-none`} placeholder="Describe your primary duties..." />
               </div>
             </div>
-          ))}
-          <button type="button" onClick={addEmployer} className="flex items-center gap-2 text-[#f0b429] text-sm font-black tracking-wider hover:text-[#d9a320] transition-colors">
-            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" /></svg>
-            ADD ANOTHER EMPLOYER
+          </SubBlock>
+        ))}
+        <SubBlock>
+          <button type="button" onClick={addEmployer}
+            className="flex items-center gap-2 rounded-lg border-2 border-[#f0b429]/50 bg-[#f0b429]/10 px-4 py-2 text-xs font-black uppercase tracking-wider text-[#f0b429] hover:bg-[#f0b429]/20 transition-colors">
+            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" /></svg>
+            Add another employer
           </button>
-        </div>
+        </SubBlock>
       </Section>
-      <Section num={7} title="EMS Experience & Skills" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">            <div className="grid sm:grid-cols-3 gap-4">
-              <div>
-                <label className={labelClass}>Years of EMS Experience</label>
-                <input type="number" name="years_ems" min="0" className={inputClass} placeholder="0" />
-              </div>
-              <div>
-                <label className={labelClass}>Years of ALS Experience</label>
-                <input type="number" name="years_als" min="0" className={inputClass} placeholder="0" />
-              </div>
-              <div>
-                <label className={labelClass}>Years of Critical Care Experience</label>
-                <input type="number" name="years_cc" min="0" className={inputClass} placeholder="0" />
-              </div>
-            </div>
-          </div>
-      </Section>
-      <Section num={8} title="Driving History" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">            <div className="grid sm:grid-cols-2 gap-4">
-              <YesNo name="valid_dl" label="Valid Driver's License?" />
-              <YesNo name="cdl" label="CDL (if applicable)?" />
-              <YesNo name="accidents" label="Accidents in the past 5 years?" />
-              <YesNo name="violations" label="Traffic violations in the past 5 years?" />
-              <YesNo name="dl_suspension" label="License suspension in the past 5 years?" />
+
+      <Section num={7} title="EMS Experience" openSection={openSection} setOpenSection={setOpenSection}>
+        <SubBlock title="Years of Experience">
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div>
+              <label className={labelClass}>EMS</label>
+              <input type="number" name="years_ems" min="0" className={inputClass} placeholder="0" />
             </div>
             <div>
-              <label className={labelClass}>If yes to any above, please explain</label>
-              <textarea name="driving_explain" rows={3} className={`${inputClass} resize-none`} placeholder="Provide details..." />
+              <label className={labelClass}>ALS</label>
+              <input type="number" name="years_als" min="0" className={inputClass} placeholder="0" />
+            </div>
+            <div>
+              <label className={labelClass}>Critical Care</label>
+              <input type="number" name="years_cc" min="0" className={inputClass} placeholder="0" />
             </div>
           </div>
+        </SubBlock>
+      </Section>
+
+      <Section num={8} title="Driving History" openSection={openSection} setOpenSection={setOpenSection}>
+        <SubBlock title="Driving Questions">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <YesNo name="valid_dl" label="Valid Driver's License?" />
+            <YesNo name="cdl" label="CDL (if applicable)?" />
+            <YesNo name="accidents" label="Accidents in the past 5 years?" />
+            <YesNo name="violations" label="Traffic violations in the past 5 years?" />
+            <YesNo name="dl_suspension" label="License suspension in the past 5 years?" />
+          </div>
+        </SubBlock>
+
+        <SubBlock title="Explanation">
+          <label className={labelClass}>If yes to any above, please explain</label>
+          <textarea name="driving_explain" rows={3} className={`${inputClass} resize-none`} placeholder="Provide details..." />
+        </SubBlock>
       </Section>
       <Section num={9} title="I Am Willing To Work" openSection={openSection} setOpenSection={setOpenSection}>
           <div className="grid sm:grid-cols-3 gap-4">
@@ -748,75 +769,75 @@ export default function ApplicationForm() {
           </div>
       </Section>
       <Section num={10} title="Professional References" openSection={openSection} setOpenSection={setOpenSection}>
-          <p className="text-slate-500 text-sm mb-12">Minimum of 3 references required.</p>
-          <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">            {references.map((r, i) => (
-              <div key={i} className="p-10 bg-[#040d1a] border border-white/10 rounded-lg">
-                <div className="flex items-center justify-between mb-10">
-                  <span className="text-white font-bold text-base">Reference #{i + 1}</span>
-                  {references.length > 3 && (
-                    <button type="button" onClick={() => setReferences((p) => p.filter((_, idx) => idx !== i))} className="text-slate-600 hover:text-red-400 text-xs font-bold transition-colors">Remove</button>
-                  )}
-                </div>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className={labelClass}>Name</label>
-                    <input type="text" value={r.name} onChange={(e) => updateReference(i, "name", e.target.value)} className={inputClass} placeholder="Full name" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Title</label>
-                    <input type="text" value={r.title} onChange={(e) => updateReference(i, "title", e.target.value)} className={inputClass} placeholder="e.g. EMS Director" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Relationship to You</label>
-                    <input type="text" value={r.relationship} onChange={(e) => updateReference(i, "relationship", e.target.value)} className={inputClass} placeholder="e.g. Former Supervisor" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Phone / Email</label>
-                    <input type="text" value={r.contact} onChange={(e) => updateReference(i, "contact", e.target.value)} className={inputClass} placeholder="Phone or email" />
-                  </div>
-                </div>
+        <p className="text-slate-400 text-sm mb-2">Minimum of 3 references required.</p>
+        {references.map((r, i) => (
+          <SubBlock
+            key={i}
+            title={`Reference #${i + 1}`}
+            action={references.length > 3 ? (
+              <button type="button" onClick={() => setReferences((p) => p.filter((_, idx) => idx !== i))} className="text-slate-500 hover:text-red-400 text-xs font-black uppercase tracking-wider transition-colors">Remove</button>
+            ) : undefined}
+          >
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelClass}>Name</label>
+                <input type="text" value={r.name} onChange={(e) => updateReference(i, "name", e.target.value)} className={inputClass} placeholder="Full name" />
               </div>
-            ))}
-            <button type="button" onClick={addReference} className="flex items-center gap-2 text-[#f0b429] text-sm font-black tracking-wider hover:text-[#d9a320] transition-colors">
-              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" /></svg>
-              ADD ANOTHER REFERENCE
-            </button>
-          </div>
+              <div>
+                <label className={labelClass}>Title</label>
+                <input type="text" value={r.title} onChange={(e) => updateReference(i, "title", e.target.value)} className={inputClass} placeholder="e.g. EMS Director" />
+              </div>
+              <div>
+                <label className={labelClass}>Relationship to You</label>
+                <input type="text" value={r.relationship} onChange={(e) => updateReference(i, "relationship", e.target.value)} className={inputClass} placeholder="e.g. Former Supervisor" />
+              </div>
+              <div>
+                <label className={labelClass}>Phone / Email</label>
+                <input type="text" value={r.contact} onChange={(e) => updateReference(i, "contact", e.target.value)} className={inputClass} placeholder="Phone or email" />
+              </div>
+            </div>
+          </SubBlock>
+        ))}
+        <SubBlock>
+          <button type="button" onClick={addReference}
+            className="flex items-center gap-2 rounded-lg border-2 border-[#f0b429]/50 bg-[#f0b429]/10 px-4 py-2 text-xs font-black uppercase tracking-wider text-[#f0b429] hover:bg-[#f0b429]/20 transition-colors">
+            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" /></svg>
+            Add another reference
+          </button>
+        </SubBlock>
       </Section>
+
       <Section num={11} title="Additional Information" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">            <div>
-              <label className={labelClass}>Why do you want to work for Millstadt Ambulance Service?</label>
-              <textarea name="why_millstadt" rows={5} className={`${inputClass} resize-none`} placeholder="Tell us about yourself and why you want to join our team..." />
-            </div>
-            <div>
-              <label className={labelClass}>What are 5 goals you have for the next 5 years?</label>
-              <p className="text-slate-500 text-sm mb-3 -mt-1">Personal, professional, educational, financial — anything. List five things you&apos;re working toward.</p>
-              <textarea name="five_year_goals" rows={7} className={`${inputClass} resize-none`} placeholder={"1.\n2.\n3.\n4.\n5."} />
-            </div>
-          </div>
+        <SubBlock title="Why Millstadt EMS?">
+          <textarea name="why_millstadt" rows={5} className={`${inputClass} resize-none`} placeholder="Tell us about yourself and why you want to join our team..." />
+        </SubBlock>
+
+        <SubBlock title="5-Year Goals">
+          <p className="text-slate-400 text-sm mb-3 -mt-1">Personal, professional, educational, financial — anything. List five things you&apos;re working toward.</p>
+          <textarea name="five_year_goals" rows={7} className={`${inputClass} resize-none`} placeholder={"1.\n2.\n3.\n4.\n5."} />
+        </SubBlock>
       </Section>
+
       <Section num={12} title="Attachments" openSection={openSection} setOpenSection={setOpenSection}>
-          <p className="text-slate-500 text-sm mb-12">Upload copies of your licenses, certifications, and supporting documents. Multiple files accepted. All documents will be attached to your application email.</p>
-          <div className="[&>*]:py-10 divide-y-[14px] divide-[#1e3a6e]">            {[
-              { name: "file_resume", label: "Resume / CV" },
-              { name: "file_cover", label: "Cover Letter" },
-              { name: "file_dl", label: "Driver's License Copy" },
-              { name: "file_license", label: "Professional License(s)" },
-              { name: "file_certs", label: "Certification Cards" },
-              { name: "file_immunizations", label: "Immunization Records" },
-              { name: "file_other", label: "Additional Documents" },
-            ].map((f) => (
-              <div key={f.name} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 bg-[#040d1a] border border-white/10 rounded-lg">
-                <span className="text-slate-300 text-sm font-bold w-52 shrink-0">{f.label}</span>
-                <input
-                  type="file"
-                  name={f.name}
-                  multiple
-                  className="text-slate-400 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-[#f0b429]/10 file:text-[#f0b429] file:font-bold file:text-xs file:tracking-wider hover:file:bg-[#f0b429]/20 file:transition-colors cursor-pointer"
-                />
-              </div>
-            ))}
-          </div>
+        <p className="text-slate-400 text-sm mb-2">Upload your licenses, certifications, and supporting documents. Multiple files accepted.</p>
+        {[
+          { name: "file_resume", label: "Resume / CV" },
+          { name: "file_cover", label: "Cover Letter" },
+          { name: "file_dl", label: "Driver's License Copy" },
+          { name: "file_license", label: "Professional License(s)" },
+          { name: "file_certs", label: "Certification Cards" },
+          { name: "file_immunizations", label: "Immunization Records" },
+          { name: "file_other", label: "Additional Documents" },
+        ].map((f) => (
+          <SubBlock key={f.name} title={f.label}>
+            <input
+              type="file"
+              name={f.name}
+              multiple
+              className="text-slate-400 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#f0b429]/10 file:text-[#f0b429] file:font-black file:text-xs file:uppercase file:tracking-wider hover:file:bg-[#f0b429]/20 file:transition-colors cursor-pointer"
+            />
+          </SubBlock>
+        ))}
       </Section>
       <Section num={13} title="Applicant Certification" openSection={openSection} setOpenSection={setOpenSection}>
           <p className="text-slate-400 text-sm leading-relaxed mb-6">
