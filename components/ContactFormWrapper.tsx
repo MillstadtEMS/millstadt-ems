@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+/* Link is used in the success state below */
 
 interface Props {
   formType: string;
@@ -64,29 +65,13 @@ export default function ContactFormWrapper({
     <form onSubmit={handleSubmit} className="space-y-2">
       {children}
 
-      {disclaimer && (
-        <div
-          className="p-4 mt-8 mb-10"
-          style={{ background: "#0d0d0d", border: "1px solid rgba(240,180,41,0.4)", borderLeft: "4px solid #f0b429" }}
-        >
-          <p className="text-xs leading-relaxed text-slate-400">{disclaimer}</p>
-        </div>
-      )}
-
       <button
         type="submit"
         disabled={status === "sending"}
-        className="block w-full py-5 bg-[#f0b429] hover:bg-[#d9a320] disabled:opacity-60 text-[#040d1a] font-black text-base uppercase tracking-widest transition-colors"
+        className="block w-full py-5 mt-10 bg-[#f0b429] hover:bg-[#d9a320] disabled:opacity-60 text-[#040d1a] font-black text-base uppercase tracking-widest transition-colors"
       >
         {status === "sending" ? "Submitting…" : "Submit Request"}
       </button>
-
-      <Link
-        href={backHref}
-        className="block text-center text-slate-500 hover:text-slate-300 text-xs uppercase tracking-widest font-bold mt-6 transition-colors"
-      >
-        ← Cancel and return to forms
-      </Link>
 
       {status === "error" && (
         <p className="text-red-400 text-sm pt-4">
