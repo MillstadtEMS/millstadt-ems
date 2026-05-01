@@ -51,11 +51,30 @@ export default function SubmissionDetail() {
 
   return (
     <>
-      {/* Print styles */}
+      {/* Print styles — hide everything except the print-area card.
+          Uses visibility (not display) so ancestors stay laid out, and
+          repositions the print-area to fill the page. */}
       <style>{`
         @media print {
-          body > * { display: none !important; }
-          .print-area { display: block !important; }
+          @page { margin: 0.5in; }
+          body { background: #ffffff !important; color: #000 !important; }
+          body * { visibility: hidden !important; }
+          .print-area, .print-area * { visibility: visible !important; }
+          .print-area {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            background: #ffffff !important;
+            color: #000 !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          .print-area * {
+            background: transparent !important;
+            color: #000 !important;
+            border-color: #ccc !important;
+          }
           .no-print { display: none !important; }
         }
       `}</style>
