@@ -53,7 +53,7 @@ function Section({
         </svg>
       </button>
       {isOpen && (
-        <div className="px-6 pb-10 pt-2 max-w-4xl mx-auto">
+        <div className="px-8 lg:px-16 pb-10 pt-2">
           {children}
         </div>
       )}
@@ -82,6 +82,7 @@ function YesNo({ name, label }: { name: string; label: string }) {
 type Cert = { name: string; number: string; expiry: string };
 type Employer = { agency: string; title: string; from: string; to: string; type: string; supervisor: string; reason: string; duties: string };
 type Reference = { name: string; title: string; relationship: string; contact: string };
+type College = { name: string; degree: string; gradYear: string; honors: string; gpa: string };
 
 const defaultCerts: Cert[] = [
   { name: "BLS", number: "", expiry: "" },
@@ -100,14 +101,7 @@ const defaultCerts: Cert[] = [
 
 const defaultEmployer = (): Employer => ({ agency: "", title: "", from: "", to: "", type: "", supervisor: "", reason: "", duties: "" });
 const defaultReference = (): Reference => ({ name: "", title: "", relationship: "", contact: "" });
-
-const skills = [
-  "911 Response", "Interfacility Transport", "Critical Care Transport",
-  "RSI / Advanced Airway", "Ventilator Management", "IV/IO Access",
-  "Cardiac Monitoring / 12-Lead Interpretation", "Medication Infusions",
-  "Trauma Management", "Pediatric Care", "Geriatric Care",
-  "Community Paramedicine", "Telehealth / Consults",
-];
+const defaultCollege = (): College => ({ name: "", degree: "", gradYear: "", honors: "", gpa: "" });
 
 const availability = [
   "Day Shifts", "Night Shifts", "Weekends", "Holidays",
@@ -128,6 +122,7 @@ export default function ApplicationForm() {
   const [certs, setCerts] = useState<Cert[]>(defaultCerts);
   const [employers, setEmployers] = useState<Employer[]>([defaultEmployer(), defaultEmployer(), defaultEmployer()]);
   const [references, setReferences] = useState<Reference[]>([defaultReference(), defaultReference(), defaultReference()]);
+  const [colleges, setColleges] = useState<College[]>([defaultCollege()]);
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [openSection, setOpenSection] = useState(1);
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -165,6 +160,17 @@ export default function ApplicationForm() {
 
   function updateReference(i: number, field: keyof Reference, val: string) {
     setReferences((prev) => prev.map((r, idx) => idx === i ? { ...r, [field]: val } : r));
+  }
+
+  function addCollege() {
+    setColleges((prev) => [...prev, defaultCollege()]);
+  }
+  function updateCollege(i: number, field: keyof College, val: string) {
+    setColleges((prev) => prev.map((c, idx) => idx === i ? { ...c, [field]: val } : c));
+  }
+  function removeCollege(i: number) {
+    if (colleges.length <= 1) return;
+    setColleges((prev) => prev.filter((_, idx) => idx !== i));
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -212,6 +218,12 @@ export default function ApplicationForm() {
       `${c.name}: #${c.number} Exp: ${c.expiry}`
     ).join("\n");
     fd.set("additional_certs", certText);
+
+    // Serialize dynamic colleges
+    const collegeText = colleges.map((c, i) =>
+      `College #${i + 1}: ${c.name} | Degree: ${c.degree} | Grad: ${c.gradYear} | Honors: ${c.honors} | GPA: ${c.gpa}`
+    ).join("\n");
+    fd.set("college_education", collegeText);
 
     try {
       const res = await fetch("/api/apply", { method: "POST", body: fd });
@@ -269,7 +281,7 @@ export default function ApplicationForm() {
   return (
     <form ref={formRef} onSubmit={handleSubmit} encType="multipart/form-data">
       <Section num={1} title="Position Applied For" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="space-y-0 divide-y divide-white/10 [&>*]:py-10 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div>
+          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div>
               <label className={labelClass}>Position *</label>
               <div className="grid sm:grid-cols-2 gap-4">
                 {positions.map((pos) => (
@@ -328,7 +340,7 @@ export default function ApplicationForm() {
           </div>
       </Section>
       <Section num={2} title="Personal Information" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="space-y-0 divide-y divide-white/10 [&>*]:py-10 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">          <div>
+          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">          <div>
             <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">Legal Name</div>
             <div className="grid sm:grid-cols-3 gap-4">
               <div>
@@ -390,7 +402,7 @@ export default function ApplicationForm() {
           </div>
       </Section>
       <Section num={3} title="Eligibility & Background" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="space-y-0 divide-y divide-white/10 [&>*]:py-10 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div className="grid sm:grid-cols-2 gap-4">
               <YesNo name="authorized_us" label="Are you legally authorized to work in the U.S.? *" />
               <YesNo name="felony" label="Have you ever been convicted of a felony?" />
               <YesNo name="excluded_medicare" label="Have you ever been excluded from Medicare/Medicaid?" />
@@ -414,7 +426,7 @@ export default function ApplicationForm() {
           </div>
       </Section>
       <Section num={4} title="Education" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="space-y-0 divide-y divide-white/10 [&>*]:py-10 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div>
+          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div>
               <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">High School</div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
@@ -428,41 +440,46 @@ export default function ApplicationForm() {
               </div>
             </div>
             <div>
-              <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">College / University</div>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelClass}>Institution</label>
-                  <input type="text" name="college_name" className={inputClass} placeholder="University Name" />
-                </div>
-                <div>
-                  <label className={labelClass}>Degree</label>
-                  <input type="text" name="college_degree" className={inputClass} placeholder="e.g. B.S., A.A.S." />
-                </div>
-                <div>
-                  <label className={labelClass}>Field of Study</label>
-                  <input type="text" name="college_field" className={inputClass} placeholder="e.g. Paramedicine" />
-                </div>
-                <div>
-                  <label className={labelClass}>Graduation Year</label>
-                  <input type="text" name="college_grad" className={inputClass} placeholder="YYYY" maxLength={4} />
-                </div>
+              <div className="flex items-center justify-between mb-6">
+                <div className="text-slate-500 text-xs font-black tracking-widest uppercase">College / University</div>
+                <button type="button" onClick={addCollege}
+                  className="rounded-lg border-2 border-[#f0b429]/50 bg-[#f0b429]/10 px-4 py-2 text-xs font-black uppercase tracking-wider text-[#f0b429] hover:bg-[#f0b429]/20 transition-colors">
+                  + Add another
+                </button>
               </div>
-            </div>
-            <div>
-              <div className="text-slate-500 text-xs font-black tracking-widest uppercase mb-6">EMS / Medical Training Program</div>
-              <div className="grid sm:grid-cols-3 gap-4">
-                <div>
-                  <label className={labelClass}>Program Name</label>
-                  <input type="text" name="ems_program" className={inputClass} placeholder="e.g. SIUE Paramedic" />
-                </div>
-                <div>
-                  <label className={labelClass}>Certification Earned</label>
-                  <input type="text" name="ems_cert" className={inputClass} placeholder="e.g. Paramedic" />
-                </div>
-                <div>
-                  <label className={labelClass}>Completion Date</label>
-                  <input type="date" name="ems_complete" className={inputClass} />
-                </div>
+              <div className="space-y-6">
+                {colleges.map((c, i) => (
+                  <div key={i} className="p-6 bg-[#040d1a] border border-white/10 rounded-lg">
+                    <div className="flex items-center justify-between mb-5">
+                      <span className="text-white font-bold text-sm">College #{i + 1}</span>
+                      {colleges.length > 1 && (
+                        <button type="button" onClick={() => removeCollege(i)} className="text-slate-600 hover:text-red-400 text-xs font-bold tracking-wider transition-colors">Remove</button>
+                      )}
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className={labelClass}>College / University</label>
+                        <input type="text" value={c.name} onChange={(e) => updateCollege(i, "name", e.target.value)} className={inputClass} placeholder="Institution name" />
+                      </div>
+                      <div>
+                        <label className={labelClass}>Degree</label>
+                        <input type="text" value={c.degree} onChange={(e) => updateCollege(i, "degree", e.target.value)} className={inputClass} placeholder="e.g. B.S., A.A.S." />
+                      </div>
+                      <div>
+                        <label className={labelClass}>Graduation Year</label>
+                        <input type="text" value={c.gradYear} onChange={(e) => updateCollege(i, "gradYear", e.target.value)} className={inputClass} placeholder="YYYY" maxLength={4} />
+                      </div>
+                      <div>
+                        <label className={labelClass}>Cumulative GPA</label>
+                        <input type="text" value={c.gpa} onChange={(e) => updateCollege(i, "gpa", e.target.value)} className={inputClass} placeholder="e.g. 3.85" />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className={labelClass}>University Honors</label>
+                        <input type="text" value={c.honors} onChange={(e) => updateCollege(i, "honors", e.target.value)} className={inputClass} placeholder="e.g. Dean's List, Magna Cum Laude, Honors Society" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -612,7 +629,7 @@ export default function ApplicationForm() {
       </Section>
       <Section num={6} title="Work History" openSection={openSection} setOpenSection={setOpenSection}>
           <p className="text-slate-500 text-sm mb-12">List all relevant EMS/medical employment — most recent first.</p>
-        <div className="space-y-0 divide-y divide-white/10 [&>*]:py-10 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">          {employers.map((em, i) => (
+        <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">          {employers.map((em, i) => (
             <div key={i} className="p-10 bg-[#040d1a] border border-white/10 rounded-lg">
               <div className="flex items-center justify-between mb-10">
                 <span className="text-white font-bold text-base">Employer #{i + 1}</span>
@@ -665,7 +682,7 @@ export default function ApplicationForm() {
         </div>
       </Section>
       <Section num={7} title="EMS Experience & Skills" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="space-y-0 divide-y divide-white/10 [&>*]:py-10 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div className="grid sm:grid-cols-3 gap-4">
+          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div className="grid sm:grid-cols-3 gap-4">
               <div>
                 <label className={labelClass}>Years of EMS Experience</label>
                 <input type="number" name="years_ems" min="0" className={inputClass} placeholder="0" />
@@ -679,21 +696,10 @@ export default function ApplicationForm() {
                 <input type="number" name="years_cc" min="0" className={inputClass} placeholder="0" />
               </div>
             </div>
-            <div>
-              <label className={labelClass}>Skills Checklist</label>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {skills.map((s) => (
-                  <label key={s} className="flex items-center gap-4 p-3 bg-[#071428] border border-white/10 rounded-lg cursor-pointer hover:border-[#f0b429]/30 transition-colors">
-                    <input type="checkbox" name="skills" value={s} className="accent-[#f0b429] w-4 h-4 shrink-0" />
-                    <span className="text-slate-300 text-sm">{s}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
           </div>
       </Section>
       <Section num={8} title="Driving History" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="space-y-0 divide-y divide-white/10 [&>*]:py-10 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div className="grid sm:grid-cols-2 gap-4">
               <YesNo name="valid_dl" label="Valid Driver's License?" />
               <YesNo name="cdl" label="CDL (if applicable)?" />
               <YesNo name="accidents" label="Accidents in the past 5 years?" />
@@ -718,7 +724,7 @@ export default function ApplicationForm() {
       </Section>
       <Section num={10} title="Professional References" openSection={openSection} setOpenSection={setOpenSection}>
           <p className="text-slate-500 text-sm mb-12">Minimum of 3 references required.</p>
-          <div className="space-y-0 divide-y divide-white/10 [&>*]:py-10 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            {references.map((r, i) => (
+          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            {references.map((r, i) => (
               <div key={i} className="p-10 bg-[#040d1a] border border-white/10 rounded-lg">
                 <div className="flex items-center justify-between mb-10">
                   <span className="text-white font-bold text-base">Reference #{i + 1}</span>
@@ -753,7 +759,7 @@ export default function ApplicationForm() {
           </div>
       </Section>
       <Section num={11} title="Additional Information" openSection={openSection} setOpenSection={setOpenSection}>
-          <div className="space-y-0 divide-y divide-white/10 [&>*]:py-10 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div>
+          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            <div>
               <label className={labelClass}>Why do you want to work for Millstadt Ambulance Service?</label>
               <textarea name="why_millstadt" rows={5} className={`${inputClass} resize-none`} placeholder="Tell us about yourself and why you want to join our team..." />
             </div>
@@ -769,7 +775,7 @@ export default function ApplicationForm() {
       </Section>
       <Section num={12} title="Attachments" openSection={openSection} setOpenSection={setOpenSection}>
           <p className="text-slate-500 text-sm mb-12">Upload copies of your licenses, certifications, and supporting documents. Multiple files accepted. All documents will be attached to your application email.</p>
-          <div className="space-y-0 divide-y divide-white/10 [&>*]:py-10 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            {[
+          <div className="space-y-0 [&>*]:relative [&>*]:py-12 [&>*+*]:border-t-8 [&>*+*]:border-[#0d2138] [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">            {[
               { name: "file_resume", label: "Resume / CV" },
               { name: "file_cover", label: "Cover Letter" },
               { name: "file_dl", label: "Driver's License Copy" },
@@ -804,7 +810,7 @@ export default function ApplicationForm() {
 
       {/* Submit */}
       <div className="py-10 bg-[#071428]">
-        <div className="wrap max-w-4xl">
+        <div className="wrap">
           <div className="flex flex-col gap-4 max-w-sm">
             <button
               type="submit"
