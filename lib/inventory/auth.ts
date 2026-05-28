@@ -128,8 +128,11 @@ export async function isInventoryAuthed(): Promise<boolean> {
   try {
     const jar = await cookies();
     const token = jar.get(COOKIE)?.value;
-    if (!token) return false;
-    return await verifyInventorySession(token);
+    if (token && (await verifyInventorySession(token))) return true;
+    // Lounge SSO bridge: any active lounge employee can access inventory.
+    const { currentEmployee } = await import("@/lib/lounge/auth");
+    const emp = await currentEmployee();
+    return !!emp && emp.isActive;
   } catch {
     return false;
   }

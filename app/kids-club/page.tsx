@@ -79,9 +79,8 @@ export default function KidsClubHubPage() {
             </h2>
 
             <p className="mt-6 max-w-full text-xl font-semibold leading-9 text-slate-100 md:max-w-2xl md:text-2xl">
-              Join the Millstadt EMS Kids Club for fun monthly safety missions,
-              coloring pages, and easy emergency tips you can practice at home
-              with your family.
+              Fun monthly safety missions, coloring pages, and easy emergency
+              tips your family can practice together at home.
             </p>
 
             <div className="mt-10 flex max-w-full flex-col gap-4 sm:flex-row">

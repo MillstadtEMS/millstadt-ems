@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import LoungeButton from "./LoungeButton";
 
 export default function SiteShell({
   header,
@@ -13,7 +14,9 @@ export default function SiteShell({
 }) {
   const pathname = usePathname() || "";
   const standalone =
-    pathname.startsWith("/truckcheck") || pathname.startsWith("/inventory");
+    pathname.startsWith("/truckcheck") ||
+    pathname.startsWith("/inventory") ||
+    pathname.startsWith("/lounge");
 
   if (standalone) {
     return (
@@ -30,6 +33,7 @@ export default function SiteShell({
         {children}
       </main>
       {footer}
+      <LoungeButton />
     </>
   );
 }

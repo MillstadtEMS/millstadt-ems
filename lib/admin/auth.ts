@@ -1,5 +1,6 @@
 import { createHmac } from "crypto";
 import { cookies } from "next/headers";
+import { currentEmployee } from "@/lib/lounge/auth";
 
 const COOKIE = "mas_admin";
 const MAX_AGE = 60 * 60 * 8; // 8 hours
@@ -22,11 +23,21 @@ export function verifySessionToken(token: string): boolean {
   return sign(ts) === sig;
 }
 
+/**
+ * Returns true if either:
+ *   - the legacy shared-admin-password cookie (mas_admin) is valid, OR
+ *   - a logged-in lounge employee has is_admin = true.
+ *
+ * This lets the lounge SSO replace the shared password without touching
+ * every /api/admin/* route. Once the legacy cookie path is removed we
+ * can drop the first half.
+ */
 export async function isAdminAuthed(): Promise<boolean> {
   const jar = await cookies();
   const token = jar.get(COOKIE)?.value;
-  if (!token) return false;
-  return verifySessionToken(token);
+  if (token && verifySessionToken(token)) return true;
+  const emp = await currentEmployee();
+  return !!emp && emp.isAdmin && emp.isActive;
 }
 
 export function sessionCookieOptions(token: string) {

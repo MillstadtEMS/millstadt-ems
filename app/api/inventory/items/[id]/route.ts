@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isInventoryAuthedFromRequest } from "@/lib/inventory/auth";
 import { getItem, updateItem } from "@/lib/inventory/db";
+import { currentEmployee } from "@/lib/lounge/auth";
 
 export async function GET(
   req: NextRequest,
@@ -34,7 +35,13 @@ export async function PATCH(
     return NextResponse.json({ error: "Version required for concurrent editing" }, { status: 400 });
   }
 
-  const result = await updateItem(id, version, { currentStock, expiredQty, notes, par }, "inventory");
+  // Auto-stamp the lounge-logged-in user when present, so the audit log
+  // shows who edited what. Falls back to generic "inventory" for legacy
+  // shared-password sessions until that path is fully retired.
+  const me = await currentEmployee();
+  const changedBy = me ? me.username : "inventory";
+
+  const result = await updateItem(id, version, { currentStock, expiredQty, notes, par }, changedBy);
   if (result.conflict) {
     return NextResponse.json(
       { error: "Conflict — item was updated by another user", item: result.item },
