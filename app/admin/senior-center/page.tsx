@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { upload as blobUpload } from "@vercel/blob/client";
 
 const MONTHS = [
   "january","february","march","april","may","june",
@@ -43,23 +44,22 @@ export default function SeniorCenterAdmin() {
     if (!file) return;
     setStatus(type, { type, state: "uploading" });
 
-    const form = new FormData();
-    form.append("type",  type);
-    form.append("month", month);
-    form.append("year",  year);
-    form.append("file",  file);
+    // Upload directly from the browser to Vercel Blob. The file never passes
+    // through our serverless function, so it isn't subject to the 4.5 MB
+    // request-body limit — large newsletter PDFs go through fine.
+    const pathname = `senior-center/${year}/${month}_${type}.pdf`;
 
     try {
-      const res  = await fetch("/api/admin/senior-center", { method: "POST", body: form });
-      const json = await res.json();
-      if (!res.ok) {
-        setStatus(type, { type, state: "error", msg: json.error ?? "Upload failed" });
-      } else {
-        setStatus(type, { type, state: "done", msg: "Live on the site!" });
-        setFiles(prev => ({ ...prev, [type]: null }));
-      }
-    } catch {
-      setStatus(type, { type, state: "error", msg: "Network error" });
+      await blobUpload(pathname, file, {
+        access: "public",
+        contentType: "application/pdf",
+        handleUploadUrl: "/api/admin/senior-center",
+      });
+      setStatus(type, { type, state: "done", msg: "Live on the site!" });
+      setFiles(prev => ({ ...prev, [type]: null }));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setStatus(type, { type, state: "error", msg });
     }
   }
 

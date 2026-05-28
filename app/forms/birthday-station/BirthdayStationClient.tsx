@@ -74,7 +74,7 @@ export default function BirthdayStationClient() {
         ]}
       />
 
-      <div className="wrap pt-16 pb-40 max-w-[920px]">
+      <div className="wrap pt-16 max-w-[920px]">
         <ContactFormWrapper
           formType="Birthday Party at Station Request"
           disclaimer="A small fee may apply. All submissions are subject to station and crew availability."

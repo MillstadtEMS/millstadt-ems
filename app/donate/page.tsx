@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { getContent } from "@/lib/db";
+import SectionDivider from "@/components/SectionDivider";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function DonatePage({
   return (
     <>
       {/* Page Header */}
-      <section className="relative pt-16 pb-28 bg-[#040d1a] overflow-hidden">
+      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
         <div className="relative wrap">
@@ -52,10 +53,10 @@ export default async function DonatePage({
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-24 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* Venmo Donation */}
-      <section className="pb-40 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>
         <div className="wrap grid md:grid-cols-2 gap-20 items-center">
           {/* QR Code */}
           <div className="flex flex-col items-center">
@@ -111,10 +112,10 @@ export default async function DonatePage({
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* What Donations Fund */}
-      <section className="py-28 bg-[#071428]">
+      <section className="bg-[#071428]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap">
           <div className="flex items-center gap-3 mb-8">
             <span className="h-px w-8 bg-[#f0b429]" />
@@ -171,10 +172,10 @@ export default async function DonatePage({
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* CTA */}
-      <section className="pb-40 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>
         <div className="wrap">
           <h2 className="text-4xl font-black text-white mb-4">Questions About Donating?</h2>
           <p className="text-slate-400 text-lg mb-10">Reach out to us directly — we appreciate every contribution.</p>
@@ -188,7 +189,6 @@ export default async function DonatePage({
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-[#040d1a]" />
-    </>
+      </>
   );
 }

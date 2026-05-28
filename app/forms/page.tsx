@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import SectionDivider from "@/components/SectionDivider";
 
 export const metadata: Metadata = {
   title: "Forms",
@@ -62,7 +63,7 @@ export default function FormsPage() {
   return (
     <>
       {/* Page Header */}
-      <section className="relative pt-16 pb-24 bg-[#040d1a] overflow-hidden">
+      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
         <div className="relative wrap">
@@ -78,7 +79,7 @@ export default function FormsPage() {
       </section>
 
       {/* Form Cards */}
-      <section className="py-24 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap">
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {forms.map((form, i) => (
@@ -112,7 +113,7 @@ export default function FormsPage() {
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* Contact note */}
       <section className="py-16 bg-[#071428] border-t border-white/5">

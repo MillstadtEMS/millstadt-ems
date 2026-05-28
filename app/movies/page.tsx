@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import SectionDivider from "@/components/SectionDivider";
 
 export const metadata: Metadata = {
   title: "Honorable but Broken: EMS in Crisis — Documentary",
@@ -12,7 +13,7 @@ export default function MoviesPage() {
   return (
     <>
       {/* Page Header */}
-      <section className="relative pt-16 pb-28 bg-[#040d1a] overflow-hidden">
+      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
         <div className="relative wrap">
@@ -30,7 +31,7 @@ export default function MoviesPage() {
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-24 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* Video Embed */}
       <section className="pb-20 bg-[#040d1a]">
@@ -48,10 +49,10 @@ export default function MoviesPage() {
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-24 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* Watch on Tubi */}
-      <section className="pb-24 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap">
           <div className="text-[#f0b429] text-sm font-black tracking-[0.25em] uppercase mb-4">Stream Free</div>
           <p className="text-slate-300 text-xl mb-10">Watch the full documentary on Tubi — free, no subscription required.</p>
@@ -72,7 +73,7 @@ export default function MoviesPage() {
       <div className="h-16 bg-[#040d1a]" />
 
       {/* Synopsis */}
-      <section className="py-28 bg-[#071428]">
+      <section className="bg-[#071428]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap">
           <div className="flex items-center gap-3 mb-8">
             <span className="h-px w-8 bg-[#f0b429]" />
@@ -119,10 +120,10 @@ export default function MoviesPage() {
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* Why It Matters */}
-      <section className="pb-40 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>
         <div className="wrap">
           <div className="flex items-center gap-3 mb-8">
             <span className="h-px w-8 bg-[#f0b429]" />
@@ -153,7 +154,6 @@ export default function MoviesPage() {
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-[#040d1a]" />
-    </>
+      </>
   );
 }

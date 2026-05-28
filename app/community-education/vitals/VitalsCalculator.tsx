@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import SectionDivider from "@/components/SectionDivider";
 
 // ── Types ─────────────────────────────────────────────────────────────
 type Status = "idle" | "normal" | "elevated" | "warning" | "danger";
@@ -331,7 +332,7 @@ export default function VitalsCalculator() {
       `}</style>
 
       {/* Page Header */}
-      <section className="relative pt-16 pb-28 bg-[#040d1a] overflow-hidden">
+      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
         {/* Ambient glow orb */}
@@ -357,7 +358,7 @@ export default function VitalsCalculator() {
       <ECGBand />
 
       {/* Cards Grid */}
-      <section className="py-28 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
 
@@ -489,7 +490,7 @@ export default function VitalsCalculator() {
       </section>
 
       {/* Disclaimer footer */}
-      <section className="py-24 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap max-w-3xl mx-auto">
           <div className="rounded-2xl border border-white/8 p-14 text-center" style={{ background: "rgba(7,20,40,0.6)" }}>
             <div className="text-[#f0b429] text-xs font-black tracking-[0.25em] uppercase mb-6">Educational Disclaimer</div>
@@ -508,8 +509,6 @@ export default function VitalsCalculator() {
           </div>
         </div>
       </section>
-
-      <div className="h-40 bg-[#040d1a]" />
-    </>
+      </>
   );
 }

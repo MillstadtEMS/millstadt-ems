@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import SectionDivider from "@/components/SectionDivider";
 
 interface Post {
   id: string; author: string; title: string; body: string;
@@ -20,7 +21,7 @@ export default function BulletinPage() {
   return (
     <>
       {/* Header */}
-      <section className="pt-16 pb-20 bg-gradient-to-b from-[#071428] to-[#040d1a] border-b border-white/5">
+      <section className="bg-gradient-to-b from-[#071428] to-[#040d1a] border-b border-white/5" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="wrap">
           <div className="flex items-center gap-3 mb-6">
             <span className="h-px w-8 bg-[#f0b429]" />
@@ -57,7 +58,6 @@ export default function BulletinPage() {
           )}
         </div>
       </section>
-      <div className="h-24 bg-[#040d1a]" />
-    </>
+      </>
   );
 }

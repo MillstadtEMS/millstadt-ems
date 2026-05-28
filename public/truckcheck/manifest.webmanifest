@@ -1,0 +1,25 @@
+{
+  "name": "Millstadt EMS Truck Check",
+  "short_name": "Truck Check",
+  "description": "Daily ambulance inspection — Millstadt EMS",
+  "start_url": "/truckcheck",
+  "scope": "/truckcheck",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#040d1a",
+  "theme_color": "#040d1a",
+  "icons": [
+    {
+      "src": "/images/millstadt-ems/pwa-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/millstadt-ems/pwa-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -29,7 +29,7 @@ export default function RideAlongPage() {
         ]}
       />
 
-      <div className="wrap pt-16 pb-40 max-w-[920px]">
+      <div className="wrap pt-16 max-w-[920px]">
         <ContactFormWrapper
           formType="Ride Along Request"
           disclaimer="Requests are reviewed by Millstadt EMS leadership. All submissions are subject to availability, background check requirements, and leadership approval."

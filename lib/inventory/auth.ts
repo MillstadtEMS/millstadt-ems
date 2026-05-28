@@ -73,7 +73,7 @@ export async function setPasswordHash(hash: string): Promise<void> {
 export async function ensurePassword(): Promise<void> {
   const existing = await getPasswordHash();
   if (existing) return;
-  const initial = process.env.INVENTORY_PASSWORD ?? "$Millstadtinventory3935!";
+  const initial = process.env.INVENTORY_PASSWORD ?? "$Millstadt3935!";
   const hash = hashPassword(initial);
   await setPasswordHash(hash);
 }

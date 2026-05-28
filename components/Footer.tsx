@@ -9,6 +9,7 @@ const footerNav = {
     { href: "/medical-control", label: "Medical Control" },
     { href: "/community-education", label: "Community Education" },
     { href: "/events", label: "Events" },
+    { href: "/kids-club", label: "Kids Club" },
   ],
   resources: [
     { href: "/billing", label: "Billing Information" },
@@ -24,7 +25,7 @@ export default function Footer() {
       {/* Top accent bar */}
       <div className="h-1 bg-gradient-to-r from-[#1a3a6e] via-[#f0b429] to-[#1a3a6e]" />
 
-      <div className="wrap py-16">
+      <div className="wrap py-10">
         <div className="flex flex-col md:flex-row justify-center gap-10">
 
           {/* Brand block */}
@@ -56,12 +57,12 @@ export default function Footer() {
           </div>
 
           {/* Agency nav */}
-          <div className="md:w-48 shrink-0">
+          <div className="md:w-96 shrink-0">
             <div className="text-white font-bold text-xs uppercase tracking-widest mb-5 flex items-center gap-2">
               <span className="w-6 h-px bg-[#f0b429]" />
               Agency
             </div>
-            <ul className="space-y-3">
+            <ul className="grid grid-cols-2 gap-x-6 gap-y-3">
               {footerNav.agency.map((l) => (
                 <li key={l.href}>
                   <Link
@@ -130,7 +131,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="mt-8 pt-6 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-slate-600 text-xs">
             &copy; {new Date().getFullYear()} Millstadt Ambulance Service. All rights reserved.
           </p>

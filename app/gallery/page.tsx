@@ -11,7 +11,7 @@ export default function GalleryPage() {
   return (
     <>
       {/* Page Header */}
-      <section className="relative pt-16 pb-24 bg-[#040d1a] overflow-hidden">
+      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
         <div className="relative wrap">
@@ -30,7 +30,7 @@ export default function GalleryPage() {
       </section>
 
       {/* Gallery */}
-      <section className="pb-40 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>
         <div className="wrap">
           <GalleryGrid />
         </div>

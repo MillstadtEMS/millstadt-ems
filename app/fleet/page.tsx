@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { Metadata } from "next";
 import { getContent } from "@/lib/db";
+import SectionDivider from "@/components/SectionDivider";
 
 export const dynamic = "force-dynamic";
 
@@ -87,7 +88,7 @@ export default async function FleetPage({
   return (
     <>
       {/* Page Header */}
-      <section className="relative pt-16 pb-24 bg-[#040d1a] overflow-hidden">
+      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
         <div className="relative wrap">
@@ -103,16 +104,15 @@ export default async function FleetPage({
       </section>
 
       {/* Units */}
-      <div className="h-40 bg-gradient-to-b from-[#040d1a] to-[#040d1a]" />
+      <SectionDivider />
 
       {units.map((unit, index) => (
         <div key={unit.id}>
           {index > 0 && (
             <div className={`h-40 ${index === 1 ? "bg-gradient-to-b from-[#040d1a] to-[#071428]" : "bg-gradient-to-b from-[#071428] to-[#040d1a]"}`} />
           )}
-          <section
-            className={`py-28 ${index % 2 === 0 ? "bg-[#040d1a]" : "bg-[#071428]"}`}
-          >
+          <section className={`${index % 2 === 0 ? "bg-[#040d1a]" : "bg-[#071428]"}`}
+           style={{ paddingTop: 24, paddingBottom: 24 }}>
           <div className="wrap">
             <div className={`grid md:grid-cols-2 gap-16 items-center ${index % 2 === 1 ? "direction-rtl" : ""}`}>
               {/* Image */}
@@ -148,7 +148,6 @@ export default async function FleetPage({
       ))}
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-[#040d1a]" />
-    </>
+      </>
   );
 }

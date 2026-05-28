@@ -3,6 +3,7 @@ import Link from "next/link";
 import HolidayOverlay from "@/components/HolidayOverlay";
 import HeroCarousel from "@/components/HeroCarousel";
 import CallVolumeCounter from "@/components/CallVolumeCounter";
+import SectionDivider from "@/components/SectionDivider";
 import { getContent } from "@/lib/db";
 
 // Always SSR so ?preview=ve shows fresh draft content
@@ -76,7 +77,15 @@ export default async function Home({
               {titleLine3}
             </h1>
 
-            <p className="text-slate-300 text-lg md:text-2xl leading-relaxed mb-8 sm:mb-14 max-w-xl">
+            <p
+              className="text-white leading-relaxed max-w-2xl text-center"
+              style={{
+                fontSize: "clamp(1.375rem, 2.4vw, 2rem)",
+                fontWeight: 600,
+                textShadow: "0 2px 12px rgba(0,0,0,0.55)",
+                marginBottom: 56,
+              }}
+            >
               {subtitle}<br />
               {subtitle2}
             </p>
@@ -98,6 +107,9 @@ export default async function Home({
               </Link>
             </div>
           </div>
+
+          {/* Breathing room between CTAs and the (now-larger) call counter — inline style because Tailwind v4 spacing utilities resolve to 0 here */}
+          <div style={{ height: 56 }} aria-hidden />
 
           {/* ── hero-middle: call volume counter ── */}
           <div className="hero-middle w-full flex flex-col items-center justify-center text-center">
@@ -124,12 +136,12 @@ export default async function Home({
         </div>
       </section>
 
-      <div className="h-24 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* ════════════════════════════════
           QUICK ACTION CARDS
       ════════════════════════════════ */}
-      <section className="pb-20 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingBottom: 16 }}>
         <div className="wrap flex justify-center">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 w-full max-w-4xl">
             {[
@@ -204,13 +216,55 @@ export default async function Home({
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-40 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <SectionDivider />
+
+      {/* ════════════════════════════════
+          KIDS CLUB BANNER
+      ════════════════════════════════ */}
+      <section className="bg-[#040d1a]" style={{ paddingTop: 4, paddingBottom: 8 }}>
+        <div className="wrap box-border">
+          <Link
+            href="/kids-club"
+            style={{ padding: 10, gap: 10 }}
+            className="group grid rounded-2xl border border-white/10 bg-[#071428] shadow-xl shadow-black/20 transition hover:-translate-y-0.5 hover:border-[#f0b429]/45 focus:outline-none focus:ring-2 focus:ring-[#f0b429] focus:ring-offset-2 focus:ring-offset-[#040d1a] md:grid-cols-[auto_1fr_auto] md:items-center"
+          >
+            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-[#f0b429]/40 bg-white md:h-28 md:w-28">
+              <Image
+                src="/kids-club/coloring/kids-club-logo.png"
+                alt=""
+                fill
+                sizes="112px"
+                className="object-contain p-1.5"
+              />
+            </div>
+            <div>
+              <div className="text-xs font-black uppercase tracking-[0.22em] text-[#f0b429]">
+                For Families
+              </div>
+              <h2 className="mt-2 text-2xl font-black leading-tight text-white md:text-3xl">
+                Millstadt EMS Kids Club
+              </h2>
+              <p className="mt-2 max-w-2xl text-base font-medium leading-7 text-slate-400">
+                Monthly safety activities, custom coloring pages, and family
+                resources from Millstadt EMS.
+              </p>
+            </div>
+            <div className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#f0b429] px-5 text-sm font-black uppercase tracking-[0.14em] text-[#040d1a] transition group-hover:bg-[#ffd45c] md:justify-self-end">
+              Open Kids Club
+              <svg viewBox="0 0 20 20" className="ml-3 h-4 w-4 fill-current transition group-hover:translate-x-1">
+                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </Link>
+        </div>
+      </section>
+
+      <SectionDivider variant="fadeDown" />
 
       {/* ════════════════════════════════
           WHO WE ARE — Preview
       ════════════════════════════════ */}
-      <section className="pb-52 bg-[#071428]">
+      <section className="bg-[#071428]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap">
           <div className="grid md:grid-cols-2 gap-20 items-center">
             <div>
@@ -269,8 +323,8 @@ export default async function Home({
       {/* ════════════════════════════════
           COMMUNITY — Preview
       ════════════════════════════════ */}
-      <div className="h-40 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
-      <section className="pb-52 bg-[#040d1a]">
+      <SectionDivider variant="fadeUp" />
+      <section className="bg-[#040d1a]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap">
           <div className="grid md:grid-cols-2 gap-20 items-center">
             <div className="relative h-[460px] rounded-2xl overflow-hidden">
@@ -315,8 +369,8 @@ export default async function Home({
       {/* ════════════════════════════════
           SUPPORT / DONATE CTA
       ════════════════════════════════ */}
-      <div className="h-40 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
-      <section className="pb-52 bg-[#071428]">
+      <SectionDivider variant="fadeDown" />
+      <section className="bg-[#071428]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap">
           <div className="grid md:grid-cols-2 gap-20 items-center">
             <div>
@@ -359,8 +413,6 @@ export default async function Home({
           </div>
         </div>
       </section>
-
-      <div className="h-32 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
-    </>
+      </>
   );
 }

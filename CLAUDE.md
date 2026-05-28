@@ -35,3 +35,20 @@
 - Verify PDF generation
 - Verify email alert flow
 - Verify mobile layout
+
+## Treasurer / Budget Workflow (autonomous)
+- Treasurer and master budget Excel files live on ~/Desktop:
+  - Treasurer: ~/Desktop/Code Stuff/Final MEMS Budget/CPA/FINAL_Millstadt_Ambulance_Treasurer_Reports.xlsx
+  - Master:    ~/Desktop/Budget/FY2025-2026/Millstadt_Ambulance_Financial_Master_FY2025-2026.xlsx
+  - Monthly bills source: ~/Desktop/<Month YYYY> bills.xlsx (e.g. "April 2026 bills.xlsx")
+- Always make a *.BACKUP_YYYY-MM-DD_pre_<reason>.xlsx copy before editing either file.
+- When the user hands over a month of numbers:
+  1. Read the bills workbook; treat the Operating Expenses tab as source of truth.
+     The Income and Personnel tabs in the bills workbook are template leftovers — ignore unless the user tells you otherwise.
+  2. Write April-style transactions into the Treasurer Transactions tab.
+  3. Write line-itemized entries into the Master <Mon YY> monthly sheet, the Monthly Detail register, and the Revenue Detail.
+  4. Repair any cross-sheet references that shifted (Dashboard, Fiscal Year Summary, Audit Trail).
+  5. Run a full audit and tell the user the result.
+- Do not ask yes/no permission questions for routine spreadsheet work in these files — make a decision using prior-month precedents and proceed.
+- Acceptable autonomous decisions: category mappings using prior-month precedent; relabel duplicate template rows to defuse double-counting; remove unused/zero rows when account numbers change; update stale hard-coded reference values in the Audit Trail; fix vendor categorization errors discovered during audit.
+- Always report what you changed at the end. If something genuinely cannot be inferred (e.g., a number the user hasn't shared yet), state the gap rather than guess.

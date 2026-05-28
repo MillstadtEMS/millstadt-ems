@@ -623,7 +623,7 @@ export default function WeatherClient() {
   const today = periods.slice(0, 14);
 
   return (
-    <div className="pb-40">
+    <div className="">
 
       {/* ── Active Alerts ── */}
       {alerts.length > 0 && (

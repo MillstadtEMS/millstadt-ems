@@ -48,6 +48,14 @@ const SECTIONS = [
     icon: <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>,
   },
   {
+    label: "Truck Checks",
+    href: "/admin/truck-checks",
+    desc: "Daily ambulance inspections from /truckcheck",
+    accent: "border-yellow-500/40 bg-yellow-500/8",
+    iconColor: "text-yellow-300",
+    icon: <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M3 6a2 2 0 0 1 2-2h9v10H3V6Zm11 1h4l3 4v3h-7V7Zm-9 9a3 3 0 1 1 6 0 3 3 0 0 1-6 0Zm10 0a3 3 0 1 1 6 0 3 3 0 0 1-6 0Z"/></svg>,
+  },
+  {
     label: "Image Manager",
     href: "/admin/media",
     desc: "Upload and replace images across the site",

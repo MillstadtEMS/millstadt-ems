@@ -24,7 +24,7 @@ export default async function TestimonialsPage() {
   return (
     <>
       {/* Page Header */}
-      <section className="relative pt-16 pb-28 bg-[#040d1a] overflow-hidden">
+      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
         <div className="relative wrap">
@@ -40,7 +40,7 @@ export default async function TestimonialsPage() {
       </section>
 
       {/* Testimonials area */}
-      <section className="pb-24 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap">
           <div className="flex items-center gap-3 mb-6">
             <span className="h-px w-8 bg-[#f0b429]" />
@@ -89,7 +89,7 @@ export default async function TestimonialsPage() {
       </section>
 
       {/* Submit form */}
-      <section className="py-24 bg-[#071428] border-t border-white/5">
+      <section className="bg-[#071428] border-t border-white/5" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap">
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center gap-3 mb-4">

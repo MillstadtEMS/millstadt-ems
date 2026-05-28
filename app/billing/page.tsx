@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { getContent } from "@/lib/db";
+import SectionDivider from "@/components/SectionDivider";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function BillingPage({
   return (
     <>
       {/* Page Header */}
-      <section className="relative pt-16 pb-28 bg-[#040d1a] overflow-hidden">
+      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
         <div className="relative wrap">
@@ -52,10 +53,10 @@ export default async function BillingPage({
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-24 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* Main Pay CTA */}
-      <section className="pb-40 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>
         <div className="wrap max-w-2xl">
           <div className="w-20 h-20 rounded-2xl bg-[#1a3a6e]/60 border border-[#2563eb]/30 flex items-center justify-center mb-10">
             <svg viewBox="0 0 24 24" className="w-10 h-10 fill-current text-[#f0b429]">
@@ -105,10 +106,10 @@ export default async function BillingPage({
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* FAQ / Info */}
-      <section className="py-28 bg-[#071428]">
+      <section className="bg-[#071428]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap">
           <div className="flex items-center gap-3 mb-8">
             <span className="h-px w-8 bg-[#f0b429]" />
@@ -144,7 +145,6 @@ export default async function BillingPage({
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-[#040d1a]" />
-    </>
+      </>
   );
 }

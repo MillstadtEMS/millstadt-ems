@@ -26,6 +26,7 @@ const MENU_GROUPS = [
     color: "text-[#f0b429]",
     links: [
       { href: "/events",          label: "Events Calendar" },
+      { href: "/kids-club",        label: "Kids Club" },
       { href: "/senior-center",   label: "Senior Center" },
       { href: "/commercial-club", label: "Commercial Club" },
       { href: "/bulletin",        label: "Bulletin Board" },

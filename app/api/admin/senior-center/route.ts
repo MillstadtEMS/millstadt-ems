@@ -1,44 +1,55 @@
 /**
  * POST /api/admin/senior-center
- * Accepts a PDF upload. Auth via admin session cookie.
- * Body: multipart/form-data — type (menu|activities|newsletter), month, year, file
+ * Client-upload token endpoint for Vercel Blob.
+ *
+ * Files go DIRECTLY from the browser to Blob storage (no 4.5 MB serverless
+ * body limit), so large newsletter PDFs upload fine. This route only mints a
+ * short-lived upload token after verifying the admin session and the target
+ * path — it never receives the file bytes itself.
+ *
+ * Pathname convention (unchanged, so GET /api/senior-center/docs still finds it):
+ *   senior-center/<year>/<month>_<type>.pdf
  */
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminAuthed } from "@/lib/admin/auth";
-import { put } from "@vercel/blob";
+import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 
 export const runtime = "nodejs";
 
-const VALID_TYPES = ["menu", "activities", "newsletter"] as const;
-type DocType = typeof VALID_TYPES[number];
+const PATH_RE = /^senior-center\/\d{4}\/[a-z]+_(menu|activities|newsletter)\.pdf$/;
 
-export async function POST(req: NextRequest) {
-  if (!(await isAdminAuthed())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  const body = (await req.json()) as HandleUploadBody;
+
+  try {
+    const result = await handleUpload({
+      request: req,
+      body,
+      onBeforeGenerateToken: async (pathname) => {
+        // Only authenticated admins may obtain an upload token.
+        if (!(await isAdminAuthed())) {
+          throw new Error("Unauthorized");
+        }
+        // Lock uploads to the senior-center namespace and PDF naming.
+        if (!PATH_RE.test(pathname)) {
+          throw new Error("Invalid upload path");
+        }
+        return {
+          allowedContentTypes: ["application/pdf"],
+          maximumSizeInBytes: 50 * 1024 * 1024, // 50 MB ceiling
+          addRandomSuffix: false,               // keep the exact filename
+          allowOverwrite: true,                 // replacing a month's file is expected
+        };
+      },
+      // Fires server-side when the browser finishes uploading. The docs route
+      // lists blobs live, so nothing to persist here. (Does not fire on
+      // localhost — Vercel can't call back to a local dev server.)
+      onUploadCompleted: async () => {},
+    });
+
+    return NextResponse.json(result);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Upload failed";
+    return NextResponse.json({ error: msg }, { status: msg === "Unauthorized" ? 401 : 400 });
   }
-
-  const form  = await req.formData();
-  const type  = form.get("type")  as DocType;
-  const month = form.get("month") as string;
-  const year  = form.get("year")  as string;
-  const file  = form.get("file")  as File | null;
-
-  if (!VALID_TYPES.includes(type)) {
-    return NextResponse.json({ error: "Invalid document type" }, { status: 400 });
-  }
-  if (!month || !year || !file) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-  }
-  if (file.type !== "application/pdf") {
-    return NextResponse.json({ error: "Only PDF files are accepted" }, { status: 400 });
-  }
-
-  const filename = `senior-center/${year}/${month}_${type}.pdf`;
-  const blob = await put(filename, file, {
-    access: "public",
-    allowOverwrite: true,
-    contentType: "application/pdf",
-  });
-
-  return NextResponse.json({ ok: true, url: blob.url, filename });
 }

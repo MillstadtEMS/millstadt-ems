@@ -63,7 +63,7 @@ export default async function LinksPage({
   return (
     <>
       {/* Page Header */}
-      <section className="relative pt-16 pb-28 bg-[#040d1a] overflow-hidden">
+      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
         <div className="relative wrap">
@@ -81,7 +81,7 @@ export default async function LinksPage({
       </section>
 
       {/* Link Groups */}
-      <section className="py-28 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap">
           {linkGroups.map((group, gi) => (
             <div key={group.category}>
@@ -121,7 +121,7 @@ export default async function LinksPage({
       </section>
 
       {/* CTA */}
-      <section className="py-24 bg-[#071428] border-t border-white/5">
+      <section className="bg-[#071428] border-t border-white/5" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap flex flex-col items-center text-center gap-6">
           <h2 className="text-4xl font-black text-white">Missing a Link?</h2>
           <p className="text-slate-400 text-lg max-w-md leading-relaxed">

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getContent } from "@/lib/db";
+import SectionDivider from "@/components/SectionDivider";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export default async function AboutPage({
   return (
     <>
       {/* Page Header */}
-      <section className="relative pt-16 pb-28 bg-[#040d1a] overflow-hidden">
+      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
         <div className="relative wrap">
@@ -87,11 +88,10 @@ export default async function AboutPage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-24 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* Mission & Vision — stacked full width */}
-      <section className="pb-40 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>
         <div className="wrap flex flex-col gap-8">
 
           {/* Mission */}
@@ -104,9 +104,9 @@ export default async function AboutPage({
                 height={32}
                 style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 4px #f0b429)" }}
               />
-              <span className="text-[#f0b429] text-2xl font-black tracking-[0.15em] uppercase">Mission</span>
+              <span className="text-[#f0b429] text-4xl font-black tracking-[0.15em] uppercase">Mission</span>
             </div>
-            <p className="text-slate-300 text-lg leading-relaxed">{mission}</p>
+            <p className="text-slate-200 text-2xl leading-relaxed">{mission}</p>
           </div>
 
           {/* Vision */}
@@ -119,19 +119,18 @@ export default async function AboutPage({
                 height={32}
                 style={{ filter: "drop-shadow(0 0 4px #2563eb)" }}
               />
-              <span className="text-[#2563eb] text-2xl font-black tracking-[0.15em] uppercase">Vision</span>
+              <span className="text-[#2563eb] text-4xl font-black tracking-[0.15em] uppercase">Vision</span>
             </div>
-            <p className="text-slate-300 text-lg leading-relaxed">{vision}</p>
+            <p className="text-slate-200 text-2xl leading-relaxed">{vision}</p>
           </div>
 
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-40 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <SectionDivider variant="fadeDown" />
 
       {/* Core Values */}
-      <section className="pb-40 bg-[#071428]">
+      <section className="bg-[#071428]" style={{ paddingBottom: 24 }}>
         <div className="wrap">
           <div className="flex items-center gap-4 mb-8">
             <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={32} height={32} style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 4px #f0b429)" }} />
@@ -152,11 +151,10 @@ export default async function AboutPage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-40 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <SectionDivider variant="fadeUp" />
 
       {/* Service Area */}
-      <section className="pb-40 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>
         <div className="wrap grid md:grid-cols-2 gap-24 items-center">
           <div>
             <div className="flex items-center gap-4 mb-8">
@@ -193,11 +191,10 @@ export default async function AboutPage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-40 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <SectionDivider variant="fadeDown" />
 
       {/* History Timeline */}
-      <section className="pb-40 bg-[#071428]">
+      <section className="bg-[#071428]" style={{ paddingBottom: 24 }}>
         <div className="wrap">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             {/* Historic photo 2×2 grid */}
@@ -258,11 +255,10 @@ export default async function AboutPage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-40 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <SectionDivider variant="fadeUp" />
 
       {/* Staff & Future */}
-      <section className="pb-40 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>
         <div className="wrap grid md:grid-cols-2 gap-24 items-start">
           <div>
             <div className="flex items-center gap-4 mb-8">
@@ -308,11 +304,10 @@ export default async function AboutPage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-40 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <SectionDivider variant="fadeDown" />
 
       {/* Crew Photo Strip */}
-      <section className="pb-40 bg-[#071428]">
+      <section className="bg-[#071428]" style={{ paddingBottom: 24 }}>
         <div className="wrap">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-5">
             {[
@@ -337,11 +332,10 @@ export default async function AboutPage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-40 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <SectionDivider variant="fadeUp" />
 
       {/* CTA */}
-      <section className="py-40 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap flex flex-col items-center text-center gap-8">
           <h2 className="text-4xl font-black text-white">Join Our Team</h2>
           <p className="text-slate-400 text-lg max-w-xl">
@@ -363,9 +357,6 @@ export default async function AboutPage({
           </div>
         </div>
       </section>
-
-      {/* ── VOID ── */}
-      <div className="h-40 bg-[#040d1a]" />
-    </>
+      </>
   );
 }

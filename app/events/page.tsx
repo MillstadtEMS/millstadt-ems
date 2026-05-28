@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import SectionDivider from "@/components/SectionDivider";
 
 export const metadata: Metadata = {
   title: "Community Events",
@@ -21,7 +22,7 @@ export default function EventsPage() {
   return (
     <>
       {/* Page Header */}
-      <section className="relative pt-16 pb-28 bg-[#040d1a] overflow-hidden">
+      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
         <div className="relative wrap">
@@ -40,10 +41,10 @@ export default function EventsPage() {
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-24 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* Calendar */}
-      <section className="pb-40 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>
         <div className="wrap">
           <div className="flex items-center gap-4 mb-10">
             <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={32} height={32} style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 4px #f0b429)" }} />
@@ -63,7 +64,6 @@ export default function EventsPage() {
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-[#040d1a]" />
-    </>
+      </>
   );
 }

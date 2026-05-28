@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import SectionDivider from "@/components/SectionDivider";
 
 const MONTHS = [
   "january","february","march","april","may","june",
@@ -160,8 +161,6 @@ export default function SeniorCenterPage() {
           )}
         </div>
       </section>
-
-      <div className="h-24 bg-[#040d1a]" />
-    </>
+      </>
   );
 }

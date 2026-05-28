@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import SectionDivider from "@/components/SectionDivider";
 
 export const metadata: Metadata = {
   title: "BE-FAST Stroke Recognition Tool",
@@ -300,7 +301,7 @@ export default function StrokeToolPage() {
   return (
     <>
       {/* Page Header */}
-      <section className="relative pt-16 pb-28 bg-[#040d1a] overflow-hidden">
+      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
         <div className="relative wrap">
@@ -326,10 +327,10 @@ export default function StrokeToolPage() {
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-24 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* Quick Reference Bar */}
-      <section className="pb-24 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap">
           <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
             {["B", "E", "F", "A", "S", "T"].map((l, i) => {
@@ -347,10 +348,10 @@ export default function StrokeToolPage() {
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-24 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* Step-by-step assessments */}
-      <section className="pb-40 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>
         <div className="wrap space-y-20">
           {steps.map((step) => (
             <div key={step.letter} className={`rounded-2xl border overflow-hidden ${"isTime" in step && step.isTime ? "border-red-500/30" : "border-white/8"}`}>
@@ -400,10 +401,10 @@ export default function StrokeToolPage() {
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <SectionDivider variant="fadeDown" />
 
       {/* Key Facts */}
-      <section className="py-28 bg-[#071428]">
+      <section className="bg-[#071428]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap">
           <div className="flex items-center gap-3 mb-8">
             <span className="h-px w-8 bg-[#f0b429]" />
@@ -447,7 +448,6 @@ export default function StrokeToolPage() {
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-[#040d1a]" />
-    </>
+      </>
   );
 }

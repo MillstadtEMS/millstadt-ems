@@ -131,7 +131,7 @@ export default function WeatherTestPage() {
   const ticker = tickerStyles(alerts);
 
   return (
-    <div className="min-h-screen bg-[#040d1a] pt-8 pb-40">
+    <div className="min-h-screen bg-[#040d1a] pt-8">
       <div className="wrap max-w-4xl mx-auto">
 
         {/* Header */}

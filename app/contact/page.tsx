@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import EmbedSection from "../EmbedSection";
 import { getContent } from "@/lib/db";
+import SectionDivider from "@/components/SectionDivider";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +40,7 @@ export default async function ContactPage({
   return (
     <>
       {/* Page Header */}
-      <section className="relative pt-16 pb-28 bg-[#040d1a] overflow-hidden">
+      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
         <div className="relative wrap">
@@ -72,10 +73,10 @@ export default async function ContactPage({
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-24 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* Main Contact Info */}
-      <section className="pb-40 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>
         <div className="wrap flex flex-col gap-8">
 
           {/* Station Contact */}
@@ -166,7 +167,7 @@ export default async function ContactPage({
       <div className="h-16 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
 
       {/* Local Emergency Contacts */}
-      <section className="pb-40 bg-[#071428]">
+      <section className="bg-[#071428]" style={{ paddingBottom: 24 }}>
         <div className="wrap">
           <div className="flex items-center gap-4 mb-8">
             <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={32} height={32} style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 4px #f0b429)" }} />

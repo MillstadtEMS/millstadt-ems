@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import SectionDivider from "@/components/SectionDivider";
 
 function StorySeparator() {
   return (
@@ -60,7 +61,7 @@ export default function NewsPage() {
 
   return (
     <>
-      <section className="pt-16 pb-16 bg-gradient-to-b from-[#071428] to-[#040d1a] border-b border-white/5">
+      <section className="bg-gradient-to-b from-[#071428] to-[#040d1a] border-b border-white/5" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="wrap">
           <div className="flex items-center gap-3 mb-6">
             <span className="h-px w-8 bg-[#f0b429]" />
@@ -162,7 +163,6 @@ export default function NewsPage() {
           )}
         </div>
       </section>
-      <div className="h-24 bg-[#040d1a]" />
-    </>
+      </>
   );
 }

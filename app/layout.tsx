@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import WeatherAlertOverlay from "@/components/WeatherAlertOverlay";
 import CallTicker from "@/components/cad/CallTicker";
 import AmboScroll from "@/components/AmboScroll";
+import SiteShell from "@/components/SiteShell";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -41,14 +42,23 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/images/millstadt-ems/pwa-icon.png" />
       </head>
       <body className="min-h-full flex flex-col bg-[#040d1a] text-slate-100 antialiased overflow-x-hidden">
-        <CallTicker />
-        <Nav />
-        <WeatherAlertOverlay />
-        <main className="flex-1 w-full overflow-x-hidden" style={{ paddingTop: "120px" }}>
+        <SiteShell
+          header={
+            <>
+              <CallTicker />
+              <Nav />
+              <WeatherAlertOverlay />
+            </>
+          }
+          footer={
+            <>
+              <AmboScroll />
+              <Footer />
+            </>
+          }
+        >
           {children}
-          <AmboScroll />
-        </main>
-        <Footer />
+        </SiteShell>
       </body>
     </html>
   );

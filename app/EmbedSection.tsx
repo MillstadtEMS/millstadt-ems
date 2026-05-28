@@ -14,7 +14,7 @@ export default function EmbedSection() {
   }
 
   return (
-    <section className="pb-28 bg-[#040d1a]">
+    <section className="bg-[#040d1a]" style={{ paddingTop: 24, paddingBottom: 24 }}>
       <div className="wrap">
         <div className="flex items-center gap-3 mb-4">
           <span className="h-px w-8 bg-[#f0b429]" />

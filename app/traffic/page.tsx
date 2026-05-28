@@ -41,7 +41,7 @@ export default function TrafficPage() {
   return (
     <>
       {/* Page Header */}
-      <section className="relative pt-16 pb-28 bg-[#040d1a] overflow-hidden">
+      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
         <div className="relative wrap">
@@ -62,7 +62,7 @@ export default function TrafficPage() {
       <div className="h-16 bg-[#040d1a]" />
 
       {/* Maps grid */}
-      <section className="pb-40 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>
         <div className="wrap">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {maps.map((m) => (

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { getContent } from "@/lib/db";
+import SectionDivider from "@/components/SectionDivider";
 
 export const dynamic = "force-dynamic";
 
@@ -243,7 +244,7 @@ export default async function CommunityEducationPage({
   return (
     <>
       {/* Page Header */}
-      <section className="relative pt-16 pb-24 bg-[#040d1a] overflow-hidden">
+      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
         <div className="relative wrap">
@@ -261,10 +262,10 @@ export default async function CommunityEducationPage({
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-gradient-to-b from-[#040d1a] to-[#040d1a]" />
+      <SectionDivider />
 
       {/* Outreach Section */}
-      <section className="pb-28 bg-[#040d1a]">
+      <section className="bg-[#040d1a]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap grid md:grid-cols-2 gap-20 items-center">
           <div className="relative h-[460px] rounded-2xl overflow-hidden">
             <Image
@@ -302,10 +303,10 @@ export default async function CommunityEducationPage({
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <SectionDivider variant="fadeDown" />
 
       {/* Interactive Tools */}
-      <section className="pb-24 bg-[#071428]">
+      <section className="bg-[#071428]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap">
           <div className="flex items-center gap-3 mb-5">
             <span className="h-px w-8 bg-[#f0b429]" />
@@ -353,7 +354,7 @@ export default async function CommunityEducationPage({
       <div className="h-16 bg-[#071428]" />
 
       {/* Safety Topics */}
-      <section className="pb-24 bg-[#071428]">
+      <section className="bg-[#071428]" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap">
           <div className="flex items-center gap-3 mb-5">
             <span className="h-px w-8 bg-[#f0b429]" />
@@ -403,7 +404,7 @@ export default async function CommunityEducationPage({
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <SectionDivider variant="fadeUp" />
 
       {/* Photo Strip */}
       <section className="pb-0 bg-[#040d1a]">
@@ -422,10 +423,10 @@ export default async function CommunityEducationPage({
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <SectionDivider variant="fadeDown" />
 
       {/* CTA */}
-      <section className="pb-40 bg-[#071428]">
+      <section className="bg-[#071428]" style={{ paddingBottom: 24 }}>
         <div className="wrap flex flex-col items-center text-center gap-8">
           <h2 className="text-4xl font-black text-white">Schedule a Visit or Event</h2>
           <p className="text-slate-400 text-lg max-w-xl">We&apos;re available for school visits, birthday parties, safety demos, and more.</p>
@@ -450,7 +451,6 @@ export default async function CommunityEducationPage({
       </section>
 
       {/* ── VOID ── */}
-      <div className="h-40 bg-[#071428]" />
-    </>
+      </>
   );
 }
