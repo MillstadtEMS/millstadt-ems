@@ -63,7 +63,7 @@ export default function KidsClubHubPage() {
               <span className="text-[#fef3c7]">Millstadt EMS Youth Safety Program</span>
             </div>
 
-            <div style={{ marginTop: 36 }}>
+            <div style={{ marginTop: 16 }}>
               <KidsClubWordmark />
             </div>
 
@@ -239,17 +239,17 @@ export default function KidsClubHubPage() {
 }
 
 function KidsClubWordmark() {
-  // Single compact line of colorful tilted letters — no mascots stacked on top.
+  // Single compact line. Letters share one line-box; per-letter color via inline span.
   const letters = [
-    { ch: "K", color: "#ff3d8b", tilt: -5 },
-    { ch: "I", color: "#a3e635", tilt: 3 },
-    { ch: "D", color: "#22d3ee", tilt: -3 },
-    { ch: "S", color: "#facc15", tilt: 4 },
-    { ch: " ", color: "", tilt: 0 },
-    { ch: "C", color: "#fb923c", tilt: -4 },
-    { ch: "L", color: "#f472b6", tilt: 3 },
-    { ch: "U", color: "#34d399", tilt: -3 },
-    { ch: "B", color: "#60a5fa", tilt: 5 },
+    { ch: "K", color: "#ff3d8b" },
+    { ch: "I", color: "#a3e635" },
+    { ch: "D", color: "#22d3ee" },
+    { ch: "S", color: "#facc15" },
+    { ch: " ", color: "" },
+    { ch: "C", color: "#fb923c" },
+    { ch: "L", color: "#f472b6" },
+    { ch: "U", color: "#34d399" },
+    { ch: "B", color: "#60a5fa" },
   ];
   return (
     <div
@@ -257,34 +257,27 @@ function KidsClubWordmark() {
       style={{
         fontFamily: "'Chalkboard SE', 'Comic Sans MS', 'Marker Felt', system-ui, sans-serif",
         fontWeight: 900,
-        fontSize: "clamp(2.5rem, 8vw, 5.5rem)",
+        fontSize: "clamp(2rem, 6vw, 3.75rem)",
         lineHeight: 1,
-        letterSpacing: "-0.02em",
+        letterSpacing: "-0.04em",
         whiteSpace: "nowrap",
         display: "block",
       }}
     >
       <span className="sr-only">Millstadt EMS Kids Club</span>
-      {letters.map((l, i) =>
-        l.ch === " " ? (
-          <span key={i} aria-hidden style={{ display: "inline-block", width: "0.45em" }} />
-        ) : (
-          <span
-            key={i}
-            aria-hidden
-            style={{
-              display: "inline-block",
-              color: l.color,
-              transform: `rotate(${l.tilt}deg)`,
-              WebkitTextStroke: "2px rgba(3,9,20,0.55)",
-              textShadow: "0 5px 0 rgba(0,0,0,0.32), 0 10px 18px rgba(0,0,0,0.28)",
-              margin: "0 0.01em",
-            }}
-          >
-            {l.ch}
-          </span>
-        )
-      )}
+      {letters.map((l, i) => (
+        <span
+          key={i}
+          aria-hidden
+          style={{
+            color: l.color || "transparent",
+            WebkitTextStroke: l.color ? "2px rgba(3,9,20,0.55)" : "none",
+            textShadow: l.color ? "0 4px 0 rgba(0,0,0,0.32), 0 8px 14px rgba(0,0,0,0.28)" : "none",
+          }}
+        >
+          {l.ch === " " ? " " : l.ch}
+        </span>
+      ))}
     </div>
   );
 }
