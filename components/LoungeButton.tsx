@@ -25,8 +25,8 @@ export default function LoungeButton() {
         bottom: 14,
         zIndex: 50,
         display: "block",
-        width: 160,
-        height: 160,
+        width: 220,
+        height: 220,
         background: "transparent",
         transition:
           "transform 0.25s cubic-bezier(0.22,0.61,0.36,1), filter 0.25s",
@@ -43,7 +43,7 @@ export default function LoungeButton() {
         width={320}
         height={320}
         priority={false}
-        sizes="160px"
+        sizes="220px"
         style={{
           width: "100%",
           height: "100%",

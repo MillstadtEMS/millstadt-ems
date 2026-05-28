@@ -110,6 +110,13 @@ export default async function LoungeHome() {
             accent="#a3e635"
           />
           <Tile
+            href="/lounge/feed"
+            eyebrow="The Wall"
+            title="Shift-to-Shift Feed"
+            description="Share what the next crew needs to know. Post, react, comment, pin important notices."
+            accent="#a78bfa"
+          />
+          <Tile
             href="/lounge/certs"
             eyebrow="Compliance"
             title="My Certifications"

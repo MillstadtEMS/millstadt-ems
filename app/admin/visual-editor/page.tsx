@@ -103,18 +103,18 @@ const PAGES: EditablePage[] = [
         ],
       },
       {
-        title: "EMS Chief",
+        title: "EMS Co-Chief — Jennifer Goetz",
         fields: [
-          { key: "leadership.chief.name",  label: "Chief Name",   type: "text", fallback: "Jennifer Goetz" },
-          { key: "leadership.chief.title", label: "Title",        type: "text", fallback: "EMS Chief" },
+          { key: "leadership.chief.name",  label: "Name",         type: "text", fallback: "Jennifer Goetz" },
+          { key: "leadership.chief.title", label: "Title",        type: "text", fallback: "EMS Co-Chief" },
           { key: "leadership.chief.since", label: "Tenure Line",  type: "text", fallback: "Serving since 2024" },
         ],
       },
       {
-        title: "Assistant Chief",
+        title: "EMS Co-Chief — Kenneth James",
         fields: [
           { key: "leadership.asst-chief.name",  label: "Name",   type: "text", fallback: "Kenneth James" },
-          { key: "leadership.asst-chief.title", label: "Title",  type: "text", fallback: "Assistant Chief of Operations" },
+          { key: "leadership.asst-chief.title", label: "Title",  type: "text", fallback: "EMS Co-Chief" },
           { key: "leadership.asst-chief.since", label: "Tenure", type: "text", fallback: "Serving since 2015" },
         ],
       },

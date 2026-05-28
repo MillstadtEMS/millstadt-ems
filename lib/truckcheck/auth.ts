@@ -1,5 +1,6 @@
 import { createHmac } from "crypto";
 import { cookies } from "next/headers";
+import { currentEmployee } from "@/lib/lounge/auth";
 
 const COOKIE = "mas_truckcheck";
 const MAX_AGE = 60 * 60 * 24 * 30; // 30 days — phones stay logged in
