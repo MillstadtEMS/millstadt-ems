@@ -145,9 +145,7 @@ export default function LoungeLogin() {
             lineHeight: 1.6,
           }}
         >
-          First time signing in? Use your initial password
-          (<span style={{ color: "#94a3b8" }}>firstinitial + lastname + 3935</span>).
-          You&apos;ll be asked to choose a new one.
+          Don&apos;t have your password? Contact management.
         </p>
       </div>
     </div>

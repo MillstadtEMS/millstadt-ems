@@ -21,33 +21,34 @@ export default function LoungeButton() {
       onMouseLeave={() => setHover(false)}
       style={{
         position: "fixed",
-        right: 18,
-        bottom: 18,
+        right: 14,
+        bottom: 14,
         zIndex: 50,
         display: "block",
-        width: 92,
-        height: 92,
-        borderRadius: "50%",
+        width: 160,
+        height: 160,
+        background: "transparent",
         transition:
           "transform 0.25s cubic-bezier(0.22,0.61,0.36,1), filter 0.25s",
-        transform: hover ? "translateY(-3px) scale(1.04)" : "translateY(0) scale(1)",
+        transform: hover ? "translateY(-4px) scale(1.05)" : "translateY(0) scale(1)",
         filter: hover
-          ? "drop-shadow(0 12px 28px rgba(240,180,41,0.45)) drop-shadow(0 4px 10px rgba(0,0,0,0.55))"
-          : "drop-shadow(0 8px 18px rgba(0,0,0,0.55))",
+          ? "drop-shadow(0 16px 30px rgba(240,180,41,0.50)) drop-shadow(0 6px 12px rgba(0,0,0,0.55))"
+          : "drop-shadow(0 10px 22px rgba(0,0,0,0.55))",
         cursor: "pointer",
       }}
     >
       <Image
         src="/lounge/lounge-button.png"
         alt=""
-        width={184}
-        height={184}
+        width={320}
+        height={320}
         priority={false}
-        sizes="92px"
+        sizes="160px"
         style={{
           width: "100%",
           height: "100%",
           objectFit: "contain",
+          background: "transparent",
           pointerEvents: "none",
         }}
       />

@@ -26,9 +26,12 @@ export async function isTruckCheckAuthed(): Promise<boolean> {
   const token = jar.get(COOKIE)?.value;
   if (token && verifySessionToken(token)) return true;
   // Lounge SSO bridge: any active lounge employee can submit truck checks.
-  const { currentEmployee } = await import("@/lib/lounge/auth");
-  const emp = await currentEmployee();
-  return !!emp && emp.isActive;
+  try {
+    const emp = await currentEmployee();
+    return !!emp && emp.isActive;
+  } catch {
+    return false;
+  }
 }
 
 export function sessionCookieOptions(token: string) {

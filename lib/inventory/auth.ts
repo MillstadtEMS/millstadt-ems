@@ -7,6 +7,16 @@
 import { scryptSync, randomBytes, createHmac } from "crypto";
 import { cookies } from "next/headers";
 import { neon } from "@neondatabase/serverless";
+import { currentEmployee } from "@/lib/lounge/auth";
+
+async function loungeSsoAllows(): Promise<boolean> {
+  try {
+    const emp = await currentEmployee();
+    return !!emp && emp.isActive;
+  } catch {
+    return false;
+  }
+}
 
 const COOKIE = "mas_inventory";
 const MAX_AGE = 60 * 60 * 8; // 8 hours
@@ -129,13 +139,10 @@ export async function isInventoryAuthed(): Promise<boolean> {
     const jar = await cookies();
     const token = jar.get(COOKIE)?.value;
     if (token && (await verifyInventorySession(token))) return true;
-    // Lounge SSO bridge: any active lounge employee can access inventory.
-    const { currentEmployee } = await import("@/lib/lounge/auth");
-    const emp = await currentEmployee();
-    return !!emp && emp.isActive;
   } catch {
-    return false;
+    // fall through to lounge check
   }
+  return loungeSsoAllows();
 }
 
 /**
