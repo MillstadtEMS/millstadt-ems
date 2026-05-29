@@ -81,7 +81,7 @@ export default function Nav() {
 
       {/* ── Nav bar ── */}
       <div className="bg-[#020912] border-b border-white/8" style={{ overflow: "visible" }}>
-        <div className="wrap flex items-center justify-between gap-4 py-4 md:py-5" style={{ overflow: "visible" }}>
+        <div className="wrap flex items-center justify-between gap-4 py-3" style={{ overflow: "visible" }}>
 
           {/* Logo */}
           <Link href="/" className="shrink-0 group">
@@ -110,9 +110,9 @@ export default function Nav() {
               src="/lounge/lounge-button.png"
               alt=""
               className="lounge-hover-expand-img"
-              style={{ height: "clamp(96px, 10vw, 140px)", width: "auto", display: "block", transition: "transform 0.22s cubic-bezier(0.22,1.2,0.36,1), filter 0.22s" }}
+              style={{ height: "clamp(36px, 4.6vw, 52px)", width: "auto", display: "block", transition: "transform 0.22s cubic-bezier(0.22,1.2,0.36,1), filter 0.22s" }}
             />
-            <div className="text-[11px] text-[#f0b429] uppercase tracking-widest font-black mt-1">Lounge</div>
+            <div className="text-[9px] text-[#f0b429] uppercase tracking-widest font-black mt-0.5">Lounge</div>
           </Link>
 
           {/* Ambulance menu button */}

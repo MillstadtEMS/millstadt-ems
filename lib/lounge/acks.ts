@@ -165,6 +165,23 @@ export async function createAck(input: {
   return rowToAck(rows[0]);
 }
 
+export async function getAckForUser(ackId: string, userId: string): Promise<Ack | null> {
+  void userId;
+  const db = sql();
+  const rows = (await db`
+    SELECT a.id, a.title, a.body, a.category, a.created_by,
+           a.requires_acknowledgment, a.attachment_uri, a.attachment_name, a.attachment_type,
+           a.created_at, a.updated_at,
+           e.first_name AS author_first_name, e.last_name AS author_last_name,
+           e.photo_url AS author_photo_url
+    FROM lounge_acks a
+    JOIN lounge_employees e ON e.id = a.created_by
+    WHERE a.id = ${ackId}
+    LIMIT 1
+  `) as unknown as DbAckRow[];
+  return rows[0] ? rowToAck(rows[0]) : null;
+}
+
 export async function markViewed(ackId: string, userId: string): Promise<void> {
   const db = sql();
   await db`
@@ -175,15 +192,75 @@ export async function markViewed(ackId: string, userId: string): Promise<void> {
   `;
 }
 
-export async function markAcknowledged(ackId: string, userId: string): Promise<void> {
+export async function markAcknowledged(input: {
+  ackId: string;
+  userId: string;
+  signatureDataUrl?: string | null;
+  ip?: string | null;
+  userAgent?: string | null;
+}): Promise<void> {
   const db = sql();
   await db`
-    INSERT INTO lounge_ack_states (ack_id, user_id, viewed_at, acknowledged_at)
-    VALUES (${ackId}, ${userId}, NOW(), NOW())
+    INSERT INTO lounge_ack_states (ack_id, user_id, viewed_at, acknowledged_at,
+                                   signature_data_url, signature_ip, signature_ua)
+    VALUES (${input.ackId}, ${input.userId}, NOW(), NOW(),
+            ${input.signatureDataUrl ?? null}, ${input.ip ?? null}, ${input.userAgent ?? null})
     ON CONFLICT (ack_id, user_id) DO UPDATE
       SET viewed_at = COALESCE(lounge_ack_states.viewed_at, NOW()),
-          acknowledged_at = NOW()
+          acknowledged_at = NOW(),
+          signature_data_url = COALESCE(EXCLUDED.signature_data_url, lounge_ack_states.signature_data_url),
+          signature_ip = COALESCE(EXCLUDED.signature_ip, lounge_ack_states.signature_ip),
+          signature_ua = COALESCE(EXCLUDED.signature_ua, lounge_ack_states.signature_ua)
   `;
+}
+
+/** Link an acknowledgment to a personnel record (the file row that holds it). */
+export async function linkAckToPersonnelRecord(ackId: string, userId: string, personnelRecordId: string): Promise<void> {
+  const db = sql();
+  await db`
+    UPDATE lounge_ack_states
+    SET personnel_record_id = ${personnelRecordId}
+    WHERE ack_id = ${ackId} AND user_id = ${userId}
+  `;
+}
+
+/** Admin view: roster of every active employee with their ack state for this ack. */
+export async function listAckRoster(ackId: string): Promise<{
+  employeeId: string;
+  firstName: string;
+  lastName: string;
+  certification: string | null;
+  viewedAt: string | null;
+  acknowledgedAt: string | null;
+  signatureDataUrl: string | null;
+}[]> {
+  const db = sql();
+  const rows = (await db`
+    SELECT e.id AS employee_id, e.first_name, e.last_name, e.certification,
+           s.viewed_at, s.acknowledged_at, s.signature_data_url
+    FROM lounge_employees e
+    LEFT JOIN lounge_ack_states s ON s.ack_id = ${ackId} AND s.user_id = e.id
+    WHERE e.is_active = TRUE
+    ORDER BY (s.acknowledged_at IS NULL) DESC,
+             e.last_name ASC, e.first_name ASC
+  `) as unknown as {
+    employee_id: string;
+    first_name: string;
+    last_name: string;
+    certification: string | null;
+    viewed_at: string | null;
+    acknowledged_at: string | null;
+    signature_data_url: string | null;
+  }[];
+  return rows.map((r) => ({
+    employeeId: r.employee_id,
+    firstName: r.first_name,
+    lastName: r.last_name,
+    certification: r.certification,
+    viewedAt: r.viewed_at,
+    acknowledgedAt: r.acknowledged_at,
+    signatureDataUrl: r.signature_data_url,
+  }));
 }
 
 export async function deleteAck(ackId: string): Promise<void> {

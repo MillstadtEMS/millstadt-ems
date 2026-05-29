@@ -117,7 +117,7 @@ function CommandHeader({
         </div>
       </div>
       <div className="lounge-hero-mark" aria-hidden>
-        <Image src="/lounge/lounge-button.png" alt="" width={104} height={74} />
+        <Image src="/lounge/lounge-button.png" alt="" width={220} height={156} />
       </div>
     </header>
   );
@@ -329,15 +329,15 @@ const LOUNGE_HOME_CSS = `
 .lounge-hero-mark {
   position: relative;
   z-index: 1;
-  width: 112px;
-  min-width: 112px;
+  width: 240px;
+  min-width: 200px;
   display: flex;
   justify-content: flex-end;
 }
 .lounge-hero-mark img {
-  width: 104px;
+  width: 220px;
   height: auto;
-  filter: drop-shadow(0 14px 20px rgba(0,0,0,0.38));
+  filter: drop-shadow(0 14px 28px rgba(0,0,0,0.45));
 }
 .lounge-cert-banner {
   display: grid;

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export interface SidebarMe {
@@ -31,11 +31,10 @@ const NAV: NavItem[] = [
   { href: "/lounge/incidents",    label: "Maintenance & Reports", emoji: "🛠️" },
   { href: "/api/lounge/sso/truckcheck", label: "Truck Check", emoji: "🚑", external: true },
   { href: "/api/lounge/sso/inventory",  label: "Inventory",   emoji: "📦", external: true },
-  // Admin section.
+  // Admin section — collapsed under "Admin Tools" group in the sidebar.
   { href: "/admin/filing-cabinet",        label: "Filing Cabinet",        emoji: "🗄️", adminOnly: true },
   { href: "/admin/incidents",             label: "Incident Reports",      emoji: "🚨", adminOnly: true },
   { href: "/admin/calls",                 label: "Ticker Editor",         emoji: "📟", adminOnly: true },
-  { href: "/admin/admin-tools",           label: "Admin Tools",           emoji: "🧰", adminOnly: true },
   { href: "/admin/website-config",        label: "Website Configuration", emoji: "⚙️", adminOnly: true },
 ];
 
@@ -48,6 +47,25 @@ export default function LoungeShell({
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname() || "/lounge";
+  const router = useRouter();
+
+  // Required-ack lockdown: if there's at least one un-acknowledged required
+  // notice, push the user to /lounge/acks until they sign. Admin pages
+  // (/admin/*) stay accessible so leadership can post + manage notices
+  // without being trapped.
+  useEffect(() => {
+    if (pathname.startsWith("/lounge/acks") || pathname.startsWith("/lounge/login")
+        || pathname.startsWith("/admin")) return;
+    let cancelled = false;
+    fetch("/api/lounge/me/required-acks").then(async (r) => {
+      if (!r.ok) return;
+      const d = await r.json().catch(() => null);
+      if (!cancelled && d && typeof d.count === "number" && d.count > 0) {
+        router.replace("/lounge/acks");
+      }
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [pathname, router]);
 
   // Slide the session forward while the user is active. The cookie has a
   // 15-minute TTL; we ping every 5 minutes IF the user has interacted

@@ -93,18 +93,25 @@ export default function FilingCabinetEmployeePage() {
 
   return (
     <div>
-      <header style={{ marginBottom: 18 }}>
-        <Link href="/admin/filing-cabinet" style={{ color: "#94a3b8", fontSize: 12, textDecoration: "none", letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 700 }}>
-          ← Filing Cabinet
-        </Link>
-        <h1 style={{ margin: "8px 0 0", fontSize: "1.85rem", fontWeight: 900 }}>
-          {profile.firstName} {profile.lastName}
-        </h1>
-        <div style={{ color: "#94a3b8", fontSize: 13, marginTop: 4 }}>
-          @{profile.username}{profile.certification ? ` · ${profile.certification}` : ""}{profile.position ? ` · ${profile.position}` : ""}
-          {profile.isAdmin && <span style={{ marginLeft: 10, color: "#f0b429", fontWeight: 800 }}>Admin</span>}
-          {!profile.isActive && <span style={{ marginLeft: 10, color: "#fca5a5", fontWeight: 800 }}>Inactive</span>}
+      <header style={{ marginBottom: 18, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <Link href="/admin/filing-cabinet" style={{ color: "#94a3b8", fontSize: 12, textDecoration: "none", letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 700 }}>
+            ← Filing Cabinet
+          </Link>
+          <h1 style={{ margin: "8px 0 0", fontSize: "1.85rem", fontWeight: 900 }}>
+            {profile.firstName} {profile.lastName}
+          </h1>
+          <div style={{ color: "#94a3b8", fontSize: 13, marginTop: 4 }}>
+            @{profile.username}{profile.certification ? ` · ${profile.certification}` : ""}{profile.position ? ` · ${profile.position}` : ""}
+            {profile.isAdmin && <span style={{ marginLeft: 10, color: "#f0b429", fontWeight: 800 }}>Admin</span>}
+            {!profile.isActive && <span style={{ marginLeft: 10, color: "#fca5a5", fontWeight: 800 }}>Inactive</span>}
+          </div>
         </div>
+        <ActiveToggle
+          employeeId={profile.id}
+          isActive={profile.isActive}
+          onChanged={(next) => setProfile((p) => p ? { ...p, isActive: next } : p)}
+        />
       </header>
 
       {/* About Me — read-only */}
@@ -200,6 +207,57 @@ export default function FilingCabinetEmployeePage() {
         />
       )}
     </div>
+  );
+}
+
+function ActiveToggle({
+  employeeId, isActive, onChanged,
+}: {
+  employeeId: string;
+  isActive: boolean;
+  onChanged: (nextActive: boolean) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  async function toggle() {
+    const action = isActive ? "deactivate" : "reactivate";
+    if (!confirm(isActive ? "Mark this employee Inactive? They will no longer be able to sign in." : "Re-activate this employee?")) return;
+    setBusy(true);
+    try {
+      const r = await fetch(`/api/admin/employees/${employeeId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !isActive }),
+      });
+      if (r.ok) onChanged(!isActive);
+      else {
+        const d = await r.json().catch(() => ({}));
+        alert(d.error || `Failed to ${action} (${r.status})`);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      disabled={busy}
+      style={{
+        background: isActive ? "rgba(239,68,68,0.10)" : "rgba(34,197,94,0.12)",
+        border: `1px solid ${isActive ? "rgba(239,68,68,0.40)" : "rgba(34,197,94,0.40)"}`,
+        color: isActive ? "#fca5a5" : "#86efac",
+        padding: "10px 14px",
+        borderRadius: 12,
+        fontSize: 12,
+        fontWeight: 900,
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+        cursor: busy ? "wait" : "pointer",
+        fontFamily: "inherit",
+      }}
+    >
+      {busy ? "Saving…" : isActive ? "Mark Inactive" : "Reactivate"}
+    </button>
   );
 }
 

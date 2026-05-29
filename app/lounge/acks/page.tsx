@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import SignaturePad from "@/components/lounge/SignaturePad";
 
 interface Author {
   id: string;
@@ -247,6 +249,12 @@ function UserAckCard({
   onDelete: () => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [scrolledToEnd, setScrolledToEnd] = useState(false);
+  const [signing, setSigning] = useState(false);
+  const [signature, setSignature] = useState<string | null>(null);
+  const [thanks, setThanks] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const bodyRef = useRef<HTMLDivElement | null>(null);
 
   // Auto-mark viewed when first rendered (one-shot per session per ack).
   useEffect(() => {
@@ -258,11 +266,48 @@ function UserAckCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ack.id]);
 
+  // Scroll-to-bottom detection — Acknowledge button stays disabled until
+  // the user has reached the end of the notice body.
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    function check() {
+      const e = bodyRef.current;
+      if (!e) return;
+      // If the body isn't tall enough to scroll, treat as already-read.
+      if (e.scrollHeight <= e.clientHeight + 4) { setScrolledToEnd(true); return; }
+      if (e.scrollTop + e.clientHeight >= e.scrollHeight - 6) setScrolledToEnd(true);
+    }
+    check();
+    el.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    return () => {
+      el.removeEventListener("scroll", check);
+      window.removeEventListener("resize", check);
+    };
+  }, [ack.body]);
+
   async function acknowledge() {
     setBusy(true);
+    setErr(null);
     try {
-      const res = await fetch(`/api/lounge/acks/${ack.id}/ack`, { method: "POST" });
-      if (res.ok) onChange({ ...ack, acknowledgedAt: new Date().toISOString(), viewedAt: ack.viewedAt ?? new Date().toISOString() });
+      const res = await fetch(`/api/lounge/acks/${ack.id}/ack`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(ack.requiresAcknowledgment ? { signature } : {}),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErr(data?.error || "Could not record acknowledgment.");
+        return;
+      }
+      onChange({
+        ...ack,
+        acknowledgedAt: data.acknowledgedAt ?? new Date().toISOString(),
+        viewedAt: ack.viewedAt ?? new Date().toISOString(),
+      });
+      setThanks(data?.employeeFirstName ?? "thank you");
+      setSigning(false);
     } finally {
       setBusy(false);
     }
@@ -314,9 +359,73 @@ function UserAckCard({
           </span>
         )}
       </header>
-      <p style={{ color: "#e2e8f0", fontSize: "0.92rem", lineHeight: 1.55, marginTop: 8, whiteSpace: "pre-wrap" }}>
+      <div
+        ref={bodyRef}
+        style={{
+          color: "#e2e8f0",
+          fontSize: "0.95rem",
+          lineHeight: 1.6,
+          marginTop: 10,
+          whiteSpace: "pre-wrap",
+          maxHeight: 320,
+          overflowY: "auto",
+          padding: "12px 14px",
+          background: "#040d1a",
+          border: "1px solid rgba(255,255,255,0.06)",
+          borderRadius: 10,
+        }}
+      >
         {ack.body}
-      </p>
+      </div>
+
+      {needsAck && !scrolledToEnd && (
+        <p style={{ color: "#fdba74", fontSize: 12, marginTop: 8, marginBottom: 0 }}>
+          Scroll to the bottom of the notice to enable the Acknowledge button.
+        </p>
+      )}
+
+      {needsAck && signing && (
+        <div style={{ marginTop: 12, padding: 12, background: "#040d1a", border: "1px solid rgba(240,180,41,0.30)", borderRadius: 12 }}>
+          <p style={{ color: "#cbd5e1", fontSize: 13, margin: "0 0 10px" }}>
+            By signing, you confirm you read and acknowledge this notice. This signature
+            is saved to your personnel file with a timestamp.
+          </p>
+          <SignaturePad value={signature} onChange={setSignature} label="Acknowledgment signature" height={140} />
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 12 }}>
+            <button type="button" onClick={() => { setSigning(false); setSignature(null); }} style={ghostBtn}>Cancel</button>
+            <button
+              type="button"
+              onClick={acknowledge}
+              disabled={busy || !signature}
+              style={{ ...goldBtn, opacity: busy || !signature ? 0.5 : 1 }}
+            >
+              {busy ? "Saving…" : "Sign & acknowledge"}
+            </button>
+          </div>
+          {err && <p style={{ color: "#fca5a5", fontSize: 12, marginTop: 8, marginBottom: 0 }}>{err}</p>}
+        </div>
+      )}
+
+      {thanks && (
+        <div style={{
+          marginTop: 12, padding: "12px 14px",
+          background: "rgba(34,197,94,0.10)",
+          border: "1px solid rgba(34,197,94,0.30)",
+          borderRadius: 12,
+          display: "flex", alignItems: "center", gap: 12,
+        }}>
+          <Image src="/images/millstadt-ems/crest.png" alt="" width={42} height={42} style={{ objectFit: "contain" }} />
+          <div>
+            <div style={{ color: "#86efac", fontSize: 11, fontWeight: 900, letterSpacing: "0.20em", textTransform: "uppercase" }}>
+              Thank you, {thanks}
+            </div>
+            <div style={{ color: "#e2e8f0", fontSize: 13.5, marginTop: 2 }}>
+              Your acknowledgment is recorded in your personnel file.
+            </div>
+          </div>
+        </div>
+      )}
+
       <footer
         style={{
           marginTop: 12,
@@ -332,17 +441,19 @@ function UserAckCard({
           Posted by {ack.createdBy.firstName} {ack.createdBy.lastName} · {timeAgo(ack.createdAt)}
         </span>
         <div style={{ display: "flex", gap: 8 }}>
-          {needsAck && (
+          {needsAck && !signing && (
             <button
               type="button"
-              onClick={acknowledge}
-              disabled={busy}
-              style={{ ...goldBtn, opacity: busy ? 0.6 : 1 }}
+              onClick={() => setSigning(true)}
+              disabled={busy || !scrolledToEnd}
+              title={!scrolledToEnd ? "Scroll to the bottom of the notice first" : ""}
+              style={{ ...goldBtn, opacity: busy || !scrolledToEnd ? 0.45 : 1, cursor: busy || !scrolledToEnd ? "not-allowed" : "pointer" }}
             >
-              Acknowledge
+              {scrolledToEnd ? "Acknowledge" : "Scroll to acknowledge"}
             </button>
           )}
-          {(ack.createdBy.id === me.id || me.isAdmin) && (
+          {/* Delete is admin-only — regular employees never see it. */}
+          {me.isAdmin && (
             <button type="button" onClick={onDelete} style={{ ...ghostBtn, color: "#fca5a5" }}>Delete</button>
           )}
         </div>
@@ -393,7 +504,10 @@ function AdminAckRow({ ack, onDelete }: { ack: Ack; onDelete: () => void }) {
             : `${viewed}/${total} viewed`}
         </span>
       </div>
-      <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end" }}>
+      <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <Link href={`/admin/notices/${ack.id}`} style={{ color: "#38bdf8", fontSize: 12, fontWeight: 800, textDecoration: "none", letterSpacing: "0.10em", textTransform: "uppercase" }}>
+          See who acknowledged →
+        </Link>
         <button type="button" onClick={onDelete} style={{ ...ghostBtn, color: "#fca5a5" }}>Delete</button>
       </div>
     </article>

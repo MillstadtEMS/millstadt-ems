@@ -77,9 +77,12 @@ export default function InventoryMenu() {
       <header className="shrink-0 bg-slate-900 border-b border-slate-700">
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center">
-              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-yellow-400"><path d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/></svg>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/millstadt-ems/crest.png"
+              alt="Millstadt EMS"
+              style={{ width: 48, height: 48, objectFit: "contain", filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.45))" }}
+            />
             <div>
               <div className="text-white font-black text-lg leading-none">Inventory</div>
               <div className="text-yellow-400/60 text-[10px] font-bold uppercase tracking-widest mt-0.5">Millstadt EMS</div>

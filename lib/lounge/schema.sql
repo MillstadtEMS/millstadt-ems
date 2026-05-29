@@ -315,6 +315,12 @@ CREATE TABLE IF NOT EXISTS lounge_ack_states (
 CREATE INDEX IF NOT EXISTS lounge_ack_states_user_idx
     ON lounge_ack_states (user_id);
 
+-- Signature + personnel-file linkage on each acknowledgment.
+ALTER TABLE lounge_ack_states ADD COLUMN IF NOT EXISTS signature_data_url TEXT;
+ALTER TABLE lounge_ack_states ADD COLUMN IF NOT EXISTS signature_ip       TEXT;
+ALTER TABLE lounge_ack_states ADD COLUMN IF NOT EXISTS signature_ua       TEXT;
+ALTER TABLE lounge_ack_states ADD COLUMN IF NOT EXISTS personnel_record_id TEXT;
+
 -- ═══════════════════════════════════════════════════════════════════════
 -- OPEN SHIFTS
 -- ═══════════════════════════════════════════════════════════════════════

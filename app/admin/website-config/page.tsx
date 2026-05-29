@@ -1,8 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { currentEmployee } from "@/lib/lounge/auth";
-import { getEmployee } from "@/lib/lounge/employees";
-import LoungeShell from "@/components/lounge/LoungeShell";
 
 export const dynamic = "force-dynamic";
 
@@ -16,22 +14,15 @@ const SECTIONS = [
   { href: "/admin/media",        label: "Media Manager",            description: "Replace photos used across the website." },
 ];
 
+// LoungeShell is provided by app/admin/layout.tsx — this page only renders
+// its own content.
 export default async function WebsiteConfigPage() {
   const session = await currentEmployee();
   if (!session) redirect("/lounge/login");
   if (!session.isAdmin) redirect("/lounge");
-  const emp = await getEmployee(session.id);
-
-  const me = {
-    firstName: session.firstName,
-    lastName: session.lastName,
-    certification: emp?.certification ?? null,
-    photoUrl: emp?.photoUrl ?? null,
-    isAdmin: session.isAdmin,
-  };
 
   return (
-    <LoungeShell me={me}>
+    <>
       <header style={{ marginBottom: 22 }}>
         <div style={{ color: "#f0b429", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
           Admin
@@ -65,6 +56,6 @@ export default async function WebsiteConfigPage() {
           </Link>
         ))}
       </div>
-    </LoungeShell>
+    </>
   );
 }
