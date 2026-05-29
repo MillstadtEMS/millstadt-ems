@@ -6,7 +6,6 @@ import { currentEmployee } from "@/lib/lounge/auth";
 import { getEmployee } from "@/lib/lounge/employees";
 import { expiringCertsForEmployee, type EmployeeCert } from "@/lib/lounge/certs";
 import { listAcksForViewer, type Ack } from "@/lib/lounge/acks";
-import { listOpenShifts, type OpenShift } from "@/lib/lounge/open-shifts";
 import LoungeShell from "@/components/lounge/LoungeShell";
 import Wall from "@/components/lounge/Wall";
 import WelcomeOverlay from "@/components/lounge/WelcomeOverlay";
@@ -16,46 +15,13 @@ const PRANK_USERNAMES = new Set(["kwetzel", "jgoetz"]);
 
 export const dynamic = "force-dynamic";
 
-const quickActions = [
-  { href: "/lounge/open-shifts", label: "Open Shift Sign-Up", detail: "Available coverage", icon: "plus" },
-  { href: "/lounge/incidents", label: "Report Issue", detail: "Station, unit, safety", icon: "tool" },
-  { href: "/lounge/certs", label: "Upload Credential", detail: "Certs and renewals", icon: "upload" },
-  { href: "/lounge/acks", label: "Acknowledgments", detail: "Read and sign", icon: "check" },
-];
-
-const adminActions = [
-  { href: "/admin/calls", label: "Ticker Editor", detail: "Live call strip", icon: "ticker" },
-  { href: "/admin/employees", label: "Employee Records", detail: "Personnel admin", icon: "users" },
-  { href: "/admin/admin-tools", label: "Admin Tools", detail: "Operations controls", icon: "shield" },
-];
-
-const trainingItems = [
-  { title: "Annual compliance", status: "Track in Certs", href: "/lounge/certs" },
-  { title: "Protocol updates", status: "Post as notice", href: "/lounge/acks" },
-  { title: "Skills check-offs", status: "Admin managed", href: "/admin/classes" },
-];
-
-const resourceItems = [
-  { title: "Policies and SOPs", href: "/lounge/acks", label: "Notices" },
-  { title: "Maintenance requests", href: "/lounge/incidents", label: "Reports" },
-  { title: "Inventory", href: "/api/lounge/sso/inventory", label: "SSO" },
-  { title: "Truck check", href: "/api/lounge/sso/truckcheck", label: "SSO" },
-];
-
-const recognitions = [
-  { type: "Clinical Save", name: "Crew Recognition", text: "Highlight saves, thank-yous, and strong calls on the Wall." },
-  { type: "Above and Beyond", name: "Station Culture", text: "Pin recognition posts so the whole crew sees the win." },
-  { type: "Training Complete", name: "Credential Growth", text: "Celebrate new certs, class completions, and milestones." },
-];
-
 export default async function LoungeHome() {
   const session = await currentEmployee();
   if (!session) redirect("/lounge/login");
 
-  const [emp, expiring, openShifts, acks] = await Promise.all([
+  const [emp, expiring, acks] = await Promise.all([
     getEmployee(session.id),
     expiringCertsForEmployee(session.id),
-    listOpenShifts(session.id),
     listAcksForViewer(session.id),
   ]);
 
@@ -68,7 +34,6 @@ export default async function LoungeHome() {
   };
 
   const pendingAcks = acks.filter((ack) => ack.requiresAcknowledgment && !ack.acknowledgedAt);
-  const activeOpenShifts = openShifts.filter((shift) => shift.status === "open");
   const latestNotice = acks[0] ?? null;
 
   return (
@@ -80,7 +45,6 @@ export default async function LoungeHome() {
           role={emp?.certification ?? "Crew"}
           isAdmin={session.isAdmin}
           pendingAcks={pendingAcks.length}
-          openShifts={activeOpenShifts.length}
           expiringCerts={expiring.length}
         />
 
@@ -97,14 +61,10 @@ export default async function LoungeHome() {
                 isAdmin: session.isAdmin,
               }}
             />
-            <QuickActionDock isAdmin={session.isAdmin} />
-            <ScheduleSnapshot openShifts={activeOpenShifts} />
-            <TrainingResourcesRecognition isAdmin={session.isAdmin} />
           </div>
 
           <CommandRail
             pendingAcks={pendingAcks}
-            openShifts={activeOpenShifts}
             expiring={expiring}
             latestNotice={latestNotice}
             isAdmin={session.isAdmin}
@@ -124,20 +84,17 @@ function CommandHeader({
   role,
   isAdmin,
   pendingAcks,
-  openShifts,
   expiringCerts,
 }: {
   firstName: string;
   role: string;
   isAdmin: boolean;
   pendingAcks: number;
-  openShifts: number;
   expiringCerts: number;
 }) {
   const now = new Date();
   const statusChips = [
     { label: "Available", value: "Crew portal" },
-    { label: "Open Coverage", value: `${openShifts}` },
     { label: "Pending Items", value: `${pendingAcks + expiringCerts}` },
     { label: isAdmin ? "Admin" : "Employee", value: role },
   ];
@@ -148,7 +105,7 @@ function CommandHeader({
         <div className="lounge-eyebrow">{formatDateLine(now)}</div>
         <div className="lounge-hero-title-row">
           <h1>Employee Lounge</h1>
-          <p>Welcome back, {firstName}. Shift notes, coverage, messages, and crew tools.</p>
+          <p>Welcome back, {firstName}. Crew posts, messages, acknowledgments, and admin tools.</p>
         </div>
         <div className="lounge-status-strip">
           {statusChips.map((chip) => (
@@ -166,124 +123,13 @@ function CommandHeader({
   );
 }
 
-function QuickActionDock({ isAdmin }: { isAdmin: boolean }) {
-  const actions = isAdmin ? [...quickActions, ...adminActions] : quickActions;
-  return (
-    <section className="lounge-action-dock" aria-label="Quick actions">
-      <div className="lounge-section-head">
-        <span>Quick actions</span>
-        <h2>Shift tasks</h2>
-      </div>
-      <div className="lounge-action-grid">
-        {actions.map((action) => (
-          <Link key={action.href + action.label} href={action.href} className="lounge-action-card">
-            <Icon name={action.icon} />
-            <span>{action.label}</span>
-            <small>{action.detail}</small>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function ScheduleSnapshot({ openShifts }: { openShifts: OpenShift[] }) {
-  const preview = openShifts.slice(0, 3);
-  return (
-    <section className="lounge-schedule" id="schedule">
-      <div className="lounge-section-head">
-        <span>Schedule snapshot</span>
-        <h2>Coverage</h2>
-      </div>
-
-      <div className="lounge-schedule-grid">
-        <div className="lounge-unit-board">
-          <StatusRow label="Today" value="Use Aladtec for official roster" tone="blue" />
-          <StatusRow label="Unit staffing" value="Schedule sync not connected yet" tone="gold" />
-          <StatusRow label="Next shift" value="Private schedule stays in Aladtec" tone="neutral" />
-        </div>
-
-        <div className="lounge-open-board">
-          <div className="lounge-open-top">
-            <div>
-              <span>Open Coverage</span>
-              <strong>{openShifts.length} active</strong>
-            </div>
-            <Link href="/lounge/open-shifts">Open board</Link>
-          </div>
-          {preview.length === 0 ? (
-            <p className="lounge-empty">No open shifts posted right now.</p>
-          ) : (
-            <div className="lounge-shift-list">
-              {preview.map((shift) => (
-                <article key={shift.id}>
-                  <span>{shift.target || "All crew"}</span>
-                  <strong>{shift.title}</strong>
-                  <p>{shift.body}</p>
-                </article>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function TrainingResourcesRecognition({ isAdmin }: { isAdmin: boolean }) {
-  return (
-    <section className="lounge-panels-row">
-      <DashboardPanel eyebrow="Training Center" title="Education and compliance">
-        <div className="lounge-list">
-          {trainingItems.map((item) => (
-            <Link key={item.title} href={item.href}>
-              <span>{item.title}</span>
-              <strong>{item.status}</strong>
-            </Link>
-          ))}
-        </div>
-      </DashboardPanel>
-
-      <DashboardPanel eyebrow="Station Resources" title="Forms, tools, and links" id="resources">
-        <div className="lounge-resource-grid">
-          {resourceItems.map((item) => (
-            <Link key={item.title} href={item.href}>
-              <span>{item.label}</span>
-              <strong>{item.title}</strong>
-            </Link>
-          ))}
-        </div>
-      </DashboardPanel>
-
-      <DashboardPanel eyebrow="Recognition Wall" title="Crew wins">
-        <div className="lounge-recognition">
-          {recognitions.map((item) => (
-            <article key={item.type}>
-              <span>{item.type}</span>
-              <strong>{item.name}</strong>
-              <p>{item.text}</p>
-            </article>
-          ))}
-        </div>
-        {isAdmin && (
-          <Link href="/lounge" className="lounge-admin-note">
-            Post recognition through the Wall composer
-          </Link>
-        )}
-      </DashboardPanel>
-    </section>
-  );
-}
-
 function CommandRail({
   pendingAcks,
-  openShifts,
   expiring,
   latestNotice,
   isAdmin,
 }: {
   pendingAcks: Ack[];
-  openShifts: OpenShift[];
   expiring: EmployeeCert[];
   latestNotice: Ack | null;
   isAdmin: boolean;
@@ -292,7 +138,6 @@ function CommandRail({
     <aside className="lounge-command-rail">
       <RailCard title="At a glance">
         <RailMetric label="Pending acknowledgments" value={pendingAcks.length} href="/lounge/acks" />
-        <RailMetric label="Open shifts" value={openShifts.length} href="/lounge/open-shifts" />
         <RailMetric label="Credentials due" value={expiring.length} href="/lounge/certs" />
       </RailCard>
 
@@ -318,7 +163,6 @@ function CommandRail({
           <div className="lounge-admin-links">
             <Link href="/admin/calls">Ticker editor</Link>
             <Link href="/lounge/acks">Create notice</Link>
-            <Link href="/lounge/open-shifts">Post open shift</Link>
             <Link href="/admin/employees">Employee records</Link>
           </div>
         </RailCard>
@@ -358,26 +202,6 @@ function CertAlertsBanner({ certs }: { certs: EmployeeCert[] }) {
   );
 }
 
-function DashboardPanel({
-  eyebrow,
-  title,
-  id,
-  children,
-}: {
-  eyebrow: string;
-  title: string;
-  id?: string;
-  children: ReactNode;
-}) {
-  return (
-    <article className="lounge-dashboard-panel" id={id}>
-      <span>{eyebrow}</span>
-      <h2>{title}</h2>
-      {children}
-    </article>
-  );
-}
-
 function RailCard({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="lounge-rail-card">
@@ -393,37 +217,6 @@ function RailMetric({ label, value, href }: { label: string; value: number; href
       <span>{label}</span>
       <strong>{value}</strong>
     </Link>
-  );
-}
-
-function StatusRow({ label, value, tone }: { label: string; value: string; tone: "blue" | "gold" | "neutral" }) {
-  return (
-    <div className={`lounge-status-row is-${tone}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function Icon({ name }: { name: string }) {
-  const paths: Record<string, ReactNode> = {
-    calendar: <path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2Zm13 8H4v10h16V10Z" />,
-    plus: <path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z" />,
-    ambulance: <path d="M3 6h10v10H3V6Zm12 3h3l3 4v3h-2a3 3 0 0 1-6 0h-3a3 3 0 0 1-6 0H2V4h13v5Zm-8 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm9 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm1-6h-2v2h3.5L17 11ZM8 8h2v2h2v2h-2v2H8v-2H6v-2h2V8Z" />,
-    tool: <path d="M22 19.6 19.6 22l-6.8-6.8a6.5 6.5 0 0 1-8.1-8.1l4.2 4.2 2.4-2.4-4.2-4.2a6.5 6.5 0 0 1 8.1 8.1L22 19.6Z" />,
-    upload: <path d="M11 16h2V8l3.5 3.5 1.4-1.4L12 4.2 6.1 10.1l1.4 1.4L11 8v8Zm-7 2h16v2H4v-2Z" />,
-    file: <path d="M6 2h8l4 4v16H6V2Zm7 1.5V7h3.5L13 3.5ZM8 12h8v2H8v-2Zm0 4h8v2H8v-2Z" />,
-    check: <path d="m9.2 16.2-4.1-4.1-1.4 1.4 5.5 5.5L21 7.2l-1.4-1.4L9.2 16.2Z" />,
-    message: <path d="M4 4h16v12H7.8L4 19.8V4Zm2 2v9l1-1h11V6H6Z" />,
-    ticker: <path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm0 2v10h16V7H4Zm2 3h5v2H6v-2Zm7 0h5v2h-5v-2Zm-7 4h8v2H6v-2Z" />,
-    users: <path d="M8 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm8 1a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7ZM2 21v-2a5 5 0 0 1 10 0v2H2Zm11 0v-1.5a6.8 6.8 0 0 0-1.2-3.9A4.8 4.8 0 0 1 21 17.5V21h-8Z" />,
-    shield: <path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3Zm-1 14-3.3-3.3 1.4-1.4 1.9 1.9 4.9-4.9 1.4 1.4L11 16Z" />,
-  };
-
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden>
-      {paths[name] ?? paths.file}
-    </svg>
   );
 }
 
@@ -482,10 +275,7 @@ const LOUNGE_HOME_CSS = `
   justify-content: space-between;
 }
 .lounge-eyebrow,
-.lounge-section-head span,
-.lounge-dashboard-panel > span,
 .lounge-cert-banner span,
-.lounge-open-top span,
 .lounge-notice-link span {
   display: block;
   color: #f0b429;
@@ -526,10 +316,6 @@ const LOUNGE_HOME_CSS = `
   border: 1px solid rgba(255,255,255,0.09);
 }
 .lounge-status-strip span,
-.lounge-action-card small,
-.lounge-status-row span,
-.lounge-resource-grid span,
-.lounge-recognition span,
 .lounge-rail-metric span {
   display: block;
   color: #94a3b8;
@@ -594,9 +380,7 @@ const LOUNGE_HOME_CSS = `
   font-size: 0.82rem;
 }
 .lounge-cert-banner a,
-.lounge-open-top a,
-.lounge-rail-button,
-.lounge-admin-note {
+.lounge-rail-button {
   min-height: 40px;
   display: inline-flex;
   align-items: center;
@@ -611,9 +395,6 @@ const LOUNGE_HOME_CSS = `
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-.lounge-action-dock,
-.lounge-schedule,
-.lounge-dashboard-panel,
 .lounge-rail-card {
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 18px;
@@ -622,63 +403,12 @@ const LOUNGE_HOME_CSS = `
     #071428;
   box-shadow: 0 12px 34px rgba(0,0,0,0.2);
 }
-.lounge-action-dock {
-  padding: 14px;
-}
-.lounge-section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  gap: 16px;
-  margin-bottom: 10px;
-}
-.lounge-section-head h2,
-.lounge-dashboard-panel h2,
 .lounge-rail-card h3 {
   margin: 5px 0 0;
   color: white;
   font-size: 1.08rem;
   line-height: 1.1;
   letter-spacing: -0.025em;
-}
-.lounge-action-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
-.lounge-action-card {
-  min-height: 72px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 14px;
-  text-decoration: none;
-  background: rgba(255,255,255,0.045);
-  border: 1px solid rgba(255,255,255,0.08);
-  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
-}
-.lounge-action-card:hover,
-.lounge-action-card:focus {
-  transform: translateY(-2px);
-  border-color: rgba(240,180,41,0.45);
-  background: rgba(240,180,41,0.08);
-}
-.lounge-action-card svg {
-  width: 24px;
-  height: 24px;
-  fill: #f0b429;
-  flex: 0 0 auto;
-}
-.lounge-action-card span {
-  color: white;
-  font-size: 0.86rem;
-  font-weight: 900;
-  line-height: 1.15;
-}
-.lounge-action-card small {
-  display: none;
 }
 .lounge-command-grid {
   display: grid;
@@ -691,57 +421,11 @@ const LOUNGE_HOME_CSS = `
   gap: 14px;
   min-width: 0;
 }
-.lounge-schedule {
-  padding: 14px;
-}
-.lounge-schedule-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 10px;
-}
-.lounge-unit-board,
-.lounge-open-board {
-  display: grid;
-  gap: 10px;
-}
-.lounge-status-row,
-.lounge-open-board,
 .lounge-rail-metric,
-.lounge-notice-link,
-.lounge-list a,
-.lounge-resource-grid a,
-.lounge-recognition article {
+.lounge-notice-link {
   border-radius: 16px;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.08);
-}
-.lounge-status-row {
-  padding: 12px;
-  border-left: 4px solid #64748b;
-}
-.lounge-status-row.is-blue { border-left-color: #38bdf8; }
-.lounge-status-row.is-gold { border-left-color: #f0b429; }
-.lounge-status-row strong {
-  display: block;
-  margin-top: 6px;
-  color: white;
-  font-size: 0.86rem;
-  line-height: 1.4;
-}
-.lounge-open-board {
-  padding: 12px;
-}
-.lounge-open-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.lounge-open-top strong {
-  display: block;
-  margin-top: 4px;
-  color: white;
-  font-size: 1.16rem;
 }
 .lounge-empty {
   margin: 12px 0 0;
@@ -749,92 +433,11 @@ const LOUNGE_HOME_CSS = `
   font-size: 0.9rem;
   line-height: 1.55;
 }
-.lounge-shift-list {
-  display: grid;
-  gap: 8px;
-  margin-top: 12px;
-}
-.lounge-shift-list article {
-  padding: 12px;
-  border-radius: 14px;
-  background: rgba(2,9,18,0.5);
-}
-.lounge-shift-list span {
-  color: #7dd3fc;
-  font-size: 0.68rem;
-  font-weight: 950;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-}
-.lounge-shift-list strong {
-  display: block;
-  margin-top: 4px;
-  color: white;
-}
-.lounge-shift-list p {
-  display: -webkit-box;
-  margin: 5px 0 0;
-  color: #94a3b8;
-  font-size: 0.82rem;
-  line-height: 1.45;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.lounge-panels-row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-.lounge-dashboard-panel {
-  padding: 14px;
-}
-.lounge-list,
-.lounge-resource-grid,
-.lounge-recognition {
-  display: grid;
-  gap: 8px;
-  margin-top: 12px;
-}
-.lounge-list a,
-.lounge-resource-grid a {
-  display: block;
-  padding: 11px;
-  text-decoration: none;
-}
-.lounge-list span,
-.lounge-resource-grid strong,
-.lounge-list strong,
-.lounge-recognition strong {
-  display: block;
-}
-.lounge-list span,
-.lounge-resource-grid strong {
-  color: white;
-  font-weight: 850;
-}
-.lounge-list strong,
-.lounge-resource-grid span {
-  margin-top: 4px;
-  color: #f0b429;
-}
-.lounge-recognition article {
-  padding: 11px;
-}
-.lounge-recognition strong {
-  margin-top: 4px;
-  color: white;
-}
-.lounge-recognition p,
 .lounge-rail-card p {
   margin: 7px 0 0;
   color: #94a3b8;
   font-size: 0.84rem;
   line-height: 1.55;
-}
-.lounge-admin-note {
-  width: 100%;
-  margin-top: 12px;
 }
 .lounge-command-rail {
   position: sticky;
@@ -895,9 +498,7 @@ const LOUNGE_HOME_CSS = `
 }
 @media (max-width: 1180px) {
   .lounge-command-grid,
-  .lounge-hero,
-  .lounge-schedule-grid,
-  .lounge-panels-row {
+  .lounge-hero {
     grid-template-columns: 1fr;
   }
   .lounge-command-rail {
@@ -906,9 +507,6 @@ const LOUNGE_HOME_CSS = `
 }
 @media (max-width: 760px) {
   .lounge-hero,
-  .lounge-action-dock,
-  .lounge-schedule,
-  .lounge-dashboard-panel,
   .lounge-rail-card,
   .lounge-cert-banner {
     border-radius: 18px;
@@ -930,15 +528,8 @@ const LOUNGE_HOME_CSS = `
     display: none;
   }
   .lounge-status-strip,
-  .lounge-action-grid,
   .lounge-cert-banner {
     grid-template-columns: 1fr;
-  }
-  .lounge-action-card {
-    min-height: 96px;
-  }
-  .lounge-section-head {
-    display: block;
   }
 }
 `;
