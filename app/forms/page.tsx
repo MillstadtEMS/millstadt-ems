@@ -57,6 +57,30 @@ const forms = [
       </svg>
     ),
   },
+  {
+    href: "/forms/education-request",
+    title: "Education Request",
+    desc: "Request a CPR class, Stop the Bleed training, AED instruction, school visit, or other community education program.",
+    badge: "Education",
+    badgeColor: "bg-cyan-950 text-cyan-400 border-cyan-800/40",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-7 h-7 fill-current">
+        <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z" />
+      </svg>
+    ),
+  },
+  {
+    href: "/forms/equipment-request",
+    title: "Equipment Request",
+    desc: "Request loaned equipment — AED, training mannequin, Stop the Bleed kit, event first-aid supplies — for a community event or training.",
+    badge: "Equipment",
+    badgeColor: "bg-orange-950 text-orange-400 border-orange-800/40",
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-7 h-7 fill-current">
+        <path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1 .1-1.4z" />
+      </svg>
+    ),
+  },
 ];
 
 export default function FormsPage() {

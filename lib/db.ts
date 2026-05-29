@@ -340,6 +340,36 @@ export async function deleteFormSubmission(id: string): Promise<void> {
   await db`DELETE FROM form_submissions WHERE id = ${id}`;
 }
 
+/**
+ * Submissions that haven't been opened in the admin console yet AND haven't
+ * already been reminded about. Used by /api/cron/submission-reminders.
+ */
+export async function findOverdueSubmissions(
+  thresholdDays: number,
+): Promise<FormSubmission[]> {
+  await ensureSiteSchema();
+  const db = sql();
+  await db`ALTER TABLE form_submissions ADD COLUMN IF NOT EXISTS reminded_at TIMESTAMPTZ`;
+  const interval = `${Math.max(1, Math.floor(thresholdDays))} days`;
+  const rows = await db`
+    SELECT * FROM form_submissions
+    WHERE read_at IS NULL
+      AND reminded_at IS NULL
+      AND submitted_at < NOW() - ${interval}::interval
+    ORDER BY submitted_at ASC
+  `;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (rows as any[]).map(toSubmission);
+}
+
+export async function markSubmissionsReminded(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  await ensureSiteSchema();
+  const db = sql();
+  await db`ALTER TABLE form_submissions ADD COLUMN IF NOT EXISTS reminded_at TIMESTAMPTZ`;
+  await db`UPDATE form_submissions SET reminded_at = NOW() WHERE id = ANY(${ids})`;
+}
+
 // ── Change Log ────────────────────────────────────────────────────────────
 
 export interface ChangeLogEntry {

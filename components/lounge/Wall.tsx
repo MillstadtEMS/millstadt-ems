@@ -358,25 +358,38 @@ function PostCard({
         {post.body}
       </p>
 
-      {post.media.length > 0 && (
-        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: post.media.length > 1 ? "repeat(auto-fit, minmax(160px, 1fr))" : "1fr", gap: 8 }}>
-          {post.media.map((m, i) =>
-            m.kind === "video" ? (
-              <div key={i} style={{ display: "block", borderRadius: 10, overflow: "hidden", background: "#020912" }}>
-                <video src={m.url} controls playsInline preload="metadata" style={{ width: "100%", display: "block", maxHeight: 420 }} />
-              </div>
-            ) : (
-              <a key={i} href={m.url} target="_blank" rel="noreferrer" style={{ display: "block", borderRadius: 10, overflow: "hidden", background: "#020912" }}>
-                {m.kind === "image" ? (
-                  <img src={m.url} alt="" style={{ width: "100%", height: "auto", display: "block" }} />
-                ) : (
-                  <div style={{ padding: 14, color: "#cbd5e1", fontSize: "0.85rem" }}>📎 {m.name ?? "attachment"}</div>
-                )}
-              </a>
-            ),
-          )}
-        </div>
-      )}
+      {post.media.length > 0 && (() => {
+        const isSingle = post.media.length === 1;
+        // Facebook-style: single image fills the post column but is capped
+        // to a sane viewing height with the rest letterboxed against a dark
+        // backdrop. Grids of 2+ stay square-ish thumbnails.
+        const gridCols = isSingle ? "1fr" : "repeat(auto-fit, minmax(160px, 1fr))";
+        const imgStyle: React.CSSProperties = isSingle
+          ? { width: "100%", maxHeight: 480, height: "auto", objectFit: "contain", display: "block" }
+          : { width: "100%", aspectRatio: "1 / 1", objectFit: "cover", display: "block" };
+        const videoStyle: React.CSSProperties = isSingle
+          ? { width: "100%", maxHeight: 480, display: "block" }
+          : { width: "100%", aspectRatio: "1 / 1", objectFit: "cover", display: "block" };
+        return (
+          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: gridCols, gap: 8 }}>
+            {post.media.map((m, i) =>
+              m.kind === "video" ? (
+                <div key={i} style={{ display: "block", borderRadius: 10, overflow: "hidden", background: "#020912" }}>
+                  <video src={m.url} controls playsInline preload="metadata" style={videoStyle} />
+                </div>
+              ) : (
+                <a key={i} href={m.url} target="_blank" rel="noreferrer" style={{ display: "block", borderRadius: 10, overflow: "hidden", background: "#020912" }}>
+                  {m.kind === "image" ? (
+                    <img src={m.url} alt="" style={imgStyle} />
+                  ) : (
+                    <div style={{ padding: 14, color: "#cbd5e1", fontSize: "0.85rem" }}>📎 {m.name ?? "attachment"}</div>
+                  )}
+                </a>
+              ),
+            )}
+          </div>
+        );
+      })()}
 
       <footer style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
         <ReactionPicker current={myReaction} reactions={post.reactions} onPick={(k) => onReact(myReaction === k ? null : k)} />

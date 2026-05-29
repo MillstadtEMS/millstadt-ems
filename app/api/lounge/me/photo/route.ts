@@ -47,13 +47,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Image too large. Max size is 8 MB." }, { status: 400 });
   }
 
-  // Reject only when the upload clearly isn't an image at all.
-  const looksLikeImage =
-    (file.type || "").toLowerCase().startsWith("image/") ||
-    /\.(jpe?g|png|webp|gif|heic|heif|avif|bmp|tiff?)$/i.test(file.name || "");
-  if (!looksLikeImage) {
-    return NextResponse.json({ error: "Choose an image (JPG, PNG, HEIC, etc.)" }, { status: 400 });
-  }
+  // We used to reject when filename had no image extension and MIME was
+  // empty. macOS Finder's Photos sidebar regularly hands us exactly that
+  // (HEIC bytes with stripped metadata), so we now trust the picker and
+  // upload anything reasonable in size. The client picker filters out
+  // truly unrelated files.
 
   const ext = extensionFor(file.type, file.name);
   const path = `lounge/employees/${session.id}/profile-${Date.now()}.${ext}`;

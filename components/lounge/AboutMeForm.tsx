@@ -108,15 +108,10 @@ export default function AboutMeForm({ initial }: { initial: ProfileInitial }) {
     setPhotoBusy(true);
     setPhotoStatus(null);
     try {
-      // macOS Safari sometimes gives HEIC files an empty MIME — fall back
-      // to the filename extension so we don't reject real camera files.
-      const looksLikeImage =
-        (file.type || "").toLowerCase().startsWith("image/") ||
-        /\.(jpe?g|png|webp|gif|heic|heif|avif|bmp|tiff?)$/i.test(file.name || "");
-      if (!looksLikeImage) {
-        setPhotoStatus({ kind: "err", message: "Choose an image file." });
-        return;
-      }
+      // Don't gate on MIME or filename extension here — Finder's Photos
+      // sidebar can hand us a file with no extension AND no MIME, even
+      // though the bytes are a real JPEG/HEIC. We trust the picker and
+      // let the server validate.
       if (file.size > 8 * 1024 * 1024) {
         setPhotoStatus({ kind: "err", message: "Keep profile photos under 8 MB." });
         return;
@@ -280,11 +275,12 @@ export default function AboutMeForm({ initial }: { initial: ProfileInitial }) {
             <p style={{ color: "#cbd5e1", fontSize: 14, lineHeight: 1.55, margin: "0 0 14px" }}>
               Add a headshot for the Wall, comments, Messenger, and your lounge identity chip.
             </p>
-            {/* Library / file picker — accepts HEIC, JPG, PNG, WebP, AVIF… */}
+            {/* Library / file picker — accept ANY file so the macOS Photos
+                sidebar in Finder (which sometimes presents files with no
+                extension) doesn't get filtered out. Server validates. */}
             <input
               ref={photoInputRef}
               type="file"
-              accept="image/*,.heic,.heif,.avif"
               style={{ display: "none" }}
               onChange={(event) => {
                 const file = event.currentTarget.files?.[0] ?? null;

@@ -25,10 +25,16 @@ const TYPE_META: Record<string, { short: string; icon: string; color: string }> 
   "Ride Along Request":               { short: "Ride Along",          icon: "🚑", color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
   "Event Appearance Request":         { short: "Event Appearance",    icon: "📅", color: "text-amber-400 bg-amber-400/10 border-amber-400/20" },
   "Employment Application":           { short: "Employment",          icon: "📋", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
+  "Education Request":                { short: "Education",           icon: "🎓", color: "text-cyan-400 bg-cyan-400/10 border-cyan-400/20" },
+  "Equipment Request":                { short: "Equipment",           icon: "🛠️", color: "text-orange-400 bg-orange-400/10 border-orange-400/20" },
+  "Run Number Request":               { short: "Run Number",          icon: "🧾", color: "text-rose-400 bg-rose-400/10 border-rose-400/20" },
 };
 // Always show these categories on the admin index, even when there are 0 submissions
 const EXPECTED_TYPES = [
   "Employment Application",
+  "Run Number Request",
+  "Education Request",
+  "Equipment Request",
   "Ride Along Request",
   "Event Appearance Request",
   "Birthday Party Appearance Request",
