@@ -10,6 +10,8 @@ import LoungeShell from "@/components/lounge/LoungeShell";
 import Wall from "@/components/lounge/Wall";
 import PasskeyPrompt from "@/components/lounge/PasskeyPrompt";
 import TodayEventsWidget from "@/components/lounge/TodayEventsWidget";
+import BirthdayBanner from "@/components/lounge/BirthdayBanner";
+import { listTodaysBirthdays } from "@/lib/lounge/birthdays";
 import WelcomeOverlay from "@/components/lounge/WelcomeOverlay";
 import CoffeePrankOverlay from "@/components/lounge/CoffeePrankOverlay";
 
@@ -21,10 +23,11 @@ export default async function LoungeHome() {
   const session = await currentEmployee();
   if (!session) redirect("/lounge/login");
 
-  const [emp, expiring, acks] = await Promise.all([
+  const [emp, expiring, acks, birthdays] = await Promise.all([
     getEmployee(session.id),
     expiringCertsForEmployee(session.id),
     listAcksForViewer(session.id),
+    listTodaysBirthdays(),
   ]);
 
   const me = {
@@ -41,6 +44,7 @@ export default async function LoungeHome() {
   return (
     <LoungeShell me={me}>
       <style>{LOUNGE_HOME_CSS}</style>
+      <BirthdayBanner people={birthdays} />
       <PasskeyPrompt />
       <div className="lounge-command-page">
         <CommandHeader
