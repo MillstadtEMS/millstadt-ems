@@ -681,5 +681,7 @@ INSERT INTO lounge_cert_types (id, name, slug, requires_expiration, is_built_in)
     ('builtin-nims-300',          'NIMS 300',                       'nims-300',          FALSE, TRUE),
     ('builtin-nims-400',          'NIMS 400',                       'nims-400',          FALSE, TRUE),
     ('builtin-nims-700',          'NIMS 700',                       'nims-700',          FALSE, TRUE),
-    ('builtin-nims-800',          'NIMS 800',                       'nims-800',          FALSE, TRUE)
+    ('builtin-nims-800',          'NIMS 800',                       'nims-800',          FALSE, TRUE),
+    ('builtin-hazmat-awareness',  'HazMat Awareness',               'hazmat-awareness',  FALSE, TRUE),
+    ('builtin-cc-specialty',      'Critical Care Certification (FP-C / CCP-C / CFRN)', 'cc-specialty', TRUE, TRUE)
 ON CONFLICT (id) DO NOTHING;
