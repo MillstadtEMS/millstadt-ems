@@ -32,6 +32,7 @@ const NAV: NavItem[] = [
   { href: "/lounge/incidents",    label: "Incident Reports",   emoji: "🚨" },
   { href: "/lounge/maintenance",  label: "Maintenance Request", emoji: "🛠️" },
   { href: "/lounge/truckwash",    label: "Truck Wash Log",     emoji: "🧼" },
+  { href: "/lounge/hospitals",    label: "Hospitals",          emoji: "🏥" },
   { href: "/api/lounge/sso/truckcheck", label: "Truck Check", emoji: "🚑", external: true },
   { href: "/api/lounge/sso/inventory",  label: "Inventory",   emoji: "📦", external: true },
   // Admin section — collapsed under "Admin Tools" group in the sidebar.
@@ -218,8 +219,79 @@ export default function LoungeShell({
         </aside>
 
         {/* Main content */}
-        <main style={{ padding: "22px 22px 80px" }}>{children}</main>
+        <main
+          className="lounge-shell-main"
+          style={{ padding: "22px 22px 80px" }}
+        >
+          {children}
+        </main>
       </div>
+
+      {/* Mobile bottom tab bar — visible only on phones, mirrors iOS pattern */}
+      <nav
+        className="lounge-bottom-nav"
+        aria-label="Lounge sections"
+        style={{
+          display: "none",
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(2,9,18,0.96)",
+          backdropFilter: "saturate(180%) blur(14px)",
+          WebkitBackdropFilter: "saturate(180%) blur(14px)",
+          borderTop: "1px solid rgba(240,180,41,0.18)",
+          paddingBottom: "max(env(safe-area-inset-bottom), 6px)",
+          zIndex: 70,
+        }}
+      >
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", alignItems: "stretch" }}>
+          {BOTTOM_TABS.map((tab) => {
+            const active = tab.kind === "more"
+              ? false
+              : tab.match
+                ? tab.match(pathname)
+                : pathname === tab.href;
+            const sharedStyle: React.CSSProperties = {
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 2,
+              padding: "8px 6px 6px",
+              color: active ? "#f0b429" : "#94a3b8",
+              textDecoration: "none",
+              background: "transparent",
+              border: 0,
+              borderTop: `2px solid ${active ? "#f0b429" : "transparent"}`,
+              fontSize: 10,
+              fontWeight: 800,
+              letterSpacing: "0.04em",
+              cursor: "pointer",
+              fontFamily: "inherit",
+            };
+            if (tab.kind === "more") {
+              return (
+                <button
+                  key="more"
+                  type="button"
+                  aria-label="More lounge sections"
+                  onClick={() => setDrawerOpen(true)}
+                  style={sharedStyle}
+                >
+                  <span style={{ fontSize: 22, lineHeight: 1 }} aria-hidden>{tab.emoji}</span>
+                  <span>{tab.label}</span>
+                </button>
+              );
+            }
+            return (
+              <Link key={tab.href} href={tab.href} style={sharedStyle}>
+                <span style={{ fontSize: 22, lineHeight: 1 }} aria-hidden>{tab.emoji}</span>
+                <span>{tab.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
 
       <style>{`
         @keyframes lounge-drawer-in {
@@ -230,10 +302,27 @@ export default function LoungeShell({
           0%   { opacity: 0; }
           100% { opacity: 1; }
         }
+        @media (max-width: 899px) {
+          .lounge-bottom-nav { display: block !important; }
+          .lounge-shell-main { padding: 16px 14px 100px !important; }
+        }
       `}</style>
     </div>
   );
 }
+
+// Top 5 destinations for the bottom tab bar. "More" surfaces the rest
+// of the sidebar inside the drawer.
+type BottomTab =
+  | { kind: "link"; href: string; label: string; emoji: string; match?: (path: string) => boolean }
+  | { kind: "more"; href: string; label: string; emoji: string };
+const BOTTOM_TABS: BottomTab[] = [
+  { kind: "link", href: "/lounge",            label: "Wall",      emoji: "📰", match: (p) => p === "/lounge" || p === "/lounge/" },
+  { kind: "link", href: "/lounge/messages",   label: "Chat",      emoji: "💬", match: (p) => p.startsWith("/lounge/messages") },
+  { kind: "link", href: "/lounge/hospitals",  label: "Hospitals", emoji: "🏥", match: (p) => p.startsWith("/lounge/hospitals") },
+  { kind: "link", href: "/lounge/my-file",    label: "My File",   emoji: "🗂️", match: (p) => p.startsWith("/lounge/my-file") || p.startsWith("/lounge/certs") || p.startsWith("/lounge/about-me") },
+  { kind: "more", href: "#more",              label: "More",      emoji: "☰" },
+];
 
 function SidebarBody({
   me, items, pathname, onNavigate,

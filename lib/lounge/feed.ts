@@ -17,6 +17,7 @@ export interface FeedAuthor {
   firstName: string;
   lastName: string;
   certification: string | null;
+  position: string | null;
   photoUrl: string | null;
   isAdmin: boolean;
 }
@@ -60,6 +61,7 @@ interface DbPostRow {
   author_first_name: string;
   author_last_name: string;
   author_certification: string | null;
+  author_position: string | null;
   author_photo_url: string | null;
   author_is_admin: boolean;
 }
@@ -94,6 +96,7 @@ function rowToPost(
       firstName: r.author_first_name,
       lastName: r.author_last_name,
       certification: r.author_certification,
+      position: r.author_position,
       photoUrl: r.author_photo_url,
       isAdmin: r.author_is_admin,
     },
@@ -119,6 +122,7 @@ export async function listFeed(viewerId: string, limit = 50): Promise<FeedPost[]
            e.first_name AS author_first_name,
            e.last_name AS author_last_name,
            e.certification AS author_certification,
+           e.position AS author_position,
            e.photo_url AS author_photo_url,
            e.is_admin AS author_is_admin
     FROM lounge_feed_posts p
@@ -172,6 +176,7 @@ export async function getPost(
            e.first_name AS author_first_name,
            e.last_name AS author_last_name,
            e.certification AS author_certification,
+           e.position AS author_position,
            e.photo_url AS author_photo_url,
            e.is_admin AS author_is_admin
     FROM lounge_feed_posts p
@@ -272,6 +277,7 @@ interface DbCommentRow {
   first_name: string;
   last_name: string;
   certification: string | null;
+  position: string | null;
   photo_url: string | null;
   is_admin: boolean;
 }
@@ -285,6 +291,7 @@ function rowToComment(r: DbCommentRow): FeedComment {
       firstName: r.first_name,
       lastName: r.last_name,
       certification: r.certification,
+      position: r.position,
       photoUrl: r.photo_url,
       isAdmin: r.is_admin,
     },
@@ -297,7 +304,7 @@ export async function listComments(postId: string): Promise<FeedComment[]> {
   const db = sql();
   const rows = (await db`
     SELECT c.id, c.post_id, c.author_id, c.body, c.created_at,
-           e.first_name, e.last_name, e.certification, e.photo_url, e.is_admin
+           e.first_name, e.last_name, e.certification, e.position, e.photo_url, e.is_admin
     FROM lounge_feed_post_comments c
     JOIN lounge_employees e ON e.id = c.author_id
     WHERE c.post_id = ${postId}
@@ -319,7 +326,7 @@ export async function addComment(input: {
   `;
   const rows = (await db`
     SELECT c.id, c.post_id, c.author_id, c.body, c.created_at,
-           e.first_name, e.last_name, e.certification, e.photo_url, e.is_admin
+           e.first_name, e.last_name, e.certification, e.position, e.photo_url, e.is_admin
     FROM lounge_feed_post_comments c
     JOIN lounge_employees e ON e.id = c.author_id
     WHERE c.id = ${id} LIMIT 1

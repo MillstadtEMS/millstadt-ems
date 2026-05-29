@@ -8,6 +8,7 @@ import { expiringCertsForEmployee, type EmployeeCert } from "@/lib/lounge/certs"
 import { listAcksForViewer, type Ack } from "@/lib/lounge/acks";
 import LoungeShell from "@/components/lounge/LoungeShell";
 import Wall from "@/components/lounge/Wall";
+import PasskeyPrompt from "@/components/lounge/PasskeyPrompt";
 import WelcomeOverlay from "@/components/lounge/WelcomeOverlay";
 import CoffeePrankOverlay from "@/components/lounge/CoffeePrankOverlay";
 
@@ -39,6 +40,7 @@ export default async function LoungeHome() {
   return (
     <LoungeShell me={me}>
       <style>{LOUNGE_HOME_CSS}</style>
+      <PasskeyPrompt />
       <div className="lounge-command-page">
         <CommandHeader
           firstName={session.firstName}

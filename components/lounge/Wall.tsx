@@ -14,6 +14,7 @@ interface Author {
   firstName: string;
   lastName: string;
   certification: string | null;
+  position: string | null;
   photoUrl: string | null;
   isAdmin: boolean;
 }
@@ -365,7 +366,9 @@ function PostCard({
             )}
           </div>
           <div style={{ color: "#64748b", fontSize: "0.72rem", marginTop: 1 }}>
-            {post.author.certification && <>{post.author.certification} · </>}
+            {(post.author.position ?? post.author.certification) && (
+              <>{post.author.position ?? post.author.certification} · </>
+            )}
             {timeAgo(post.createdAt)}
           </div>
         </div>

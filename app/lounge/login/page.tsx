@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { startAuthentication as browserStartAuthentication } from "@simplewebauthn/browser";
 
 export default function LoungeLogin() {
   const [username, setUsername] = useState("");
@@ -177,6 +178,8 @@ export default function LoungeLogin() {
             >
               {loading ? "Checking…" : "Continue"}
             </button>
+
+            <BiometricSignIn router={router} setError={setError} />
           </form>
         )}
 
@@ -406,3 +409,81 @@ const buttonStyle: React.CSSProperties = {
   transition: "background 0.2s",
   fontFamily: "inherit",
 };
+
+function BiometricSignIn({
+  router,
+  setError,
+}: {
+  router: ReturnType<typeof useRouter>;
+  setError: (msg: string) => void;
+}) {
+  const [supported, setSupported] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.PublicKeyCredential) {
+      setSupported(true);
+    }
+  }, []);
+
+  async function go() {
+    setBusy(true);
+    setError("");
+    try {
+      const startRes = await fetch("/api/lounge/webauthn/assert-start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!startRes.ok) {
+        setError("Biometric sign-in unavailable.");
+        return;
+      }
+      const { options } = await startRes.json();
+      const asserted = await browserStartAuthentication({ optionsJSON: options });
+      const finishRes = await fetch("/api/lounge/webauthn/assert-finish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ response: asserted }),
+      });
+      const data = await finishRes.json().catch(() => ({}));
+      if (!finishRes.ok) {
+        setError(data.error || "Biometric sign-in failed.");
+        return;
+      }
+      router.push("/lounge");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Biometric sign-in cancelled.";
+      // User-cancelled on iOS shows "NotAllowedError"; treat as silent.
+      if (!/NotAllowed|cancel/i.test(msg)) setError(msg);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!supported) return null;
+  return (
+    <button
+      type="button"
+      onClick={go}
+      disabled={busy}
+      style={{
+        marginTop: 4,
+        width: "100%",
+        padding: "12px 16px",
+        background: "transparent",
+        color: "#f0b429",
+        border: "1px solid rgba(240,180,41,0.40)",
+        borderRadius: 12,
+        fontWeight: 900,
+        fontSize: 13,
+        letterSpacing: "0.10em",
+        textTransform: "uppercase",
+        cursor: busy ? "wait" : "pointer",
+        fontFamily: "inherit",
+      }}
+    >
+      {busy ? "Waking your authenticator…" : "🔓 Sign in with Face ID / fingerprint"}
+    </button>
+  );
+}
