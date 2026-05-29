@@ -544,7 +544,6 @@ const LOUNGE_HOME_CSS = `
 .tone-cyan { border-color: rgba(56,189,248,0.18); }
 .tone-blue { border-color: rgba(96,165,250,0.18); }
 .tone-red { border-color: rgba(251,113,133,0.18); }
-}
 .lounge-cert-banner {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 0.8fr) auto;

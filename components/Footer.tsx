@@ -51,7 +51,7 @@ export default function Footer() {
           transition: "transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1)",
           willChange: "transform",
         }}
-        className="bg-[#040d1a] border-t border-white/5 shadow-[0_-20px_60px_rgba(0,0,0,0.45)]"
+        className="mems-footer bg-[#040d1a] border-t border-white/5 shadow-[0_-20px_60px_rgba(0,0,0,0.45)]"
       >
         {/* Peek strip — always visible. Click to toggle on touch devices. */}
         <button

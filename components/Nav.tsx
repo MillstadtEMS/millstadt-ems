@@ -77,10 +77,10 @@ export default function Nav() {
   useEffect(() => { setOpen(false); }, [pathname]);
 
   return (
-    <header className="fixed top-[46px] left-0 right-0 z-50">
+    <header className="mems-site-nav fixed top-[46px] left-0 right-0 z-50">
 
       {/* ── Nav bar ── */}
-      <div className="bg-[#020912] border-b border-white/8" style={{ overflow: "visible" }}>
+      <div className="mems-nav-bar bg-[#020912] border-b border-white/8" style={{ overflow: "visible" }}>
         <div className="wrap flex items-center justify-between gap-4 py-3" style={{ overflow: "visible" }}>
 
           {/* Logo */}
@@ -138,7 +138,7 @@ export default function Nav() {
 
       {/* ── Dropdown menu ── */}
       <div className={`overflow-hidden transition-all duration-300 ${open ? "max-h-[90vh]" : "max-h-0"}`}>
-        <div className="bg-[#030c1a]/99 backdrop-blur-md border-b border-white/8 overflow-y-auto" style={{ maxHeight: "80vh" }}>
+        <div className="mems-nav-panel bg-[#030c1a]/99 backdrop-blur-md border-b border-white/8 overflow-y-auto" style={{ maxHeight: "80vh" }}>
           <div className="wrap py-5">
 
             {/* Quick links row */}
