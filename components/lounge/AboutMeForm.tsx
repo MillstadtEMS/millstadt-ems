@@ -29,6 +29,7 @@ interface ProfileInitial {
   allergies: string;
   medicalConditions: string;
   bloodType: string;
+  phoneVerifiedAt: string | null;
   profileCompletedAt: string | null;
 }
 
@@ -36,6 +37,60 @@ export default function AboutMeForm({ initial }: { initial: ProfileInitial }) {
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<null | "ok" | "err">(null);
+
+  // Phone verification UI state
+  const [phoneVerifiedAt, setPhoneVerifiedAt] = useState<string | null>(initial.phoneVerifiedAt);
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [verifyStep, setVerifyStep] = useState<"send" | "code">("send");
+  const [verifyCode, setVerifyCodeState] = useState("");
+  const [verifyStatus, setVerifyStatus] = useState<string | null>(null);
+  const [verifyDevCode, setVerifyDevCode] = useState<string | null>(null);
+  const [verifyBusy, setVerifyBusy] = useState(false);
+
+  async function sendCode() {
+    if (!form.phone.trim()) { setVerifyStatus("Enter a phone number above first."); return; }
+    setVerifyBusy(true);
+    setVerifyStatus(null);
+    setVerifyDevCode(null);
+    try {
+      const r = await fetch("/api/lounge/me/phone-verify/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: form.phone }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setVerifyStatus(d.error || "Couldn't send code."); return; }
+      if (d.via === "fallback" && d.devCode) {
+        setVerifyDevCode(d.devCode);
+        setVerifyStatus("SMS isn't configured yet — enter the code shown below.");
+      } else {
+        setVerifyStatus("We just texted you a 6-digit code.");
+      }
+      setVerifyStep("code");
+    } catch {
+      setVerifyStatus("Couldn't send code. Try again.");
+    } finally { setVerifyBusy(false); }
+  }
+  async function confirmCode() {
+    setVerifyBusy(true);
+    setVerifyStatus(null);
+    try {
+      const r = await fetch("/api/lounge/me/phone-verify/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: verifyCode }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setVerifyStatus(d.error || "Wrong code."); return; }
+      setPhoneVerifiedAt(d.verifiedAt ?? new Date().toISOString());
+      setVerifyStatus("Number verified ✅");
+      setVerifyStep("send");
+      setVerifyCodeState("");
+      setVerifyOpen(false);
+    } catch {
+      setVerifyStatus("Couldn't verify. Try again.");
+    } finally { setVerifyBusy(false); }
+  }
 
   function set<K extends keyof ProfileInitial>(key: K, value: ProfileInitial[K]) {
     setForm((s) => ({ ...s, [key]: value }));
@@ -96,6 +151,78 @@ export default function AboutMeForm({ initial }: { initial: ProfileInitial }) {
           <Field label="Mobile phone" type="tel"   value={form.phone}  onChange={(v) => set("phone", v)} placeholder="(618) 555-0100" />
           <Field label="Date of birth" type="date" value={form.dob}    onChange={(v) => set("dob", v)} />
         </Grid>
+
+        <div style={{ marginTop: 14, padding: 14, background: phoneVerifiedAt ? "rgba(34,197,94,0.08)" : "rgba(56,189,248,0.08)", border: `1px solid ${phoneVerifiedAt ? "rgba(34,197,94,0.30)" : "rgba(56,189,248,0.30)"}`, borderRadius: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ color: phoneVerifiedAt ? "#86efac" : "#7dd3fc", fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase" }}>
+                Phone verification
+              </div>
+              <div style={{ color: "white", fontSize: 14, marginTop: 4 }}>
+                {phoneVerifiedAt
+                  ? `Verified ${new Date(phoneVerifiedAt).toLocaleDateString()}`
+                  : "Verify your mobile so management can confirm it on file."}
+              </div>
+            </div>
+            {!phoneVerifiedAt && (
+              <button
+                type="button"
+                onClick={() => { setVerifyOpen((v) => !v); setVerifyStep("send"); setVerifyStatus(null); setVerifyDevCode(null); }}
+                style={{ padding: "8px 14px", background: "#38bdf8", color: "#040d1a", border: 0, borderRadius: 10, fontSize: 12, fontWeight: 900, letterSpacing: "0.10em", textTransform: "uppercase", cursor: "pointer", fontFamily: "inherit" }}
+              >
+                {verifyOpen ? "Close" : "Verify number"}
+              </button>
+            )}
+          </div>
+
+          {verifyOpen && !phoneVerifiedAt && (
+            <div style={{ marginTop: 12 }}>
+              {verifyStep === "send" ? (
+                <button
+                  type="button"
+                  disabled={verifyBusy || !form.phone.trim()}
+                  onClick={sendCode}
+                  style={{ padding: "10px 16px", background: form.phone.trim() ? "#f0b429" : "rgba(240,180,41,0.4)", color: "#040d1a", border: 0, borderRadius: 10, fontSize: 12, fontWeight: 900, letterSpacing: "0.10em", textTransform: "uppercase", cursor: form.phone.trim() && !verifyBusy ? "pointer" : "not-allowed", fontFamily: "inherit" }}
+                >
+                  {verifyBusy ? "Sending…" : "Text me a code"}
+                </button>
+              ) : (
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <input
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={verifyCode}
+                    onChange={(e) => setVerifyCodeState(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="123456"
+                    style={{ width: 160, padding: "10px 12px", background: "#040d1a", border: "1px solid rgba(255,255,255,0.10)", color: "white", borderRadius: 10, fontSize: 18, letterSpacing: "0.35em", textAlign: "center", outline: "none", fontFamily: "inherit" }}
+                  />
+                  <button
+                    type="button"
+                    disabled={verifyBusy || verifyCode.length !== 6}
+                    onClick={confirmCode}
+                    style={{ padding: "10px 16px", background: verifyCode.length === 6 ? "#f0b429" : "rgba(240,180,41,0.4)", color: "#040d1a", border: 0, borderRadius: 10, fontSize: 12, fontWeight: 900, letterSpacing: "0.10em", textTransform: "uppercase", cursor: verifyCode.length === 6 && !verifyBusy ? "pointer" : "not-allowed", fontFamily: "inherit" }}
+                  >
+                    {verifyBusy ? "Verifying…" : "Verify"}
+                  </button>
+                  <button type="button" onClick={() => { setVerifyStep("send"); setVerifyCodeState(""); setVerifyStatus(null); setVerifyDevCode(null); }} style={{ background: "transparent", border: 0, color: "#94a3b8", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                    ← Re-send
+                  </button>
+                </div>
+              )}
+              {verifyStatus && (
+                <p style={{ color: verifyStatus.includes("✅") ? "#86efac" : "#cbd5e1", fontSize: 13, marginTop: 10, marginBottom: 0 }}>
+                  {verifyStatus}
+                </p>
+              )}
+              {verifyDevCode && (
+                <div style={{ marginTop: 10, padding: 10, background: "rgba(240,180,41,0.10)", border: "1px solid rgba(240,180,41,0.30)", borderRadius: 8 }}>
+                  <span style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase" }}>Dev fallback code</span>
+                  <div style={{ color: "#f0b429", fontSize: 22, fontWeight: 900, letterSpacing: "0.42em", marginTop: 4 }}>{verifyDevCode}</div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </Card>
 
       <Card title="Home address">

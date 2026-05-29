@@ -1,359 +1,617 @@
 /**
- * Millstadt EMS Kids Club — monthly activity rotation.
+ * Millstadt EMS Kids Club - safety activity content.
  *
- * Two EMS-themed activities per calendar month (24 total), written for
- * Millstadt families.
- *
- * The Kids Club page shows the current month's two activities automatically and
- * lets visitors browse other months. To tweak wording or swap an activity, just
- * edit the entry below — the page picks it up by month index (0 = January).
- *
- * `sheet` is optional: when you add a printable activity PDF to
- * /public/kids-club/activities/, set `sheet` to its filename and a "Print this
- * activity" button appears automatically.
+ * Activities are intentionally stored as reusable data objects so the page can
+ * be redesigned without scattering mission copy through the component tree.
  */
 
-export interface KidsActivity {
-  title: string;
-  ages: string;
-  blurb: string;
-  youNeed: string[];
-  steps: string[];
-  sheet?: string; // filename in /public/kids-club/activities/, e.g. "know-your-address.pdf"
+export type KidsAgeTrack = "Ages 2-5" | "Ages 6-11";
+
+export interface KidsPrintable {
+  label: string;
+  href: string;
 }
 
-/** 12 months, each with exactly two activities. Index 0 = January. */
-export const ACTIVITIES_BY_MONTH: KidsActivity[][] = [
-  // ── January ──
-  [
-    {
-      title: "Know Your Address Hero",
-      ages: "Ages 4–8",
-      blurb: "If you ever need to call for help, knowing where you live helps the ambulance find you fast!",
-      youNeed: ["Paper", "Crayons or markers", "A grown-up helper"],
-      steps: [
-        "Practice saying your full home address out loud with a grown-up.",
-        "Say your phone number too — slow and clear.",
-        "Draw a picture of your house with the address written on the mailbox.",
-        "Hang it on the fridge and practice once a week!",
-      ],
-    },
-    {
-      title: "911 Practice Call",
-      ages: "Ages 5–10",
-      blurb: "Learn exactly what to do — and say — if there is a real emergency.",
-      youNeed: ["A toy phone or your hand", "A grown-up to play the dispatcher"],
-      steps: [
-        "Call 911 ONLY for a real emergency (someone hurt, a fire, or danger).",
-        "Stay calm and tell them WHAT happened and WHERE you are.",
-        "Don't hang up until the helper says it's okay.",
-        "Practice with a grown-up so you feel brave and ready.",
-      ],
-    },
-  ],
-  // ── February (Heart Month) ──
-  [
-    {
-      title: "Healthy Heart Plate",
-      ages: "Ages 4–9",
-      blurb: "February is Heart Month! Your heart loves good food and lots of moving around.",
-      youNeed: ["Paper plate or paper", "Crayons", "Grocery ads (optional)"],
-      steps: [
-        "Draw or glue heart-healthy foods onto a plate: fruits, veggies, and water.",
-        "Color the foods that make your heart strong.",
-        "Pick one new healthy food to try this week.",
-        "Do 10 jumping jacks to feel your heart beat faster!",
-      ],
-    },
-    {
-      title: "Stayin' Alive Beat",
-      ages: "Ages 6–11",
-      blurb: "Paramedics push on a person's chest to a special beat. You can practice the rhythm!",
-      youNeed: ["A pillow or stuffed animal", "A grown-up"],
-      steps: [
-        "Ask a grown-up to play the song 'Stayin' Alive' (it's the perfect speed).",
-        "Push gently on the pillow to the beat — about 100 pushes a minute.",
-        "Learn that REAL CPR is for grown-ups and big kids in a class.",
-        "Your job in an emergency: call 911 and get an adult!",
-      ],
-    },
-  ],
-  // ── March ──
-  [
-    {
-      title: "Buckle-Up Buddy",
-      ages: "Ages 3–8",
-      blurb: "Seatbelts and booster seats keep you safe every single ride.",
-      youNeed: ["Paper", "Crayons"],
-      steps: [
-        "Draw your family car with everyone buckled up safely.",
-        "Remember: you ride in a booster seat until a seatbelt fits just right.",
-        "Make it a rule — the car doesn't move until everyone clicks!",
-        "Give a high-five to whoever buckles up first.",
-      ],
-    },
-    {
-      title: "Medicine Is Not Candy",
-      ages: "Ages 4–9",
-      blurb: "Medicine helps us when a grown-up gives it — but it can be dangerous on its own.",
-      youNeed: ["Paper", "A red crayon"],
-      steps: [
-        "Draw a big red STOP sign.",
-        "Write: 'Always ask a grown-up before taking any medicine.'",
-        "Medicine and vitamins are NOT candy, even if they look like it.",
-        "If you find pills, tell an adult right away — don't touch them.",
-      ],
-    },
-  ],
-  // ── April ──
-  [
-    {
-      title: "Bike Helmet Champion",
-      ages: "Ages 4–10",
-      blurb: "A helmet protects the most important part of you — your brain!",
-      youNeed: ["Your bike helmet", "Stickers (optional)"],
-      steps: [
-        "Do the 2-finger test: only two fingers should fit between your eyebrows and the helmet.",
-        "Make sure the straps form a 'V' under each ear and buckle snug.",
-        "Decorate a paper helmet or add safe stickers to yours.",
-        "Helmet ON every time you ride — bike, scooter, or skates!",
-      ],
-    },
-    {
-      title: "Allergy Detective",
-      ages: "Ages 5–10",
-      blurb: "Some people's bodies react to certain foods or bug stings. Good detectives help keep friends safe.",
-      youNeed: ["Paper", "Crayons", "A grown-up"],
-      steps: [
-        "Talk with a grown-up about what an allergy is.",
-        "Learn that we never share food unless a grown-up says it's okay.",
-        "If a friend feels sick or can't breathe, get an adult FAST.",
-        "Draw a poster: 'Be a Good Friend — Ask Before You Share!'",
-      ],
-    },
-  ],
-  // ── May ──
-  [
-    {
-      title: "Meet the Ambulance",
-      ages: "Ages 3–9",
-      blurb: "An ambulance is a hospital on wheels! Let's learn what's inside and out.",
-      youNeed: ["Paper", "Crayons"],
-      steps: [
-        "Draw an ambulance with flashing lights on top.",
-        "Label the parts you know: lights, siren, doors, and the big red cross.",
-        "The lights and siren mean 'Please move over, we're helping someone!'",
-        "Ask us for a tour at our next community event!",
-      ],
-    },
-    {
-      title: "Boo-Boo First Aid Kit",
-      ages: "Ages 5–10",
-      blurb: "Build a mini first-aid kit so you're ready for little scrapes and bumps.",
-      youNeed: ["A small box or bag", "Bandages", "A grown-up"],
-      steps: [
-        "With a grown-up, gather bandages, wipes, and a small ice pack.",
-        "Decorate your kit box with a red cross.",
-        "Practice cleaning a pretend scrape and putting on a bandage.",
-        "Remember: big boo-boos need a grown-up's help!",
-      ],
-    },
-  ],
-  // ── June ──
-  [
-    {
-      title: "Sun & Water Safety",
-      ages: "Ages 4–10",
-      blurb: "Summer fun is the best — let's stay safe in the sun and around water.",
-      youNeed: ["Paper", "Crayons", "Sunscreen"],
-      steps: [
-        "Always swim with a buddy and a watching grown-up — never alone.",
-        "Put on sunscreen before you go outside, and again after swimming.",
-        "Drink water even when you're not thirsty.",
-        "Draw yourself at the pool wearing sunscreen and a smile!",
-      ],
-    },
-    {
-      title: "Never-Hot-Car Promise",
-      ages: "Ages 4–9",
-      blurb: "Cars get dangerously hot fast. People AND pets should never wait inside.",
-      youNeed: ["Paper", "Crayons"],
-      steps: [
-        "Learn that a parked car heats up super fast, even with a window cracked.",
-        "If you're ever stuck in a car, honk the horn to get help.",
-        "Make a poster reminding grown-ups: 'Look Before You Lock!'",
-        "Tell a grown-up if you ever see a kid or pet alone in a car.",
-      ],
-    },
-  ],
-  // ── July ──
-  [
-    {
-      title: "Sparkler Smarts",
-      ages: "Ages 5–11",
-      blurb: "Fireworks are beautiful — and best enjoyed safely from a distance.",
-      youNeed: ["Paper", "Glitter or crayons", "A grown-up"],
-      steps: [
-        "Watch big fireworks from far away with your family.",
-        "Sparklers get VERY hot — only with a grown-up, and drop them in water when done.",
-        "Never pick up a firework that didn't go off — tell an adult.",
-        "Make a glittery firework picture instead of touching real ones!",
-      ],
-    },
-    {
-      title: "Hydration Station",
-      ages: "Ages 4–10",
-      blurb: "On hot days your body needs lots of water to stay cool and strong.",
-      youNeed: ["Paper", "A marker", "A water cup"],
-      steps: [
-        "Draw a water-cup chart with a box for each cup you drink today.",
-        "Color in a box every time you finish a cup of water.",
-        "Try to fill all your boxes by bedtime!",
-        "Feeling dizzy or super tired in the heat? Rest in the shade and tell a grown-up.",
-      ],
-    },
-  ],
-  // ── August (Back to School) ──
-  [
-    {
-      title: "Safe Walk to School",
-      ages: "Ages 5–10",
-      blurb: "Walking or biking to school? Let's practice being seen and safe.",
-      youNeed: ["Paper", "Crayons"],
-      steps: [
-        "Always cross at the corner or crosswalk — look left, right, then left again.",
-        "Make eye contact with drivers before you cross.",
-        "Wear bright colors so cars can see you.",
-        "Draw a map of your safe route with a grown-up.",
-      ],
-    },
-    {
-      title: "Backpack Emergency Card",
-      ages: "Ages 6–11",
-      blurb: "A little card in your backpack helps grown-ups reach your family if you ever need help.",
-      youNeed: ["Index card", "Marker", "A grown-up"],
-      steps: [
-        "Write your name and a parent's phone number on a card.",
-        "Add any allergies a helper should know about.",
-        "Slip it into a backpack pocket — and tell your teacher where it is.",
-        "Decorate the card so it's easy to spot!",
-      ],
-    },
-  ],
-  // ── September ──
-  [
-    {
-      title: "Family Go-Bag Builder",
-      ages: "Ages 5–11",
-      blurb: "Emergencies can happen anytime. A ready-to-go bag helps your whole family.",
-      youNeed: ["A backpack or bag", "A grown-up"],
-      steps: [
-        "With a grown-up, gather water, snacks, a flashlight, and a phone charger.",
-        "Add a family photo and a list of important phone numbers.",
-        "Pick one safe spot to keep the bag.",
-        "Draw a checklist and check off each item you packed!",
-      ],
-    },
-    {
-      title: "Choking Rescue Helper",
-      ages: "Ages 6–11",
-      blurb: "If someone is choking, kids can be a big help by getting an adult fast.",
-      youNeed: ["A grown-up to talk with"],
-      steps: [
-        "Learn the sign for choking: hands at the throat and can't talk.",
-        "Your #1 job: YELL for a grown-up and call 911 if no adult is near.",
-        "Big kids can learn back-blows in a real safety class.",
-        "Practice calmly saying, 'Help! Someone is choking!'",
-      ],
-    },
-  ],
-  // ── October ──
-  [
-    {
-      title: "Be-Seen Costume",
-      ages: "Ages 3–10",
-      blurb: "Trick-or-treating is more fun when cars can see you in the dark.",
-      youNeed: ["Reflective tape or stickers", "A flashlight or glow stick"],
-      steps: [
-        "Add reflective tape or bright stickers to your costume and bag.",
-        "Carry a flashlight or glow stick when it gets dark.",
-        "Only cross at corners and walk with a grown-up.",
-        "Draw your glow-in-the-dark costume idea!",
-      ],
-    },
-    {
-      title: "Safe-Hands Pumpkin",
-      ages: "Ages 4–9",
-      blurb: "Kids design, grown-ups carve — that's the safe-hands rule for sharp tools.",
-      youNeed: ["Paper", "Crayons", "A pumpkin (optional)"],
-      steps: [
-        "Draw the silly or spooky pumpkin face you want.",
-        "Let a grown-up do the cutting with the sharp tools.",
-        "Use a glow stick instead of a candle so nothing gets too hot.",
-        "Show off your pumpkin design!",
-      ],
-    },
-  ],
-  // ── November ──
-  [
-    {
-      title: "Thank-You Card for Helpers",
-      ages: "Ages 3–10",
-      blurb: "Paramedics, EMTs, nurses, and dispatchers help our town. Let's say thanks!",
-      youNeed: ["Paper", "Crayons", "Markers"],
-      steps: [
-        "Fold a piece of paper to make a card.",
-        "Draw an ambulance or a helper on the front.",
-        "Write a thank-you message inside.",
-        "Bring it to the station — we love to hang them up!",
-      ],
-    },
-    {
-      title: "Kitchen Safety Sidekick",
-      ages: "Ages 4–9",
-      blurb: "The kitchen is busy during the holidays. Smart kids know how to stay safe.",
-      youNeed: ["Paper", "Crayons"],
-      steps: [
-        "Stay an arm's length back from the hot stove and oven.",
-        "Turn pot handles inward so nothing gets bumped (a grown-up's job).",
-        "Wash your hands before helping with food.",
-        "Draw the 'kid-safe zone' in your kitchen.",
-      ],
-    },
-  ],
-  // ── December ──
-  [
-    {
-      title: "Winter Warm-Up",
-      ages: "Ages 3–10",
-      blurb: "Cold weather is here! Dressing right keeps your body warm and healthy.",
-      youNeed: ["Paper", "Crayons"],
-      steps: [
-        "Dress in layers — like a cozy sandwich of clothes!",
-        "Cover your ears, hands, and head when it's freezing.",
-        "Come inside if your fingers or toes start to hurt or feel numb.",
-        "Draw yourself bundled up for a snowy day.",
-      ],
-    },
-    {
-      title: "Holiday Helper",
-      ages: "Ages 4–10",
-      blurb: "Help keep your home safe and bright through the holidays.",
-      youNeed: ["Paper", "Crayons", "A grown-up"],
-      steps: [
-        "Keep walkways and doors clear so helpers can get through if needed.",
-        "Remind grown-ups to turn off holiday lights at bedtime.",
-        "Know two ways out of your home in case of an emergency.",
-        "Draw your family's safe meeting spot outside.",
-      ],
-    },
-  ],
+export interface KidsActivity {
+  id: number;
+  slug: string;
+  title: string;
+  ageTrack: KidsAgeTrack;
+  summary: string;
+  learn: string;
+  helpLevel: "Grown-up led" | "Side-by-side" | "Check-in";
+  time: string;
+  supplies: string[];
+  steps: string[];
+  safetyNote: string;
+  tags: string[];
+  badge: string;
+  printable?: KidsPrintable;
+  image: string;
+  accent: "cyan" | "gold" | "red" | "green" | "blue";
+}
+
+export const KIDS_ACTIVITIES: KidsActivity[] = [
+  {
+    id: 1,
+    slug: "meet-the-ambulance",
+    title: "Meet the Ambulance",
+    ageTrack: "Ages 2-5",
+    summary: "Explore what an ambulance is, why it has lights, and how EMS crews help people.",
+    learn: "Ambulances bring trained helpers and equipment to sick or hurt people.",
+    helpLevel: "Grown-up led",
+    time: "15 min",
+    supplies: ["Ambulance picture", "Crayons", "Toy vehicle"],
+    steps: [
+      "Look at an ambulance picture together and name the lights, wheels, doors, and stretcher area.",
+      "Practice saying, 'Ambulances are helpers.'",
+      "Color the ambulance and add bright lights on top.",
+      "Talk about who might ride inside: EMTs, paramedics, and patients who need help.",
+    ],
+    safetyNote: "Keep the tone calm and positive. Ambulances can be loud, but they are coming to help.",
+    tags: ["Helper Skills", "Ambulance", "911"],
+    badge: "Ambulance Explorer",
+    printable: { label: "Print ambulance page", href: "/kids-club/coloring/ambulance-water-tower.pdf" },
+    image: "/kids-club/coloring/ambulance-water-tower.png",
+    accent: "cyan",
+  },
+  {
+    id: 2,
+    slug: "helper-match-game",
+    title: "Helper Match Game",
+    ageTrack: "Ages 2-5",
+    summary: "Match community helpers with the tools they use to keep people safe.",
+    learn: "EMTs, paramedics, firefighters, police officers, nurses, and dispatchers all have helping jobs.",
+    helpLevel: "Side-by-side",
+    time: "10 min",
+    supplies: ["Helper cards", "Tool cards", "Table space"],
+    steps: [
+      "Lay out cards for helpers and tools: ambulance, bandage, helmet, phone, fire truck, and stethoscope.",
+      "Ask your child to match each helper with a tool.",
+      "Say one simple job for each helper, such as 'Paramedics help sick people.'",
+      "Finish by naming two trusted grown-ups your child can go to for help.",
+    ],
+    safetyNote: "Reinforce that children should find a trusted adult or emergency helper when something feels unsafe.",
+    tags: ["Helper Skills", "Community", "911"],
+    badge: "Helper Spotter",
+    printable: { label: "Print helper lineup", href: "/kids-club/coloring/emergency-team.pdf" },
+    image: "/kids-club/coloring/emergency-team.png",
+    accent: "gold",
+  },
+  {
+    id: 3,
+    slug: "teddy-bear-bandage-rescue",
+    title: "Teddy Bear Bandage Rescue",
+    ageTrack: "Ages 2-5",
+    summary: "Use a stuffed animal to practice telling a grown-up and caring gently for a small pretend injury.",
+    learn: "Small injuries should be shown to a grown-up before kids try to fix them.",
+    helpLevel: "Grown-up led",
+    time: "12 min",
+    supplies: ["Stuffed animal", "Toy bandage", "Clean cloth"],
+    steps: [
+      "Pretend teddy has a small scrape and ask, 'Who should we tell first?'",
+      "Use a clean cloth to gently pat the pretend scrape.",
+      "Place a toy bandage or paper bandage on teddy.",
+      "Practice saying, 'I need help with a boo-boo.'",
+    ],
+    safetyNote: "Use pretend play only. Real cuts, blood, or pain should be handled by a grown-up.",
+    tags: ["First Aid", "Helper Skills"],
+    badge: "Bandage Buddy",
+    image: "/kids-club/coloring/full-crew.png",
+    accent: "red",
+  },
+  {
+    id: 4,
+    slug: "my-name-and-address-practice",
+    title: "My Name and Address Practice",
+    ageTrack: "Ages 2-5",
+    summary: "Practice the words a child may need to tell a trusted helper in an emergency.",
+    learn: "Children can learn their full name, caregiver name, and the basics of where they live.",
+    helpLevel: "Grown-up led",
+    time: "10 min",
+    supplies: ["Practice sheet", "Crayons", "Repetition"],
+    steps: [
+      "Say the child's full name together three times.",
+      "Practice a caregiver's name and phone number.",
+      "Say the home address slowly, one piece at a time.",
+      "Draw a home, mailbox, or landmark to connect the address with a picture.",
+    ],
+    safetyNote: "Teach that personal information is shared only with trusted adults and emergency helpers.",
+    tags: ["911", "Preparedness", "Helper Skills"],
+    badge: "Address Ace",
+    image: "/kids-club/coloring/our-station.png",
+    accent: "green",
+  },
+  {
+    id: 5,
+    slug: "when-to-call-911",
+    title: "When to Call 911",
+    ageTrack: "Ages 2-5",
+    summary: "Sort simple situations into 'call 911' or 'get a grown-up' buckets.",
+    learn: "911 is for real emergencies like serious injury, fire, danger, or someone who cannot wake up.",
+    helpLevel: "Grown-up led",
+    time: "15 min",
+    supplies: ["Picture cards", "Two baskets", "Marker"],
+    steps: [
+      "Label one basket 'Call 911' and one basket 'Get a grown-up.'",
+      "Sort cards such as fire, big injury, lost toy, spilled milk, or someone not waking up.",
+      "Practice the phrase, 'Call 911. We need help.'",
+      "End by saying that 911 is never for jokes or practice calls on a real phone.",
+    ],
+    safetyNote: "Use a toy phone or unplugged device for practice. Never place a real practice call.",
+    tags: ["911", "Emergency", "Decision Skills"],
+    badge: "911 Helper",
+    image: "/kids-club/coloring/ready-to-roll.png",
+    accent: "blue",
+  },
+  {
+    id: 6,
+    slug: "handwashing-hero",
+    title: "Handwashing Hero",
+    ageTrack: "Ages 2-5",
+    summary: "Practice a handwashing routine that is easy to remember before meals and after bathroom trips.",
+    learn: "Soap, scrubbing, rinsing, and drying help stop germs from spreading.",
+    helpLevel: "Side-by-side",
+    time: "8 min",
+    supplies: ["Sink", "Soap", "Towel", "20-second song"],
+    steps: [
+      "Wet hands and add soap.",
+      "Scrub fronts, backs, between fingers, and fingertips while counting to 20.",
+      "Rinse well and dry with a clean towel.",
+      "Name three times to wash: before eating, after bathroom trips, and after coughing or sneezing.",
+    ],
+    safetyNote: "Help younger children with water temperature and sink access.",
+    tags: ["Hygiene", "Health"],
+    badge: "Handwashing Hero",
+    image: "/kids-club/coloring/at-the-hospital.png",
+    accent: "cyan",
+  },
+  {
+    id: 7,
+    slug: "helmet-on-ready-to-ride",
+    title: "Helmet On, Ready to Ride",
+    ageTrack: "Ages 2-5",
+    summary: "Learn that helmets protect heads when riding bikes, scooters, and skates.",
+    learn: "A helmet should sit level, feel snug, and be buckled before wheels move.",
+    helpLevel: "Side-by-side",
+    time: "12 min",
+    supplies: ["Helmet", "Mirror", "Sticker sheet"],
+    steps: [
+      "Place the helmet level on the head, not tipped back.",
+      "Check that straps make a V shape around the ears.",
+      "Buckle the strap and practice saying, 'Helmet first.'",
+      "Decorate a paper helmet or sticker sheet as a reminder.",
+    ],
+    safetyNote: "A grown-up should check helmet fit every time.",
+    tags: ["Bike Safety", "Helmet", "Preparedness"],
+    badge: "Helmet Hero",
+    image: "/kids-club/coloring/ambulance-duo.png",
+    accent: "gold",
+  },
+  {
+    id: 8,
+    slug: "buckle-up-challenge",
+    title: "Buckle Up Challenge",
+    ageTrack: "Ages 2-5",
+    summary: "Use pretend play to reinforce that every car ride starts with buckling up.",
+    learn: "Seat belts and car seats help protect bodies in the car.",
+    helpLevel: "Side-by-side",
+    time: "10 min",
+    supplies: ["Doll or teddy", "Toy car seat", "Picture cards"],
+    steps: [
+      "Pretend teddy is going for a ride.",
+      "Place teddy in a safe seat and pretend to buckle the straps.",
+      "Ask, 'When do we buckle?' and answer, 'Every ride.'",
+      "Practice waiting for a grown-up to check the real buckle.",
+    ],
+    safetyNote: "A grown-up must always check real car seats and seat belts.",
+    tags: ["Car Safety", "Preparedness"],
+    badge: "Buckle Boss",
+    image: "/kids-club/coloring/whole-fleet.png",
+    accent: "red",
+  },
+  {
+    id: 9,
+    slug: "crosswalk-color-walk",
+    title: "Crosswalk Color Walk",
+    ageTrack: "Ages 2-5",
+    summary: "Build a pretend crosswalk and practice stop, look, hold hands, and walk.",
+    learn: "Safe walkers stop, look left-right-left, hold hands, and never run into the street.",
+    helpLevel: "Grown-up led",
+    time: "15 min",
+    supplies: ["Painter tape", "Toy stop sign", "Open floor"],
+    steps: [
+      "Make a pretend crosswalk on the floor with tape.",
+      "Stand at the edge and say 'stop.'",
+      "Look left, right, and left again with a grown-up.",
+      "Hold hands and walk across slowly.",
+    ],
+    safetyNote: "Practice indoors first. Outside, children should cross only with a grown-up.",
+    tags: ["Pedestrian Safety", "Street Safety"],
+    badge: "Crosswalk Captain",
+    image: "/kids-club/coloring/ballpark.png",
+    accent: "green",
+  },
+  {
+    id: 10,
+    slug: "medicine-is-not-candy",
+    title: "Medicine Is Not Candy",
+    ageTrack: "Ages 2-5",
+    summary: "Use safe picture sorting to teach that medicine is only taken from a trusted grown-up.",
+    learn: "Pills, vitamins, cleaners, and unknown items should never be tasted or touched.",
+    helpLevel: "Grown-up led",
+    time: "12 min",
+    supplies: ["Picture cards", "Stop sign drawing", "Crayons"],
+    steps: [
+      "Sort pictures into 'ask a grown-up' and 'safe snack' groups.",
+      "Draw a bright stop sign for medicine and unknown items.",
+      "Practice saying, 'I found this. Can you help?'",
+      "Point out safe places where medicine stays locked or up high.",
+    ],
+    safetyNote: "Do not use real medication for this activity.",
+    tags: ["Poison Safety", "Medication", "Helper Skills"],
+    badge: "Poison Safety Pal",
+    image: "/kids-club/coloring/ems-crest.png",
+    accent: "blue",
+  },
+  {
+    id: 11,
+    slug: "feel-better-breathing",
+    title: "Feel Better Breathing",
+    ageTrack: "Ages 2-5",
+    summary: "Practice a tiny calm-down skill for scary sounds, storms, or stressful moments.",
+    learn: "Slow breathing can help children feel steadier while they get a grown-up.",
+    helpLevel: "Side-by-side",
+    time: "6 min",
+    supplies: ["Pinwheel", "Star drawing", "Quiet space"],
+    steps: [
+      "Pretend to smell a flower with a slow breath in.",
+      "Pretend to blow out a candle with a slow breath out.",
+      "Trace each point of a star while breathing slowly.",
+      "Practice saying, 'I feel scared. I need a grown-up.'",
+    ],
+    safetyNote: "Breathing helps with feelings, but sickness, pain, or danger still needs a grown-up right away.",
+    tags: ["Coping Skills", "Helper Skills"],
+    badge: "Calm Helper",
+    image: "/kids-club/coloring/kids-club-logo.png",
+    accent: "cyan",
+  },
+  {
+    id: 12,
+    slug: "find-the-first-aid-kit",
+    title: "Find the First Aid Kit",
+    ageTrack: "Ages 2-5",
+    summary: "Take a grown-up guided safety scavenger hunt around the house.",
+    learn: "Families keep helpful safety supplies in special places.",
+    helpLevel: "Grown-up led",
+    time: "15 min",
+    supplies: ["Home checklist", "First aid kit", "Flashlight"],
+    steps: [
+      "Find the first aid kit with a grown-up.",
+      "Find a flashlight and talk about when it might help.",
+      "Point to smoke alarms without touching them.",
+      "Choose one safe family meeting spot outside.",
+    ],
+    safetyNote: "Children should know where supplies are, but grown-ups should use them.",
+    tags: ["Preparedness", "First Aid", "Fire Safety"],
+    badge: "Ready Kid",
+    image: "/kids-club/coloring/our-station.png",
+    accent: "gold",
+  },
+  {
+    id: 13,
+    slug: "build-a-mini-first-aid-kit",
+    title: "Build a Mini First Aid Kit",
+    ageTrack: "Ages 6-11",
+    summary: "Pack a simple first aid kit and learn what each item is for.",
+    learn: "Prepared families know where basic supplies are and when to ask for help.",
+    helpLevel: "Side-by-side",
+    time: "25 min",
+    supplies: ["Small pouch", "Bandages", "Wipes", "Gloves", "Gauze"],
+    steps: [
+      "Gather supplies with a grown-up and place them on a table.",
+      "Label the pouch 'First Aid.'",
+      "Talk through what each item does and what kids should not use alone.",
+      "Put the kit in an easy-to-remember family location.",
+    ],
+    safetyNote: "This kit supports grown-up care. It does not replace first aid training or emergency help.",
+    tags: ["First Aid", "Preparedness"],
+    badge: "Little Lifesaver",
+    image: "/kids-club/coloring/ems-crest.png",
+    accent: "red",
+  },
+  {
+    id: 14,
+    slug: "911-script-practice",
+    title: "911 Script Practice",
+    ageTrack: "Ages 6-11",
+    summary: "Role-play a calm emergency call using the details dispatchers need most.",
+    learn: "Callers should say the location, what happened, who needs help, and stay on the line.",
+    helpLevel: "Side-by-side",
+    time: "20 min",
+    supplies: ["Toy phone", "Script card", "Address practice"],
+    steps: [
+      "Use a toy phone and have a grown-up play the dispatcher.",
+      "Practice: name, address, phone number, and what happened.",
+      "Answer simple follow-up questions slowly and clearly.",
+      "Practice staying on the line until the dispatcher says it is okay to hang up.",
+    ],
+    safetyNote: "Never call real 911 for practice. Use a toy phone, locked phone, or paper script.",
+    tags: ["911", "Communication", "Preparedness"],
+    badge: "911 Helper",
+    image: "/kids-club/coloring/ready-to-roll.png",
+    accent: "cyan",
+  },
+  {
+    id: 15,
+    slug: "home-emergency-kit-challenge",
+    title: "Home Emergency Kit Challenge",
+    ageTrack: "Ages 6-11",
+    summary: "Help build a family kit for power outages, storms, and unexpected delays.",
+    learn: "Water, light, food, medication planning, and comfort items help families stay ready.",
+    helpLevel: "Side-by-side",
+    time: "30 min",
+    supplies: ["Bag or bin", "Water list", "Flashlight", "Snacks", "Comfort item"],
+    steps: [
+      "Pick a bag or bin for emergency supplies.",
+      "Check off water, flashlight, batteries, snacks, charger, and family contact list.",
+      "Add one comfort item such as a small game or stuffed animal.",
+      "Choose a storage spot and review it with the whole family.",
+    ],
+    safetyNote: "A grown-up should manage medications, batteries, and anything with expiration dates.",
+    tags: ["Preparedness", "Weather", "Family Safety"],
+    badge: "Ready Kid",
+    image: "/kids-club/coloring/whole-fleet.png",
+    accent: "gold",
+  },
+  {
+    id: 16,
+    slug: "bike-and-scooter-safety-check",
+    title: "Bike and Scooter Safety Check",
+    ageTrack: "Ages 6-11",
+    summary: "Do a pre-ride safety check before bikes, scooters, or skates leave the driveway.",
+    learn: "Helmet fit, brakes, tires, visibility, and permission matter before every ride.",
+    helpLevel: "Check-in",
+    time: "20 min",
+    supplies: ["Bike or scooter", "Helmet", "Reflector check"],
+    steps: [
+      "Check helmet position, straps, and buckle.",
+      "Test brakes and look for low tires or loose parts.",
+      "Check reflectors, bright clothing, and safe riding area.",
+      "Ask permission and tell a grown-up where you are riding.",
+    ],
+    safetyNote: "Ride only in approved areas and follow local traffic rules with adult supervision as needed.",
+    tags: ["Bike Safety", "Helmet", "Street Safety"],
+    badge: "Helmet Hero",
+    image: "/kids-club/coloring/ambulance-duo.png",
+    accent: "green",
+  },
+  {
+    id: 17,
+    slug: "bleeding-basics-press-and-tell",
+    title: "Bleeding Basics: Press and Tell",
+    ageTrack: "Ages 6-11",
+    summary: "Learn the simplest age-appropriate response to a bleeding injury: get help, press, and stay calm.",
+    learn: "A clean cloth and steady pressure can help while a grown-up takes over.",
+    helpLevel: "Grown-up led",
+    time: "20 min",
+    supplies: ["Clean cloth", "Pretend injury card", "Timer"],
+    steps: [
+      "Role-play finding a pretend cut and immediately calling for a grown-up.",
+      "Place a clean cloth over the pretend injury.",
+      "Hold steady pressure without peeking for one minute.",
+      "Practice saying what happened and where the person is hurt.",
+    ],
+    safetyNote: "This is simple awareness, not full first aid training. Real bleeding needs an adult and possibly 911.",
+    tags: ["First Aid", "Emergency", "Helper Skills"],
+    badge: "Press and Tell Pro",
+    image: "/kids-club/coloring/full-crew.png",
+    accent: "red",
+  },
+  {
+    id: 18,
+    slug: "poison-proof-the-house",
+    title: "Poison-Proof the House",
+    ageTrack: "Ages 6-11",
+    summary: "Walk through home spaces with a grown-up and identify products that should stay secured.",
+    learn: "Cleaning products, pills, chemicals, and unknown liquids can be dangerous.",
+    helpLevel: "Side-by-side",
+    time: "25 min",
+    supplies: ["Room checklist", "Pencil", "Grown-up guide"],
+    steps: [
+      "Visit the kitchen, bathroom, laundry room, and garage with a grown-up.",
+      "Point out items that should be locked, high, or clearly labeled.",
+      "Review the rule: never smell, taste, or mix unknown products.",
+      "Choose one storage area the family can make safer today.",
+    ],
+    safetyNote: "Do not touch or open chemicals during the walkthrough.",
+    tags: ["Poison Safety", "Medication", "Home Safety"],
+    badge: "Poison Safety Pal",
+    image: "/kids-club/coloring/ems-crest.png",
+    accent: "blue",
+  },
+  {
+    id: 19,
+    slug: "pet-safety-and-dog-bite-prevention",
+    title: "Pet Safety and Dog Bite Prevention",
+    ageTrack: "Ages 6-11",
+    summary: "Use scenario cards to practice safe choices around dogs and other animals.",
+    learn: "Ask before petting, give animals space, stay calm, and tell an adult about bites or scratches.",
+    helpLevel: "Side-by-side",
+    time: "18 min",
+    supplies: ["Scenario cards", "Family pet rules", "Quiet space"],
+    steps: [
+      "Sort scenarios into safe and unsafe choices.",
+      "Practice asking, 'May I pet your dog?' before approaching.",
+      "Practice standing still and calm if a dog runs up.",
+      "Review telling an adult right away after any bite or scratch.",
+    ],
+    safetyNote: "Do not practice with unfamiliar animals. Use cards or a calm family pet only with adult permission.",
+    tags: ["Animal Safety", "Helper Skills"],
+    badge: "Safe Friend",
+    image: "/kids-club/coloring/station-lineup.png",
+    accent: "gold",
+  },
+  {
+    id: 20,
+    slug: "smoke-alarm-and-exit-map-mission",
+    title: "Smoke Alarm and Exit Map Mission",
+    ageTrack: "Ages 6-11",
+    summary: "Draw a simple home fire escape map with two ways out and a family meeting spot.",
+    learn: "Get out, stay out, and call 911 from a safe place.",
+    helpLevel: "Side-by-side",
+    time: "30 min",
+    supplies: ["Paper", "Pencil", "Home map sheet"],
+    steps: [
+      "Draw rooms, doors, and windows on a simple home map.",
+      "Mark two ways out of each sleeping area when possible.",
+      "Circle the outside meeting spot.",
+      "Ask a grown-up to test smoke alarms according to the family's plan.",
+    ],
+    safetyNote: "Never go back inside a burning building for people, pets, or belongings.",
+    tags: ["Fire Safety", "911", "Preparedness"],
+    badge: "Exit Planner",
+    image: "/kids-club/coloring/our-station.png",
+    accent: "red",
+  },
+  {
+    id: 21,
+    slug: "weather-watch-mission",
+    title: "Weather Watch Mission",
+    ageTrack: "Ages 6-11",
+    summary: "Learn the difference between a weather watch and warning, then choose safe shelter spots.",
+    learn: "A watch means be ready. A warning means act now and follow grown-up instructions.",
+    helpLevel: "Side-by-side",
+    time: "25 min",
+    supplies: ["Weather chart", "Home shelter list", "Flashlight"],
+    steps: [
+      "Match weather words like thunderstorm, tornado, flood, watch, and warning.",
+      "Find the safest storm shelter area in the home.",
+      "Pack or check a small storm-ready flashlight and comfort item.",
+      "Practice moving calmly to the shelter spot when a grown-up says it is time.",
+    ],
+    safetyNote: "During real severe weather, follow trusted alerts and adult instructions immediately.",
+    tags: ["Weather", "Preparedness"],
+    badge: "Weather Watcher",
+    image: "/kids-club/coloring/air-care-landing.png",
+    accent: "blue",
+  },
+  {
+    id: 22,
+    slug: "germ-detective-challenge",
+    title: "Germ Detective Challenge",
+    ageTrack: "Ages 6-11",
+    summary: "Use a glitter demo to see how germs move and how handwashing stops the spread.",
+    learn: "Germs spread by touch, but soap and smart habits lower the risk.",
+    helpLevel: "Side-by-side",
+    time: "20 min",
+    supplies: ["Glitter", "Soap", "Sink", "Checklist"],
+    steps: [
+      "Put a small amount of glitter on one hand as pretend germs.",
+      "Shake hands or touch a safe object to see how glitter spreads.",
+      "Wash with soap for 20 seconds and compare before and after.",
+      "Make a clean-touch list: wash hands, cover coughs, and avoid touching your face.",
+    ],
+    safetyNote: "Use craft-safe glitter and clean surfaces afterward.",
+    tags: ["Hygiene", "Health"],
+    badge: "Germ Detective",
+    image: "/kids-club/coloring/at-the-hospital.png",
+    accent: "green",
+  },
+  {
+    id: 23,
+    slug: "safe-walker-mission",
+    title: "Safe Walker Mission",
+    ageTrack: "Ages 6-11",
+    summary: "Practice crosswalk, bus-stop, and visibility skills for walking near traffic.",
+    learn: "Safe walkers stop, look, listen, stay visible, and avoid distractions near roads.",
+    helpLevel: "Check-in",
+    time: "25 min",
+    supplies: ["Chalk or tape", "Safety checklist", "Bright clothing"],
+    steps: [
+      "Mark a pretend curb and crosswalk.",
+      "Practice stop-look-listen before crossing.",
+      "Talk through safe bus-stop behavior and staying back from the road.",
+      "Review why phones and horseplay do not belong near traffic.",
+    ],
+    safetyNote: "Outdoor practice should happen with a grown-up in a safe location.",
+    tags: ["Pedestrian Safety", "Street Safety"],
+    badge: "Safe Walker",
+    image: "/kids-club/coloring/ballpark.png",
+    accent: "cyan",
+  },
+  {
+    id: 24,
+    slug: "junior-ems-explorer-challenge",
+    title: "Junior EMS Explorer Challenge",
+    ageTrack: "Ages 6-11",
+    summary: "Match common EMS tools with what they help crews do during an emergency.",
+    learn: "Gloves, bandages, stethoscopes, oxygen masks, and stretchers all have specific helping jobs.",
+    helpLevel: "Side-by-side",
+    time: "25 min",
+    supplies: ["Tool cards", "Pencil", "Ambulance picture"],
+    steps: [
+      "Look at photos or cards of common EMS tools.",
+      "Match each tool to its purpose in simple words.",
+      "Talk about why crews wear gloves and keep equipment clean.",
+      "Complete an explorer checklist and choose a badge to color.",
+    ],
+    safetyNote: "Real EMS equipment should only be handled with permission from EMS personnel.",
+    tags: ["Ambulance", "Helper Skills", "First Aid"],
+    badge: "Junior EMS Explorer",
+    printable: { label: "Print crew page", href: "/kids-club/coloring/full-crew.pdf" },
+    image: "/kids-club/coloring/full-crew.png",
+    accent: "gold",
+  },
 ];
+
+export const AGE_TRACKS: KidsAgeTrack[] = ["Ages 2-5", "Ages 6-11"];
 
 export const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
+
+export const MONTHLY_FEATURED_SLUGS = [
+  "my-name-and-address-practice",
+  "911-script-practice",
+  "buckle-up-challenge",
+  "bike-and-scooter-safety-check",
+  "meet-the-ambulance",
+  "germ-detective-challenge",
+  "home-emergency-kit-challenge",
+  "safe-walker-mission",
+  "smoke-alarm-and-exit-map-mission",
+  "weather-watch-mission",
+  "medicine-is-not-candy",
+  "find-the-first-aid-kit",
+];
+
+export const BADGES = [
+  "911 Helper",
+  "Handwashing Hero",
+  "Helmet Hero",
+  "Little Lifesaver",
+  "Ready Kid",
+  "Ambulance Explorer",
+];
+
+export const ACTIVITY_TAGS = Array.from(
+  new Set(KIDS_ACTIVITIES.flatMap((activity) => activity.tags)),
+).sort();
+
+/**
+ * Backward-compatible monthly grouping for older imports. Each month receives
+ * one younger-track and one older-track mission.
+ */
+export const ACTIVITIES_BY_MONTH = MONTHLY_FEATURED_SLUGS.map((slug) => {
+  const featured = KIDS_ACTIVITIES.find((activity) => activity.slug === slug);
+  const alternateTrack: KidsAgeTrack = featured?.ageTrack === "Ages 2-5" ? "Ages 6-11" : "Ages 2-5";
+  const alternate = KIDS_ACTIVITIES.find(
+    (activity) => activity.ageTrack === alternateTrack && activity.slug !== slug,
+  );
+  return [featured, alternate].filter(Boolean) as KidsActivity[];
+});
 
 export interface ColoringPage {
   slug: string;        // file basename in /public/kids-club/coloring/ (.png thumb + .pdf print)

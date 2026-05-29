@@ -19,27 +19,40 @@ export const runtime = "nodejs";
 // The client generates the QR from the returned otpauth:// URL — that
 // avoids any server-side QR library failure leaving the user stuck.
 export async function GET(req: NextRequest) {
-  const cookie = req.cookies.get(LOUNGE_PREAUTH_COOKIE_NAME)?.value;
-  const session = cookie ? verifyPreauthToken(cookie) : null;
-  if (!session) return NextResponse.json({ error: "Preauth expired" }, { status: 401 });
+  try {
+    const key = process.env.LOUNGE_ENCRYPTION_KEY;
+    if (!key || key.length !== 64) {
+      return NextResponse.json(
+        { error: "Server config: LOUNGE_ENCRYPTION_KEY env var missing or wrong length. Set in Vercel → Project Settings → Environment Variables, then redeploy." },
+        { status: 500 },
+      );
+    }
 
-  const emp = await findEmployeeById(session.employeeId);
-  if (!emp) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const cookie = req.cookies.get(LOUNGE_PREAUTH_COOKIE_NAME)?.value;
+    const session = cookie ? verifyPreauthToken(cookie) : null;
+    if (!session) return NextResponse.json({ error: "Preauth expired — go back and sign in again." }, { status: 401 });
 
-  const existing = await getTotpEnrollment(emp.id);
-  let secret = existing.secret;
-  // If they have a secret but never confirmed it, re-use it. Otherwise mint a fresh one.
-  if (!secret) {
-    secret = generateSecret();
-    await setTotpSecret(emp.id, secret);
+    const emp = await findEmployeeById(session.employeeId);
+    if (!emp) return NextResponse.json({ error: "Employee not found" }, { status: 404 });
+
+    const existing = await getTotpEnrollment(emp.id);
+    let secret = existing.secret;
+    if (!secret) {
+      secret = generateSecret();
+      await setTotpSecret(emp.id, secret);
+    }
+
+    const otp = otpauthUrl({
+      issuer: "Millstadt EMS",
+      account: `${emp.firstName}.${emp.lastName}`.toLowerCase(),
+      secret,
+    });
+    return NextResponse.json({ otpauth: otp, secret });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Unknown server error";
+    console.error("[setup-2fa GET] failed:", e);
+    return NextResponse.json({ error: `Setup failed: ${msg}` }, { status: 500 });
   }
-
-  const otp = otpauthUrl({
-    issuer: "Millstadt EMS",
-    account: `${emp.firstName}.${emp.lastName}`.toLowerCase(),
-    secret,
-  });
-  return NextResponse.json({ otpauth: otp, secret });
 }
 
 // POST { code } — verify the code, mark enrolled, issue the real session cookie.

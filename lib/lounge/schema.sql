@@ -71,6 +71,10 @@ ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS blood_type          TEXT;
 ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS profile_completed_at TIMESTAMPTZ;
 ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS totp_secret_encrypted TEXT;
 ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS totp_enrolled_at      TIMESTAMPTZ;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS phone_verified_at     TIMESTAMPTZ;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS phone_verify_code_hash TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS phone_verify_expires_at TIMESTAMPTZ;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS phone_verify_attempts INTEGER NOT NULL DEFAULT 0;
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- PERSONNEL RECORDS (admin-only personnel file)

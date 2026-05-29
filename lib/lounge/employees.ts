@@ -48,6 +48,7 @@ export interface AdminEmployeeRow {
   allergies: string | null;
   medicalConditions: string | null;
   bloodType: string | null;
+  phoneVerifiedAt: string | null;
   profileCompletedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -103,6 +104,7 @@ interface DbEmployeeRow {
   allergies: string | null;
   medical_conditions: string | null;
   blood_type: string | null;
+  phone_verified_at: string | null;
   profile_completed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -152,6 +154,7 @@ function toAdminEmployee(row: DbEmployeeRow): AdminEmployeeRow {
     allergies: row.allergies,
     medicalConditions: row.medical_conditions,
     bloodType: row.blood_type,
+    phoneVerifiedAt: row.phone_verified_at,
     profileCompletedAt: row.profile_completed_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -174,7 +177,7 @@ export async function listEmployees(opts?: {
                ec_name, ec_relationship, ec_phone,
                ec2_name, ec2_relationship, ec2_phone,
                shirt_size, pant_size, jacket_size, allergies, medical_conditions,
-               blood_type, profile_completed_at,
+               blood_type, phone_verified_at, profile_completed_at,
                created_at, updated_at
         FROM lounge_employees
         ORDER BY last_name ASC, first_name ASC
@@ -188,7 +191,7 @@ export async function listEmployees(opts?: {
                ec_name, ec_relationship, ec_phone,
                ec2_name, ec2_relationship, ec2_phone,
                shirt_size, pant_size, jacket_size, allergies, medical_conditions,
-               blood_type, profile_completed_at,
+               blood_type, phone_verified_at, profile_completed_at,
                created_at, updated_at
         FROM lounge_employees
         WHERE is_active = TRUE

@@ -44,6 +44,7 @@ export async function GET() {
       allergies: row.allergies,
       medicalConditions: row.medicalConditions,
       bloodType: row.bloodType,
+      phoneVerifiedAt: row.phoneVerifiedAt,
       profileCompletedAt: row.profileCompletedAt,
     },
   });
