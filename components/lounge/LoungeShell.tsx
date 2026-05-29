@@ -28,7 +28,8 @@ const NAV: NavItem[] = [
   { href: "/lounge/my-file",      label: "My Employee File", emoji: "🗂️" },
   { href: "/lounge/messages",     label: "Messages",         emoji: "💬" },
   { href: "/lounge/acks",         label: "Acknowledgments",  emoji: "✅" },
-  { href: "/lounge/incidents",    label: "Maintenance & Reports", emoji: "🛠️" },
+  { href: "/lounge/incidents",    label: "Incident Reports",   emoji: "🚨" },
+  { href: "/lounge/maintenance",  label: "Maintenance Request", emoji: "🛠️" },
   { href: "/api/lounge/sso/truckcheck", label: "Truck Check", emoji: "🚑", external: true },
   { href: "/api/lounge/sso/inventory",  label: "Inventory",   emoji: "📦", external: true },
   // Admin section — collapsed under "Admin Tools" group in the sidebar.
