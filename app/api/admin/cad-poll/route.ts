@@ -5,16 +5,13 @@
  */
 
 import { NextResponse } from "next/server";
-import { verifySessionToken as verifyAdminToken } from "@/lib/admin/auth";
-import { cookies } from "next/headers";
+import { isAdminAuthed } from "@/lib/admin/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST() {
-  const jar = await cookies();
-  const adminToken = jar.get("mas_admin")?.value;
-  if (!adminToken || !verifyAdminToken(adminToken)) {
+  if (!(await isAdminAuthed())) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

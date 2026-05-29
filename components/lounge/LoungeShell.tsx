@@ -223,13 +223,25 @@ function SidebarBody({
 }) {
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
-        <Image src="/images/millstadt-ems/logo.png" alt="" width={36} height={36} style={{ borderRadius: 8 }} />
-        <div style={{ lineHeight: 1.1 }}>
-          <div style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
+      <div style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 18,
+        padding: "14px 12px 16px",
+        background: "linear-gradient(180deg, rgba(240,180,41,0.06) 0%, transparent 100%)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: 16,
+      }}>
+        <div style={{ filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.45)) drop-shadow(0 0 18px rgba(60,120,255,0.20))" }}>
+          <Image src="/images/millstadt-ems/crest.png" alt="" width={76} height={76} style={{ display: "block", objectFit: "contain" }} />
+        </div>
+        <div style={{ lineHeight: 1.1, textAlign: "center" }}>
+          <div style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.30em", textTransform: "uppercase" }}>
             Employee Lounge
           </div>
-          <div style={{ color: "white", fontWeight: 900, fontSize: 17 }}>Millstadt EMS</div>
+          <div style={{ color: "white", fontWeight: 900, fontSize: 16, marginTop: 4, letterSpacing: "-0.005em" }}>Millstadt EMS</div>
         </div>
       </div>
 
@@ -239,39 +251,74 @@ function SidebarBody({
       </div>
 
       <nav style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 2 }}>
-        {items.map((n) => {
-          const active = isActive(pathname, n);
-          const isAdminLink = n.adminOnly === true;
-          return (
-            <Link
-              key={n.href}
-              href={n.href}
-              onClick={onNavigate}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "11px 12px",
-                borderRadius: 11,
-                color: active ? "#f0b429" : isAdminLink ? "#fcd34d" : "#cbd5e1",
-                background: active ? "rgba(240,180,41,0.10)" : "transparent",
-                textDecoration: "none",
-                fontWeight: active ? 800 : 600,
-                fontSize: 14,
-                border: active ? "1px solid rgba(240,180,41,0.25)" : "1px solid transparent",
-              }}
-            >
-              <span style={{ fontSize: 17, width: 22, textAlign: "center" }} aria-hidden>{n.emoji}</span>
-              <span style={{ flex: 1 }}>{n.label}</span>
-              {n.external && (
-                <span aria-hidden style={{ fontSize: 11, color: "#64748b" }}>↗</span>
-              )}
-            </Link>
-          );
-        })}
+        {/* Crew section header */}
+        <div style={navSection}>Crew</div>
+        {items.filter((n) => !n.adminOnly).map((n) => (
+          <NavRow key={n.href} item={n} active={isActive(pathname, n)} onNavigate={onNavigate} />
+        ))}
+
+        {/* Admin section header */}
+        {items.some((n) => n.adminOnly) && (
+          <>
+            <div style={{ ...navSection, marginTop: 16, color: "#fdba74" }}>Admin</div>
+            {items.filter((n) => n.adminOnly).map((n) => (
+              <NavRow key={n.href} item={n} active={isActive(pathname, n)} onNavigate={onNavigate} />
+            ))}
+          </>
+        )}
       </nav>
 
     </>
+  );
+}
+
+const navSection: React.CSSProperties = {
+  color: "#94a3b8",
+  fontSize: 10,
+  fontWeight: 900,
+  letterSpacing: "0.30em",
+  textTransform: "uppercase",
+  padding: "4px 12px 6px",
+};
+
+function NavRow({ item, active, onNavigate }: { item: NavItem; active: boolean; onNavigate?: () => void }) {
+  const isAdminLink = item.adminOnly === true;
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "10px 12px",
+        borderRadius: 12,
+        color: active ? "#f0b429" : isAdminLink ? "#fde68a" : "#cbd5e1",
+        background: active ? "rgba(240,180,41,0.12)" : "transparent",
+        textDecoration: "none",
+        fontWeight: active ? 800 : 600,
+        fontSize: 14,
+        border: active ? "1px solid rgba(240,180,41,0.30)" : "1px solid transparent",
+        transition: "background 0.12s, color 0.12s",
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 30, height: 30, borderRadius: 8,
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          background: active ? "rgba(240,180,41,0.18)" : "rgba(255,255,255,0.04)",
+          border: `1px solid ${active ? "rgba(240,180,41,0.30)" : "rgba(255,255,255,0.06)"}`,
+          fontSize: 16,
+        }}
+      >
+        {item.emoji}
+      </span>
+      <span style={{ flex: 1 }}>{item.label}</span>
+      {item.external && (
+        <span aria-hidden style={{ fontSize: 11, color: "#64748b" }}>↗</span>
+      )}
+    </Link>
   );
 }
 

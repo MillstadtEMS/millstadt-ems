@@ -153,11 +153,6 @@ function CommandRail({
         )}
       </RailCard>
 
-      <RailCard title="Issue reporting">
-        <p>Submit unit, equipment, supply, building, IT, uniform, or safety concerns through the report form.</p>
-        <Link href="/lounge/incidents" className="lounge-rail-button">New report</Link>
-      </RailCard>
-
       {isAdmin && (
         <RailCard title="Admin controls">
           <div className="lounge-admin-links">
