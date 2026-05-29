@@ -17,17 +17,14 @@ const PRANK_USERNAMES = new Set(["kwetzel", "jgoetz"]);
 export const dynamic = "force-dynamic";
 
 const quickActions = [
-  { href: "#schedule", label: "View Schedule", detail: "Today and coverage", icon: "calendar" },
   { href: "/lounge/open-shifts", label: "Open Shift Sign-Up", detail: "Available coverage", icon: "plus" },
-  { href: "/api/lounge/sso/truckcheck", label: "Complete Truck Check", detail: "Unit readiness", icon: "ambulance" },
   { href: "/lounge/incidents", label: "Report Issue", detail: "Station, unit, safety", icon: "tool" },
   { href: "/lounge/certs", label: "Upload Credential", detail: "Certs and renewals", icon: "upload" },
-  { href: "/lounge/my-file", label: "My Employee File", detail: "Private documents", icon: "file" },
   { href: "/lounge/acks", label: "Acknowledgments", detail: "Read and sign", icon: "check" },
-  { href: "/lounge/messages", label: "Messages", detail: "Crew DMs", icon: "message" },
 ];
 
 const adminActions = [
+  { href: "/admin/calls", label: "Ticker Editor", detail: "Live call strip", icon: "ticker" },
   { href: "/admin/employees", label: "Employee Records", detail: "Personnel admin", icon: "users" },
   { href: "/admin/admin-tools", label: "Admin Tools", detail: "Operations controls", icon: "shield" },
 ];
@@ -91,7 +88,6 @@ export default async function LoungeHome() {
 
         <div className="lounge-command-grid">
           <div className="lounge-main-stack">
-            <QuickActionDock isAdmin={session.isAdmin} />
             <Wall
               me={{
                 id: session.id,
@@ -101,6 +97,7 @@ export default async function LoungeHome() {
                 isAdmin: session.isAdmin,
               }}
             />
+            <QuickActionDock isAdmin={session.isAdmin} />
             <ScheduleSnapshot openShifts={activeOpenShifts} />
             <TrainingResourcesRecognition isAdmin={session.isAdmin} />
           </div>
@@ -319,6 +316,7 @@ function CommandRail({
       {isAdmin && (
         <RailCard title="Admin controls">
           <div className="lounge-admin-links">
+            <Link href="/admin/calls">Ticker editor</Link>
             <Link href="/lounge/acks">Create notice</Link>
             <Link href="/lounge/open-shifts">Post open shift</Link>
             <Link href="/admin/employees">Employee records</Link>
@@ -417,6 +415,7 @@ function Icon({ name }: { name: string }) {
     file: <path d="M6 2h8l4 4v16H6V2Zm7 1.5V7h3.5L13 3.5ZM8 12h8v2H8v-2Zm0 4h8v2H8v-2Z" />,
     check: <path d="m9.2 16.2-4.1-4.1-1.4 1.4 5.5 5.5L21 7.2l-1.4-1.4L9.2 16.2Z" />,
     message: <path d="M4 4h16v12H7.8L4 19.8V4Zm2 2v9l1-1h11V6H6Z" />,
+    ticker: <path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm0 2v10h16V7H4Zm2 3h5v2H6v-2Zm7 0h5v2h-5v-2Zm-7 4h8v2H6v-2Z" />,
     users: <path d="M8 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm8 1a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7ZM2 21v-2a5 5 0 0 1 10 0v2H2Zm11 0v-1.5a6.8 6.8 0 0 0-1.2-3.9A4.8 4.8 0 0 1 21 17.5V21h-8Z" />,
     shield: <path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3Zm-1 14-3.3-3.3 1.4-1.4 1.9 1.9 4.9-4.9 1.4 1.4L11 16Z" />,
   };

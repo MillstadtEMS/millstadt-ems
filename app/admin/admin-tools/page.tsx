@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 const TOOLS = [
   { href: "/admin",                      label: "Site Admin",            description: "Announcements, bulletin, calls, applicants, budget, testimonials, media." },
+  { href: "/admin/calls",                label: "Live Ticker Editor",    description: "Edit the public call ticker, reactivate a manual ticker item, or force a Gmail poll." },
   { href: "/admin/truckcheck-dashboard", label: "Truck Check Insights",  description: "Recent checks, pencil-whip flags, trends per unit, fast-submitter watchlist." },
   { href: "/admin/personnel-dashboard",  label: "Personnel Dashboard",   description: "Open follow-ups, pending acknowledgments, accommodation reviews." },
 ];

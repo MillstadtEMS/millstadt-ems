@@ -10,7 +10,7 @@ function uid() {
 
 export async function POST(req: NextRequest) {
   if (!(await isAdminAuthed())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { dispatchDate, dispatchTime, dispatchNature, eventNumber } = await req.json();
+  const { dispatchDate, dispatchTime, dispatchNature, eventNumber, active } = await req.json();
   if (!dispatchDate || !dispatchTime || !dispatchNature?.trim()) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
   const formattedDate = `${month}/${day}/${year}`;
   const dispatchDatetime = `${dispatchDate}T${dispatchTime}:00`;
   const sourceYear = parseInt(year, 10);
+  const completedAt = active === true ? null : new Date();
   const db = neon(process.env.DATABASE_URL!);
   await db`
     INSERT INTO cad_calls
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
        dispatch_nature, source_year, parse_status, completed_at)
     VALUES
       (${id}, ${gmailMessageId}, ${eventNumber?.trim() || null}, ${dispatchDatetime},
-       ${formattedDate}, ${dispatchTime}, ${dispatchNature.trim()}, ${sourceYear}, 'manual', NOW())
+       ${formattedDate}, ${dispatchTime}, ${dispatchNature.trim()}, ${sourceYear}, 'manual', ${completedAt})
   `;
   return NextResponse.json({ ok: true });
 }

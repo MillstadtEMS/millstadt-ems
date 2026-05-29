@@ -69,9 +69,9 @@ function CallRow({
             onClick={() => onToggleActive(c)}
             disabled={toggling}
             title={highlight ? "Mark as completed (remove from ticker)" : "Mark as active (show on ticker)"}
-            className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded border shrink-0 transition-colors disabled:opacity-50 ${highlight ? "text-red-400 bg-red-400/10 border-red-400/20 hover:bg-red-400/20" : "text-slate-600 bg-white/3 border-white/8 hover:text-[#f0b429] hover:border-[#f0b429]/40"}`}
+            className={`min-w-[92px] text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded border shrink-0 transition-colors disabled:opacity-50 ${highlight ? "text-red-300 bg-red-400/10 border-red-400/25 hover:bg-red-400/20" : "text-slate-400 bg-white/3 border-white/8 hover:text-[#f0b429] hover:border-[#f0b429]/40"}`}
           >
-            {toggling ? "…" : highlight ? "Active" : "Done"}
+            {toggling ? "…" : highlight ? "On ticker" : "Show ticker"}
           </button>
           <button onClick={() => onEdit(c)} title="Edit call description"
             className="text-slate-600 hover:text-[#f0b429] transition-colors p-1 shrink-0">
@@ -100,7 +100,13 @@ export default function CallsAdmin() {
 
   // Add call form
   const [showAdd, setShowAdd] = useState(false);
-  const [addForm, setAddForm] = useState({ dispatchDate: todayLocal(), dispatchTime: nowTimeLocal(), dispatchNature: "", eventNumber: "" });
+  const [addForm, setAddForm] = useState({
+    dispatchDate: todayLocal(),
+    dispatchTime: nowTimeLocal(),
+    dispatchNature: "",
+    eventNumber: "",
+    active: false,
+  });
   const [adding, setAdding]   = useState(false);
 
   async function load() {
@@ -158,7 +164,7 @@ export default function CallsAdmin() {
     });
     setAdding(false);
     setShowAdd(false);
-    setAddForm({ dispatchDate: todayLocal(), dispatchTime: nowTimeLocal(), dispatchNature: "", eventNumber: "" });
+    setAddForm({ dispatchDate: todayLocal(), dispatchTime: nowTimeLocal(), dispatchNature: "", eventNumber: "", active: false });
     await load();
   }
 
@@ -174,7 +180,7 @@ export default function CallsAdmin() {
   };
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-5xl">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <span className="h-px w-8 bg-[#f0b429]" />
@@ -182,8 +188,10 @@ export default function CallsAdmin() {
         </div>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-black text-white">Call Log</h1>
-            <p className="text-slate-400 text-sm mt-1">{new Date().getFullYear()} — {calls.length} calls. Click the pencil icon to edit a call&apos;s description.</p>
+            <h1 className="text-3xl font-black text-white">Live Call Ticker Editor</h1>
+            <p className="text-slate-400 text-sm mt-1">
+              {new Date().getFullYear()} — {calls.length} calls. Active calls show in the public top ticker; edits update within 30 seconds.
+            </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <ForcePollButton onAfter={() => load()} />
@@ -192,16 +200,37 @@ export default function CallsAdmin() {
               className="shrink-0 flex items-center gap-2 bg-[#f0b429]/10 hover:bg-[#f0b429]/20 border border-[#f0b429]/25 text-[#f0b429] font-black text-sm px-4 py-2.5 rounded-xl transition-colors"
             >
               <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-              Add Call
+              Add ticker/log item
             </button>
           </div>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3 mb-8">
+        <div className="rounded-2xl border border-red-400/20 bg-red-400/5 p-4">
+          <span className="text-red-300 text-[10px] font-black uppercase tracking-[0.2em]">Live ticker</span>
+          <strong className="block text-white text-2xl mt-1">{active.length}</strong>
+          <p className="text-slate-500 text-xs mt-1">Showing on the public top strip now.</p>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          <span className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Completed log</span>
+          <strong className="block text-white text-2xl mt-1">{complete.length}</strong>
+          <p className="text-slate-500 text-xs mt-1">Stored history, not on the ticker.</p>
+        </div>
+        <div className="rounded-2xl border border-[#f0b429]/20 bg-[#f0b429]/5 p-4">
+          <span className="text-[#f0b429] text-[10px] font-black uppercase tracking-[0.2em]">Update timing</span>
+          <strong className="block text-white text-2xl mt-1">30s</strong>
+          <p className="text-slate-500 text-xs mt-1">Ticker refresh window after edits.</p>
         </div>
       </div>
 
       {/* Add call form */}
       {showAdd && (
         <div className="bg-[#071428] border border-[#f0b429]/20 rounded-2xl p-6 mb-8">
-          <h2 className="text-white font-black text-base mb-5">Add to Log</h2>
+          <h2 className="text-white font-black text-base mb-2">Add ticker/log item</h2>
+          <p className="text-slate-400 text-sm mb-5">
+            Use this for a corrected dispatch entry or a manual public ticker item. Gmail polling and cron jobs are unchanged.
+          </p>
           <div className="grid sm:grid-cols-2 gap-4 mb-4">
             <div>
               <label className={lbl}>Date</label>
@@ -227,11 +256,24 @@ export default function CallsAdmin() {
             <label className={lbl}>Event Number <span className="text-slate-600 font-normal normal-case">(optional)</span></label>
             <input value={addForm.eventNumber} onChange={e => setAddForm(f => ({...f, eventNumber: e.target.value}))} placeholder="e.g. 2026-00123" className={inp} />
           </div>
-          <p className="text-slate-600 text-xs mb-5">This adds the call directly to the completed log. It will not affect the live active ticker.</p>
+          <label className="mb-5 flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={addForm.active}
+              onChange={e => setAddForm(f => ({...f, active: e.target.checked}))}
+              className="mt-1 h-4 w-4 accent-[#f0b429]"
+            />
+            <span>
+              <span className="block text-white text-sm font-black">Show on live ticker immediately</span>
+              <span className="block text-slate-500 text-xs mt-1">
+                Leave off to save it as completed log history only.
+              </span>
+            </span>
+          </label>
           <div className="flex items-center gap-3">
             <button onClick={addCall} disabled={adding || !addForm.dispatchNature.trim()}
               className="bg-[#f0b429] hover:bg-[#f5c842] disabled:opacity-40 text-[#020810] font-black px-6 py-2.5 rounded-xl text-sm transition-colors">
-              {adding ? "Adding…" : "Add to Log"}
+              {adding ? "Adding…" : addForm.active ? "Add to live ticker" : "Add to log"}
             </button>
             <button onClick={() => setShowAdd(false)}
               className="text-slate-500 hover:text-slate-300 px-4 py-2.5 rounded-xl text-sm transition-colors">
@@ -252,19 +294,19 @@ export default function CallsAdmin() {
                   <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping" />
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-400" />
                 </span>
-                <span className="text-red-400 text-sm font-black uppercase tracking-widest">{active.length} Active</span>
+                <span className="text-red-400 text-sm font-black uppercase tracking-widest">{active.length} on live ticker</span>
               </div>
               <div className="space-y-2">
                 {active.map(c => <CallRow key={c.id} c={c} highlight={true} isEditing={editingId === c.id} toggling={togglingId === c.id} {...rowProps} />)}
               </div>
-              <p className="text-slate-600 text-xs mt-3">Edit the description above — the ticker updates within 30 seconds.</p>
+              <p className="text-slate-600 text-xs mt-3">These are the items currently feeding the public call ticker.</p>
             </div>
           )}
           {complete.length > 0 && (
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <span className="h-px w-6 bg-slate-700" />
-                <span className="text-slate-500 text-xs font-semibold uppercase tracking-widest">{complete.length} Completed</span>
+                <span className="text-slate-500 text-xs font-semibold uppercase tracking-widest">{complete.length} completed / not on ticker</span>
               </div>
               <div className="space-y-2">
                 {complete.map(c => <CallRow key={c.id} c={c} highlight={false} isEditing={editingId === c.id} toggling={togglingId === c.id} {...rowProps} />)}
@@ -273,7 +315,7 @@ export default function CallsAdmin() {
           )}
         </div>
       )}
-      <p className="text-slate-700 text-xs mt-8">Removing a call only affects the public display — it does not delete from the raw Gmail log.</p>
+      <p className="text-slate-700 text-xs mt-8">This editor only changes the display records in the call log table. CAD polling, the call ticker component, and cron behavior are untouched.</p>
     </div>
   );
 }
