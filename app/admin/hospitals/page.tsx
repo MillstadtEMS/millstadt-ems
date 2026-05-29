@@ -1,30 +1,21 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentEmployee } from "@/lib/lounge/auth";
-import { getEmployee } from "@/lib/lounge/employees";
 import { listHospitalsLive } from "@/lib/lounge/hospitals";
-import LoungeShell from "@/components/lounge/LoungeShell";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+// LoungeShell is provided by app/admin/layout.tsx — only render content here.
 export default async function AdminHospitalsPage() {
   const session = await currentEmployee();
   if (!session) redirect("/lounge/login");
   if (!session.isAdmin) redirect("/lounge");
 
-  const row = await getEmployee(session.id);
-  const me = {
-    firstName: session.firstName,
-    lastName: session.lastName,
-    certification: row?.certification ?? null,
-    photoUrl: row?.photoUrl ?? null,
-    isAdmin: session.isAdmin,
-  };
   const hospitals = await listHospitalsLive();
 
   return (
-    <LoungeShell me={me}>
+    <>
       <header style={{ marginBottom: 22 }}>
         <div style={{ color: "#f0b429", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
           Admin
@@ -37,12 +28,18 @@ export default async function AdminHospitalsPage() {
         </p>
       </header>
 
-      <div style={{ marginBottom: 14 }}>
+      <div style={{ marginBottom: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
         <Link
           href="/admin/hospitals/new"
           style={{ display: "inline-block", padding: "10px 18px", background: "#f0b429", color: "#040d1a", borderRadius: 12, fontWeight: 900, fontSize: 13, letterSpacing: "0.10em", textTransform: "uppercase", textDecoration: "none" }}
         >
           + New Hospital
+        </Link>
+        <Link
+          href="/admin/hospitals/suggestions"
+          style={{ display: "inline-block", padding: "10px 18px", background: "transparent", border: "1px solid rgba(56,189,248,0.40)", color: "#7dd3fc", borderRadius: 12, fontWeight: 900, fontSize: 13, letterSpacing: "0.10em", textTransform: "uppercase", textDecoration: "none" }}
+        >
+          Crew Suggestions
         </Link>
       </div>
 
@@ -68,6 +65,6 @@ export default async function AdminHospitalsPage() {
           </li>
         ))}
       </ul>
-    </LoungeShell>
+    </>
   );
 }
