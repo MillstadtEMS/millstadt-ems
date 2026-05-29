@@ -4,6 +4,13 @@ import { COLORING_PAGES } from "@/lib/kids/activities";
 
 export default function KidsClubPrintablesPage() {
   const [featured, ...rest] = COLORING_PAGES;
+  // Sort so all landscapes (short) come first and the portraits (tall)
+  // sit at the bottom — gives the grid a uniform look instead of a jagged
+  // mix of aspect ratios.
+  const sorted = [...rest].sort((a, b) => {
+    if (a.orientation === b.orientation) return 0;
+    return a.orientation === "landscape" ? -1 : 1;
+  });
 
   return (
     <main className="bg-[#f4f8fb] text-[#061121]">
@@ -57,21 +64,23 @@ export default function KidsClubPrintablesPage() {
                   Print the crest page first, or scroll through the full set
                   below.
                 </p>
-                <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                <div className="mt-8 flex flex-col sm:flex-row" style={{ gap: 16 }}>
                   <a
                     href={`/kids-club/coloring/${featured.slug}.pdf`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex min-h-14 items-center justify-center gap-3 rounded-xl bg-[#061121] px-7 text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-[#1b58c9] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
+                    className="rounded-xl bg-[#061121] text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-[#1b58c9] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
+                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 56, padding: "0 28px" }}
                   >
                     Print PDF
-                    <PrintIcon className="h-5 w-5" />
+                    <PrintIcon style={{ width: 20, height: 20 }} />
                   </a>
                   <a
                     href={`/kids-club/coloring/${featured.slug}.png`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex min-h-14 items-center justify-center rounded-xl border-2 border-[#061121] bg-white px-7 text-sm font-black uppercase tracking-[0.14em] text-[#061121] transition hover:bg-[#d7ff22] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
+                    className="rounded-xl border-2 border-[#061121] bg-white text-sm font-black uppercase tracking-[0.14em] text-[#061121] transition hover:bg-[#d7ff22] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
+                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: 56, padding: "0 28px" }}
                   >
                     View Page
                   </a>
@@ -111,14 +120,15 @@ export default function KidsClubPrintablesPage() {
               </div>
               <Link
                 href="/kids-club/activities"
-                className="inline-flex min-h-12 items-center rounded-xl border-2 border-[#061121] bg-white px-5 text-sm font-black uppercase tracking-[0.14em] text-[#061121] transition hover:bg-[#f0b429] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
+                className="rounded-xl border-2 border-[#061121] bg-white text-sm font-black uppercase tracking-[0.14em] text-[#061121] transition hover:bg-[#f0b429] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
+                style={{ display: "inline-flex", alignItems: "center", minHeight: 48, padding: "0 20px" }}
               >
                 Monthly Missions
               </Link>
             </div>
 
             <div className="mt-10 grid gap-7 sm:grid-cols-2 xl:grid-cols-3">
-              {rest.map((page, index) => (
+              {sorted.map((page, index) => (
                 <article
                   key={page.slug}
                   className="flex flex-col rounded-[1.4rem] border border-slate-200 bg-white p-4 shadow-xl shadow-slate-200/80"
@@ -144,24 +154,26 @@ export default function KidsClubPrintablesPage() {
                     <h3 className="text-2xl font-black leading-tight text-[#061121]">
                       {page.title}
                     </h3>
-                    <div className="mt-6 grid grid-cols-[1fr_3.5rem] gap-3">
+                    <div className="mt-6" style={{ display: "grid", gridTemplateColumns: "1fr 56px", gap: 12 }}>
                       <a
                         href={`/kids-club/coloring/${page.slug}.pdf`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex min-h-13 items-center justify-center gap-3 rounded-xl bg-[#061121] px-5 text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-[#1b58c9] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
+                        className="rounded-xl bg-[#061121] text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-[#1b58c9] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
+                        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 52, padding: "0 20px" }}
                       >
                         Print
-                        <PrintIcon className="h-4 w-4" />
+                        <PrintIcon style={{ width: 16, height: 16 }} />
                       </a>
                       <a
                         href={`/kids-club/coloring/${page.slug}.png`}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`View ${page.title}`}
-                        className="grid min-h-13 place-items-center rounded-xl border-2 border-[#061121] bg-white text-[#061121] transition hover:bg-[#d7ff22] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
+                        className="rounded-xl border-2 border-[#061121] bg-white text-[#061121] transition hover:bg-[#d7ff22] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
+                        style={{ display: "grid", placeItems: "center", minHeight: 52 }}
                       >
-                        <EyeIcon className="h-5 w-5" />
+                        <EyeIcon style={{ width: 20, height: 20 }} />
                       </a>
                     </div>
                   </div>
@@ -175,17 +187,17 @@ export default function KidsClubPrintablesPage() {
   );
 }
 
-function PrintIcon({ className = "h-5 w-5" }: { className?: string }) {
+function PrintIcon({ className = "h-5 w-5", style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
+    <svg viewBox="0 0 24 24" className={className} style={style} fill="currentColor" aria-hidden>
       <path d="M6 3h12v5H6V3Zm12 14h1a3 3 0 0 0 3-3v-3a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v3a3 3 0 0 0 3 3h1v4h12v-4Zm-2 2H8v-5h8v5Zm3-6.75a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Z" />
     </svg>
   );
 }
 
-function EyeIcon({ className = "h-5 w-5" }: { className?: string }) {
+function EyeIcon({ className = "h-5 w-5", style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
+    <svg viewBox="0 0 24 24" className={className} style={style} fill="currentColor" aria-hidden>
       <path d="M12 5c5.2 0 9.35 4.1 10.75 7-1.4 2.9-5.55 7-10.75 7S2.65 14.9 1.25 12C2.65 9.1 6.8 5 12 5Zm0 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0-2.2a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6Z" />
     </svg>
   );

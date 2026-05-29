@@ -293,12 +293,18 @@ export default function KidsClubActivitiesPage() {
             <h2>Printable badge goals</h2>
             <p>Use these as completion rewards after a child finishes a mission with a grown-up.</p>
             <div className="kc-badge-grid">
-              {BADGES.map((badge) => (
-                <div key={badge}>
-                  <StarIcon />
-                  <strong>{badge}</strong>
-                </div>
-              ))}
+              {BADGES.map((badge) => {
+                const slug = badge.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                return (
+                  <Link key={badge} href={`/kids-club/badge/${slug}`} title={`Print ${badge} certificate`}>
+                    <StarIcon />
+                    <strong>{badge}</strong>
+                    <span style={{ display: "block", color: "#1b58c9", fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginTop: 6 }}>
+                      Print certificate ↗
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           </aside>
         </div>
@@ -1209,14 +1215,22 @@ const KIDS_ACTIVITY_CSS = `
   gap: 10px;
   margin-top: 20px;
 }
-.kc-badge-grid div {
+.kc-badge-grid > * {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
-  padding: 12px;
+  padding: 12px 14px;
   border-radius: 18px;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.08);
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+.kc-badge-grid > a:hover {
+  background: rgba(240,180,41,0.10);
+  border-color: rgba(240,180,41,0.40);
 }
 .kc-badge-grid svg {
   width: 26px;
