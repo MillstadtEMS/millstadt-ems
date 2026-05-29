@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import VersionWatcher from "./VersionWatcher";
 
 export interface SidebarMe {
   firstName: string;
@@ -226,6 +227,8 @@ export default function LoungeShell({
           {children}
         </main>
       </div>
+
+      <VersionWatcher />
 
       {/* Mobile bottom tab bar — visible only on phones, mirrors iOS pattern */}
       <nav

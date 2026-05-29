@@ -125,9 +125,30 @@ export default function MessengerClient({ meId }: { meId: string }) {
       return `${r.firstName} ${r.lastName}`.toLowerCase().includes(q);
     });
 
+  // Phone-portrait: show one pane at a time (Messenger-style). The CSS
+  // classes are toggled by media query below — no JS resize listener
+  // needed, and the SSR shell stays identical.
   return (
-    <div>
-      <header style={{ marginBottom: 16 }}>
+    <div className={`messenger-root ${activeConv ? "has-active" : ""}`}>
+      <style>{`
+        .messenger-root .messenger-header { margin-bottom: 16px; }
+        .messenger-grid { display: grid; grid-template-columns: minmax(0,320px) minmax(0,1fr); gap: 14px; align-items: start; }
+        .messenger-list { background:#071428; border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:12px; max-height:600px; overflow-y:auto; }
+        .messenger-thread { background:#071428; border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:14px; min-height:500px; display:flex; flex-direction:column; }
+        .messenger-back { display: none; }
+        @media (max-width: 720px) {
+          .messenger-root .messenger-header { display: none; }
+          .messenger-grid { grid-template-columns: 1fr; gap: 0; }
+          .messenger-list, .messenger-thread { border-radius: 0; border-left: 0; border-right: 0; }
+          .messenger-list { max-height: calc(100vh - 56px - env(safe-area-inset-bottom) - env(safe-area-inset-top)); }
+          .messenger-thread { min-height: calc(100vh - 56px - env(safe-area-inset-bottom) - env(safe-area-inset-top)); padding: 0; }
+          .messenger-root.has-active .messenger-list { display: none; }
+          .messenger-root:not(.has-active) .messenger-thread { display: none; }
+          .messenger-back { display: inline-flex; }
+        }
+      `}</style>
+
+      <header className="messenger-header">
         <div style={{ color: "#f0b429", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
           Messages
         </div>
@@ -139,9 +160,9 @@ export default function MessengerClient({ meId }: { meId: string }) {
         </p>
       </header>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,320px) minmax(0,1fr)", gap: 14, alignItems: "start" }}>
+      <div className="messenger-grid">
         {/* Conversation list */}
-        <aside style={{ background: "#071428", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: 12, maxHeight: 600, overflowY: "auto" }}>
+        <aside className="messenger-list">
           <button
             type="button"
             onClick={() => setShowRoster((v) => !v)}
@@ -213,24 +234,35 @@ export default function MessengerClient({ meId }: { meId: string }) {
         </aside>
 
         {/* Active thread */}
-        <section style={{ background: "#071428", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: 14, minHeight: 500, display: "flex", flexDirection: "column" }}>
+        <section className="messenger-thread">
           {!activeConv ? (
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" }}>
               Pick a conversation or start a new one.
             </div>
           ) : (
             <>
-              <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                <div>
-                  <div style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-                    {activeConv.kind === "dm" ? "Direct message" : "Group"}
-                  </div>
-                  <div style={{ color: "white", fontWeight: 800, marginTop: 2 }}>
-                    {activeConv.title ?? activeConv.participants.map((p) => `${p.firstName} ${p.lastName}`).join(", ")}
+              <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(2,9,18,0.65)", position: "sticky", top: 0, zIndex: 5, backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)" }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0, flex: 1 }}>
+                  <button
+                    type="button"
+                    className="messenger-back"
+                    onClick={() => setActiveId(null)}
+                    aria-label="Back to conversations"
+                    style={{ background: "transparent", border: 0, color: "#f0b429", fontSize: 22, padding: 4, cursor: "pointer", fontFamily: "inherit", alignItems: "center" }}
+                  >
+                    ‹
+                  </button>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
+                      {activeConv.kind === "dm" ? "Direct message" : "Group"}
+                    </div>
+                    <div style={{ color: "white", fontWeight: 800, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {activeConv.title ?? activeConv.participants.map((p) => `${p.firstName} ${p.lastName}`).join(", ")}
+                    </div>
                   </div>
                 </div>
               </header>
-              <div style={{ flex: 1, overflowY: "auto", padding: "12px 0", display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ flex: 1, overflowY: "auto", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
                 {messages.length === 0 ? (
                   <p style={{ color: "#94a3b8", fontSize: 13, alignSelf: "center", marginTop: 30 }}>
                     No messages in this thread yet. Say hi.
@@ -255,7 +287,7 @@ export default function MessengerClient({ meId }: { meId: string }) {
                 })}
                 <div ref={messagesEndRef} />
               </div>
-              <div style={{ paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: 10 }}>
+              <div style={{ padding: "12px 14px calc(env(safe-area-inset-bottom) + 12px)", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: 10, background: "#071428", position: "sticky", bottom: 0 }}>
                 <input
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
@@ -277,11 +309,6 @@ export default function MessengerClient({ meId }: { meId: string }) {
         </section>
       </div>
 
-      <style>{`
-        @media (max-width: 767px) {
-          aside { max-height: 320px !important; }
-        }
-      `}</style>
     </div>
   );
 }
