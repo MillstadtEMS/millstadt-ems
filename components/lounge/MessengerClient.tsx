@@ -37,6 +37,7 @@ export default function MessengerClient({ meId }: { meId: string }) {
   const [roster, setRoster] = useState<RosterEntry[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [readBy, setReadBy] = useState<Record<string, string>>({});
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [showRoster, setShowRoster] = useState(false);
@@ -65,6 +66,7 @@ export default function MessengerClient({ meId }: { meId: string }) {
       if (r.ok && !cancelled) {
         const d = await r.json();
         setMessages(d.messages ?? []);
+        setReadBy(d.readBy ?? {});
       }
     }
     load();
@@ -267,24 +269,42 @@ export default function MessengerClient({ meId }: { meId: string }) {
                   <p style={{ color: "#94a3b8", fontSize: 13, alignSelf: "center", marginTop: 30 }}>
                     No messages in this thread yet. Say hi.
                   </p>
-                ) : messages.map((m) => {
-                  const mine = m.authorId === meId;
-                  return (
-                    <div key={m.id} style={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start" }}>
-                      <div style={{ maxWidth: "78%", background: mine ? "#f0b429" : "rgba(255,255,255,0.05)", color: mine ? "#040d1a" : "#e2e8f0", padding: "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4 }}>
-                        {!mine && (
-                          <div style={{ fontSize: 11, fontWeight: 800, color: "#cbd5e1", marginBottom: 2 }}>
-                            {m.authorFirstName} {m.authorLastName}
+                ) : (() => {
+                  // Pre-compute the id of the last message I sent so we only
+                  // render one "Seen by…" receipt at the bottom of the thread
+                  // (Messenger-style — no per-message ticks above it).
+                  const lastMineIdx = (() => {
+                    for (let i = messages.length - 1; i >= 0; i--) {
+                      if (messages[i].authorId === meId) return i;
+                    }
+                    return -1;
+                  })();
+                  return messages.map((m, idx) => {
+                    const mine = m.authorId === meId;
+                    const showReceipt = mine && idx === lastMineIdx;
+                    const receipt = showReceipt ? buildReceipt(m, activeConv, readBy, meId) : null;
+                    return (
+                      <div key={m.id} style={{ display: "flex", flexDirection: "column", alignItems: mine ? "flex-end" : "flex-start" }}>
+                        <div style={{ maxWidth: "78%", background: mine ? "#f0b429" : "rgba(255,255,255,0.05)", color: mine ? "#040d1a" : "#e2e8f0", padding: "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4 }}>
+                          {!mine && (
+                            <div style={{ fontSize: 11, fontWeight: 800, color: "#cbd5e1", marginBottom: 2 }}>
+                              {m.authorFirstName} {m.authorLastName}
+                            </div>
+                          )}
+                          <div style={{ fontSize: 14, lineHeight: 1.4, whiteSpace: "pre-wrap" }}>{m.body}</div>
+                          <div style={{ fontSize: 10, opacity: 0.7, marginTop: 4 }}>
+                            {new Date(m.createdAt).toLocaleString()}
+                          </div>
+                        </div>
+                        {receipt && (
+                          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4, marginRight: 4, fontWeight: 700 }}>
+                            {receipt}
                           </div>
                         )}
-                        <div style={{ fontSize: 14, lineHeight: 1.4, whiteSpace: "pre-wrap" }}>{m.body}</div>
-                        <div style={{ fontSize: 10, opacity: 0.7, marginTop: 4 }}>
-                          {new Date(m.createdAt).toLocaleString()}
-                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
                 <div ref={messagesEndRef} />
               </div>
               <div style={{ padding: "12px 14px calc(env(safe-area-inset-bottom) + 12px)", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: 10, background: "#071428", position: "sticky", bottom: 0 }}>
@@ -311,4 +331,29 @@ export default function MessengerClient({ meId }: { meId: string }) {
 
     </div>
   );
+}
+
+// ── Read receipts ────────────────────────────────────────────────────────
+interface ReceiptConv { participants: { id: string; firstName: string; lastName: string }[]; kind: "dm" | "group" }
+function buildReceipt(
+  msg: { createdAt: string },
+  conv: ReceiptConv | null,
+  readBy: Record<string, string>,
+  meId: string,
+): string | null {
+  if (!conv) return "Sent";
+  const others = conv.participants.filter((p) => p.id !== meId);
+  if (others.length === 0) return null;
+  const msgTime = new Date(msg.createdAt).getTime();
+  const seenBy = others.filter((p) => {
+    const stamp = readBy[p.id];
+    if (!stamp) return false;
+    return new Date(stamp).getTime() >= msgTime;
+  });
+  if (seenBy.length === 0) return "Sent";
+  if (conv.kind === "dm") return "Seen ✓✓";
+  if (seenBy.length === others.length) return "Seen by everyone";
+  if (seenBy.length === 1) return `Seen by ${seenBy[0].firstName}`;
+  if (seenBy.length === 2) return `Seen by ${seenBy[0].firstName} & ${seenBy[1].firstName}`;
+  return `Seen by ${seenBy.length} of ${others.length}`;
 }

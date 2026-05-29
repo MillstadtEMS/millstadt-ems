@@ -156,6 +156,29 @@ export async function listMyConversations(meId: string): Promise<ConversationPre
 
 // ── List messages in a thread ───────────────────────────────────────────
 
+export interface ConversationReadInfo {
+  /** Map of participant user id → ISO timestamp of their last-read mark. */
+  readBy: Record<string, string>;
+  participantIds: string[];
+}
+
+/**
+ * Per-conversation read map keyed by user id. Used by the client to
+ * compute "Seen by X" receipts. Skips the gate-check — caller already
+ * fetched messages, which gates participation.
+ */
+export async function getConversationReadInfo(conversationId: string): Promise<ConversationReadInfo | null> {
+  const db = sql();
+  const rows = (await db`
+    SELECT participant_ids, read_by FROM lounge_conversations WHERE id = ${conversationId} LIMIT 1
+  `) as unknown as { participant_ids: string[]; read_by: Record<string, string> | null }[];
+  if (!rows[0]) return null;
+  return {
+    participantIds: rows[0].participant_ids,
+    readBy: rows[0].read_by ?? {},
+  };
+}
+
 export async function listMessages(conversationId: string, meId: string, since?: string): Promise<MessageRow[]> {
   const db = sql();
   // gate: must be a participant

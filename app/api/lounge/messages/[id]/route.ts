@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentEmployee } from "@/lib/lounge/auth";
-import { listMessages, markRead, sendMessage } from "@/lib/lounge/messages";
+import {
+  getConversationReadInfo,
+  listMessages,
+  markRead,
+  sendMessage,
+} from "@/lib/lounge/messages";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +21,14 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   // (so the unread badge clears as soon as they open the thread).
   if (!since) await markRead(id, me.id);
 
-  return NextResponse.json({ messages });
+  // After (possibly) marking read, snapshot the read_by map so the
+  // client can compute per-message "Seen by X" receipts.
+  const readInfo = await getConversationReadInfo(id);
+  return NextResponse.json({
+    messages,
+    readBy: readInfo?.readBy ?? {},
+    participantIds: readInfo?.participantIds ?? [],
+  });
 }
 
 // POST a new message into the existing thread.
