@@ -2,6 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const SEEN_STORAGE_KEY = "lounge:notif-last-seen-id";
+
+function readSeenId(): string | null {
+  if (typeof window === "undefined") return null;
+  try { return window.localStorage.getItem(SEEN_STORAGE_KEY); } catch { return null; }
+}
+function writeSeenId(id: string) {
+  if (typeof window === "undefined") return;
+  try { window.localStorage.setItem(SEEN_STORAGE_KEY, id); } catch { /* ignore */ }
+}
 
 interface NotificationRow {
   id: string;
@@ -30,7 +42,11 @@ const KIND_META: Record<NotificationRow["kind"], { emoji: string; color: string 
 export function useNotifications() {
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [unread, setUnread] = useState(0);
-  const lastSeenId = useRef<string | null>(null);
+  // Last-seen ID must live in STATE (not a ref) so dismissing the toast
+  // triggers a re-render. Persisted to localStorage so it survives reloads
+  // and stays in sync between the toast (in LoungeShell) and the list page
+  // — both instances of this hook read from the same storage key.
+  const [lastSeenId, setLastSeenId] = useState<string | null>(() => readSeenId());
 
   const load = useCallback(async () => {
     try {
@@ -39,31 +55,53 @@ export function useNotifications() {
       const d = await r.json();
       setItems(Array.isArray(d.notifications) ? d.notifications : []);
       setUnread(typeof d.unread === "number" ? d.unread : 0);
+      // Pick up dismissals made by other hook instances since last poll.
+      const fromStorage = readSeenId();
+      if (fromStorage) setLastSeenId((cur) => (cur === fromStorage ? cur : fromStorage));
     } catch { /* ignore */ }
   }, []);
 
   useEffect(() => {
     load();
     const id = setInterval(load, 30_000);
-    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") load(); });
-    return () => clearInterval(id);
+    const onVisible = () => { if (document.visibilityState === "visible") load(); };
+    document.addEventListener("visibilitychange", onVisible);
+    // Cross-instance sync: if another hook instance dismisses the toast, it
+    // writes to localStorage and a `storage` event fires on this tab too
+    // (when written from a different document) or we re-check via poll/visibility.
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === SEEN_STORAGE_KEY && e.newValue) setLastSeenId(e.newValue);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("storage", onStorage);
+    };
   }, [load]);
 
   // Detect a brand-new notification since the last seen one for the toast.
   const newest = items[0] ?? null;
-  const isNewSinceLast = newest && !newest.readAt && newest.id !== lastSeenId.current;
-  const markToastSeen = () => { if (newest) lastSeenId.current = newest.id; };
+  const isNewSinceLast = Boolean(newest && !newest.readAt && newest.id !== lastSeenId);
+  const markToastSeen = useCallback(() => {
+    if (!newest) return;
+    writeSeenId(newest.id);
+    setLastSeenId(newest.id);
+  }, [newest]);
 
   async function markAllRead() {
     await fetch("/api/lounge/notifications/read-all", { method: "POST" });
     setUnread(0);
     setItems((s) => s.map((n) => ({ ...n, readAt: n.readAt ?? new Date().toISOString() })));
+    // Marking everything read should also dismiss any pending toast.
+    if (newest) { writeSeenId(newest.id); setLastSeenId(newest.id); }
   }
 
   async function markOne(id: string) {
     await fetch(`/api/lounge/notifications/${id}/read`, { method: "POST" });
     setItems((s) => s.map((n) => n.id === id ? { ...n, readAt: n.readAt ?? new Date().toISOString() } : n));
     setUnread((c) => Math.max(0, c - 1));
+    if (newest && id === newest.id) { writeSeenId(id); setLastSeenId(id); }
   }
 
   return { items, unread, newest, isNewSinceLast, markToastSeen, markAllRead, markOne, reload: load };
@@ -72,6 +110,14 @@ export function useNotifications() {
 /** Persistent bottom-right toast when a fresh notification arrives. */
 export function NotificationsToast() {
   const { newest, isNewSinceLast, markToastSeen } = useNotifications();
+  const pathname = usePathname() || "";
+  // While the user is sitting on the notifications page, the toast is just
+  // noise — dismiss it automatically.
+  useEffect(() => {
+    if (pathname.startsWith("/lounge/notifications") && isNewSinceLast) {
+      markToastSeen();
+    }
+  }, [pathname, isNewSinceLast, markToastSeen]);
   if (!isNewSinceLast || !newest) return null;
   const meta = KIND_META[newest.kind];
   return (
