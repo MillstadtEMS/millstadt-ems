@@ -7,6 +7,7 @@
 
 import { randomUUID } from "crypto";
 import { sql } from "./db";
+import { createNotifications, type CreateNotification } from "./notifications";
 
 export interface ConversationPreview {
   id: string;
@@ -419,6 +420,40 @@ export async function sendMessage(input: {
     WHERE id = ${input.conversationId}
   `;
   const list = await listMessages(input.conversationId, input.authorId, undefined);
+
+  // Notify every other participant. The notifications-tab gets a
+  // "DM from X" / "Group message from X in <title>" entry and the
+  // toast in the corner picks up the same unread count.
+  try {
+    const others = conv[0].participant_ids.filter((pid: string) => pid !== input.authorId);
+    if (others.length > 0) {
+      const author = (await db`
+        SELECT first_name, last_name FROM lounge_employees WHERE id = ${input.authorId} LIMIT 1
+      `) as unknown as { first_name: string; last_name: string }[];
+      const convInfo = (await db`
+        SELECT kind, title FROM lounge_conversations WHERE id = ${input.conversationId} LIMIT 1
+      `) as unknown as { kind: string; title: string | null }[];
+      const authorName = author[0] ? `${author[0].first_name} ${author[0].last_name}` : "Someone";
+      const preview = input.body.trim().slice(0, 180) || (cleanedMedia.length > 0 ? "📎 Sent an attachment" : "");
+      const inGroup = convInfo[0]?.kind === "group";
+      const title = inGroup
+        ? `${authorName}${convInfo[0]?.title ? ` in ${convInfo[0].title}` : ""}`
+        : `${authorName}`;
+      const items: CreateNotification[] = others.map((rid: string) => ({
+        recipientId: rid,
+        kind: "message" as const,
+        title,
+        bodyPreview: preview,
+        linkUrl: "/lounge/messages",
+        sourceId: input.conversationId,
+        actorId: input.authorId,
+      }));
+      await createNotifications(items);
+    }
+  } catch (e) {
+    console.error("[messages] notify fanout failed:", e instanceof Error ? e.message : e);
+  }
+
   return list[list.length - 1] ?? null;
 }
 

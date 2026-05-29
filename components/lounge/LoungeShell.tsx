@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import VersionWatcher from "./VersionWatcher";
 import PresenceHeartbeat from "./PresenceHeartbeat";
+import { NotificationsToast } from "./NotificationsCenter";
 
 export interface SidebarMe {
   firstName: string;
@@ -26,6 +27,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { href: "/lounge",              label: "The Wall",         emoji: "📰", eyebrow: "Home" },
+  { href: "/lounge/notifications", label: "Notifications",   emoji: "🔔" },
   { href: "/lounge/about-me",     label: "About Me",         emoji: "🪪" },
   { href: "/lounge/certs",        label: "My Certifications", emoji: "📜" },
   { href: "/lounge/my-file",      label: "My Employee File", emoji: "🗂️" },
@@ -234,6 +236,7 @@ export default function LoungeShell({
 
       <VersionWatcher />
       <PresenceHeartbeat />
+      <NotificationsToast />
 
       {/* Mobile bottom tab bar — visible only on phones, mirrors iOS pattern */}
       <nav

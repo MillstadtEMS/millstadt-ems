@@ -757,27 +757,74 @@ function CommentSection({
   const [comments, setComments] = useState<Comment[]>([]);
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
+  const [roster, setRoster] = useState<RosterMember[]>([]);
+  const [mentioned, setMentioned] = useState<RosterMember[]>([]);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionAnchor, setMentionAnchor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch(`/api/lounge/feed/${postId}/comments`)
       .then(async (r) => { if (r.ok) setComments((await r.json()).comments); })
       .catch(() => {});
+    fetch("/api/lounge/roster").then((r) => r.ok ? r.json() : { employees: [] }).then((d) => setRoster(Array.isArray(d.employees) ? d.employees : []));
   }, [postId]);
+
+  function onBodyChange(value: string) {
+    setBody(value);
+    const el = inputRef.current;
+    if (!el) return;
+    const caret = el.selectionStart ?? value.length;
+    const before = value.slice(0, caret);
+    const atIdx = before.lastIndexOf("@");
+    if (atIdx === -1) { setMentionQuery(null); return; }
+    if (atIdx > 0 && !/\s/.test(before[atIdx - 1])) { setMentionQuery(null); return; }
+    const between = before.slice(atIdx + 1);
+    if (/\s/.test(between)) { setMentionQuery(null); return; }
+    if (between.length > 30) { setMentionQuery(null); return; }
+    setMentionQuery(between.toLowerCase());
+    setMentionAnchor(atIdx);
+  }
+
+  function pickMention(r: RosterMember) {
+    const el = inputRef.current;
+    const before = body.slice(0, mentionAnchor);
+    const after = body.slice(el?.selectionStart ?? body.length);
+    const display = `@${r.firstName} ${r.lastName}`;
+    const next = `${before}${display} ${after}`;
+    setBody(next);
+    setMentioned((s) => s.find((m) => m.id === r.id) ? s : [...s, r]);
+    setMentionQuery(null);
+    requestAnimationFrame(() => {
+      if (!inputRef.current) return;
+      const pos = (before + display + " ").length;
+      inputRef.current.focus();
+      inputRef.current.setSelectionRange(pos, pos);
+    });
+  }
+
+  const mentionMatches = mentionQuery === null
+    ? []
+    : roster
+        .filter((r) => `${r.firstName} ${r.lastName}`.toLowerCase().includes(mentionQuery))
+        .slice(0, 6);
 
   async function submit() {
     if (!body.trim() || posting) return;
     setPosting(true);
     try {
+      const liveMentions = mentioned.filter((m) => body.includes(`@${m.firstName} ${m.lastName}`));
       const res = await fetch(`/api/lounge/feed/${postId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: body.trim() }),
+        body: JSON.stringify({ body: body.trim(), mentions: liveMentions.map((m) => m.id) }),
       });
       if (res.ok) {
         const d = await res.json();
         setComments((s) => [...s, d.comment]);
         setBody("");
+        setMentioned([]);
+        setMentionQuery(null);
         inputRef.current?.focus();
       }
     } finally {
@@ -801,7 +848,7 @@ function CommentSection({
               <span style={{ color: "#64748b", fontSize: "0.7rem" }}>{timeAgo(c.createdAt)}</span>
             </div>
             <div style={{ color: "#e2e8f0", fontSize: "0.88rem", marginTop: 2, whiteSpace: "pre-wrap" }}>
-              {c.body}
+              {renderBodyWithMentions(c.body, roster.map((r) => ({ id: r.id, firstName: r.firstName, lastName: r.lastName })))}
             </div>
             {(c.author.id === me.id || me.isAdmin) && (
               <button type="button" onClick={() => remove(c.id)} style={{ marginTop: 4, background: "transparent", color: "#64748b", border: 0, fontSize: "0.7rem", cursor: "pointer", padding: 0 }}>
@@ -811,13 +858,34 @@ function CommentSection({
           </div>
         </div>
       ))}
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ display: "flex", gap: 8, position: "relative" }}>
+        {mentionMatches.length > 0 && (
+          <div style={{
+            position: "absolute", bottom: "calc(100% + 4px)", left: 0, right: 0, zIndex: 30,
+            background: "#040d1a", border: "1px solid rgba(240,180,41,0.30)", borderRadius: 12,
+            boxShadow: "0 14px 30px rgba(0,0,0,0.45)", padding: 4, maxHeight: 240, overflowY: "auto",
+          }}>
+            {mentionMatches.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => pickMention(m)}
+                style={{ display: "flex", width: "100%", gap: 10, alignItems: "center", padding: "8px 10px", background: "transparent", border: 0, color: "white", textAlign: "left", cursor: "pointer", borderRadius: 8, fontFamily: "inherit", fontSize: 13, fontWeight: 800 }}
+              >
+                {m.firstName} {m.lastName}
+              </button>
+            ))}
+          </div>
+        )}
         <input
           ref={inputRef}
           value={body}
-          onChange={(e) => setBody(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
-          placeholder="Write a comment…"
+          onChange={(e) => onBodyChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && mentionQuery !== null) { setMentionQuery(null); return; }
+            if (e.key === "Enter" && mentionQuery === null) submit();
+          }}
+          placeholder="Write a comment… (@ to tag)"
           style={{
             flex: 1,
             background: "#020912",

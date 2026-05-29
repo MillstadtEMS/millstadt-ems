@@ -11,6 +11,7 @@
  */
 import { randomUUID } from "crypto";
 import { sql } from "./db";
+import { createNotifications, type CreateNotification } from "./notifications";
 
 export interface FeedAuthor {
   id: string;
@@ -287,6 +288,39 @@ export async function createPost(input: {
   `;
   const post = await getPost(id, input.authorId);
   if (!post) throw new Error("Post not found after create");
+
+  // ─ Notifications fan-out ────────────────────────────────────────────
+  // 1. Every active employee except the author gets a "new post" item.
+  // 2. Anyone the author tagged via @mention gets a louder "mention"
+  //    item — both render together, the mention overrides the post one.
+  try {
+    const employees = (await db`
+      SELECT id FROM lounge_employees WHERE is_active = TRUE AND id <> ${input.authorId}
+    `) as unknown as { id: string }[];
+    const mentioned = new Set(mentionedIds);
+    const preview = (input.body || "").slice(0, 180);
+    const author = (await db`
+      SELECT first_name, last_name FROM lounge_employees WHERE id = ${input.authorId} LIMIT 1
+    `) as unknown as { first_name: string; last_name: string }[];
+    const authorName = author[0] ? `${author[0].first_name} ${author[0].last_name}` : "Someone";
+    const items: CreateNotification[] = [];
+    for (const e of employees) {
+      const isMention = mentioned.has(e.id);
+      items.push({
+        recipientId: e.id,
+        kind: isMention ? "mention" : "post",
+        title: isMention ? `${authorName} mentioned you on the Wall` : `${authorName} posted on the Wall`,
+        bodyPreview: preview,
+        linkUrl: "/lounge",
+        sourceId: post.id,
+        actorId: input.authorId,
+      });
+    }
+    await createNotifications(items);
+  } catch (e) {
+    console.error("[feed] notify fanout failed:", e instanceof Error ? e.message : e);
+  }
+
   return post;
 }
 
@@ -383,6 +417,7 @@ export async function addComment(input: {
   postId: string;
   authorId: string;
   body: string;
+  mentions?: string[];
 }): Promise<FeedComment> {
   const id = randomUUID();
   const db = sql();
@@ -397,7 +432,42 @@ export async function addComment(input: {
     JOIN lounge_employees e ON e.id = c.author_id
     WHERE c.id = ${id} LIMIT 1
   `) as unknown as DbCommentRow[];
-  return rowToComment(rows[0]);
+  const comment = rowToComment(rows[0]);
+
+  // ─ Notifications ─────────────────────────────────────────────────────
+  // Original post author + any @-mentioned users get a comment ping.
+  try {
+    const post = (await db`
+      SELECT author_id, body FROM lounge_feed_posts WHERE id = ${input.postId} LIMIT 1
+    `) as unknown as { author_id: string; body: string }[];
+    if (post[0]) {
+      const recipients = new Set<string>();
+      if (post[0].author_id !== input.authorId) recipients.add(post[0].author_id);
+      for (const m of input.mentions ?? []) if (m !== input.authorId) recipients.add(m);
+      if (recipients.size > 0) {
+        const author = (await db`
+          SELECT first_name, last_name FROM lounge_employees WHERE id = ${input.authorId} LIMIT 1
+        `) as unknown as { first_name: string; last_name: string }[];
+        const authorName = author[0] ? `${author[0].first_name} ${author[0].last_name}` : "Someone";
+        const items: CreateNotification[] = Array.from(recipients).map((rid) => ({
+          recipientId: rid,
+          kind: (input.mentions ?? []).includes(rid) ? "mention" : "comment",
+          title: (input.mentions ?? []).includes(rid)
+            ? `${authorName} mentioned you in a comment`
+            : `${authorName} commented on your post`,
+          bodyPreview: input.body.slice(0, 180),
+          linkUrl: "/lounge",
+          sourceId: input.postId,
+          actorId: input.authorId,
+        }));
+        await createNotifications(items);
+      }
+    }
+  } catch (e) {
+    console.error("[feed] comment notify failed:", e instanceof Error ? e.message : e);
+  }
+
+  return comment;
 }
 
 export async function deleteComment(commentId: string): Promise<void> {

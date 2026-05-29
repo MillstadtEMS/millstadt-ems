@@ -30,6 +30,9 @@ export async function POST(
   const body = await req.json();
   const text = String(body.body ?? "").trim();
   if (!text) return NextResponse.json({ error: "Empty comment" }, { status: 400 });
-  const comment = await addComment({ postId: id, authorId: me.id, body: text });
+  const mentions = Array.isArray(body.mentions)
+    ? body.mentions.filter((m: unknown): m is string => typeof m === "string")
+    : [];
+  const comment = await addComment({ postId: id, authorId: me.id, body: text, mentions });
   return NextResponse.json({ comment });
 }
