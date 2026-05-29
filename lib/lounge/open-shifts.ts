@@ -10,7 +10,7 @@ export interface ShiftResponse {
   firstName: string;
   lastName: string;
   certification: string | null;
-  response: "available" | "unavailable";
+  response: "available" | "unavailable" | "bid";
   note: string | null;
   createdAt: string;
 }
@@ -63,7 +63,7 @@ async function loadResponses(shiftIds: string[]) {
   `) as unknown as {
     shift_id: string;
     user_id: string;
-    response: "available" | "unavailable";
+    response: "available" | "unavailable" | "bid";
     note: string | null;
     created_at: string;
     first_name: string;
@@ -166,7 +166,7 @@ export async function createOpenShift(input: {
 export async function respondToShift(input: {
   shiftId: string;
   userId: string;
-  response: "available" | "unavailable";
+  response: "available" | "unavailable" | "bid";
   note?: string;
 }): Promise<void> {
   const db = sql();

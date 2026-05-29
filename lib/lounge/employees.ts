@@ -47,6 +47,7 @@ export interface AdminEmployeeRow {
   jacketSize: string | null;
   allergies: string | null;
   medicalConditions: string | null;
+  bloodType: string | null;
   profileCompletedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -101,6 +102,7 @@ interface DbEmployeeRow {
   jacket_size: string | null;
   allergies: string | null;
   medical_conditions: string | null;
+  blood_type: string | null;
   profile_completed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -149,6 +151,7 @@ function toAdminEmployee(row: DbEmployeeRow): AdminEmployeeRow {
     jacketSize: row.jacket_size,
     allergies: row.allergies,
     medicalConditions: row.medical_conditions,
+    bloodType: row.blood_type,
     profileCompletedAt: row.profile_completed_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -171,7 +174,7 @@ export async function listEmployees(opts?: {
                ec_name, ec_relationship, ec_phone,
                ec2_name, ec2_relationship, ec2_phone,
                shirt_size, pant_size, jacket_size, allergies, medical_conditions,
-               profile_completed_at,
+               blood_type, profile_completed_at,
                created_at, updated_at
         FROM lounge_employees
         ORDER BY last_name ASC, first_name ASC
@@ -185,7 +188,7 @@ export async function listEmployees(opts?: {
                ec_name, ec_relationship, ec_phone,
                ec2_name, ec2_relationship, ec2_phone,
                shirt_size, pant_size, jacket_size, allergies, medical_conditions,
-               profile_completed_at,
+               blood_type, profile_completed_at,
                created_at, updated_at
         FROM lounge_employees
         WHERE is_active = TRUE
@@ -304,6 +307,7 @@ export interface UpdateEmployeeInput {
   jacketSize?: string | null;
   allergies?: string | null;
   medicalConditions?: string | null;
+  bloodType?: string | null;
   markProfileCompleted?: boolean;
 }
 
@@ -381,6 +385,8 @@ export async function updateEmployee(
     await db`UPDATE lounge_employees SET allergies = ${input.allergies}, updated_at = NOW() WHERE id = ${id}`;
   if (input.medicalConditions !== undefined)
     await db`UPDATE lounge_employees SET medical_conditions = ${input.medicalConditions}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.bloodType !== undefined)
+    await db`UPDATE lounge_employees SET blood_type = ${input.bloodType}, updated_at = NOW() WHERE id = ${id}`;
   if (input.markProfileCompleted)
     await db`UPDATE lounge_employees SET profile_completed_at = NOW(), updated_at = NOW() WHERE id = ${id}`;
 

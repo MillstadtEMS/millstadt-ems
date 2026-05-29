@@ -550,6 +550,22 @@ input[type="range"]::-moz-range-thumb {
   .lg\:items-center{align-items:center}.lg\:overflow-visible{overflow:visible}
 }
 
+/* ── Nav lounge button: hover-grow to bottom-floater size ───────────── */
+.lounge-hover-expand {
+  position: relative;
+}
+.lounge-hover-expand .lounge-hover-expand-img {
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+}
+@media (hover: hover) and (pointer: fine) {
+  .lounge-hover-expand:hover .lounge-hover-expand-img {
+    transform: translateY(2px) scale(4);
+    transform-origin: top right;
+    filter: drop-shadow(0 14px 36px rgba(240,180,41,0.45)) drop-shadow(0 6px 12px rgba(0,0,0,0.55));
+    z-index: 60;
+  }
+}
+
 /* ── Mobile app-shell experience ─────────────────────────────────────── */
 
 /* Buttery scroll + no double-tap zoom delay on phones */

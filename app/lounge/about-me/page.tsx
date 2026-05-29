@@ -47,6 +47,7 @@ export default async function AboutMePage() {
     jacketSize: row.jacketSize ?? "",
     allergies: row.allergies ?? "",
     medicalConditions: row.medicalConditions ?? "",
+    bloodType: row.bloodType ?? "",
     profileCompletedAt: row.profileCompletedAt,
   };
 

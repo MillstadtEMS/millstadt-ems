@@ -28,7 +28,7 @@ interface Post {
   id: string;
   author: Author;
   body: string;
-  media: { url: string; kind: "image" | "file"; name?: string }[];
+  media: { url: string; kind: "image" | "video" | "file"; name?: string }[];
   pinned: boolean;
   highlighted: boolean;
   savedByMe: boolean;
@@ -70,11 +70,11 @@ export default function Wall({ me }: { me: WallMe }) {
     setPosts((s) => s.map((p) => (p.id === updated.id ? updated : p)));
   }
 
-  async function onCreate(body: string) {
+  async function onCreate(body: string, media: { url: string; kind: "image" | "video" | "file"; name?: string }[]) {
     const res = await fetch("/api/lounge/feed", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body }),
+      body: JSON.stringify({ body, media }),
     });
     if (res.ok) {
       const d = await res.json();
@@ -164,17 +164,45 @@ function Composer({
   onCreate,
 }: {
   me: { firstName: string; lastName: string; photoUrl: string | null };
-  onCreate: (body: string) => Promise<void>;
+  onCreate: (body: string, media: { url: string; kind: "image" | "video" | "file"; name?: string }[]) => Promise<void>;
 }) {
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
+  const [media, setMedia] = useState<{ url: string; kind: "image" | "video" | "file"; name?: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  async function pickMedia() {
+    fileRef.current?.click();
+  }
+  async function onFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      for (const f of Array.from(files)) {
+        const form = new FormData();
+        form.append("file", f);
+        const r = await fetch("/api/lounge/feed/media", { method: "POST", body: form });
+        if (r.ok) {
+          const d = await r.json();
+          setMedia((s) => [...s, { url: d.url, kind: d.kind, name: d.name }]);
+        }
+      }
+    } finally {
+      setUploading(false);
+    }
+  }
+  function removeMedia(url: string) {
+    setMedia((s) => s.filter((m) => m.url !== url));
+  }
 
   async function submit() {
-    if (!body.trim() || posting) return;
+    if ((!body.trim() && media.length === 0) || posting) return;
     setPosting(true);
     try {
-      await onCreate(body.trim());
+      await onCreate(body.trim(), media);
       setBody("");
+      setMedia([]);
     } finally {
       setPosting(false);
     }
@@ -213,15 +241,49 @@ function Composer({
           }}
         />
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
-        <span style={{ color: "#64748b", fontSize: "0.72rem" }}>⌘+Enter to post</span>
+      {media.length > 0 && (
+        <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
+          {media.map((m) => (
+            <div key={m.url} style={{ position: "relative", background: "#020912", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, overflow: "hidden", height: 110 }}>
+              {m.kind === "image" ? (
+                <img src={m.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : m.kind === "video" ? (
+                <video src={m.url} muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <div style={{ padding: 12, color: "#cbd5e1", fontSize: 12 }}>📎 {m.name ?? "file"}</div>
+              )}
+              <button type="button" onClick={() => removeMedia(m.url)} style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.6)", border: 0, color: "white", padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 800, cursor: "pointer" }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button
+            type="button"
+            onClick={pickMedia}
+            disabled={uploading}
+            style={{ padding: "8px 12px", background: "#020912", border: "1px solid rgba(240,180,41,0.30)", color: "#f0b429", borderRadius: 10, fontSize: 12, fontWeight: 800, cursor: uploading ? "wait" : "pointer", fontFamily: "inherit" }}
+          >
+            {uploading ? "Uploading…" : "📷 Photos / Videos"}
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            multiple
+            accept="image/*,video/*"
+            style={{ display: "none" }}
+            onChange={(e) => onFiles(e.target.files)}
+          />
+          <span style={{ color: "#64748b", fontSize: "0.72rem" }}>⌘+Enter to post</span>
+        </div>
         <button
           type="button"
           onClick={submit}
-          disabled={posting || !body.trim()}
+          disabled={posting || (!body.trim() && media.length === 0)}
           style={{
             padding: "10px 18px",
-            background: posting || !body.trim() ? "rgba(240,180,41,0.4)" : "#f0b429",
+            background: posting || (!body.trim() && media.length === 0) ? "rgba(240,180,41,0.4)" : "#f0b429",
             color: "#040d1a",
             fontWeight: 900,
             fontSize: "0.76rem",
@@ -229,7 +291,7 @@ function Composer({
             textTransform: "uppercase",
             borderRadius: 10,
             border: 0,
-            cursor: posting || !body.trim() ? "not-allowed" : "pointer",
+            cursor: posting || (!body.trim() && media.length === 0) ? "not-allowed" : "pointer",
             fontFamily: "inherit",
           }}
         >
@@ -293,15 +355,21 @@ function PostCard({
 
       {post.media.length > 0 && (
         <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: post.media.length > 1 ? "repeat(auto-fit, minmax(160px, 1fr))" : "1fr", gap: 8 }}>
-          {post.media.map((m, i) => (
-            <a key={i} href={m.url} target="_blank" rel="noreferrer" style={{ display: "block", borderRadius: 10, overflow: "hidden", background: "#020912" }}>
-              {m.kind === "image" ? (
-                <img src={m.url} alt="" style={{ width: "100%", height: "auto", display: "block" }} />
-              ) : (
-                <div style={{ padding: 14, color: "#cbd5e1", fontSize: "0.85rem" }}>📎 {m.name ?? "attachment"}</div>
-              )}
-            </a>
-          ))}
+          {post.media.map((m, i) =>
+            m.kind === "video" ? (
+              <div key={i} style={{ display: "block", borderRadius: 10, overflow: "hidden", background: "#020912" }}>
+                <video src={m.url} controls playsInline preload="metadata" style={{ width: "100%", display: "block", maxHeight: 420 }} />
+              </div>
+            ) : (
+              <a key={i} href={m.url} target="_blank" rel="noreferrer" style={{ display: "block", borderRadius: 10, overflow: "hidden", background: "#020912" }}>
+                {m.kind === "image" ? (
+                  <img src={m.url} alt="" style={{ width: "100%", height: "auto", display: "block" }} />
+                ) : (
+                  <div style={{ padding: 14, color: "#cbd5e1", fontSize: "0.85rem" }}>📎 {m.name ?? "attachment"}</div>
+                )}
+              </a>
+            ),
+          )}
         </div>
       )}
 

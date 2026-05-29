@@ -43,6 +43,7 @@ export async function GET() {
       jacketSize: row.jacketSize,
       allergies: row.allergies,
       medicalConditions: row.medicalConditions,
+      bloodType: row.bloodType,
       profileCompletedAt: row.profileCompletedAt,
     },
   });
@@ -85,6 +86,7 @@ export async function PUT(req: NextRequest) {
     jacketSize: s(body.jacketSize),
     allergies: s(body.allergies),
     medicalConditions: s(body.medicalConditions),
+    bloodType: s(body.bloodType),
     markProfileCompleted: true,
   });
 

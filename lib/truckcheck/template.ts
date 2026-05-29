@@ -13,7 +13,8 @@ export type ResponseType =
   | "fluid"      // status enum + optional "amount added" — comment required on configured statuses
   | "numeric"    // numeric value with min/max bounds
   | "tire_psi"   // expands into N tire fields, one per position on the unit
-  | "stock";     // Stocked | Low | Missing | Restocked | Expired | Not Checked — comment required on non-stocked
+  | "stock"      // Stocked | Low | Missing | Restocked | Expired | Not Checked — comment required on non-stocked
+  | "repeatable_numeric"; // user adds N entries (each with numeric value + label + comment)
 
 export interface ItemBase {
   itemKey: string;
@@ -56,6 +57,16 @@ export interface TirePsiItem extends ItemBase {
   // Tire positions come from the unit spec at runtime.
 }
 
+export interface RepeatableNumericItem extends ItemBase {
+  responseType: "repeatable_numeric";
+  unitOfMeasure: string;
+  min?: number;
+  max?: number;
+  defaultCount: number;
+  entryLabel: string;       // e.g. "Portable O2 #"
+  addButtonLabel: string;   // e.g. "+ Add another portable O2"
+}
+
 export interface StockItem extends ItemBase {
   responseType: "stock";
   amountUnit?: string;
@@ -67,7 +78,8 @@ export type ChecklistItem =
   | FluidItem
   | NumericItem
   | TirePsiItem
-  | StockItem;
+  | StockItem
+  | RepeatableNumericItem;
 
 export interface CategoryDef {
   category: string;
@@ -107,6 +119,16 @@ export const STOCK_OPTS = [
 
 export function buildTemplate(unit: UnitSpec): CategoryDef[] {
   const cats: CategoryDef[] = [
+    {
+      category: "Pre-Check",
+      description: "Quick overall impression before you start.",
+      items: [
+        { itemKey: "pre_condition",   label: "Condition prior to check", category: "Pre-Check", responseType: "status",
+          statuses: ["Great", "Good", "Fair", "Poor"], commentRequiredOn: ["Poor"] },
+        { itemKey: "check_engine",    label: "Check engine light",       category: "Pre-Check", responseType: "status",
+          statuses: ["Off", "On"], commentRequiredOn: ["On"] },
+      ],
+    },
     {
       category: "Vehicle Exterior",
       items: [
@@ -177,8 +199,9 @@ export function buildTemplate(unit: UnitSpec): CategoryDef[] {
       items: [
         { itemKey: "main_o2_psi",    label: "Main oxygen", category: "Patient Compartment", responseType: "numeric",
           unitOfMeasure: "psi", min: unit.mainO2MinPsi, max: 2200, required: true, trendGroup: "main_o2" },
-        { itemKey: "portable_o2_psi", label: "Portable oxygen", category: "Patient Compartment", responseType: "numeric",
-          unitOfMeasure: "psi", min: unit.portableO2MinPsi, max: 2200, required: true, trendGroup: "portable_o2" },
+        { itemKey: "portable_o2_psi", label: "Portable oxygen", category: "Patient Compartment", responseType: "repeatable_numeric",
+          unitOfMeasure: "psi", min: unit.portableO2MinPsi, max: 2200, defaultCount: 1, trendGroup: "portable_o2",
+          entryLabel: "Portable O2 #", addButtonLabel: "+ Add another portable O2" },
         { itemKey: "o2_wrench",      label: "Oxygen wrench present", category: "Patient Compartment", responseType: "status",
           statuses: ["Yes", "No"], commentRequiredOn: ["No"] },
         { itemKey: "suction_built",  label: "Built-in suction",      category: "Patient Compartment", responseType: "status",
@@ -251,19 +274,19 @@ export function buildTemplate(unit: UnitSpec): CategoryDef[] {
 
   if (unit.hasNarcotics) {
     cats.push({
-      category: "Controlled Substances",
-      description: "Restricted — narcotic safe + drug box + seal verification.",
+      category: "Narcotics & Refrigerator",
+      description: "Quick check — safe locked, LogRx checked out, fridge closed + temp in range (36–46°F).",
       items: [
-        { itemKey: "narc_safe_locked",   label: "Narcotic safe locked",   category: "Controlled Substances", responseType: "passfail", failComment: true },
-        { itemKey: "narc_count_verified", label: "Narcotic count verified", category: "Controlled Substances", responseType: "status",
-          statuses: ["Verified", "Discrepancy"], commentRequiredOn: ["Discrepancy"] },
-        { itemKey: "drug_box_sealed",    label: "Drug box present + sealed", category: "Controlled Substances", responseType: "passfail", failComment: true },
-        { itemKey: "seal_number",        label: "Seal number",            category: "Controlled Substances", responseType: "status",
-          statuses: ["Match", "Mismatch", "Not Recorded"], commentRequiredOn: ["Mismatch", "Not Recorded"] },
-        { itemKey: "med_expiration",     label: "Medication expiration check", category: "Controlled Substances", responseType: "status",
-          statuses: ["All In Date", "Near Expiry", "Expired Found"], commentRequiredOn: ["Near Expiry", "Expired Found"] },
-        { itemKey: "med_temp",           label: "Temperature-sensitive medication", category: "Controlled Substances", responseType: "status",
-          statuses: ["In Range", "Out of Range", "N/A"], commentRequiredOn: ["Out of Range"] },
+        { itemKey: "narc_safe_locked",   label: "Narcotics safe locked",        category: "Narcotics & Refrigerator", responseType: "passfail", failComment: true },
+        { itemKey: "narc_logrx",         label: "Narcotics checked out in LogRx", category: "Narcotics & Refrigerator", responseType: "status",
+          statuses: ["Yes", "No"], commentRequiredOn: ["No"] },
+        { itemKey: "fridge_closed",      label: "Refrigerator closed",          category: "Narcotics & Refrigerator", responseType: "status",
+          statuses: ["Yes", "No"], commentRequiredOn: ["No"] },
+        // Numeric with explicit 36–46°F window. Out-of-range is flagged and
+        // surfaced specially in the form ("notify management" thumbs-down)
+        // and on the PDF.
+        { itemKey: "fridge_temp",        label: "Refrigerator temperature",     category: "Narcotics & Refrigerator", responseType: "numeric",
+          unitOfMeasure: "°F", min: 36, max: 46, required: true, trendGroup: "fridge_temp" },
       ],
     });
   }

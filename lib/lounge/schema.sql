@@ -67,6 +67,7 @@ ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS pant_size           TEXT;
 ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS jacket_size         TEXT;
 ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS allergies           TEXT;
 ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS medical_conditions  TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS blood_type          TEXT;
 ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS profile_completed_at TIMESTAMPTZ;
 
 -- ═══════════════════════════════════════════════════════════════════════
@@ -332,11 +333,24 @@ CREATE INDEX IF NOT EXISTS lounge_open_shifts_status_idx
 CREATE TABLE IF NOT EXISTS lounge_open_shift_responses (
     shift_id   TEXT NOT NULL REFERENCES lounge_open_shifts(id) ON DELETE CASCADE,
     user_id    TEXT NOT NULL REFERENCES lounge_employees(id) ON DELETE CASCADE,
-    response   TEXT NOT NULL CHECK (response IN ('available', 'unavailable')),
+    response   TEXT NOT NULL CHECK (response IN ('available', 'unavailable', 'bid')),
     note       TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (shift_id, user_id)
 );
+-- Allow 'bid' on existing installs (idempotent: drops old constraint if any).
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE table_name = 'lounge_open_shift_responses'
+      AND constraint_name = 'lounge_open_shift_responses_response_check'
+  ) THEN
+    ALTER TABLE lounge_open_shift_responses DROP CONSTRAINT lounge_open_shift_responses_response_check;
+  END IF;
+  ALTER TABLE lounge_open_shift_responses
+    ADD CONSTRAINT lounge_open_shift_responses_response_check
+    CHECK (response IN ('available', 'unavailable', 'bid'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- OPS REQUESTS

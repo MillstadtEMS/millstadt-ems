@@ -1,7 +1,6 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import LoungeButton from "./LoungeButton";
 
 export default function SiteShell({
   header,
@@ -36,7 +35,6 @@ export default function SiteShell({
         {children}
       </main>
       {footer}
-      <LoungeButton />
     </>
   );
 }

@@ -13,6 +13,7 @@ import {
   type StockItem,
   type NumericItem,
   type PassFailItem,
+  type RepeatableNumericItem,
 } from "@/lib/truckcheck/template";
 
 /**
@@ -33,8 +34,11 @@ type ItemValue = {
   amountAdded: number | null;
   comment: string;
   checkedAt: string | null;
+  photos?: string[];   // per-item photo URLs
 };
 type ItemState = Record<string, ItemValue>;
+type CategoryComments = Record<string, string>;
+type RepeatableState = Record<string, { id: string; value: number | null; comment: string; checkedAt: string | null }[]>;
 
 interface PhotoEntry {
   url: string;
@@ -100,14 +104,19 @@ export default function TruckCheckForm() {
 
   // Item state — initialize an empty value per item (tire_psi expands per position).
   const [items, setItems] = useState<ItemState>(() => init(template, unit));
+  const [categoryComments, setCategoryComments] = useState<CategoryComments>({});
+  const [repeatables, setRepeatables] = useState<RepeatableState>(() => initRepeatables(template));
+  const [refillRequest, setRefillRequest] = useState("");
 
   // When unit changes, rebuild state so tire positions match
   useEffect(() => {
-    setItems(init(buildTemplate(unit), unit));
+    const next = buildTemplate(unit);
+    setItems(init(next, unit));
+    setRepeatables(initRepeatables(next));
     setExpanded((s) => {
-      const next = { ...s };
-      for (const c of buildTemplate(unit)) next[c.category] ??= true;
-      return next;
+      const updated = { ...s };
+      for (const c of next) updated[c.category] ??= true;
+      return updated;
     });
   }, [unit]);
 
@@ -128,6 +137,38 @@ export default function TruckCheckForm() {
         ...patch,
         checkedAt: new Date().toISOString(),
       },
+    }));
+  }
+
+  function addItemPhoto(itemKey: string, url: string) {
+    setItems((s) => {
+      const cur = s[itemKey] ?? blank();
+      return { ...s, [itemKey]: { ...cur, photos: [...(cur.photos ?? []), url], checkedAt: new Date().toISOString() } };
+    });
+  }
+  function removeItemPhoto(itemKey: string, url: string) {
+    setItems((s) => {
+      const cur = s[itemKey] ?? blank();
+      return { ...s, [itemKey]: { ...cur, photos: (cur.photos ?? []).filter((u) => u !== url) } };
+    });
+  }
+
+  function addRepeatable(itemKey: string) {
+    setRepeatables((s) => ({
+      ...s,
+      [itemKey]: [...(s[itemKey] ?? []), { id: cryptoRandomId(), value: null, comment: "", checkedAt: null }],
+    }));
+  }
+  function patchRepeatable(itemKey: string, id: string, patch: Partial<{ value: number | null; comment: string }>) {
+    setRepeatables((s) => ({
+      ...s,
+      [itemKey]: (s[itemKey] ?? []).map((e) => e.id === id ? { ...e, ...patch, checkedAt: new Date().toISOString() } : e),
+    }));
+  }
+  function removeRepeatable(itemKey: string, id: string) {
+    setRepeatables((s) => ({
+      ...s,
+      [itemKey]: (s[itemKey] ?? []).filter((e) => e.id !== id),
     }));
   }
 
@@ -166,8 +207,9 @@ export default function TruckCheckForm() {
 
     // Build the flat item list with abnormal flags so the server gets
     // exactly what it persists. Tire PSI is exploded into one entry per
-    // position.
-    const payloadItems = flattenForSubmit(template, unit, items);
+    // position. Repeatable numerics are exploded into one entry per
+    // attached unit.
+    const payloadItems = flattenForSubmit(template, unit, items, repeatables);
 
     // Client-side guardrails (matches what the server flags).
     for (const i of payloadItems) {
@@ -202,6 +244,8 @@ export default function TruckCheckForm() {
         submittedAt: new Date().toISOString(),
         durationSeconds: elapsed,
         notes: generalNotes,
+        categoryComments,
+        refillRequest: refillRequest.trim() || null,
         items: payloadItems.map(({ requireComment, requireAmount, requireNumeric, ...rest }) => {
           void requireComment; void requireAmount; void requireNumeric;
           return rest;
@@ -218,8 +262,8 @@ export default function TruckCheckForm() {
     router.push("/truckcheck/submitted");
   }
 
-  const abnormalCount = countAbnormal(template, unit, items);
-  const failCount = countFails(template, unit, items);
+  const abnormalCount = countAbnormal(template, unit, items, repeatables);
+  const failCount = countFails(template, unit, items, repeatables);
 
   return (
     <>
@@ -294,11 +338,33 @@ export default function TruckCheckForm() {
             cat={cat}
             unit={unit}
             items={items}
+            repeatables={repeatables}
+            categoryComment={categoryComments[cat.category] ?? ""}
+            onCategoryComment={(v) => setCategoryComments((s) => ({ ...s, [cat.category]: v }))}
             expanded={expanded[cat.category] !== false}
             onToggle={() => setExpanded((s) => ({ ...s, [cat.category]: s[cat.category] === false }))}
             onPatch={patchItem}
+            onAddRepeat={addRepeatable}
+            onPatchRepeat={patchRepeatable}
+            onRemoveRepeat={removeRepeatable}
+            onAddItemPhoto={addItemPhoto}
+            onRemoveItemPhoto={removeItemPhoto}
           />
         ))}
+
+        <Card title="Vehicle Equipment / Maintenance Refill Request">
+          <p style={{ color: "#94a3b8", fontSize: 13, marginTop: 0, marginBottom: 10 }}>
+            List anything we need to order, refill, repair, or restock. This goes straight to
+            management on the report.
+          </p>
+          <textarea
+            value={refillRequest}
+            onChange={(e) => setRefillRequest(e.target.value)}
+            rows={5}
+            placeholder="e.g. 1x case of 4x4 gauze, 2x adult NRB masks, BP cuff replacement, wash truck this week, etc."
+            style={{ ...inp, resize: "vertical", minHeight: 110 }}
+          />
+        </Card>
 
         {/* Photos */}
         <Card title={`Photos (${photos.length})`}>
@@ -452,14 +518,23 @@ function FloatingTimer({ elapsed, unit }: { elapsed: number; unit: string }) {
 // ── Category section ────────────────────────────────────────────────────
 
 function Category({
-  cat, unit, items, expanded, onToggle, onPatch,
+  cat, unit, items, repeatables, categoryComment, onCategoryComment, expanded, onToggle, onPatch,
+  onAddRepeat, onPatchRepeat, onRemoveRepeat, onAddItemPhoto, onRemoveItemPhoto,
 }: {
   cat: CategoryDef;
   unit: UnitSpec;
   items: ItemState;
+  repeatables: RepeatableState;
+  categoryComment: string;
+  onCategoryComment: (v: string) => void;
   expanded: boolean;
   onToggle: () => void;
   onPatch: (key: string, patch: Partial<ItemValue>) => void;
+  onAddRepeat: (itemKey: string) => void;
+  onPatchRepeat: (itemKey: string, id: string, patch: Partial<{ value: number | null; comment: string }>) => void;
+  onRemoveRepeat: (itemKey: string, id: string) => void;
+  onAddItemPhoto: (itemKey: string, url: string) => void;
+  onRemoveItemPhoto: (itemKey: string, url: string) => void;
 }) {
   return (
     <section style={card}>
@@ -473,32 +548,80 @@ function Category({
       </button>
       {cat.description && <p style={{ color: "#94a3b8", fontSize: 13, marginTop: 8, marginBottom: 0 }}>{cat.description}</p>}
       {expanded && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 16 }}>
-          {cat.items.map((it) => (
-            <ItemRow key={it.itemKey} item={it} unit={unit} items={items} onPatch={onPatch} />
-          ))}
-        </div>
+        <>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 16 }}>
+            {cat.items.map((it) => (
+              <ItemRow
+                key={it.itemKey}
+                item={it}
+                unit={unit}
+                items={items}
+                repeatables={repeatables}
+                onPatch={onPatch}
+                onAddRepeat={onAddRepeat}
+                onPatchRepeat={onPatchRepeat}
+                onRemoveRepeat={onRemoveRepeat}
+                onAddItemPhoto={onAddItemPhoto}
+                onRemoveItemPhoto={onRemoveItemPhoto}
+              />
+            ))}
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <label style={{ display: "block", color: "#f0b429", fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 6 }}>
+              Section comments
+            </label>
+            <textarea
+              value={categoryComment}
+              onChange={(e) => onCategoryComment(e.target.value)}
+              rows={2}
+              placeholder={`Anything else about ${cat.category}?`}
+              style={{ ...inp, resize: "vertical", minHeight: 56, fontSize: 14 }}
+            />
+          </div>
+        </>
       )}
     </section>
   );
 }
 
 function ItemRow({
-  item, unit, items, onPatch,
+  item, unit, items, repeatables, onPatch,
+  onAddRepeat, onPatchRepeat, onRemoveRepeat, onAddItemPhoto, onRemoveItemPhoto,
 }: {
   item: ChecklistItem;
   unit: UnitSpec;
   items: ItemState;
+  repeatables: RepeatableState;
   onPatch: (key: string, patch: Partial<ItemValue>) => void;
+  onAddRepeat: (itemKey: string) => void;
+  onPatchRepeat: (itemKey: string, id: string, patch: Partial<{ value: number | null; comment: string }>) => void;
+  onRemoveRepeat: (itemKey: string, id: string) => void;
+  onAddItemPhoto: (itemKey: string, url: string) => void;
+  onRemoveItemPhoto: (itemKey: string, url: string) => void;
 }) {
+  const v = items[item.itemKey] ?? blank();
+  const photoStrip = item.responseType !== "tire_psi" && item.responseType !== "repeatable_numeric" ? (
+    <PhotoStrip photos={v.photos ?? []} itemKey={item.itemKey} onAdd={onAddItemPhoto} onRemove={onRemoveItemPhoto} />
+  ) : null;
+
   switch (item.responseType) {
-    case "passfail":   return <PassFailRow item={item}  value={items[item.itemKey] ?? blank()} onPatch={onPatch} />;
-    case "status":     return <StatusRow   item={item}  value={items[item.itemKey] ?? blank()} onPatch={onPatch} />;
-    case "fluid":      return <FluidRow    item={item}  value={items[item.itemKey] ?? blank()} onPatch={onPatch} />;
-    case "numeric":    return <NumericRow  item={item}  value={items[item.itemKey] ?? blank()} onPatch={onPatch} />;
-    case "tire_psi":   return <TirePsiRow  unit={unit}  items={items}                          onPatch={onPatch} />;
-    case "stock":      return <StockRow    item={item}  value={items[item.itemKey] ?? blank()} onPatch={onPatch} />;
+    case "passfail":   return <Wrap photos={photoStrip}><PassFailRow item={item}  value={v} onPatch={onPatch} /></Wrap>;
+    case "status":     return <Wrap photos={photoStrip}><StatusRow   item={item}  value={v} onPatch={onPatch} /></Wrap>;
+    case "fluid":      return <Wrap photos={photoStrip}><FluidRow    item={item}  value={v} onPatch={onPatch} /></Wrap>;
+    case "numeric":
+      if (item.itemKey === "fridge_temp") {
+        return <Wrap photos={photoStrip}><FridgeTempRow item={item} value={v} onPatch={onPatch} /></Wrap>;
+      }
+      return <Wrap photos={photoStrip}><NumericRow  item={item}  value={v} onPatch={onPatch} /></Wrap>;
+    case "tire_psi":   return <TirePsiRow  unit={unit}  items={items} onPatch={onPatch} />;
+    case "stock":      return <Wrap photos={photoStrip}><StockRow    item={item}  value={v} onPatch={onPatch} /></Wrap>;
+    case "repeatable_numeric":
+      return <RepeatableNumericRow item={item} entries={repeatables[item.itemKey] ?? []} onAdd={onAddRepeat} onPatch={onPatchRepeat} onRemove={onRemoveRepeat} />;
   }
+}
+
+function Wrap({ photos, children }: { photos: React.ReactNode; children: React.ReactNode }) {
+  return <div>{children}{photos}</div>;
 }
 
 function PassFailRow({ item, value, onPatch }: { item: PassFailItem; value: ItemValue; onPatch: (key: string, patch: Partial<ItemValue>) => void }) {
@@ -621,6 +744,168 @@ function TirePsiRow({ unit, items, onPatch }: { unit: UnitSpec; items: ItemState
         })}
       </div>
     </ItemFrame>
+  );
+}
+
+function FridgeTempRow({ item, value, onPatch }: { item: NumericItem; value: ItemValue; onPatch: (key: string, patch: Partial<ItemValue>) => void }) {
+  const v = value.numericValue;
+  const inRange = v !== null && v >= (item.min ?? 36) && v <= (item.max ?? 46);
+  const tooCold = v !== null && v < (item.min ?? 36);
+  const tooHot = v !== null && v > (item.max ?? 46);
+  const status = v === null ? null : inRange ? "In Range" : (tooCold ? "Too Cold" : "Too Hot");
+  return (
+    <ItemFrame label={item.label} status={status}>
+      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <input
+          type="number"
+          inputMode="decimal"
+          step="0.1"
+          placeholder={`Enter ${item.unitOfMeasure}`}
+          value={v ?? ""}
+          onChange={(e) => onPatch(item.itemKey, { numericValue: e.target.value === "" ? null : Number(e.target.value) })}
+          style={{ ...inp, maxWidth: 180 }}
+        />
+        <span style={{ color: "#94a3b8", fontSize: 14 }}>{item.unitOfMeasure}</span>
+        {v !== null && (
+          <span style={{ fontSize: 28, lineHeight: 1 }} aria-hidden>
+            {inRange ? "👍" : "👎"}
+          </span>
+        )}
+      </div>
+      <p style={{ color: "#64748b", fontSize: 11, marginTop: 6, marginBottom: 0 }}>
+        Acceptable range {item.min}–{item.max} {item.unitOfMeasure}
+      </p>
+      {!inRange && v !== null && (
+        <div style={{ marginTop: 10, background: "rgba(239,68,68,0.10)", border: "1px solid rgba(239,68,68,0.45)", borderRadius: 10, padding: "10px 12px" }}>
+          <div style={{ color: "#fca5a5", fontSize: 12, fontWeight: 900, letterSpacing: "0.10em", textTransform: "uppercase" }}>
+            Notify management
+          </div>
+          <p style={{ color: "#fecaca", fontSize: 13, marginTop: 4, marginBottom: 0 }}>
+            Refrigerator is {tooCold ? "too cold" : "too hot"}. Management will be flagged automatically on the PDF.
+          </p>
+          <input
+            value={value.comment}
+            onChange={(e) => onPatch(item.itemKey, { comment: e.target.value })}
+            placeholder="Add detail (current reading, action taken)…"
+            style={{ ...inp, marginTop: 8, fontSize: 13, background: "#040d1a", border: "1px solid rgba(239,68,68,0.40)" }}
+          />
+        </div>
+      )}
+    </ItemFrame>
+  );
+}
+
+function RepeatableNumericRow({ item, entries, onAdd, onPatch, onRemove }: {
+  item: RepeatableNumericItem;
+  entries: { id: string; value: number | null; comment: string }[];
+  onAdd: (itemKey: string) => void;
+  onPatch: (itemKey: string, id: string, patch: Partial<{ value: number | null; comment: string }>) => void;
+  onRemove: (itemKey: string, id: string) => void;
+}) {
+  return (
+    <ItemFrame label={`${item.label} (${entries.length})`}>
+      <div style={{ display: "grid", gap: 10 }}>
+        {entries.length === 0 && (
+          <p style={{ color: "#94a3b8", fontSize: 12, margin: 0 }}>None added. Tap below to add one.</p>
+        )}
+        {entries.map((e, idx) => {
+          const abnormal =
+            e.value !== null && (
+              (item.min !== undefined && e.value < item.min) ||
+              (item.max !== undefined && e.value > item.max)
+            );
+          return (
+            <div key={e.id} style={{ background: "#040d1a", border: `1px solid ${abnormal ? "rgba(239,68,68,0.40)" : "rgba(255,255,255,0.08)"}`, borderRadius: 10, padding: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                <span style={{ color: "#cbd5e1", fontWeight: 700, fontSize: 13 }}>{item.entryLabel}{idx + 1}</span>
+                {entries.length > 0 && (
+                  <button type="button" onClick={() => onRemove(item.itemKey, e.id)} style={{ background: "transparent", border: 0, color: "#fca5a5", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>
+                    Remove
+                  </button>
+                )}
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder={`Enter ${item.unitOfMeasure}`}
+                  value={e.value ?? ""}
+                  onChange={(ev) => onPatch(item.itemKey, e.id, { value: ev.target.value === "" ? null : Number(ev.target.value) })}
+                  style={{ ...inp, padding: "10px 12px", fontSize: 16 }}
+                />
+                <span style={{ color: "#94a3b8", fontSize: 13 }}>{item.unitOfMeasure}</span>
+              </div>
+              {(item.min !== undefined || item.max !== undefined) && (
+                <p style={{ color: "#64748b", fontSize: 11, marginTop: 6, marginBottom: 0 }}>
+                  Normal range {item.min ?? "?"}–{item.max ?? "?"} {item.unitOfMeasure}
+                </p>
+              )}
+              {abnormal && (
+                <CommentInput value={e.comment} onChange={(c) => onPatch(item.itemKey, e.id, { comment: c })} placeholder="Why is this out of range?" required small />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <button type="button" onClick={() => onAdd(item.itemKey)} style={{ ...addAttendantBtn, marginTop: 10 }}>
+        {item.addButtonLabel}
+      </button>
+    </ItemFrame>
+  );
+}
+
+function PhotoStrip({ photos, itemKey, onAdd, onRemove }: { photos: string[]; itemKey: string; onAdd: (itemKey: string, url: string) => void; onRemove: (itemKey: string, url: string) => void }) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function pick() {
+    const el = inputRef.current;
+    if (!el) return;
+    el.value = "";
+    el.click();
+  }
+  async function onFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      for (const f of Array.from(files)) {
+        const form = new FormData();
+        form.append("file", f);
+        const r = await fetch("/api/truckcheck/photo", { method: "POST", body: form });
+        if (r.ok) {
+          const d = await r.json();
+          onAdd(itemKey, d.url);
+        }
+      }
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed rgba(255,255,255,0.06)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <button type="button" onClick={pick} style={{ ...secondaryBtn, fontSize: 11 }} disabled={uploading}>
+          {uploading ? "Uploading…" : "📷 Add photo"}
+        </button>
+        {photos.length > 0 && (
+          <span style={{ color: "#94a3b8", fontSize: 11 }}>{photos.length} attached</span>
+        )}
+        <input ref={inputRef} type="file" accept="image/*" capture="environment" multiple style={{ display: "none" }} onChange={(e) => onFiles(e.target.files)} />
+      </div>
+      {photos.length > 0 && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+          {photos.map((u) => (
+            <div key={u} style={{ position: "relative", width: 70, height: 70, borderRadius: 8, overflow: "hidden", background: "#040d1a", border: "1px solid rgba(255,255,255,0.10)" }}>
+              <img src={u} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <button type="button" onClick={() => onRemove(itemKey, u)} style={{ position: "absolute", top: 2, right: 2, background: "rgba(0,0,0,0.6)", border: 0, color: "white", padding: "1px 6px", borderRadius: 6, fontSize: 10, fontWeight: 800, cursor: "pointer" }}>
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -759,12 +1044,32 @@ function SummaryRow({ label, value, bad }: { label: string; value: string; bad?:
 
 // ── Build helpers ───────────────────────────────────────────────────────
 
+const secondaryBtn: React.CSSProperties = {
+  background: "transparent",
+  color: "#cbd5e1",
+  border: "1px solid rgba(255,255,255,0.10)",
+  padding: "6px 12px",
+  borderRadius: 10,
+  fontSize: 12,
+  fontWeight: 800,
+  cursor: "pointer",
+  fontFamily: "inherit",
+};
+
+function cryptoRandomId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+
 function init(template: CategoryDef[], unit: UnitSpec): ItemState {
   const map: ItemState = {};
   for (const cat of template) {
     for (const it of cat.items) {
       if (it.responseType === "tire_psi") {
         for (const tp of unit.tires) map[`tire_${tp.key}`] = blank();
+      } else if (it.responseType === "repeatable_numeric") {
+        // Repeatable lives in a separate state map; ItemState stays empty for it.
+        continue;
       } else {
         map[it.itemKey] = blank();
       }
@@ -773,11 +1078,29 @@ function init(template: CategoryDef[], unit: UnitSpec): ItemState {
   return map;
 }
 
-function countAbnormal(template: CategoryDef[], unit: UnitSpec, items: ItemState): number {
-  return flattenForSubmit(template, unit, items).filter((i) => i.isAbnormal).length;
+function initRepeatables(template: CategoryDef[]): RepeatableState {
+  const map: RepeatableState = {};
+  for (const cat of template) {
+    for (const it of cat.items) {
+      if (it.responseType === "repeatable_numeric") {
+        const count = it.defaultCount > 0 ? it.defaultCount : 1;
+        map[it.itemKey] = Array.from({ length: count }, () => ({
+          id: cryptoRandomId(),
+          value: null,
+          comment: "",
+          checkedAt: null,
+        }));
+      }
+    }
+  }
+  return map;
 }
-function countFails(template: CategoryDef[], unit: UnitSpec, items: ItemState): number {
-  return flattenForSubmit(template, unit, items).filter((i) => i.status === "Fail" || i.status === "Missing" || i.status === "Discrepancy" || i.status === "Expired Found" || i.status === "Out of Range").length;
+
+function countAbnormal(template: CategoryDef[], unit: UnitSpec, items: ItemState, repeatables: RepeatableState): number {
+  return flattenForSubmit(template, unit, items, repeatables).filter((i) => i.isAbnormal).length;
+}
+function countFails(template: CategoryDef[], unit: UnitSpec, items: ItemState, repeatables: RepeatableState): number {
+  return flattenForSubmit(template, unit, items, repeatables).filter((i) => i.status === "Fail" || i.status === "Missing" || i.status === "Discrepancy" || i.status === "Expired Found" || i.status === "Out of Range" || i.status === "Too Cold" || i.status === "Too Hot").length;
 }
 
 interface FlatItem {
@@ -791,6 +1114,7 @@ interface FlatItem {
   amountAdded: number | null;
   amountUnit: string | null;
   comment: string;
+  photos: string[];
   isAbnormal: boolean;
   requiresFollowUp: boolean;
   trendGroup: string | null;
@@ -801,7 +1125,7 @@ interface FlatItem {
   requireNumeric: boolean;
 }
 
-function flattenForSubmit(template: CategoryDef[], unit: UnitSpec, items: ItemState): FlatItem[] {
+function flattenForSubmit(template: CategoryDef[], unit: UnitSpec, items: ItemState, repeatables: RepeatableState): FlatItem[] {
   const out: FlatItem[] = [];
   const now = new Date().toISOString();
   for (const cat of template) {
@@ -824,6 +1148,7 @@ function flattenForSubmit(template: CategoryDef[], unit: UnitSpec, items: ItemSt
             amountAdded: null,
             amountUnit: null,
             comment: v.comment,
+            photos: v.photos ?? [],
             isAbnormal: !!abnormal,
             requiresFollowUp: !!abnormal,
             trendGroup: "tire_psi",
@@ -831,6 +1156,37 @@ function flattenForSubmit(template: CategoryDef[], unit: UnitSpec, items: ItemSt
             requireComment: !!abnormal,
             requireAmount: false,
             requireNumeric: false,
+          });
+        }
+        continue;
+      }
+      if (it.responseType === "repeatable_numeric") {
+        const list = repeatables[it.itemKey] ?? [];
+        for (let i = 0; i < list.length; i++) {
+          const e = list[i];
+          const abnormal = e.value !== null && (
+            (it.min !== undefined && e.value < it.min) ||
+            (it.max !== undefined && e.value > it.max)
+          );
+          out.push({
+            itemKey: `${it.itemKey}_${i + 1}`,
+            label: `${it.entryLabel}${i + 1}`,
+            category: it.category,
+            responseType: "numeric",
+            status: e.value === null ? null : abnormal ? "Abnormal" : "OK",
+            numericValue: e.value,
+            unitOfMeasure: it.unitOfMeasure,
+            amountAdded: null,
+            amountUnit: null,
+            comment: e.comment,
+            photos: [],
+            isAbnormal: !!abnormal,
+            requiresFollowUp: !!abnormal,
+            trendGroup: it.trendGroup ?? null,
+            checkedAt: e.checkedAt ?? now,
+            requireComment: !!abnormal,
+            requireAmount: false,
+            requireNumeric: i === 0 && list.length === 1 ? false : false,
           });
         }
         continue;
@@ -874,17 +1230,27 @@ function flattenForSubmit(template: CategoryDef[], unit: UnitSpec, items: ItemSt
         if (v.status === "Restocked") requireAmount = true;
       }
 
+      // Special: fridge_temp gets a derived status pill (In Range / Too Cold / Too Hot)
+      let status: string | null = v.status;
+      if (it.itemKey === "fridge_temp" && numericVal !== null) {
+        const ni = it as NumericItem;
+        if (ni.min !== undefined && numericVal < ni.min) status = "Too Cold";
+        else if (ni.max !== undefined && numericVal > ni.max) status = "Too Hot";
+        else status = "In Range";
+      }
+
       out.push({
         itemKey: it.itemKey,
         label: it.label,
         category: it.category,
         responseType: it.responseType,
-        status: v.status,
+        status,
         numericValue: numericVal,
         unitOfMeasure,
         amountAdded: v.amountAdded,
         amountUnit,
         comment: v.comment,
+        photos: v.photos ?? [],
         isAbnormal: abnormal,
         requiresFollowUp: abnormal,
         trendGroup: it.trendGroup ?? null,

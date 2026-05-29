@@ -23,21 +23,20 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { href: "/lounge",              label: "The Wall",        emoji: "📰", eyebrow: "Home" },
-  { href: "/lounge/about-me",     label: "About Me",        emoji: "🪪" },
+  { href: "/lounge",              label: "The Wall",         emoji: "📰", eyebrow: "Home" },
+  { href: "/lounge/about-me",     label: "About Me",         emoji: "🪪" },
   { href: "/lounge/my-file",      label: "My Employee File", emoji: "🗂️" },
-  { href: "/lounge/open-shifts",  label: "Open Shifts",     emoji: "📅" },
-  { href: "/lounge/acks",         label: "Acknowledgments", emoji: "✅" },
+  { href: "/lounge/messages",     label: "Messages",         emoji: "💬" },
+  { href: "/lounge/open-shifts",  label: "Open Shifts",      emoji: "📅" },
+  { href: "/lounge/acks",         label: "Acknowledgments",  emoji: "✅" },
   { href: "/lounge/incidents",    label: "Maintenance & Reports", emoji: "🛠️" },
   { href: "/lounge/certs",        label: "My Certifications",     emoji: "🎓" },
   { href: "/api/lounge/sso/truckcheck", label: "Truck Check", emoji: "🚑", external: true },
   { href: "/api/lounge/sso/inventory",  label: "Inventory",   emoji: "📦", external: true },
-  { href: "/admin",                       label: "Site Admin",         emoji: "🛠", adminOnly: true },
-  { href: "/admin/employees",             label: "Employee Records",   emoji: "👥", adminOnly: true },
-  { href: "/admin/classes",               label: "Classes & Roles",    emoji: "📚", adminOnly: true },
-  { href: "/admin/cert-types",            label: "Cert Types",         emoji: "📜", adminOnly: true },
-  { href: "/admin/truckcheck-dashboard",  label: "Truck Check Insights", emoji: "📊", adminOnly: true },
-  { href: "/admin/personnel-dashboard",   label: "Personnel Dashboard",  emoji: "🔒", adminOnly: true },
+  // Admin section — collapsed.
+  { href: "/admin/employees",             label: "Employee Records",     emoji: "👥", adminOnly: true },
+  { href: "/admin/admin-tools",           label: "Admin Tools",          emoji: "🧰", adminOnly: true },
+  { href: "/admin/website-config",        label: "Website Configuration", emoji: "⚙️", adminOnly: true },
 ];
 
 export default function LoungeShell({

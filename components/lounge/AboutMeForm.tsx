@@ -28,6 +28,7 @@ interface ProfileInitial {
   jacketSize: string;
   allergies: string;
   medicalConditions: string;
+  bloodType: string;
   profileCompletedAt: string | null;
 }
 
@@ -68,6 +69,7 @@ export default function AboutMeForm({ initial }: { initial: ProfileInitial }) {
           jacketSize: form.jacketSize,
           allergies: form.allergies,
           medicalConditions: form.medicalConditions,
+          bloodType: form.bloodType,
         }),
       });
       setSaved(res.ok ? "ok" : "err");
@@ -137,6 +139,10 @@ export default function AboutMeForm({ initial }: { initial: ProfileInitial }) {
       </Card>
 
       <Card title="Medical">
+        <Grid>
+          <Field label="Blood type" value={form.bloodType} onChange={(v) => set("bloodType", v)} placeholder="O+, A-, AB+…" />
+        </Grid>
+        <div style={{ height: 12 }} />
         <Field full label="Allergies" value={form.allergies}
           onChange={(v) => set("allergies", v)} placeholder="None, latex, penicillin…" />
         <div style={{ height: 12 }} />

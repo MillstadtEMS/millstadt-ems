@@ -30,6 +30,7 @@ interface SubmittedItem {
   amountAdded: number | null;
   amountUnit: string | null;
   comment: string;
+  photos?: string[];
   isAbnormal: boolean;
   requiresFollowUp: boolean;
   trendGroup: string | null;
@@ -61,6 +62,30 @@ export async function POST(req: NextRequest) {
   const photos: { url: string; caption: string | null; itemKey?: string }[] = Array.isArray(body.photos)
     ? body.photos.filter((p: { url?: string }) => typeof p?.url === "string")
     : [];
+
+  // Roll per-item photo URLs in alongside global photos so the dashboard
+  // and PDF still see them all.
+  for (const it of itemsIn) {
+    if (Array.isArray(it.photos)) {
+      for (const u of it.photos) {
+        if (typeof u === "string" && !photos.some((p) => p.url === u)) {
+          photos.push({ url: u, caption: it.label, itemKey: it.itemKey });
+        }
+      }
+    }
+  }
+
+  const categoryComments: Record<string, string> =
+    body.categoryComments && typeof body.categoryComments === "object" && !Array.isArray(body.categoryComments)
+      ? Object.fromEntries(
+          Object.entries(body.categoryComments as Record<string, unknown>)
+            .filter(([, v]) => typeof v === "string" && (v as string).trim().length > 0)
+            .map(([k, v]) => [k, (v as string).trim()]),
+        )
+      : {};
+  const refillRequest: string | null = typeof body.refillRequest === "string" && body.refillRequest.trim().length > 0
+    ? body.refillRequest.trim()
+    : null;
   interface AttendantIn { id?: string | null; name?: string; signature?: string }
   const additionalAttendants: { id: string | null; name: string; signatureDataUrl: string | null }[] = Array.isArray(body.attendants)
     ? (body.attendants as AttendantIn[])
@@ -136,7 +161,9 @@ export async function POST(req: NextRequest) {
             flag,
             photoUrls: photos.map((p) => p.url),
             additionalAttendants: additionalAttendants.map((a) => ({ id: a.id, name: a.name })),
-            formVersion: 3,
+            categoryComments,
+            refillRequest,
+            formVersion: 4,
           })}::jsonb,
           ${startedAt}::timestamptz, ${durationSeconds}, ${overallStatus}, ${flag.flag}, ${JSON.stringify(flag.reasons)}::jsonb,
           ${additionalAttendants[0]?.id ?? null}, ${additionalAttendants[0]?.name ?? null}, ${null}, ${String(body.notes || "").trim() || null}
@@ -214,6 +241,8 @@ export async function POST(req: NextRequest) {
       pencilWhipReasons: flag.reasons,
       overallStatus,
       notes: String(body.notes || ""),
+      categoryComments,
+      refillRequest,
       items: itemsIn,
       photos,
       signatureDataUrl: String(body.attendant1Signature || "") || null,

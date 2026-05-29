@@ -37,7 +37,7 @@ export interface FeedPost {
   id: string;
   author: FeedAuthor;
   body: string;
-  media: { url: string; kind: "image" | "file"; name?: string }[];
+  media: { url: string; kind: "image" | "video" | "file"; name?: string }[];
   pinned: boolean;
   highlighted: boolean;
   savedByMe: boolean;
@@ -67,11 +67,16 @@ interface DbPostRow {
 function parseMedia(v: unknown): FeedPost["media"] {
   if (!v) return [];
   if (Array.isArray(v)) {
-    return v.filter((m) => m && typeof m === "object" && "url" in m).map((m) => ({
-      url: String((m as { url: unknown }).url ?? ""),
-      kind: ((m as { kind?: string }).kind === "file" ? "file" : "image") as "image" | "file",
-      name: (m as { name?: string }).name,
-    }));
+    return v.filter((m) => m && typeof m === "object" && "url" in m).map((m) => {
+      const k = (m as { kind?: string }).kind;
+      const kind: "image" | "video" | "file" =
+        k === "video" ? "video" : k === "file" ? "file" : "image";
+      return {
+        url: String((m as { url: unknown }).url ?? ""),
+        kind,
+        name: (m as { name?: string }).name,
+      };
+    });
   }
   return [];
 }

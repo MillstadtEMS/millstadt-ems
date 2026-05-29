@@ -18,6 +18,8 @@ export interface PdfInput {
   pencilWhipReasons: { code: string; message: string; severity: string }[];
   overallStatus: string;
   notes: string;
+  categoryComments?: Record<string, string>;
+  refillRequest?: string | null;
   items: {
     category: string;
     label: string;
@@ -144,7 +146,59 @@ export async function buildTruckCheckPdf(input: PdfInput): Promise<Buffer> {
       },
     });
     // @ts-expect-error jspdf-autotable extends `lastAutoTable` on the document.
-    y = (doc.lastAutoTable?.finalY ?? y) + 18;
+    y = (doc.lastAutoTable?.finalY ?? y) + 10;
+
+    // Section comments under each category, if present
+    const sectionComment = input.categoryComments?.[cat];
+    if (sectionComment) {
+      if (y > 720) { doc.addPage(); y = 48; }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(217, 119, 6);
+      doc.text("Section comments:", 48, y); y += 12;
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(60);
+      const lines = doc.splitTextToSize(sectionComment, W - 96);
+      doc.text(lines, 48, y);
+      y += 11 * lines.length + 6;
+    }
+
+    // Management-notify flag for the fridge specifically
+    const fridge = list.find((i) => i.label.toLowerCase().startsWith("refrigerator temperature"));
+    if (fridge && fridge.isAbnormal) {
+      if (y > 720) { doc.addPage(); y = 48; }
+      doc.setFillColor(220, 38, 38);
+      doc.roundedRect(48, y, W - 96, 22, 4, 4, "F");
+      doc.setTextColor(255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text(
+        `NOTIFY MANAGEMENT — Refrigerator out of range (${fridge.numericValue}°F). Acceptable 36–46°F.`,
+        58,
+        y + 15,
+      );
+      y += 32;
+    }
+
+    y += 8;
+  }
+
+  // Refill request
+  if (input.refillRequest) {
+    if (y > 680) { doc.addPage(); y = 48; }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(20, 30, 60);
+    doc.text("Vehicle Equipment / Maintenance Refill Request", 48, y); y += 14;
+    doc.setFillColor(254, 243, 199);
+    const refillLines = doc.splitTextToSize(input.refillRequest, W - 116);
+    const boxH = 18 + 12 * refillLines.length;
+    doc.roundedRect(48, y, W - 96, boxH, 6, 6, "F");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(75, 41, 12);
+    doc.text(refillLines, 58, y + 16);
+    y += boxH + 18;
   }
 
   // Notes

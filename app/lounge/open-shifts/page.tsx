@@ -9,7 +9,7 @@ interface Resp {
   firstName: string;
   lastName: string;
   certification: string | null;
-  response: "available" | "unavailable";
+  response: "available" | "unavailable" | "bid";
   note: string | null;
   createdAt: string;
 }
@@ -56,7 +56,7 @@ export default function OpenShiftsPage() {
     setShifts((s) => s.map((x) => (x.id === updated.id ? updated : x)));
   }
 
-  async function respond(id: string, response: "available" | "unavailable", note?: string) {
+  async function respond(id: string, response: "available" | "unavailable" | "bid", note?: string) {
     const res = await fetch(`/api/lounge/open-shifts/${id}/respond`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -217,7 +217,7 @@ function ShiftCard({
 }: {
   shift: Shift;
   me: { id: string; isAdmin: boolean };
-  onRespond: (r: "available" | "unavailable", note?: string) => void;
+  onRespond: (r: "available" | "unavailable" | "bid", note?: string) => void;
   onAward: (uid: string) => void;
   onCancel: () => void;
   onDelete: () => void;
@@ -253,9 +253,9 @@ function ShiftCard({
         {shift.body}
       </p>
 
-      {/* User response controls */}
-      {isOpen && (
-        <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+      {/* Employee response controls (accept / bid / deny) */}
+      {isOpen && !me.isAdmin && (
+        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button
             type="button"
             onClick={() => onRespond("available")}
@@ -265,7 +265,19 @@ function ShiftCard({
               color: "#040d1a",
             }}
           >
-            {shift.myResponse?.response === "available" ? "✓ Available" : "I'm Available"}
+            {shift.myResponse?.response === "available" ? "✓ Accepted" : "Accept"}
+          </button>
+          <button
+            type="button"
+            onClick={() => onRespond("bid")}
+            style={{
+              ...goldBtn,
+              background: shift.myResponse?.response === "bid" ? "#38bdf8" : "rgba(56,189,248,0.20)",
+              color: shift.myResponse?.response === "bid" ? "#040d1a" : "#7dd3fc",
+              border: "1px solid rgba(56,189,248,0.30)",
+            }}
+          >
+            {shift.myResponse?.response === "bid" ? "✓ Bidding" : "Place Bid"}
           </button>
           <button
             type="button"
@@ -276,8 +288,13 @@ function ShiftCard({
               color: shift.myResponse?.response === "unavailable" ? "#fca5a5" : "#94a3b8",
             }}
           >
-            Unavailable
+            {shift.myResponse?.response === "unavailable" ? "✓ Declined" : "Deny"}
           </button>
+        </div>
+      )}
+      {isOpen && me.isAdmin && (
+        <div style={{ marginTop: 12, color: "#94a3b8", fontSize: 12 }}>
+          Admins post shifts; only employees accept, bid, or deny.
         </div>
       )}
 

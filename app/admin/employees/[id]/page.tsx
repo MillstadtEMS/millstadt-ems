@@ -40,6 +40,7 @@ interface EmpDto {
   jacketSize: string | null;
   allergies: string | null;
   medicalConditions: string | null;
+  bloodType: string | null;
   profileCompletedAt: string | null;
 }
 interface FileDto {
@@ -403,7 +404,10 @@ export default function EmployeeDetailPage() {
           </FormGrid>
 
           <SubHeading>Medical</SubHeading>
-          <InlineField    label="Allergies"          value={emp.allergies ?? ""}          onSave={(v) => patch({ allergies: v || null })} />
+          <FormGrid>
+            <InlineField label="Blood type" value={emp.bloodType ?? ""} onSave={(v) => patch({ bloodType: v || null })} />
+            <InlineField label="Allergies"  value={emp.allergies ?? ""}  onSave={(v) => patch({ allergies: v || null })} />
+          </FormGrid>
           <InlineTextarea label="Medical conditions" value={emp.medicalConditions ?? ""} onSave={(v) => patch({ medicalConditions: v || null })} />
         </Card>
 

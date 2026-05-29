@@ -99,6 +99,22 @@ export default function Nav() {
             <WeatherTicker />
           </div>
 
+          {/* Employee Lounge button (left of menu) */}
+          <Link
+            href="/lounge"
+            aria-label="Employee Lounge"
+            className="lounge-hover-expand shrink-0 flex flex-col items-center group relative"
+            style={{ marginRight: 6 }}
+          >
+            <img
+              src="/lounge/lounge-button.png"
+              alt=""
+              className="lounge-hover-expand-img"
+              style={{ height: "clamp(36px, 4.6vw, 52px)", width: "auto", display: "block", transition: "transform 0.22s cubic-bezier(0.22,1.2,0.36,1), filter 0.22s" }}
+            />
+            <div className="text-[9px] text-[#f0b429] uppercase tracking-widest font-black mt-0.5">Lounge</div>
+          </Link>
+
           {/* Ambulance menu button */}
           <div className="flex shrink-0 flex-col items-center">
             <button
