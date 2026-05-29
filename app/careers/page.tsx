@@ -60,7 +60,7 @@ const positions = [
   {
     title: "Critical Care Paramedic",
     badge: "CCP",
-    badgeColor: "text-[#2563eb] border-[#2563eb]/30 bg-[#2563eb]/10",
+    badgeColor: "text-sky-300 border-sky-300/30 bg-sky-300/10",
     description:
       "CCPs manage complex interfacility transports and high-acuity 911 calls requiring skills beyond the standard ALS scope — ventilator management, vasoactive infusions, and advanced monitoring.",
     responsibilities: [

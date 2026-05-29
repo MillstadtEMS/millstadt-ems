@@ -6,6 +6,7 @@ import {
   VEHICLE_CATEGORIES,
   BUILDING_CATEGORIES,
 } from "@/lib/lounge/maintenance";
+import { notifyAdminsInLounge, emailAdmins } from "@/lib/lounge/notify-admins";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,6 +56,37 @@ export async function POST(req: NextRequest) {
     summary,
     details: typeof body.details === "string" ? body.details.trim() || null : null,
   });
+
+  // Best-effort admin fan-out (lounge bell + millstadtems@gmail.com inbox).
+  // Excludes the submitter when they're an admin so they don't badge themselves.
+  const categoryLabel = customCategory || category;
+  const unitLabel = typeof body.unitOrLocation === "string" ? body.unitOrLocation.trim() : "";
+  const headline = `${kind === "vehicle" ? "Vehicle" : "Building"} — ${categoryLabel}${unitLabel ? ` · ${unitLabel}` : ""}`;
+  try {
+    await notifyAdminsInLounge({
+      kind: "post",
+      title: `New maintenance ticket — ${categoryLabel}`,
+      bodyPreview: summary.slice(0, 180),
+      linkUrl: "/lounge/maintenance",
+      sourceId: request.id,
+      actorId: me.id,
+      exceptIds: [me.id],
+    });
+  } catch (err) {
+    console.error("Maintenance admin notification failed:", err);
+  }
+  try {
+    await emailAdmins({
+      kicker: "Maintenance",
+      headline,
+      meta: `Submitted by ${me.firstName} ${me.lastName} · ${new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`,
+      bodyText: summary + (typeof body.details === "string" && body.details.trim() ? `\n\n${body.details.trim()}` : ""),
+      link: { url: "https://millstadtems.org/lounge/maintenance", label: "Open in lounge" },
+      subject: `Maintenance — ${categoryLabel}${unitLabel ? ` · ${unitLabel}` : ""}`,
+    });
+  } catch (err) {
+    console.error("Maintenance admin email failed:", err);
+  }
 
   return NextResponse.json({ ok: true, request });
 }

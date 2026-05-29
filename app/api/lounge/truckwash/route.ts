@@ -6,6 +6,7 @@ import {
   TRUCK_WASH_UNITS,
   TRUCK_WASH_EXEMPT_REASONS,
 } from "@/lib/lounge/truckwash";
+import { notifyAdminsInLounge, emailAdmins } from "@/lib/lounge/notify-admins";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -88,6 +89,41 @@ export async function POST(req: NextRequest) {
     crew,
     notes: typeof body.notes === "string" ? body.notes.trim() || null : null,
   });
+
+  // Best-effort admin fan-out (lounge bell + millstadtems@gmail.com inbox).
+  const verb = exempt ? "Exempt" : "Washed";
+  const crewLine = crew.map((c) => `${c.firstName} ${c.lastName}`).join(", ");
+  const notesLine = typeof body.notes === "string" ? body.notes.trim() : "";
+  const summaryText =
+    `${verb} ${unit} on ${new Date(washedAt).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}.` +
+    (exempt && exemptReason ? `\nExempt reason: ${exemptReason}.` : "") +
+    `\nCrew: ${crewLine}.` +
+    (notesLine ? `\nNotes: ${notesLine}` : "");
+  try {
+    await notifyAdminsInLounge({
+      kind: "post",
+      title: `${verb} — ${unit}`,
+      bodyPreview: (notesLine || crewLine).slice(0, 180),
+      linkUrl: "/admin/truckwash",
+      sourceId: log.id,
+      actorId: me.id,
+      exceptIds: [me.id],
+    });
+  } catch (err) {
+    console.error("Truck wash admin notification failed:", err);
+  }
+  try {
+    await emailAdmins({
+      kicker: "Truck wash",
+      headline: `${verb} — ${unit}`,
+      meta: `Submitted by ${me.firstName} ${me.lastName}`,
+      bodyText: summaryText,
+      link: { url: "https://millstadtems.org/admin/truckwash", label: "Open admin log" },
+      subject: `Truck wash ${exempt ? "(exempt)" : "logged"} — ${unit}`,
+    });
+  } catch (err) {
+    console.error("Truck wash admin email failed:", err);
+  }
 
   return NextResponse.json({ ok: true, log });
 }

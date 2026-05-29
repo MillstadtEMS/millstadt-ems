@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentEmployee } from "@/lib/lounge/auth";
 import { createSuggestion } from "@/lib/lounge/hospital-suggestions";
+import { notifyAdminsInLounge, emailAdmins } from "@/lib/lounge/notify-admins";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,6 +29,31 @@ export async function POST(req: NextRequest) {
       kind: "code_change",
       payload: { codeKind, newValue, note: note || null },
     });
+    try {
+      await notifyAdminsInLounge({
+        kind: "post",
+        title: `Code change — ${codeKind}`,
+        bodyPreview: `${codeKind}: ${newValue}${note ? ` — ${note}` : ""}`.slice(0, 180),
+        linkUrl: "/admin/hospitals/suggestions",
+        sourceId: created.id,
+        actorId: me.id,
+        exceptIds: [me.id],
+      });
+    } catch (err) {
+      console.error("Hospital suggestion notification failed:", err);
+    }
+    try {
+      await emailAdmins({
+        kicker: "Hospital code change",
+        headline: `${codeKind} update suggested`,
+        meta: `Submitted by ${me.firstName} ${me.lastName}`,
+        bodyText: `Suggested ${codeKind}: ${newValue}${note ? `\n\nNote: ${note}` : ""}`,
+        link: { url: "https://millstadtems.org/admin/hospitals/suggestions", label: "Review in admin" },
+        subject: `Hospital ${codeKind} update — pending review`,
+      });
+    } catch (err) {
+      console.error("Hospital suggestion email failed:", err);
+    }
     return NextResponse.json({ ok: true, suggestion: created });
   }
 
@@ -55,5 +81,35 @@ export async function POST(req: NextRequest) {
     kind: "new_facility",
     payload,
   });
+  try {
+    await notifyAdminsInLounge({
+      kind: "post",
+      title: `New facility suggested — ${payload.name}`,
+      bodyPreview: `${payload.name} · ${payload.city}, ${payload.state}`.slice(0, 180),
+      linkUrl: "/admin/hospitals/suggestions",
+      sourceId: created.id,
+      actorId: me.id,
+      exceptIds: [me.id],
+    });
+  } catch (err) {
+    console.error("Hospital suggestion notification failed:", err);
+  }
+  try {
+    await emailAdmins({
+      kicker: "New hospital",
+      headline: `${payload.name} — ${payload.city}, ${payload.state}`,
+      meta: `Submitted by ${me.firstName} ${me.lastName}`,
+      bodyText:
+        `Address: ${payload.address}\n` +
+        `Primary line: ${payload.primaryLabel} — ${payload.primaryPhone}` +
+        (payload.doorCode ? `\nDoor code: ${payload.doorCode}` : "") +
+        (payload.emsRoomCode ? `\nEMS room code: ${payload.emsRoomCode}` : "") +
+        (payload.note ? `\n\nNote: ${payload.note}` : ""),
+      link: { url: "https://millstadtems.org/admin/hospitals/suggestions", label: "Review in admin" },
+      subject: `New facility suggestion — ${payload.name}`,
+    });
+  } catch (err) {
+    console.error("Hospital suggestion email failed:", err);
+  }
   return NextResponse.json({ ok: true, suggestion: created });
 }
