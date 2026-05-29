@@ -15,15 +15,35 @@ export default function LoungeLogin() {
   const [code, setCode] = useState("");
   const [qr, setQr] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
+  const [setupError, setSetupError] = useState<string | null>(null);
 
-  // When we transition to setup_2fa, fetch the QR + secret.
+  // When we transition to setup_2fa, fetch the otpauth URL + secret, then
+  // render the QR client-side so a server-side qrcode failure can never
+  // strand the user on "Loading QR…".
   useEffect(() => {
     if (step !== "setup_2fa") return;
-    fetch("/api/lounge/setup-2fa")
-      .then(async (r) => r.ok ? r.json() : null)
-      .then((d) => {
-        if (d) { setQr(d.qr); setSecret(d.secret); }
-      });
+    let cancelled = false;
+    (async () => {
+      setSetupError(null);
+      try {
+        const r = await fetch("/api/lounge/setup-2fa");
+        if (!r.ok) {
+          const d = await r.json().catch(() => ({}));
+          if (!cancelled) setSetupError(d.error || `Couldn't load setup (${r.status}). Refresh and try again.`);
+          return;
+        }
+        const d = await r.json();
+        if (cancelled) return;
+        setSecret(d.secret);
+        // Lazy-import qrcode so SSR doesn't bundle it.
+        const QR = (await import("qrcode")).default;
+        const dataUrl = await QR.toDataURL(d.otpauth, { margin: 1, width: 260, errorCorrectionLevel: "M" });
+        if (!cancelled) setQr(dataUrl);
+      } catch (err) {
+        if (!cancelled) setSetupError(err instanceof Error ? err.message : "Couldn't load setup. Refresh and try again.");
+      }
+    })();
+    return () => { cancelled = true; };
   }, [step]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -93,15 +113,18 @@ export default function LoungeLogin() {
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              width: 72,
-              height: 72,
-              borderRadius: 18,
-              background: "rgba(240,180,41,0.10)",
-              border: "1px solid rgba(240,180,41,0.22)",
-              marginBottom: 18,
+              width: 132,
+              height: 132,
+              marginBottom: 14,
+              filter: "drop-shadow(0 10px 28px rgba(0,0,0,0.6)) drop-shadow(0 0 28px rgba(60,120,255,0.35))",
             }}
           >
-            <LoungeIcon />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/millstadt-ems/crest.png"
+              alt="Millstadt EMS"
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+            />
           </div>
           <h1
             style={{
@@ -198,8 +221,10 @@ export default function LoungeLogin() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={qr} alt="2FA setup QR code" style={{ width: 220, height: 220, background: "white", borderRadius: 12, padding: 8 }} />
               </div>
+            ) : setupError ? (
+              <ErrorBanner>{setupError}</ErrorBanner>
             ) : (
-              <div style={{ color: "#94a3b8", textAlign: "center", padding: 22 }}>Loading QR…</div>
+              <div style={{ color: "#94a3b8", textAlign: "center", padding: 22 }}>Generating QR…</div>
             )}
             {secret && (
               <div style={{ color: "#94a3b8", fontSize: 11, textAlign: "center" }}>
@@ -298,31 +323,3 @@ const buttonStyle: React.CSSProperties = {
   fontFamily: "inherit",
 };
 
-function LoungeIcon() {
-  return (
-    <svg viewBox="0 0 32 32" width="36" height="36" fill="none" aria-hidden>
-      <rect x="14" y="2" width="4" height="28" rx="2" fill="white" opacity="0.9" />
-      <rect
-        x="14"
-        y="2"
-        width="4"
-        height="28"
-        rx="2"
-        fill="white"
-        opacity="0.9"
-        transform="rotate(60 16 16)"
-      />
-      <rect
-        x="14"
-        y="2"
-        width="4"
-        height="28"
-        rx="2"
-        fill="white"
-        opacity="0.9"
-        transform="rotate(120 16 16)"
-      />
-      <circle cx="16" cy="16" r="3" fill="#f0b429" />
-    </svg>
-  );
-}

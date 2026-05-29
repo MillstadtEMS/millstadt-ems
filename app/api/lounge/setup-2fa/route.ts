@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import QRCode from "qrcode";
 import {
   cookieOptions,
   findEmployeeById,
@@ -14,9 +13,11 @@ import {
 import { generateSecret, otpauthUrl, verifyCode } from "@/lib/lounge/totp";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-// GET — issue (or reuse) a TOTP secret for a preauth-authenticated user and
-// return the otpauth URL + QR data URL so they can scan.
+// GET — issue (or reuse) a TOTP secret for a preauth-authenticated user.
+// The client generates the QR from the returned otpauth:// URL — that
+// avoids any server-side QR library failure leaving the user stuck.
 export async function GET(req: NextRequest) {
   const cookie = req.cookies.get(LOUNGE_PREAUTH_COOKIE_NAME)?.value;
   const session = cookie ? verifyPreauthToken(cookie) : null;
@@ -38,8 +39,7 @@ export async function GET(req: NextRequest) {
     account: `${emp.firstName}.${emp.lastName}`.toLowerCase(),
     secret,
   });
-  const qr = await QRCode.toDataURL(otp, { margin: 1, width: 260 });
-  return NextResponse.json({ otpauth: otp, secret, qr });
+  return NextResponse.json({ otpauth: otp, secret });
 }
 
 // POST { code } — verify the code, mark enrolled, issue the real session cookie.
