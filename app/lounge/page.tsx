@@ -17,6 +17,16 @@ import CoffeePrankOverlay from "@/components/lounge/CoffeePrankOverlay";
 
 const PRANK_USERNAMES = new Set(["kwetzel", "jgoetz"]);
 
+// Per-employee welcome-screen image overrides. Drop a PNG at
+// /lounge/welcome-overrides/<username>.png and add the username to
+// the map below to replace the EMS crest for that one person.
+const WELCOME_IMAGE_OVERRIDES: Record<string, string> = {
+  dspencer: "/lounge/welcome-overrides/dylan-spencer.png",
+};
+function welcomeOverrideFor(username: string): string | null {
+  return WELCOME_IMAGE_OVERRIDES[username] ?? null;
+}
+
 export const dynamic = "force-dynamic";
 
 export default async function LoungeHome() {
@@ -83,7 +93,7 @@ export default async function LoungeHome() {
 
       {PRANK_USERNAMES.has(session.username)
         ? <CoffeePrankOverlay name={session.firstName} />
-        : <WelcomeOverlay name={session.firstName} />}
+        : <WelcomeOverlay name={session.firstName} customImage={welcomeOverrideFor(session.username)} />}
     </LoungeShell>
   );
 }

@@ -34,14 +34,19 @@ export async function POST(req: NextRequest) {
   if (role === "admin") {
     emp = (await findEmployeeByUsername("kjames")) ?? (await findEmployeeByUsername("jgoetz"));
   } else {
-    const db = sql();
-    const rows = (await db`
-      SELECT username FROM lounge_employees
-      WHERE is_admin = FALSE AND is_active = TRUE
-      ORDER BY last_name, first_name
-      LIMIT 1
-    `) as unknown as { username: string }[];
-    if (rows[0]) emp = await findEmployeeByUsername(rows[0].username);
+    // Dev "employee" slot is pinned to Dylan Spencer so we always test
+    // against his account (and his custom welcome image).
+    emp = await findEmployeeByUsername("dspencer");
+    if (!emp) {
+      const db = sql();
+      const rows = (await db`
+        SELECT username FROM lounge_employees
+        WHERE is_admin = FALSE AND is_active = TRUE
+        ORDER BY last_name, first_name
+        LIMIT 1
+      `) as unknown as { username: string }[];
+      if (rows[0]) emp = await findEmployeeByUsername(rows[0].username);
+    }
   }
   if (!emp) {
     return NextResponse.json({ error: "No matching employee found" }, { status: 404 });

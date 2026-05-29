@@ -21,9 +21,10 @@ const CREST_SRC = "/images/millstadt-ems/crest.png";
  * sessionStorage flag is cleared so refreshes don't replay it.
  */
 const TOTAL_MS = 5500;
-export default function WelcomeOverlay({ name }: { name: string }) {
+export default function WelcomeOverlay({ name, customImage }: { name: string; customImage?: string | null }) {
   const [phase, setPhase] = useState<"idle" | "playing" | "done">("idle");
   const [crestOk, setCrestOk] = useState(true);
+  const imageSrc = customImage || CREST_SRC;
 
   useEffect(() => {
     let active = false;
@@ -97,7 +98,7 @@ export default function WelcomeOverlay({ name }: { name: string }) {
           {crestOk ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={CREST_SRC}
+              src={imageSrc}
               alt=""
               onError={() => setCrestOk(false)}
               style={{
