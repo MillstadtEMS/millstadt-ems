@@ -21,35 +21,35 @@ interface NavItem {
   href: string;
   label: string;
   eyebrow?: string;
-  emoji: string;
+  icon: LoungeIconName;
   external?: boolean; // routes outside /lounge that need SSO
   adminOnly?: boolean;
 }
 
 const NAV: NavItem[] = [
-  { href: "/lounge",              label: "The Wall",         emoji: "📰", eyebrow: "Home" },
-  { href: "/lounge/notifications", label: "Notifications",   emoji: "🔔" },
-  { href: "/lounge/games",        label: "Games",            emoji: "🎮" },
-  { href: "/lounge/about-me",     label: "About Me",         emoji: "🪪" },
-  { href: "/lounge/certs",        label: "My Certifications", emoji: "📜" },
-  { href: "/lounge/my-file",      label: "My Employee File", emoji: "🗂️" },
-  { href: "/lounge/messages",     label: "Messages",         emoji: "💬" },
-  { href: "/lounge/acks",         label: "Acknowledgments",  emoji: "✅" },
-  { href: "/lounge/incidents",    label: "Incident Reports",   emoji: "🚨" },
-  { href: "/lounge/maintenance",  label: "Maintenance Request", emoji: "🛠️" },
-  { href: "/lounge/truckwash",    label: "Truck Wash Log",     emoji: "🧼" },
-  { href: "/lounge/hospitals",    label: "Hospitals",          emoji: "🏥" },
-  { href: "/api/lounge/sso/truckcheck", label: "Truck Check", emoji: "🚑", external: true },
-  { href: "/api/lounge/sso/inventory",  label: "Inventory",   emoji: "📦", external: true },
+  { href: "/lounge",              label: "The Wall",         icon: "newspaper", eyebrow: "Home" },
+  { href: "/lounge/notifications", label: "Notifications",   icon: "bell" },
+  { href: "/lounge/games",        label: "Games",            icon: "gamepad" },
+  { href: "/lounge/about-me",     label: "About Me",         icon: "badge" },
+  { href: "/lounge/certs",        label: "My Certifications", icon: "certificate" },
+  { href: "/lounge/my-file",      label: "My Employee File", icon: "folder" },
+  { href: "/lounge/messages",     label: "Messages",         icon: "message" },
+  { href: "/lounge/acks",         label: "Acknowledgments",  icon: "checkCircle" },
+  { href: "/lounge/incidents",    label: "Incident Reports",   icon: "alert" },
+  { href: "/lounge/maintenance",  label: "Maintenance Request", icon: "wrench" },
+  { href: "/lounge/truckwash",    label: "Truck Wash Log",     icon: "droplet" },
+  { href: "/lounge/hospitals",    label: "Hospitals",          icon: "hospital" },
+  { href: "/api/lounge/sso/truckcheck", label: "Truck Check", icon: "ambulance", external: true },
+  { href: "/api/lounge/sso/inventory",  label: "Inventory",   icon: "box", external: true },
   // Admin section — collapsed under "Admin Tools" group in the sidebar.
-  { href: "/admin/filing-cabinet",        label: "Filing Cabinet",        emoji: "🗄️", adminOnly: true },
-  { href: "/admin/incidents",             label: "Incident Reports",      emoji: "🚨", adminOnly: true },
-  { href: "/admin/truckwash",             label: "Truck Wash Log",        emoji: "🧼", adminOnly: true },
-  { href: "/admin/hospitals",             label: "Hospitals Directory",   emoji: "🏥", adminOnly: true },
-  { href: "/admin/hospitals/suggestions", label: "Hospital Suggestions",  emoji: "✉️", adminOnly: true },
-  { href: "/admin/polls",                 label: "Polls & Surveys",       emoji: "📊", adminOnly: true },
-  { href: "/admin/calls",                 label: "Ticker Editor",         emoji: "📟", adminOnly: true },
-  { href: "/admin/website-config",        label: "Website Configuration", emoji: "⚙️", adminOnly: true },
+  { href: "/admin/filing-cabinet",        label: "Filing Cabinet",        icon: "archive", adminOnly: true },
+  { href: "/admin/incidents",             label: "Incident Reports",      icon: "alert", adminOnly: true },
+  { href: "/admin/truckwash",             label: "Truck Wash Log",        icon: "droplet", adminOnly: true },
+  { href: "/admin/hospitals",             label: "Hospitals Directory",   icon: "hospital", adminOnly: true },
+  { href: "/admin/hospitals/suggestions", label: "Hospital Suggestions",  icon: "mail", adminOnly: true },
+  { href: "/admin/polls",                 label: "Polls & Surveys",       icon: "chart", adminOnly: true },
+  { href: "/admin/calls",                 label: "Ticker Editor",         icon: "ticker", adminOnly: true },
+  { href: "/admin/website-config",        label: "Website Configuration", icon: "gear", adminOnly: true },
 ];
 
 export default function LoungeShell({
@@ -291,14 +291,14 @@ export default function LoungeShell({
                   onClick={() => setDrawerOpen(true)}
                   style={sharedStyle}
                 >
-                  <span style={{ fontSize: 22, lineHeight: 1 }} aria-hidden>{tab.emoji}</span>
+                  <LoungeIcon name={tab.icon} size={21} />
                   <span>{tab.label}</span>
                 </button>
               );
             }
             return (
               <Link key={tab.href} href={tab.href} style={sharedStyle}>
-                <span style={{ fontSize: 22, lineHeight: 1 }} aria-hidden>{tab.emoji}</span>
+                <LoungeIcon name={tab.icon} size={21} />
                 <span>{tab.label}</span>
               </Link>
             );
@@ -327,14 +327,14 @@ export default function LoungeShell({
 // Top 5 destinations for the bottom tab bar. "More" surfaces the rest
 // of the sidebar inside the drawer.
 type BottomTab =
-  | { kind: "link"; href: string; label: string; emoji: string; match?: (path: string) => boolean }
-  | { kind: "more"; href: string; label: string; emoji: string };
+  | { kind: "link"; href: string; label: string; icon: LoungeIconName; match?: (path: string) => boolean }
+  | { kind: "more"; href: string; label: string; icon: LoungeIconName };
 const BOTTOM_TABS: BottomTab[] = [
-  { kind: "link", href: "/lounge",            label: "Wall",      emoji: "📰", match: (p) => p === "/lounge" || p === "/lounge/" },
-  { kind: "link", href: "/lounge/messages",   label: "Chat",      emoji: "💬", match: (p) => p.startsWith("/lounge/messages") },
-  { kind: "link", href: "/lounge/hospitals",  label: "Hospitals", emoji: "🏥", match: (p) => p.startsWith("/lounge/hospitals") },
-  { kind: "link", href: "/lounge/my-file",    label: "My File",   emoji: "🗂️", match: (p) => p.startsWith("/lounge/my-file") || p.startsWith("/lounge/certs") || p.startsWith("/lounge/about-me") },
-  { kind: "more", href: "#more",              label: "More",      emoji: "☰" },
+  { kind: "link", href: "/lounge",            label: "Wall",      icon: "newspaper", match: (p) => p === "/lounge" || p === "/lounge/" },
+  { kind: "link", href: "/lounge/messages",   label: "Chat",      icon: "message", match: (p) => p.startsWith("/lounge/messages") },
+  { kind: "link", href: "/lounge/hospitals",  label: "Hospitals", icon: "hospital", match: (p) => p.startsWith("/lounge/hospitals") },
+  { kind: "link", href: "/lounge/my-file",    label: "My File",   icon: "folder", match: (p) => p.startsWith("/lounge/my-file") || p.startsWith("/lounge/certs") || p.startsWith("/lounge/about-me") },
+  { kind: "more", href: "#more",              label: "More",      icon: "menu" },
 ];
 
 function SidebarBody({
@@ -432,12 +432,12 @@ function NavRow({ item, active, onNavigate }: { item: NavItem; active: boolean; 
         style={{
           width: 30, height: 30, borderRadius: 8,
           display: "inline-flex", alignItems: "center", justifyContent: "center",
-          background: active ? "rgba(240,180,41,0.18)" : "rgba(255,255,255,0.04)",
-          border: `1px solid ${active ? "rgba(240,180,41,0.30)" : "rgba(255,255,255,0.06)"}`,
-          fontSize: 16,
+          background: active ? "rgba(240,180,41,0.18)" : "rgba(255,255,255,0.045)",
+          border: `1px solid ${active ? "rgba(240,180,41,0.34)" : "rgba(255,255,255,0.07)"}`,
+          color: active ? "#f0b429" : isAdminLink ? "#fde68a" : "#94a3b8",
         }}
       >
-        {item.emoji}
+        <LoungeIcon name={item.icon} size={17} />
       </span>
       <span style={{ flex: 1 }}>{item.label}</span>
       {item.external && (
@@ -491,7 +491,9 @@ function AdminToolsGroup({
             background: "rgba(253,186,116,0.10)",
             border: "1px solid rgba(253,186,116,0.25)",
             fontSize: 16,
-          }}>🧰</span>
+          }}>
+            <LoungeIcon name="toolbox" size={17} />
+          </span>
           Admin Tools
         </span>
         <span aria-hidden style={{ fontSize: 11, color: "#94a3b8" }}>{open ? "▾" : "▸"}</span>
@@ -606,6 +608,68 @@ function IdentityChip({ me, compact }: { me: SidebarMe; compact?: boolean }) {
         </span>
       </div>
     </div>
+  );
+}
+
+type LoungeIconName =
+  | "alert"
+  | "ambulance"
+  | "archive"
+  | "badge"
+  | "bell"
+  | "box"
+  | "certificate"
+  | "chart"
+  | "checkCircle"
+  | "droplet"
+  | "folder"
+  | "gamepad"
+  | "gear"
+  | "hospital"
+  | "mail"
+  | "menu"
+  | "message"
+  | "newspaper"
+  | "ticker"
+  | "toolbox"
+  | "wrench";
+
+function LoungeIcon({ name, size = 18 }: { name: LoungeIconName; size?: number }) {
+  const common = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+  const paths: Record<LoungeIconName, React.ReactNode> = {
+    alert: <><path d="M12 9v4" /><path d="M12 17h.01" /><path d="M10.3 3.9 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" /></>,
+    ambulance: <><path d="M3 6h10v10H3z" /><path d="M13 10h4l3 4v2h-3" /><path d="M7 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" /><path d="M17 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" /><path d="M8 8v5" /><path d="M5.5 10.5h5" /></>,
+    archive: <><path d="M4 7h16" /><path d="M6 7v13h12V7" /><path d="M4 4h16v3H4z" /><path d="M10 11h4" /></>,
+    badge: <><path d="M12 3 5 6v6c0 4.3 2.8 8.2 7 9 4.2-.8 7-4.7 7-9V6l-7-3Z" /><path d="M9 12h6" /><path d="M12 9v6" /></>,
+    bell: <><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" /><path d="M10 21h4" /></>,
+    box: <><path d="m21 8-9-5-9 5 9 5 9-5Z" /><path d="M3 8v8l9 5 9-5V8" /><path d="M12 13v8" /></>,
+    certificate: <><path d="M6 3h12v14H6z" /><path d="M9 7h6" /><path d="M9 11h6" /><path d="m10 17-1 4 3-2 3 2-1-4" /></>,
+    chart: <><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 16v-5" /><path d="M12 16V8" /><path d="M16 16v-7" /></>,
+    checkCircle: <><path d="M21 11.1V12a9 9 0 1 1-5.3-8.2" /><path d="m9 11 3 3L22 4" /></>,
+    droplet: <><path d="M12 3s6 6.3 6 11a6 6 0 0 1-12 0c0-4.7 6-11 6-11Z" /></>,
+    folder: <><path d="M3 6h7l2 2h9v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /></>,
+    gamepad: <><path d="M6 12h4" /><path d="M8 10v4" /><path d="M15 12h.01" /><path d="M18 10h.01" /><path d="M5.5 8h13a3.5 3.5 0 0 1 3.2 4.9l-1.4 3.4a2.5 2.5 0 0 1-4.2.7L14.8 16H9.2l-1.3 1a2.5 2.5 0 0 1-4.2-.7l-1.4-3.4A3.5 3.5 0 0 1 5.5 8Z" /></>,
+    gear: <><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2 3-.2-.1a1.7 1.7 0 0 0-1.9-.2 1.7 1.7 0 0 0-1 1.5V21h-3.4v-.3a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.2l-.2.1-2-3 .1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H5v-3.4h.3a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 2-3 .2.1a1.7 1.7 0 0 0 1.9.2 1.7 1.7 0 0 0 1-1.5V3h3.4v.3a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.2l.2-.1 2 3-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.3V14h-.3a1.7 1.7 0 0 0-1.7 1Z" /></>,
+    hospital: <><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16" /><path d="M3 21h18" /><path d="M10 8h4" /><path d="M12 6v4" /><path d="M9 21v-5h6v5" /></>,
+    mail: <><path d="M4 6h16v12H4z" /><path d="m4 7 8 6 8-6" /></>,
+    menu: <><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></>,
+    message: <><path d="M4 5h16v11H8l-4 4V5Z" /></>,
+    newspaper: <><path d="M4 5h14a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2V5Z" /><path d="M8 9h8" /><path d="M8 13h8" /><path d="M8 17h5" /></>,
+    ticker: <><path d="M4 6h16v12H4z" /><path d="M7 10h5" /><path d="M14 10h3" /><path d="M7 14h10" /></>,
+    toolbox: <><path d="M9 6V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1" /><path d="M4 8h16v11H4z" /><path d="M4 12h16" /><path d="M12 12v3" /></>,
+    wrench: <><path d="M14.7 6.3a4 4 0 0 0-5 5L3 18l3 3 6.7-6.7a4 4 0 0 0 5-5l-2.8 2.8-3-3 2.8-2.8Z" /></>,
+  };
+
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden style={{ display: "block" }} {...common}>
+      {paths[name]}
+    </svg>
   );
 }
 

@@ -153,23 +153,23 @@ export default function Wall({ me }: { me: WallMe }) {
     <section
       style={{
         background:
-          "linear-gradient(180deg, rgba(7,20,40,0.96), rgba(4,13,26,0.98))",
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 18,
-        padding: "14px",
-        boxShadow: "0 12px 34px rgba(0,0,0,0.2)",
+          "radial-gradient(circle at 0% 0%, rgba(56,189,248,0.10), transparent 18rem), linear-gradient(180deg, rgba(7,20,40,0.98), rgba(4,13,26,0.99))",
+        border: "1px solid rgba(148,163,184,0.15)",
+        borderRadius: 20,
+        padding: "16px",
+        boxShadow: "0 16px 42px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.05)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
           <div style={{ color: "#f0b429", fontSize: "0.66rem", fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-            Internal Social Feed
+            Internal Wall
           </div>
-          <h2 style={{ margin: "4px 0 0", fontSize: "1.08rem", fontWeight: 900, color: "white" }}>
-            Shift-to-Shift Feed
+          <h2 style={{ margin: "4px 0 0", fontSize: "1.24rem", fontWeight: 950, color: "white", letterSpacing: "-0.02em" }}>
+            Crew updates
           </h2>
         </div>
-        <span style={{ color: "#94a3b8", fontSize: "0.78rem" }}>
+        <span style={{ color: "#94a3b8", fontSize: "0.78rem", fontWeight: 800 }}>
           {posts.length} post{posts.length === 1 ? "" : "s"}
         </span>
       </div>
@@ -423,10 +423,10 @@ function ComposerInner({
       style={{
         marginTop: 12,
         background: "rgba(2,9,18,0.54)",
-        border: "1px solid rgba(255,255,255,0.1)",
-        borderRadius: 14,
-        padding: 12,
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
+        border: "1px solid rgba(240,180,41,0.18)",
+        borderRadius: 16,
+        padding: 13,
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05), 0 12px 28px rgba(0,0,0,0.16)",
       }}
     >
       <div style={{ display: "flex", gap: 12, alignItems: "flex-start", position: "relative" }}>
@@ -445,7 +445,7 @@ function ComposerInner({
             style={{
               width: "100%",
               background: "rgba(255,255,255,0.045)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              border: "1px solid rgba(148,163,184,0.16)",
               borderRadius: 14,
               color: "white",
               padding: "12px 14px",
@@ -542,9 +542,9 @@ function ComposerInner({
             type="button"
             onClick={pickMedia}
             disabled={uploading}
-            style={{ padding: "8px 12px", background: "#020912", border: "1px solid rgba(240,180,41,0.30)", color: "#f0b429", borderRadius: 10, fontSize: 12, fontWeight: 800, cursor: uploading ? "wait" : "pointer", fontFamily: "inherit" }}
+            style={{ padding: "8px 12px", background: "#020912", border: "1px solid rgba(240,180,41,0.30)", color: "#f0b429", borderRadius: 10, fontSize: 12, fontWeight: 850, cursor: uploading ? "wait" : "pointer", fontFamily: "inherit", letterSpacing: "0.05em", textTransform: "uppercase" }}
           >
-            {uploading ? "Uploading…" : "📷 Photos / Videos"}
+            {uploading ? "Uploading..." : "Add media"}
           </button>
           <input
             ref={fileRef}
@@ -598,9 +598,9 @@ function PostCard({
     <article
       style={{
         background: post.pinned
-          ? "linear-gradient(135deg, rgba(240,180,41,0.10), rgba(56,189,248,0.04)), rgba(4,13,26,0.92)"
-          : "rgba(4,13,26,0.84)",
-        border: `1px solid ${post.pinned ? "rgba(240,180,41,0.34)" : "rgba(255,255,255,0.08)"}`,
+          ? "linear-gradient(135deg, rgba(240,180,41,0.13), rgba(56,189,248,0.05)), rgba(4,13,26,0.94)"
+          : "linear-gradient(180deg, rgba(255,255,255,0.025), transparent), rgba(4,13,26,0.88)",
+        border: `1px solid ${post.pinned ? "rgba(240,180,41,0.38)" : "rgba(148,163,184,0.13)"}`,
         borderRadius: 18,
         padding: "16px 18px",
         position: "relative",
@@ -609,7 +609,7 @@ function PostCard({
     >
       {post.pinned && (
         <div style={{ position: "absolute", top: 10, right: 12, color: "#f0b429", fontSize: "0.6rem", fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase" }}>
-          📌 Pinned
+          Pinned
         </div>
       )}
 
@@ -693,10 +693,10 @@ function PostCard({
       <footer style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
         <ReactionPicker current={myReaction} reactions={post.reactions} onPick={(k) => onReact(myReaction === k ? null : k)} />
         <button type="button" onClick={() => setShowComments((v) => !v)} style={iconBtn} title="Comments">
-          💬 <span style={{ marginLeft: 4, fontSize: "0.8rem" }}>{post.commentCount}</span>
+          Comments <span style={{ marginLeft: 4, fontSize: "0.8rem" }}>{post.commentCount}</span>
         </button>
         <button type="button" onClick={onSave} style={{ ...iconBtn, color: post.savedByMe ? "#f0b429" : "#94a3b8" }} title={post.savedByMe ? "Unsave" : "Save"}>
-          {post.savedByMe ? "🔖" : "🏷️"}
+          {post.savedByMe ? "Saved" : "Save"}
         </button>
         <div style={{ flex: 1 }} />
         {me.isAdmin && (
@@ -957,8 +957,19 @@ function Avatar({
 
 function EmptyState() {
   return (
-    <div style={{ marginTop: 14, textAlign: "center", padding: "26px 18px", background: "#040d1a", border: "1px dashed rgba(255,255,255,0.10)", borderRadius: 14 }}>
-      <div style={{ fontSize: "1.35rem", marginBottom: 8 }}>📋</div>
+    <div style={{ marginTop: 14, textAlign: "center", padding: "28px 18px", background: "rgba(2,9,18,0.54)", border: "1px dashed rgba(148,163,184,0.18)", borderRadius: 16 }}>
+      <div
+        aria-hidden
+        style={{
+          width: 34,
+          height: 34,
+          margin: "0 auto 10px",
+          borderRadius: 10,
+          background: "linear-gradient(135deg, rgba(240,180,41,0.22), rgba(56,189,248,0.14))",
+          border: "1px solid rgba(255,255,255,0.12)",
+          boxShadow: "0 0 22px rgba(56,189,248,0.12)",
+        }}
+      />
       <h3 style={{ color: "white", margin: 0, fontSize: "1rem" }}>No posts yet. Be the first.</h3>
       <p style={{ color: "#94a3b8", fontSize: "0.86rem", marginTop: 6 }}>
         Drop a shift handoff, ask the next crew a question, or share something the team should know.
