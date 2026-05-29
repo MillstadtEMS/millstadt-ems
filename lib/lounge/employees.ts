@@ -30,6 +30,24 @@ export interface AdminEmployeeRow {
   isAdmin: boolean;
   isActive: boolean;
   mustChangePassword: boolean;
+  addressStreet: string | null;
+  addressCity: string | null;
+  addressState: string | null;
+  addressZip: string | null;
+  driverLicenseNum: string | null;
+  driverLicenseState: string | null;
+  ecName: string | null;
+  ecRelationship: string | null;
+  ecPhone: string | null;
+  ec2Name: string | null;
+  ec2Relationship: string | null;
+  ec2Phone: string | null;
+  shirtSize: string | null;
+  pantSize: string | null;
+  jacketSize: string | null;
+  allergies: string | null;
+  medicalConditions: string | null;
+  profileCompletedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -66,6 +84,24 @@ interface DbEmployeeRow {
   is_admin: boolean;
   is_active: boolean;
   must_change_password: boolean;
+  address_street: string | null;
+  address_city: string | null;
+  address_state: string | null;
+  address_zip: string | null;
+  driver_license_num: string | null;
+  driver_license_state: string | null;
+  ec_name: string | null;
+  ec_relationship: string | null;
+  ec_phone: string | null;
+  ec2_name: string | null;
+  ec2_relationship: string | null;
+  ec2_phone: string | null;
+  shirt_size: string | null;
+  pant_size: string | null;
+  jacket_size: string | null;
+  allergies: string | null;
+  medical_conditions: string | null;
+  profile_completed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -96,6 +132,24 @@ function toAdminEmployee(row: DbEmployeeRow): AdminEmployeeRow {
     isAdmin: row.is_admin,
     isActive: row.is_active,
     mustChangePassword: row.must_change_password,
+    addressStreet: row.address_street,
+    addressCity: row.address_city,
+    addressState: row.address_state,
+    addressZip: row.address_zip,
+    driverLicenseNum: row.driver_license_num,
+    driverLicenseState: row.driver_license_state,
+    ecName: row.ec_name,
+    ecRelationship: row.ec_relationship,
+    ecPhone: row.ec_phone,
+    ec2Name: row.ec2_name,
+    ec2Relationship: row.ec2_relationship,
+    ec2Phone: row.ec2_phone,
+    shirtSize: row.shirt_size,
+    pantSize: row.pant_size,
+    jacketSize: row.jacket_size,
+    allergies: row.allergies,
+    medicalConditions: row.medical_conditions,
+    profileCompletedAt: row.profile_completed_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -111,14 +165,28 @@ export async function listEmployees(opts?: {
     ? ((await db`
         SELECT id, username, first_name, last_name, certification, position,
                email, phone, dob, ssn_encrypted, photo_url, hire_date, notes,
-               is_admin, is_active, must_change_password, created_at, updated_at
+               is_admin, is_active, must_change_password,
+               address_street, address_city, address_state, address_zip,
+               driver_license_num, driver_license_state,
+               ec_name, ec_relationship, ec_phone,
+               ec2_name, ec2_relationship, ec2_phone,
+               shirt_size, pant_size, jacket_size, allergies, medical_conditions,
+               profile_completed_at,
+               created_at, updated_at
         FROM lounge_employees
         ORDER BY last_name ASC, first_name ASC
       `) as unknown as DbEmployeeRow[])
     : ((await db`
         SELECT id, username, first_name, last_name, certification, position,
                email, phone, dob, ssn_encrypted, photo_url, hire_date, notes,
-               is_admin, is_active, must_change_password, created_at, updated_at
+               is_admin, is_active, must_change_password,
+               address_street, address_city, address_state, address_zip,
+               driver_license_num, driver_license_state,
+               ec_name, ec_relationship, ec_phone,
+               ec2_name, ec2_relationship, ec2_phone,
+               shirt_size, pant_size, jacket_size, allergies, medical_conditions,
+               profile_completed_at,
+               created_at, updated_at
         FROM lounge_employees
         WHERE is_active = TRUE
         ORDER BY last_name ASC, first_name ASC
@@ -218,6 +286,25 @@ export interface UpdateEmployeeInput {
   notes?: string | null;
   isAdmin?: boolean;
   isActive?: boolean;
+  // About-Me / personal fields (employee-fillable)
+  addressStreet?: string | null;
+  addressCity?: string | null;
+  addressState?: string | null;
+  addressZip?: string | null;
+  driverLicenseNum?: string | null;
+  driverLicenseState?: string | null;
+  ecName?: string | null;
+  ecRelationship?: string | null;
+  ecPhone?: string | null;
+  ec2Name?: string | null;
+  ec2Relationship?: string | null;
+  ec2Phone?: string | null;
+  shirtSize?: string | null;
+  pantSize?: string | null;
+  jacketSize?: string | null;
+  allergies?: string | null;
+  medicalConditions?: string | null;
+  markProfileCompleted?: boolean;
 }
 
 export async function updateEmployee(
@@ -259,6 +346,43 @@ export async function updateEmployee(
     await db`UPDATE lounge_employees SET is_admin = ${input.isAdmin}, updated_at = NOW() WHERE id = ${id}`;
   if (input.isActive !== undefined)
     await db`UPDATE lounge_employees SET is_active = ${input.isActive}, updated_at = NOW() WHERE id = ${id}`;
+
+  if (input.addressStreet !== undefined)
+    await db`UPDATE lounge_employees SET address_street = ${input.addressStreet}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.addressCity !== undefined)
+    await db`UPDATE lounge_employees SET address_city = ${input.addressCity}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.addressState !== undefined)
+    await db`UPDATE lounge_employees SET address_state = ${input.addressState}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.addressZip !== undefined)
+    await db`UPDATE lounge_employees SET address_zip = ${input.addressZip}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.driverLicenseNum !== undefined)
+    await db`UPDATE lounge_employees SET driver_license_num = ${input.driverLicenseNum}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.driverLicenseState !== undefined)
+    await db`UPDATE lounge_employees SET driver_license_state = ${input.driverLicenseState}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.ecName !== undefined)
+    await db`UPDATE lounge_employees SET ec_name = ${input.ecName}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.ecRelationship !== undefined)
+    await db`UPDATE lounge_employees SET ec_relationship = ${input.ecRelationship}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.ecPhone !== undefined)
+    await db`UPDATE lounge_employees SET ec_phone = ${input.ecPhone}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.ec2Name !== undefined)
+    await db`UPDATE lounge_employees SET ec2_name = ${input.ec2Name}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.ec2Relationship !== undefined)
+    await db`UPDATE lounge_employees SET ec2_relationship = ${input.ec2Relationship}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.ec2Phone !== undefined)
+    await db`UPDATE lounge_employees SET ec2_phone = ${input.ec2Phone}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.shirtSize !== undefined)
+    await db`UPDATE lounge_employees SET shirt_size = ${input.shirtSize}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.pantSize !== undefined)
+    await db`UPDATE lounge_employees SET pant_size = ${input.pantSize}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.jacketSize !== undefined)
+    await db`UPDATE lounge_employees SET jacket_size = ${input.jacketSize}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.allergies !== undefined)
+    await db`UPDATE lounge_employees SET allergies = ${input.allergies}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.medicalConditions !== undefined)
+    await db`UPDATE lounge_employees SET medical_conditions = ${input.medicalConditions}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.markProfileCompleted)
+    await db`UPDATE lounge_employees SET profile_completed_at = NOW(), updated_at = NOW() WHERE id = ${id}`;
 
   return getEmployee(id);
 }

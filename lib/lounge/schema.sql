@@ -48,6 +48,41 @@ CREATE INDEX IF NOT EXISTS lounge_employees_username_idx
 CREATE INDEX IF NOT EXISTS lounge_employees_active_idx
     ON lounge_employees (is_active);
 
+-- Personal/About-Me fields employees fill in themselves.
+-- These are added via ALTER for safety on existing DBs.
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS address_street      TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS address_city        TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS address_state       TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS address_zip         TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS driver_license_num  TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS driver_license_state TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS ec_name             TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS ec_relationship     TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS ec_phone            TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS ec2_name            TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS ec2_relationship    TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS ec2_phone           TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS shirt_size          TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS pant_size           TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS jacket_size         TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS allergies           TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS medical_conditions  TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS profile_completed_at TIMESTAMPTZ;
+
+-- Per-employee captured signatures (truck check + inventory submissions).
+CREATE TABLE IF NOT EXISTS lounge_signatures (
+    id              TEXT PRIMARY KEY,
+    employee_id     TEXT REFERENCES lounge_employees(id) ON DELETE SET NULL,
+    purpose         TEXT NOT NULL,   -- 'truckcheck' | 'inventory' | other
+    reference_id    TEXT,            -- FK string into the related submission table
+    image_data_url  TEXT NOT NULL,   -- base64 PNG (kept small: 600x180)
+    captured_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS lounge_signatures_employee_idx
+    ON lounge_signatures (employee_id, captured_at DESC);
+CREATE INDEX IF NOT EXISTS lounge_signatures_reference_idx
+    ON lounge_signatures (purpose, reference_id);
+
 -- Per-employee files: certs, licenses, write-ups, misc personnel files.
 CREATE TABLE IF NOT EXISTS lounge_employee_files (
     id              TEXT PRIMARY KEY,

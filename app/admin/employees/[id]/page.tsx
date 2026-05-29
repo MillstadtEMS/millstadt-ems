@@ -22,6 +22,24 @@ interface EmpDto {
   isAdmin: boolean;
   isActive: boolean;
   mustChangePassword: boolean;
+  addressStreet: string | null;
+  addressCity: string | null;
+  addressState: string | null;
+  addressZip: string | null;
+  driverLicenseNum: string | null;
+  driverLicenseState: string | null;
+  ecName: string | null;
+  ecRelationship: string | null;
+  ecPhone: string | null;
+  ec2Name: string | null;
+  ec2Relationship: string | null;
+  ec2Phone: string | null;
+  shirtSize: string | null;
+  pantSize: string | null;
+  jacketSize: string | null;
+  allergies: string | null;
+  medicalConditions: string | null;
+  profileCompletedAt: string | null;
 }
 interface FileDto {
   id: string;
@@ -344,6 +362,50 @@ export default function EmployeeDetailPage() {
           />
         </Card>
 
+        {/* ── About Me (employee-fillable; admin can also edit) ── */}
+        <Card
+          title={`About Me — Personal Info ${emp.profileCompletedAt ? `· last saved ${new Date(emp.profileCompletedAt).toLocaleDateString()}` : "· not filled in yet"}`}
+        >
+          <SubHeading>Home address</SubHeading>
+          <FormGrid>
+            <InlineField label="Street" value={emp.addressStreet ?? ""} onSave={(v) => patch({ addressStreet: v || null })} />
+            <InlineField label="City"   value={emp.addressCity ?? ""}   onSave={(v) => patch({ addressCity: v || null })} />
+            <InlineField label="State"  value={emp.addressState ?? ""}  onSave={(v) => patch({ addressState: v || null })} />
+            <InlineField label="ZIP"    value={emp.addressZip ?? ""}    onSave={(v) => patch({ addressZip: v || null })} />
+          </FormGrid>
+
+          <SubHeading>Driver&apos;s license</SubHeading>
+          <FormGrid>
+            <InlineField label="DL number" value={emp.driverLicenseNum ?? ""}   onSave={(v) => patch({ driverLicenseNum: v || null })} />
+            <InlineField label="DL state"  value={emp.driverLicenseState ?? ""} onSave={(v) => patch({ driverLicenseState: v || null })} />
+          </FormGrid>
+
+          <SubHeading>Emergency contact (primary)</SubHeading>
+          <FormGrid>
+            <InlineField label="Name"         value={emp.ecName ?? ""}         onSave={(v) => patch({ ecName: v || null })} />
+            <InlineField label="Relationship" value={emp.ecRelationship ?? ""} onSave={(v) => patch({ ecRelationship: v || null })} />
+            <InlineField label="Phone" type="tel" value={emp.ecPhone ?? ""}    onSave={(v) => patch({ ecPhone: v || null })} />
+          </FormGrid>
+
+          <SubHeading>Emergency contact (secondary)</SubHeading>
+          <FormGrid>
+            <InlineField label="Name"         value={emp.ec2Name ?? ""}         onSave={(v) => patch({ ec2Name: v || null })} />
+            <InlineField label="Relationship" value={emp.ec2Relationship ?? ""} onSave={(v) => patch({ ec2Relationship: v || null })} />
+            <InlineField label="Phone" type="tel" value={emp.ec2Phone ?? ""}    onSave={(v) => patch({ ec2Phone: v || null })} />
+          </FormGrid>
+
+          <SubHeading>Uniform sizes</SubHeading>
+          <FormGrid>
+            <InlineField label="Shirt"  value={emp.shirtSize ?? ""}  onSave={(v) => patch({ shirtSize: v || null })} />
+            <InlineField label="Pants"  value={emp.pantSize ?? ""}   onSave={(v) => patch({ pantSize: v || null })} />
+            <InlineField label="Jacket" value={emp.jacketSize ?? ""} onSave={(v) => patch({ jacketSize: v || null })} />
+          </FormGrid>
+
+          <SubHeading>Medical</SubHeading>
+          <InlineField    label="Allergies"          value={emp.allergies ?? ""}          onSave={(v) => patch({ allergies: v || null })} />
+          <InlineTextarea label="Medical conditions" value={emp.medicalConditions ?? ""} onSave={(v) => patch({ medicalConditions: v || null })} />
+        </Card>
+
         {/* ── Settings ── */}
         <Card title="Access">
           <Toggle
@@ -599,6 +661,24 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
       </div>
       <div style={{ display: "grid", gap: 12 }}>{children}</div>
     </section>
+  );
+}
+
+function SubHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        color: "#94a3b8",
+        fontSize: 11,
+        fontWeight: 800,
+        letterSpacing: "0.16em",
+        textTransform: "uppercase",
+        marginTop: 4,
+        marginBottom: -2,
+      }}
+    >
+      {children}
+    </div>
   );
 }
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import SignaturePad from "@/components/lounge/SignaturePad";
 
 interface Item {
   id: string;
@@ -136,6 +137,7 @@ export default function StateInventoryDashboard() {
   const [showSubmit, setShowSubmit] = useState(false);
   const [submitNotes, setSubmitNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [signature, setSignature] = useState<string | null>(null);
   const lastPoll = useRef(new Date().toISOString());
   const editedCount = useRef(0);
   const [focusedIdx, setFocusedIdx] = useState(0);
@@ -289,11 +291,12 @@ export default function StateInventoryDashboard() {
   for (const item of filtered) { const loc = item.location ?? "Other"; if (loc !== lastLoc) { groups.push({ loc, items: [] }); lastLoc = loc; } groups[groups.length - 1].items.push(item); }
 
   async function handleSubmit() {
+    if (!signature) { msg("Signature required"); return; }
     setSubmitting(true);
     try {
       await fetch("/api/inventory/submit", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ categorySlug: activeCat, itemsUpdated: editedCount.current, notes: submitNotes || null, submittedBy: "State Inventory" }) });
-      msg("Submitted!"); setShowSubmit(false); setSubmitNotes(""); editedCount.current = 0;
+        body: JSON.stringify({ categorySlug: activeCat, itemsUpdated: editedCount.current, notes: submitNotes || null, submittedBy: "State Inventory", signature, purpose: "inventory_state" }) });
+      msg("Submitted!"); setShowSubmit(false); setSubmitNotes(""); setSignature(null); editedCount.current = 0;
     } catch { msg("Failed"); } finally { setSubmitting(false); }
   }
 
@@ -410,9 +413,12 @@ export default function StateInventoryDashboard() {
             <p className="text-slate-400 text-sm mb-3">{editedCount.current} items edited</p>
             <textarea value={submitNotes} onChange={e => setSubmitNotes(e.target.value)} placeholder="Notes (optional)" rows={2}
               className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none mb-3 resize-none" />
+            <div style={{ marginBottom: 14 }}>
+              <SignaturePad value={signature} onChange={setSignature} label="Sign to certify count" height={150} />
+            </div>
             <div className="flex gap-3">
-              <button onClick={() => setShowSubmit(false)} className="flex-1 py-3 border border-slate-600 rounded-xl text-slate-300 font-semibold text-sm">Cancel</button>
-              <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-3 bg-emerald-500 text-white font-bold text-sm rounded-xl disabled:opacity-50">{submitting ? "..." : "Submit"}</button>
+              <button onClick={() => { setShowSubmit(false); setSignature(null); }} className="flex-1 py-3 border border-slate-600 rounded-xl text-slate-300 font-semibold text-sm">Cancel</button>
+              <button onClick={handleSubmit} disabled={submitting || !signature} className="flex-1 py-3 bg-emerald-500 text-white font-bold text-sm rounded-xl disabled:opacity-50">{submitting ? "..." : !signature ? "Sign to enable" : "Submit"}</button>
             </div>
           </div>
         </div>
