@@ -12,10 +12,10 @@ interface ScoreRow {
   details: Record<string, unknown>;
 }
 
-const LEVELS: { id: "beginner" | "intermediate" | "expert"; label: string; desc: string; color: string }[] = [
-  { id: "beginner",     label: "Beginner",     desc: "Sinus + classic emergencies. 9 rhythms.",            color: "#86efac" },
-  { id: "intermediate", label: "Intermediate", desc: "PACs, PVCs, SVT, AIVR, paced rhythms.",              color: "#7dd3fc" },
-  { id: "expert",       label: "Expert",       desc: "AV blocks, torsades, escape rhythms.",               color: "#f0b429" },
+const LEVELS: { id: "beginner" | "intermediate" | "expert"; label: string; color: string }[] = [
+  { id: "beginner",     label: "Beginner",     color: "#2ff587" },
+  { id: "intermediate", label: "Intermediate", color: "#7dd3fc" },
+  { id: "expert",       label: "Expert",       color: "#f2b84b" },
 ];
 
 export default function GamesLanding({ meId }: { meId: string }) {
@@ -45,59 +45,57 @@ export default function GamesLanding({ meId }: { meId: string }) {
         <h1 style={{ margin: "4px 0 6px", fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.015em" }}>
           Lounge arcade
         </h1>
-        <p style={{ color: "#94a3b8", fontSize: "0.95rem", lineHeight: 1.55 }}>
-          Sharpen rhythm recognition on the clock, see who&apos;s topping the board.
-        </p>
       </header>
 
-      <section style={card}>
-        <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{ color: "#86efac", fontSize: 11, fontWeight: 900, letterSpacing: "0.20em", textTransform: "uppercase" }}>
-              Featured
-            </div>
-            <h2 style={{ margin: "4px 0 6px", color: "white", fontSize: "1.5rem", fontWeight: 900 }}>Lead II — Rhythm Quiz</h2>
-            <p style={{ color: "#cbd5e1", fontSize: 13.5, margin: 0, lineHeight: 1.55 }}>
-              10 rhythm strips per round. Identify each one before the clock and your streak burn out. Built for the truck, not the textbook.
-            </p>
-          </div>
-          <div style={{ background: "rgba(134,239,172,0.10)", border: "1px solid rgba(134,239,172,0.30)", borderRadius: 12, padding: "10px 14px", textAlign: "center" }}>
-            <div style={{ color: "#86efac", fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase" }}>Your best ({LEVELS.find((l) => l.id === level)?.label})</div>
-            <div style={{ color: "#bbf7d0", fontSize: 32, fontWeight: 900, fontFamily: "ui-monospace, SFMono-Regular, monospace", lineHeight: 1, marginTop: 4 }}>{myBest}</div>
-          </div>
+      <Link
+        href="/lounge/games/lead-ii"
+        style={{
+          display: "block",
+          borderRadius: 18,
+          overflow: "hidden",
+          background: "#030503",
+          border: "2px solid rgba(47,245,135,0.40)",
+          boxShadow: "0 18px 40px rgba(47,245,135,0.18)",
+          textDecoration: "none",
+          color: "inherit",
+          maxWidth: 520,
+          margin: "0 auto",
+          aspectRatio: "1 / 1",
+          position: "relative",
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/lounge/games/lead-ii-icon.png"
+          alt="Lead II"
+          style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+        />
+        <div style={{
+          position: "absolute", left: 0, right: 0, bottom: 0,
+          padding: "10px 14px",
+          background: "linear-gradient(0deg, rgba(3,5,3,0.95), rgba(3,5,3,0))",
+          color: "#8adf9d", fontFamily: "VT323, ui-monospace, monospace", fontSize: 22, letterSpacing: "0.12em", textAlign: "center",
+        }}>
+          TAP TO PLAY
         </div>
+      </Link>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginTop: 14 }}>
-          {LEVELS.map((l) => (
-            <Link
-              key={l.id}
-              href={`/lounge/games/lead-ii?level=${l.id}`}
-              style={{
-                display: "block",
-                padding: "14px 16px",
-                background: "rgba(2,9,18,0.55)",
-                border: `1px solid ${l.color}55`,
-                borderLeft: `4px solid ${l.color}`,
-                borderRadius: 14, color: "white", textDecoration: "none",
-              }}
-            >
-              <div style={{ color: l.color, fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase" }}>
-                {l.label}
-              </div>
-              <div style={{ color: "#cbd5e1", fontSize: 13, marginTop: 4 }}>{l.desc}</div>
-              <div style={{ color: "white", fontWeight: 900, fontSize: 13, marginTop: 8, letterSpacing: "0.08em" }}>
-                Start round →
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section style={{ ...card, marginTop: 16 }}>
+      <section style={{
+        marginTop: 20,
+        background: "#071428",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: 16,
+        padding: "16px 18px",
+      }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
-          <h3 style={{ margin: 0, color: "white", fontSize: 15, fontWeight: 900, letterSpacing: "0.04em" }}>
-            Leaderboard
-          </h3>
+          <div>
+            <div style={{ color: "#94a3b8", fontSize: 10.5, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase" }}>
+              Leaderboard — Lead II
+            </div>
+            <h3 style={{ margin: "4px 0 0", color: "white", fontSize: 16, fontWeight: 900 }}>
+              Your best ({LEVELS.find((l) => l.id === level)?.label}): <span style={{ color: "#86efac", fontFamily: "ui-monospace, SFMono-Regular, monospace" }}>{myBest}</span>
+            </h3>
+          </div>
           <div style={{ display: "flex", gap: 6 }}>
             {LEVELS.map((l) => (
               <button
@@ -107,7 +105,7 @@ export default function GamesLanding({ meId }: { meId: string }) {
                 style={{
                   padding: "5px 11px", borderRadius: 999,
                   background: level === l.id ? l.color : "transparent",
-                  color: level === l.id ? "#040d1a" : l.color,
+                  color: level === l.id ? "#030503" : l.color,
                   border: `1px solid ${level === l.id ? l.color : `${l.color}55`}`,
                   fontFamily: "inherit", fontSize: 11, fontWeight: 800, letterSpacing: "0.08em",
                   textTransform: "uppercase", cursor: "pointer",
@@ -150,10 +148,3 @@ export default function GamesLanding({ meId }: { meId: string }) {
     </div>
   );
 }
-
-const card: React.CSSProperties = {
-  background: "#071428",
-  border: "1px solid rgba(255,255,255,0.06)",
-  borderRadius: 16,
-  padding: "16px 18px",
-};

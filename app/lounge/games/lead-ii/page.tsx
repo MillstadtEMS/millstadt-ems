@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { currentEmployee } from "@/lib/lounge/auth";
 import { getEmployee } from "@/lib/lounge/employees";
 import LoungeShell from "@/components/lounge/LoungeShell";
-import LeadIIRunner from "@/components/lounge/LeadIIRunner";
+import LeadIIApp from "@/components/lounge/games/lead-ii/LeadIIApp";
 
 export const dynamic = "force-dynamic";
 
@@ -18,12 +18,14 @@ export default async function LeadIIPage({ searchParams }: { searchParams: Promi
     isAdmin: session.isAdmin,
   };
   const params = await searchParams;
-  const raw = typeof params.level === "string" ? params.level : "beginner";
-  const level = (["beginner", "intermediate", "expert"].includes(raw) ? raw : "beginner") as "beginner" | "intermediate" | "expert";
+  const raw = typeof params.level === "string" ? params.level : "";
+  const initialLevel = ["beginner", "intermediate", "expert"].includes(raw)
+    ? (raw as "beginner" | "intermediate" | "expert")
+    : undefined;
 
   return (
     <LoungeShell me={me}>
-      <LeadIIRunner playerName={session.firstName} level={level} />
+      <LeadIIApp playerName={session.firstName} initialLevel={initialLevel} />
     </LoungeShell>
   );
 }
