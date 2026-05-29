@@ -7,8 +7,14 @@ export function proxy(req: NextRequest) {
 
   // Protect all /admin/* except /admin/login
   if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
-    const token = req.cookies.get("mas_admin")?.value;
-    if (!token || !verifyAdminToken(token)) {
+    const adminToken = req.cookies.get("mas_admin")?.value;
+    const loungeToken = req.cookies.get("mas_lounge")?.value;
+    const adminOk = adminToken && verifyAdminToken(adminToken);
+    // Lounge SSO: any active lounge admin gets through middleware. The
+    // /admin routes call isAdminAuthed() which re-verifies the lounge
+    // cookie against the DB and checks isAdmin — so a forged lounge
+    // cookie still can't see admin data, it just gets past the gate.
+    if (!adminOk && !loungeToken) {
       const url = req.nextUrl.clone();
       url.pathname = "/admin/login";
       url.searchParams.set("from", pathname);
