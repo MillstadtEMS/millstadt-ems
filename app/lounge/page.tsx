@@ -18,9 +18,6 @@ import CoffeePrankOverlay from "@/components/lounge/CoffeePrankOverlay";
 
 const PRANK_USERNAMES = new Set(["kwetzel", "jgoetz"]);
 
-// Per-employee welcome-screen image overrides. Drop a PNG at
-// /lounge/welcome-overrides/<username>.png and add the username to
-// the map below to replace the EMS crest for that one person.
 const WELCOME_IMAGE_OVERRIDES: Record<string, string> = {
   dspencer: "/lounge/welcome-overrides/dylan-spencer.png",
 };
@@ -51,30 +48,30 @@ export default async function LoungeHome() {
 
   const pendingAcks = acks.filter((ack) => ack.requiresAcknowledgment && !ack.acknowledgedAt);
   const latestNotice = acks[0] ?? null;
+  const blockingCerts = expiring.filter((c) => c.status === "expired" || c.status === "final_7");
 
   return (
     <LoungeShell me={me}>
-      <style>{LOUNGE_HOME_CSS}</style>
+      <style>{LANDING_CSS}</style>
       <BirthdayBanner people={birthdays} />
       <PasskeyPrompt />
-      <div className="lounge-command-page">
-        <CommandHeader
+
+      <div className="mas-home">
+        <HomeHero
           firstName={session.firstName}
           rank={emp?.position ?? emp?.certification ?? "Crew"}
-          isAdmin={session.isAdmin}
           pendingAcks={pendingAcks.length}
-          expiringCerts={expiring.length}
+          dueCerts={blockingCerts.length}
         />
 
-        {expiring.length > 0 && <CertAlertsBanner certs={expiring} />}
+        {blockingCerts.length > 0 && <CertAlertsBanner certs={expiring} />}
 
-        <LoungeActions hasPhoto={Boolean(emp?.photoUrl)} />
+        <div className="mas-home-events">
+          <TodayEventsWidget />
+        </div>
 
-        <TodayEventsWidget />
-        <PollsWidget />
-
-        <div className="lounge-command-grid">
-          <div className="lounge-main-stack">
+        <div className="mas-home-grid">
+          <div className="mas-home-main">
             <Wall
               me={{
                 id: session.id,
@@ -86,12 +83,12 @@ export default async function LoungeHome() {
             />
           </div>
 
-          <CommandRail
-            pendingAcks={pendingAcks}
-            expiring={expiring}
-            latestNotice={latestNotice}
-            isAdmin={session.isAdmin}
-          />
+          <aside className="mas-home-rail">
+            <AtAGlanceCard pendingAcks={pendingAcks.length} dueCerts={expiring.length} />
+            <LatestNoticeCard notice={latestNotice} />
+            <PollsWidget />
+            {session.isAdmin && <AdminQuickCard />}
+          </aside>
         </div>
       </div>
 
@@ -102,223 +99,168 @@ export default async function LoungeHome() {
   );
 }
 
-function CommandHeader({
+// ── Hero ─────────────────────────────────────────────────────────────────
+function HomeHero({
   firstName,
   rank,
-  isAdmin,
   pendingAcks,
-  expiringCerts,
+  dueCerts,
 }: {
   firstName: string;
   rank: string;
-  isAdmin: boolean;
   pendingAcks: number;
-  expiringCerts: number;
+  dueCerts: number;
 }) {
   const now = new Date();
-  const statusChips = [
-    { label: "Pending Items", value: `${pendingAcks + expiringCerts}` },
-    { label: "Rank", value: rank },
-    { label: "Access", value: isAdmin ? "Admin" : "User" },
-  ];
+  const dateLine = now.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
 
   return (
-    <header className="lounge-hero">
-      <div className="lounge-hero-copy">
-        <div className="lounge-eyebrow">{formatDateLine(now)}</div>
-        <h1 className="lounge-hero-title">Employee Lounge</h1>
-        <p className="lounge-hero-welcome">
-          Welcome back, {firstName}. Wall posts, messages, forms, credentials, and crew tools stay in one clean shift view.
+    <header className="mas-hero">
+      <Image
+        src="/lounge/brand/hero-3926.jpg"
+        alt=""
+        fill
+        sizes="(max-width: 900px) 100vw, 1200px"
+        priority
+        className="mas-hero-photo"
+      />
+      <div className="mas-hero-veil" aria-hidden />
+      <div className="mas-hero-tint" aria-hidden />
+      <div className="mas-hero-copy">
+        <span className="mas-hero-eyebrow">{dateLine} · Millstadt EMS</span>
+        <h1 className="mas-hero-title">
+          On duty, {firstName}.
+        </h1>
+        <p className="mas-hero-sub">
+          The station wall, shift events, and crew tools.
         </p>
-        <div className="lounge-status-strip">
-          {statusChips.map((chip) => (
-            <div key={chip.label}>
-              <span>{chip.label}</span>
-              <strong>{chip.value}</strong>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="lounge-hero-mark" aria-hidden>
-        <Image src="/lounge/lounge-button.png" alt="" width={220} height={156} />
+        <dl className="mas-hero-meta">
+          <div>
+            <dt>Position</dt>
+            <dd>{rank}</dd>
+          </div>
+          <div>
+            <dt>Acknowledgments</dt>
+            <dd className={pendingAcks > 0 ? "is-warn" : ""}>
+              <span className="mas-numeric">{pendingAcks}</span> pending
+            </dd>
+          </div>
+          <div>
+            <dt>Credentials due</dt>
+            <dd className={dueCerts > 0 ? "is-warn" : ""}>
+              <span className="mas-numeric">{dueCerts}</span> {dueCerts === 1 ? "item" : "items"}
+            </dd>
+          </div>
+        </dl>
       </div>
     </header>
   );
 }
 
-function LoungeActions({ hasPhoto }: { hasPhoto: boolean }) {
-  const actions = [
-    {
-      href: "/lounge/messages",
-      label: "Messages",
-      meta: "Crew DMs",
-      accent: "cyan",
-    },
-    {
-      href: "/lounge/maintenance",
-      label: "Maintenance",
-      meta: "Unit, station, equipment",
-      accent: "gold",
-    },
-    {
-      href: "/lounge/incidents",
-      label: "Incident Reports",
-      meta: "Submit documentation",
-      accent: "red",
-    },
-    {
-      href: "/lounge/about-me",
-      label: hasPhoto ? "Profile Photo" : "Add Profile Photo",
-      meta: hasPhoto ? "Update your headshot" : "Shows on Wall and chat",
-      accent: "cyan",
-    },
-    {
-      href: "/lounge/certs",
-      label: "Certifications",
-      meta: "Renewals and uploads",
-      accent: "gold",
-    },
-    {
-      href: "/lounge/hospitals",
-      label: "Hospitals",
-      meta: "Destinations and notes",
-      accent: "blue",
-    },
-    {
-      href: "/lounge/acks",
-      label: "Required Acks",
-      meta: "Acknowledgments",
-      accent: "blue",
-    },
-    {
-      href: "/lounge/games",
-      label: "Training Games",
-      meta: "ABG and ECG practice",
-      accent: "cyan",
-    },
-  ];
-
-  return (
-    <section className="lounge-action-dock" aria-label="Employee Lounge shortcuts">
-      <div className="lounge-action-head">
-        <div>
-          <span>Shift tools</span>
-          <h2>Fast actions</h2>
-        </div>
-        <p>Common crew tasks, forms, messages, and resources without digging through menus.</p>
-      </div>
-      <div className="lounge-actions-grid">
-        {actions.map((action) => (
-          <Link key={action.href} href={action.href} className={`lounge-action-card tone-${action.accent}`}>
-            <span className="lounge-action-dot" aria-hidden />
-            <strong>{action.label}</strong>
-            <small>{action.meta}</small>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function CommandRail({
-  pendingAcks,
-  expiring,
-  latestNotice,
-  isAdmin,
-}: {
-  pendingAcks: Ack[];
-  expiring: EmployeeCert[];
-  latestNotice: Ack | null;
-  isAdmin: boolean;
-}) {
-  return (
-    <aside className="lounge-command-rail">
-      <RailCard title="At a glance">
-        <RailMetric label="Pending acknowledgments" value={pendingAcks.length} href="/lounge/acks" />
-        <RailMetric label="Credentials due" value={expiring.length} href="/lounge/certs" />
-      </RailCard>
-
-      <RailCard title="Latest announcement">
-        {latestNotice ? (
-          <Link href="/lounge/acks" className="lounge-notice-link">
-            <span>{latestNotice.category}</span>
-            <strong>{latestNotice.title}</strong>
-            <small>{timeAgo(latestNotice.createdAt)}</small>
-          </Link>
-        ) : (
-          <p className="lounge-empty">No notices posted.</p>
-        )}
-      </RailCard>
-
-      {isAdmin && (
-        <RailCard title="Admin controls">
-          <div className="lounge-admin-links">
-            <Link href="/admin/calls">Ticker editor</Link>
-            <Link href="/lounge/acks">Create notice</Link>
-            <Link href="/admin/employees">Employee records</Link>
-          </div>
-        </RailCard>
-      )}
-    </aside>
-  );
-}
-
+// ── Cert banner ──────────────────────────────────────────────────────────
 function CertAlertsBanner({ certs }: { certs: EmployeeCert[] }) {
-  const expired = certs.filter((cert) => cert.status === "expired");
-  const final7 = certs.filter((cert) => cert.status === "final_7");
-  const soon = certs.filter(
-    (cert) => cert.status === "30" || cert.status === "60" || cert.status === "90" || cert.status === "120",
-  );
+  const expired = certs.filter((c) => c.status === "expired");
+  const final7 = certs.filter((c) => c.status === "final_7");
   const blocking = expired.length > 0;
 
   return (
-    <section className={blocking ? "lounge-cert-banner is-blocking" : "lounge-cert-banner"}>
-      <div>
-        <span>{blocking ? "Action Required" : "Credential Heads Up"}</span>
-        <h2>
+    <section className={blocking ? "mas-cert-strip is-critical" : "mas-cert-strip is-warn"}>
+      <div className="mas-cert-strip-head">
+        <span className="mas-cert-strip-kicker">
+          {blocking ? "Action required" : "Heads up"}
+        </span>
+        <h2 className="mas-cert-strip-title">
           {blocking
-            ? `${expired.length} expired certification${expired.length === 1 ? "" : "s"} need attention.`
-            : `${certs.length} certification${certs.length === 1 ? "" : "s"} need attention soon.`}
+            ? `${expired.length} ${expired.length === 1 ? "credential is" : "credentials are"} expired.`
+            : `${final7.length} ${final7.length === 1 ? "credential expires" : "credentials expire"} this week.`}
         </h2>
       </div>
-      <ul>
-        {[...expired, ...final7, ...soon].slice(0, 5).map((cert) => (
+      <ul className="mas-cert-strip-list">
+        {[...expired, ...final7].slice(0, 3).map((cert) => (
           <li key={cert.id}>
-            <strong>{cert.certTypeName}</strong>
-            <span>{cert.status === "expired" ? "Expired" : cert.daysLeft === 0 ? "Today" : `${cert.daysLeft}d`}</span>
+            <span>{cert.certTypeName}</span>
+            <span className="mas-numeric">
+              {cert.status === "expired" ? "Expired" : cert.daysLeft === 0 ? "Today" : `${cert.daysLeft}d`}
+            </span>
           </li>
         ))}
       </ul>
-      <Link href="/lounge/certs">Open certs</Link>
+      <Link href="/lounge/certs" className="mas-cert-strip-cta">
+        Open certifications
+      </Link>
     </section>
+  );
+}
+
+// ── Sidebar widgets ──────────────────────────────────────────────────────
+function AtAGlanceCard({ pendingAcks, dueCerts }: { pendingAcks: number; dueCerts: number }) {
+  return (
+    <RailCard title="Today">
+      <RailMetric label="Pending acknowledgments" value={pendingAcks} href="/lounge/acks" tone={pendingAcks > 0 ? "warn" : "neutral"} />
+      <RailMetric label="Credentials due" value={dueCerts} href="/lounge/certs" tone={dueCerts > 0 ? "warn" : "neutral"} />
+    </RailCard>
+  );
+}
+
+function LatestNoticeCard({ notice }: { notice: Ack | null }) {
+  return (
+    <RailCard title="Pinned notice">
+      {notice ? (
+        <Link href="/lounge/acks" className="mas-rail-notice">
+          <span className="mas-rail-notice-cat">{notice.category}</span>
+          <strong>{notice.title}</strong>
+          <small>{timeAgo(notice.createdAt)}</small>
+        </Link>
+      ) : (
+        <p className="mas-rail-empty">No notices posted.</p>
+      )}
+    </RailCard>
+  );
+}
+
+function AdminQuickCard() {
+  return (
+    <RailCard title="Admin">
+      <div className="mas-rail-admin">
+        <Link href="/admin/calls">Ticker editor</Link>
+        <Link href="/lounge/acks">Post a notice</Link>
+        <Link href="/admin/employees">Employee records</Link>
+        <Link href="/admin/polls">Polls &amp; surveys</Link>
+      </div>
+    </RailCard>
   );
 }
 
 function RailCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="lounge-rail-card">
-      <h3>{title}</h3>
+    <section className="mas-rail-card">
+      <h3 className="mas-rail-card-title">{title}</h3>
       {children}
     </section>
   );
 }
 
-function RailMetric({ label, value, href }: { label: string; value: number; href: string }) {
+function RailMetric({
+  label,
+  value,
+  href,
+  tone = "neutral",
+}: {
+  label: string;
+  value: number;
+  href: string;
+  tone?: "neutral" | "warn";
+}) {
   return (
-    <Link href={href} className="lounge-rail-metric">
+    <Link href={href} className={`mas-rail-metric tone-${tone}`}>
       <span>{label}</span>
-      <strong>{value}</strong>
+      <strong className="mas-numeric">{value}</strong>
     </Link>
   );
-}
-
-function formatDateLine(date: Date) {
-  return date.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 function timeAgo(input: string) {
@@ -332,416 +274,292 @@ function timeAgo(input: string) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-const LOUNGE_HOME_CSS = `
-.lounge-command-page {
+// ── CSS ──────────────────────────────────────────────────────────────────
+const LANDING_CSS = `
+.mas-home {
   display: grid;
-  gap: 16px;
+  gap: var(--mas-s-5);
 }
-.lounge-hero {
+
+/* ── Hero ─────────────────────────────────────────────────────────── */
+.mas-hero {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 22px;
-  min-height: 154px;
-  padding: 22px 24px;
-  border: 1px solid rgba(148,163,184,0.22);
-  border-radius: 22px;
+  border-radius: var(--mas-r-4);
+  border: 1px solid var(--mas-border);
+  background: var(--mas-surface);
+  min-height: 280px;
+  box-shadow: var(--mas-shadow-3);
+  animation: mas-rise var(--mas-base) var(--mas-ease-out) both;
+}
+.mas-hero-photo {
+  object-fit: cover;
+  object-position: center 40%;
+  filter: saturate(0.95);
+}
+.mas-hero-veil {
+  position: absolute; inset: 0;
   background:
-    linear-gradient(90deg, rgba(37,99,235,0.28), transparent 44%),
-    radial-gradient(circle at 88% 18%, rgba(240,180,41,0.22), transparent 15rem),
-    radial-gradient(circle at 14% 0%, rgba(56,189,248,0.16), transparent 18rem),
-    linear-gradient(135deg, #081a33 0%, #020912 100%);
-  box-shadow: 0 18px 52px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.08);
+    linear-gradient(95deg, rgba(4,13,26,0.94) 0%, rgba(4,13,26,0.68) 45%, rgba(4,13,26,0.05) 78%);
 }
-.lounge-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
-  background-size: 22px 22px;
-  mask-image: linear-gradient(90deg, black, transparent 76%);
+.mas-hero-tint {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: linear-gradient(90deg, var(--mas-brand-gold), transparent 60%);
 }
-.lounge-hero::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #f0b429, #38bdf8, transparent);
-}
-.lounge-hero-copy {
+.mas-hero-copy {
   position: relative;
   z-index: 1;
-  flex: 1;
-  min-width: 0;
+  padding: var(--mas-s-7) var(--mas-s-7) var(--mas-s-6);
+  display: grid;
+  gap: var(--mas-s-3);
+  max-width: 680px;
 }
-.lounge-hero-title {
-  margin: 7px 0 0;
-  color: white;
-  font-size: clamp(2.35rem, 4.4vw, 4.5rem);
-  line-height: 0.92;
-  letter-spacing: -0.035em;
-  font-weight: 950;
-}
-.lounge-hero-welcome {
-  max-width: 640px;
-  margin: 12px 0 0;
-  color: #dbeafe;
-  font-size: 1rem;
-  line-height: 1.55;
-  font-weight: 650;
-}
-.lounge-eyebrow,
-.lounge-cert-banner span,
-.lounge-notice-link span {
-  display: block;
-  color: #f0b429;
-  font-size: 0.68rem;
-  font-weight: 950;
-  letter-spacing: 0.2em;
+.mas-hero-eyebrow {
+  color: var(--mas-brand-gold);
+  font-family: var(--mas-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
+  font-weight: 600;
 }
-.lounge-status-strip {
+.mas-hero-title {
+  margin: 0;
+  font-size: clamp(2.2rem, 4.4vw, 3.4rem);
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: var(--mas-ink);
+}
+.mas-hero-sub {
+  margin: 0;
+  color: var(--mas-ink-muted);
+  font-size: 0.98rem;
+  line-height: 1.55;
+  max-width: 46ch;
+}
+.mas-hero-meta {
+  margin: var(--mas-s-3) 0 0;
+  padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
+  gap: var(--mas-s-2) var(--mas-s-5);
 }
-.lounge-status-strip div {
-  min-width: 116px;
-  padding: 9px 12px;
-  border-radius: 999px;
-  background: rgba(2,9,18,0.52);
-  border: 1px solid rgba(255,255,255,0.12);
-}
-.lounge-status-strip span,
-.lounge-rail-metric span {
-  display: block;
-  color: #94a3b8;
-  font-size: 0.68rem;
-  font-weight: 850;
-  letter-spacing: 0.12em;
+.mas-hero-meta div { display: grid; gap: 2px; }
+.mas-hero-meta dt {
+  color: var(--mas-ink-soft);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+  font-weight: 600;
+  font-family: var(--mas-font-mono);
 }
-.lounge-status-strip strong {
-  display: block;
-  margin-top: 3px;
-  color: white;
-  font-size: 0.88rem;
-  line-height: 1.2;
+.mas-hero-meta dd {
+  margin: 0;
+  color: var(--mas-ink);
+  font-size: 0.92rem;
+  font-weight: 500;
 }
-.lounge-hero-mark {
-  position: relative;
-  z-index: 1;
-  width: 220px;
-  min-width: 180px;
-  display: flex;
-  justify-content: flex-end;
-}
-.lounge-hero-mark img {
-  width: 210px;
-  height: auto;
-  filter: drop-shadow(0 16px 28px rgba(0,0,0,0.48)) drop-shadow(0 0 28px rgba(56,189,248,0.14));
-}
-.lounge-action-dock {
+.mas-hero-meta dd.is-warn { color: var(--mas-warn); }
+
+/* ── Cert alert strip ─────────────────────────────────────────────── */
+.mas-cert-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--mas-s-4);
+  padding: var(--mas-s-4) var(--mas-s-5);
+  border-radius: var(--mas-r-3);
+  border: 1px solid var(--mas-border);
+  background: var(--mas-surface-1);
   position: relative;
   overflow: hidden;
-  padding: 16px;
-  border: 1px solid rgba(148,163,184,0.16);
-  border-radius: 20px;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(56,189,248,0.10), transparent 15rem),
-    linear-gradient(180deg, rgba(15,32,58,0.92), rgba(7,20,40,0.96));
-  box-shadow: 0 14px 36px rgba(0,0,0,0.22);
 }
-.lounge-action-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: end;
-  margin-bottom: 12px;
+.mas-cert-strip::before {
+  content: "";
+  position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: currentColor;
 }
-.lounge-action-head span {
-  display: block;
-  color: #f0b429;
-  font-size: 0.66rem;
-  font-weight: 950;
-  letter-spacing: 0.2em;
+.mas-cert-strip.is-warn { color: var(--mas-warn); }
+.mas-cert-strip.is-critical { color: var(--mas-critical); }
+.mas-cert-strip-head { color: var(--mas-ink); }
+.mas-cert-strip-kicker {
+  color: currentColor;
+  font-family: var(--mas-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
+  font-weight: 600;
 }
-.lounge-action-head h2 {
+.mas-cert-strip-title {
   margin: 4px 0 0;
-  color: white;
-  font-size: 1.2rem;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-}
-.lounge-action-head p {
-  max-width: 360px;
-  margin: 0;
-  color: #94a3b8;
-  font-size: 0.82rem;
-  line-height: 1.45;
-}
-.lounge-actions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 9px;
-}
-.lounge-action-card {
-  position: relative;
-  display: grid;
-  gap: 5px;
-  min-height: 78px;
-  padding: 13px 14px 13px 42px;
-  border-radius: 15px;
-  text-decoration: none;
-  background: rgba(255,255,255,0.045);
-  border: 1px solid rgba(255,255,255,0.09);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
-  transition: transform 150ms ease, border-color 150ms ease, background 150ms ease;
-}
-.lounge-action-card:hover {
-  transform: translateY(-1px);
-  background: rgba(255,255,255,0.065);
-  border-color: rgba(255,255,255,0.18);
-}
-.lounge-action-dot {
-  position: absolute;
-  left: 14px;
-  top: 17px;
-  width: 15px;
-  height: 15px;
-  border-radius: 999px;
-  box-shadow: 0 0 18px currentColor;
-}
-.lounge-action-card strong {
-  min-width: 0;
-  color: white;
-  font-size: 0.92rem;
-  line-height: 1.15;
-  overflow-wrap: anywhere;
-}
-.lounge-action-card small {
-  min-width: 0;
-  color: #94a3b8;
-  font-size: 0.72rem;
-  line-height: 1.25;
-  font-weight: 750;
-  overflow-wrap: anywhere;
-}
-.tone-gold .lounge-action-dot { color: #f0b429; background: #f0b429; }
-.tone-cyan .lounge-action-dot { color: #38bdf8; background: #38bdf8; }
-.tone-blue .lounge-action-dot { color: #60a5fa; background: #60a5fa; }
-.tone-red .lounge-action-dot { color: #fb7185; background: #fb7185; }
-.tone-gold { border-color: rgba(240,180,41,0.18); }
-.tone-cyan { border-color: rgba(56,189,248,0.18); }
-.tone-blue { border-color: rgba(96,165,250,0.18); }
-.tone-red { border-color: rgba(251,113,133,0.18); }
-.lounge-cert-banner {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.8fr) auto;
-  gap: 14px;
-  align-items: center;
-  padding: 16px;
-  border-radius: 20px;
-  background: rgba(240,180,41,0.08);
-  border: 1px solid rgba(240,180,41,0.28);
-  border-left: 5px solid #f0b429;
-}
-.lounge-cert-banner.is-blocking {
-  background: rgba(239,68,68,0.1);
-  border-color: rgba(239,68,68,0.38);
-  border-left-color: #ef4444;
-}
-.lounge-cert-banner h2 {
-  margin: 5px 0 0;
-  color: white;
   font-size: 1rem;
+  font-weight: 600;
+  color: var(--mas-ink);
+  letter-spacing: -0.01em;
 }
-.lounge-cert-banner ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 6px;
+.mas-cert-strip-list {
+  margin: 0; padding: 0; list-style: none;
+  display: grid; gap: 6px;
 }
-.lounge-cert-banner li {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  color: #e2e8f0;
-  font-size: 0.82rem;
+.mas-cert-strip-list li {
+  display: flex; justify-content: space-between; gap: 12px;
+  color: var(--mas-ink-muted);
+  font-size: 0.85rem;
 }
-.lounge-cert-banner a,
-.lounge-rail-button {
-  min-height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  padding: 0 14px;
-  background: #f0b429;
-  color: #040d1a;
-  text-decoration: none;
-  font-size: 0.72rem;
-  font-weight: 950;
-  letter-spacing: 0.12em;
+.mas-cert-strip-list li .mas-numeric { color: currentColor; }
+.mas-cert-strip-cta {
+  display: inline-flex; align-items: center; height: 36px;
+  padding: 0 var(--mas-s-4);
+  border-radius: var(--mas-r-pill);
+  background: var(--mas-brand-gold);
+  color: var(--mas-ink-on-light);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  text-decoration: none;
+  transition: transform var(--mas-fast) var(--mas-ease), filter var(--mas-fast) var(--mas-ease);
 }
-.lounge-rail-card {
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(37,99,235,0.08), transparent),
-    #071428;
-  box-shadow: 0 12px 34px rgba(0,0,0,0.2);
+.mas-cert-strip-cta:hover { transform: translateY(-1px); filter: brightness(1.06); }
+
+/* ── Today events strip wrapper ──────────────────────────────────── */
+.mas-home-events > * {
+  border-radius: var(--mas-r-3);
 }
-.lounge-rail-card h3 {
-  margin: 5px 0 0;
-  color: white;
-  font-size: 1.08rem;
-  line-height: 1.1;
-  letter-spacing: -0.025em;
-}
-.lounge-command-grid {
+
+/* ── Main grid (Wall + sidebar) ──────────────────────────────────── */
+.mas-home-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--mas-s-5);
   align-items: start;
 }
-.lounge-main-stack {
-  display: grid;
-  gap: 14px;
-  min-width: 0;
+.mas-home-main { min-width: 0; display: grid; gap: var(--mas-s-4); }
+.mas-home-rail {
+  position: sticky; top: var(--mas-s-4);
+  display: grid; gap: var(--mas-s-3);
+  align-self: start;
 }
-.lounge-rail-metric,
-.lounge-notice-link {
-  border-radius: 16px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
+
+/* ── Rail cards ───────────────────────────────────────────────────── */
+.mas-rail-card {
+  border-radius: var(--mas-r-3);
+  border: 1px solid var(--mas-border);
+  background: var(--mas-surface-1);
+  padding: var(--mas-s-4) var(--mas-s-5) var(--mas-s-5);
+  box-shadow: var(--mas-shadow-1);
+  animation: mas-rise var(--mas-base) var(--mas-ease-out) both;
 }
-.lounge-empty {
-  margin: 12px 0 0;
-  color: #94a3b8;
-  font-size: 0.9rem;
-  line-height: 1.55;
+.mas-rail-card-title {
+  margin: 0 0 var(--mas-s-3);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--mas-ink-soft);
+  font-family: var(--mas-font-mono);
+  font-weight: 600;
 }
-.lounge-rail-card p {
-  margin: 7px 0 0;
-  color: #94a3b8;
-  font-size: 0.84rem;
-  line-height: 1.55;
-}
-.lounge-command-rail {
-  position: sticky;
-  top: 14px;
-  display: grid;
-  gap: 10px;
-}
-.lounge-rail-card {
-  padding: 18px 18px 20px;
-}
-.lounge-rail-metric {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 16px 18px;
+.mas-rail-metric {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--mas-r-2);
+  background: var(--mas-surface-well);
+  border: 1px solid var(--mas-border);
   text-decoration: none;
+  transition: border-color var(--mas-fast) var(--mas-ease), background var(--mas-fast) var(--mas-ease);
 }
-.lounge-rail-metric + .lounge-rail-metric {
-  margin-top: 10px;
+.mas-rail-metric + .mas-rail-metric { margin-top: var(--mas-s-2); }
+.mas-rail-metric:hover {
+  border-color: var(--mas-border-strong);
+  background: rgba(255,255,255,0.02);
 }
-.lounge-rail-metric span {
-  flex: 1;
-  min-width: 0;
-  padding-right: 8px;
+.mas-rail-metric span {
+  color: var(--mas-ink-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
 }
-.lounge-rail-metric strong {
-  color: #f0b429;
-  font-size: 1.45rem;
+.mas-rail-metric strong {
+  color: var(--mas-ink);
+  font-size: 1.4rem;
+  font-weight: 600;
   line-height: 1;
 }
-.lounge-notice-link {
-  display: block;
-  margin-top: 12px;
-  padding: 13px;
+.mas-rail-metric.tone-warn strong { color: var(--mas-warn); }
+.mas-rail-notice {
+  display: grid; gap: 6px;
+  padding: 12px 14px;
+  border-radius: var(--mas-r-2);
+  background: var(--mas-surface-well);
+  border: 1px solid var(--mas-border);
   text-decoration: none;
+  transition: border-color var(--mas-fast) var(--mas-ease);
 }
-.lounge-notice-link strong {
+.mas-rail-notice:hover { border-color: var(--mas-border-strong); }
+.mas-rail-notice-cat {
+  color: var(--mas-brand-gold);
+  font-family: var(--mas-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.mas-rail-notice strong {
+  color: var(--mas-ink);
+  font-size: 0.94rem;
+  line-height: 1.3;
+  font-weight: 600;
+}
+.mas-rail-notice small {
+  color: var(--mas-ink-soft);
+  font-size: 0.78rem;
+  font-family: var(--mas-font-mono);
+}
+.mas-rail-empty {
+  margin: 0;
+  color: var(--mas-ink-soft);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.mas-rail-admin { display: grid; gap: var(--mas-s-1); }
+.mas-rail-admin a {
   display: block;
-  margin-top: 6px;
-  color: white;
-  line-height: 1.25;
-}
-.lounge-notice-link small {
-  display: block;
-  margin-top: 8px;
-  color: #94a3b8;
-}
-.lounge-rail-button {
-  width: 100%;
-  margin-top: 14px;
-}
-.lounge-admin-links {
-  display: grid;
-  gap: 8px;
-  margin-top: 12px;
-}
-.lounge-admin-links a {
-  color: #f0b429;
+  padding: 8px 12px;
+  border-radius: var(--mas-r-1);
+  color: var(--mas-ink-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
   text-decoration: none;
-  font-size: 0.86rem;
-  font-weight: 800;
+  transition: background var(--mas-fast) var(--mas-ease), color var(--mas-fast) var(--mas-ease);
 }
-@media (max-width: 1180px) {
-  .lounge-command-grid,
-  .lounge-hero {
-    grid-template-columns: 1fr;
-  }
-  .lounge-command-rail {
-    position: static;
-  }
+.mas-rail-admin a:hover {
+  background: var(--mas-surface-well);
+  color: var(--mas-brand-gold);
+}
+
+/* ── Motion ───────────────────────────────────────────────────────── */
+@keyframes mas-rise {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.mas-home-main > * { animation: mas-rise var(--mas-base) var(--mas-ease-out) both; }
+.mas-home-rail > * { animation: mas-rise var(--mas-base) var(--mas-ease-out) both; }
+.mas-home-rail > *:nth-child(2) { animation-delay: 60ms; }
+.mas-home-rail > *:nth-child(3) { animation-delay: 120ms; }
+.mas-home-rail > *:nth-child(4) { animation-delay: 180ms; }
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .mas-home-grid { grid-template-columns: 1fr; }
+  .mas-home-rail { position: static; }
 }
 @media (max-width: 760px) {
-  .lounge-hero,
-  .lounge-rail-card,
-  .lounge-cert-banner {
-    border-radius: 18px;
+  .mas-hero { min-height: 220px; }
+  .mas-hero-copy { padding: var(--mas-s-5) var(--mas-s-5) var(--mas-s-4); }
+  .mas-hero-veil {
+    background: linear-gradient(180deg, rgba(4,13,26,0.85) 35%, rgba(4,13,26,0.92) 100%);
   }
-  .lounge-hero {
-    padding: 20px;
-    display: grid;
-  }
-  .lounge-hero-title-row {
-    display: block;
-  }
-  .lounge-hero h1 {
-    white-space: normal;
-  }
-  .lounge-hero p {
-    margin-top: 10px;
-  }
-  .lounge-hero-mark {
-    display: none;
-  }
-  .lounge-status-strip,
-  .lounge-cert-banner {
-    grid-template-columns: 1fr;
-  }
-  .lounge-action-head {
-    display: grid;
-    align-items: start;
-  }
-  .lounge-action-head p {
-    max-width: none;
-  }
+  .mas-cert-strip { grid-template-columns: 1fr; }
+  .mas-cert-strip-cta { justify-self: start; }
 }
 `;
