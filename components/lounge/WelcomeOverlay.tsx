@@ -9,16 +9,18 @@ const CREST_SRC = "/images/millstadt-ems/crest.png";
 /**
  * Full-screen "teleport into the lounge" intro. Fires once after login
  * (the login page sets sessionStorage["lounge:welcome"] = "1" right
- * before navigating here). Animation timeline:
+ * before navigating here). Animation timeline (5500ms total):
  *
- *    0  →  600ms   black blanket pours in + star-of-life materializes
- *  600  → 1400ms   "Hi, {name}." fades up
- * 1400  → 2400ms   "Welcome to the Employee Lounge" fades up + holds
- * 2400  → 3300ms   everything fades out, revealing the dashboard
+ *      0 → 1000ms   black blanket eases in + crest fades up
+ *   1000 → 2000ms   "Hi, {name}." fades up
+ *   2000 → 3000ms   "Welcome to the Employee Lounge" fades up
+ *   3000 → 4500ms   hold (read the room)
+ *   4500 → 5500ms   slow fade out reveals the dashboard
  *
- * Total: ~3.3s. After dismissal the flag is cleared so refreshes don't
- * replay it.
+ * Long enough that phones don't blink through it. After dismissal the
+ * sessionStorage flag is cleared so refreshes don't replay it.
  */
+const TOTAL_MS = 5500;
 export default function WelcomeOverlay({ name }: { name: string }) {
   const [phase, setPhase] = useState<"idle" | "playing" | "done">("idle");
   const [crestOk, setCrestOk] = useState(true);
@@ -38,7 +40,7 @@ export default function WelcomeOverlay({ name }: { name: string }) {
       return;
     }
     setPhase("playing");
-    const t = setTimeout(() => setPhase("done"), 3300);
+    const t = setTimeout(() => setPhase("done"), TOTAL_MS);
     return () => clearTimeout(t);
   }, []);
 
@@ -53,7 +55,7 @@ export default function WelcomeOverlay({ name }: { name: string }) {
         zIndex: 9999,
         pointerEvents: "none",
         background: "#000",
-        animation: "lounge-curtain 3300ms ease-in forwards",
+        animation: `lounge-curtain ${TOTAL_MS}ms ease-in-out forwards`,
       }}
     >
       <style>{KEYFRAMES}</style>
@@ -88,8 +90,8 @@ export default function WelcomeOverlay({ name }: { name: string }) {
             transform: "scale(0.55)",
             filter: "blur(8px)",
             animation:
-              "lounge-pop 700ms 100ms cubic-bezier(0.22,1.2,0.36,1) forwards, " +
-              "lounge-pulse 1800ms 800ms ease-in-out infinite",
+              "lounge-pop 1000ms 0ms cubic-bezier(0.22,1.2,0.36,1) forwards, " +
+              "lounge-pulse 2400ms 1000ms ease-in-out infinite",
           }}
         >
           {crestOk ? (
@@ -125,7 +127,7 @@ export default function WelcomeOverlay({ name }: { name: string }) {
             letterSpacing: "-0.015em",
             opacity: 0,
             transform: "translateY(14px)",
-            animation: "lounge-rise 700ms 700ms cubic-bezier(0.22,0.61,0.36,1) forwards",
+            animation: "lounge-rise 1000ms 1000ms cubic-bezier(0.22,0.61,0.36,1) forwards",
             textShadow: "0 4px 28px rgba(240,180,41,0.45)",
           }}
         >
@@ -143,7 +145,7 @@ export default function WelcomeOverlay({ name }: { name: string }) {
             textTransform: "uppercase",
             opacity: 0,
             transform: "translateY(14px)",
-            animation: "lounge-rise 700ms 1500ms cubic-bezier(0.22,0.61,0.36,1) forwards",
+            animation: "lounge-rise 1000ms 2000ms cubic-bezier(0.22,0.61,0.36,1) forwards",
           }}
         >
           Welcome to the Employee Lounge
@@ -167,7 +169,11 @@ const KEYFRAMES = `
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes lounge-curtain {
-  0%, 72%  { opacity: 1; }
-  100%     { opacity: 0; }
+  /* 5500ms total: 1000ms fade in, ~3500ms hold, 1000ms fade out.
+     Long enough that phones don't blink through it. */
+  0%                  { opacity: 0; }
+  18%                 { opacity: 1; }
+  82%                 { opacity: 1; }
+  100%                { opacity: 0; }
 }
 `;
