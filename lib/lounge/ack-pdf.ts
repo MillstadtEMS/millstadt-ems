@@ -60,7 +60,7 @@ export async function buildAckMemorandumPdf(input: AckPdfInput): Promise<Buffer>
   doc.setTextColor(80);
   doc.text("Office of the Chief", W / 2, y, { align: "center" });
   y += 12;
-  doc.text("203 W Laurel St · Millstadt, Illinois 62260", W / 2, y, { align: "center" });
+  doc.text("100 E Laurel St · Millstadt, Illinois 62260", W / 2, y, { align: "center" });
   y += 18;
 
   doc.setDrawColor(20, 30, 60);

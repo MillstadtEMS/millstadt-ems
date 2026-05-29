@@ -675,6 +675,7 @@ INSERT INTO lounge_cert_types (id, name, slug, requires_expiration, is_built_in)
     ('builtin-itls',              'ITLS',                           'itls',              TRUE,  TRUE),
     ('builtin-pals',              'PALS',                           'pals',              TRUE,  TRUE),
     ('builtin-vaccination',       'Vaccination Proof',              'vaccination',       FALSE, TRUE),
+    ('builtin-vaccination-exemption', 'Vaccination Exemption',      'vaccination-exemption', FALSE, TRUE),
     ('builtin-nims-100',          'NIMS 100',                       'nims-100',          FALSE, TRUE),
     ('builtin-nims-200',          'NIMS 200',                       'nims-200',          FALSE, TRUE),
     ('builtin-nims-300',          'NIMS 300',                       'nims-300',          FALSE, TRUE),

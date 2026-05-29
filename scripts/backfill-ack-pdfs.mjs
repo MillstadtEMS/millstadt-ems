@@ -43,7 +43,7 @@ function buildPdf(input) {
   doc.setTextColor(80);
   doc.text("Office of the Chief", W / 2, y, { align: "center" });
   y += 12;
-  doc.text("203 W Laurel St · Millstadt, Illinois 62260", W / 2, y, { align: "center" });
+  doc.text("100 E Laurel St · Millstadt, Illinois 62260", W / 2, y, { align: "center" });
   y += 18;
 
   doc.setDrawColor(20, 30, 60);
@@ -212,7 +212,7 @@ const linkedRows = await sql`
   JOIN lounge_acks n ON n.id = s.ack_id
   JOIN lounge_employees emp ON emp.id = att.employee_id
   WHERE att.document_category = 'notice_acknowledgment'
-    AND att.file_url LIKE 'data:%'
+    AND (att.file_url LIKE 'data:%' OR att.file_url LIKE '%/ack-memorandums/%')
 `;
 
 const orphanRows = await sql`
@@ -233,7 +233,7 @@ const orphanRows = await sql`
   JOIN lounge_personnel_records r ON r.id = att.record_id
   JOIN lounge_employees emp ON emp.id = att.employee_id
   WHERE att.document_category = 'notice_acknowledgment'
-    AND att.file_url LIKE 'data:%'
+    AND (att.file_url LIKE 'data:%' OR att.file_url LIKE '%/ack-memorandums/%')
     AND NOT EXISTS (
       SELECT 1 FROM lounge_ack_states s
       WHERE s.personnel_record_id = att.record_id
