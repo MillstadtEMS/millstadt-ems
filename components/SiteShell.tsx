@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import LoungeButton from "./LoungeButton";
+import MobileTabBar from "./MobileTabBar";
 
 export default function SiteShell({
   header,
@@ -29,11 +30,15 @@ export default function SiteShell({
   return (
     <>
       {header}
-      <main className="flex-1 w-full overflow-x-hidden" style={{ paddingTop: "120px" }}>
+      <main
+        className="flex-1 w-full overflow-x-hidden mems-main-pad"
+        style={{ paddingTop: "120px" }}
+      >
         {children}
       </main>
       {footer}
       <LoungeButton />
+      <MobileTabBar />
     </>
   );
 }

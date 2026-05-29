@@ -137,10 +137,10 @@ export default async function ContactPage({
           <div className="p-16 rounded-2xl bg-[#071428] border border-white/8">
               <div className="flex items-center gap-3 mb-5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                <span className="text-emerald-400 text-xs font-bold uppercase tracking-widest">Always Available</span>
+                <span className="text-emerald-400 font-bold uppercase tracking-widest" style={{ fontSize: 15, letterSpacing: "0.18em" }}>Always Available</span>
               </div>
-              <h3 className="text-white font-black text-2xl mb-4">24-Hour Emergency Response</h3>
-              <p className="text-slate-400 text-base leading-relaxed">
+              <h3 className="text-white font-black mb-5" style={{ fontSize: 40, lineHeight: 1.1 }}>24-Hour Emergency Response</h3>
+              <p className="text-slate-300 leading-relaxed" style={{ fontSize: 22, lineHeight: 1.55 }}>
                 Millstadt Ambulance Service operates 24 hours a day, 365 days a year. For all
                 life-threatening emergencies, call 9-1-1. Our providers are on call around the clock.
               </p>
@@ -150,10 +150,10 @@ export default async function ContactPage({
           <div className="p-16 rounded-2xl bg-[#071428] border border-[#f0b429]/20">
             <div className="flex items-center gap-3 mb-5">
               <span className="w-2 h-2 rounded-full bg-[#f0b429] animate-pulse shrink-0" />
-              <span className="text-[#f0b429] text-xs font-bold uppercase tracking-widest">Important</span>
+              <span className="text-[#f0b429] font-bold uppercase tracking-widest" style={{ fontSize: 15, letterSpacing: "0.18em" }}>Important</span>
             </div>
-            <h3 className="text-white font-black text-2xl mb-4">We Come to You</h3>
-            <p className="text-slate-400 text-base leading-relaxed">
+            <h3 className="text-white font-black mb-5" style={{ fontSize: 40, lineHeight: 1.1 }}>We Come to You</h3>
+            <p className="text-slate-300 leading-relaxed" style={{ fontSize: 22, lineHeight: 1.55 }}>
               Our ambulance base is not always staffed in person — but our providers are on call 24/7
               and ready to respond at a moment&apos;s notice. If you need emergency assistance, call
               9-1-1 and we will come to you. Please do not drive to the station.
