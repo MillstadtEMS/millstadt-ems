@@ -72,7 +72,7 @@ export default function KidsClubActivitiesPage() {
           <aside className="kc-hero-console" aria-label="Kids Club mission stats">
             <div className="kc-console-top">
               <Image
-                src="/images/millstadt-ems/star-of-life.png"
+                src="/images/millstadt-ems/crest.png"
                 alt=""
                 width={64}
                 height={64}

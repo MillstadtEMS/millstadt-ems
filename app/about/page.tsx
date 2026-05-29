@@ -80,7 +80,7 @@ export default async function AboutPage({
               "Serving Millstadt and surrounding communities since 1980, we provide reliable, high-quality emergency care when it matters most.",
             ].map((text) => (
               <li key={text} className="flex items-start gap-4">
-                <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
+                <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
                 <span className="text-slate-300 text-xl leading-relaxed">{text}</span>
               </li>
             ))}
@@ -98,11 +98,11 @@ export default async function AboutPage({
           <div className="p-16 rounded-2xl bg-[#071428] border border-white/8">
             <div className="flex items-center gap-4 mb-8">
               <Image
-                src="/images/millstadt-ems/star-of-life.png"
+                src="/images/millstadt-ems/crest.png"
                 alt=""
                 width={32}
                 height={32}
-                style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 4px #f0b429)" }}
+               
               />
               <span className="text-[#f0b429] text-4xl font-black tracking-[0.15em] uppercase">Mission</span>
             </div>
@@ -113,7 +113,7 @@ export default async function AboutPage({
           <div className="p-16 rounded-2xl bg-[#071428] border border-white/8">
             <div className="flex items-center gap-4 mb-8">
               <Image
-                src="/images/millstadt-ems/star-of-life.png"
+                src="/images/millstadt-ems/crest.png"
                 alt=""
                 width={32}
                 height={32}
@@ -133,7 +133,7 @@ export default async function AboutPage({
       <section className="bg-[#071428]" style={{ paddingBottom: 24 }}>
         <div className="wrap">
           <div className="flex items-center gap-4 mb-8">
-            <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={32} height={32} style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 4px #f0b429)" }} />
+            <Image src="/images/millstadt-ems/crest.png" alt="" width={32} height={32} />
             <span className="text-[#f0b429] text-2xl font-black tracking-[0.15em] uppercase">Core Values</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-black text-white mb-24">What We Stand For</h2>
@@ -141,7 +141,7 @@ export default async function AboutPage({
             {values.map((v) => (
               <div key={v.label} className="p-14 rounded-2xl bg-[#040d1a] border border-white/8 hover:border-[#f0b429]/25 transition-colors">
                 <div className="flex items-center gap-3 mb-5">
-                  <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={22} height={22} style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
+                  <Image src="/images/millstadt-ems/crest.png" alt="" width={22} height={22} style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
                   <span className="text-[#f0b429] font-black text-xl">{v.label}</span>
                 </div>
                 <p className="text-slate-300 text-base leading-relaxed">{v.desc}</p>
@@ -158,7 +158,7 @@ export default async function AboutPage({
         <div className="wrap grid md:grid-cols-2 gap-24 items-center">
           <div>
             <div className="flex items-center gap-4 mb-8">
-              <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={32} height={32} style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 4px #f0b429)" }} />
+              <Image src="/images/millstadt-ems/crest.png" alt="" width={32} height={32} />
               <span className="text-[#f0b429] text-2xl font-black tracking-[0.15em] uppercase">Service Area</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-white mb-12 leading-tight">
@@ -172,7 +172,7 @@ export default async function AboutPage({
                 "Serves a diverse region with both rural and urban community response needs.",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-5">
-                  <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={20} height={20} className="shrink-0" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
+                  <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
                   <span className="text-slate-300 text-lg leading-relaxed">{item}</span>
                 </li>
               ))}
@@ -229,7 +229,7 @@ export default async function AboutPage({
             {/* Timeline */}
             <div>
             <div className="flex items-center gap-4 mb-8">
-                <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={32} height={32} style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 4px #f0b429)" }} />
+                <Image src="/images/millstadt-ems/crest.png" alt="" width={32} height={32} />
                 <span className="text-[#f0b429] text-2xl font-black tracking-[0.15em] uppercase">Our History</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-black text-white mb-20">Built by the Community</h2>
@@ -238,7 +238,7 @@ export default async function AboutPage({
                 <div key={t.year} className="relative">
                   <div className="absolute -left-[2.85rem] top-0">
                     <Image
-                      src="/images/millstadt-ems/star-of-life.png"
+                      src="/images/millstadt-ems/crest.png"
                       alt=""
                       width={24}
                       height={24}
@@ -262,7 +262,7 @@ export default async function AboutPage({
         <div className="wrap grid md:grid-cols-2 gap-24 items-start">
           <div>
             <div className="flex items-center gap-4 mb-8">
-              <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={32} height={32} style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 4px #f0b429)" }} />
+              <Image src="/images/millstadt-ems/crest.png" alt="" width={32} height={32} />
               <span className="text-[#f0b429] text-2xl font-black tracking-[0.15em] uppercase">Our Team</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-white mb-10 leading-tight">
@@ -280,7 +280,7 @@ export default async function AboutPage({
           </div>
           <div>
             <div className="flex items-center gap-4 mb-8">
-              <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={32} height={32} style={{ filter: "drop-shadow(0 0 4px #2563eb)" }} />
+              <Image src="/images/millstadt-ems/crest.png" alt="" width={32} height={32} style={{ filter: "drop-shadow(0 0 4px #2563eb)" }} />
               <span className="text-[#2563eb] text-2xl font-black tracking-[0.15em] uppercase">Future Outlook</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-white mb-10 leading-tight">
@@ -295,7 +295,7 @@ export default async function AboutPage({
                 "Continued investment in personnel and provider development",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-5">
-                  <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
+                  <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
                   <span className="text-slate-300 text-lg leading-relaxed">{item}</span>
                 </li>
               ))}

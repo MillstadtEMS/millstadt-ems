@@ -34,7 +34,7 @@ export default function EventsPage() {
             Community Events
           </h1>
           <div className="flex items-start gap-4 max-w-2xl">
-            <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
+            <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
             <span className="text-slate-300 text-xl leading-relaxed">A live look at upcoming community events, public appearances, and local happenings in and around Millstadt.</span>
           </div>
         </div>
@@ -47,7 +47,7 @@ export default function EventsPage() {
       <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>
         <div className="wrap">
           <div className="flex items-center gap-4 mb-10">
-            <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={32} height={32} style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 4px #f0b429)" }} />
+            <Image src="/images/millstadt-ems/crest.png" alt="" width={32} height={32} />
             <span className="text-[#f0b429] text-2xl font-black tracking-[0.15em] uppercase">Event Calendar</span>
           </div>
 

@@ -82,9 +82,9 @@ export default async function ContactPage({
           {/* Station Contact */}
           <div className="p-10 rounded-2xl bg-[#071428] border border-white/8">
             <div className="flex items-center justify-between gap-4 mb-8 pb-6 border-b border-white/8">
-              <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={26} height={26} style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 4px #f0b429)" }} />
+              <Image src="/images/millstadt-ems/crest.png" alt="" width={26} height={26} />
               <h2 className="text-white font-black text-xl">Millstadt Ambulance Service</h2>
-              <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={26} height={26} style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 4px #f0b429)" }} />
+              <Image src="/images/millstadt-ems/crest.png" alt="" width={26} height={26} />
             </div>
 
             <ul className="flex flex-col gap-4">
@@ -170,7 +170,7 @@ export default async function ContactPage({
       <section className="bg-[#071428]" style={{ paddingBottom: 24 }}>
         <div className="wrap">
           <div className="flex items-center gap-4 mb-8">
-            <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={32} height={32} style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 4px #f0b429)" }} />
+            <Image src="/images/millstadt-ems/crest.png" alt="" width={32} height={32} />
             <span className="text-[#f0b429] text-2xl font-black tracking-[0.15em] uppercase">Local Resources</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-black text-white mb-16">Community Contacts</h2>

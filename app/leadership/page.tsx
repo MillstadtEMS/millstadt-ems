@@ -142,7 +142,7 @@ export default async function LeadershipPage({
                     {leader.bio.map((para, i) => (
                       <li key={i} className="flex items-start gap-4">
                         <Image
-                          src="/images/millstadt-ems/star-of-life.png"
+                          src="/images/millstadt-ems/crest.png"
                           alt=""
                           width={20}
                           height={20}

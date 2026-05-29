@@ -83,19 +83,19 @@ export default function MoviesPage() {
           <div className="grid md:grid-cols-2 gap-12">
             <div className="space-y-6">
               <div className="flex items-start gap-5">
-                <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
+                <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
                 <p className="text-slate-300 text-lg leading-relaxed">
                   <em>Honorable but Broken</em> exposes the systemic failures threatening emergency medical services across the United States — underfunding, staffing shortages, burnout, and a broken reimbursement model that leaves providers and patients both paying the price.
                 </p>
               </div>
               <div className="flex items-start gap-5">
-                <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
+                <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
                 <p className="text-slate-300 text-lg leading-relaxed">
                   The documentary follows EMTs and paramedics from agencies across the country as they navigate impossible working conditions — long shifts, inadequate pay, mental health struggles, and the weight of life-and-death responsibility that comes with every call.
                 </p>
               </div>
               <div className="flex items-start gap-5">
-                <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
+                <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
                 <p className="text-slate-300 text-lg leading-relaxed">
                   Rural and volunteer agencies face the sharpest edge of the crisis — with some communities going hours without ambulance coverage. The film asks a hard question: when the system that saves lives is itself breaking down, who saves the system?
                 </p>
@@ -103,13 +103,13 @@ export default function MoviesPage() {
             </div>
             <div className="space-y-6">
               <div className="flex items-start gap-5">
-                <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
+                <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
                 <p className="text-slate-300 text-lg leading-relaxed">
                   Interviews with EMS directors, state legislators, national advocates, and frontline providers paint a picture of a profession that has long operated in the shadows of the healthcare system — honored in moments of crisis, forgotten the rest of the time.
                 </p>
               </div>
               <div className="flex items-start gap-5">
-                <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
+                <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
                 <p className="text-slate-300 text-lg leading-relaxed">
                   At Millstadt Ambulance Service, we see this reality firsthand. We are proud to spotlight this film because the story it tells is the story of every community-based EMS agency — including ours — and every provider who shows up every day despite the odds.
                 </p>

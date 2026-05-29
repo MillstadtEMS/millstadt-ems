@@ -44,7 +44,7 @@ export default async function BillingPage({
               "Most major insurance plans, Medicare, and Medicaid cover emergency ambulance services.",
             ].map((text) => (
               <li key={text} className="flex items-start gap-4">
-                <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
+                <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
                 <span className="text-slate-300 text-xl leading-relaxed">{text}</span>
               </li>
             ))}

@@ -45,7 +45,7 @@ export default async function MedicalControlPage({
               "Our Medical Director provides regional leadership across the Southwestern Illinois EMS System.",
             ].map((text) => (
               <li key={text} className="flex items-start gap-4">
-                <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
+                <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
                 <span className="text-slate-300 text-xl leading-relaxed">{text}</span>
               </li>
             ))}
@@ -81,19 +81,19 @@ export default async function MedicalControlPage({
 
               <div className="text-slate-400 text-lg leading-relaxed">
                 <div className="flex items-start gap-5 mb-8">
-                  <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "drop-shadow(0 0 4px #2563eb)" }} />
+                  <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "drop-shadow(0 0 4px #2563eb)" }} />
                   <p>Dr. Leo Hsu is a board-certified emergency physician and a Fellow of both the American College of Emergency Physicians (FACEP) and the Academy of Emergency Medical Services (FAEMS). He currently serves as Regional Medical Director at TeamHealth, a position he has held since 2017, and as Medical Director at Rezilient Health since 2022.</p>
                 </div>
                 <div className="flex items-start gap-5 mb-8">
-                  <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "drop-shadow(0 0 4px #2563eb)" }} />
+                  <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "drop-shadow(0 0 4px #2563eb)" }} />
                   <p>His EMS leadership spans multiple systems across the region. Dr. Hsu has served as EMS Medical Director for the Southwestern Illinois EMS System (SWIL) since April 2018 and for Missouri Baptist Sullivan Hospital since March 2018. He also served as EMS Medical Director for St. Charles County Ambulance District from 2012 to 2023, and currently serves as EMS Medical Director for St. François County EMS in Missouri.</p>
                 </div>
                 <div className="flex items-start gap-5 mb-8">
-                  <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "drop-shadow(0 0 4px #2563eb)" }} />
+                  <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "drop-shadow(0 0 4px #2563eb)" }} />
                   <p>Earlier in his career, Dr. Hsu was an Attending Physician in the Emergency Department at Progress West Hospital beginning in 2007. He went on to serve as the hospital&apos;s Stroke Medical Director from 2014 to 2017 and as Medical Director of the Emergency Department from 2012 to 2017.</p>
                 </div>
                 <div className="flex items-start gap-5">
-                  <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "drop-shadow(0 0 4px #2563eb)" }} />
+                  <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "drop-shadow(0 0 4px #2563eb)" }} />
                   <p>Dr. Hsu&apos;s breadth of experience across clinical practice, hospital leadership, and regional EMS direction reflects a lifelong commitment to advancing emergency medicine and improving outcomes for the communities he serves.</p>
                 </div>
               </div>
@@ -122,7 +122,7 @@ export default async function MedicalControlPage({
               { degree: "MBA, Health Care Administration & Management", school: "Southeast Missouri State University", year: "2017" },
             ].map((item) => (
               <div key={item.degree} className="flex items-start gap-5 p-8 bg-[#071428] border border-white/8 rounded-2xl">
-                <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={18} height={18} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
+                <Image src="/images/millstadt-ems/crest.png" alt="" width={18} height={18} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
                 <div>
                   <div className="text-white font-bold text-base mb-1">{item.degree}</div>
                   <div className="text-slate-400 text-sm">{item.school} &mdash; {item.year}</div>

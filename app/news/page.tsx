@@ -9,7 +9,7 @@ function StorySeparator() {
     <div className="flex items-center gap-4 py-2">
       <span className="flex-1 h-px bg-gradient-to-r from-transparent to-white/8" />
       <Image
-        src="/images/millstadt-ems/star-of-life.png"
+        src="/images/millstadt-ems/crest.png"
         alt=""
         width={16}
         height={16}

@@ -135,7 +135,7 @@ export default async function FleetPage({
                 <ul className="space-y-5">
                   {unit.capabilities.map((c) => (
                     <li key={c} className="flex items-start gap-4 text-slate-300 text-sm">
-                      <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={16} height={16} className="shrink-0 mt-0.5" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
+                      <Image src="/images/millstadt-ems/crest.png" alt="" width={16} height={16} className="shrink-0 mt-0.5" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
                       {c}
                     </li>
                   ))}

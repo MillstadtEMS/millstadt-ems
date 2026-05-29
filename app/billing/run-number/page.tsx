@@ -18,11 +18,11 @@ function SectionHeader({ title }: { title: string }) {
   return (
     <div className="flex items-center gap-4 pb-8 border-b border-white/8">
       <Image
-        src="/images/millstadt-ems/star-of-life.png"
+        src="/images/millstadt-ems/crest.png"
         alt=""
         width={30}
         height={30}
-        style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 4px #f0b429)" }}
+       
       />
       <h2 className="text-white font-black text-2xl">{title}</h2>
     </div>
@@ -56,7 +56,7 @@ export default function RunNumberPage() {
               "A member of our team will respond to your request with your run number as soon as possible. Identity verification is required by law.",
             ].map((text) => (
               <li key={text} className="flex items-start gap-4">
-                <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
+                <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
                 <span className="text-slate-300 text-xl leading-relaxed">{text}</span>
               </li>
             ))}
@@ -157,7 +157,7 @@ export default function RunNumberPage() {
                     "Millstadt Ambulance Service reserves the right to verify my identity before responding to this request.",
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-4">
-                      <Image src="/images/millstadt-ems/star-of-life.png" alt="" width={16} height={16} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
+                      <Image src="/images/millstadt-ems/crest.png" alt="" width={16} height={16} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
                       <span>{item}</span>
                     </li>
                   ))}
