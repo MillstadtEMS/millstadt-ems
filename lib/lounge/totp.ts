@@ -1,13 +1,15 @@
 /**
  * RFC 6238 TOTP (Time-Based One-Time Password).
  *
- * Compatible with Okta Verify, Google Authenticator, 1Password, Authy,
- * Microsoft Authenticator, etc. — anything that scans the standard
- * `otpauth://` URL.
+ * Microsoft Authenticator-compatible TOTP for the Employee Lounge.
+ *
+ * Microsoft Authenticator reads the standard `otpauth://` URL used here.
+ * The login UI intentionally presents Microsoft Authenticator as the only
+ * supported setup path for employees.
  *
  * - 30-second time step
- * - SHA-1 HMAC (the universal default; what Okta Verify expects on a
- *   third-party site setup)
+ * - SHA-1 HMAC (the universal default Microsoft Authenticator expects for
+ *   third-party account codes)
  * - 6 digits
  */
 
@@ -96,8 +98,7 @@ export function verifyCode(secretBase32: string, code: string, now = Date.now())
 }
 
 /**
- * Build an otpauth:// URL. Authenticator apps render this as a QR.
- *   issuer: "Millstadt EMS" → shown as the account label.
+ * Build an otpauth:// URL for Microsoft Authenticator to render as a QR.
  */
 export function otpauthUrl(input: { issuer: string; account: string; secret: string }): string {
   const label = encodeURIComponent(`${input.issuer}:${input.account}`);

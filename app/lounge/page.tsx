@@ -89,11 +89,9 @@ export default async function LoungeHome() {
 
         {expiring.length > 0 && <CertAlertsBanner certs={expiring} />}
 
-        <QuickActionDock isAdmin={session.isAdmin} />
-
         <div className="lounge-command-grid">
           <div className="lounge-main-stack">
-            <ScheduleSnapshot openShifts={activeOpenShifts} />
+            <QuickActionDock isAdmin={session.isAdmin} />
             <Wall
               me={{
                 id: session.id,
@@ -103,6 +101,7 @@ export default async function LoungeHome() {
                 isAdmin: session.isAdmin,
               }}
             />
+            <ScheduleSnapshot openShifts={activeOpenShifts} />
             <TrainingResourcesRecognition isAdmin={session.isAdmin} />
           </div>
 
@@ -148,18 +147,12 @@ function CommandHeader({
 
   return (
     <header className="lounge-hero">
-      <div className="lounge-hero-bg" aria-hidden>
-        <Image
-          src="/images/millstadt-ems/star-of-life.png"
-          alt=""
-          width={240}
-          height={240}
-        />
-      </div>
       <div className="lounge-hero-copy">
         <div className="lounge-eyebrow">{formatDateLine(now)}</div>
-        <h1>Employee Lounge</h1>
-        <p>Welcome back, {firstName}. Crew updates, open coverage, training, documents, and station tools are all in one command view.</p>
+        <div className="lounge-hero-title-row">
+          <h1>Employee Lounge</h1>
+          <p>Welcome back, {firstName}. Shift notes, coverage, messages, and crew tools.</p>
+        </div>
         <div className="lounge-status-strip">
           {statusChips.map((chip) => (
             <div key={chip.label}>
@@ -169,10 +162,8 @@ function CommandHeader({
           ))}
         </div>
       </div>
-      <div className="lounge-hero-card">
-        <Image src="/lounge/lounge-button.png" alt="" width={170} height={115} />
-        <span>Station Culture</span>
-        <strong>Feed, coverage, and crew tools built for shift life.</strong>
+      <div className="lounge-hero-mark" aria-hidden>
+        <Image src="/lounge/lounge-button.png" alt="" width={104} height={74} />
       </div>
     </header>
   );
@@ -183,8 +174,8 @@ function QuickActionDock({ isAdmin }: { isAdmin: boolean }) {
   return (
     <section className="lounge-action-dock" aria-label="Quick actions">
       <div className="lounge-section-head">
-        <span>Quick Action Dock</span>
-        <h2>Common shift tasks</h2>
+        <span>Quick actions</span>
+        <h2>Shift tasks</h2>
       </div>
       <div className="lounge-action-grid">
         {actions.map((action) => (
@@ -204,15 +195,15 @@ function ScheduleSnapshot({ openShifts }: { openShifts: OpenShift[] }) {
   return (
     <section className="lounge-schedule" id="schedule">
       <div className="lounge-section-head">
-        <span>Shift and Schedule Snapshot</span>
-        <h2>Coverage board</h2>
+        <span>Schedule snapshot</span>
+        <h2>Coverage</h2>
       </div>
 
       <div className="lounge-schedule-grid">
         <div className="lounge-unit-board">
-          <StatusRow label="Today" value="Crew schedule connection pending" tone="blue" />
-          <StatusRow label="Current unit staffing" value="Use Aladtec source until sync is wired" tone="gold" />
-          <StatusRow label="Next shift" value="Private schedule not connected on this page yet" tone="neutral" />
+          <StatusRow label="Today" value="Use Aladtec for official roster" tone="blue" />
+          <StatusRow label="Unit staffing" value="Schedule sync not connected yet" tone="gold" />
+          <StatusRow label="Next shift" value="Private schedule stays in Aladtec" tone="neutral" />
         </div>
 
         <div className="lounge-open-board">
@@ -460,35 +451,36 @@ function timeAgo(input: string) {
 const LOUNGE_HOME_CSS = `
 .lounge-command-page {
   display: grid;
-  gap: 18px;
+  gap: 14px;
 }
 .lounge-hero {
   position: relative;
   overflow: hidden;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 22px;
-  min-height: 360px;
-  padding: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 132px;
+  padding: 18px 20px;
   border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 28px;
+  border-radius: 20px;
   background:
-    radial-gradient(circle at 18% 14%, rgba(37,99,235,0.28), transparent 22rem),
-    radial-gradient(circle at 82% 0%, rgba(240,180,41,0.24), transparent 18rem),
+    linear-gradient(90deg, rgba(27,88,201,0.2), transparent 42%),
+    radial-gradient(circle at 92% 0%, rgba(240,180,41,0.2), transparent 16rem),
     linear-gradient(135deg, #071428 0%, #020912 100%);
-  box-shadow: 0 24px 80px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.08);
+  box-shadow: 0 16px 46px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.07);
 }
-.lounge-hero-bg {
-  position: absolute;
-  right: 42px;
-  top: 24px;
-  opacity: 0.13;
-  filter: drop-shadow(0 0 28px rgba(56,189,248,0.8));
-}
-.lounge-hero-copy,
-.lounge-hero-card {
+.lounge-hero-copy {
   position: relative;
   z-index: 1;
+  flex: 1;
+  min-width: 0;
+}
+.lounge-hero-title-row {
+  display: flex;
+  align-items: end;
+  gap: 18px;
+  justify-content: space-between;
 }
 .lounge-eyebrow,
 .lounge-section-head span,
@@ -504,36 +496,37 @@ const LOUNGE_HOME_CSS = `
   text-transform: uppercase;
 }
 .lounge-hero h1 {
-  margin: 10px 0 0;
+  margin: 7px 0 0;
   color: white;
-  font-size: clamp(2.5rem, 6vw, 5.8rem);
-  line-height: 0.86;
-  letter-spacing: -0.055em;
+  font-size: clamp(2.15rem, 4vw, 4rem);
+  line-height: 0.9;
+  letter-spacing: -0.045em;
   font-weight: 950;
+  white-space: nowrap;
 }
 .lounge-hero p {
-  max-width: 720px;
-  margin: 18px 0 0;
-  color: #dbeafe;
-  font-size: 1rem;
-  line-height: 1.7;
+  max-width: 430px;
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.92rem;
+  line-height: 1.55;
   font-weight: 650;
 }
 .lounge-status-strip {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
 }
 .lounge-status-strip div {
-  min-height: 92px;
-  padding: 14px;
-  border-radius: 18px;
+  min-height: 0;
+  min-width: 128px;
+  padding: 9px 12px;
+  border-radius: 999px;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.09);
 }
 .lounge-status-strip span,
-.lounge-hero-card span,
 .lounge-action-card small,
 .lounge-status-row span,
 .lounge-resource-grid span,
@@ -548,34 +541,23 @@ const LOUNGE_HOME_CSS = `
 }
 .lounge-status-strip strong {
   display: block;
-  margin-top: 8px;
+  margin-top: 3px;
   color: white;
-  font-size: 1.05rem;
+  font-size: 0.88rem;
+  line-height: 1.2;
 }
-.lounge-hero-card {
-  align-self: stretch;
+.lounge-hero-mark {
+  position: relative;
+  z-index: 1;
+  width: 112px;
+  min-width: 112px;
   display: flex;
-  flex-direction: column;
   justify-content: flex-end;
-  padding: 22px;
-  border-radius: 24px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04)),
-    rgba(2,9,18,0.7);
-  border: 1px solid rgba(255,255,255,0.1);
 }
-.lounge-hero-card img {
-  width: min(100%, 190px);
+.lounge-hero-mark img {
+  width: 104px;
   height: auto;
-  margin: 0 auto 20px;
-  filter: drop-shadow(0 20px 28px rgba(0,0,0,0.38));
-}
-.lounge-hero-card strong {
-  display: block;
-  margin-top: 8px;
-  color: white;
-  font-size: 1.2rem;
-  line-height: 1.25;
+  filter: drop-shadow(0 14px 20px rgba(0,0,0,0.38));
 }
 .lounge-cert-banner {
   display: grid;
@@ -635,44 +617,44 @@ const LOUNGE_HOME_CSS = `
 .lounge-dashboard-panel,
 .lounge-rail-card {
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 22px;
+  border-radius: 18px;
   background:
-    radial-gradient(circle at top left, rgba(37,99,235,0.12), transparent 18rem),
+    linear-gradient(180deg, rgba(37,99,235,0.08), transparent),
     #071428;
-  box-shadow: 0 18px 50px rgba(0,0,0,0.22);
+  box-shadow: 0 12px 34px rgba(0,0,0,0.2);
 }
 .lounge-action-dock {
-  padding: 18px;
+  padding: 14px;
 }
 .lounge-section-head {
   display: flex;
   justify-content: space-between;
   align-items: end;
   gap: 16px;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 .lounge-section-head h2,
 .lounge-dashboard-panel h2,
 .lounge-rail-card h3 {
   margin: 5px 0 0;
   color: white;
-  font-size: 1.35rem;
+  font-size: 1.08rem;
   line-height: 1.1;
   letter-spacing: -0.025em;
 }
 .lounge-action-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 .lounge-action-card {
-  min-height: 118px;
+  min-height: 72px;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 16px;
-  border-radius: 18px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
   text-decoration: none;
   background: rgba(255,255,255,0.045);
   border: 1px solid rgba(255,255,255,0.08);
@@ -685,34 +667,38 @@ const LOUNGE_HOME_CSS = `
   background: rgba(240,180,41,0.08);
 }
 .lounge-action-card svg {
-  width: 27px;
-  height: 27px;
+  width: 24px;
+  height: 24px;
   fill: #f0b429;
+  flex: 0 0 auto;
 }
 .lounge-action-card span {
   color: white;
-  font-size: 0.95rem;
+  font-size: 0.86rem;
   font-weight: 900;
   line-height: 1.15;
 }
+.lounge-action-card small {
+  display: none;
+}
 .lounge-command-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 310px;
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 14px;
   align-items: start;
 }
 .lounge-main-stack {
   display: grid;
-  gap: 18px;
+  gap: 14px;
   min-width: 0;
 }
 .lounge-schedule {
-  padding: 18px;
+  padding: 14px;
 }
 .lounge-schedule-grid {
   display: grid;
-  grid-template-columns: 0.78fr 1.22fr;
-  gap: 12px;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 10px;
 }
 .lounge-unit-board,
 .lounge-open-board {
@@ -731,7 +717,7 @@ const LOUNGE_HOME_CSS = `
   border: 1px solid rgba(255,255,255,0.08);
 }
 .lounge-status-row {
-  padding: 14px;
+  padding: 12px;
   border-left: 4px solid #64748b;
 }
 .lounge-status-row.is-blue { border-left-color: #38bdf8; }
@@ -740,11 +726,11 @@ const LOUNGE_HOME_CSS = `
   display: block;
   margin-top: 6px;
   color: white;
-  font-size: 0.92rem;
+  font-size: 0.86rem;
   line-height: 1.4;
 }
 .lounge-open-board {
-  padding: 14px;
+  padding: 12px;
 }
 .lounge-open-top {
   display: flex;
@@ -756,7 +742,7 @@ const LOUNGE_HOME_CSS = `
   display: block;
   margin-top: 4px;
   color: white;
-  font-size: 1.45rem;
+  font-size: 1.16rem;
 }
 .lounge-empty {
   margin: 12px 0 0;
@@ -799,22 +785,22 @@ const LOUNGE_HOME_CSS = `
 .lounge-panels-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 10px;
 }
 .lounge-dashboard-panel {
-  padding: 18px;
+  padding: 14px;
 }
 .lounge-list,
 .lounge-resource-grid,
 .lounge-recognition {
   display: grid;
-  gap: 9px;
-  margin-top: 14px;
+  gap: 8px;
+  margin-top: 12px;
 }
 .lounge-list a,
 .lounge-resource-grid a {
   display: block;
-  padding: 13px;
+  padding: 11px;
   text-decoration: none;
 }
 .lounge-list span,
@@ -834,7 +820,7 @@ const LOUNGE_HOME_CSS = `
   color: #f0b429;
 }
 .lounge-recognition article {
-  padding: 13px;
+  padding: 11px;
 }
 .lounge-recognition strong {
   margin-top: 4px;
@@ -853,12 +839,12 @@ const LOUNGE_HOME_CSS = `
 }
 .lounge-command-rail {
   position: sticky;
-  top: 20px;
+  top: 14px;
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 .lounge-rail-card {
-  padding: 16px;
+  padding: 14px;
 }
 .lounge-rail-metric {
   display: flex;
@@ -873,7 +859,7 @@ const LOUNGE_HOME_CSS = `
 }
 .lounge-rail-metric strong {
   color: #f0b429;
-  font-size: 1.8rem;
+  font-size: 1.45rem;
   line-height: 1;
 }
 .lounge-notice-link {
@@ -930,6 +916,19 @@ const LOUNGE_HOME_CSS = `
   }
   .lounge-hero {
     padding: 20px;
+    display: grid;
+  }
+  .lounge-hero-title-row {
+    display: block;
+  }
+  .lounge-hero h1 {
+    white-space: normal;
+  }
+  .lounge-hero p {
+    margin-top: 10px;
+  }
+  .lounge-hero-mark {
+    display: none;
   }
   .lounge-status-strip,
   .lounge-action-grid,

@@ -12,7 +12,13 @@ interface Stats {
   inventoryItems: number;
   lowStock: number;
   expiredItems: number;
+  newApplicants: number;
+  pendingBirthdays: number;
+  pendingRideAlong: number;
+  pendingEventAppearances: number;
 }
+
+interface SubmissionCategory { formType: string; total: number; unread: number; latest: string | null }
 
 const SECTIONS = [
   {
@@ -113,6 +119,42 @@ const SECTIONS = [
   },
 ];
 
+function AwaitingCard({ stats }: { stats: Stats }) {
+  const items = [
+    { label: "New applicants",     value: stats.newApplicants,            href: "/admin/applicants?status=Applied", color: "text-emerald-300", bg: "bg-emerald-500/10 border-emerald-500/30" },
+    { label: "Birthday requests",  value: stats.pendingBirthdays,         href: "/admin/submissions",                color: "text-pink-300",     bg: "bg-pink-500/10 border-pink-500/30" },
+    { label: "Ride-along requests", value: stats.pendingRideAlong,        href: "/admin/submissions",                color: "text-sky-300",      bg: "bg-sky-500/10 border-sky-500/30" },
+    { label: "Event appearances",  value: stats.pendingEventAppearances,  href: "/admin/submissions",                color: "text-amber-300",    bg: "bg-amber-500/10 border-amber-500/30" },
+    { label: "Pending bulletin",   value: stats.pendingBulletin,          href: "/admin/bulletin",                   color: "text-blue-300",     bg: "bg-blue-500/10 border-blue-500/30" },
+    { label: "Other unread forms", value: Math.max(0, stats.unreadSubmissions - stats.pendingBirthdays - stats.pendingRideAlong - stats.pendingEventAppearances), href: "/admin/submissions", color: "text-[#f0b429]", bg: "bg-[#f0b429]/10 border-[#f0b429]/30" },
+  ];
+  const total = items.reduce((n, i) => n + i.value, 0);
+  return (
+    <section className="mb-6 border border-white/10 rounded-2xl bg-[#071428] p-6">
+      <div className="flex items-baseline justify-between mb-4 gap-3 flex-wrap">
+        <div>
+          <div className="text-[#f0b429] text-xs font-black tracking-[0.22em] uppercase">Awaiting You</div>
+          <h2 className="text-white font-black text-lg mt-1">
+            {total === 0 ? "Inbox is clear — no items waiting." : `${total} item${total === 1 ? "" : "s"} waiting on you`}
+          </h2>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+        {items.map((i) => (
+          <Link
+            key={i.label}
+            href={i.href}
+            className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border ${i.bg} hover:opacity-90 transition`}
+          >
+            <span className="text-slate-200 text-sm font-semibold">{i.label}</span>
+            <span className={`text-2xl font-black tabular-nums ${i.value > 0 ? i.color : "text-slate-600"}`}>{i.value}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
 
@@ -124,17 +166,27 @@ export default function AdminDashboard() {
       fetch("/api/cad/log").then(r => r.json()).catch(() => []),
       fetch("/api/admin/submissions").then(r => r.json()).catch(() => []),
       fetch("/api/inventory/items").then(r => r.ok ? r.json() : []).catch(() => []),
-    ]).then(([t, b, a, c, s, inv]) => {
+      fetch("/api/admin/applicants").then(r => r.json()).catch(() => null),
+    ]).then(([t, b, a, c, s, inv, app]) => {
       const invItems = Array.isArray(inv) ? inv : [];
+      const cats: SubmissionCategory[] = Array.isArray(s) ? s : [];
+      const unreadByType = (type: string) => cats.find((cat) => cat.formType === type)?.unread ?? 0;
+      const appCounts = app && typeof app === "object" && "counts" in app && app.counts ? app.counts as Record<string, number> : {};
       setStats({
         testimonials: Array.isArray(t) ? t.length : 0,
         pendingBulletin: Array.isArray(b) ? b.filter((p: { approved: boolean }) => !p.approved).length : 0,
         activeAnnouncements: Array.isArray(a) ? a.filter((x: { active: boolean }) => x.active).length : 0,
         callsThisYear: Array.isArray(c) ? c.length : 0,
-        unreadSubmissions: Array.isArray(s) ? s.reduce((n: number, cat: { unread: number }) => n + cat.unread, 0) : 0,
+        unreadSubmissions: cats.reduce((n, cat) => n + cat.unread, 0),
         inventoryItems: invItems.length,
         lowStock: invItems.filter((i: { qtyToOrder: number; skipOrder: boolean }) => i.qtyToOrder > 0 && !i.skipOrder).length,
         expiredItems: invItems.filter((i: { expiredQty: number }) => i.expiredQty > 0).length,
+        newApplicants: appCounts["Applied"] ?? 0,
+        pendingBirthdays:
+          unreadByType("Birthday Party Appearance Request") +
+          unreadByType("Birthday Party at Station Request"),
+        pendingRideAlong: unreadByType("Ride Along Request"),
+        pendingEventAppearances: unreadByType("Event Appearance Request"),
       });
     });
   }, []);
@@ -150,6 +202,9 @@ export default function AdminDashboard() {
         <h1 className="text-3xl font-black text-white">Dashboard</h1>
         <p className="text-slate-400 text-sm mt-1.5">Millstadt Ambulance Service — Site Control</p>
       </div>
+
+      {/* Awaiting You */}
+      {stats && <AwaitingCard stats={stats} />}
 
       {/* Stats */}
       {stats && (
@@ -174,6 +229,36 @@ export default function AdminDashboard() {
 
       {/* Section cards */}
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <Link
+          href="/admin/employees"
+          className="group border border-indigo-500/40 bg-indigo-500/8 rounded-2xl p-6 flex gap-4 items-start hover:opacity-90 transition-all duration-150"
+        >
+          <div className="shrink-0 mt-0.5 text-indigo-300">
+            <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-white font-bold text-base mb-1.5">Employee Records</div>
+            <div className="text-slate-400 text-sm leading-relaxed">Add employees, set username + initial password, edit personnel files.</div>
+          </div>
+          <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current text-slate-600 group-hover:text-slate-300 transition-colors shrink-0 mt-1">
+            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+          </svg>
+        </Link>
+        <Link
+          href="/admin/applicants"
+          className="group border border-green-500/40 bg-green-500/8 rounded-2xl p-6 flex gap-4 items-start hover:opacity-90 transition-all duration-150"
+        >
+          <div className="shrink-0 mt-0.5 text-green-300">
+            <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-white font-bold text-base mb-1.5">Applicants</div>
+            <div className="text-slate-400 text-sm leading-relaxed">Hiring pipeline — Applied, Waitlisted, Interview, Tentative Hire, Hired, Denied.</div>
+          </div>
+          <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current text-slate-600 group-hover:text-slate-300 transition-colors shrink-0 mt-1">
+            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+          </svg>
+        </Link>
         {SECTIONS.map(s => (
           <Link
             key={s.href}

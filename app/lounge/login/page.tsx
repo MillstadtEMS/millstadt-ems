@@ -17,9 +17,9 @@ export default function LoungeLogin() {
   const [secret, setSecret] = useState<string | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
 
-  // When we transition to setup_2fa, fetch the otpauth URL + secret, then
-  // render the QR client-side so a server-side qrcode failure can never
-  // strand the user on "Loading QR…".
+  // When we transition to setup_2fa, fetch the Microsoft Authenticator
+  // otpauth URL + secret, then render the QR client-side so a server-side
+  // qrcode failure can never strand the user on "Loading QR…".
   useEffect(() => {
     if (step !== "setup_2fa") return;
     let cancelled = false;
@@ -186,7 +186,7 @@ export default function LoungeLogin() {
             style={{ display: "grid", gap: 14 }}
           >
             <p style={{ color: "#cbd5e1", fontSize: 14, lineHeight: 1.55, margin: 0 }}>
-              Open Okta Verify (or your authenticator app) and enter the 6-digit code for <strong style={{ color: "#f0b429" }}>Millstadt EMS</strong>.
+              Open <strong style={{ color: "#f0b429" }}>Microsoft Authenticator</strong> and enter the 6-digit code for <strong style={{ color: "#f0b429" }}>Millstadt EMS Employee Lounge</strong>.
             </p>
             <input
               type="text"
@@ -214,12 +214,18 @@ export default function LoungeLogin() {
             style={{ display: "grid", gap: 14 }}
           >
             <p style={{ color: "#cbd5e1", fontSize: 14, lineHeight: 1.55, margin: 0 }}>
-              First-time setup: open <strong style={{ color: "#f0b429" }}>Okta Verify</strong> (or Google Authenticator, 1Password, Authy, etc.) and scan this QR code, then enter the 6-digit code it shows.
+              First-time setup uses <strong style={{ color: "#f0b429" }}>Microsoft Authenticator only</strong>. Add a new account in Microsoft Authenticator, choose <strong style={{ color: "#f0b429" }}>Other account</strong>, scan the QR code, then enter the 6-digit code it shows.
             </p>
+            <div style={{ display: "grid", gap: 8, padding: 12, borderRadius: 14, background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.22)", color: "#dbeafe", fontSize: 13, lineHeight: 1.45 }}>
+              <strong style={{ color: "white" }}>Microsoft Authenticator setup</strong>
+              <span>1. Open Microsoft Authenticator.</span>
+              <span>2. Tap +, then choose Other account.</span>
+              <span>3. Scan this QR and use the 6-digit code.</span>
+            </div>
             {qr ? (
               <div style={{ display: "flex", justifyContent: "center" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qr} alt="2FA setup QR code" style={{ width: 220, height: 220, background: "white", borderRadius: 12, padding: 8 }} />
+                <img src={qr} alt="Microsoft Authenticator setup QR code" style={{ width: 230, height: 230, background: "white", borderRadius: 16, padding: 10, boxShadow: "0 18px 42px rgba(0,0,0,0.34)" }} />
               </div>
             ) : setupError ? (
               <ErrorBanner>{setupError}</ErrorBanner>
@@ -228,7 +234,7 @@ export default function LoungeLogin() {
             )}
             {secret && (
               <div style={{ color: "#94a3b8", fontSize: 11, textAlign: "center" }}>
-                Can&apos;t scan? Enter this secret manually:<br />
+                Can&apos;t scan? In Microsoft Authenticator, choose manual entry and use this secret:<br />
                 <code style={{ color: "#f0b429", fontSize: 13, letterSpacing: "0.08em", display: "inline-block", marginTop: 4 }}>{secret}</code>
               </div>
             )}
@@ -322,4 +328,3 @@ const buttonStyle: React.CSSProperties = {
   transition: "background 0.2s",
   fontFamily: "inherit",
 };
-

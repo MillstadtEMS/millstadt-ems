@@ -7,6 +7,7 @@ import {
   ACTIVITY_TAGS,
   AGE_TRACKS,
   BADGES,
+  COLORING_PAGES,
   KIDS_ACTIVITIES,
   MONTHLY_FEATURED_SLUGS,
   MONTH_NAMES,
@@ -220,6 +221,55 @@ export default function KidsClubActivitiesPage() {
         </div>
       </section>
 
+      <section className="kc-coloring-section" id="coloring-pages">
+        <div className="kc-wrap">
+          <div className="kc-coloring-header">
+            <div>
+              <span className="kc-panel-label">Quick print coloring pages</span>
+              <h2>All coloring pages, right here with the missions.</h2>
+              <p>
+                The dedicated printable page still exists, but families can now
+                grab any Millstadt EMS coloring sheet without leaving the mission board.
+              </p>
+            </div>
+            <Link href="/kids-club/printables" className="kc-primary-action">
+              Open Full Printable Page
+            </Link>
+          </div>
+
+          <div className="kc-coloring-grid">
+            {COLORING_PAGES.map((page, index) => (
+              <article className="kc-coloring-card" key={page.slug}>
+                <a
+                  href={`/kids-club/coloring/${page.slug}.pdf`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`kc-coloring-thumb ${page.orientation === "portrait" ? "is-portrait" : ""}`}
+                  aria-label={`Print ${page.title}`}
+                >
+                  <Image
+                    src={`/kids-club/coloring/${page.slug}.png`}
+                    alt={page.title}
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1180px) 25vw, 180px"
+                  />
+                  <span>{index + 1}</span>
+                </a>
+                <h3>{page.title}</h3>
+                <div className="kc-coloring-actions">
+                  <a href={`/kids-club/coloring/${page.slug}.pdf`} target="_blank" rel="noopener noreferrer">
+                    Print PDF
+                  </a>
+                  <a href={`/kids-club/coloring/${page.slug}.png`} target="_blank" rel="noopener noreferrer">
+                    View
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="kc-lower-section">
         <div className="kc-wrap kc-lower-grid">
           <article className="kc-printable-callout">
@@ -371,7 +421,7 @@ const KIDS_ACTIVITY_CSS = `
   background:
     radial-gradient(circle at 12% 18%, rgba(34, 211, 238, 0.18), transparent 28rem),
     radial-gradient(circle at 88% 8%, rgba(240, 180, 41, 0.18), transparent 24rem),
-    linear-gradient(180deg, #041326 0%, #eef6fb 36%, #f7fbff 100%);
+    linear-gradient(180deg, #eef7ff 0%, #f7fbff 100%);
   color: #061121;
   overflow: hidden;
 }
@@ -585,13 +635,36 @@ const KIDS_ACTIVITY_CSS = `
 }
 .kc-spotlight-section,
 .kc-browse-section,
+.kc-coloring-section,
 .kc-lower-section,
 .kc-parent-section {
   position: relative;
   padding: 72px 0;
+  scroll-margin-top: 160px;
+}
+.kc-age-track,
+.kc-mission-card {
+  scroll-margin-top: 160px;
+}
+.kc-spotlight-section {
+  background:
+    radial-gradient(circle at 82% 8%, rgba(240,180,41,0.16), transparent 20rem),
+    linear-gradient(180deg, #eef7ff 0%, #f8fbff 100%);
+  border-top: 1px solid rgba(255,255,255,0.68);
+}
+.kc-browse-section {
+  background:
+    radial-gradient(circle at 8% 12%, rgba(34,211,238,0.14), transparent 24rem),
+    #f8fbff;
 }
 .kc-section-heading {
   max-width: 760px;
+  padding: 22px;
+  border-radius: 28px;
+  background: rgba(255,255,255,0.78);
+  border: 1px solid rgba(6,17,33,0.08);
+  box-shadow: 0 18px 50px rgba(15,23,42,0.08);
+  backdrop-filter: blur(10px);
 }
 .kc-section-heading h2,
 .kc-track-heading h2,
@@ -958,6 +1031,123 @@ const KIDS_ACTIVITY_CSS = `
 .kc-lower-section {
   background: linear-gradient(180deg, transparent, rgba(4,13,26,0.05));
 }
+.kc-coloring-section {
+  background:
+    linear-gradient(180deg, #f8fbff 0%, #eef6fb 100%),
+    radial-gradient(circle at 12% 12%, rgba(27,88,201,0.1), transparent 18rem);
+}
+.kc-coloring-header {
+  display: flex;
+  gap: 24px;
+  align-items: end;
+  justify-content: space-between;
+  padding: 28px;
+  border-radius: 30px;
+  background: #061121;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 22px 60px rgba(15,23,42,0.2);
+}
+.kc-coloring-header h2 {
+  max-width: 760px;
+  margin: 12px 0 0;
+  color: white;
+  font-size: clamp(2rem, 4vw, 4rem);
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+  font-weight: 950;
+}
+.kc-coloring-header p {
+  max-width: 760px;
+  margin: 14px 0 0;
+  color: #dbeafe;
+  font-size: 1.02rem;
+  line-height: 1.65;
+  font-weight: 650;
+}
+.kc-coloring-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 22px;
+}
+.kc-coloring-card {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 22px;
+  background: white;
+  border: 1px solid rgba(6,17,33,0.1);
+  box-shadow: 0 16px 40px rgba(15,23,42,0.1);
+}
+.kc-coloring-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(34,211,238,0.1), rgba(240,180,41,0.1)),
+    white;
+  border: 1px solid rgba(6,17,33,0.1);
+}
+.kc-coloring-thumb.is-portrait {
+  aspect-ratio: 3 / 4;
+}
+.kc-coloring-thumb img {
+  object-fit: contain;
+  padding: 10px;
+}
+.kc-coloring-thumb span {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #f0b429;
+  color: #061121;
+  font-size: 0.84rem;
+  font-weight: 950;
+  box-shadow: 0 10px 22px rgba(15,23,42,0.16);
+}
+.kc-coloring-card h3 {
+  min-height: 2.45em;
+  margin: 12px 2px 0;
+  color: #061121;
+  font-size: 1rem;
+  line-height: 1.2;
+  font-weight: 950;
+}
+.kc-coloring-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin-top: 12px;
+}
+.kc-coloring-actions a {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.68rem;
+  font-weight: 950;
+}
+.kc-coloring-actions a:first-child {
+  background: #061121;
+  color: white;
+}
+.kc-coloring-actions a:last-child {
+  padding: 0 12px;
+  background: #eef6fb;
+  color: #061121;
+  border: 1px solid rgba(6,17,33,0.1);
+}
 .kc-lower-grid {
   display: grid;
   grid-template-columns: 1.35fr 0.65fr;
@@ -1068,6 +1258,7 @@ const KIDS_ACTIVITY_CSS = `
   .kc-filter-panel,
   .kc-lower-grid,
   .kc-printable-callout,
+  .kc-coloring-header,
   .kc-parent-grid {
     grid-template-columns: 1fr;
   }
@@ -1076,6 +1267,13 @@ const KIDS_ACTIVITY_CSS = `
   }
   .kc-card-grid {
     grid-template-columns: 1fr;
+  }
+  .kc-coloring-header {
+    display: grid;
+    align-items: start;
+  }
+  .kc-coloring-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .kc-spotlight-art {
     min-height: 390px;
@@ -1103,6 +1301,7 @@ const KIDS_ACTIVITY_CSS = `
   }
   .kc-spotlight-section,
   .kc-browse-section,
+  .kc-coloring-section,
   .kc-lower-section,
   .kc-parent-section {
     padding: 48px 0;
@@ -1126,6 +1325,18 @@ const KIDS_ACTIVITY_CSS = `
   }
   .kc-print-stack {
     min-height: 250px;
+  }
+  .kc-coloring-grid {
+    gap: 12px;
+  }
+  .kc-coloring-card {
+    padding: 9px;
+  }
+  .kc-coloring-card h3 {
+    font-size: 0.9rem;
+  }
+  .kc-coloring-actions {
+    grid-template-columns: 1fr;
   }
 }
 `;

@@ -114,11 +114,11 @@ export default function Wall({ me }: { me: WallMe }) {
     <section
       style={{
         background:
-          "radial-gradient(circle at 12% 0%, rgba(56,189,248,0.12), transparent 20rem), linear-gradient(180deg, #071428 0%, #040d1a 100%)",
+          "linear-gradient(180deg, rgba(7,20,40,0.96), rgba(4,13,26,0.98))",
         border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 22,
-        padding: "20px 22px 22px",
-        boxShadow: "0 18px 50px rgba(0,0,0,0.24)",
+        borderRadius: 18,
+        padding: "14px",
+        boxShadow: "0 12px 34px rgba(0,0,0,0.2)",
       }}
     >
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
@@ -126,7 +126,7 @@ export default function Wall({ me }: { me: WallMe }) {
           <div style={{ color: "#f0b429", fontSize: "0.66rem", fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
             Internal Social Feed
           </div>
-          <h2 style={{ margin: "4px 0 0", fontSize: "1.35rem", fontWeight: 900, color: "white" }}>
+          <h2 style={{ margin: "4px 0 0", fontSize: "1.08rem", fontWeight: 900, color: "white" }}>
             Shift-to-Shift Feed
           </h2>
         </div>
@@ -212,11 +212,11 @@ function Composer({
   return (
     <div
       style={{
-        marginTop: 18,
-        background: "rgba(2,9,18,0.72)",
-        border: "1px solid rgba(240,180,41,0.18)",
-        borderRadius: 18,
-        padding: 16,
+        marginTop: 12,
+        background: "rgba(2,9,18,0.54)",
+        border: "1px solid rgba(255,255,255,0.1)",
+        borderRadius: 14,
+        padding: 12,
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
       }}
     >
@@ -227,7 +227,7 @@ function Composer({
           onChange={(e) => setBody(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit(); }}
           placeholder="What's going on this shift?"
-          rows={3}
+          rows={2}
           style={{
             flex: 1,
             background: "rgba(255,255,255,0.045)",
@@ -239,7 +239,7 @@ function Composer({
             outline: "none",
             fontFamily: "inherit",
             resize: "vertical",
-            minHeight: 70,
+            minHeight: 58,
           }}
         />
       </div>
@@ -577,8 +577,8 @@ function Avatar({
 
 function EmptyState() {
   return (
-    <div style={{ marginTop: 20, textAlign: "center", padding: "36px 22px", background: "#040d1a", border: "1px dashed rgba(255,255,255,0.10)", borderRadius: 14 }}>
-      <div style={{ fontSize: "1.6rem", marginBottom: 10 }}>📋</div>
+    <div style={{ marginTop: 14, textAlign: "center", padding: "26px 18px", background: "#040d1a", border: "1px dashed rgba(255,255,255,0.10)", borderRadius: 14 }}>
+      <div style={{ fontSize: "1.35rem", marginBottom: 8 }}>📋</div>
       <h3 style={{ color: "white", margin: 0, fontSize: "1rem" }}>No posts yet. Be the first.</h3>
       <p style={{ color: "#94a3b8", fontSize: "0.86rem", marginTop: 6 }}>
         Drop a shift handoff, ask the next crew a question, or share something the team should know.

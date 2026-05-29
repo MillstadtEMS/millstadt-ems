@@ -239,6 +239,7 @@ export interface CreateEmployeeInput {
   notes?: string;
   isAdmin?: boolean;
   initialPassword?: string;  // defaults to firstinitial+lastname+3935
+  username?: string;         // optional override; defaults to firstinitial+lastname
 }
 
 export function defaultUsername(firstName: string, lastName: string): string {
@@ -253,7 +254,8 @@ export async function createEmployee(
   input: CreateEmployeeInput,
 ): Promise<AdminEmployeeRow> {
   const id = randomUUID();
-  const username = defaultUsername(input.firstName, input.lastName);
+  const cleanUsername = (input.username ?? "").trim().toLowerCase().replace(/[^a-z0-9_.-]/g, "");
+  const username = cleanUsername || defaultUsername(input.firstName, input.lastName);
   const pw = input.initialPassword || defaultInitialPassword(input.firstName, input.lastName);
   const passwordHash = hashPassword(pw);
   const ssnEnc = input.ssn ? encrypt(input.ssn) : null;

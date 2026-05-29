@@ -174,7 +174,7 @@ export default function LoungeShell({
         style={{
           display: "grid",
           gridTemplateColumns: "260px minmax(0, 1fr)",
-          maxWidth: 1280,
+          maxWidth: 1480,
           margin: "0 auto",
           minHeight: "100vh",
         }}
@@ -196,7 +196,7 @@ export default function LoungeShell({
         </aside>
 
         {/* Main content */}
-        <main style={{ padding: "26px 22px 80px" }}>{children}</main>
+        <main style={{ padding: "22px 22px 80px" }}>{children}</main>
       </div>
 
       <style>{`
@@ -233,10 +233,8 @@ function SidebarBody({
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <IdentityChip me={me} />
-        </div>
+      <div style={{ display: "grid", gap: 8 }}>
+        <IdentityChip me={me} />
         <SignOutButton />
       </div>
 
@@ -279,7 +277,7 @@ function SidebarBody({
 
 function SignOutButton({ compact }: { compact?: boolean } = {}) {
   return (
-    <form action="/api/lounge/logout" method="post" style={{ display: "inline-flex", margin: 0 }}>
+    <form action="/api/lounge/logout" method="post" style={{ display: compact ? "inline-flex" : "flex", margin: 0 }}>
       <button
         type="submit"
         aria-label="Sign out"
@@ -287,7 +285,9 @@ function SignOutButton({ compact }: { compact?: boolean } = {}) {
         style={{
           display: "inline-flex",
           alignItems: "center",
+          justifyContent: "center",
           gap: 6,
+          width: compact ? undefined : "100%",
           background: "rgba(239,68,68,0.10)",
           border: "1px solid rgba(239,68,68,0.30)",
           color: "#fca5a5",

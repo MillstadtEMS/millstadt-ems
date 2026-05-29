@@ -34,12 +34,14 @@ export async function GET(req: NextRequest) {
       await setTotpSecret(emp.id, secret);
     }
 
+    const issuer = "Millstadt EMS Employee Lounge";
+    const account = emp.username;
     const otp = otpauthUrl({
-      issuer: "Millstadt EMS",
-      account: `${emp.firstName}.${emp.lastName}`.toLowerCase(),
+      issuer,
+      account,
       secret,
     });
-    return NextResponse.json({ otpauth: otp, secret });
+    return NextResponse.json({ otpauth: otp, secret, issuer, account, authenticator: "microsoft" });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown server error";
     console.error("[setup-2fa GET] failed:", e);

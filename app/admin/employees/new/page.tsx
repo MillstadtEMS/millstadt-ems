@@ -18,6 +18,7 @@ export default function NewEmployeePage() {
   const [notes, setNotes] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [overridePassword, setOverridePassword] = useState("");
+  const [overrideUsername, setOverrideUsername] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -34,10 +35,11 @@ export default function NewEmployeePage() {
       .catch(() => router.push("/lounge/login"));
   }, [router]);
 
-  const username = useMemo(() => {
+  const autoUsername = useMemo(() => {
     if (!firstName || !lastName) return "";
     return (firstName.trim()[0] + lastName.trim()).toLowerCase().replace(/[^a-z]/g, "");
   }, [firstName, lastName]);
+  const username = overrideUsername.trim() || autoUsername;
   const defaultPassword = username ? `${username}3935` : "";
 
   async function handleSubmit(e: React.FormEvent) {
@@ -65,6 +67,7 @@ export default function NewEmployeePage() {
           notes: notes.trim() || undefined,
           isAdmin,
           initialPassword: overridePassword.trim() || undefined,
+          username: overrideUsername.trim() || undefined,
         }),
       });
       const data = await res.json();
@@ -111,6 +114,18 @@ export default function NewEmployeePage() {
             </Field>
           </Row>
 
+          <Field label="Username (optional override)">
+            <input
+              type="text"
+              value={overrideUsername}
+              onChange={(e) => setOverrideUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ""))}
+              placeholder={autoUsername || "Auto: first-initial + last-name"}
+              autoCapitalize="none"
+              autoComplete="off"
+              spellCheck={false}
+              style={inputStyle}
+            />
+          </Field>
           {username && (
             <div
               style={{
@@ -123,6 +138,9 @@ export default function NewEmployeePage() {
               }}
             >
               Username will be <strong style={{ color: "#f0b429" }}>@{username}</strong>
+              {overrideUsername.trim() && autoUsername !== username && (
+                <span style={{ color: "#94a3b8", marginLeft: 8 }}>(overridden from <code>@{autoUsername}</code>)</span>
+              )}
             </div>
           )}
 
