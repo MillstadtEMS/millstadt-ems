@@ -1,9 +1,11 @@
 /**
- * Hospital roster for Millstadt EMS. Single source of truth used by the
- * /lounge/hospitals page. Ported from the original Expo app's hospitalsSeed.
- *
- * To add or update a hospital, edit HOSPITALS below.
+ * Hospital roster for Millstadt EMS. DB-backed so admins can edit door
+ * codes, phone numbers, and notes from the lounge. The seed below ports
+ * the original Expo app's hospitalsSeed — it's inserted on first read
+ * if the lounge_hospitals table is empty, and is otherwise just a fall-
+ * back source of truth.
  */
+import { sql } from "./db";
 
 export type PrimaryContactLabel = "EMS Patch" | "ED" | "Report Line";
 
@@ -154,6 +156,233 @@ export const HOSPITALS: Hospital[] = [
     address: "1 Good Samaritan Way, Mt Vernon, IL 62864",
     latitude: 38.29713, longitude: -88.93884 },
 ];
+
+export interface HospitalRecord extends Hospital {
+  fax?: string | null;
+  flagForReview?: boolean;
+}
+
+let schemaEnsured = false;
+let seedAttempted = false;
+
+async function ensureSchema() {
+  if (schemaEnsured) return;
+  const db = sql();
+  await db`
+    CREATE TABLE IF NOT EXISTS lounge_hospitals (
+      id                  TEXT PRIMARY KEY,
+      name                TEXT NOT NULL,
+      city                TEXT NOT NULL,
+      state               TEXT NOT NULL,
+      system              TEXT,
+      primary_label       TEXT NOT NULL DEFAULT 'EMS Patch',
+      primary_phone       TEXT NOT NULL,
+      secondary_label     TEXT,
+      secondary_value     TEXT,
+      address             TEXT NOT NULL,
+      latitude            DOUBLE PRECISION NOT NULL,
+      longitude           DOUBLE PRECISION NOT NULL,
+      door_code           TEXT,
+      ems_room_code       TEXT,
+      codes               JSONB,
+      twelve_lead_email   TEXT,
+      fax                 TEXT,
+      notes               TEXT,
+      flag_for_review     BOOLEAN NOT NULL DEFAULT FALSE,
+      is_deleted          BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  schemaEnsured = true;
+}
+
+async function seedIfEmpty() {
+  if (seedAttempted) return;
+  seedAttempted = true;
+  await ensureSchema();
+  const db = sql();
+  const rows = await db`SELECT COUNT(*)::int AS c FROM lounge_hospitals` as unknown as { c: number }[];
+  if ((rows[0]?.c ?? 0) > 0) return;
+  for (const h of HOSPITALS) {
+    await db`
+      INSERT INTO lounge_hospitals
+        (id, name, city, state, primary_label, primary_phone,
+         secondary_label, secondary_value, address, latitude, longitude,
+         door_code, ems_room_code, codes, twelve_lead_email, notes)
+      VALUES
+        (${h.id}, ${h.name}, ${h.city}, ${h.state},
+         ${h.primaryContact.label}, ${h.primaryContact.phone},
+         ${h.secondaryContact?.label ?? null}, ${h.secondaryContact?.value ?? null},
+         ${h.address}, ${h.latitude}, ${h.longitude},
+         ${h.doorCode ?? null}, ${h.emsRoomCode ?? null},
+         ${h.codes ? JSON.stringify(h.codes) : null}::jsonb,
+         ${h.twelveLeadEmail ?? null}, ${h.notes ?? null})
+      ON CONFLICT (id) DO NOTHING
+    `;
+  }
+}
+
+interface DbRow {
+  id: string;
+  name: string;
+  city: string;
+  state: string;
+  system: string | null;
+  primary_label: string;
+  primary_phone: string;
+  secondary_label: string | null;
+  secondary_value: string | null;
+  address: string;
+  latitude: number;
+  longitude: number;
+  door_code: string | null;
+  ems_room_code: string | null;
+  codes: AccessCode[] | null;
+  twelve_lead_email: string | null;
+  fax: string | null;
+  notes: string | null;
+  flag_for_review: boolean;
+  is_deleted: boolean;
+}
+
+function rowToHospital(r: DbRow): HospitalRecord {
+  return {
+    id: r.id,
+    name: r.name,
+    city: r.city,
+    state: r.state,
+    system: r.system ?? undefined,
+    primaryContact: { label: r.primary_label as PrimaryContactLabel, phone: r.primary_phone },
+    secondaryContact: r.secondary_label && r.secondary_value
+      ? { label: r.secondary_label, value: r.secondary_value }
+      : undefined,
+    address: r.address,
+    latitude: r.latitude,
+    longitude: r.longitude,
+    doorCode: r.door_code ?? undefined,
+    emsRoomCode: r.ems_room_code ?? undefined,
+    codes: r.codes ?? undefined,
+    twelveLeadEmail: r.twelve_lead_email ?? undefined,
+    fax: r.fax ?? undefined,
+    notes: r.notes ?? undefined,
+    flagForReview: r.flag_for_review,
+  };
+}
+
+export async function listHospitalsLive(): Promise<HospitalRecord[]> {
+  await seedIfEmpty();
+  const db = sql();
+  const rows = (await db`
+    SELECT * FROM lounge_hospitals WHERE is_deleted = FALSE ORDER BY name ASC
+  `) as unknown as DbRow[];
+  return rows.map(rowToHospital);
+}
+
+export async function getHospitalLive(id: string): Promise<HospitalRecord | null> {
+  await seedIfEmpty();
+  const db = sql();
+  const rows = (await db`SELECT * FROM lounge_hospitals WHERE id = ${id} LIMIT 1`) as unknown as DbRow[];
+  return rows[0] ? rowToHospital(rows[0]) : null;
+}
+
+export interface HospitalPatch {
+  name?: string;
+  city?: string;
+  state?: string;
+  system?: string | null;
+  primaryLabel?: string;
+  primaryPhone?: string;
+  secondaryLabel?: string | null;
+  secondaryValue?: string | null;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  doorCode?: string | null;
+  emsRoomCode?: string | null;
+  codes?: AccessCode[] | null;
+  twelveLeadEmail?: string | null;
+  fax?: string | null;
+  notes?: string | null;
+  flagForReview?: boolean;
+}
+
+export async function updateHospital(id: string, patch: HospitalPatch): Promise<HospitalRecord | null> {
+  await ensureSchema();
+  const db = sql();
+  if (patch.name !== undefined)
+    await db`UPDATE lounge_hospitals SET name = ${patch.name}, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.city !== undefined)
+    await db`UPDATE lounge_hospitals SET city = ${patch.city}, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.state !== undefined)
+    await db`UPDATE lounge_hospitals SET state = ${patch.state}, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.system !== undefined)
+    await db`UPDATE lounge_hospitals SET system = ${patch.system}, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.primaryLabel !== undefined)
+    await db`UPDATE lounge_hospitals SET primary_label = ${patch.primaryLabel}, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.primaryPhone !== undefined)
+    await db`UPDATE lounge_hospitals SET primary_phone = ${patch.primaryPhone}, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.secondaryLabel !== undefined)
+    await db`UPDATE lounge_hospitals SET secondary_label = ${patch.secondaryLabel}, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.secondaryValue !== undefined)
+    await db`UPDATE lounge_hospitals SET secondary_value = ${patch.secondaryValue}, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.address !== undefined)
+    await db`UPDATE lounge_hospitals SET address = ${patch.address}, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.latitude !== undefined)
+    await db`UPDATE lounge_hospitals SET latitude = ${patch.latitude}, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.longitude !== undefined)
+    await db`UPDATE lounge_hospitals SET longitude = ${patch.longitude}, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.doorCode !== undefined)
+    await db`UPDATE lounge_hospitals SET door_code = ${patch.doorCode}, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.emsRoomCode !== undefined)
+    await db`UPDATE lounge_hospitals SET ems_room_code = ${patch.emsRoomCode}, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.codes !== undefined)
+    await db`UPDATE lounge_hospitals SET codes = ${patch.codes ? JSON.stringify(patch.codes) : null}::jsonb, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.twelveLeadEmail !== undefined)
+    await db`UPDATE lounge_hospitals SET twelve_lead_email = ${patch.twelveLeadEmail}, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.fax !== undefined)
+    await db`UPDATE lounge_hospitals SET fax = ${patch.fax}, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.notes !== undefined)
+    await db`UPDATE lounge_hospitals SET notes = ${patch.notes}, updated_at = NOW() WHERE id = ${id}`;
+  if (patch.flagForReview !== undefined)
+    await db`UPDATE lounge_hospitals SET flag_for_review = ${patch.flagForReview}, updated_at = NOW() WHERE id = ${id}`;
+  return getHospitalLive(id);
+}
+
+export interface CreateHospitalInput {
+  id?: string;
+  name: string;
+  city: string;
+  state: string;
+  primaryLabel: string;
+  primaryPhone: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+}
+
+export async function createHospital(input: CreateHospitalInput): Promise<HospitalRecord> {
+  await ensureSchema();
+  const db = sql();
+  const id = input.id ?? `custom-${Date.now()}`;
+  await db`
+    INSERT INTO lounge_hospitals
+      (id, name, city, state, primary_label, primary_phone, address, latitude, longitude)
+    VALUES
+      (${id}, ${input.name}, ${input.city}, ${input.state},
+       ${input.primaryLabel}, ${input.primaryPhone}, ${input.address},
+       ${input.latitude}, ${input.longitude})
+  `;
+  const fresh = await getHospitalLive(id);
+  if (!fresh) throw new Error("Created hospital not found");
+  return fresh;
+}
+
+export async function softDeleteHospital(id: string): Promise<void> {
+  await ensureSchema();
+  const db = sql();
+  await db`UPDATE lounge_hospitals SET is_deleted = TRUE, updated_at = NOW() WHERE id = ${id}`;
+}
 
 /** Haversine distance in miles between two coords. */
 export function distanceMiles(lat1: number, lng1: number, lat2: number, lng2: number): number {

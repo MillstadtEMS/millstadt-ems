@@ -18,6 +18,6 @@ export async function POST(req: NextRequest) {
     const emp = await findEmployeeByUsername(body.username.trim());
     if (emp) employeeId = emp.id;
   }
-  const options = await startAuthentication(employeeId);
+  const options = await startAuthentication(employeeId, req.headers.get("host"));
   return NextResponse.json({ options });
 }

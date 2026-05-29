@@ -2,14 +2,15 @@ import { redirect } from "next/navigation";
 import { currentEmployee } from "@/lib/lounge/auth";
 import { getEmployee } from "@/lib/lounge/employees";
 import LoungeShell from "@/components/lounge/LoungeShell";
-import HospitalsClient from "@/components/lounge/HospitalsClient";
-import { listHospitalsLive, STATION_LAT, STATION_LNG, EMS_DOOR_CODE, distanceMiles } from "@/lib/lounge/hospitals";
+import HospitalNewClient from "@/components/lounge/HospitalNewClient";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-export default async function HospitalsPage() {
+export default async function NewHospitalPage() {
   const session = await currentEmployee();
   if (!session) redirect("/lounge/login");
+  if (!session.isAdmin) redirect("/lounge");
   const row = await getEmployee(session.id);
   const me = {
     firstName: session.firstName,
@@ -18,16 +19,9 @@ export default async function HospitalsPage() {
     photoUrl: row?.photoUrl ?? null,
     isAdmin: session.isAdmin,
   };
-
-  const live = await listHospitalsLive();
-  const enriched = live.map((h) => {
-    const miles = distanceMiles(STATION_LAT, STATION_LNG, h.latitude, h.longitude);
-    return { ...h, miles };
-  }).sort((a, b) => a.miles - b.miles);
-
   return (
     <LoungeShell me={me}>
-      <HospitalsClient hospitals={enriched} stationLat={STATION_LAT} stationLng={STATION_LNG} emsDoorCode={EMS_DOOR_CODE} />
+      <HospitalNewClient />
     </LoungeShell>
   );
 }

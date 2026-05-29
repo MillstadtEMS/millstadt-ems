@@ -40,6 +40,7 @@ const NAV: NavItem[] = [
   { href: "/admin/filing-cabinet",        label: "Filing Cabinet",        emoji: "🗄️", adminOnly: true },
   { href: "/admin/incidents",             label: "Incident Reports",      emoji: "🚨", adminOnly: true },
   { href: "/admin/truckwash",             label: "Truck Wash Log",        emoji: "🧼", adminOnly: true },
+  { href: "/admin/hospitals",             label: "Hospitals Directory",   emoji: "🏥", adminOnly: true },
   { href: "/admin/calls",                 label: "Ticker Editor",         emoji: "📟", adminOnly: true },
   { href: "/admin/website-config",        label: "Website Configuration", emoji: "⚙️", adminOnly: true },
 ];

@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   if (!body.response) return NextResponse.json({ error: "Missing response" }, { status: 400 });
   const deviceLabel = typeof body.deviceLabel === "string" ? body.deviceLabel : undefined;
-  const result = await finishRegistration(me.id, body.response, deviceLabel);
+  const result = await finishRegistration(me.id, body.response, deviceLabel, req.headers.get("host"));
   if (!result.verified) {
     return NextResponse.json({ error: result.reason ?? "Could not register" }, { status: 400 });
   }

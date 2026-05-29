@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Hospital } from "@/lib/lounge/hospitals";
 
 interface H extends Hospital { miles: number }
+
+interface LiveEta { minutes: number; miles: number; source: "osrm" | "estimate"; rush: boolean }
 
 function fmtPhone(raw: string) {
   const digits = raw.replace(/\D/g, "");
@@ -11,8 +13,6 @@ function fmtPhone(raw: string) {
   return raw;
 }
 function estEtaMin(miles: number): { min: number; max: number; bucket: "now" | "light" | "rush" } {
-  // Quick estimator: assume 55 mph average on highway-heavy routes. Apply a
-  // light-traffic floor and a rush-hour cap based on local hour.
   const baseMin = (miles / 55) * 60;
   const hour = new Date().getHours();
   const inRush = (hour >= 7 && hour < 9) || (hour >= 16 && hour < 19);
@@ -32,6 +32,27 @@ export default function HospitalsClient({
 }: { hospitals: H[]; stationLat: number; stationLng: number; emsDoorCode: string }) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState<H | null>(null);
+  const [liveEtas, setLiveEtas] = useState<Record<string, LiveEta>>({});
+
+  // Pull a real driving ETA for every hospital on mount. Each request is
+  // small + cached server-side so this stays cheap. The "ETA 44 min" the
+  // crew sees then mirrors what Maps would say with traffic.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      for (const h of hospitals) {
+        if (cancelled) return;
+        try {
+          const r = await fetch(`/api/lounge/hospitals/eta?lat=${h.latitude}&lng=${h.longitude}`);
+          if (!r.ok) continue;
+          const d = await r.json();
+          if (cancelled) return;
+          setLiveEtas((s) => ({ ...s, [h.id]: d }));
+        } catch { /* swallow */ }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [hospitals]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -72,7 +93,8 @@ export default function HospitalsClient({
 
       <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
         {filtered.map((h) => {
-          const eta = estEtaMin(h.miles);
+          const live = liveEtas[h.id];
+          const fallback = estEtaMin(h.miles);
           return (
             <li key={h.id}>
               <button
@@ -88,15 +110,15 @@ export default function HospitalsClient({
                     )}
                   </div>
                   <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 3 }}>
-                    {h.city}, {h.state} · {h.miles.toFixed(1)} mi
+                    {h.city}, {h.state} · {(live?.miles ?? h.miles).toFixed(1)} mi
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontWeight: 800, fontSize: 13, color: "#f0b429" }}>
-                    ~{eta.min}-{eta.max} min
+                    {live ? `ETA ${live.minutes} min` : `~${fallback.min}-${fallback.max} min`}
                   </div>
                   <div style={{ fontSize: 10, color: "#94a3b8", letterSpacing: "0.10em", textTransform: "uppercase", marginTop: 2 }}>
-                    {eta.bucket === "rush" ? "rush hour" : "off-peak"}
+                    {live ? (live.rush ? "traffic adjusted" : "current traffic") : (fallback.bucket === "rush" ? "rush hour" : "off-peak")}
                   </div>
                 </div>
               </button>
@@ -105,12 +127,12 @@ export default function HospitalsClient({
         })}
       </ul>
 
-      {open && <DetailModal h={open} emsDoorCode={emsDoorCode} onClose={() => setOpen(null)} />}
+      {open && <DetailModal h={open} liveEta={liveEtas[open.id]} emsDoorCode={emsDoorCode} onClose={() => setOpen(null)} />}
     </div>
   );
 }
 
-function DetailModal({ h, emsDoorCode, onClose }: { h: H; emsDoorCode: string; onClose: () => void }) {
+function DetailModal({ h, liveEta, emsDoorCode, onClose }: { h: H; liveEta?: LiveEta; emsDoorCode: string; onClose: () => void }) {
   const eta = estEtaMin(h.miles);
   return (
     <div onClick={onClose} style={overlay}>
@@ -125,8 +147,12 @@ function DetailModal({ h, emsDoorCode, onClose }: { h: H; emsDoorCode: string; o
 
         <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(240,180,41,0.08)", border: "1px solid rgba(240,180,41,0.25)", borderRadius: 12 }}>
           <span style={{ color: "#f0b429", fontSize: 12, fontWeight: 800 }}>ETA from station:</span>{" "}
-          <span style={{ color: "white", fontWeight: 800 }}>~{eta.min}-{eta.max} min</span>{" "}
-          <span style={{ color: "#94a3b8", fontSize: 12 }}>({eta.bucket === "rush" ? "rush-hour adjusted" : "off-peak"})</span>
+          <span style={{ color: "white", fontWeight: 800 }}>
+            {liveEta ? `${liveEta.minutes} min` : `~${eta.min}-${eta.max} min`}
+          </span>{" "}
+          <span style={{ color: "#94a3b8", fontSize: 12 }}>
+            ({liveEta ? (liveEta.rush ? "traffic adjusted" : "current traffic") : (eta.bucket === "rush" ? "rush-hour adjusted" : "off-peak")})
+          </span>
         </div>
 
         <div style={{ display: "grid", gap: 10, marginTop: 14 }}>

@@ -51,8 +51,14 @@ async function ensureSchema() {
   schemaEnsured = true;
 }
 
-/** Origin allowed for WebAuthn ceremonies. Picks the deployment URL or localhost. */
-function originAndRp(): { rpID: string; origin: string } {
+/**
+ * Origin allowed for WebAuthn ceremonies. Tries (in order):
+ *   1. NEXT_PUBLIC_SITE_URL if set
+ *   2. The Host header on this request (so prod just works on any
+ *      domain Vercel hosts us under)
+ *   3. localhost fallback for local dev
+ */
+function originAndRp(host?: string | null): { rpID: string; origin: string } {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL;
   if (explicit) {
     try {
@@ -60,6 +66,15 @@ function originAndRp(): { rpID: string; origin: string } {
       return { rpID: u.hostname, origin: explicit.replace(/\/$/, "") };
     } catch { /* fall through */ }
   }
+  if (host) {
+    const cleanHost = host.trim().toLowerCase();
+    const proto = cleanHost.startsWith("localhost") || cleanHost.startsWith("127.")
+      ? "http"
+      : "https";
+    return { rpID: cleanHost.split(":")[0], origin: `${proto}://${cleanHost}` };
+  }
+  const vercel = process.env.VERCEL_URL;
+  if (vercel) return { rpID: vercel.split(":")[0], origin: `https://${vercel}` };
   return { rpID: "localhost", origin: "http://localhost:3000" };
 }
 
@@ -130,9 +145,9 @@ export async function deleteCredential(employeeId: string, credentialRowId: stri
 
 // ── Registration ────────────────────────────────────────────────────────
 
-export async function startRegistration(employeeId: string, userName: string, displayName: string) {
+export async function startRegistration(employeeId: string, userName: string, displayName: string, host?: string | null) {
   await ensureSchema();
-  const { rpID } = originAndRp();
+  const { rpID } = originAndRp(host);
   const db = sql();
   const existing = (await db`
     SELECT credential_id, transports FROM lounge_webauthn_credentials WHERE employee_id = ${employeeId}
@@ -162,9 +177,10 @@ export async function finishRegistration(
   employeeId: string,
   response: RegistrationResponseJSON,
   deviceLabel?: string,
+  host?: string | null,
 ): Promise<{ verified: boolean; reason?: string }> {
   await ensureSchema();
-  const { rpID, origin } = originAndRp();
+  const { rpID, origin } = originAndRp(host);
   const challenge = response.response.clientDataJSON
     ? JSON.parse(Buffer.from(response.response.clientDataJSON, "base64url").toString("utf8")).challenge
     : null;
@@ -213,9 +229,9 @@ export async function finishRegistration(
 
 // ── Assertion (passwordless sign-in) ─────────────────────────────────────
 
-export async function startAuthentication(employeeIdHint?: string) {
+export async function startAuthentication(employeeIdHint?: string, host?: string | null) {
   await ensureSchema();
-  const { rpID } = originAndRp();
+  const { rpID } = originAndRp(host);
   const db = sql();
   let allowCredentials: { id: string; transports?: AuthenticatorTransportFuture[] }[] = [];
   if (employeeIdHint) {
@@ -238,9 +254,10 @@ export async function startAuthentication(employeeIdHint?: string) {
 
 export async function finishAuthentication(
   response: AuthenticationResponseJSON,
+  host?: string | null,
 ): Promise<{ verified: boolean; employeeId?: string; reason?: string }> {
   await ensureSchema();
-  const { rpID, origin } = originAndRp();
+  const { rpID, origin } = originAndRp(host);
   const challenge = response.response.clientDataJSON
     ? JSON.parse(Buffer.from(response.response.clientDataJSON, "base64url").toString("utf8")).challenge
     : null;
