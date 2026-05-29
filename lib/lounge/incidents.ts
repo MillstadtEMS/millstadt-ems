@@ -41,6 +41,8 @@ export interface IncidentReport {
   media: IncidentMedia[];
   adminNotes: IncidentAdminNote[];
   payload: Record<string, unknown>;
+  pdfUrl: string | null;
+  emailSentAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -57,6 +59,8 @@ interface DbRow {
   media: unknown;
   admin_notes: unknown;
   payload: unknown;
+  pdf_url: string | null;
+  email_sent_at: string | null;
   created_at: string;
   updated_at: string;
   author_first_name: string;
@@ -89,6 +93,8 @@ function rowToReport(r: DbRow): IncidentReport {
     media: asArray<IncidentMedia>(r.media),
     adminNotes: asArray<IncidentAdminNote>(r.admin_notes),
     payload: asObject(r.payload),
+    pdfUrl: r.pdf_url,
+    emailSentAt: r.email_sent_at,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -104,7 +110,7 @@ export async function listIncidents(opts: {
     ? ((await db`
         SELECT i.id, i.created_by, i.review_status, i.incident_date, i.incident_time,
                i.city, i.specific_location, i.unit_involved, i.media, i.admin_notes,
-               i.payload, i.created_at, i.updated_at,
+               i.payload, i.pdf_url, i.email_sent_at, i.created_at, i.updated_at,
                e.first_name AS author_first_name, e.last_name AS author_last_name,
                e.photo_url AS author_photo_url
         FROM lounge_incident_reports i
@@ -121,7 +127,7 @@ export async function listIncidents(opts: {
     : ((await db`
         SELECT i.id, i.created_by, i.review_status, i.incident_date, i.incident_time,
                i.city, i.specific_location, i.unit_involved, i.media, i.admin_notes,
-               i.payload, i.created_at, i.updated_at,
+               i.payload, i.pdf_url, i.email_sent_at, i.created_at, i.updated_at,
                e.first_name AS author_first_name, e.last_name AS author_last_name,
                e.photo_url AS author_photo_url
         FROM lounge_incident_reports i
@@ -137,7 +143,7 @@ export async function getIncident(id: string): Promise<IncidentReport | null> {
   const rows = (await db`
     SELECT i.id, i.created_by, i.review_status, i.incident_date, i.incident_time,
            i.city, i.specific_location, i.unit_involved, i.media, i.admin_notes,
-           i.payload, i.created_at, i.updated_at,
+           i.payload, i.pdf_url, i.email_sent_at, i.created_at, i.updated_at,
            e.first_name AS author_first_name, e.last_name AS author_last_name,
            e.photo_url AS author_photo_url
     FROM lounge_incident_reports i
@@ -184,6 +190,24 @@ export async function updateStatus(id: string, status: IncidentStatus): Promise<
   await db`
     UPDATE lounge_incident_reports
     SET review_status = ${status}, updated_at = NOW()
+    WHERE id = ${id}
+  `;
+}
+
+export async function markIncidentPdfReady(id: string, pdfUrl: string): Promise<void> {
+  const db = sql();
+  await db`
+    UPDATE lounge_incident_reports
+    SET pdf_url = ${pdfUrl}, pdf_generated_at = NOW(), updated_at = NOW()
+    WHERE id = ${id}
+  `;
+}
+
+export async function markIncidentEmailSent(id: string): Promise<void> {
+  const db = sql();
+  await db`
+    UPDATE lounge_incident_reports
+    SET email_sent_at = NOW(), updated_at = NOW()
     WHERE id = ${id}
   `;
 }

@@ -33,6 +33,7 @@ const NAV: NavItem[] = [
   { href: "/api/lounge/sso/inventory",  label: "Inventory",   emoji: "📦", external: true },
   // Admin section.
   { href: "/admin/filing-cabinet",        label: "Filing Cabinet",        emoji: "🗄️", adminOnly: true },
+  { href: "/admin/incidents",             label: "Incident Reports",      emoji: "🚨", adminOnly: true },
   { href: "/admin/calls",                 label: "Ticker Editor",         emoji: "📟", adminOnly: true },
   { href: "/admin/admin-tools",           label: "Admin Tools",           emoji: "🧰", adminOnly: true },
   { href: "/admin/website-config",        label: "Website Configuration", emoji: "⚙️", adminOnly: true },

@@ -62,7 +62,10 @@ export default function IncidentsPage() {
   }, []);
   useEffect(() => { if (me) load(); }, [me, load]);
 
-  async function create(input: Partial<Report> & { summary: string }) {
+  async function create(input: Partial<Report> & {
+    summary: string;
+    photos?: { url: string; name?: string }[];
+  }) {
     const res = await fetch("/api/lounge/incidents", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -73,6 +76,7 @@ export default function IncidentsPage() {
         specificLocation: input.specificLocation,
         unitInvolved: input.unitInvolved,
         payload: input.payload,
+        media: (input.photos ?? []).map((p) => ({ url: p.url, kind: "image", name: p.name })),
       }),
     });
     if (res.ok) {
@@ -167,14 +171,16 @@ export default function IncidentsPage() {
 
 // ── Composer ────────────────────────────────────────────────────────────
 
+interface RosterEntry { id: string; firstName: string; lastName: string; certification: string | null }
+
 function Composer({
   me,
   onCancel,
   onCreate,
 }: {
-  me: { firstName: string; lastName: string };
+  me: { id: string; firstName: string; lastName: string };
   onCancel: () => void;
-  onCreate: (input: Partial<Report> & { summary: string }) => void;
+  onCreate: (input: Partial<Report> & { summary: string; photos?: { url: string; name?: string }[] }) => void;
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(today);
@@ -186,6 +192,61 @@ function Composer({
   const [patientInvolved, setPatientInvolved] = useState("");
   const [witnesses, setWitnesses] = useState("");
   const [actionsTaken, setActionsTaken] = useState("");
+
+  // Photos
+  const [photos, setPhotos] = useState<{ url: string; name?: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  // Involved employees (roster pick)
+  const [roster, setRoster] = useState<RosterEntry[]>([]);
+  const [involved, setInvolved] = useState<{ id: string; name: string }[]>([
+    // Submitter is always involved by default.
+    { id: me.id, name: `${me.firstName} ${me.lastName}` },
+  ]);
+  const [rosterSearch, setRosterSearch] = useState("");
+  const [showPicker, setShowPicker] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/lounge/roster").then(async (r) => {
+      if (r.ok) setRoster((await r.json()).employees ?? []);
+    });
+  }, []);
+
+  async function onFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      for (const f of Array.from(files)) {
+        const form = new FormData();
+        form.append("file", f);
+        const r = await fetch("/api/lounge/incidents/photo", { method: "POST", body: form });
+        if (r.ok) {
+          const d = await r.json();
+          setPhotos((s) => [...s, { url: d.url, name: d.name ?? f.name }]);
+        }
+      }
+    } finally {
+      setUploading(false);
+    }
+  }
+  function removePhoto(url: string) {
+    setPhotos((s) => s.filter((p) => p.url !== url));
+  }
+
+  function addInvolved(e: RosterEntry) {
+    if (involved.some((x) => x.id === e.id)) return;
+    setInvolved((s) => [...s, { id: e.id, name: `${e.firstName} ${e.lastName}` }]);
+  }
+  function removeInvolved(id: string) {
+    setInvolved((s) => s.filter((x) => x.id !== id));
+  }
+  const filteredRoster = roster
+    .filter((r) => !involved.some((x) => x.id === r.id))
+    .filter((r) => {
+      const q = rosterSearch.trim().toLowerCase();
+      if (!q) return true;
+      return `${r.firstName} ${r.lastName}`.toLowerCase().includes(q);
+    });
 
   function submit() {
     if (!summary.trim()) return;
@@ -201,8 +262,10 @@ function Composer({
         witnesses: witnesses.trim(),
         actionsTaken: actionsTaken.trim(),
         submittedBy: `${me.firstName} ${me.lastName}`,
+        involvedEmployees: involved,
       },
       summary: summary.trim(),
+      photos,
     });
   }
 
@@ -253,6 +316,77 @@ function Composer({
           style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit", minHeight: 80 }}
         />
       </Field>
+
+      {/* Employees involved */}
+      <div>
+        <div style={eyebrowStyle}>Employees involved ({involved.length})</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+          {involved.map((e) => (
+            <span key={e.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(240,180,41,0.10)", border: "1px solid rgba(240,180,41,0.30)", color: "white", padding: "6px 10px", borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
+              {e.name}
+              {e.id !== me.id && (
+                <button type="button" onClick={() => removeInvolved(e.id)} style={{ background: "transparent", border: 0, color: "#fca5a5", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 0 }} aria-label={`Remove ${e.name}`}>×</button>
+              )}
+            </span>
+          ))}
+          <button type="button" onClick={() => setShowPicker((v) => !v)} style={{ ...ghostBtn, padding: "6px 12px", fontSize: 12 }}>
+            {showPicker ? "Close roster" : "+ Add"}
+          </button>
+        </div>
+        {showPicker && (
+          <div style={{ marginTop: 8, background: "#040d1a", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, padding: 8 }}>
+            <input
+              value={rosterSearch}
+              onChange={(e) => setRosterSearch(e.target.value)}
+              placeholder="Search employees…"
+              style={{ ...inputStyle, padding: "8px 10px", fontSize: 13 }}
+            />
+            <div style={{ maxHeight: 200, overflowY: "auto", marginTop: 8, display: "grid", gap: 4 }}>
+              {filteredRoster.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => addInvolved(r)}
+                  style={{ display: "flex", justifyContent: "space-between", padding: "8px 10px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, color: "white", fontSize: 13, fontWeight: 700, textAlign: "left", cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  <span>{r.firstName} {r.lastName}</span>
+                  {r.certification && <span style={{ color: "#94a3b8", fontSize: 11 }}>{r.certification}</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Photos */}
+      <div>
+        <div style={eyebrowStyle}>Photos ({photos.length})</div>
+        <p style={{ color: "#94a3b8", fontSize: 12, marginTop: 6, marginBottom: 8 }}>
+          Take a photo with your phone camera or upload from your library. Each photo appears full-size on its own page in the PDF.
+        </p>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <label style={{ ...goldBtn, cursor: uploading ? "wait" : "pointer", display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px" }}>
+            📷 Take photo
+            <input type="file" accept="image/*" capture="environment" onChange={(e) => onFiles(e.target.files)} style={{ display: "none" }} />
+          </label>
+          <label style={{ ...ghostBtn, cursor: uploading ? "wait" : "pointer", display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px" }}>
+            📁 Upload
+            <input type="file" accept="image/*" multiple onChange={(e) => onFiles(e.target.files)} style={{ display: "none" }} />
+          </label>
+          {uploading && <span style={{ color: "#f0b429", fontSize: 12, alignSelf: "center" }}>Uploading…</span>}
+        </div>
+        {photos.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginTop: 12 }}>
+            {photos.map((p) => (
+              <div key={p.url} style={{ position: "relative", borderRadius: 10, overflow: "hidden", background: "#040d1a", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <img src={p.url} alt="" style={{ width: "100%", height: 110, objectFit: "cover", display: "block" }} />
+                <button type="button" onClick={() => removePhoto(p.url)} style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.62)", border: 0, color: "white", padding: "2px 7px", borderRadius: 6, fontSize: 11, fontWeight: 800, cursor: "pointer" }}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
         <button type="button" onClick={onCancel} style={ghostBtn}>Cancel</button>
         <button type="button" onClick={submit} disabled={!summary.trim()} style={{ ...goldBtn, opacity: !summary.trim() ? 0.5 : 1 }}>

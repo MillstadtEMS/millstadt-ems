@@ -397,6 +397,11 @@ CREATE INDEX IF NOT EXISTS lounge_incidents_created_idx
 CREATE INDEX IF NOT EXISTS lounge_incidents_status_idx
     ON lounge_incident_reports (review_status);
 
+-- Render artefacts + delivery tracking on each incident.
+ALTER TABLE lounge_incident_reports ADD COLUMN IF NOT EXISTS pdf_url        TEXT;
+ALTER TABLE lounge_incident_reports ADD COLUMN IF NOT EXISTS pdf_generated_at TIMESTAMPTZ;
+ALTER TABLE lounge_incident_reports ADD COLUMN IF NOT EXISTS email_sent_at  TIMESTAMPTZ;
+
 -- ═══════════════════════════════════════════════════════════════════════
 -- POLICIES
 -- ═══════════════════════════════════════════════════════════════════════
