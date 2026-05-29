@@ -1,6 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+/**
+ * Crew messenger.
+ *
+ * Embedded surface that handles both DMs and group chats. Every backend
+ * contract is identical to the previous revision — same endpoints, same
+ * polling cadence, same Vercel Blob upload flow, same MediaRecorder pipeline,
+ * same optimistic reaction updates, same read-receipt math. The redesign
+ * affects only the visual layer (tokens, typography, animation, copy).
+ */
 
 interface ConversationPreview {
   id: string;
@@ -38,7 +48,6 @@ interface Message {
   replyTo: MessageReplyTo | null;
   createdAt: string;
 }
-
 interface RosterEntry {
   id: string;
   firstName: string;
@@ -98,7 +107,6 @@ export default function MessengerClient({ meId }: { meId: string }) {
     return () => clearInterval(id);
   }, [loadConversations]);
 
-  // Poll active thread for new messages
   useEffect(() => {
     if (!activeId) return;
     let cancelled = false;
@@ -115,13 +123,11 @@ export default function MessengerClient({ meId }: { meId: string }) {
     return () => { cancelled = true; clearInterval(id); };
   }, [activeId]);
 
-  // Refresh conversation list every 8s for unread/last-message updates
   useEffect(() => {
     const id = setInterval(loadConversations, POLL_MS * 2);
     return () => clearInterval(id);
   }, [loadConversations]);
 
-  // Auto-scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
@@ -264,7 +270,6 @@ export default function MessengerClient({ meId }: { meId: string }) {
   async function toggleReaction(messageId: string, kind: MessageReactionKind) {
     const myCurrent = messages.find((m) => m.id === messageId)?.reactions.find((r) => r.userId === meId);
     const newKind = myCurrent?.kind === kind ? null : kind;
-    // Optimistic update so the picker feels snappy on slow connections.
     setMessages((s) => s.map((m) => {
       if (m.id !== messageId) return m;
       const without = m.reactions.filter((r) => r.userId !== meId);
@@ -289,73 +294,62 @@ export default function MessengerClient({ meId }: { meId: string }) {
       return `${r.firstName} ${r.lastName}`.toLowerCase().includes(q);
     });
 
-  // Phone-portrait: show one pane at a time (Messenger-style). The CSS
-  // classes are toggled by media query below — no JS resize listener
-  // needed, and the SSR shell stays identical.
-  return (
-    <div className={`messenger-root ${activeConv ? "has-active" : ""}`}>
-      <style>{`
-        .messenger-root .messenger-header { margin-bottom: 16px; }
-        .messenger-grid { display: grid; grid-template-columns: minmax(0,320px) minmax(0,1fr); gap: 14px; align-items: start; }
-        .messenger-list { background:#071428; border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:12px; max-height:600px; overflow-y:auto; }
-        .messenger-thread { background:#071428; border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:14px; min-height:500px; display:flex; flex-direction:column; }
-        .messenger-back { display: none; }
-        .messenger-row:hover .messenger-row-tools { opacity: 1 !important; }
-        @media (max-width: 720px) {
-          .messenger-row-tools { opacity: 1 !important; }
-        }
-        @media (max-width: 720px) {
-          .messenger-root .messenger-header { display: none; }
-          .messenger-grid { grid-template-columns: 1fr; gap: 0; }
-          .messenger-list, .messenger-thread { border-radius: 0; border-left: 0; border-right: 0; }
-          .messenger-list { max-height: calc(100vh - 56px - env(safe-area-inset-bottom) - env(safe-area-inset-top)); }
-          .messenger-thread { min-height: calc(100vh - 56px - env(safe-area-inset-bottom) - env(safe-area-inset-top)); padding: 0; }
-          .messenger-root.has-active .messenger-list { display: none; }
-          .messenger-root:not(.has-active) .messenger-thread { display: none; }
-          .messenger-back { display: inline-flex; }
-        }
-      `}</style>
+  const otherInDm = activeConv?.kind === "dm"
+    ? activeConv.participants.find((p) => p.id !== meId)
+    : null;
+  const activeOnline = activeConv?.participants.some((p) => p.id !== meId && presence[p.id]?.online) ?? false;
 
-      <header className="messenger-header">
-        <div style={{ color: "#f0b429", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-          Messages
+  // Group messages into runs by author + adjacency in time (≤ 3 min apart) so
+  // we can collapse repeated avatars and names, plus break by day for headers.
+  const groupedMessages = useMemo(() => groupMessages(messages), [messages]);
+
+  return (
+    <div className={`mas-msgr ${activeConv ? "has-active" : ""}`}>
+      <style>{MESSENGER_CSS}</style>
+
+      <header className="mas-msgr-head">
+        <div>
+          <span className="mas-msgr-kicker">Crew messages</span>
+          <h1 className="mas-msgr-title">Messages</h1>
         </div>
-        <h1 style={{ margin: "4px 0 0", fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.015em" }}>
-          Millstadt EMS DM&apos;s
-        </h1>
       </header>
 
-      <div className="messenger-grid">
-        {/* Conversation list */}
-        <aside className="messenger-list">
+      <div className="mas-msgr-grid">
+        {/* ───── Conversation list ───── */}
+        <aside className="mas-msgr-list">
           <button
             type="button"
             onClick={() => setShowRoster((v) => !v)}
-            style={{ width: "100%", padding: "10px 12px", background: "#040d1a", border: "1px solid rgba(240,180,41,0.30)", color: "#f0b429", borderRadius: 10, fontSize: 12, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase", cursor: "pointer", fontFamily: "inherit", marginBottom: 10 }}
+            className={showRoster ? "mas-msgr-new is-open" : "mas-msgr-new"}
           >
-            {showRoster ? "Hide directory" : "+ Start a chat"}
+            {showRoster ? "Cancel" : "New conversation"}
           </button>
 
           {showRoster && (
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                <button type="button" onClick={() => setCreateMode("dm")} style={modeTab(createMode === "dm")}>1:1 DM</button>
-                <button type="button" onClick={() => setCreateMode("group")} style={modeTab(createMode === "group")}>Group</button>
+            <div className="mas-msgr-newpanel">
+              <div className="mas-msgr-newtabs">
+                <button type="button" onClick={() => setCreateMode("dm")} className={createMode === "dm" ? "mas-msgr-newtab is-active" : "mas-msgr-newtab"}>
+                  Direct
+                </button>
+                <button type="button" onClick={() => setCreateMode("group")} className={createMode === "group" ? "mas-msgr-newtab is-active" : "mas-msgr-newtab"}>
+                  Group chat
+                </button>
               </div>
+
               {createMode === "group" && (
-                <div style={{ display: "grid", gap: 8, marginBottom: 8 }}>
+                <div className="mas-msgr-group">
                   <input
                     value={groupTitle}
                     onChange={(e) => setGroupTitle(e.target.value)}
-                    placeholder="Group name (optional)"
-                    style={{ width: "100%", background: "#040d1a", border: "1px solid rgba(255,255,255,0.10)", color: "white", padding: "8px 12px", borderRadius: 10, fontSize: 13, outline: "none" }}
+                    placeholder="Name this group (optional)"
+                    className="mas-msgr-input"
                   />
                   {groupSelected.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    <div className="mas-msgr-chips">
                       {groupSelected.map((m) => (
-                        <span key={m.id} style={{ padding: "4px 8px", background: "rgba(240,180,41,0.15)", color: "#f0b429", borderRadius: 999, fontSize: 12, fontWeight: 800 }}>
+                        <span key={m.id} className="mas-msgr-chip">
                           {m.firstName} {m.lastName}
-                          <button type="button" onClick={() => toggleGroupMember(m)} style={{ background: "transparent", border: 0, color: "#f0b429", marginLeft: 4, fontSize: 14, cursor: "pointer" }}>×</button>
+                          <button type="button" onClick={() => toggleGroupMember(m)} aria-label="Remove">×</button>
                         </span>
                       ))}
                     </div>
@@ -364,30 +358,38 @@ export default function MessengerClient({ meId }: { meId: string }) {
                     type="button"
                     onClick={createGroup}
                     disabled={groupSelected.length < 2}
-                    style={{ padding: "8px 14px", background: groupSelected.length < 2 ? "rgba(240,180,41,0.4)" : "#f0b429", color: "#040d1a", border: 0, borderRadius: 10, fontWeight: 900, fontSize: 12, letterSpacing: "0.10em", textTransform: "uppercase", cursor: groupSelected.length < 2 ? "not-allowed" : "pointer", fontFamily: "inherit" }}
+                    className="mas-msgr-group-go"
                   >
                     Start group ({groupSelected.length})
                   </button>
                 </div>
               )}
+
               <input
-                placeholder="Search employees…"
+                placeholder="Search the crew"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                style={{ width: "100%", background: "#040d1a", border: "1px solid rgba(255,255,255,0.10)", color: "white", padding: "8px 12px", borderRadius: 10, fontSize: 13, outline: "none", marginBottom: 8 }}
+                className="mas-msgr-input"
               />
-              <div style={{ maxHeight: 220, overflowY: "auto", display: "grid", gap: 4 }}>
+              <div className="mas-msgr-roster">
                 {filteredRoster.map((r) => {
                   const checked = groupSelected.some((g) => g.id === r.id);
+                  const online = presence[r.id]?.online;
                   return (
                     <button
                       key={r.id}
                       type="button"
                       onClick={() => createMode === "group" ? toggleGroupMember(r) : openDmWith(r.id)}
-                      style={{ display: "flex", justifyContent: "space-between", padding: "8px 10px", background: checked ? "rgba(240,180,41,0.12)" : "rgba(255,255,255,0.03)", border: `1px solid ${checked ? "rgba(240,180,41,0.30)" : "rgba(255,255,255,0.06)"}`, borderRadius: 8, color: "white", fontSize: 13, fontWeight: 700, textAlign: "left", cursor: "pointer", fontFamily: "inherit" }}
+                      className={checked ? "mas-msgr-rosteritem is-checked" : "mas-msgr-rosteritem"}
                     >
-                      <span>{createMode === "group" ? `${checked ? "✓ " : ""}` : ""}{r.firstName} {r.lastName}</span>
-                      {r.certification && <span style={{ color: "#94a3b8", fontSize: 11 }}>{r.certification}</span>}
+                      <span className="mas-msgr-rosteritem-name">
+                        {createMode === "group" && checked && <span className="mas-msgr-checkdot" aria-hidden />}
+                        {r.firstName} {r.lastName}
+                      </span>
+                      <span className="mas-msgr-rosteritem-meta">
+                        {online && <span className="mas-msgr-onlinedot" aria-label="Online" />}
+                        {r.certification && <span>{r.certification}</span>}
+                      </span>
                     </button>
                   );
                 })}
@@ -395,46 +397,54 @@ export default function MessengerClient({ meId }: { meId: string }) {
             </div>
           )}
 
-          {conversations.length === 0 ? (
-            <p style={{ color: "#94a3b8", fontSize: 13, padding: 8 }}>No conversations yet. Use “Start a chat” to message someone.</p>
+          {conversations.length === 0 && !showRoster ? (
+            <div className="mas-msgr-list-empty">
+              <p>No conversations yet.</p>
+              <small>Start one with anyone on the crew.</small>
+            </div>
           ) : (
-            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 4 }}>
+            <ul className="mas-msgr-conv-list">
               {conversations.map((c) => {
-                const title = c.title ?? c.participants.map((p) => `${p.firstName} ${p.lastName}`).join(", ");
-                const photo = c.participants[0]?.photoUrl ?? null;
-                const initials = (c.participants[0]?.firstName?.[0] ?? "?") + (c.participants[0]?.lastName?.[0] ?? "");
+                const others = c.participants;
+                const title = c.title ?? others.map((p) => p.firstName).join(", ");
+                const photo = others[0]?.photoUrl ?? null;
+                const initials = (others[0]?.firstName?.[0] ?? "?") + (others[0]?.lastName?.[0] ?? "");
                 const active = c.id === activeId;
-                // For DMs, presence reflects the single other participant.
-                // For groups, "online" is anyone-online so the indicator
-                // tells you somebody's likely around.
-                const counterparts = c.participants;
-                const onlineSomeone = counterparts.find((p) => presence[p.id]?.online);
+                const onlineSomeone = others.find((p) => presence[p.id]?.online);
                 const isOnline = !!onlineSomeone;
-                const newestActivity = counterparts
-                  .map((p) => presence[p.id]?.lastActivityAt)
-                  .filter((s): s is string => !!s)
-                  .sort()
-                  .pop() ?? null;
+                const preview = c.lastMessage
+                  ? (c.lastMessage.authorId === meId ? "You: " : "") + (c.lastMessage.body || "Attachment")
+                  : "No messages yet";
                 return (
                   <li key={c.id}>
                     <button
                       type="button"
                       onClick={() => setActiveId(c.id)}
-                      style={{ width: "100%", display: "flex", gap: 10, alignItems: "center", padding: "10px 10px", background: active ? "rgba(240,180,41,0.10)" : "transparent", border: active ? "1px solid rgba(240,180,41,0.30)" : "1px solid transparent", borderRadius: 10, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}
+                      className={
+                        [
+                          "mas-msgr-conv",
+                          active ? "is-active" : "",
+                          c.unreadCount > 0 ? "is-unread" : "",
+                        ].filter(Boolean).join(" ")
+                      }
                     >
-                      <div style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(240,180,41,0.14)", border: "1px solid rgba(240,180,41,0.30)", color: "#f0b429", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, overflow: "hidden", position: "relative", flexShrink: 0 }}>
-                        {photo ? <img src={photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : initials.toUpperCase()}
+                      <div className="mas-msgr-conv-avatar">
+                        {photo
+                          ? <img src={photo} alt="" />
+                          : <span>{initials.toUpperCase()}</span>}
                         {isOnline && <OnlineDot />}
+                        {c.kind === "group" && <span className="mas-msgr-conv-badge">{others.length}</span>}
                       </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 6 }}>
-                          <span style={{ color: "white", fontWeight: 800, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</span>
-                          {c.unreadCount > 0 && (
-                            <span style={{ background: "#f0b429", color: "#040d1a", padding: "2px 7px", borderRadius: 999, fontSize: 10, fontWeight: 900 }}>{c.unreadCount}</span>
-                          )}
+                      <div className="mas-msgr-conv-body">
+                        <div className="mas-msgr-conv-line1">
+                          <span className="mas-msgr-conv-name">{title}</span>
+                          <span className="mas-msgr-conv-time mas-mono">{c.lastMessage ? shortTime(c.lastMessage.createdAt) : ""}</span>
                         </div>
-                        <div style={{ color: isOnline ? "#86efac" : "#94a3b8", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2, fontWeight: isOnline ? 700 : 400 }}>
-                          {isOnline ? `● Active now${c.kind === "group" ? ` · ${onlineSomeone?.firstName}` : ""}` : (newestActivity ? `Last active ${relTime(newestActivity)}` : (c.lastMessage ? c.lastMessage.body : "No messages yet"))}
+                        <div className="mas-msgr-conv-line2">
+                          <span className="mas-msgr-conv-preview">{preview}</span>
+                          {c.unreadCount > 0 && (
+                            <span className="mas-msgr-conv-unread mas-mono">{c.unreadCount}</span>
+                          )}
                         </div>
                       </div>
                     </button>
@@ -445,230 +455,234 @@ export default function MessengerClient({ meId }: { meId: string }) {
           )}
         </aside>
 
-        {/* Active thread */}
-        <section className="messenger-thread">
+        {/* ───── Active thread ───── */}
+        <section className="mas-msgr-thread">
           {!activeConv ? (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" }}>
-              Pick a conversation or start a new one.
+            <div className="mas-msgr-empty-thread">
+              <div className="mas-msgr-empty-bg" aria-hidden />
+              <div className="mas-msgr-empty-content">
+                <span className="mas-msgr-empty-kicker">Crew messages</span>
+                <h3>Pick a conversation</h3>
+                <p>Or start a new one to message anyone on the crew.</p>
+              </div>
             </div>
           ) : (
             <>
-              <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(2,9,18,0.65)", position: "sticky", top: 0, zIndex: 5, backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)" }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0, flex: 1 }}>
-                  <button
-                    type="button"
-                    className="messenger-back"
-                    onClick={() => setActiveId(null)}
-                    aria-label="Back to conversations"
-                    style={{ background: "transparent", border: 0, color: "#f0b429", fontSize: 22, padding: 4, cursor: "pointer", fontFamily: "inherit", alignItems: "center" }}
-                  >
-                    ‹
-                  </button>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-                      {activeConv.kind === "dm" ? "Direct message" : "Group"}
-                    </div>
-                    <div style={{ color: "white", fontWeight: 800, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {activeConv.title ?? activeConv.participants.map((p) => `${p.firstName} ${p.lastName}`).join(", ")}
-                    </div>
+              <header className="mas-msgr-thread-head">
+                <button
+                  type="button"
+                  className="mas-msgr-back"
+                  onClick={() => setActiveId(null)}
+                  aria-label="Back to conversations"
+                >
+                  ‹
+                </button>
+                <div className="mas-msgr-thread-titlewrap">
+                  <div className="mas-msgr-thread-title">
+                    {activeConv.title ?? activeConv.participants.filter((p) => p.id !== meId).map((p) => `${p.firstName} ${p.lastName}`).join(", ")}
+                  </div>
+                  <div className="mas-msgr-thread-sub">
+                    {activeConv.kind === "group"
+                      ? `Group · ${activeConv.participants.length} members`
+                      : (activeOnline ? "Active now" : (otherInDm ? "Direct message" : "Direct message"))}
                   </div>
                 </div>
+                {activeOnline && <span className="mas-msgr-thread-live" aria-label="Online" />}
               </header>
-              <div style={{ flex: 1, overflowY: "auto", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+
+              <div className="mas-msgr-thread-body">
                 {messages.length === 0 ? (
-                  <p style={{ color: "#94a3b8", fontSize: 13, alignSelf: "center", marginTop: 30 }}>
-                    No messages in this thread yet. Say hi.
-                  </p>
+                  <div className="mas-msgr-thread-empty">
+                    <p>No messages yet.</p>
+                    <small>Send the first one to start the thread.</small>
+                  </div>
                 ) : (() => {
-                  // Pre-compute the id of the last message I sent so we only
-                  // render one "Seen by…" receipt at the bottom of the thread
-                  // (Messenger-style — no per-message ticks above it).
                   const lastMineIdx = (() => {
                     for (let i = messages.length - 1; i >= 0; i--) {
                       if (messages[i].authorId === meId) return i;
                     }
                     return -1;
                   })();
-                  return messages.map((m, idx) => {
-                    const mine = m.authorId === meId;
-                    const showReceipt = mine && idx === lastMineIdx;
-                    const receipt = showReceipt ? buildReceipt(m, activeConv, readBy, meId) : null;
-                    const counts = new Map<MessageReactionKind, number>();
-                    for (const r of m.reactions) counts.set(r.kind, (counts.get(r.kind) ?? 0) + 1);
-                    const myReaction = m.reactions.find((r) => r.userId === meId)?.kind ?? null;
-                    return (
-                      <div
-                        key={m.id}
-                        className="messenger-row"
-                        style={{ display: "flex", flexDirection: "column", alignItems: mine ? "flex-end" : "flex-start", position: "relative" }}
-                      >
-                        <div style={{ display: "flex", alignItems: "flex-end", gap: 6, flexDirection: mine ? "row-reverse" : "row", maxWidth: "92%" }}>
-                          <div style={{ maxWidth: "100%", background: mine ? "#f0b429" : "rgba(255,255,255,0.05)", color: mine ? "#040d1a" : "#e2e8f0", padding: "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4 }}>
-                            {m.replyTo && (
-                              <div style={{
-                                background: mine ? "rgba(4,13,26,0.18)" : "rgba(255,255,255,0.04)",
-                                borderLeft: `3px solid ${mine ? "rgba(4,13,26,0.45)" : "rgba(56,189,248,0.55)"}`,
-                                padding: "6px 8px", borderRadius: 6, marginBottom: 6,
-                                fontSize: 12,
-                              }}>
-                                <div style={{ color: mine ? "rgba(4,13,26,0.85)" : "#7dd3fc", fontWeight: 800, fontSize: 11 }}>
-                                  Replying to {m.replyTo.authorFirstName} {m.replyTo.authorLastName}
-                                </div>
-                                <div style={{ color: mine ? "rgba(4,13,26,0.85)" : "#cbd5e1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 220 }}>
-                                  {m.replyTo.bodyPreview || (m.replyTo.hasMedia ? "📎 Attachment" : "(message)")}
-                                </div>
-                              </div>
-                            )}
+                  return groupedMessages.map((group) => (
+                    <div key={group.key} className="mas-msgr-group-block">
+                      {group.dayLabel && (
+                        <div className="mas-msgr-day">
+                          <span>{group.dayLabel}</span>
+                        </div>
+                      )}
+                      {group.runs.map((run) => {
+                        const mine = run.authorId === meId;
+                        return (
+                          <div key={run.key} className={mine ? "mas-msgr-run is-mine" : "mas-msgr-run is-theirs"}>
                             {!mine && (
-                              <div style={{ fontSize: 11, fontWeight: 800, color: "#cbd5e1", marginBottom: 2 }}>
-                                {m.authorFirstName} {m.authorLastName}
+                              <div className="mas-msgr-run-avatar">
+                                <AuthorAvatar
+                                  firstName={run.items[0].authorFirstName}
+                                  lastName={run.items[0].authorLastName}
+                                  photoUrl={run.items[0].authorPhotoUrl}
+                                />
                               </div>
                             )}
-                            {m.body && <div style={{ fontSize: 14, lineHeight: 1.4, whiteSpace: "pre-wrap" }}>{m.body}</div>}
-                            {m.media && m.media.length > 0 && (
-                              <div style={{ display: "grid", gap: 6, marginTop: m.body ? 6 : 0 }}>
-                                {m.media.map((att, ai) => (
-                                  <MessageAttachment key={ai} att={att} mine={mine} />
-                                ))}
-                              </div>
-                            )}
-                            <div style={{ fontSize: 10, opacity: 0.7, marginTop: 4 }}>
-                              {new Date(m.createdAt).toLocaleString()}
+                            <div className="mas-msgr-run-bubbles">
+                              {!mine && activeConv.kind === "group" && (
+                                <div className="mas-msgr-run-name">{run.items[0].authorFirstName} {run.items[0].authorLastName}</div>
+                              )}
+                              {run.items.map((m, i) => {
+                                const idx = messages.indexOf(m);
+                                const showReceipt = mine && idx === lastMineIdx;
+                                const receipt = showReceipt ? buildReceipt(m, activeConv, readBy, meId) : null;
+                                const isLast = i === run.items.length - 1;
+                                const counts = new Map<MessageReactionKind, number>();
+                                for (const r of m.reactions) counts.set(r.kind, (counts.get(r.kind) ?? 0) + 1);
+                                const myReaction = m.reactions.find((r) => r.userId === meId)?.kind ?? null;
+                                return (
+                                  <div key={m.id} className="mas-msgr-msg">
+                                    <div className="mas-msgr-bubble-row">
+                                      <div className={["mas-msgr-bubble", mine ? "is-mine" : "is-theirs", isLast ? "is-tail" : ""].filter(Boolean).join(" ")}>
+                                        {m.replyTo && (
+                                          <a
+                                            href={`#msg-${m.replyTo.id}`}
+                                            className="mas-msgr-quote"
+                                            onClick={(e) => e.preventDefault()}
+                                          >
+                                            <span className="mas-msgr-quote-name">
+                                              Replying to {m.replyTo.authorFirstName} {m.replyTo.authorLastName}
+                                            </span>
+                                            <span className="mas-msgr-quote-body">
+                                              {m.replyTo.bodyPreview || (m.replyTo.hasMedia ? "Attachment" : "Message")}
+                                            </span>
+                                          </a>
+                                        )}
+                                        {m.body && <div className="mas-msgr-text">{m.body}</div>}
+                                        {m.media && m.media.length > 0 && (
+                                          <div className="mas-msgr-media">
+                                            {m.media.map((att, ai) => (
+                                              <MessageAttachment key={ai} att={att} mine={mine} />
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="mas-msgr-tools">
+                                        <button
+                                          type="button"
+                                          aria-label="React"
+                                          onClick={() => setReactionPickerFor(reactionPickerFor === m.id ? null : m.id)}
+                                          className="mas-msgr-tool"
+                                        >
+                                          <ReactIcon />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          aria-label="Reply"
+                                          onClick={() => setReplyTo(m)}
+                                          className="mas-msgr-tool"
+                                        >
+                                          <ReplyIcon />
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {reactionPickerFor === m.id && (
+                                      <div className={mine ? "mas-msgr-reactpop is-mine" : "mas-msgr-reactpop is-theirs"}>
+                                        {MESSAGE_REACTIONS.map((r) => (
+                                          <button
+                                            key={r.kind}
+                                            type="button"
+                                            aria-label={r.label}
+                                            onClick={() => toggleReaction(m.id, r.kind)}
+                                            className={myReaction === r.kind ? "mas-msgr-reactpop-btn is-mine" : "mas-msgr-reactpop-btn"}
+                                          >
+                                            {r.emoji}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    {m.reactions.length > 0 && (
+                                      <div className={mine ? "mas-msgr-reactrow is-mine" : "mas-msgr-reactrow is-theirs"}>
+                                        {MESSAGE_REACTIONS.map((r) => {
+                                          const c = counts.get(r.kind) ?? 0;
+                                          if (c === 0) return null;
+                                          const isMine = myReaction === r.kind;
+                                          return (
+                                            <button
+                                              key={r.kind}
+                                              type="button"
+                                              onClick={() => toggleReaction(m.id, r.kind)}
+                                              className={isMine ? "mas-msgr-reactchip is-mine" : "mas-msgr-reactchip"}
+                                            >
+                                              {r.emoji} <span className="mas-mono">{c}</span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+
+                                    {isLast && (
+                                      <div className={mine ? "mas-msgr-time is-mine" : "mas-msgr-time is-theirs"}>
+                                        <span className="mas-mono">{shortClock(m.createdAt)}</span>
+                                        {receipt && <span className="mas-msgr-receipt">· {receipt}</span>}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
-                          <div className="messenger-row-tools" style={{ display: "flex", flexDirection: "column", gap: 4, opacity: 0, transition: "opacity 0.15s" }}>
-                            <button
-                              type="button"
-                              title="React"
-                              onClick={() => setReactionPickerFor(reactionPickerFor === m.id ? null : m.id)}
-                              style={toolBtn}
-                            >
-                              😊
-                            </button>
-                            <button
-                              type="button"
-                              title="Reply"
-                              onClick={() => setReplyTo(m)}
-                              style={toolBtn}
-                            >
-                              ↩
-                            </button>
-                          </div>
-                        </div>
-
-                        {reactionPickerFor === m.id && (
-                          <div style={{
-                            marginTop: 4,
-                            display: "flex", gap: 4,
-                            padding: "6px 8px",
-                            background: "rgba(2,9,18,0.92)",
-                            border: "1px solid rgba(240,180,41,0.30)",
-                            borderRadius: 999,
-                            boxShadow: "0 10px 24px rgba(0,0,0,0.45)",
-                          }}>
-                            {MESSAGE_REACTIONS.map((r) => (
-                              <button
-                                key={r.kind}
-                                type="button"
-                                title={r.label}
-                                onClick={() => toggleReaction(m.id, r.kind)}
-                                style={{
-                                  background: myReaction === r.kind ? "rgba(240,180,41,0.20)" : "transparent",
-                                  border: 0, fontSize: 20, padding: "4px 6px",
-                                  borderRadius: 999, cursor: "pointer", fontFamily: "inherit",
-                                }}
-                              >
-                                {r.emoji}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-
-                        {m.reactions.length > 0 && (
-                          <div style={{ marginTop: 4, display: "flex", gap: 4, flexWrap: "wrap" }}>
-                            {MESSAGE_REACTIONS.map((r) => {
-                              const c = counts.get(r.kind) ?? 0;
-                              if (c === 0) return null;
-                              const isMine = myReaction === r.kind;
-                              return (
-                                <button
-                                  key={r.kind}
-                                  type="button"
-                                  onClick={() => toggleReaction(m.id, r.kind)}
-                                  style={{
-                                    padding: "2px 8px",
-                                    background: isMine ? "rgba(240,180,41,0.20)" : "rgba(255,255,255,0.06)",
-                                    border: `1px solid ${isMine ? "rgba(240,180,41,0.40)" : "rgba(255,255,255,0.10)"}`,
-                                    borderRadius: 999, color: "#e2e8f0",
-                                    fontSize: 12, cursor: "pointer", fontFamily: "inherit",
-                                  }}
-                                >
-                                  {r.emoji} {c}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-
-                        {receipt && (
-                          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4, marginRight: 4, fontWeight: 700 }}>
-                            {receipt}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  });
+                        );
+                      })}
+                    </div>
+                  ));
                 })()}
                 <div ref={messagesEndRef} />
               </div>
-              <div style={{ padding: "10px 14px calc(env(safe-area-inset-bottom) + 12px)", borderTop: "1px solid rgba(255,255,255,0.06)", display: "grid", gap: 8, background: "#071428", position: "sticky", bottom: 0 }}>
+
+              <div className="mas-msgr-composer">
                 {replyTo && (
-                  <div style={{
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
-                    padding: "8px 10px", background: "rgba(56,189,248,0.08)",
-                    border: "1px solid rgba(56,189,248,0.25)", borderLeft: "3px solid #38bdf8",
-                    borderRadius: 8, gap: 8,
-                  }}>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ color: "#7dd3fc", fontSize: 11, fontWeight: 800 }}>
-                        Replying to {replyTo.authorFirstName} {replyTo.authorLastName}
-                      </div>
-                      <div style={{ color: "#cbd5e1", fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {replyTo.body || (replyTo.media.length > 0 ? "📎 Attachment" : "(message)")}
-                      </div>
+                  <div className="mas-msgr-reply">
+                    <div>
+                      <span className="mas-msgr-reply-label">Replying to {replyTo.authorFirstName} {replyTo.authorLastName}</span>
+                      <span className="mas-msgr-reply-body">
+                        {replyTo.body || (replyTo.media.length > 0 ? "Attachment" : "Message")}
+                      </span>
                     </div>
-                    <button type="button" onClick={() => setReplyTo(null)} style={{ background: "transparent", border: 0, color: "#cbd5e1", fontSize: 16, cursor: "pointer", padding: "2px 6px", fontFamily: "inherit" }}>×</button>
+                    <button type="button" onClick={() => setReplyTo(null)} aria-label="Cancel reply">×</button>
                   </div>
                 )}
+
                 {pendingMedia.length > 0 && (
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <div className="mas-msgr-pending">
                     {pendingMedia.map((m) => (
-                      <div key={m.url} style={{ position: "relative", background: "#040d1a", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, padding: 6, paddingRight: 28, fontSize: 12, color: "#cbd5e1", display: "flex", alignItems: "center", gap: 6 }}>
-                        <span aria-hidden>{m.kind === "image" ? "🖼️" : m.kind === "video" ? "🎬" : m.kind === "audio" ? "🎙️" : "📎"}</span>
-                        <span style={{ maxWidth: 160, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name ?? m.kind}</span>
-                        <button type="button" onClick={() => dropPending(m.url)} style={{ position: "absolute", top: 4, right: 4, background: "transparent", border: 0, color: "#94a3b8", cursor: "pointer", fontSize: 16, lineHeight: 1, fontFamily: "inherit" }}>×</button>
-                      </div>
+                      <PendingMedia key={m.url} m={m} onRemove={() => dropPending(m.url)} />
                     ))}
                   </div>
                 )}
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+
+                {recording && (
+                  <div className="mas-msgr-recording" role="status">
+                    <span className="mas-msgr-recording-dot" aria-hidden />
+                    <span>Recording — tap stop to send</span>
+                  </div>
+                )}
+
+                <div className="mas-msgr-composer-row">
                   <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
                     disabled={uploadingMedia || recording}
-                    style={iconBtnStyle}
-                    title="Attach photo / video / file"
+                    className="mas-msgr-icon-btn"
+                    aria-label="Attach a file"
                   >
-                    📎
+                    <AttachIcon />
                   </button>
                   <button
                     type="button"
                     onClick={recording ? stopRecording : startRecording}
                     disabled={uploadingMedia}
-                    style={{ ...iconBtnStyle, color: recording ? "#fca5a5" : "#f0b429", borderColor: recording ? "rgba(252,165,165,0.40)" : "rgba(240,180,41,0.30)" }}
-                    title={recording ? "Stop recording" : "Record voice note"}
+                    className={recording ? "mas-msgr-icon-btn is-recording" : "mas-msgr-icon-btn"}
+                    aria-label={recording ? "Stop recording" : "Record a voice note"}
                   >
-                    {recording ? "■" : "🎙️"}
+                    {recording ? <StopIcon /> : <MicIcon />}
                   </button>
                   <input
                     ref={fileRef}
@@ -682,16 +696,17 @@ export default function MessengerClient({ meId }: { meId: string }) {
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-                    placeholder={recording ? "Recording…" : uploadingMedia ? "Uploading…" : "Message…"}
-                    style={{ flex: 1, background: "#040d1a", border: "1px solid rgba(255,255,255,0.10)", color: "white", padding: "12px 14px", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit" }}
+                    placeholder={recording ? "Recording…" : uploadingMedia ? "Uploading…" : "Type a message"}
+                    className="mas-msgr-input mas-msgr-draft"
                   />
                   <button
                     type="button"
                     onClick={send}
                     disabled={sending || uploadingMedia || (!draft.trim() && pendingMedia.length === 0)}
-                    style={{ padding: "12px 18px", background: !draft.trim() && pendingMedia.length === 0 ? "rgba(240,180,41,0.4)" : "#f0b429", color: "#040d1a", border: 0, borderRadius: 12, fontWeight: 900, fontSize: 13, letterSpacing: "0.10em", textTransform: "uppercase", cursor: sending || uploadingMedia ? "not-allowed" : "pointer", fontFamily: "inherit" }}
+                    className="mas-msgr-send"
+                    aria-label="Send"
                   >
-                    {sending ? "Sending…" : "Send"}
+                    {sending ? <Spinner /> : <SendIcon />}
                   </button>
                 </div>
               </div>
@@ -699,12 +714,47 @@ export default function MessengerClient({ meId }: { meId: string }) {
           )}
         </section>
       </div>
-
     </div>
   );
 }
 
-// ── Read receipts ────────────────────────────────────────────────────────
+// ── Author avatar (used in their-bubble rows) ──────────────────────────
+function AuthorAvatar({ firstName, lastName, photoUrl }: { firstName: string; lastName: string; photoUrl: string | null }) {
+  if (photoUrl) {
+    return (
+      <div className="mas-msgr-avatar">
+        <img src={photoUrl} alt="" />
+      </div>
+    );
+  }
+  return (
+    <div className="mas-msgr-avatar is-fallback">
+      {(firstName[0] ?? "?") + (lastName[0] ?? "")}
+    </div>
+  );
+}
+
+// ── Pending media tile ─────────────────────────────────────────────────
+function PendingMedia({ m, onRemove }: { m: MessageMedia; onRemove: () => void }) {
+  const label = m.kind === "audio" ? "Voice note" : m.kind === "video" ? "Video" : m.kind === "image" ? "Image" : (m.name ?? "File");
+  return (
+    <div className="mas-msgr-pending-tile">
+      <div className="mas-msgr-pending-preview">
+        {m.kind === "image" ? <img src={m.url} alt="" />
+          : m.kind === "video" ? <video src={m.url} muted playsInline />
+          : m.kind === "audio" ? <AudioIcon />
+          : <FileIcon />}
+      </div>
+      <div className="mas-msgr-pending-meta">
+        <span className="mas-msgr-pending-label">{label}</span>
+        {m.name && m.kind !== "audio" && <span className="mas-msgr-pending-name">{m.name}</span>}
+      </div>
+      <button type="button" onClick={onRemove} aria-label="Remove">×</button>
+    </div>
+  );
+}
+
+// ── Read receipts ──────────────────────────────────────────────────────
 interface ReceiptConv { participants: { id: string; firstName: string; lastName: string }[]; kind: "dm" | "group" }
 function buildReceipt(
   msg: { createdAt: string },
@@ -722,129 +772,993 @@ function buildReceipt(
     return new Date(stamp).getTime() >= msgTime;
   });
   if (seenBy.length === 0) return "Sent";
-  if (conv.kind === "dm") return "Seen ✓✓";
+  if (conv.kind === "dm") return "Seen";
   if (seenBy.length === others.length) return "Seen by everyone";
   if (seenBy.length === 1) return `Seen by ${seenBy[0].firstName}`;
   if (seenBy.length === 2) return `Seen by ${seenBy[0].firstName} & ${seenBy[1].firstName}`;
   return `Seen by ${seenBy.length} of ${others.length}`;
 }
 
-// ── Inline attachment renderer ──────────────────────────────────────────
+// ── Attachment renderer ────────────────────────────────────────────────
 function MessageAttachment({ att, mine }: { att: MessageMedia; mine: boolean }) {
   if (att.kind === "image") {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <a href={att.url} target="_blank" rel="noreferrer" style={{ display: "block", borderRadius: 10, overflow: "hidden" }}>
-        <img src={att.url} alt={att.name ?? ""} style={{ display: "block", maxWidth: "100%", maxHeight: 320, borderRadius: 10 }} />
+      <a href={att.url} target="_blank" rel="noreferrer" className="mas-msgr-att mas-msgr-att-img">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={att.url} alt={att.name ?? ""} />
       </a>
     );
   }
   if (att.kind === "video") {
     return (
-      <video src={att.url} controls playsInline preload="metadata" style={{ width: "100%", maxHeight: 360, borderRadius: 10, background: "#020912" }} />
+      <div className="mas-msgr-att mas-msgr-att-vid">
+        <video src={att.url} controls playsInline preload="metadata" />
+      </div>
     );
   }
   if (att.kind === "audio") {
     return (
-      <audio src={att.url} controls preload="metadata" style={{ width: "100%" }} />
+      <div className="mas-msgr-att mas-msgr-att-audio">
+        <audio src={att.url} controls preload="metadata" />
+      </div>
     );
   }
   return (
-    <a href={att.url} target="_blank" rel="noreferrer" style={{ color: mine ? "#040d1a" : "#7dd3fc", textDecoration: "underline", fontWeight: 700, fontSize: 13 }}>
-      📎 {att.name ?? "Attachment"}
+    <a
+      href={att.url}
+      target="_blank"
+      rel="noreferrer"
+      className={`mas-msgr-att mas-msgr-att-file ${mine ? "is-mine" : "is-theirs"}`}
+    >
+      <FileIcon />
+      <span>{att.name ?? "Attachment"}</span>
     </a>
   );
 }
 
-const iconBtnStyle: React.CSSProperties = {
-  width: 44,
-  height: 44,
-  padding: 0,
-  background: "#040d1a",
-  color: "#f0b429",
-  border: "1px solid rgba(240,180,41,0.30)",
-  borderRadius: 12,
-  fontFamily: "inherit",
-  fontSize: 18,
-  cursor: "pointer",
-  lineHeight: 1,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  flexShrink: 0,
-};
-
-// ── Online presence helpers ─────────────────────────────────────────────
+// ── Online indicator (used both on conversation list + thread header) ──
 function OnlineDot() {
-  // Little star-of-life chip stuck to the corner of the avatar — green
-  // outline ring, classic 6-point star inside.
   return (
-    <span
-      title="Active now"
-      aria-label="Active now"
-      style={{
-        position: "absolute",
-        bottom: -2,
-        right: -2,
-        width: 16,
-        height: 16,
-        borderRadius: "50%",
-        background: "#04140a",
-        border: "2px solid #071428",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        boxShadow: "0 0 10px rgba(134,239,172,0.55)",
-      }}
-    >
-      <svg viewBox="0 0 32 32" width="11" height="11" aria-hidden>
-        <rect x="14" y="2" width="4" height="28" rx="1.5" fill="#86efac" />
-        <rect x="14" y="2" width="4" height="28" rx="1.5" fill="#86efac" transform="rotate(60 16 16)" />
-        <rect x="14" y="2" width="4" height="28" rx="1.5" fill="#86efac" transform="rotate(120 16 16)" />
-        <circle cx="16" cy="16" r="3" fill="#bbf7d0" />
+    <span className="mas-msgr-online" aria-label="Active now">
+      <svg viewBox="0 0 32 32" width="9" height="9" aria-hidden>
+        <rect x="14" y="2" width="4" height="28" rx="1.5" fill="#34d399" />
+        <rect x="14" y="2" width="4" height="28" rx="1.5" fill="#34d399" transform="rotate(60 16 16)" />
+        <rect x="14" y="2" width="4" height="28" rx="1.5" fill="#34d399" transform="rotate(120 16 16)" />
+        <circle cx="16" cy="16" r="3.2" fill="#a7f3d0" />
       </svg>
     </span>
   );
 }
 
-function relTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const min = Math.round(diff / 60000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.round(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const d = Math.round(hr / 24);
-  return `${d}d ago`;
+// ── Time helpers ────────────────────────────────────────────────────────
+function shortTime(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  if (sameDay) {
+    return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  }
+  const yest = new Date(now.getTime() - 86_400_000);
+  if (d.toDateString() === yest.toDateString()) return "Yest";
+  const days = Math.floor((now.getTime() - d.getTime()) / 86_400_000);
+  if (days < 7) return d.toLocaleDateString("en-US", { weekday: "short" });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function modeTab(active: boolean): React.CSSProperties {
-  return {
-    flex: 1,
-    padding: "8px 10px",
-    background: active ? "rgba(240,180,41,0.15)" : "transparent",
-    color: active ? "#f0b429" : "#94a3b8",
-    border: `1px solid ${active ? "rgba(240,180,41,0.35)" : "rgba(255,255,255,0.10)"}`,
-    borderRadius: 8,
-    fontSize: 11,
-    fontWeight: 800,
-    letterSpacing: "0.10em",
-    textTransform: "uppercase",
-    cursor: "pointer",
-    fontFamily: "inherit",
-  };
+function shortClock(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
-const toolBtn: React.CSSProperties = {
-  background: "rgba(2,9,18,0.65)",
-  border: "1px solid rgba(255,255,255,0.10)",
-  color: "#cbd5e1",
-  width: 26,
-  height: 26,
-  borderRadius: 999,
-  fontSize: 13,
-  cursor: "pointer",
-  fontFamily: "inherit",
-  padding: 0,
-  lineHeight: 1,
-};
+function dayHeader(d: Date): string {
+  const now = new Date();
+  const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+  if (sameDay(d, now)) return "Today";
+  const yest = new Date(now.getTime() - 86_400_000);
+  if (sameDay(d, yest)) return "Yesterday";
+  const days = Math.floor((now.getTime() - d.getTime()) / 86_400_000);
+  if (days < 7) return d.toLocaleDateString("en-US", { weekday: "long" });
+  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: d.getFullYear() === now.getFullYear() ? undefined : "numeric" });
+}
+
+// Group messages into day blocks → author runs (consecutive messages from
+// the same author within 3 minutes). The renderer uses the result to
+// collapse repeated avatars + names, Messenger-style.
+interface MsgRun { key: string; authorId: string; items: Message[] }
+interface MsgDayBlock { key: string; dayLabel: string | null; runs: MsgRun[] }
+function groupMessages(messages: Message[]): MsgDayBlock[] {
+  if (messages.length === 0) return [];
+  const blocks: MsgDayBlock[] = [];
+  let currentBlock: MsgDayBlock | null = null;
+  let lastAuthor: string | null = null;
+  let lastTime = 0;
+  let lastDay = "";
+
+  for (const m of messages) {
+    const d = new Date(m.createdAt);
+    const dayKey = d.toDateString();
+    if (dayKey !== lastDay) {
+      currentBlock = { key: dayKey, dayLabel: dayHeader(d), runs: [] };
+      blocks.push(currentBlock);
+      lastDay = dayKey;
+      lastAuthor = null;
+    }
+    const t = d.getTime();
+    const newRun = m.authorId !== lastAuthor || (t - lastTime) > 3 * 60 * 1000;
+    if (newRun) {
+      currentBlock!.runs.push({ key: m.id, authorId: m.authorId, items: [m] });
+    } else {
+      currentBlock!.runs[currentBlock!.runs.length - 1].items.push(m);
+    }
+    lastAuthor = m.authorId;
+    lastTime = t;
+  }
+  return blocks;
+}
+
+// ── Icons (inline SVG, currentColor) ───────────────────────────────────
+function AttachIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+    </svg>
+  );
+}
+function MicIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+      <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8" />
+    </svg>
+  );
+}
+function StopIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden>
+      <rect x="5" y="5" width="14" height="14" rx="2" />
+    </svg>
+  );
+}
+function SendIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
+      <path d="M3.4 20.4l17.45-7.48a1 1 0 000-1.84L3.4 3.6a1 1 0 00-1.4 1.04L4 11l9 1-9 1-2 6.36a1 1 0 001.4 1.04z" />
+    </svg>
+  );
+}
+function ReactIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+      <line x1="9" y1="9" x2="9.01" y2="9" />
+      <line x1="15" y1="9" x2="15.01" y2="9" />
+    </svg>
+  );
+}
+function ReplyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <polyline points="9 17 4 12 9 7" />
+      <path d="M20 18v-2a4 4 0 00-4-4H4" />
+    </svg>
+  );
+}
+function AudioIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+      <path d="M3 12v0M7 9v6M11 6v12M15 9v6M19 12v0" />
+    </svg>
+  );
+}
+function FileIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+    </svg>
+  );
+}
+function Spinner() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="40 60">
+        <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.9s" repeatCount="indefinite" />
+      </circle>
+    </svg>
+  );
+}
+
+// ── Styles ──────────────────────────────────────────────────────────────
+const MESSENGER_CSS = `
+.mas-msgr { color: var(--mas-ink); font-family: var(--mas-font-body); }
+.mas-msgr-head { margin-bottom: var(--mas-s-4); }
+.mas-msgr-kicker {
+  display: block;
+  color: var(--mas-brand-gold);
+  font-family: var(--mas-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.mas-msgr-title {
+  margin: 4px 0 0;
+  font-family: var(--mas-font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Grid */
+.mas-msgr-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+  gap: var(--mas-s-4);
+  align-items: start;
+  min-height: 640px;
+}
+
+/* ── List ─────────────────────────────────────────────────────────────── */
+.mas-msgr-list {
+  background: var(--mas-surface-1);
+  border: 1px solid var(--mas-border);
+  border-radius: var(--mas-r-3);
+  padding: var(--mas-s-3);
+  max-height: 700px;
+  overflow-y: auto;
+  box-shadow: var(--mas-shadow-2);
+}
+.mas-msgr-new {
+  width: 100%;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px 14px;
+  background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--mas-brand-gold) 45%, transparent);
+  color: var(--mas-brand-gold);
+  border-radius: var(--mas-r-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-family: inherit;
+  cursor: pointer;
+  margin-bottom: var(--mas-s-3);
+  transition: background var(--mas-fast) var(--mas-ease), border-color var(--mas-fast) var(--mas-ease);
+}
+.mas-msgr-new:hover {
+  background: color-mix(in srgb, var(--mas-brand-gold) 8%, transparent);
+  border-style: solid;
+  border-color: var(--mas-brand-gold);
+}
+.mas-msgr-new.is-open {
+  background: var(--mas-surface-well);
+  border-style: solid;
+  border-color: var(--mas-border-strong);
+  color: var(--mas-ink-muted);
+}
+
+.mas-msgr-newpanel {
+  margin-bottom: var(--mas-s-3);
+  padding: var(--mas-s-3);
+  border-radius: var(--mas-r-2);
+  background: var(--mas-surface-well);
+  border: 1px solid var(--mas-border);
+  display: grid; gap: var(--mas-s-2);
+  animation: mas-rise var(--mas-base) var(--mas-ease-out) both;
+}
+.mas-msgr-newtabs { display: flex; gap: 6px; }
+.mas-msgr-newtab {
+  flex: 1;
+  padding: 8px 10px;
+  background: transparent;
+  color: var(--mas-ink-soft);
+  border: 1px solid var(--mas-border);
+  border-radius: var(--mas-r-1);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background var(--mas-fast) var(--mas-ease), color var(--mas-fast) var(--mas-ease);
+}
+.mas-msgr-newtab.is-active {
+  background: color-mix(in srgb, var(--mas-brand-gold) 14%, transparent);
+  color: var(--mas-brand-gold);
+  border-color: color-mix(in srgb, var(--mas-brand-gold) 35%, transparent);
+}
+
+.mas-msgr-group { display: grid; gap: var(--mas-s-2); }
+.mas-msgr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.mas-msgr-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 8px 4px 10px;
+  background: color-mix(in srgb, var(--mas-brand-gold) 14%, transparent);
+  color: var(--mas-brand-gold);
+  border-radius: var(--mas-r-pill);
+  font-size: 12px;
+  font-weight: 600;
+}
+.mas-msgr-chip button {
+  background: transparent; border: 0; color: inherit;
+  font-size: 16px; cursor: pointer; line-height: 1; padding: 0;
+}
+.mas-msgr-group-go {
+  padding: 9px 14px;
+  background: var(--mas-brand-gold);
+  color: var(--mas-ink-on-light);
+  border: 0;
+  border-radius: var(--mas-r-2);
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+}
+.mas-msgr-group-go:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.mas-msgr-input {
+  width: 100%;
+  background: var(--mas-surface);
+  border: 1px solid var(--mas-border);
+  color: var(--mas-ink);
+  padding: 9px 12px;
+  border-radius: var(--mas-r-2);
+  font-size: 13.5px;
+  font-family: var(--mas-font-body);
+  outline: none;
+  transition: border-color var(--mas-fast) var(--mas-ease);
+}
+.mas-msgr-input::placeholder { color: var(--mas-ink-soft); }
+.mas-msgr-input:focus { border-color: var(--mas-border-focus); }
+
+.mas-msgr-roster {
+  max-height: 240px;
+  overflow-y: auto;
+  display: grid; gap: 3px;
+  padding-top: 4px;
+}
+.mas-msgr-rosteritem {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 11px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--mas-r-2);
+  color: var(--mas-ink);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background var(--mas-fast) var(--mas-ease), border-color var(--mas-fast) var(--mas-ease);
+}
+.mas-msgr-rosteritem:hover {
+  background: var(--mas-surface-well);
+  border-color: var(--mas-border);
+}
+.mas-msgr-rosteritem.is-checked {
+  background: color-mix(in srgb, var(--mas-brand-gold) 10%, transparent);
+  border-color: color-mix(in srgb, var(--mas-brand-gold) 35%, transparent);
+}
+.mas-msgr-rosteritem-name { display: inline-flex; align-items: center; gap: 6px; }
+.mas-msgr-rosteritem-meta {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--mas-ink-soft); font-size: 11px;
+}
+.mas-msgr-checkdot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--mas-brand-gold);
+  display: inline-block;
+}
+.mas-msgr-onlinedot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--mas-positive);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--mas-positive) 60%, transparent);
+}
+
+.mas-msgr-list-empty {
+  padding: var(--mas-s-5) var(--mas-s-3);
+  text-align: center;
+}
+.mas-msgr-list-empty p {
+  margin: 0; color: var(--mas-ink-muted); font-size: 0.92rem; font-weight: 500;
+}
+.mas-msgr-list-empty small {
+  display: block; margin-top: 4px; color: var(--mas-ink-soft); font-size: 0.82rem;
+}
+
+/* Conversation rows */
+.mas-msgr-conv-list {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: 2px;
+}
+.mas-msgr-conv {
+  width: 100%;
+  display: flex; gap: 10px; align-items: center;
+  padding: 10px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--mas-r-2);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background var(--mas-fast) var(--mas-ease), border-color var(--mas-fast) var(--mas-ease);
+}
+.mas-msgr-conv:hover { background: var(--mas-surface-well); }
+.mas-msgr-conv.is-active {
+  background: color-mix(in srgb, var(--mas-brand-gold) 10%, transparent);
+  border-color: color-mix(in srgb, var(--mas-brand-gold) 30%, transparent);
+}
+.mas-msgr-conv-avatar {
+  position: relative;
+  width: 40px; height: 40px; border-radius: 50%;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--mas-brand-gold) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mas-brand-gold) 30%, transparent);
+  color: var(--mas-brand-gold);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.84rem;
+  flex-shrink: 0;
+}
+.mas-msgr-conv-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mas-msgr-conv-badge {
+  position: absolute; bottom: -2px; right: -2px;
+  min-width: 17px; height: 17px; padding: 0 5px;
+  border-radius: 999px;
+  background: var(--mas-surface-2);
+  border: 2px solid var(--mas-surface-1);
+  color: var(--mas-ink-muted);
+  font-family: var(--mas-font-mono);
+  font-size: 9px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.mas-msgr-conv-body { flex: 1; min-width: 0; }
+.mas-msgr-conv-line1 {
+  display: flex; justify-content: space-between; gap: 8px; align-items: baseline;
+}
+.mas-msgr-conv-name {
+  color: var(--mas-ink); font-weight: 600; font-size: 14px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  letter-spacing: -0.005em;
+}
+.mas-msgr-conv-time {
+  color: var(--mas-ink-soft); font-size: 11px;
+  flex-shrink: 0;
+}
+.mas-msgr-conv-line2 {
+  display: flex; justify-content: space-between; gap: 8px; align-items: center;
+  margin-top: 2px;
+}
+.mas-msgr-conv-preview {
+  flex: 1; min-width: 0;
+  color: var(--mas-ink-soft); font-size: 12.5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mas-msgr-conv-unread {
+  background: var(--mas-brand-gold);
+  color: var(--mas-ink-on-light);
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.mas-msgr-conv.is-unread .mas-msgr-conv-name { font-weight: 700; }
+.mas-msgr-conv.is-unread .mas-msgr-conv-preview { color: var(--mas-ink-muted); font-weight: 500; }
+
+/* ── Thread ─────────────────────────────────────────────────────────── */
+.mas-msgr-thread {
+  background: var(--mas-surface-1);
+  border: 1px solid var(--mas-border);
+  border-radius: var(--mas-r-3);
+  min-height: 640px;
+  max-height: 700px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--mas-shadow-2);
+}
+.mas-msgr-empty-thread {
+  flex: 1;
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: var(--mas-s-7);
+  color: var(--mas-ink-soft);
+  overflow: hidden;
+}
+.mas-msgr-empty-bg {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(180deg, rgba(8,22,38,0.92) 0%, rgba(8,22,38,0.78) 50%, rgba(8,22,38,0.96) 100%),
+    url('/lounge/brand/crew-community.jpg') center / cover no-repeat;
+  filter: saturate(0.85);
+}
+.mas-msgr-empty-content {
+  position: relative; z-index: 1;
+  max-width: 360px;
+  animation: mas-rise var(--mas-base) var(--mas-ease-out) both;
+}
+.mas-msgr-empty-kicker {
+  display: block;
+  color: var(--mas-brand-gold);
+  font-family: var(--mas-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.mas-msgr-empty-thread h3 {
+  margin: 0;
+  color: var(--mas-ink);
+  font-family: var(--mas-font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.mas-msgr-empty-thread p {
+  margin: 8px 0 0;
+  color: var(--mas-ink-muted);
+  font-size: 0.96rem;
+  line-height: 1.5;
+}
+
+.mas-msgr-thread-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: var(--mas-s-3) var(--mas-s-4);
+  border-bottom: 1px solid var(--mas-border);
+  background: color-mix(in srgb, var(--mas-surface-well) 80%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  position: sticky; top: 0; z-index: 4;
+}
+.mas-msgr-back {
+  display: none;
+  background: transparent; border: 0;
+  color: var(--mas-brand-gold);
+  font-size: 22px; cursor: pointer; padding: 4px 8px;
+  font-family: inherit; line-height: 1;
+}
+.mas-msgr-thread-titlewrap { flex: 1; min-width: 0; }
+.mas-msgr-thread-title {
+  color: var(--mas-ink); font-size: 1.02rem; font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-family: var(--mas-font-display);
+}
+.mas-msgr-thread-sub {
+  margin-top: 1px;
+  color: var(--mas-ink-soft); font-size: 11.5px;
+  font-family: var(--mas-font-mono); letter-spacing: 0.02em;
+}
+.mas-msgr-thread-live {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--mas-positive);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--mas-positive) 70%, transparent);
+}
+
+.mas-msgr-thread-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--mas-s-4);
+  scroll-behavior: smooth;
+}
+.mas-msgr-thread-empty {
+  margin: var(--mas-s-7) auto 0;
+  text-align: center; color: var(--mas-ink-soft);
+}
+.mas-msgr-thread-empty p {
+  margin: 0; color: var(--mas-ink-muted); font-size: 0.95rem; font-weight: 500;
+}
+.mas-msgr-thread-empty small {
+  display: block; margin-top: 4px; color: var(--mas-ink-soft); font-size: 0.82rem;
+}
+
+.mas-msgr-group-block { margin-bottom: var(--mas-s-4); }
+.mas-msgr-day {
+  display: flex; align-items: center; gap: 12px;
+  margin: var(--mas-s-3) 0;
+}
+.mas-msgr-day::before,
+.mas-msgr-day::after {
+  content: ""; flex: 1; height: 1px;
+  background: var(--mas-border);
+}
+.mas-msgr-day span {
+  color: var(--mas-ink-soft);
+  font-family: var(--mas-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.mas-msgr-run {
+  display: flex; gap: 8px;
+  margin-top: 4px;
+  animation: mas-rise var(--mas-fast) var(--mas-ease-out) both;
+}
+.mas-msgr-run.is-mine { flex-direction: row-reverse; }
+.mas-msgr-run-avatar { width: 28px; flex-shrink: 0; display: flex; align-items: flex-end; }
+.mas-msgr-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--mas-border-strong);
+  background: color-mix(in srgb, var(--mas-brand-gold) 14%, transparent);
+}
+.mas-msgr-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mas-msgr-avatar.is-fallback {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--mas-brand-gold);
+  font-weight: 700; font-size: 11px;
+}
+.mas-msgr-run-bubbles {
+  max-width: 78%;
+  min-width: 0;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.mas-msgr-run.is-mine .mas-msgr-run-bubbles { align-items: flex-end; }
+.mas-msgr-run-name {
+  margin: 0 8px 2px;
+  color: var(--mas-ink-soft);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.mas-msgr-msg { display: flex; flex-direction: column; }
+.mas-msgr-bubble-row {
+  display: flex; align-items: flex-end; gap: 6px;
+}
+.mas-msgr-run.is-mine .mas-msgr-bubble-row { flex-direction: row-reverse; }
+.mas-msgr-bubble {
+  padding: 8px 13px;
+  border-radius: var(--mas-r-3);
+  max-width: 100%;
+  word-wrap: break-word;
+  position: relative;
+  font-size: 14.5px;
+  line-height: 1.42;
+  box-shadow: var(--mas-shadow-1);
+}
+.mas-msgr-bubble.is-mine {
+  background: var(--mas-brand-gold);
+  color: var(--mas-ink-on-light);
+}
+.mas-msgr-bubble.is-mine.is-tail { border-bottom-right-radius: 6px; }
+.mas-msgr-bubble.is-theirs {
+  background: var(--mas-surface-well);
+  color: var(--mas-ink);
+  border: 1px solid var(--mas-border);
+}
+.mas-msgr-bubble.is-theirs.is-tail { border-bottom-left-radius: 6px; }
+.mas-msgr-text { white-space: pre-wrap; }
+
+.mas-msgr-quote {
+  display: block;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  border-left: 3px solid;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+.mas-msgr-bubble.is-mine .mas-msgr-quote {
+  background: rgba(12,28,46,0.18);
+  border-left-color: rgba(12,28,46,0.55);
+  color: rgba(12,28,46,0.95);
+}
+.mas-msgr-bubble.is-theirs .mas-msgr-quote {
+  background: color-mix(in srgb, var(--mas-brand-gold) 8%, transparent);
+  border-left-color: color-mix(in srgb, var(--mas-brand-gold) 55%, transparent);
+  color: var(--mas-ink-muted);
+}
+.mas-msgr-quote-name {
+  display: block; font-weight: 700; font-size: 11px;
+}
+.mas-msgr-quote-body {
+  display: block;
+  margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+.mas-msgr-media {
+  margin-top: 6px;
+  display: grid; gap: 4px;
+}
+.mas-msgr-att { display: block; border-radius: var(--mas-r-2); overflow: hidden; }
+.mas-msgr-att-img img {
+  display: block; max-width: 100%; max-height: 320px; border-radius: var(--mas-r-2);
+}
+.mas-msgr-att-vid video {
+  display: block; width: 100%; max-height: 360px; border-radius: var(--mas-r-2);
+  background: var(--mas-surface-well);
+}
+.mas-msgr-att-audio audio { width: 100%; }
+.mas-msgr-att-file {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--mas-r-2);
+  font-size: 13px; font-weight: 600;
+  text-decoration: none;
+}
+.mas-msgr-att-file.is-mine { background: rgba(12,28,46,0.12); color: rgba(12,28,46,0.95); }
+.mas-msgr-att-file.is-theirs { background: color-mix(in srgb, var(--mas-brand-gold) 10%, transparent); color: var(--mas-brand-gold); }
+
+/* Per-message tools (react / reply) — visible on hover, always visible on touch */
+.mas-msgr-tools {
+  display: flex; flex-direction: column; gap: 4px;
+  opacity: 0;
+  transition: opacity var(--mas-fast) var(--mas-ease);
+}
+.mas-msgr-bubble-row:hover .mas-msgr-tools,
+.mas-msgr-bubble-row:focus-within .mas-msgr-tools { opacity: 1; }
+@media (hover: none) {
+  .mas-msgr-tools { opacity: 1; }
+}
+.mas-msgr-tool {
+  width: 24px; height: 24px;
+  border-radius: 999px;
+  background: var(--mas-surface);
+  border: 1px solid var(--mas-border);
+  color: var(--mas-ink-soft);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  transition: color var(--mas-fast) var(--mas-ease), border-color var(--mas-fast) var(--mas-ease);
+}
+.mas-msgr-tool:hover {
+  color: var(--mas-brand-gold);
+  border-color: color-mix(in srgb, var(--mas-brand-gold) 40%, transparent);
+}
+
+.mas-msgr-reactpop {
+  display: inline-flex; gap: 4px;
+  padding: 6px 8px;
+  margin-top: 4px;
+  background: var(--mas-surface-well);
+  border: 1px solid var(--mas-border-strong);
+  border-radius: var(--mas-r-pill);
+  box-shadow: var(--mas-shadow-3);
+  align-self: flex-start;
+  animation: mas-rise var(--mas-fast) var(--mas-ease-out) both;
+}
+.mas-msgr-reactpop.is-mine { align-self: flex-end; }
+.mas-msgr-reactpop-btn {
+  background: transparent;
+  border: 0;
+  font-size: 19px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform var(--mas-fast) var(--mas-ease), background var(--mas-fast) var(--mas-ease);
+}
+.mas-msgr-reactpop-btn:hover { transform: scale(1.18); background: rgba(255,255,255,0.06); }
+.mas-msgr-reactpop-btn.is-mine { background: color-mix(in srgb, var(--mas-brand-gold) 18%, transparent); }
+
+.mas-msgr-reactrow {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  margin-top: 4px;
+}
+.mas-msgr-reactrow.is-mine { justify-content: flex-end; }
+.mas-msgr-reactchip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px;
+  background: var(--mas-surface-well);
+  border: 1px solid var(--mas-border);
+  border-radius: var(--mas-r-pill);
+  color: var(--mas-ink-muted);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color var(--mas-fast) var(--mas-ease), background var(--mas-fast) var(--mas-ease);
+}
+.mas-msgr-reactchip:hover { background: var(--mas-surface); border-color: var(--mas-border-strong); }
+.mas-msgr-reactchip.is-mine {
+  background: color-mix(in srgb, var(--mas-brand-gold) 14%, transparent);
+  border-color: color-mix(in srgb, var(--mas-brand-gold) 40%, transparent);
+}
+
+.mas-msgr-time {
+  margin-top: 4px;
+  padding: 0 6px;
+  color: var(--mas-ink-soft);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+}
+.mas-msgr-time.is-mine { align-self: flex-end; }
+.mas-msgr-time.is-theirs { align-self: flex-start; }
+.mas-msgr-receipt { margin-left: 4px; color: var(--mas-ink-soft); }
+
+/* Composer */
+.mas-msgr-composer {
+  padding: var(--mas-s-3) var(--mas-s-3) calc(env(safe-area-inset-bottom) + var(--mas-s-3));
+  border-top: 1px solid var(--mas-border);
+  background: var(--mas-surface-1);
+  display: grid; gap: var(--mas-s-2);
+}
+.mas-msgr-reply {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--mas-brand-gold) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mas-brand-gold) 30%, transparent);
+  border-left: 3px solid var(--mas-brand-gold);
+  border-radius: var(--mas-r-2);
+  animation: mas-rise var(--mas-fast) var(--mas-ease-out) both;
+}
+.mas-msgr-reply > div { min-width: 0; }
+.mas-msgr-reply-label {
+  display: block;
+  color: var(--mas-brand-gold);
+  font-family: var(--mas-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.mas-msgr-reply-body {
+  display: block;
+  margin-top: 2px;
+  color: var(--mas-ink-muted);
+  font-size: 12.5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mas-msgr-reply button {
+  background: transparent; border: 0;
+  color: var(--mas-ink-muted);
+  font-size: 18px; cursor: pointer; padding: 2px 6px; line-height: 1;
+  font-family: inherit;
+}
+
+.mas-msgr-pending {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.mas-msgr-pending-tile {
+  position: relative;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 30px 6px 6px;
+  background: var(--mas-surface-well);
+  border: 1px solid var(--mas-border);
+  border-radius: var(--mas-r-2);
+  font-size: 12px;
+  color: var(--mas-ink-muted);
+}
+.mas-msgr-pending-preview {
+  width: 38px; height: 38px; flex-shrink: 0;
+  border-radius: var(--mas-r-1);
+  background: var(--mas-surface);
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--mas-brand-gold);
+}
+.mas-msgr-pending-preview img,
+.mas-msgr-pending-preview video {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.mas-msgr-pending-meta { display: grid; gap: 1px; min-width: 0; }
+.mas-msgr-pending-label {
+  color: var(--mas-ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+.mas-msgr-pending-name {
+  color: var(--mas-ink-soft);
+  font-size: 11px;
+  max-width: 140px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mas-msgr-pending-tile button {
+  position: absolute; top: 4px; right: 4px;
+  background: transparent; border: 0;
+  color: var(--mas-ink-soft); cursor: pointer; font-size: 16px; padding: 0; line-height: 1;
+  font-family: inherit;
+}
+
+.mas-msgr-recording {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--mas-critical) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mas-critical) 36%, transparent);
+  border-radius: var(--mas-r-2);
+  color: var(--mas-critical);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.mas-msgr-recording-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--mas-critical);
+  animation: mas-pulse 1.2s ease-in-out infinite;
+}
+
+.mas-msgr-composer-row {
+  display: flex; gap: 8px; align-items: center;
+}
+.mas-msgr-icon-btn {
+  width: 42px; height: 42px;
+  padding: 0;
+  background: var(--mas-surface-well);
+  border: 1px solid var(--mas-border);
+  color: var(--mas-ink-muted);
+  border-radius: var(--mas-r-2);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-family: inherit;
+  transition: color var(--mas-fast) var(--mas-ease), border-color var(--mas-fast) var(--mas-ease);
+}
+.mas-msgr-icon-btn:hover {
+  color: var(--mas-brand-gold);
+  border-color: color-mix(in srgb, var(--mas-brand-gold) 40%, transparent);
+}
+.mas-msgr-icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.mas-msgr-icon-btn.is-recording {
+  color: var(--mas-critical);
+  border-color: color-mix(in srgb, var(--mas-critical) 50%, transparent);
+  background: color-mix(in srgb, var(--mas-critical) 8%, var(--mas-surface-well));
+}
+.mas-msgr-draft {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: var(--mas-r-3);
+  font-size: 14.5px;
+}
+.mas-msgr-send {
+  width: 42px; height: 42px;
+  padding: 0;
+  background: var(--mas-brand-gold);
+  color: var(--mas-ink-on-light);
+  border: 0;
+  border-radius: var(--mas-r-2);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-family: inherit;
+  transition: filter var(--mas-fast) var(--mas-ease), transform var(--mas-fast) var(--mas-ease);
+}
+.mas-msgr-send:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
+.mas-msgr-send:disabled {
+  background: var(--mas-surface-well);
+  color: var(--mas-ink-soft);
+  cursor: not-allowed;
+}
+
+/* ── Animations ─────────────────────────────────────────────────────── */
+@keyframes mas-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.45; transform: scale(0.85); }
+}
+
+/* ── Mobile (single-pane Messenger pattern) ─────────────────────────── */
+@media (max-width: 720px) {
+  .mas-msgr-head { display: none; }
+  .mas-msgr-grid { grid-template-columns: 1fr; gap: 0; min-height: auto; }
+  .mas-msgr-list, .mas-msgr-thread {
+    border-radius: 0;
+    border-left: 0; border-right: 0;
+    max-height: none; min-height: 0;
+  }
+  .mas-msgr-list {
+    max-height: calc(100vh - 56px - env(safe-area-inset-bottom) - env(safe-area-inset-top));
+  }
+  .mas-msgr-thread {
+    min-height: calc(100vh - 56px - env(safe-area-inset-bottom) - env(safe-area-inset-top));
+  }
+  .mas-msgr.has-active .mas-msgr-list { display: none; }
+  .mas-msgr:not(.has-active) .mas-msgr-thread { display: none; }
+  .mas-msgr-back { display: inline-flex; }
+}
+
+/* Online indicator on conv-avatar */
+.mas-msgr-online {
+  position: absolute;
+  bottom: -2px; right: -2px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--mas-surface-2);
+  border: 2px solid var(--mas-surface-1);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--mas-positive) 60%, transparent);
+}
+`;

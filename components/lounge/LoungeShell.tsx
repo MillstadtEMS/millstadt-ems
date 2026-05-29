@@ -400,10 +400,10 @@ function SidebarBody({
           <Image src="/images/millstadt-ems/crest.png" alt="" width={62} height={62} style={{ display: "block", objectFit: "contain" }} />
         </div>
         <div style={{ lineHeight: 1.1, textAlign: "center" }}>
-          <div style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.30em", textTransform: "uppercase" }}>
+          <div className="mas-mono" style={{ color: "#f0b429", fontSize: 10, fontWeight: 600, letterSpacing: "0.22em", textTransform: "uppercase" }}>
             Employee Lounge
           </div>
-          <div style={{ color: "white", fontWeight: 900, fontSize: 16, marginTop: 4, letterSpacing: "-0.005em" }}>Millstadt EMS</div>
+          <div className="mas-display" style={{ color: "white", fontWeight: 700, fontSize: 17, marginTop: 5, letterSpacing: "-0.015em" }}>Millstadt EMS</div>
         </div>
       </div>
 
@@ -475,10 +475,11 @@ function NavSection({
 const navSection: React.CSSProperties = {
   color: "#94a3b8",
   fontSize: 10,
-  fontWeight: 900,
-  letterSpacing: "0.24em",
+  fontWeight: 600,
+  letterSpacing: "0.20em",
   textTransform: "uppercase",
-  padding: "1px 10px 4px",
+  padding: "2px 10px 5px",
+  fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
 };
 
 function NavRow({ item, active, onNavigate }: { item: NavItem; active: boolean; onNavigate?: () => void }) {
