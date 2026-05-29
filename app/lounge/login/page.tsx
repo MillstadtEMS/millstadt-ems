@@ -299,15 +299,7 @@ export default function LoungeLogin() {
             onSubmit={(e) => { e.preventDefault(); submitCode("/api/lounge/setup-2fa"); }}
             style={{ display: "grid", gap: 14 }}
           >
-            <p style={{ color: "#cbd5e1", fontSize: 14, lineHeight: 1.55, margin: 0 }}>
-              First-time setup uses <strong style={{ color: "#f0b429" }}>Microsoft Authenticator only</strong>. Add a new account in Microsoft Authenticator, choose <strong style={{ color: "#f0b429" }}>Other account</strong>, scan the QR code, then enter the 6-digit code it shows.
-            </p>
-            <div style={{ display: "grid", gap: 8, padding: 12, borderRadius: 14, background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.22)", color: "#dbeafe", fontSize: 13, lineHeight: 1.45 }}>
-              <strong style={{ color: "white" }}>Microsoft Authenticator setup</strong>
-              <span>1. Open Microsoft Authenticator.</span>
-              <span>2. Tap +, then choose Other account.</span>
-              <span>3. Scan this QR and use the 6-digit code.</span>
-            </div>
+            <AuthenticatorSetupGuide />
             {qr ? (
               <div style={{ display: "flex", justifyContent: "center" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -447,6 +439,93 @@ function DevShortcut() {
   );
 }
 
+function AuthenticatorSetupGuide() {
+  const steps = [
+    "Install or open Microsoft Authenticator on your phone.",
+    "Tap the + button, then choose Other account. Do not choose personal, work, or school Microsoft sign-in for this QR.",
+    "Allow camera access if asked, scan the QR code below, then enter the 6-digit code shown for Millstadt EMS Employee Lounge.",
+  ];
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gap: 12,
+        padding: 14,
+        borderRadius: 16,
+        background:
+          "linear-gradient(180deg, rgba(56,189,248,0.10), rgba(7,20,40,0.72))",
+        border: "1px solid rgba(56,189,248,0.25)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
+      }}
+    >
+      <div>
+        <div style={{ color: "#f0b429", fontSize: 10, fontWeight: 950, letterSpacing: "0.20em", textTransform: "uppercase" }}>
+          First-time authenticator setup
+        </div>
+        <h2 style={{ margin: "5px 0 0", color: "white", fontSize: 18, lineHeight: 1.1, fontWeight: 950 }}>
+          Connect Microsoft Authenticator
+        </h2>
+        <p style={{ color: "#cbd5e1", fontSize: 13, lineHeight: 1.5, margin: "8px 0 0" }}>
+          The Lounge uses Microsoft Authenticator for rotating 6-digit codes.
+          Set it up once, then use the code from the app whenever the Lounge asks.
+        </p>
+      </div>
+
+      <div style={{ display: "grid", gap: 8 }}>
+        {steps.map((step, index) => (
+          <div key={step} style={{ display: "grid", gridTemplateColumns: "28px minmax(0, 1fr)", gap: 10, alignItems: "start" }}>
+            <span
+              style={{
+                width: 28,
+                height: 28,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 999,
+                background: "#f0b429",
+                color: "#040d1a",
+                fontSize: 12,
+                fontWeight: 950,
+              }}
+            >
+              {index + 1}
+            </span>
+            <span style={{ color: "#dbeafe", fontSize: 13, lineHeight: 1.45 }}>{step}</span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <a
+          href="https://support.microsoft.com/en-us/authenticator/download-microsoft-authenticator"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={authGuideLink}
+        >
+          Download app
+        </a>
+        <a
+          href="https://apps.apple.com/us/app/microsoft-authenticator/id983156458"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={authGuideLink}
+        >
+          iPhone
+        </a>
+        <a
+          href="https://play.google.com/store/apps/details?id=com.azure.authenticator"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={authGuideLink}
+        >
+          Android
+        </a>
+      </div>
+    </div>
+  );
+}
+
 function ErrorBanner({ children }: { children: React.ReactNode }) {
   return (
     <div
@@ -501,6 +580,23 @@ const buttonStyle: React.CSSProperties = {
   border: 0,
   transition: "background 0.2s",
   fontFamily: "inherit",
+};
+
+const authGuideLink: React.CSSProperties = {
+  minHeight: 34,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "0 12px",
+  borderRadius: 999,
+  background: "rgba(255,255,255,0.06)",
+  border: "1px solid rgba(255,255,255,0.12)",
+  color: "#f0b429",
+  textDecoration: "none",
+  fontSize: 11,
+  fontWeight: 900,
+  letterSpacing: "0.10em",
+  textTransform: "uppercase",
 };
 
 function BiometricSignIn({

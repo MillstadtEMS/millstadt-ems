@@ -24,17 +24,28 @@ const FLUTTER_AMPLITUDE_MV = FLUTTER_PROFILE.generator?.flutterWaveAmplitudeMv ?
 const CONDUCTION_RATIO = FLUTTER_PROFILE.generator?.flutterConductionRatio ?? 2; // 2:1 — every 2nd flutter wave conducts
 
 /**
- * Asymmetric flutter wave (-1..1) parameterized by a phase argument.
+ * Asymmetric flutter wave parameterized by a phase argument.
  *
- * Real inferior-lead flutter waves rise slowly then drop sharply — a
- * symmetric triangle wave reads as a series of cones, not a sawtooth.
- * 85% rise / 15% fall produces the classic "F-wave" shape.
+ * Lead II is an inferior lead — classic flutter waves point DOWN here, with
+ * a slow descending limb and a sharp ascending recovery. We model that as
+ * a sawtooth that sits mostly below baseline: slow descent from 0 to -1
+ * over 80% of the cycle, then a sharp rise to a small overshoot (+0.25)
+ * over the last 20%. That overshoot adds the brief positive deflection
+ * that real F-waves show between teeth, instead of stopping flat at zero.
  */
 function sawtooth(phase: number): number {
   const p = phase - Math.floor(phase);
-  const RISE_FRAC = 0.85;
-  if (p < RISE_FRAC) return -1 + (p / RISE_FRAC) * 2;
-  return 1 - ((p - RISE_FRAC) / (1 - RISE_FRAC)) * 2;
+  const DESCENT_FRAC = 0.80;
+  if (p < DESCENT_FRAC) {
+    // Slight downward concavity using a mild quadratic so the descending
+    // limb has the classic "scooped" curve rather than a perfectly straight
+    // ramp. k * (p/D)^1.25 stays monotonic but bows the line slightly.
+    const u = p / DESCENT_FRAC;
+    return -Math.pow(u, 1.15);
+  }
+  // Sharp ascent from -1 through 0 to a small positive overshoot.
+  const u = (p - DESCENT_FRAC) / (1 - DESCENT_FRAC);
+  return -1 + u * 1.25; // ends at +0.25
 }
 
 /** No-P beat — flutter waves themselves stand in for atrial activity. */

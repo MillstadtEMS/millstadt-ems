@@ -453,7 +453,7 @@ function TimedScreen({ level, playerName, onExit }: { level: LevelId; playerName
         </p>
       )}
       <p style={{ color: LEAD_II_COLORS.phosphorDim, textAlign: "center", marginTop: 14, fontSize: 14 }}>
-        Subject: {subject?.displayName} · tier {tierForRhythm(current) ?? "?"}
+        Subject: {displayNameFor(current)} · tier {tierForRhythm(current) ?? "?"}
       </p>
     </div>
   );
@@ -560,7 +560,7 @@ function LearnScreen({ level, onExit }: { level: LevelId; onExit: () => void }) 
 
       <div style={{ marginTop: 12 }}>
         <div style={{ color: LEAD_II_COLORS.amber, fontSize: 20, letterSpacing: "0.12em" }}>
-          NOW SHOWING — {def?.displayName.toUpperCase() ?? picked}
+          NOW SHOWING — {displayNameFor(picked).toUpperCase()}
         </div>
         <p style={{ color: LEAD_II_COLORS.phosphorDim, marginTop: 4, fontSize: 16, lineHeight: 1.55 }}>
           Family: {def?.family ?? "?"} · Difficulty: {def?.difficulty ?? "?"}.

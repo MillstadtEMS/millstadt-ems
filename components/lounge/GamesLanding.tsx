@@ -23,6 +23,7 @@ export default function GamesLanding({ meId }: { meId: string }) {
   const [scores, setScores] = useState<ScoreRow[]>([]);
   const [myBest, setMyBest] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -122,27 +123,52 @@ export default function GamesLanding({ meId }: { meId: string }) {
         ) : scores.length === 0 ? (
           <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>Nobody&apos;s posted a score yet — be the first.</p>
         ) : (
-          <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
-            {scores.map((s, i) => {
-              const isMe = s.player.id === meId;
-              return (
-                <li key={s.id} style={{
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                  gap: 12, padding: "10px 12px",
-                  background: isMe ? "rgba(240,180,41,0.08)" : "rgba(2,9,18,0.55)",
-                  border: `1px solid ${isMe ? "rgba(240,180,41,0.30)" : "rgba(255,255,255,0.06)"}`,
-                  borderRadius: 10,
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                    <span style={{ width: 28, textAlign: "right", color: i < 3 ? "#f0b429" : "#94a3b8", fontWeight: 900, fontFamily: "ui-monospace, SFMono-Regular, monospace" }}>{i + 1}</span>
-                    <span style={{ color: "white", fontWeight: 800, fontSize: 13.5 }}>{s.player.firstName} {s.player.lastName}</span>
-                    {isMe && <span style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase" }}>You</span>}
-                  </div>
-                  <span style={{ color: "#bbf7d0", fontWeight: 900, fontSize: 16, fontFamily: "ui-monospace, SFMono-Regular, monospace" }}>{s.score}</span>
-                </li>
-              );
-            })}
-          </ol>
+          <>
+            <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
+              {scores.slice(0, expanded ? 10 : 3).map((s, i) => {
+                const isMe = s.player.id === meId;
+                return (
+                  <li key={s.id} style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    gap: 12, padding: "10px 12px",
+                    background: isMe ? "rgba(240,180,41,0.08)" : "rgba(2,9,18,0.55)",
+                    border: `1px solid ${isMe ? "rgba(240,180,41,0.30)" : "rgba(255,255,255,0.06)"}`,
+                    borderRadius: 10,
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      <span style={{ width: 28, textAlign: "right", color: i < 3 ? "#f0b429" : "#94a3b8", fontWeight: 900, fontFamily: "ui-monospace, SFMono-Regular, monospace" }}>{i + 1}</span>
+                      <span style={{ color: "white", fontWeight: 800, fontSize: 13.5 }}>{s.player.firstName} {s.player.lastName}</span>
+                      {isMe && <span style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase" }}>You</span>}
+                    </div>
+                    <span style={{ color: "#bbf7d0", fontWeight: 900, fontSize: 16, fontFamily: "ui-monospace, SFMono-Regular, monospace" }}>{s.score}</span>
+                  </li>
+                );
+              })}
+            </ol>
+            {scores.length > 3 && (
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                style={{
+                  marginTop: 10,
+                  width: "100%",
+                  background: "transparent",
+                  border: "1px solid rgba(240,180,41,0.30)",
+                  color: "#f0b429",
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  fontSize: 11,
+                  fontWeight: 900,
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {expanded ? "Show top 3 ▴" : `Show top ${Math.min(10, scores.length)} ▾`}
+              </button>
+            )}
+          </>
         )}
       </section>
     </div>
