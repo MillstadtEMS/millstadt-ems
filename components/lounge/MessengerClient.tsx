@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Image from "next/image";
 
 interface ConversationPreview {
   id: string;
@@ -192,7 +191,7 @@ export default function MessengerClient({ meId }: { meId: string }) {
                       style={{ width: "100%", display: "flex", gap: 10, alignItems: "center", padding: "10px 10px", background: active ? "rgba(240,180,41,0.10)" : "transparent", border: active ? "1px solid rgba(240,180,41,0.30)" : "1px solid transparent", borderRadius: 10, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}
                     >
                       <div style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(240,180,41,0.14)", border: "1px solid rgba(240,180,41,0.30)", color: "#f0b429", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, overflow: "hidden", position: "relative", flexShrink: 0 }}>
-                        {photo ? <Image src={photo} alt="" fill sizes="38px" style={{ objectFit: "cover" }} /> : initials.toUpperCase()}
+                        {photo ? <img src={photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : initials.toUpperCase()}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 6 }}>

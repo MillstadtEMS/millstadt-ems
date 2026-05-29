@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface ProfileInitial {
   firstName: string;
   lastName: string;
   certification: string | null;
   position: string | null;
+  photoUrl: string | null;
   hireDate: string | null;
   email: string;
   phone: string;
@@ -34,9 +36,14 @@ interface ProfileInitial {
 }
 
 export default function AboutMeForm({ initial }: { initial: ProfileInitial }) {
+  const router = useRouter();
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<null | "ok" | "err">(null);
+  const [photoUrl, setPhotoUrl] = useState(initial.photoUrl);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoStatus, setPhotoStatus] = useState<null | { kind: "ok" | "err"; message: string }>(null);
 
   // Phone verification UI state
   const [phoneVerifiedAt, setPhoneVerifiedAt] = useState<string | null>(initial.phoneVerifiedAt);
@@ -96,6 +103,63 @@ export default function AboutMeForm({ initial }: { initial: ProfileInitial }) {
     setForm((s) => ({ ...s, [key]: value }));
   }
 
+  async function uploadPhoto(file: File) {
+    setPhotoBusy(true);
+    setPhotoStatus(null);
+    try {
+      if (!file.type.startsWith("image/")) {
+        setPhotoStatus({ kind: "err", message: "Choose an image file." });
+        return;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        setPhotoStatus({ kind: "err", message: "Keep profile photos under 8 MB." });
+        return;
+      }
+
+      const payload = new FormData();
+      payload.append("photo", file);
+      const res = await fetch("/api/lounge/me/photo", {
+        method: "POST",
+        body: payload,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPhotoStatus({ kind: "err", message: data.error || "Photo upload failed." });
+        return;
+      }
+      const nextUrl = data.photoUrl ?? null;
+      setPhotoUrl(nextUrl);
+      setForm((s) => ({ ...s, photoUrl: nextUrl }));
+      setPhotoStatus({ kind: "ok", message: "Profile picture updated." });
+      router.refresh();
+    } catch {
+      setPhotoStatus({ kind: "err", message: "Photo upload failed." });
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
+  async function removePhoto() {
+    setPhotoBusy(true);
+    setPhotoStatus(null);
+    try {
+      const res = await fetch("/api/lounge/me/photo", { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPhotoStatus({ kind: "err", message: data.error || "Could not remove photo." });
+        return;
+      }
+      setPhotoUrl(null);
+      setForm((s) => ({ ...s, photoUrl: null }));
+      setPhotoStatus({ kind: "ok", message: "Profile picture removed." });
+      router.refresh();
+    } catch {
+      setPhotoStatus({ kind: "err", message: "Could not remove photo." });
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
   async function save() {
     setSaving(true);
     setSaved(null);
@@ -136,8 +200,104 @@ export default function AboutMeForm({ initial }: { initial: ProfileInitial }) {
     }
   }
 
+  const initials = `${form.firstName[0] ?? ""}${form.lastName[0] ?? ""}`.toUpperCase() || "ME";
+
   return (
     <div style={{ display: "grid", gap: 18 }}>
+      <Card title="Profile picture">
+        <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", gap: 18, alignItems: "center" }}>
+          <div
+            style={{
+              width: 92,
+              height: 92,
+              borderRadius: "50%",
+              overflow: "hidden",
+              border: "2px solid rgba(240,180,41,0.55)",
+              boxShadow: "0 0 26px rgba(56,189,248,0.18)",
+              background: "radial-gradient(circle at 35% 20%, rgba(56,189,248,0.32), rgba(240,180,41,0.16) 45%, rgba(4,13,26,0.96) 100%)",
+              color: "#f0b429",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 28,
+              fontWeight: 900,
+              flexShrink: 0,
+            }}
+          >
+            {photoUrl ? (
+              <img src={photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            ) : (
+              initials
+            )}
+          </div>
+          <div>
+            <p style={{ color: "#cbd5e1", fontSize: 14, lineHeight: 1.55, margin: "0 0 14px" }}>
+              Add a headshot for the Wall, comments, Messenger, and your lounge identity chip.
+            </p>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              style={{ display: "none" }}
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0] ?? null;
+                event.currentTarget.value = "";
+                if (file) void uploadPhoto(file);
+              }}
+            />
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <button
+                type="button"
+                disabled={photoBusy}
+                onClick={() => photoInputRef.current?.click()}
+                style={{
+                  padding: "10px 16px",
+                  background: photoBusy ? "rgba(240,180,41,0.45)" : "#f0b429",
+                  color: "#040d1a",
+                  border: 0,
+                  borderRadius: 11,
+                  fontSize: 12,
+                  fontWeight: 900,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  cursor: photoBusy ? "wait" : "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {photoBusy ? "Working..." : photoUrl ? "Change photo" : "Upload photo"}
+              </button>
+              {photoUrl && (
+                <button
+                  type="button"
+                  disabled={photoBusy}
+                  onClick={removePhoto}
+                  style={{
+                    padding: "10px 16px",
+                    background: "rgba(255,255,255,0.04)",
+                    color: "#cbd5e1",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    borderRadius: 11,
+                    fontSize: 12,
+                    fontWeight: 800,
+                    letterSpacing: "0.10em",
+                    textTransform: "uppercase",
+                    cursor: photoBusy ? "wait" : "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Remove
+                </button>
+              )}
+              {photoStatus && (
+                <span style={{ color: photoStatus.kind === "ok" ? "#86efac" : "#fca5a5", fontSize: 13, fontWeight: 700 }}>
+                  {photoStatus.message}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </Card>
+
       <ReadOnlyCard title="Identity (managed by admin)" rows={[
         ["Name",          `${form.firstName} ${form.lastName}`],
         ["Certification", form.certification ?? "—"],

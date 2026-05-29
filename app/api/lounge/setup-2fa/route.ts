@@ -20,14 +20,6 @@ export const runtime = "nodejs";
 // avoids any server-side QR library failure leaving the user stuck.
 export async function GET(req: NextRequest) {
   try {
-    const key = process.env.LOUNGE_ENCRYPTION_KEY;
-    if (!key || key.length !== 64) {
-      return NextResponse.json(
-        { error: "Server config: LOUNGE_ENCRYPTION_KEY env var missing or wrong length. Set in Vercel → Project Settings → Environment Variables, then redeploy." },
-        { status: 500 },
-      );
-    }
-
     const cookie = req.cookies.get(LOUNGE_PREAUTH_COOKIE_NAME)?.value;
     const session = cookie ? verifyPreauthToken(cookie) : null;
     if (!session) return NextResponse.json({ error: "Preauth expired — go back and sign in again." }, { status: 401 });

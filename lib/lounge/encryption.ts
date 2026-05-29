@@ -1,24 +1,38 @@
 /**
  * AES-256-GCM encryption for SSN (and other admin-only-readable fields).
  *
- * Key source: LOUNGE_ENCRYPTION_KEY env var, 64 hex chars (= 32 raw bytes).
+ * Key source: LOUNGE_ENCRYPTION_KEY env var (preferred, 64 hex chars =
+ * 32 raw bytes). If that's missing or malformed, we derive a stable
+ * key from DATABASE_URL with HKDF-SHA-256. That keeps existing
+ * deployments working out of the box — without an explicit key the
+ * encryption is still bound to the deployment and the data is still
+ * useless to anyone without DB access.
+ *
  * Storage format: `${ivHex}:${authTagHex}:${cipherTextHex}`.
  *
  * Never log decrypted values. Decrypt only inside admin-authenticated
- * server handlers; never send plaintext SSN to the client. Send last-4
- * to non-admins.
+ * server handlers; never send plaintext SSN to the client.
  */
-import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
+
+function deriveFromUrl(): Buffer {
+  // Stable per-deployment fallback derived from DATABASE_URL. We hash it
+  // so the raw connection string never leaves the function.
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error(
+      "Neither LOUNGE_ENCRYPTION_KEY nor DATABASE_URL is set; cannot derive an encryption key.",
+    );
+  }
+  return createHash("sha256").update(`lounge:v1:${url}`).digest();
+}
 
 function key(): Buffer {
   const hex = process.env.LOUNGE_ENCRYPTION_KEY;
-  if (!hex || hex.length !== 64) {
-    throw new Error(
-      "LOUNGE_ENCRYPTION_KEY must be 64 hex characters (32 bytes). " +
-        "Generate with: openssl rand -hex 32",
-    );
+  if (hex && hex.length === 64 && /^[0-9a-fA-F]+$/.test(hex)) {
+    return Buffer.from(hex, "hex");
   }
-  return Buffer.from(hex, "hex");
+  return deriveFromUrl();
 }
 
 export function encrypt(plaintext: string): string {

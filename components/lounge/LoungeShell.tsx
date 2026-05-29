@@ -345,7 +345,7 @@ function IdentityChip({ me, compact }: { me: SidebarMe; compact?: boolean }) {
         }}
       >
         {me.photoUrl ? (
-          <Image src={me.photoUrl} alt="" fill sizes={`${compact ? 32 : 40}px`} style={{ objectFit: "cover" }} />
+          <img src={me.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         ) : (
           initials
         )}

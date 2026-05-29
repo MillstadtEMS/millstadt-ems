@@ -26,6 +26,7 @@ export default async function AboutMePage() {
     lastName: row.lastName,
     certification: row.certification,
     position: row.position,
+    photoUrl: row.photoUrl,
     hireDate: row.hireDate,
     email: row.email ?? "",
     phone: row.phone ?? "",
