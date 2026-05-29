@@ -127,6 +127,7 @@ export default function LoungeShell({
         </div>
         <div style={{ flex: 1 }} />
         <IdentityChip me={me} compact />
+        <SignOutButton compact />
       </div>
 
       {/* Mobile drawer */}
@@ -232,7 +233,12 @@ function SidebarBody({
         </div>
       </div>
 
-      <IdentityChip me={me} />
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <IdentityChip me={me} />
+        </div>
+        <SignOutButton />
+      </div>
 
       <nav style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 2 }}>
         {items.map((n) => {
@@ -267,28 +273,41 @@ function SidebarBody({
         })}
       </nav>
 
-      <form action="/api/lounge/logout" method="post" style={{ marginTop: 26 }}>
-        <button
-          type="submit"
-          style={{
-            width: "100%",
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            color: "#94a3b8",
-            padding: "10px 12px",
-            borderRadius: 10,
-            fontSize: 12,
-            fontWeight: 700,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            cursor: "pointer",
-            fontFamily: "inherit",
-          }}
-        >
-          Sign out
-        </button>
-      </form>
     </>
+  );
+}
+
+function SignOutButton({ compact }: { compact?: boolean } = {}) {
+  return (
+    <form action="/api/lounge/logout" method="post" style={{ display: "inline-flex", margin: 0 }}>
+      <button
+        type="submit"
+        aria-label="Sign out"
+        title="Sign out"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          background: "rgba(239,68,68,0.10)",
+          border: "1px solid rgba(239,68,68,0.30)",
+          color: "#fca5a5",
+          padding: compact ? "6px 10px" : "8px 12px",
+          borderRadius: 10,
+          fontSize: compact ? 10 : 11,
+          fontWeight: 800,
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          cursor: "pointer",
+          fontFamily: "inherit",
+          flexShrink: 0,
+        }}
+      >
+        <svg viewBox="0 0 24 24" width={compact ? 14 : 16} height={compact ? 14 : 16} fill="currentColor" aria-hidden>
+          <path d="M16 13v-2H7V8l-5 4 5 4v-3h9zm3-10H9c-1.1 0-2 .9-2 2v4h2V5h10v14H9v-4H7v4c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
+        </svg>
+        {!compact && <span>Sign out</span>}
+      </button>
+    </form>
   );
 }
 
