@@ -50,7 +50,7 @@ const LEVEL_LABEL: Record<LoungeLevelId, string> = {
   expert: "Expert",
 };
 const LEVEL_DESC: Record<LoungeLevelId, string> = {
-  beginner:     "pH + primary problem. Acidemia, alkalemia, normal. Read it off the print.",
+  beginner:     "pH + primary problem. Acidosis, alkalosis, normal. Read it off the print.",
   intermediate: "Adds compensation, oxygenation, anion gap. Same printout, more questions.",
   expert:       "Winter's, delta-delta, A-a, clinical priority. Mixed disorders show up.",
 };

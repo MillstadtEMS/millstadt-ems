@@ -172,9 +172,9 @@ export const BLOOD_GAS_QUESTIONS: readonly BloodGasQuestionDef[] = [
     title: '1. pH status',
     hint: 'ABG normal pH is 7.35-7.45. VBG pH runs slightly lower.',
     options: [
-      { id: 'acidemia', label: 'Acidemia' },
+      { id: 'acidemia', label: 'Acidosis' },
       { id: 'normal', label: 'Normal pH' },
-      { id: 'alkalemia', label: 'Alkalemia' },
+      { id: 'alkalemia', label: 'Alkalosis' },
     ],
     minLevel: 1,
   },
@@ -285,7 +285,7 @@ export const BLOOD_GAS_QUESTIONS: readonly BloodGasQuestionDef[] = [
 ];
 
 export const BLOOD_GAS_LABELS: Record<BloodGasQuestionId, Record<string, string>> = {
-  ph: { acidemia: 'acidemia', normal: 'normal pH', alkalemia: 'alkalemia' },
+  ph: { acidemia: 'acidosis', normal: 'normal pH', alkalemia: 'alkalosis' },
   primary: {
     normal: 'normal blood gas',
     'resp-acidosis': 'respiratory acidosis',

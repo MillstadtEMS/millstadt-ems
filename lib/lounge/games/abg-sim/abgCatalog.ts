@@ -216,7 +216,7 @@ export const BLOOD_GAS_CASES: readonly BloodGasCase[] = [
       { id: 'comp-resp-acidosis', label: 'Compensated respiratory acidosis' },
     ],
     teachingPoint:
-      'Loss of gastric HCl raises bicarbonate and produces hypochloremia and hypokalemia. The lungs hypoventilate, raising pCO2 to buffer the alkalemia.',
+      'Loss of gastric HCl raises bicarbonate and produces hypochloremia and hypokalemia. The lungs hypoventilate, raising pCO2 to buffer the alkalosis.',
     evidenceRefs: [ABG_INTERPRETATION_REFERENCE],
   },
 ];
@@ -236,7 +236,7 @@ export const BLOOD_GAS_MASTERY_TIERS: readonly BloodGasMasteryTier[] = [
     minCorrect: 1,
     minPercent: 20,
     badge: 'PH',
-    description: 'Starts every interpretation with acidemia, alkalemia, or normal pH.',
+    description: 'Starts every interpretation with acidosis, alkalosis, or normal pH.',
   },
   {
     id: 'tier-03-primary-disorder',
