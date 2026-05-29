@@ -18,6 +18,14 @@ export interface ConversationPreview {
   updatedAt: string;
 }
 
+export type MessageMediaKind = "image" | "video" | "audio" | "file";
+export interface MessageMedia {
+  url: string;
+  kind: MessageMediaKind;
+  name?: string;
+  mime?: string;
+}
+
 export interface MessageRow {
   id: string;
   conversationId: string;
@@ -26,7 +34,36 @@ export interface MessageRow {
   authorLastName: string;
   authorPhotoUrl: string | null;
   body: string;
+  media: MessageMedia[];
   createdAt: string;
+}
+
+let messageColumnsEnsured = false;
+async function ensureMessageColumns() {
+  if (messageColumnsEnsured) return;
+  const db = sql();
+  await db`ALTER TABLE lounge_messages ADD COLUMN IF NOT EXISTS media JSONB NOT NULL DEFAULT '[]'::jsonb`;
+  messageColumnsEnsured = true;
+}
+
+function parseMediaJson(v: unknown): MessageMedia[] {
+  if (!v || !Array.isArray(v)) return [];
+  return v
+    .filter((m) => m && typeof m === "object" && "url" in m)
+    .map((m) => {
+      const raw = m as { url: unknown; kind?: unknown; name?: unknown; mime?: unknown };
+      const k = typeof raw.kind === "string" ? raw.kind : "";
+      const kind: MessageMediaKind =
+        k === "video" ? "video" :
+        k === "audio" ? "audio" :
+        k === "file"  ? "file"  : "image";
+      return {
+        url: String(raw.url ?? ""),
+        kind,
+        name: typeof raw.name === "string" ? raw.name : undefined,
+        mime: typeof raw.mime === "string" ? raw.mime : undefined,
+      };
+    });
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -180,6 +217,7 @@ export async function getConversationReadInfo(conversationId: string): Promise<C
 }
 
 export async function listMessages(conversationId: string, meId: string, since?: string): Promise<MessageRow[]> {
+  await ensureMessageColumns();
   const db = sql();
   // gate: must be a participant
   const conv = (await db`
@@ -189,7 +227,7 @@ export async function listMessages(conversationId: string, meId: string, since?:
 
   const rows = since
     ? (await db`
-        SELECT m.id, m.conversation_id, m.author_id, m.body, m.created_at,
+        SELECT m.id, m.conversation_id, m.author_id, m.body, m.media, m.created_at,
                e.first_name AS author_first_name, e.last_name AS author_last_name,
                e.photo_url AS author_photo_url
         FROM lounge_messages m
@@ -200,11 +238,11 @@ export async function listMessages(conversationId: string, meId: string, since?:
         LIMIT 500
       `) as unknown as {
         id: string; conversation_id: string; author_id: string;
-        body: string; created_at: string;
+        body: string; media: unknown; created_at: string;
         author_first_name: string; author_last_name: string; author_photo_url: string | null;
       }[]
     : (await db`
-        SELECT m.id, m.conversation_id, m.author_id, m.body, m.created_at,
+        SELECT m.id, m.conversation_id, m.author_id, m.body, m.media, m.created_at,
                e.first_name AS author_first_name, e.last_name AS author_last_name,
                e.photo_url AS author_photo_url
         FROM lounge_messages m
@@ -214,7 +252,7 @@ export async function listMessages(conversationId: string, meId: string, since?:
         LIMIT 500
       `) as unknown as {
         id: string; conversation_id: string; author_id: string;
-        body: string; created_at: string;
+        body: string; media: unknown; created_at: string;
         author_first_name: string; author_last_name: string; author_photo_url: string | null;
       }[];
 
@@ -226,6 +264,7 @@ export async function listMessages(conversationId: string, meId: string, since?:
     authorLastName: r.author_last_name,
     authorPhotoUrl: r.author_photo_url,
     body: r.body,
+    media: parseMediaJson(r.media),
     createdAt: r.created_at,
   }));
 }
@@ -236,18 +275,22 @@ export async function sendMessage(input: {
   conversationId: string;
   authorId: string;
   body: string;
+  media?: MessageMedia[];
 }): Promise<MessageRow | null> {
+  await ensureMessageColumns();
   const db = sql();
   const conv = (await db`
     SELECT participant_ids FROM lounge_conversations WHERE id = ${input.conversationId} LIMIT 1
   `) as unknown as { participant_ids: string[] }[];
   if (!conv[0] || !conv[0].participant_ids.includes(input.authorId)) return null;
-  if (!input.body.trim()) return null;
+  const cleanedMedia = Array.isArray(input.media) ? input.media.filter((m) => m && typeof m.url === "string" && m.url.length > 0) : [];
+  if (!input.body.trim() && cleanedMedia.length === 0) return null;
 
   const id = randomUUID();
   await db`
-    INSERT INTO lounge_messages (id, conversation_id, author_id, body)
-    VALUES (${id}, ${input.conversationId}, ${input.authorId}, ${input.body.trim()})
+    INSERT INTO lounge_messages (id, conversation_id, author_id, body, media)
+    VALUES (${id}, ${input.conversationId}, ${input.authorId}, ${input.body.trim()},
+            ${JSON.stringify(cleanedMedia)}::jsonb)
   `;
   await db`
     UPDATE lounge_conversations

@@ -37,13 +37,16 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await ctx.params;
   const body = await req.json().catch(() => ({}));
-  if (typeof body.body !== "string" || !body.body.trim()) {
+  const text = typeof body.body === "string" ? body.body : "";
+  const media = Array.isArray(body.media) ? body.media : [];
+  if (!text.trim() && media.length === 0) {
     return NextResponse.json({ error: "Empty message" }, { status: 400 });
   }
   const message = await sendMessage({
     conversationId: id,
     authorId: me.id,
-    body: body.body,
+    body: text,
+    media,
   });
   if (!message) return NextResponse.json({ error: "Not a participant" }, { status: 403 });
   return NextResponse.json({ message });

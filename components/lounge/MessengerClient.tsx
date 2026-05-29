@@ -12,6 +12,8 @@ interface ConversationPreview {
   updatedAt: string;
 }
 
+type MessageMediaKind = "image" | "video" | "audio" | "file";
+interface MessageMedia { url: string; kind: MessageMediaKind; name?: string; mime?: string }
 interface Message {
   id: string;
   conversationId: string;
@@ -20,6 +22,7 @@ interface Message {
   authorLastName: string;
   authorPhotoUrl: string | null;
   body: string;
+  media: MessageMedia[];
   createdAt: string;
 }
 
@@ -42,7 +45,13 @@ export default function MessengerClient({ meId }: { meId: string }) {
   const [sending, setSending] = useState(false);
   const [showRoster, setShowRoster] = useState(false);
   const [search, setSearch] = useState("");
+  const [pendingMedia, setPendingMedia] = useState<MessageMedia[]>([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [recording, setRecording] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordingChunksRef = useRef<Blob[]>([]);
 
   const loadConversations = useCallback(async () => {
     const r = await fetch("/api/lounge/messages");
@@ -99,23 +108,99 @@ export default function MessengerClient({ meId }: { meId: string }) {
   }
 
   async function send() {
-    if (!activeId || !draft.trim() || sending) return;
+    if (!activeId || sending) return;
+    if (!draft.trim() && pendingMedia.length === 0) return;
     setSending(true);
     try {
       const r = await fetch(`/api/lounge/messages/${activeId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: draft.trim() }),
+        body: JSON.stringify({ body: draft.trim(), media: pendingMedia }),
       });
       if (r.ok) {
         const d = await r.json();
         if (d.message) setMessages((s) => [...s, d.message as Message]);
         setDraft("");
+        setPendingMedia([]);
         loadConversations();
       }
     } finally {
       setSending(false);
     }
+  }
+
+  async function onFilesPicked(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setUploadingMedia(true);
+    try {
+      const { upload } = await import("@vercel/blob/client");
+      for (const f of Array.from(files)) {
+        try {
+          const pathname = `lounge-messages/${Date.now()}-${(f.name || "upload").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120)}`;
+          const blob = await upload(pathname, f, {
+            access: "public",
+            handleUploadUrl: "/api/lounge/messages/media",
+            contentType: f.type || undefined,
+            clientPayload: JSON.stringify({ mime: f.type || "" }),
+            multipart: true,
+          });
+          const kind: MessageMediaKind =
+            (f.type || "").startsWith("video/") ? "video" :
+            (f.type || "").startsWith("audio/") ? "audio" :
+            (f.type || "").startsWith("image/") ? "image" :
+            /\.(mp4|mov|webm)$/i.test(f.name) ? "video" :
+            /\.(m4a|mp3|wav|ogg|webm|aac)$/i.test(f.name) ? "audio" :
+            "image";
+          setPendingMedia((s) => [...s, { url: blob.url, kind, name: f.name, mime: f.type || undefined }]);
+        } catch (e) {
+          console.error("[chat upload]", e);
+        }
+      }
+    } finally { setUploadingMedia(false); }
+  }
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const rec = new MediaRecorder(stream);
+      recordingChunksRef.current = [];
+      rec.ondataavailable = (e) => { if (e.data.size > 0) recordingChunksRef.current.push(e.data); };
+      rec.onstop = async () => {
+        try {
+          const blob = new Blob(recordingChunksRef.current, { type: rec.mimeType || "audio/webm" });
+          const f = new File([blob], `voice-${Date.now()}.${(rec.mimeType || "audio/webm").includes("mp4") ? "m4a" : "webm"}`, { type: rec.mimeType || "audio/webm" });
+          setUploadingMedia(true);
+          try {
+            const { upload } = await import("@vercel/blob/client");
+            const pathname = `lounge-messages/${Date.now()}-voice.${(rec.mimeType || "audio/webm").includes("mp4") ? "m4a" : "webm"}`;
+            const uploaded = await upload(pathname, f, {
+              access: "public",
+              handleUploadUrl: "/api/lounge/messages/media",
+              contentType: f.type || undefined,
+              clientPayload: JSON.stringify({ mime: f.type || "" }),
+              multipart: true,
+            });
+            setPendingMedia((s) => [...s, { url: uploaded.url, kind: "audio", name: f.name, mime: f.type || undefined }]);
+          } finally { setUploadingMedia(false); }
+        } finally {
+          stream.getTracks().forEach((t) => t.stop());
+        }
+      };
+      recorderRef.current = rec;
+      rec.start();
+      setRecording(true);
+    } catch (e) {
+      console.error("[mic]", e);
+      alert("Couldn't access the microphone.");
+    }
+  }
+  function stopRecording() {
+    recorderRef.current?.stop();
+    recorderRef.current = null;
+    setRecording(false);
+  }
+  function dropPending(url: string) {
+    setPendingMedia((s) => s.filter((m) => m.url !== url));
   }
 
   const activeConv = conversations.find((c) => c.id === activeId) ?? null;
@@ -155,11 +240,8 @@ export default function MessengerClient({ meId }: { meId: string }) {
           Messages
         </div>
         <h1 style={{ margin: "4px 0 0", fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.015em" }}>
-          Ongoing crew chat
+          Millstadt EMS DM&apos;s
         </h1>
-        <p style={{ color: "#94a3b8", fontSize: "0.92rem", marginTop: 4 }}>
-          One thread per person. Messages stay put — no fresh threads, no losing context.
-        </p>
       </header>
 
       <div className="messenger-grid">
@@ -291,7 +373,14 @@ export default function MessengerClient({ meId }: { meId: string }) {
                               {m.authorFirstName} {m.authorLastName}
                             </div>
                           )}
-                          <div style={{ fontSize: 14, lineHeight: 1.4, whiteSpace: "pre-wrap" }}>{m.body}</div>
+                          {m.body && <div style={{ fontSize: 14, lineHeight: 1.4, whiteSpace: "pre-wrap" }}>{m.body}</div>}
+                          {m.media && m.media.length > 0 && (
+                            <div style={{ display: "grid", gap: 6, marginTop: m.body ? 6 : 0 }}>
+                              {m.media.map((att, ai) => (
+                                <MessageAttachment key={ai} att={att} mine={mine} />
+                              ))}
+                            </div>
+                          )}
                           <div style={{ fontSize: 10, opacity: 0.7, marginTop: 4 }}>
                             {new Date(m.createdAt).toLocaleString()}
                           </div>
@@ -307,22 +396,61 @@ export default function MessengerClient({ meId }: { meId: string }) {
                 })()}
                 <div ref={messagesEndRef} />
               </div>
-              <div style={{ padding: "12px 14px calc(env(safe-area-inset-bottom) + 12px)", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: 10, background: "#071428", position: "sticky", bottom: 0 }}>
-                <input
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-                  placeholder="Message…"
-                  style={{ flex: 1, background: "#040d1a", border: "1px solid rgba(255,255,255,0.10)", color: "white", padding: "12px 14px", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit" }}
-                />
-                <button
-                  type="button"
-                  onClick={send}
-                  disabled={sending || !draft.trim()}
-                  style={{ padding: "12px 18px", background: !draft.trim() ? "rgba(240,180,41,0.4)" : "#f0b429", color: "#040d1a", border: 0, borderRadius: 12, fontWeight: 900, fontSize: 13, letterSpacing: "0.10em", textTransform: "uppercase", cursor: sending || !draft.trim() ? "not-allowed" : "pointer", fontFamily: "inherit" }}
-                >
-                  {sending ? "Sending…" : "Send"}
-                </button>
+              <div style={{ padding: "10px 14px calc(env(safe-area-inset-bottom) + 12px)", borderTop: "1px solid rgba(255,255,255,0.06)", display: "grid", gap: 8, background: "#071428", position: "sticky", bottom: 0 }}>
+                {pendingMedia.length > 0 && (
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {pendingMedia.map((m) => (
+                      <div key={m.url} style={{ position: "relative", background: "#040d1a", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, padding: 6, paddingRight: 28, fontSize: 12, color: "#cbd5e1", display: "flex", alignItems: "center", gap: 6 }}>
+                        <span aria-hidden>{m.kind === "image" ? "🖼️" : m.kind === "video" ? "🎬" : m.kind === "audio" ? "🎙️" : "📎"}</span>
+                        <span style={{ maxWidth: 160, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name ?? m.kind}</span>
+                        <button type="button" onClick={() => dropPending(m.url)} style={{ position: "absolute", top: 4, right: 4, background: "transparent", border: 0, color: "#94a3b8", cursor: "pointer", fontSize: 16, lineHeight: 1, fontFamily: "inherit" }}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploadingMedia || recording}
+                    style={iconBtnStyle}
+                    title="Attach photo / video / file"
+                  >
+                    📎
+                  </button>
+                  <button
+                    type="button"
+                    onClick={recording ? stopRecording : startRecording}
+                    disabled={uploadingMedia}
+                    style={{ ...iconBtnStyle, color: recording ? "#fca5a5" : "#f0b429", borderColor: recording ? "rgba(252,165,165,0.40)" : "rgba(240,180,41,0.30)" }}
+                    title={recording ? "Stop recording" : "Record voice note"}
+                  >
+                    {recording ? "■" : "🎙️"}
+                  </button>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    multiple
+                    accept="image/*,video/*,audio/*"
+                    style={{ display: "none" }}
+                    onChange={(e) => { onFilesPicked(e.target.files); if (fileRef.current) fileRef.current.value = ""; }}
+                  />
+                  <input
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                    placeholder={recording ? "Recording…" : uploadingMedia ? "Uploading…" : "Message…"}
+                    style={{ flex: 1, background: "#040d1a", border: "1px solid rgba(255,255,255,0.10)", color: "white", padding: "12px 14px", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={send}
+                    disabled={sending || uploadingMedia || (!draft.trim() && pendingMedia.length === 0)}
+                    style={{ padding: "12px 18px", background: !draft.trim() && pendingMedia.length === 0 ? "rgba(240,180,41,0.4)" : "#f0b429", color: "#040d1a", border: 0, borderRadius: 12, fontWeight: 900, fontSize: 13, letterSpacing: "0.10em", textTransform: "uppercase", cursor: sending || uploadingMedia ? "not-allowed" : "pointer", fontFamily: "inherit" }}
+                  >
+                    {sending ? "Sending…" : "Send"}
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -357,3 +485,42 @@ function buildReceipt(
   if (seenBy.length === 2) return `Seen by ${seenBy[0].firstName} & ${seenBy[1].firstName}`;
   return `Seen by ${seenBy.length} of ${others.length}`;
 }
+
+// ── Inline attachment renderer ──────────────────────────────────────────
+function MessageAttachment({ att, mine }: { att: MessageMedia; mine: boolean }) {
+  if (att.kind === "image") {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <a href={att.url} target="_blank" rel="noreferrer" style={{ display: "block", borderRadius: 10, overflow: "hidden" }}>
+        <img src={att.url} alt={att.name ?? ""} style={{ display: "block", maxWidth: "100%", maxHeight: 320, borderRadius: 10 }} />
+      </a>
+    );
+  }
+  if (att.kind === "video") {
+    return (
+      <video src={att.url} controls playsInline preload="metadata" style={{ width: "100%", maxHeight: 360, borderRadius: 10, background: "#020912" }} />
+    );
+  }
+  if (att.kind === "audio") {
+    return (
+      <audio src={att.url} controls preload="metadata" style={{ width: "100%" }} />
+    );
+  }
+  return (
+    <a href={att.url} target="_blank" rel="noreferrer" style={{ color: mine ? "#040d1a" : "#7dd3fc", textDecoration: "underline", fontWeight: 700, fontSize: 13 }}>
+      📎 {att.name ?? "Attachment"}
+    </a>
+  );
+}
+
+const iconBtnStyle: React.CSSProperties = {
+  padding: "10px 12px",
+  background: "transparent",
+  color: "#cbd5e1",
+  border: "1px solid rgba(255,255,255,0.14)",
+  borderRadius: 10,
+  fontFamily: "inherit",
+  fontSize: 16,
+  cursor: "pointer",
+  lineHeight: 1,
+};
