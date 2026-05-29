@@ -257,6 +257,10 @@ function TimedScreen({ level, playerName, onExit }: { level: LevelId; playerName
   const [wrongAttempts, setWrongAttempts] = useState(0);
   const [lockedOut, setLockedOut] = useState<Set<string>>(new Set());
   const [stats, setStats] = useState({ correct: 0, wrong: 0, bestStreak: 0 });
+  // When the player picks the right answer we flash THAT button green for a
+  // beat before advancing, so the visual feedback matches the audio ding and
+  // the player can see WHICH answer was correct.
+  const [correctRevealed, setCorrectRevealed] = useState(false);
   const startRef = useRef<number>(0);
   const submittedToBoard = useRef(false);
 
@@ -271,6 +275,7 @@ function TimedScreen({ level, playerName, onExit }: { level: LevelId; playerName
     setChoices(buildChoices(next));
     setWrongAttempts(0);
     setLockedOut(new Set());
+    setCorrectRevealed(false);
     startRef.current = performance.now();
   }
 
@@ -321,10 +326,11 @@ function TimedScreen({ level, playerName, onExit }: { level: LevelId; playerName
   }
 
   function answer(picked: RhythmId) {
-    if (phase !== "playing" || lockedOut.has(picked)) return;
+    if (phase !== "playing" || lockedOut.has(picked) || correctRevealed) return;
     const isCorrect = picked === current;
     if (isCorrect) {
       ding();
+      setCorrectRevealed(true);
       const secs = (performance.now() - startRef.current) / 1000;
       const result = scoreCorrect(current, {
         timeToAnswerSec: secs,
@@ -396,6 +402,8 @@ function TimedScreen({ level, playerName, onExit }: { level: LevelId; playerName
         level={level}
         score={score}
         streak={streak}
+        correct={stats.correct}
+        wrong={stats.wrong}
         secondsLeft={secondsLeft}
       />
       <div style={{
@@ -421,23 +429,39 @@ function TimedScreen({ level, playerName, onExit }: { level: LevelId; playerName
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginTop: 8 }}>
         {choices.map((choice) => {
           const locked = lockedOut.has(choice.rhythmId);
+          const isCorrectReveal = correctRevealed && choice.rhythmId === current;
           return (
             <button
               key={choice.rhythmId}
               type="button"
               onClick={() => answer(choice.rhythmId)}
-              disabled={locked}
+              disabled={locked || correctRevealed}
               style={{
                 padding: "14px 16px",
-                background: locked ? "rgba(255,94,79,0.10)" : LEAD_II_COLORS.panel,
-                border: `2px solid ${locked ? LEAD_II_COLORS.danger : LEAD_II_COLORS.shellEdge}`,
-                color: locked ? LEAD_II_COLORS.danger : LEAD_II_COLORS.phosphor,
+                background: isCorrectReveal
+                  ? LEAD_II_COLORS.phosphor
+                  : locked
+                    ? "rgba(255,94,79,0.18)"
+                    : LEAD_II_COLORS.panel,
+                border: `2px solid ${
+                  isCorrectReveal ? LEAD_II_COLORS.phosphor
+                  : locked ? LEAD_II_COLORS.danger
+                  : LEAD_II_COLORS.shellEdge
+                }`,
+                color: isCorrectReveal
+                  ? LEAD_II_COLORS.black
+                  : locked
+                    ? LEAD_II_COLORS.danger
+                    : LEAD_II_COLORS.phosphor,
                 fontFamily: LEAD_II_FONT,
                 fontSize: 22,
+                fontWeight: isCorrectReveal ? 900 : 400,
                 letterSpacing: "0.04em",
                 textAlign: "left",
-                cursor: locked ? "not-allowed" : "pointer",
+                cursor: locked || correctRevealed ? "not-allowed" : "pointer",
                 borderRadius: 4,
+                boxShadow: isCorrectReveal ? `0 0 22px ${LEAD_II_COLORS.phosphor}88` : "none",
+                transition: "background 120ms ease-out, box-shadow 120ms ease-out",
               }}
             >
               {choice.label.toUpperCase()}
@@ -459,17 +483,23 @@ function TimedScreen({ level, playerName, onExit }: { level: LevelId; playerName
   );
 }
 
-function HudStrip({ playerName, level, score, streak, secondsLeft }: { playerName: string; level: LevelId; score: number; streak: number; secondsLeft: number }) {
+function HudStrip({ playerName, level, score, streak, correct, wrong, secondsLeft }: {
+  playerName: string; level: LevelId; score: number; streak: number;
+  correct: number; wrong: number; secondsLeft: number;
+}) {
+  void streak;
   const mm = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
   const ss = String(secondsLeft % 60).padStart(2, "0");
   return (
     <div style={{
-      display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8,
+      display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: 6,
       padding: "10px 12px", background: LEAD_II_COLORS.panel,
       border: `1px solid ${LEAD_II_COLORS.shellEdge}`, borderRadius: 4,
     }}>
-      <HudCell label="PLAYER" value={playerName.toUpperCase().slice(0, 12)} />
+      <HudCell label="PLAYER" value={playerName.toUpperCase().slice(0, 10)} />
       <HudCell label="LEVEL" value={LEVEL_LABEL[level].toUpperCase()} />
+      <HudCell label="RIGHT" value={String(correct)} accent={LEAD_II_COLORS.phosphor} />
+      <HudCell label="WRONG" value={String(wrong)} accent={LEAD_II_COLORS.danger} />
       <HudCell label="SCORE" value={String(score)} accent={LEAD_II_COLORS.amber} />
       <HudCell label="TIME" value={`${mm}:${ss}`} accent={secondsLeft <= 10 ? LEAD_II_COLORS.danger : LEAD_II_COLORS.phosphor} />
     </div>
@@ -477,9 +507,9 @@ function HudStrip({ playerName, level, score, streak, secondsLeft }: { playerNam
 }
 function HudCell({ label, value, accent = LEAD_II_COLORS.phosphor }: { label: string; value: string; accent?: string }) {
   return (
-    <div>
-      <div style={{ color: LEAD_II_COLORS.phosphorDim, fontSize: 12, letterSpacing: "0.18em" }}>{label}</div>
-      <div style={{ color: accent, fontFamily: LEAD_II_FONT, fontSize: 26, lineHeight: 1 }}>{value}</div>
+    <div style={{ minWidth: 0 }}>
+      <div style={{ color: LEAD_II_COLORS.phosphorDim, fontSize: 10, letterSpacing: "0.16em" }}>{label}</div>
+      <div style={{ color: accent, fontFamily: LEAD_II_FONT, fontSize: 22, lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</div>
     </div>
   );
 }

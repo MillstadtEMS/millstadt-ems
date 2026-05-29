@@ -29,6 +29,7 @@ import { canonicalGroupOf } from '../ecg/rhythmAliases';
 import { DISTRACTOR_WEIGHTS_BY_MODE } from './quizRules';
 import type { AnswerChoiceMode, QuizAnswerChoice, QuizDifficultyMode } from './quizTypes';
 import { createRng, defaultSeed, shuffle } from './rng';
+import { displayNameFor } from '../levels/rhythmDisplay';
 
 export interface GenerateAnswerChoicesArgs {
   correctRhythmId: RhythmId;
@@ -179,10 +180,13 @@ export function generateAnswerChoices({
     tryAddFrom(fallback, weights.fallback);
   }
 
-  // Build, randomize final order, and return.
+  // Build, randomize final order, and return. Labels go through displayNameFor
+  // so the Lead II override map (e.g. vent.vtach-stable → "Ventricular
+  // Tachycardia") wins — the raw catalog displayName ("Stable Monomorphic VT")
+  // must never reach an answer button.
   const choices: QuizAnswerChoice[] = Array.from(picked).map((rid) => {
     const def = byId.get(rid)!;
-    return { rhythmId: def.id, label: def.displayName };
+    return { rhythmId: def.id, label: displayNameFor(def.id) };
   });
   const ordered = shuffle(choices, rng);
   return { choices: ordered, seed: usedSeed };
