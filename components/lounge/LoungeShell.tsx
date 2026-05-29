@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import VersionWatcher from "./VersionWatcher";
 import PresenceHeartbeat from "./PresenceHeartbeat";
 import { NotificationsToast } from "./NotificationsCenter";
+import ViewModeToggle from "./ViewModeToggle";
 
 export interface SidebarMe {
   firstName: string;
@@ -371,6 +372,8 @@ function SidebarBody({
         <IdentityChip me={me} />
         <SignOutButton />
       </div>
+
+      <ViewModeToggle />
 
       <nav style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 2 }}>
         {/* Crew section header */}
