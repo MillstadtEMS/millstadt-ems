@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 
+// Drop the full-color crest at this path and it'll render through the
+// welcome animation. Until then we fall back to the white star-of-life SVG.
+const CREST_SRC = "/images/millstadt-ems/crest.png";
+
 /**
  * Full-screen "teleport into the lounge" intro. Fires once after login
  * (the login page sets sessionStorage["lounge:welcome"] = "1" right
@@ -17,6 +21,7 @@ import { useEffect, useState } from "react";
  */
 export default function WelcomeOverlay({ name }: { name: string }) {
   const [phase, setPhase] = useState<"idle" | "playing" | "done">("idle");
+  const [crestOk, setCrestOk] = useState(true);
 
   useEffect(() => {
     let active = false;
@@ -66,14 +71,16 @@ export default function WelcomeOverlay({ name }: { name: string }) {
           padding: "0 24px",
         }}
       >
-        {/* Star-of-life logo, materializes first */}
+        {/* Crest (preferred) — falls back to the star-of-life SVG if the
+            file isn't on disk yet. Drop crest.png at /images/millstadt-ems
+            to enable. */}
         <div
           style={{
-            width: 96,
-            height: 96,
-            borderRadius: "50%",
-            background: "rgba(240,180,41,0.10)",
-            border: "1px solid rgba(240,180,41,0.35)",
+            width: crestOk ? 200 : 96,
+            height: crestOk ? 200 : 96,
+            borderRadius: crestOk ? 24 : "50%",
+            background: crestOk ? "transparent" : "rgba(240,180,41,0.10)",
+            border: crestOk ? "none" : "1px solid rgba(240,180,41,0.35)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -85,30 +92,27 @@ export default function WelcomeOverlay({ name }: { name: string }) {
               "lounge-pulse 1800ms 800ms ease-in-out infinite",
           }}
         >
-          <svg viewBox="0 0 32 32" width="50" height="50" fill="none" aria-hidden>
-            <rect x="14" y="2" width="4" height="28" rx="2" fill="white" opacity="0.95" />
-            <rect
-              x="14"
-              y="2"
-              width="4"
-              height="28"
-              rx="2"
-              fill="white"
-              opacity="0.95"
-              transform="rotate(60 16 16)"
+          {crestOk ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={CREST_SRC}
+              alt=""
+              onError={() => setCrestOk(false)}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                filter: "drop-shadow(0 12px 30px rgba(0,0,0,0.6)) drop-shadow(0 0 30px rgba(240,180,41,0.45))",
+              }}
             />
-            <rect
-              x="14"
-              y="2"
-              width="4"
-              height="28"
-              rx="2"
-              fill="white"
-              opacity="0.95"
-              transform="rotate(120 16 16)"
-            />
-            <circle cx="16" cy="16" r="3.5" fill="#f0b429" />
-          </svg>
+          ) : (
+            <svg viewBox="0 0 32 32" width="50" height="50" fill="none" aria-hidden>
+              <rect x="14" y="2" width="4" height="28" rx="2" fill="white" opacity="0.95" />
+              <rect x="14" y="2" width="4" height="28" rx="2" fill="white" opacity="0.95" transform="rotate(60 16 16)" />
+              <rect x="14" y="2" width="4" height="28" rx="2" fill="white" opacity="0.95" transform="rotate(120 16 16)" />
+              <circle cx="16" cy="16" r="3.5" fill="#f0b429" />
+            </svg>
+          )}
         </div>
 
         {/* "Hi, Name." */}
