@@ -316,6 +316,66 @@ CREATE TABLE IF NOT EXISTS lounge_truck_checks (
 CREATE INDEX IF NOT EXISTS lounge_truck_checks_unit_idx
     ON lounge_truck_checks (unit, submitted_at DESC);
 
+-- Item-level tracking, durations, pencil-whip flags, partner.
+ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ;
+ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS duration_seconds INTEGER;
+ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS overall_status TEXT;        -- 'pass' | 'issues' | 'failed'
+ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS pencil_whip_flag TEXT;      -- 'normal' | 'review' | 'possible_whip'
+ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS pencil_whip_reasons JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS attendant2_id TEXT REFERENCES lounge_employees(id) ON DELETE SET NULL;
+ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS attendant2_name TEXT;
+ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS odometer INTEGER;
+ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS pdf_url TEXT;
+CREATE INDEX IF NOT EXISTS lounge_truck_checks_flag_idx
+    ON lounge_truck_checks (pencil_whip_flag, submitted_at DESC) WHERE pencil_whip_flag IS NOT NULL;
+CREATE INDEX IF NOT EXISTS lounge_truck_checks_employee_idx
+    ON lounge_truck_checks (submitted_by_id, submitted_at DESC);
+
+-- Per-item rows so we can compute trends, abnormal histories, leak detection.
+CREATE TABLE IF NOT EXISTS lounge_truck_check_items (
+    id                  TEXT PRIMARY KEY,
+    truck_check_id      TEXT NOT NULL REFERENCES lounge_truck_checks(id) ON DELETE CASCADE,
+    unit                TEXT NOT NULL,
+    category            TEXT NOT NULL,
+    item_key            TEXT NOT NULL,
+    label               TEXT NOT NULL,
+    response_type       TEXT NOT NULL,    -- 'passfail' | 'status' | 'fluid' | 'numeric' | 'tire_psi' | 'stock'
+    status              TEXT,
+    numeric_value       NUMERIC,
+    unit_of_measure     TEXT,
+    amount_added        NUMERIC,
+    amount_unit         TEXT,
+    comment             TEXT,
+    is_abnormal         BOOLEAN NOT NULL DEFAULT FALSE,
+    requires_follow_up  BOOLEAN NOT NULL DEFAULT FALSE,
+    trend_group         TEXT,
+    checked_at          TIMESTAMPTZ NOT NULL,
+    checked_by_id       TEXT REFERENCES lounge_employees(id) ON DELETE SET NULL,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS lounge_tci_check_idx
+    ON lounge_truck_check_items (truck_check_id);
+CREATE INDEX IF NOT EXISTS lounge_tci_trend_idx
+    ON lounge_truck_check_items (unit, trend_group, checked_at DESC);
+CREATE INDEX IF NOT EXISTS lounge_tci_abnormal_idx
+    ON lounge_truck_check_items (is_abnormal, checked_at DESC) WHERE is_abnormal = TRUE;
+CREATE INDEX IF NOT EXISTS lounge_tci_unit_key_idx
+    ON lounge_truck_check_items (unit, item_key, checked_at DESC);
+
+-- Photos attached to the truck check.
+CREATE TABLE IF NOT EXISTS lounge_truck_check_photos (
+    id              TEXT PRIMARY KEY,
+    truck_check_id  TEXT NOT NULL REFERENCES lounge_truck_checks(id) ON DELETE CASCADE,
+    file_url        TEXT NOT NULL,    -- Vercel Blob URL
+    caption         TEXT,
+    item_key        TEXT,             -- optional: tie a photo to a specific item
+    uploaded_by_id  TEXT REFERENCES lounge_employees(id) ON DELETE SET NULL,
+    uploaded_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS lounge_tcp_check_idx
+    ON lounge_truck_check_photos (truck_check_id, uploaded_at DESC);
+
 CREATE TABLE IF NOT EXISTS lounge_truck_washes (
     id                   TEXT PRIMARY KEY,
     unit                 TEXT NOT NULL,

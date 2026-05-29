@@ -31,10 +31,11 @@ const NAV: NavItem[] = [
   { href: "/lounge/certs",        label: "My Certifications",     emoji: "🎓" },
   { href: "/api/lounge/sso/truckcheck", label: "Truck Check", emoji: "🚑", external: true },
   { href: "/api/lounge/sso/inventory",  label: "Inventory",   emoji: "📦", external: true },
-  { href: "/admin",               label: "Site Admin",       emoji: "🛠", adminOnly: true },
-  { href: "/admin/employees",     label: "Employee Records", emoji: "👥", adminOnly: true },
-  { href: "/admin/classes",       label: "Classes & Roles",  emoji: "📚", adminOnly: true },
-  { href: "/admin/cert-types",    label: "Cert Types",       emoji: "📜", adminOnly: true },
+  { href: "/admin",                       label: "Site Admin",         emoji: "🛠", adminOnly: true },
+  { href: "/admin/employees",             label: "Employee Records",   emoji: "👥", adminOnly: true },
+  { href: "/admin/classes",               label: "Classes & Roles",    emoji: "📚", adminOnly: true },
+  { href: "/admin/cert-types",            label: "Cert Types",         emoji: "📜", adminOnly: true },
+  { href: "/admin/truckcheck-dashboard",  label: "Truck Check Insights", emoji: "📊", adminOnly: true },
 ];
 
 export default function LoungeShell({
