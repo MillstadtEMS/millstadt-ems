@@ -69,6 +69,8 @@ ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS allergies           TEXT;
 ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS medical_conditions  TEXT;
 ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS blood_type          TEXT;
 ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS profile_completed_at TIMESTAMPTZ;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS totp_secret_encrypted TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS totp_enrolled_at      TIMESTAMPTZ;
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- PERSONNEL RECORDS (admin-only personnel file)

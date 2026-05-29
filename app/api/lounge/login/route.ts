@@ -2,14 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   findEmployeeByUsername,
   verifyPassword,
-  makeSessionToken,
-  cookieOptions,
   logLogin,
+  getTotpEnrollment,
+  makePreauthToken,
+  preauthCookieOptions,
 } from "@/lib/lounge/auth";
 
+export const dynamic = "force-dynamic";
+
+// Step 1 of 2 — verifies the password and issues a short-lived preauth
+// cookie. The real session cookie is not granted until 2FA passes via
+// /api/lounge/verify-2fa or /api/lounge/setup-2fa.
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
   const ua = req.headers.get("user-agent") ?? null;
 
   let body: { username?: string; password?: string };
@@ -22,35 +27,31 @@ export async function POST(req: NextRequest) {
   const password = body.password ?? "";
 
   if (!username || !password) {
-    return NextResponse.json(
-      { error: "Username and password required" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Username and password required" }, { status: 400 });
   }
 
   const emp = await findEmployeeByUsername(username);
   if (!emp || !emp.isActive || !verifyPassword(password, emp.passwordHash)) {
     await logLogin(emp?.id ?? null, username, false, ip, ua);
-    return NextResponse.json(
-      { error: "Invalid username or password" },
-      { status: 401 },
-    );
+    return NextResponse.json({ error: "Invalid username or password" }, { status: 401 });
   }
 
-  await logLogin(emp.id, username, true, ip, ua);
+  const { secret, enrolledAt } = await getTotpEnrollment(emp.id);
+  const enrolled = !!secret && !!enrolledAt;
+  const preauth = makePreauthToken(emp.id);
 
-  const token = makeSessionToken(emp);
   const res = NextResponse.json({
     ok: true,
-    mustChangePassword: emp.mustChangePassword,
-    employee: {
-      id: emp.id,
-      username: emp.username,
-      firstName: emp.firstName,
-      lastName: emp.lastName,
-      isAdmin: emp.isAdmin,
-    },
+    step: enrolled ? "verify_2fa" : "setup_2fa",
+    employee: { id: emp.id, firstName: emp.firstName, lastName: emp.lastName },
   });
-  res.cookies.set(cookieOptions(token));
+  const opts = preauthCookieOptions(preauth);
+  res.cookies.set(opts.name, opts.value, {
+    httpOnly: opts.httpOnly,
+    secure: opts.secure,
+    sameSite: opts.sameSite,
+    maxAge: opts.maxAge,
+    path: opts.path,
+  });
   return res;
 }

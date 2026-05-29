@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export interface SidebarMe {
   firstName: string;
@@ -48,6 +48,27 @@ export default function LoungeShell({
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname() || "/lounge";
+
+  // Slide the session forward while the user is active. The cookie has a
+  // 15-minute TTL; we ping every 5 minutes IF the user has interacted
+  // recently (mouse, keyboard, touch) so idle tabs eventually time out
+  // but working users stay logged in.
+  useEffect(() => {
+    let lastActivity = Date.now();
+    const bump = () => { lastActivity = Date.now(); };
+    const events: (keyof DocumentEventMap)[] = ["mousedown", "keydown", "touchstart", "scroll", "visibilitychange"];
+    for (const ev of events) document.addEventListener(ev, bump, { passive: true });
+    const id = setInterval(() => {
+      // Only beat if the user touched the page in the last 10 minutes.
+      if (Date.now() - lastActivity < 10 * 60 * 1000) {
+        fetch("/api/lounge/heartbeat", { method: "POST" }).catch(() => {});
+      }
+    }, 5 * 60 * 1000);
+    return () => {
+      for (const ev of events) document.removeEventListener(ev, bump);
+      clearInterval(id);
+    };
+  }, []);
 
   const items = NAV.filter((n) => !n.adminOnly || me.isAdmin);
 

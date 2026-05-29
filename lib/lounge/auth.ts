@@ -9,11 +9,45 @@
 import { scryptSync, randomBytes, createHmac } from "crypto";
 import { cookies } from "next/headers";
 import { sql } from "./db";
+import { encrypt, decrypt } from "./encryption";
 
 const COOKIE = "mas_lounge";
-const MAX_AGE = 60 * 60 * 12; // 12 hours
+const MAX_AGE = 60 * 15; // 15 minutes — short session, must log in again after
 
 export const LOUNGE_COOKIE_NAME = COOKIE;
+export const LOUNGE_PREAUTH_COOKIE_NAME = "mas_lounge_preauth";
+const PREAUTH_MAX_AGE = 60 * 10; // 10 minutes to finish 2FA
+
+function preauthKey(): string {
+  return `lounge_preauth_${process.env.LOUNGE_ENCRYPTION_KEY ?? "dev"}`;
+}
+
+export function makePreauthToken(employeeId: string): string {
+  const ts = Date.now().toString();
+  const payload = `${employeeId}.${ts}`;
+  return `${payload}.${createHmac("sha256", preauthKey()).update(payload).digest("hex")}`;
+}
+
+export function verifyPreauthToken(token: string): { employeeId: string } | null {
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  const [empId, ts, sig] = parts;
+  if (Date.now() - Number(ts) > PREAUTH_MAX_AGE * 1000) return null;
+  if (createHmac("sha256", preauthKey()).update(`${empId}.${ts}`).digest("hex") !== sig) return null;
+  return { employeeId: empId };
+}
+
+export function preauthCookieOptions(token: string) {
+  return {
+    name: LOUNGE_PREAUTH_COOKIE_NAME,
+    value: token,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    maxAge: PREAUTH_MAX_AGE,
+    path: "/",
+  };
+}
 
 // ── Password hashing ────────────────────────────────────────────────────
 
@@ -80,6 +114,42 @@ export async function findEmployeeByUsername(
   `) as unknown as EmployeeRow[];
   const row = rows[0];
   return row ? rowToEmployee(row) : null;
+}
+
+// ── TOTP enrollment state ───────────────────────────────────────────────
+
+export async function getTotpEnrollment(employeeId: string): Promise<{ secret: string | null; enrolledAt: string | null }> {
+  const db = sql();
+  const rows = (await db`
+    SELECT totp_secret_encrypted, totp_enrolled_at
+    FROM lounge_employees WHERE id = ${employeeId} LIMIT 1
+  `) as unknown as { totp_secret_encrypted: string | null; totp_enrolled_at: string | null }[];
+  const r = rows[0];
+  if (!r) return { secret: null, enrolledAt: null };
+  let secret: string | null = null;
+  if (r.totp_secret_encrypted) {
+    try { secret = decrypt(r.totp_secret_encrypted); } catch { secret = null; }
+  }
+  return { secret, enrolledAt: r.totp_enrolled_at };
+}
+
+export async function setTotpSecret(employeeId: string, secret: string): Promise<void> {
+  const db = sql();
+  const enc = encrypt(secret);
+  await db`
+    UPDATE lounge_employees
+    SET totp_secret_encrypted = ${enc}, updated_at = NOW()
+    WHERE id = ${employeeId}
+  `;
+}
+
+export async function markTotpEnrolled(employeeId: string): Promise<void> {
+  const db = sql();
+  await db`
+    UPDATE lounge_employees
+    SET totp_enrolled_at = NOW(), updated_at = NOW()
+    WHERE id = ${employeeId}
+  `;
 }
 
 export async function findEmployeeById(
