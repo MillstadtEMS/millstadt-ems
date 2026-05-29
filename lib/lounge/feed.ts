@@ -34,10 +34,25 @@ export interface FeedComment {
   body: string;
   createdAt: string;
 }
+export const WALL_SUBJECT_TAGS = [
+  "Agency announcements",
+  "New hires",
+  "Promotions",
+  "Clinical saves",
+  "Training photos",
+  "Community event photos",
+  "Equipment updates",
+  "Message from the Chief",
+  "Shift highlights",
+  "Recognition posts",
+] as const;
+export type WallSubjectTag = (typeof WALL_SUBJECT_TAGS)[number];
+
 export interface FeedPost {
   id: string;
   author: FeedAuthor;
   body: string;
+  subject: WallSubjectTag | null;
   media: { url: string; kind: "image" | "video" | "file"; name?: string }[];
   pinned: boolean;
   highlighted: boolean;
@@ -52,6 +67,7 @@ interface DbPostRow {
   id: string;
   author_id: string;
   body: string;
+  subject: string | null;
   media: unknown;
   pinned: boolean;
   highlighted: boolean;
@@ -101,6 +117,7 @@ function rowToPost(
       isAdmin: r.author_is_admin,
     },
     body: r.body,
+    subject: (r.subject as WallSubjectTag | null) ?? null,
     media: parseMedia(r.media),
     pinned: r.pinned,
     highlighted: r.highlighted,
@@ -118,7 +135,7 @@ export async function listFeed(viewerId: string, limit = 50): Promise<FeedPost[]
   const db = sql();
   const rows = (await db`
     SELECT p.id, p.author_id, p.body, p.media, p.pinned, p.highlighted,
-           p.saved_by, p.created_at, p.updated_at,
+           p.saved_by, p.created_at, p.updated_at, p.subject,
            e.first_name AS author_first_name,
            e.last_name AS author_last_name,
            e.certification AS author_certification,
@@ -172,7 +189,7 @@ export async function getPost(
   const db = sql();
   const rows = (await db`
     SELECT p.id, p.author_id, p.body, p.media, p.pinned, p.highlighted,
-           p.saved_by, p.created_at, p.updated_at,
+           p.saved_by, p.created_at, p.updated_at, p.subject,
            e.first_name AS author_first_name,
            e.last_name AS author_last_name,
            e.certification AS author_certification,
@@ -207,16 +224,30 @@ export async function getPost(
   return rowToPost(rows[0], viewerId, reactions, count);
 }
 
+let columnsEnsured = false;
+async function ensurePostColumns() {
+  if (columnsEnsured) return;
+  const db = sql();
+  await db`ALTER TABLE lounge_feed_posts ADD COLUMN IF NOT EXISTS subject TEXT`;
+  await db`CREATE INDEX IF NOT EXISTS lounge_feed_posts_subject_idx ON lounge_feed_posts (subject)`;
+  columnsEnsured = true;
+}
+
 export async function createPost(input: {
   authorId: string;
   body: string;
-  media?: { url: string; kind: "image" | "file"; name?: string }[];
+  subject?: WallSubjectTag | null;
+  media?: { url: string; kind: "image" | "video" | "file"; name?: string }[];
 }): Promise<FeedPost> {
+  await ensurePostColumns();
   const id = randomUUID();
   const db = sql();
+  const subject = input.subject && (WALL_SUBJECT_TAGS as readonly string[]).includes(input.subject)
+    ? input.subject
+    : null;
   await db`
-    INSERT INTO lounge_feed_posts (id, author_id, body, media)
-    VALUES (${id}, ${input.authorId}, ${input.body},
+    INSERT INTO lounge_feed_posts (id, author_id, body, subject, media)
+    VALUES (${id}, ${input.authorId}, ${input.body}, ${subject},
             ${input.media ? JSON.stringify(input.media) : null}::jsonb)
   `;
   const post = await getPost(id, input.authorId);

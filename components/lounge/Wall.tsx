@@ -28,6 +28,7 @@ interface Post {
   id: string;
   author: Author;
   body: string;
+  subject: string | null;
   media: { url: string; kind: "image" | "video" | "file"; name?: string }[];
   pinned: boolean;
   highlighted: boolean;
@@ -37,6 +38,33 @@ interface Post {
   createdAt: string;
   updatedAt: string;
 }
+
+const WALL_SUBJECT_TAGS = [
+  "Agency announcements",
+  "New hires",
+  "Promotions",
+  "Clinical saves",
+  "Training photos",
+  "Community event photos",
+  "Equipment updates",
+  "Message from the Chief",
+  "Shift highlights",
+  "Recognition posts",
+] as const;
+type WallSubjectTag = (typeof WALL_SUBJECT_TAGS)[number];
+
+const SUBJECT_COLORS: Record<string, { fg: string; bg: string; border: string }> = {
+  "Agency announcements":     { fg: "#f0b429", bg: "rgba(240,180,41,0.12)", border: "rgba(240,180,41,0.35)" },
+  "New hires":                { fg: "#86efac", bg: "rgba(134,239,172,0.12)", border: "rgba(134,239,172,0.35)" },
+  "Promotions":               { fg: "#a78bfa", bg: "rgba(167,139,250,0.14)", border: "rgba(167,139,250,0.35)" },
+  "Clinical saves":           { fg: "#fb7185", bg: "rgba(251,113,133,0.14)", border: "rgba(251,113,133,0.35)" },
+  "Training photos":          { fg: "#7dd3fc", bg: "rgba(125,211,252,0.12)", border: "rgba(125,211,252,0.35)" },
+  "Community event photos":   { fg: "#fcd34d", bg: "rgba(252,211,77,0.12)", border: "rgba(252,211,77,0.35)" },
+  "Equipment updates":        { fg: "#fdba74", bg: "rgba(253,186,116,0.12)", border: "rgba(253,186,116,0.35)" },
+  "Message from the Chief":   { fg: "#fecaca", bg: "rgba(254,202,202,0.10)", border: "rgba(254,202,202,0.35)" },
+  "Shift highlights":         { fg: "#a5f3fc", bg: "rgba(165,243,252,0.10)", border: "rgba(165,243,252,0.35)" },
+  "Recognition posts":        { fg: "#fef3c7", bg: "rgba(254,243,199,0.10)", border: "rgba(254,243,199,0.35)" },
+};
 interface Comment {
   id: string;
   postId: string;
@@ -58,6 +86,7 @@ export interface WallMe {
 export default function Wall({ me }: { me: WallMe }) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterSubject, setFilterSubject] = useState<WallSubjectTag | null>(null);
 
   const load = useCallback(async () => {
     const r = await fetch("/api/lounge/feed");
@@ -70,11 +99,15 @@ export default function Wall({ me }: { me: WallMe }) {
     setPosts((s) => s.map((p) => (p.id === updated.id ? updated : p)));
   }
 
-  async function onCreate(body: string, media: { url: string; kind: "image" | "video" | "file"; name?: string }[]) {
+  async function onCreate(
+    body: string,
+    media: { url: string; kind: "image" | "video" | "file"; name?: string }[],
+    subject: WallSubjectTag | null,
+  ) {
     const res = await fetch("/api/lounge/feed", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body, media }),
+      body: JSON.stringify({ body, media, subject }),
     });
     if (res.ok) {
       const d = await res.json();
@@ -138,40 +171,129 @@ export default function Wall({ me }: { me: WallMe }) {
 
       <Composer me={me} onCreate={onCreate} />
 
+      <SubjectFilterBar value={filterSubject} onChange={setFilterSubject} posts={posts} />
+
       {loading ? (
         <p style={{ color: "#64748b", marginTop: 24 }}>Loading feed…</p>
-      ) : posts.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <div style={{ display: "grid", gap: 14, marginTop: 18 }}>
-          {posts.map((p) => (
-            <PostCard
-              key={p.id}
-              post={p}
-              me={me}
-              onDelete={() => onDelete(p.id)}
-              onPin={() => onPin(p.id, !p.pinned)}
-              onSave={() => onSave(p.id)}
-              onReact={(k) => onReact(p.id, k)}
-            />
-          ))}
-        </div>
-      )}
+      ) : (() => {
+        const visible = filterSubject
+          ? posts.filter((p) => p.subject === filterSubject)
+          : posts;
+        if (visible.length === 0) {
+          return filterSubject ? (
+            <p style={{ color: "#64748b", marginTop: 16, fontSize: 13 }}>
+              No posts tagged <strong style={{ color: "#cbd5e1" }}>{filterSubject}</strong> yet.
+            </p>
+          ) : <EmptyState />;
+        }
+        return (
+          <div style={{ display: "grid", gap: 14, marginTop: 18 }}>
+            {visible.map((p) => (
+              <PostCard
+                key={p.id}
+                post={p}
+                me={me}
+                onDelete={() => onDelete(p.id)}
+                onPin={() => onPin(p.id, !p.pinned)}
+                onSave={() => onSave(p.id)}
+                onReact={(k) => onReact(p.id, k)}
+              />
+            ))}
+          </div>
+        );
+      })()}
     </section>
   );
+}
+
+function SubjectFilterBar({
+  value,
+  onChange,
+  posts,
+}: {
+  value: WallSubjectTag | null;
+  onChange: (v: WallSubjectTag | null) => void;
+  posts: Post[];
+}) {
+  const counts = WALL_SUBJECT_TAGS.reduce<Record<string, number>>((acc, t) => {
+    acc[t] = posts.filter((p) => p.subject === t).length;
+    return acc;
+  }, {});
+  return (
+    <div style={{ marginTop: 14, marginBottom: 4 }}>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          style={subjectChipStyle(value === null, "#94a3b8")}
+        >
+          All posts
+        </button>
+        {WALL_SUBJECT_TAGS.map((t) => {
+          const c = counts[t];
+          if (c === 0) return null;
+          const colors = SUBJECT_COLORS[t];
+          return (
+            <button
+              key={t}
+              type="button"
+              onClick={() => onChange(value === t ? null : t)}
+              style={subjectChipStyle(value === t, colors.fg)}
+            >
+              {t} · {c}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function subjectChipStyle(active: boolean, color: string): React.CSSProperties {
+  return {
+    padding: "5px 11px",
+    background: active ? color : "transparent",
+    color: active ? "#040d1a" : color,
+    border: `1px solid ${active ? color : `${color}66`}`,
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: "0.06em",
+    cursor: "pointer",
+    fontFamily: "inherit",
+  };
 }
 
 function Composer({
   me,
   onCreate,
 }: {
+  me: WallMe;
+  onCreate: (
+    body: string,
+    media: { url: string; kind: "image" | "video" | "file"; name?: string }[],
+    subject: WallSubjectTag | null,
+  ) => Promise<void>;
+}) {
+  return <ComposerInner me={me} onCreate={onCreate} />;
+}
+
+function ComposerInner({
+  me,
+  onCreate,
+}: {
   me: { firstName: string; lastName: string; photoUrl: string | null };
-  onCreate: (body: string, media: { url: string; kind: "image" | "video" | "file"; name?: string }[]) => Promise<void>;
+  onCreate: (
+    body: string,
+    media: { url: string; kind: "image" | "video" | "file"; name?: string }[],
+    subject: WallSubjectTag | null,
+  ) => Promise<void>;
 }) {
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
   const [media, setMedia] = useState<{ url: string; kind: "image" | "video" | "file"; name?: string }[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [subject, setSubject] = useState<WallSubjectTag | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   async function pickMedia() {
@@ -219,9 +341,10 @@ function Composer({
     if ((!body.trim() && media.length === 0) || posting) return;
     setPosting(true);
     try {
-      await onCreate(body.trim(), media);
+      await onCreate(body.trim(), media, subject);
       setBody("");
       setMedia([]);
+      setSubject(null);
     } finally {
       setPosting(false);
     }
@@ -277,6 +400,38 @@ function Composer({
           ))}
         </div>
       )}
+      <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
+        <div style={{ color: "#94a3b8", fontSize: 10.5, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase" }}>
+          Subject (optional)
+        </div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {WALL_SUBJECT_TAGS.map((t) => {
+            const colors = SUBJECT_COLORS[t];
+            const active = subject === t;
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setSubject(active ? null : t)}
+                style={{
+                  padding: "4px 10px",
+                  background: active ? colors.fg : "transparent",
+                  color: active ? "#040d1a" : colors.fg,
+                  border: `1px solid ${active ? colors.fg : `${colors.fg}66`}`,
+                  borderRadius: 999,
+                  fontSize: 10.5,
+                  fontWeight: 800,
+                  letterSpacing: "0.04em",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {t}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, gap: 8, flexWrap: "wrap" }}>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <button
@@ -373,6 +528,26 @@ function PostCard({
           </div>
         </div>
       </header>
+
+      {post.subject && SUBJECT_COLORS[post.subject] && (
+        <span
+          style={{
+            display: "inline-block",
+            marginTop: 10,
+            padding: "3px 9px",
+            background: SUBJECT_COLORS[post.subject].bg,
+            color: SUBJECT_COLORS[post.subject].fg,
+            border: `1px solid ${SUBJECT_COLORS[post.subject].border}`,
+            borderRadius: 999,
+            fontSize: 10,
+            fontWeight: 900,
+            letterSpacing: "0.10em",
+            textTransform: "uppercase",
+          }}
+        >
+          {post.subject}
+        </span>
+      )}
 
       <p style={{ whiteSpace: "pre-wrap", margin: "12px 0 0", fontSize: "0.95rem", lineHeight: 1.55, color: "#e2e8f0" }}>
         {post.body}
