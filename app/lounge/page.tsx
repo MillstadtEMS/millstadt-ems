@@ -68,7 +68,7 @@ export default async function LoungeHome() {
 
         {expiring.length > 0 && <CertAlertsBanner certs={expiring} />}
 
-        <LoungeActions isAdmin={session.isAdmin} hasPhoto={Boolean(emp?.photoUrl)} />
+        <LoungeActions hasPhoto={Boolean(emp?.photoUrl)} />
 
         <TodayEventsWidget />
         <PollsWidget />
@@ -146,7 +146,7 @@ function CommandHeader({
   );
 }
 
-function LoungeActions({ isAdmin, hasPhoto }: { isAdmin: boolean; hasPhoto: boolean }) {
+function LoungeActions({ hasPhoto }: { hasPhoto: boolean }) {
   const actions = [
     {
       href: "/lounge/messages",
@@ -186,8 +186,8 @@ function LoungeActions({ isAdmin, hasPhoto }: { isAdmin: boolean; hasPhoto: bool
     },
     {
       href: "/lounge/acks",
-      label: "Acknowledgments",
-      meta: "Required reads",
+      label: "Required Acks",
+      meta: "Acknowledgments",
       accent: "blue",
     },
     {
@@ -198,15 +198,6 @@ function LoungeActions({ isAdmin, hasPhoto }: { isAdmin: boolean; hasPhoto: bool
     },
   ];
 
-  if (isAdmin) {
-    actions.unshift({
-      href: "/admin/calls",
-      label: "Ticker Editor",
-      meta: "Manual call ticker item",
-      accent: "gold",
-    });
-  }
-
   return (
     <section className="lounge-action-dock" aria-label="Employee Lounge shortcuts">
       <div className="lounge-action-head">
@@ -214,7 +205,7 @@ function LoungeActions({ isAdmin, hasPhoto }: { isAdmin: boolean; hasPhoto: bool
           <span>Shift tools</span>
           <h2>Fast actions</h2>
         </div>
-        <p>Common crew tasks, forms, messages, and admin tools without digging through menus.</p>
+        <p>Common crew tasks, forms, messages, and resources without digging through menus.</p>
       </div>
       <div className="lounge-actions-grid">
         {actions.map((action) => (
@@ -531,15 +522,19 @@ const LOUNGE_HOME_CSS = `
   box-shadow: 0 0 18px currentColor;
 }
 .lounge-action-card strong {
+  min-width: 0;
   color: white;
   font-size: 0.92rem;
   line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 .lounge-action-card small {
+  min-width: 0;
   color: #94a3b8;
   font-size: 0.72rem;
   line-height: 1.25;
   font-weight: 750;
+  overflow-wrap: anywhere;
 }
 .tone-gold .lounge-action-dot { color: #f0b429; background: #f0b429; }
 .tone-cyan .lounge-action-dot { color: #38bdf8; background: #38bdf8; }
