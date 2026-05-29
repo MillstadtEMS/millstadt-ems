@@ -26,6 +26,24 @@ export interface MessageMedia {
   mime?: string;
 }
 
+export type MessageReactionKind = "like" | "love" | "laugh" | "wow" | "sad" | "angry";
+export const MESSAGE_REACTIONS: MessageReactionKind[] = ["like", "love", "laugh", "wow", "sad", "angry"];
+
+export interface MessageReaction {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  kind: MessageReactionKind;
+}
+
+export interface MessageReplyTo {
+  id: string;
+  authorFirstName: string;
+  authorLastName: string;
+  bodyPreview: string;
+  hasMedia: boolean;
+}
+
 export interface MessageRow {
   id: string;
   conversationId: string;
@@ -35,6 +53,8 @@ export interface MessageRow {
   authorPhotoUrl: string | null;
   body: string;
   media: MessageMedia[];
+  reactions: MessageReaction[];
+  replyTo: MessageReplyTo | null;
   createdAt: string;
 }
 
@@ -43,6 +63,16 @@ async function ensureMessageColumns() {
   if (messageColumnsEnsured) return;
   const db = sql();
   await db`ALTER TABLE lounge_messages ADD COLUMN IF NOT EXISTS media JSONB NOT NULL DEFAULT '[]'::jsonb`;
+  await db`ALTER TABLE lounge_messages ADD COLUMN IF NOT EXISTS reply_to_id TEXT`;
+  await db`
+    CREATE TABLE IF NOT EXISTS lounge_message_reactions (
+      message_id   TEXT NOT NULL REFERENCES lounge_messages(id) ON DELETE CASCADE,
+      user_id      TEXT NOT NULL REFERENCES lounge_employees(id) ON DELETE CASCADE,
+      kind         TEXT NOT NULL,
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (message_id, user_id)
+    )
+  `;
   messageColumnsEnsured = true;
 }
 
@@ -112,6 +142,30 @@ export async function findOrCreateDm(meId: string, otherId: string): Promise<str
   await db`
     INSERT INTO lounge_conversations (id, kind, participant_ids)
     VALUES (${id}, 'dm', ${[meId, otherId]}::text[])
+  `;
+  return id;
+}
+
+// ── Create a group conversation ─────────────────────────────────────────
+
+/**
+ * Always creates a fresh group conversation. Repeated calls with the
+ * same set of participants make separate groups (no dedupe — that's
+ * what the DM helper is for). Caller controls the title; pass null to
+ * fall back to a comma-joined name in the UI.
+ */
+export async function createGroupConversation(
+  creatorId: string,
+  participantIds: string[],
+  title: string | null,
+): Promise<string> {
+  const all = Array.from(new Set([creatorId, ...participantIds]));
+  if (all.length < 3) throw new Error("Groups need at least three members");
+  const db = sql();
+  const id = randomUUID();
+  await db`
+    INSERT INTO lounge_conversations (id, kind, title, participant_ids)
+    VALUES (${id}, 'group', ${title}, ${all}::text[])
   `;
   return id;
 }
@@ -216,6 +270,12 @@ export async function getConversationReadInfo(conversationId: string): Promise<C
   };
 }
 
+interface DbMessageRow {
+  id: string; conversation_id: string; author_id: string;
+  body: string; media: unknown; reply_to_id: string | null; created_at: string;
+  author_first_name: string; author_last_name: string; author_photo_url: string | null;
+}
+
 export async function listMessages(conversationId: string, meId: string, since?: string): Promise<MessageRow[]> {
   await ensureMessageColumns();
   const db = sql();
@@ -227,7 +287,7 @@ export async function listMessages(conversationId: string, meId: string, since?:
 
   const rows = since
     ? (await db`
-        SELECT m.id, m.conversation_id, m.author_id, m.body, m.media, m.created_at,
+        SELECT m.id, m.conversation_id, m.author_id, m.body, m.media, m.reply_to_id, m.created_at,
                e.first_name AS author_first_name, e.last_name AS author_last_name,
                e.photo_url AS author_photo_url
         FROM lounge_messages m
@@ -236,13 +296,9 @@ export async function listMessages(conversationId: string, meId: string, since?:
           AND m.created_at > ${since}::timestamptz
         ORDER BY m.created_at ASC
         LIMIT 500
-      `) as unknown as {
-        id: string; conversation_id: string; author_id: string;
-        body: string; media: unknown; created_at: string;
-        author_first_name: string; author_last_name: string; author_photo_url: string | null;
-      }[]
+      `) as unknown as DbMessageRow[]
     : (await db`
-        SELECT m.id, m.conversation_id, m.author_id, m.body, m.media, m.created_at,
+        SELECT m.id, m.conversation_id, m.author_id, m.body, m.media, m.reply_to_id, m.created_at,
                e.first_name AS author_first_name, e.last_name AS author_last_name,
                e.photo_url AS author_photo_url
         FROM lounge_messages m
@@ -250,11 +306,48 @@ export async function listMessages(conversationId: string, meId: string, since?:
         WHERE m.conversation_id = ${conversationId}
         ORDER BY m.created_at ASC
         LIMIT 500
-      `) as unknown as {
-        id: string; conversation_id: string; author_id: string;
-        body: string; media: unknown; created_at: string;
-        author_first_name: string; author_last_name: string; author_photo_url: string | null;
-      }[];
+      `) as unknown as DbMessageRow[];
+
+  if (rows.length === 0) return [];
+
+  // Pull reactions + reply parents in single round trips.
+  const ids = rows.map((r) => r.id);
+  const replyIds = Array.from(new Set(rows.map((r) => r.reply_to_id).filter((v): v is string => !!v)));
+
+  const [reactionRows, replyRows] = await Promise.all([
+    db`
+      SELECT r.message_id, r.user_id, r.kind, e.first_name, e.last_name
+      FROM lounge_message_reactions r
+      JOIN lounge_employees e ON e.id = r.user_id
+      WHERE r.message_id = ANY(${ids}::text[])
+    ` as unknown as Promise<{ message_id: string; user_id: string; kind: string; first_name: string; last_name: string }[]>,
+    replyIds.length === 0
+      ? Promise.resolve([] as { id: string; body: string; media: unknown; first_name: string; last_name: string }[])
+      : db`
+          SELECT m.id, m.body, m.media,
+                 e.first_name, e.last_name
+          FROM lounge_messages m
+          JOIN lounge_employees e ON e.id = m.author_id
+          WHERE m.id = ANY(${replyIds}::text[])
+        ` as unknown as Promise<{ id: string; body: string; media: unknown; first_name: string; last_name: string }[]>,
+  ]);
+
+  const rxByMsg = new Map<string, MessageReaction[]>();
+  for (const r of await reactionRows) {
+    const list = rxByMsg.get(r.message_id) ?? [];
+    list.push({ userId: r.user_id, firstName: r.first_name, lastName: r.last_name, kind: r.kind as MessageReactionKind });
+    rxByMsg.set(r.message_id, list);
+  }
+  const replyMap = new Map<string, MessageReplyTo>();
+  for (const r of await replyRows) {
+    replyMap.set(r.id, {
+      id: r.id,
+      authorFirstName: r.first_name,
+      authorLastName: r.last_name,
+      bodyPreview: (r.body ?? "").slice(0, 140),
+      hasMedia: Array.isArray(r.media) && r.media.length > 0,
+    });
+  }
 
   return rows.map((r) => ({
     id: r.id,
@@ -265,8 +358,34 @@ export async function listMessages(conversationId: string, meId: string, since?:
     authorPhotoUrl: r.author_photo_url,
     body: r.body,
     media: parseMediaJson(r.media),
+    reactions: rxByMsg.get(r.id) ?? [],
+    replyTo: r.reply_to_id ? replyMap.get(r.reply_to_id) ?? null : null,
     createdAt: r.created_at,
   }));
+}
+
+export async function toggleMessageReaction(messageId: string, userId: string, kind: MessageReactionKind | null): Promise<void> {
+  await ensureMessageColumns();
+  const db = sql();
+  // gate: only participants of the conversation may react
+  const m = (await db`
+    SELECT m.id, c.participant_ids
+    FROM lounge_messages m
+    JOIN lounge_conversations c ON c.id = m.conversation_id
+    WHERE m.id = ${messageId} LIMIT 1
+  `) as unknown as { id: string; participant_ids: string[] }[];
+  if (!m[0] || !m[0].participant_ids.includes(userId)) return;
+
+  if (kind === null) {
+    await db`DELETE FROM lounge_message_reactions WHERE message_id = ${messageId} AND user_id = ${userId}`;
+    return;
+  }
+  if (!(MESSAGE_REACTIONS as string[]).includes(kind)) return;
+  await db`
+    INSERT INTO lounge_message_reactions (message_id, user_id, kind)
+    VALUES (${messageId}, ${userId}, ${kind})
+    ON CONFLICT (message_id, user_id) DO UPDATE SET kind = EXCLUDED.kind, created_at = NOW()
+  `;
 }
 
 // ── Send a message ──────────────────────────────────────────────────────
@@ -276,6 +395,7 @@ export async function sendMessage(input: {
   authorId: string;
   body: string;
   media?: MessageMedia[];
+  replyToId?: string | null;
 }): Promise<MessageRow | null> {
   await ensureMessageColumns();
   const db = sql();
@@ -288,9 +408,9 @@ export async function sendMessage(input: {
 
   const id = randomUUID();
   await db`
-    INSERT INTO lounge_messages (id, conversation_id, author_id, body, media)
+    INSERT INTO lounge_messages (id, conversation_id, author_id, body, media, reply_to_id)
     VALUES (${id}, ${input.conversationId}, ${input.authorId}, ${input.body.trim()},
-            ${JSON.stringify(cleanedMedia)}::jsonb)
+            ${JSON.stringify(cleanedMedia)}::jsonb, ${input.replyToId ?? null})
   `;
   await db`
     UPDATE lounge_conversations

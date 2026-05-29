@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import VersionWatcher from "./VersionWatcher";
+import PresenceHeartbeat from "./PresenceHeartbeat";
 
 export interface SidebarMe {
   firstName: string;
@@ -232,6 +233,7 @@ export default function LoungeShell({
       </div>
 
       <VersionWatcher />
+      <PresenceHeartbeat />
 
       {/* Mobile bottom tab bar — visible only on phones, mirrors iOS pattern */}
       <nav

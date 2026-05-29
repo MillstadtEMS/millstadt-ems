@@ -39,6 +39,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const body = await req.json().catch(() => ({}));
   const text = typeof body.body === "string" ? body.body : "";
   const media = Array.isArray(body.media) ? body.media : [];
+  const replyToId = typeof body.replyToId === "string" ? body.replyToId : null;
   if (!text.trim() && media.length === 0) {
     return NextResponse.json({ error: "Empty message" }, { status: 400 });
   }
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     authorId: me.id,
     body: text,
     media,
+    replyToId,
   });
   if (!message) return NextResponse.json({ error: "Not a participant" }, { status: 403 });
   return NextResponse.json({ message });
