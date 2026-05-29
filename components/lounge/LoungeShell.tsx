@@ -37,6 +37,7 @@ const NAV: NavItem[] = [
   { href: "/admin/classes",               label: "Classes & Roles",    emoji: "📚", adminOnly: true },
   { href: "/admin/cert-types",            label: "Cert Types",         emoji: "📜", adminOnly: true },
   { href: "/admin/truckcheck-dashboard",  label: "Truck Check Insights", emoji: "📊", adminOnly: true },
+  { href: "/admin/personnel-dashboard",   label: "Personnel Dashboard",  emoji: "🔒", adminOnly: true },
 ];
 
 export default function LoungeShell({

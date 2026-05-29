@@ -112,9 +112,19 @@ export default function PersonnelRecordsPanel({ employeeId }: { employeeId: stri
             Records below are hidden from the employee unless explicitly flagged employee-visible. All views and changes are audit logged.
           </p>
         </div>
-        <button type="button" onClick={() => setShowNew((v) => !v)} style={primaryBtn}>
-          {showNew ? "Close" : "+ New record"}
-        </button>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <a
+            href={`/api/admin/personnel-records/packet?employeeId=${encodeURIComponent(employeeId)}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{ ...secondaryBtn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+          >
+            Download packet PDF
+          </a>
+          <button type="button" onClick={() => setShowNew((v) => !v)} style={primaryBtn}>
+            {showNew ? "Close" : "+ New record"}
+          </button>
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 8 }}>
@@ -283,11 +293,25 @@ function NewRecordForm({ employeeId, category, onCreated }: { employeeId: string
   );
 }
 
+interface AuditEntry {
+  id: number;
+  actorId: string | null;
+  actorName: string | null;
+  action: string;
+  detail: unknown;
+  ip: string | null;
+  userAgent: string | null;
+  at: string;
+}
+
 function RecordRow({ record, onChanged }: { record: PRecord; onChanged: () => void }) {
   const [open, setOpen] = useState(false);
   const [atts, setAtts] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadVisibility, setUploadVisibility] = useState<"admin" | "employee" | "restricted_hr">("admin");
+  const [showAudit, setShowAudit] = useState(false);
+  const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
 
   const sevColor =
     record.severity === "critical" || record.severity === "serious" ? "#fca5a5" :
@@ -335,6 +359,17 @@ function RecordRow({ record, onChanged }: { record: PRecord; onChanged: () => vo
     await fetch(`/api/admin/personnel-records/${record.id}/attachments?attachmentId=${attId}`, { method: "DELETE" });
     loadAtts();
   }
+
+  async function loadAudit() {
+    setAuditLoading(true);
+    const r = await fetch(`/api/admin/personnel-records/${record.id}/audit`);
+    if (r.ok) {
+      const d = await r.json();
+      setAudit(d.entries ?? []);
+    }
+    setAuditLoading(false);
+  }
+  useEffect(() => { if (showAudit) loadAudit(); }, [showAudit, record.id]);
 
   return (
     <article style={{
@@ -423,6 +458,44 @@ function RecordRow({ record, onChanged }: { record: PRecord; onChanged: () => vo
                   </li>
                 ))}
               </ul>
+            )}
+          </div>
+
+          <div style={{ marginTop: 8 }}>
+            <button type="button" onClick={() => setShowAudit((v) => !v)} style={secondaryBtn}>
+              {showAudit ? "Hide audit trail" : "Show audit trail"}
+            </button>
+            {showAudit && (
+              <div style={{ marginTop: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 10, maxHeight: 280, overflowY: "auto" }}>
+                {auditLoading ? (
+                  <p style={{ color: "#94a3b8", fontSize: 12 }}>Loading…</p>
+                ) : audit.length === 0 ? (
+                  <p style={{ color: "#94a3b8", fontSize: 12 }}>No audit entries yet.</p>
+                ) : (
+                  <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
+                    {audit.map((e) => (
+                      <li key={e.id} style={{ padding: "6px 8px", background: "#040d1a", borderRadius: 6, fontSize: 12 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                          <span style={{ color: "#cbd5e1" }}>
+                            <strong style={{ color: "#f0b429" }}>{e.action}</strong> by {e.actorName ?? "system"}
+                          </span>
+                          <span style={{ color: "#64748b" }}>{new Date(e.at).toLocaleString()}</span>
+                        </div>
+                        {e.detail !== null && e.detail !== undefined && (
+                          <div style={{ color: "#64748b", fontSize: 11, marginTop: 2, fontFamily: "ui-monospace, monospace", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                            {JSON.stringify(e.detail)}
+                          </div>
+                        )}
+                        {(e.ip || e.userAgent) && (
+                          <div style={{ color: "#475569", fontSize: 10, marginTop: 2 }}>
+                            {e.ip ?? ""} {e.userAgent ? `· ${e.userAgent.slice(0, 80)}${e.userAgent.length > 80 ? "…" : ""}` : ""}
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             )}
           </div>
         </div>
