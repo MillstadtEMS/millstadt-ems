@@ -202,11 +202,9 @@ export default async function Home({
                     {card.sub}
                   </div>
                 </div>
-                <div className="flex items-center justify-center gap-6 w-full py-6 bg-[#f0b429]/10 border border-[#f0b429]/30 group-hover:bg-[#f0b429] group-hover:border-[#f0b429] rounded-2xl transition-all duration-200">
-                  <span className="text-[#f0b429] group-hover:text-[#040d1a] font-black text-lg transition-colors duration-200 whitespace-nowrap">
-                    Get Started
-                  </span>
-                  <svg viewBox="0 0 20 20" className="w-5 h-5 fill-current text-[#f0b429] group-hover:text-[#040d1a] group-hover:translate-x-1 transition-all duration-200">
+                <div className="flex items-center justify-center gap-6 w-full py-6 bg-[#f0b429] group-hover:bg-[#ffd45c] text-[#040d1a] font-black text-lg rounded-2xl transition-colors duration-200">
+                  <span className="whitespace-nowrap">Get Started</span>
+                  <svg viewBox="0 0 20 20" className="w-5 h-5 fill-current group-hover:translate-x-1 transition-transform duration-200">
                     <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
                 </div>
