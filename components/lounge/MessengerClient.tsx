@@ -757,15 +757,21 @@ function MessageAttachment({ att, mine }: { att: MessageMedia; mine: boolean }) 
 }
 
 const iconBtnStyle: React.CSSProperties = {
-  padding: "10px 12px",
-  background: "transparent",
-  color: "#cbd5e1",
-  border: "1px solid rgba(255,255,255,0.14)",
-  borderRadius: 10,
+  width: 44,
+  height: 44,
+  padding: 0,
+  background: "#040d1a",
+  color: "#f0b429",
+  border: "1px solid rgba(240,180,41,0.30)",
+  borderRadius: 12,
   fontFamily: "inherit",
-  fontSize: 16,
+  fontSize: 18,
   cursor: "pointer",
   lineHeight: 1,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
 };
 
 // ── Online presence helpers ─────────────────────────────────────────────

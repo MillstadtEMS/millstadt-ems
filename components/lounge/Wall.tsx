@@ -494,36 +494,46 @@ function ComposerInner({
           ))}
         </div>
       )}
-      <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
-        <div style={{ color: "#94a3b8", fontSize: 10.5, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase" }}>
-          Subject (optional)
-        </div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {WALL_SUBJECT_TAGS.map((t) => {
-            const colors = SUBJECT_COLORS[t];
-            const active = subject === t;
-            return (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setSubject(active ? null : t)}
-                style={{
-                  padding: "4px 10px",
-                  background: active ? colors.fg : "transparent",
-                  color: active ? "#040d1a" : colors.fg,
-                  border: `1px solid ${active ? colors.fg : `${colors.fg}66`}`,
-                  borderRadius: 999,
-                  fontSize: 10.5,
-                  fontWeight: 800,
-                  letterSpacing: "0.04em",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-              >
-                {t}
-              </button>
-            );
-          })}
+      <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <span style={{ color: "#94a3b8", fontSize: 10.5, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase" }}>
+          Subject
+        </span>
+        <div
+          style={{
+            position: "relative",
+            display: "inline-flex",
+            alignItems: "center",
+            background: subject ? SUBJECT_COLORS[subject].bg : "#020912",
+            border: `1px solid ${subject ? SUBJECT_COLORS[subject].border : "rgba(255,255,255,0.10)"}`,
+            borderRadius: 10,
+            paddingRight: 28,
+          }}
+        >
+          <select
+            value={subject ?? ""}
+            onChange={(e) => setSubject((e.target.value || null) as WallSubjectTag | null)}
+            style={{
+              appearance: "none",
+              WebkitAppearance: "none",
+              background: "transparent",
+              border: 0,
+              color: subject ? SUBJECT_COLORS[subject].fg : "#cbd5e1",
+              padding: "7px 10px",
+              fontSize: 12.5,
+              fontWeight: 800,
+              letterSpacing: "0.04em",
+              outline: "none",
+              fontFamily: "inherit",
+              cursor: "pointer",
+              minWidth: 180,
+            }}
+          >
+            <option value="">No subject</option>
+            {WALL_SUBJECT_TAGS.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          <span style={{ position: "absolute", right: 10, color: subject ? SUBJECT_COLORS[subject].fg : "#94a3b8", pointerEvents: "none", fontSize: 10 }}>▾</span>
         </div>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, gap: 8, flexWrap: "wrap" }}>

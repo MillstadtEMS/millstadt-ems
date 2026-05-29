@@ -46,15 +46,11 @@ export async function POST(req: NextRequest) {
             const parsed = clientPayloadRaw ? JSON.parse(clientPayloadRaw) : null;
             if (parsed && typeof parsed.mime === "string") mime = parsed.mime;
           } catch { /* ignore */ }
+          // Wildcards so MediaRecorder mimes like "audio/webm;codecs=opus",
+          // iPhone "video/quicktime", and HEIC photos all pass without an
+          // exact-string match. The maximum size still caps abuse.
           return {
-            allowedContentTypes: [
-              "image/jpeg", "image/png", "image/webp", "image/gif",
-              "image/heic", "image/heif", "image/avif",
-              "video/mp4", "video/quicktime", "video/webm", "video/x-m4v",
-              "audio/mp4", "audio/m4a", "audio/mpeg", "audio/mp3",
-              "audio/wav", "audio/x-wav", "audio/ogg", "audio/webm", "audio/aac",
-              "application/octet-stream",
-            ],
+            allowedContentTypes: ["image/*", "video/*", "audio/*", "application/octet-stream"],
             maximumSizeInBytes: MAX_BYTES,
             addRandomSuffix: true,
             tokenPayload: JSON.stringify({ employeeId: me.id, name: safeName, mime }),

@@ -51,12 +51,7 @@ export async function POST(req: NextRequest) {
             if (parsed && typeof parsed.mime === "string") mime = parsed.mime;
           } catch { /* ignore */ }
           return {
-            allowedContentTypes: [
-              "image/jpeg", "image/png", "image/webp", "image/gif",
-              "image/heic", "image/heif", "image/avif",
-              "video/mp4", "video/quicktime", "video/webm", "video/x-m4v",
-              "application/octet-stream",
-            ],
+            allowedContentTypes: ["image/*", "video/*", "audio/*", "application/octet-stream"],
             maximumSizeInBytes: MAX_BYTES,
             addRandomSuffix: true,
             tokenPayload: JSON.stringify({ employeeId: me.id, name: safeName, mime }),
