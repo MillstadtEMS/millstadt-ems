@@ -7,6 +7,8 @@ import {
   makePreauthToken,
   preauthCookieOptions,
 } from "@/lib/lounge/auth";
+import { sql } from "@/lib/lounge/db";
+import { sendLoginCode } from "@/lib/lounge/sms-login";
 
 export const dynamic = "force-dynamic";
 
@@ -37,12 +39,39 @@ export async function POST(req: NextRequest) {
   }
 
   const { secret, enrolledAt } = await getTotpEnrollment(emp.id);
-  const enrolled = !!secret && !!enrolledAt;
+  const totpEnrolled = !!secret && !!enrolledAt;
   const preauth = makePreauthToken(emp.id);
+
+  // SMS is preferred when the employee has a verified mobile on file —
+  // no QR code, no second app, just a text. Falls back to TOTP setup
+  // for accounts that don't have a phone verified yet.
+  const phoneRows = (await sql()`
+    SELECT phone, phone_verified_at FROM lounge_employees WHERE id = ${emp.id} LIMIT 1
+  `) as unknown as { phone: string | null; phone_verified_at: string | null }[];
+  const hasVerifiedPhone = !!(phoneRows[0]?.phone && phoneRows[0]?.phone_verified_at);
+
+  // Decide which 2FA path to send the user down.
+  let step: "verify_sms" | "verify_2fa" | "setup_2fa";
+  let phoneTail: string | null = null;
+  let smsDevCode: string | undefined;
+  if (hasVerifiedPhone) {
+    step = "verify_sms";
+    // Fire off the code now so it lands during the brief navigation.
+    const sent = await sendLoginCode(emp.id);
+    phoneTail = sent.phoneTail ?? null;
+    if (sent.via === "fallback" && sent.devCode) smsDevCode = sent.devCode;
+  } else if (totpEnrolled) {
+    step = "verify_2fa";
+  } else {
+    step = "setup_2fa";
+  }
 
   const res = NextResponse.json({
     ok: true,
-    step: enrolled ? "verify_2fa" : "setup_2fa",
+    step,
+    phoneTail,
+    devCode: smsDevCode,
+    canUseTotp: totpEnrolled,
     employee: { id: emp.id, firstName: emp.firstName, lastName: emp.lastName },
   });
   const opts = preauthCookieOptions(preauth);

@@ -12,11 +12,15 @@ export default function LoungeLogin() {
   const router = useRouter();
 
   // 2FA state
-  const [step, setStep] = useState<"password" | "verify_2fa" | "setup_2fa">("password");
+  const [step, setStep] = useState<"password" | "verify_sms" | "verify_2fa" | "setup_2fa">("password");
   const [code, setCode] = useState("");
   const [qr, setQr] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
+  const [phoneTail, setPhoneTail] = useState<string | null>(null);
+  const [devCode, setDevCode] = useState<string | null>(null);
+  const [canUseTotp, setCanUseTotp] = useState(false);
+  const [resending, setResending] = useState(false);
 
   // When we transition to setup_2fa, fetch the Microsoft Authenticator
   // otpauth URL + secret, then render the QR client-side so a server-side
@@ -63,12 +67,33 @@ export default function LoungeLogin() {
         setLoading(false);
         return;
       }
-      setStep(data.step === "setup_2fa" ? "setup_2fa" : "verify_2fa");
+      if (data.step === "verify_sms") {
+        setStep("verify_sms");
+        setPhoneTail(data.phoneTail ?? null);
+        setDevCode(data.devCode ?? null);
+        setCanUseTotp(!!data.canUseTotp);
+      } else if (data.step === "verify_2fa") {
+        setStep("verify_2fa");
+      } else {
+        setStep("setup_2fa");
+      }
       setLoading(false);
     } catch {
       setError("Connection error");
       setLoading(false);
     }
+  }
+
+  async function resendSms() {
+    setResending(true);
+    setError("");
+    try {
+      const r = await fetch("/api/lounge/sms-login-code/send", { method: "POST" });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setError(d.error || "Could not send code."); return; }
+      setPhoneTail(d.phoneTail ?? phoneTail);
+      setDevCode(d.devCode ?? null);
+    } finally { setResending(false); }
   }
 
   async function submitCode(endpoint: string) {
@@ -180,6 +205,50 @@ export default function LoungeLogin() {
             </button>
 
             <BiometricSignIn router={router} setError={setError} />
+          </form>
+        )}
+
+        {step === "verify_sms" && (
+          <form
+            onSubmit={(e) => { e.preventDefault(); submitCode("/api/lounge/sms-login-code/verify"); }}
+            style={{ display: "grid", gap: 14 }}
+          >
+            <p style={{ color: "#cbd5e1", fontSize: 14, lineHeight: 1.55, margin: 0 }}>
+              We just texted a 6-digit code to{" "}
+              <strong style={{ color: "#f0b429" }}>(•••) •••-•{phoneTail ?? "••••"}</strong>.
+              Enter it below to finish signing in.
+            </p>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              pattern="\d{6}"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="123456"
+              autoFocus
+              style={{ ...inputStyle, fontVariantNumeric: "tabular-nums", letterSpacing: "0.42em", textAlign: "center", fontSize: 24, padding: "16px 16px" }}
+            />
+            {devCode && (
+              <div style={{ padding: 10, background: "rgba(240,180,41,0.10)", border: "1px solid rgba(240,180,41,0.30)", borderRadius: 10, textAlign: "center", color: "#cbd5e1", fontSize: 12 }}>
+                SMS sender isn&apos;t configured yet — code:{" "}
+                <span style={{ color: "#f0b429", fontWeight: 900, letterSpacing: "0.32em", fontSize: 18, marginLeft: 4 }}>{devCode}</span>
+              </div>
+            )}
+            {error && <ErrorBanner>{error}</ErrorBanner>}
+            <button type="submit" disabled={loading || code.length !== 6} style={{ ...buttonStyle, opacity: loading || code.length !== 6 ? 0.5 : 1, cursor: loading || code.length !== 6 ? "not-allowed" : "pointer" }}>
+              {loading ? "Verifying…" : "Verify & sign in"}
+            </button>
+            <button type="button" onClick={resendSms} disabled={resending} style={ghostBtn}>
+              {resending ? "Sending…" : "Resend code"}
+            </button>
+            {canUseTotp && (
+              <button type="button" onClick={() => { setStep("verify_2fa"); setCode(""); setError(""); }} style={{ ...ghostBtn, color: "#94a3b8" }}>
+                Use authenticator app instead
+              </button>
+            )}
+            <button type="button" onClick={() => { setStep("password"); setCode(""); setError(""); }} style={{ ...ghostBtn, color: "#64748b" }}>← Back</button>
           </form>
         )}
 
