@@ -114,16 +114,18 @@ export default function Wall({ me }: { me: WallMe }) {
   return (
     <section
       style={{
-        background: "#071428",
-        border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: 18,
+        background:
+          "radial-gradient(circle at 12% 0%, rgba(56,189,248,0.12), transparent 20rem), linear-gradient(180deg, #071428 0%, #040d1a 100%)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 22,
         padding: "20px 22px 22px",
+        boxShadow: "0 18px 50px rgba(0,0,0,0.24)",
       }}
     >
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <div>
-          <div style={{ color: "#a78bfa", fontSize: "0.66rem", fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-            The Wall
+          <div style={{ color: "#f0b429", fontSize: "0.66rem", fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
+            Internal Social Feed
           </div>
           <h2 style={{ margin: "4px 0 0", fontSize: "1.35rem", fontWeight: 900, color: "white" }}>
             Shift-to-Shift Feed
@@ -212,10 +214,11 @@ function Composer({
     <div
       style={{
         marginTop: 18,
-        background: "#040d1a",
-        border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: 14,
-        padding: 14,
+        background: "rgba(2,9,18,0.72)",
+        border: "1px solid rgba(240,180,41,0.18)",
+        borderRadius: 18,
+        padding: 16,
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
       }}
     >
       <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
@@ -228,9 +231,9 @@ function Composer({
           rows={3}
           style={{
             flex: 1,
-            background: "#020912",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 12,
+            background: "rgba(255,255,255,0.045)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: 14,
             color: "white",
             padding: "12px 14px",
             fontSize: "0.95rem",
@@ -318,11 +321,14 @@ function PostCard({
   return (
     <article
       style={{
-        background: post.pinned ? "rgba(240,180,41,0.05)" : "#040d1a",
-        border: `1px solid ${post.pinned ? "rgba(240,180,41,0.30)" : "rgba(255,255,255,0.06)"}`,
-        borderRadius: 14,
-        padding: "14px 16px",
+        background: post.pinned
+          ? "linear-gradient(135deg, rgba(240,180,41,0.10), rgba(56,189,248,0.04)), rgba(4,13,26,0.92)"
+          : "rgba(4,13,26,0.84)",
+        border: `1px solid ${post.pinned ? "rgba(240,180,41,0.34)" : "rgba(255,255,255,0.08)"}`,
+        borderRadius: 18,
+        padding: "16px 18px",
         position: "relative",
+        boxShadow: post.pinned ? "0 16px 36px rgba(240,180,41,0.08)" : "0 12px 30px rgba(0,0,0,0.16)",
       }}
     >
       {post.pinned && (

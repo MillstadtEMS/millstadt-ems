@@ -113,10 +113,10 @@ export default function LoungeLogin() {
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              width: 132,
-              height: 132,
-              marginBottom: 14,
-              filter: "drop-shadow(0 10px 28px rgba(0,0,0,0.6)) drop-shadow(0 0 28px rgba(60,120,255,0.35))",
+              width: 240,
+              height: 240,
+              marginBottom: 4,
+              filter: "drop-shadow(0 18px 40px rgba(0,0,0,0.6)) drop-shadow(0 0 50px rgba(60,120,255,0.40))",
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}

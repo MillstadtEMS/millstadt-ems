@@ -180,18 +180,21 @@ export default function CallsAdmin() {
           <span className="h-px w-8 bg-[#f0b429]" />
           <span className="text-[#f0b429] text-xs font-black tracking-[0.25em] uppercase">Dispatch</span>
         </div>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-3xl font-black text-white">Call Log</h1>
             <p className="text-slate-400 text-sm mt-1">{new Date().getFullYear()} — {calls.length} calls. Click the pencil icon to edit a call&apos;s description.</p>
           </div>
-          <button
-            onClick={() => setShowAdd(v => !v)}
-            className="shrink-0 flex items-center gap-2 bg-[#f0b429]/10 hover:bg-[#f0b429]/20 border border-[#f0b429]/25 text-[#f0b429] font-black text-sm px-4 py-2.5 rounded-xl transition-colors"
-          >
-            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-            Add Call
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <ForcePollButton onAfter={() => load()} />
+            <button
+              onClick={() => setShowAdd(v => !v)}
+              className="shrink-0 flex items-center gap-2 bg-[#f0b429]/10 hover:bg-[#f0b429]/20 border border-[#f0b429]/25 text-[#f0b429] font-black text-sm px-4 py-2.5 rounded-xl transition-colors"
+            >
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+              Add Call
+            </button>
+          </div>
         </div>
       </div>
 
@@ -271,6 +274,47 @@ export default function CallsAdmin() {
         </div>
       )}
       <p className="text-slate-700 text-xs mt-8">Removing a call only affects the public display — it does not delete from the raw Gmail log.</p>
+    </div>
+  );
+}
+
+function ForcePollButton({ onAfter }: { onAfter: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  async function go() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await fetch("/api/admin/cad-poll", { method: "POST" });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setMsg(d.error || `Poll failed (${r.status})`);
+      } else {
+        setMsg(
+          d.processed === 0
+            ? "Polled Gmail — no new dispatch emails."
+            : `Polled Gmail — processed ${d.processed}, dupes ${d.duplicates ?? 0}, failed ${d.failed ?? 0}.`,
+        );
+        onAfter();
+      }
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Poll error");
+    } finally {
+      setBusy(false);
+      setTimeout(() => setMsg(null), 6000);
+    }
+  }
+  return (
+    <div className="flex items-center gap-3">
+      <button
+        onClick={go}
+        disabled={busy}
+        className="flex items-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-black text-sm px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+      >
+        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.74 9.99h-2.07A6 6 0 1 1 12 6a5.85 5.85 0 0 1 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        {busy ? "Polling…" : "Poll Gmail now"}
+      </button>
+      {msg && <span className="text-slate-300 text-xs">{msg}</span>}
     </div>
   );
 }

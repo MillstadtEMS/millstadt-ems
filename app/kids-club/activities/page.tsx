@@ -194,11 +194,12 @@ export default function KidsClubActivitiesPage() {
           {AGE_TRACKS.map((track) => {
             const trackActivities = filteredActivities.filter((activity) => activity.ageTrack === track);
             if (trackActivities.length === 0) return null;
+            const trackHeadingId = `${track.toLowerCase().replaceAll(" ", "-")}-heading`;
             return (
-              <section key={track} className="kc-age-track" aria-labelledby={`${track}-heading`}>
+              <section key={track} className="kc-age-track" aria-labelledby={trackHeadingId}>
                 <div className="kc-track-heading">
                   <span>{track}</span>
-                  <h2 id={`${track}-heading`}>
+                  <h2 id={trackHeadingId}>
                     {track === "Ages 2-5" ? "Little helper missions" : "Junior responder missions"}
                   </h2>
                   <p>

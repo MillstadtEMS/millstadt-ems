@@ -86,6 +86,15 @@ function natureColor(nature: string): string {
   return "text-white";
 }
 
+function timeAgo(d: Date): string {
+  const sec = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
+  if (sec < 60) return "just now";
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
+  const days = Math.floor(sec / 86400);
+  return `${days}d ago`;
+}
+
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function CallTicker() {
@@ -180,9 +189,16 @@ export default function CallTicker() {
                   {currentYear} Dispatch Log
                 </span>
               </div>
-              <span className="text-red-500 text-sm font-black">
-                {totalCalls} call{totalCalls !== 1 ? "s" : ""} this year
-              </span>
+              <div className="flex items-center gap-3">
+                {allCalls[0]?.dispatchDatetime && (
+                  <span className="text-slate-400 text-xs tabular-nums">
+                    Last: {timeAgo(new Date(allCalls[0].dispatchDatetime))}
+                  </span>
+                )}
+                <span className="text-red-500 text-sm font-black">
+                  {totalCalls} call{totalCalls !== 1 ? "s" : ""} this year
+                </span>
+              </div>
             </div>
 
             {/* Scrollable call list with ambulance scrollbar */}

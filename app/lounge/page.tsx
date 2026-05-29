@@ -1,25 +1,66 @@
-import { redirect } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import type { ReactNode } from "react";
 import { currentEmployee } from "@/lib/lounge/auth";
 import { getEmployee } from "@/lib/lounge/employees";
 import { expiringCertsForEmployee, type EmployeeCert } from "@/lib/lounge/certs";
+import { listAcksForViewer, type Ack } from "@/lib/lounge/acks";
+import { listOpenShifts, type OpenShift } from "@/lib/lounge/open-shifts";
 import LoungeShell from "@/components/lounge/LoungeShell";
 import Wall from "@/components/lounge/Wall";
 import WelcomeOverlay from "@/components/lounge/WelcomeOverlay";
 import CoffeePrankOverlay from "@/components/lounge/CoffeePrankOverlay";
 
-// Temporary joke: these two usernames get the coffee-prank flipbook
-// instead of the normal welcome overlay. Remove when KJ says.
 const PRANK_USERNAMES = new Set(["kwetzel", "jgoetz"]);
 
 export const dynamic = "force-dynamic";
+
+const quickActions = [
+  { href: "#schedule", label: "View Schedule", detail: "Today and coverage", icon: "calendar" },
+  { href: "/lounge/open-shifts", label: "Open Shift Sign-Up", detail: "Available coverage", icon: "plus" },
+  { href: "/api/lounge/sso/truckcheck", label: "Complete Truck Check", detail: "Unit readiness", icon: "ambulance" },
+  { href: "/lounge/incidents", label: "Report Issue", detail: "Station, unit, safety", icon: "tool" },
+  { href: "/lounge/certs", label: "Upload Credential", detail: "Certs and renewals", icon: "upload" },
+  { href: "/lounge/my-file", label: "My Employee File", detail: "Private documents", icon: "file" },
+  { href: "/lounge/acks", label: "Acknowledgments", detail: "Read and sign", icon: "check" },
+  { href: "/lounge/messages", label: "Messages", detail: "Crew DMs", icon: "message" },
+];
+
+const adminActions = [
+  { href: "/admin/employees", label: "Employee Records", detail: "Personnel admin", icon: "users" },
+  { href: "/admin/admin-tools", label: "Admin Tools", detail: "Operations controls", icon: "shield" },
+];
+
+const trainingItems = [
+  { title: "Annual compliance", status: "Track in Certs", href: "/lounge/certs" },
+  { title: "Protocol updates", status: "Post as notice", href: "/lounge/acks" },
+  { title: "Skills check-offs", status: "Admin managed", href: "/admin/classes" },
+];
+
+const resourceItems = [
+  { title: "Policies and SOPs", href: "/lounge/acks", label: "Notices" },
+  { title: "Maintenance requests", href: "/lounge/incidents", label: "Reports" },
+  { title: "Inventory", href: "/api/lounge/sso/inventory", label: "SSO" },
+  { title: "Truck check", href: "/api/lounge/sso/truckcheck", label: "SSO" },
+];
+
+const recognitions = [
+  { type: "Clinical Save", name: "Crew Recognition", text: "Highlight saves, thank-yous, and strong calls on the Wall." },
+  { type: "Above and Beyond", name: "Station Culture", text: "Pin recognition posts so the whole crew sees the win." },
+  { type: "Training Complete", name: "Credential Growth", text: "Celebrate new certs, class completions, and milestones." },
+];
 
 export default async function LoungeHome() {
   const session = await currentEmployee();
   if (!session) redirect("/lounge/login");
 
-  const emp = (await getEmployee(session.id)) ?? null;
-  const expiring = await expiringCertsForEmployee(session.id);
+  const [emp, expiring, openShifts, acks] = await Promise.all([
+    getEmployee(session.id),
+    expiringCertsForEmployee(session.id),
+    listOpenShifts(session.id),
+    listAcksForViewer(session.id),
+  ]);
 
   const me = {
     firstName: session.firstName,
@@ -29,28 +70,51 @@ export default async function LoungeHome() {
     isAdmin: session.isAdmin,
   };
 
+  const pendingAcks = acks.filter((ack) => ack.requiresAcknowledgment && !ack.acknowledgedAt);
+  const activeOpenShifts = openShifts.filter((shift) => shift.status === "open");
+  const latestNotice = acks[0] ?? null;
+
   return (
     <LoungeShell me={me}>
-      <header style={{ marginBottom: 18 }}>
-        <div style={{ color: "#f0b429", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-          {todayString()}
+      <style>{LOUNGE_HOME_CSS}</style>
+      <div className="lounge-command-page">
+        <CommandHeader
+          firstName={session.firstName}
+          role={emp?.certification ?? "Crew"}
+          isAdmin={session.isAdmin}
+          pendingAcks={pendingAcks.length}
+          openShifts={activeOpenShifts.length}
+          expiringCerts={expiring.length}
+        />
+
+        {expiring.length > 0 && <CertAlertsBanner certs={expiring} />}
+
+        <QuickActionDock isAdmin={session.isAdmin} />
+
+        <div className="lounge-command-grid">
+          <div className="lounge-main-stack">
+            <ScheduleSnapshot openShifts={activeOpenShifts} />
+            <Wall
+              me={{
+                id: session.id,
+                firstName: session.firstName,
+                lastName: session.lastName,
+                photoUrl: emp?.photoUrl ?? null,
+                isAdmin: session.isAdmin,
+              }}
+            />
+            <TrainingResourcesRecognition isAdmin={session.isAdmin} />
+          </div>
+
+          <CommandRail
+            pendingAcks={pendingAcks}
+            openShifts={activeOpenShifts}
+            expiring={expiring}
+            latestNotice={latestNotice}
+            isAdmin={session.isAdmin}
+          />
         </div>
-        <h1 style={{ margin: "4px 0 0", fontSize: "1.95rem", fontWeight: 900, letterSpacing: "-0.015em" }}>
-          Welcome back, {session.firstName}.
-        </h1>
-      </header>
-
-      {expiring.length > 0 && <CertAlertsBanner certs={expiring} />}
-
-      <Wall
-        me={{
-          id: session.id,
-          firstName: session.firstName,
-          lastName: session.lastName,
-          photoUrl: emp?.photoUrl ?? null,
-          isAdmin: session.isAdmin,
-        }}
-      />
+      </div>
 
       {PRANK_USERNAMES.has(session.username)
         ? <CoffeePrankOverlay name={session.firstName} />
@@ -59,9 +123,322 @@ export default async function LoungeHome() {
   );
 }
 
-function todayString() {
-  const d = new Date();
-  return d.toLocaleDateString("en-US", {
+function CommandHeader({
+  firstName,
+  role,
+  isAdmin,
+  pendingAcks,
+  openShifts,
+  expiringCerts,
+}: {
+  firstName: string;
+  role: string;
+  isAdmin: boolean;
+  pendingAcks: number;
+  openShifts: number;
+  expiringCerts: number;
+}) {
+  const now = new Date();
+  const statusChips = [
+    { label: "Available", value: "Crew portal" },
+    { label: "Open Coverage", value: `${openShifts}` },
+    { label: "Pending Items", value: `${pendingAcks + expiringCerts}` },
+    { label: isAdmin ? "Admin" : "Employee", value: role },
+  ];
+
+  return (
+    <header className="lounge-hero">
+      <div className="lounge-hero-bg" aria-hidden>
+        <Image
+          src="/images/millstadt-ems/star-of-life.png"
+          alt=""
+          width={240}
+          height={240}
+        />
+      </div>
+      <div className="lounge-hero-copy">
+        <div className="lounge-eyebrow">{formatDateLine(now)}</div>
+        <h1>Employee Lounge</h1>
+        <p>Welcome back, {firstName}. Crew updates, open coverage, training, documents, and station tools are all in one command view.</p>
+        <div className="lounge-status-strip">
+          {statusChips.map((chip) => (
+            <div key={chip.label}>
+              <span>{chip.label}</span>
+              <strong>{chip.value}</strong>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="lounge-hero-card">
+        <Image src="/lounge/lounge-button.png" alt="" width={170} height={115} />
+        <span>Station Culture</span>
+        <strong>Feed, coverage, and crew tools built for shift life.</strong>
+      </div>
+    </header>
+  );
+}
+
+function QuickActionDock({ isAdmin }: { isAdmin: boolean }) {
+  const actions = isAdmin ? [...quickActions, ...adminActions] : quickActions;
+  return (
+    <section className="lounge-action-dock" aria-label="Quick actions">
+      <div className="lounge-section-head">
+        <span>Quick Action Dock</span>
+        <h2>Common shift tasks</h2>
+      </div>
+      <div className="lounge-action-grid">
+        {actions.map((action) => (
+          <Link key={action.href + action.label} href={action.href} className="lounge-action-card">
+            <Icon name={action.icon} />
+            <span>{action.label}</span>
+            <small>{action.detail}</small>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ScheduleSnapshot({ openShifts }: { openShifts: OpenShift[] }) {
+  const preview = openShifts.slice(0, 3);
+  return (
+    <section className="lounge-schedule" id="schedule">
+      <div className="lounge-section-head">
+        <span>Shift and Schedule Snapshot</span>
+        <h2>Coverage board</h2>
+      </div>
+
+      <div className="lounge-schedule-grid">
+        <div className="lounge-unit-board">
+          <StatusRow label="Today" value="Crew schedule connection pending" tone="blue" />
+          <StatusRow label="Current unit staffing" value="Use Aladtec source until sync is wired" tone="gold" />
+          <StatusRow label="Next shift" value="Private schedule not connected on this page yet" tone="neutral" />
+        </div>
+
+        <div className="lounge-open-board">
+          <div className="lounge-open-top">
+            <div>
+              <span>Open Coverage</span>
+              <strong>{openShifts.length} active</strong>
+            </div>
+            <Link href="/lounge/open-shifts">Open board</Link>
+          </div>
+          {preview.length === 0 ? (
+            <p className="lounge-empty">No open shifts posted right now.</p>
+          ) : (
+            <div className="lounge-shift-list">
+              {preview.map((shift) => (
+                <article key={shift.id}>
+                  <span>{shift.target || "All crew"}</span>
+                  <strong>{shift.title}</strong>
+                  <p>{shift.body}</p>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TrainingResourcesRecognition({ isAdmin }: { isAdmin: boolean }) {
+  return (
+    <section className="lounge-panels-row">
+      <DashboardPanel eyebrow="Training Center" title="Education and compliance">
+        <div className="lounge-list">
+          {trainingItems.map((item) => (
+            <Link key={item.title} href={item.href}>
+              <span>{item.title}</span>
+              <strong>{item.status}</strong>
+            </Link>
+          ))}
+        </div>
+      </DashboardPanel>
+
+      <DashboardPanel eyebrow="Station Resources" title="Forms, tools, and links" id="resources">
+        <div className="lounge-resource-grid">
+          {resourceItems.map((item) => (
+            <Link key={item.title} href={item.href}>
+              <span>{item.label}</span>
+              <strong>{item.title}</strong>
+            </Link>
+          ))}
+        </div>
+      </DashboardPanel>
+
+      <DashboardPanel eyebrow="Recognition Wall" title="Crew wins">
+        <div className="lounge-recognition">
+          {recognitions.map((item) => (
+            <article key={item.type}>
+              <span>{item.type}</span>
+              <strong>{item.name}</strong>
+              <p>{item.text}</p>
+            </article>
+          ))}
+        </div>
+        {isAdmin && (
+          <Link href="/lounge" className="lounge-admin-note">
+            Post recognition through the Wall composer
+          </Link>
+        )}
+      </DashboardPanel>
+    </section>
+  );
+}
+
+function CommandRail({
+  pendingAcks,
+  openShifts,
+  expiring,
+  latestNotice,
+  isAdmin,
+}: {
+  pendingAcks: Ack[];
+  openShifts: OpenShift[];
+  expiring: EmployeeCert[];
+  latestNotice: Ack | null;
+  isAdmin: boolean;
+}) {
+  return (
+    <aside className="lounge-command-rail">
+      <RailCard title="At a glance">
+        <RailMetric label="Pending acknowledgments" value={pendingAcks.length} href="/lounge/acks" />
+        <RailMetric label="Open shifts" value={openShifts.length} href="/lounge/open-shifts" />
+        <RailMetric label="Credentials due" value={expiring.length} href="/lounge/certs" />
+      </RailCard>
+
+      <RailCard title="Latest announcement">
+        {latestNotice ? (
+          <Link href="/lounge/acks" className="lounge-notice-link">
+            <span>{latestNotice.category}</span>
+            <strong>{latestNotice.title}</strong>
+            <small>{timeAgo(latestNotice.createdAt)}</small>
+          </Link>
+        ) : (
+          <p className="lounge-empty">No notices posted.</p>
+        )}
+      </RailCard>
+
+      <RailCard title="Issue reporting">
+        <p>Submit unit, equipment, supply, building, IT, uniform, or safety concerns through the report form.</p>
+        <Link href="/lounge/incidents" className="lounge-rail-button">New report</Link>
+      </RailCard>
+
+      {isAdmin && (
+        <RailCard title="Admin controls">
+          <div className="lounge-admin-links">
+            <Link href="/lounge/acks">Create notice</Link>
+            <Link href="/lounge/open-shifts">Post open shift</Link>
+            <Link href="/admin/employees">Employee records</Link>
+          </div>
+        </RailCard>
+      )}
+    </aside>
+  );
+}
+
+function CertAlertsBanner({ certs }: { certs: EmployeeCert[] }) {
+  const expired = certs.filter((cert) => cert.status === "expired");
+  const final7 = certs.filter((cert) => cert.status === "final_7");
+  const soon = certs.filter(
+    (cert) => cert.status === "30" || cert.status === "60" || cert.status === "90" || cert.status === "120",
+  );
+  const blocking = expired.length > 0;
+
+  return (
+    <section className={blocking ? "lounge-cert-banner is-blocking" : "lounge-cert-banner"}>
+      <div>
+        <span>{blocking ? "Action Required" : "Credential Heads Up"}</span>
+        <h2>
+          {blocking
+            ? `${expired.length} expired certification${expired.length === 1 ? "" : "s"} need attention.`
+            : `${certs.length} certification${certs.length === 1 ? "" : "s"} need attention soon.`}
+        </h2>
+      </div>
+      <ul>
+        {[...expired, ...final7, ...soon].slice(0, 5).map((cert) => (
+          <li key={cert.id}>
+            <strong>{cert.certTypeName}</strong>
+            <span>{cert.status === "expired" ? "Expired" : cert.daysLeft === 0 ? "Today" : `${cert.daysLeft}d`}</span>
+          </li>
+        ))}
+      </ul>
+      <Link href="/lounge/certs">Open certs</Link>
+    </section>
+  );
+}
+
+function DashboardPanel({
+  eyebrow,
+  title,
+  id,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  id?: string;
+  children: ReactNode;
+}) {
+  return (
+    <article className="lounge-dashboard-panel" id={id}>
+      <span>{eyebrow}</span>
+      <h2>{title}</h2>
+      {children}
+    </article>
+  );
+}
+
+function RailCard({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="lounge-rail-card">
+      <h3>{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+function RailMetric({ label, value, href }: { label: string; value: number; href: string }) {
+  return (
+    <Link href={href} className="lounge-rail-metric">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </Link>
+  );
+}
+
+function StatusRow({ label, value, tone }: { label: string; value: string; tone: "blue" | "gold" | "neutral" }) {
+  return (
+    <div className={`lounge-status-row is-${tone}`}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function Icon({ name }: { name: string }) {
+  const paths: Record<string, ReactNode> = {
+    calendar: <path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2Zm13 8H4v10h16V10Z" />,
+    plus: <path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z" />,
+    ambulance: <path d="M3 6h10v10H3V6Zm12 3h3l3 4v3h-2a3 3 0 0 1-6 0h-3a3 3 0 0 1-6 0H2V4h13v5Zm-8 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm9 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm1-6h-2v2h3.5L17 11ZM8 8h2v2h2v2h-2v2H8v-2H6v-2h2V8Z" />,
+    tool: <path d="M22 19.6 19.6 22l-6.8-6.8a6.5 6.5 0 0 1-8.1-8.1l4.2 4.2 2.4-2.4-4.2-4.2a6.5 6.5 0 0 1 8.1 8.1L22 19.6Z" />,
+    upload: <path d="M11 16h2V8l3.5 3.5 1.4-1.4L12 4.2 6.1 10.1l1.4 1.4L11 8v8Zm-7 2h16v2H4v-2Z" />,
+    file: <path d="M6 2h8l4 4v16H6V2Zm7 1.5V7h3.5L13 3.5ZM8 12h8v2H8v-2Zm0 4h8v2H8v-2Z" />,
+    check: <path d="m9.2 16.2-4.1-4.1-1.4 1.4 5.5 5.5L21 7.2l-1.4-1.4L9.2 16.2Z" />,
+    message: <path d="M4 4h16v12H7.8L4 19.8V4Zm2 2v9l1-1h11V6H6Z" />,
+    users: <path d="M8 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm8 1a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7ZM2 21v-2a5 5 0 0 1 10 0v2H2Zm11 0v-1.5a6.8 6.8 0 0 0-1.2-3.9A4.8 4.8 0 0 1 21 17.5V21h-8Z" />,
+    shield: <path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3Zm-1 14-3.3-3.3 1.4-1.4 1.9 1.9 4.9-4.9 1.4 1.4L11 16Z" />,
+  };
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      {paths[name] ?? paths.file}
+    </svg>
+  );
+}
+
+function formatDateLine(date: Date) {
+  return date.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -69,82 +446,501 @@ function todayString() {
   });
 }
 
-function CertAlertsBanner({ certs }: { certs: EmployeeCert[] }) {
-  const expired = certs.filter((c) => c.status === "expired");
-  const final7 = certs.filter((c) => c.status === "final_7");
-  const soon = certs.filter(
-    (c) => c.status === "30" || c.status === "60" || c.status === "90" || c.status === "120",
-  );
-
-  const hasBlocking = expired.length > 0;
-  const accentColor = hasBlocking ? "#ef4444" : final7.length > 0 ? "#f97316" : "#f0b429";
-  const bg = hasBlocking ? "rgba(239,68,68,0.10)" : final7.length > 0 ? "rgba(249,115,22,0.10)" : "rgba(240,180,41,0.08)";
-  const border = hasBlocking ? "rgba(239,68,68,0.40)" : final7.length > 0 ? "rgba(249,115,22,0.40)" : "rgba(240,180,41,0.30)";
-
-  return (
-    <section
-      style={{
-        marginBottom: 18,
-        background: bg,
-        border: `1px solid ${border}`,
-        borderLeft: `4px solid ${accentColor}`,
-        borderRadius: 14,
-        padding: "16px 20px",
-      }}
-    >
-      <div style={{ color: accentColor, fontSize: "0.7rem", fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase", marginBottom: 8 }}>
-        {hasBlocking ? "Action Required" : "Heads Up"}
-      </div>
-      <h2 style={{ margin: 0, fontSize: "1.02rem", fontWeight: 900, color: "white" }}>
-        {hasBlocking
-          ? `You have ${expired.length} expired certification${expired.length === 1 ? "" : "s"} — contact management before your next shift.`
-          : `${certs.length} of your certifications need attention.`}
-      </h2>
-      <ul style={{ marginTop: 10, marginBottom: 0, paddingLeft: 0, listStyle: "none", display: "grid", gap: 6 }}>
-        {[...expired, ...final7, ...soon].slice(0, 6).map((c) => (
-          <li
-            key={c.id}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              padding: "6px 0",
-              borderTop: "1px solid rgba(255,255,255,0.06)",
-              color: "#e2e8f0",
-              fontSize: "0.86rem",
-            }}
-          >
-            <span style={{ fontWeight: 700 }}>{c.certTypeName}</span>
-            <span style={{ color: accentColor, fontWeight: 800 }}>
-              {c.status === "expired"
-                ? `Expired ${Math.abs(c.daysLeft ?? 0)}d ago`
-                : c.status === "final_7"
-                  ? c.daysLeft === 0
-                    ? "Expires today"
-                    : `Expires in ${c.daysLeft}d`
-                  : `In ${c.daysLeft}d`}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <Link
-        href="/lounge/certs"
-        style={{
-          display: "inline-block",
-          marginTop: 14,
-          background: accentColor,
-          color: "#040d1a",
-          padding: "9px 14px",
-          borderRadius: 10,
-          fontSize: "0.76rem",
-          fontWeight: 900,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          textDecoration: "none",
-        }}
-      >
-        Open My Certifications →
-      </Link>
-    </section>
-  );
+function timeAgo(input: string) {
+  const then = new Date(input).getTime();
+  const diff = Math.max(0, Date.now() - then);
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
 }
+
+const LOUNGE_HOME_CSS = `
+.lounge-command-page {
+  display: grid;
+  gap: 18px;
+}
+.lounge-hero {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 22px;
+  min-height: 360px;
+  padding: 30px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 18% 14%, rgba(37,99,235,0.28), transparent 22rem),
+    radial-gradient(circle at 82% 0%, rgba(240,180,41,0.24), transparent 18rem),
+    linear-gradient(135deg, #071428 0%, #020912 100%);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.lounge-hero-bg {
+  position: absolute;
+  right: 42px;
+  top: 24px;
+  opacity: 0.13;
+  filter: drop-shadow(0 0 28px rgba(56,189,248,0.8));
+}
+.lounge-hero-copy,
+.lounge-hero-card {
+  position: relative;
+  z-index: 1;
+}
+.lounge-eyebrow,
+.lounge-section-head span,
+.lounge-dashboard-panel > span,
+.lounge-cert-banner span,
+.lounge-open-top span,
+.lounge-notice-link span {
+  display: block;
+  color: #f0b429;
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.lounge-hero h1 {
+  margin: 10px 0 0;
+  color: white;
+  font-size: clamp(2.5rem, 6vw, 5.8rem);
+  line-height: 0.86;
+  letter-spacing: -0.055em;
+  font-weight: 950;
+}
+.lounge-hero p {
+  max-width: 720px;
+  margin: 18px 0 0;
+  color: #dbeafe;
+  font-size: 1rem;
+  line-height: 1.7;
+  font-weight: 650;
+}
+.lounge-status-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 24px;
+}
+.lounge-status-strip div {
+  min-height: 92px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.09);
+}
+.lounge-status-strip span,
+.lounge-hero-card span,
+.lounge-action-card small,
+.lounge-status-row span,
+.lounge-resource-grid span,
+.lounge-recognition span,
+.lounge-rail-metric span {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.lounge-status-strip strong {
+  display: block;
+  margin-top: 8px;
+  color: white;
+  font-size: 1.05rem;
+}
+.lounge-hero-card {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 22px;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04)),
+    rgba(2,9,18,0.7);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.lounge-hero-card img {
+  width: min(100%, 190px);
+  height: auto;
+  margin: 0 auto 20px;
+  filter: drop-shadow(0 20px 28px rgba(0,0,0,0.38));
+}
+.lounge-hero-card strong {
+  display: block;
+  margin-top: 8px;
+  color: white;
+  font-size: 1.2rem;
+  line-height: 1.25;
+}
+.lounge-cert-banner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.8fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(240,180,41,0.08);
+  border: 1px solid rgba(240,180,41,0.28);
+  border-left: 5px solid #f0b429;
+}
+.lounge-cert-banner.is-blocking {
+  background: rgba(239,68,68,0.1);
+  border-color: rgba(239,68,68,0.38);
+  border-left-color: #ef4444;
+}
+.lounge-cert-banner h2 {
+  margin: 5px 0 0;
+  color: white;
+  font-size: 1rem;
+}
+.lounge-cert-banner ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.lounge-cert-banner li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: #e2e8f0;
+  font-size: 0.82rem;
+}
+.lounge-cert-banner a,
+.lounge-open-top a,
+.lounge-rail-button,
+.lounge-admin-note {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  padding: 0 14px;
+  background: #f0b429;
+  color: #040d1a;
+  text-decoration: none;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.lounge-action-dock,
+.lounge-schedule,
+.lounge-dashboard-panel,
+.lounge-rail-card {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top left, rgba(37,99,235,0.12), transparent 18rem),
+    #071428;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.22);
+}
+.lounge-action-dock {
+  padding: 18px;
+}
+.lounge-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.lounge-section-head h2,
+.lounge-dashboard-panel h2,
+.lounge-rail-card h3 {
+  margin: 5px 0 0;
+  color: white;
+  font-size: 1.35rem;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+.lounge-action-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.lounge-action-card {
+  min-height: 118px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 18px;
+  text-decoration: none;
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+.lounge-action-card:hover,
+.lounge-action-card:focus {
+  transform: translateY(-2px);
+  border-color: rgba(240,180,41,0.45);
+  background: rgba(240,180,41,0.08);
+}
+.lounge-action-card svg {
+  width: 27px;
+  height: 27px;
+  fill: #f0b429;
+}
+.lounge-action-card span {
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
+.lounge-command-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 310px;
+  gap: 18px;
+  align-items: start;
+}
+.lounge-main-stack {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.lounge-schedule {
+  padding: 18px;
+}
+.lounge-schedule-grid {
+  display: grid;
+  grid-template-columns: 0.78fr 1.22fr;
+  gap: 12px;
+}
+.lounge-unit-board,
+.lounge-open-board {
+  display: grid;
+  gap: 10px;
+}
+.lounge-status-row,
+.lounge-open-board,
+.lounge-rail-metric,
+.lounge-notice-link,
+.lounge-list a,
+.lounge-resource-grid a,
+.lounge-recognition article {
+  border-radius: 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.lounge-status-row {
+  padding: 14px;
+  border-left: 4px solid #64748b;
+}
+.lounge-status-row.is-blue { border-left-color: #38bdf8; }
+.lounge-status-row.is-gold { border-left-color: #f0b429; }
+.lounge-status-row strong {
+  display: block;
+  margin-top: 6px;
+  color: white;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+.lounge-open-board {
+  padding: 14px;
+}
+.lounge-open-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.lounge-open-top strong {
+  display: block;
+  margin-top: 4px;
+  color: white;
+  font-size: 1.45rem;
+}
+.lounge-empty {
+  margin: 12px 0 0;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+.lounge-shift-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.lounge-shift-list article {
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(2,9,18,0.5);
+}
+.lounge-shift-list span {
+  color: #7dd3fc;
+  font-size: 0.68rem;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.lounge-shift-list strong {
+  display: block;
+  margin-top: 4px;
+  color: white;
+}
+.lounge-shift-list p {
+  display: -webkit-box;
+  margin: 5px 0 0;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.lounge-panels-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.lounge-dashboard-panel {
+  padding: 18px;
+}
+.lounge-list,
+.lounge-resource-grid,
+.lounge-recognition {
+  display: grid;
+  gap: 9px;
+  margin-top: 14px;
+}
+.lounge-list a,
+.lounge-resource-grid a {
+  display: block;
+  padding: 13px;
+  text-decoration: none;
+}
+.lounge-list span,
+.lounge-resource-grid strong,
+.lounge-list strong,
+.lounge-recognition strong {
+  display: block;
+}
+.lounge-list span,
+.lounge-resource-grid strong {
+  color: white;
+  font-weight: 850;
+}
+.lounge-list strong,
+.lounge-resource-grid span {
+  margin-top: 4px;
+  color: #f0b429;
+}
+.lounge-recognition article {
+  padding: 13px;
+}
+.lounge-recognition strong {
+  margin-top: 4px;
+  color: white;
+}
+.lounge-recognition p,
+.lounge-rail-card p {
+  margin: 7px 0 0;
+  color: #94a3b8;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+.lounge-admin-note {
+  width: 100%;
+  margin-top: 12px;
+}
+.lounge-command-rail {
+  position: sticky;
+  top: 20px;
+  display: grid;
+  gap: 14px;
+}
+.lounge-rail-card {
+  padding: 16px;
+}
+.lounge-rail-metric {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  text-decoration: none;
+}
+.lounge-rail-metric + .lounge-rail-metric {
+  margin-top: 8px;
+}
+.lounge-rail-metric strong {
+  color: #f0b429;
+  font-size: 1.8rem;
+  line-height: 1;
+}
+.lounge-notice-link {
+  display: block;
+  margin-top: 12px;
+  padding: 13px;
+  text-decoration: none;
+}
+.lounge-notice-link strong {
+  display: block;
+  margin-top: 6px;
+  color: white;
+  line-height: 1.25;
+}
+.lounge-notice-link small {
+  display: block;
+  margin-top: 8px;
+  color: #94a3b8;
+}
+.lounge-rail-button {
+  width: 100%;
+  margin-top: 14px;
+}
+.lounge-admin-links {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.lounge-admin-links a {
+  color: #f0b429;
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+@media (max-width: 1180px) {
+  .lounge-command-grid,
+  .lounge-hero,
+  .lounge-schedule-grid,
+  .lounge-panels-row {
+    grid-template-columns: 1fr;
+  }
+  .lounge-command-rail {
+    position: static;
+  }
+}
+@media (max-width: 760px) {
+  .lounge-hero,
+  .lounge-action-dock,
+  .lounge-schedule,
+  .lounge-dashboard-panel,
+  .lounge-rail-card,
+  .lounge-cert-banner {
+    border-radius: 18px;
+  }
+  .lounge-hero {
+    padding: 20px;
+  }
+  .lounge-status-strip,
+  .lounge-action-grid,
+  .lounge-cert-banner {
+    grid-template-columns: 1fr;
+  }
+  .lounge-action-card {
+    min-height: 96px;
+  }
+  .lounge-section-head {
+    display: block;
+  }
+}
+`;
