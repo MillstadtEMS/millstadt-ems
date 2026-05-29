@@ -9,6 +9,7 @@ import { listAcksForViewer, type Ack } from "@/lib/lounge/acks";
 import LoungeShell from "@/components/lounge/LoungeShell";
 import Wall from "@/components/lounge/Wall";
 import PasskeyPrompt from "@/components/lounge/PasskeyPrompt";
+import TodayEventsWidget from "@/components/lounge/TodayEventsWidget";
 import WelcomeOverlay from "@/components/lounge/WelcomeOverlay";
 import CoffeePrankOverlay from "@/components/lounge/CoffeePrankOverlay";
 
@@ -51,6 +52,8 @@ export default async function LoungeHome() {
         />
 
         {expiring.length > 0 && <CertAlertsBanner certs={expiring} />}
+
+        <TodayEventsWidget />
 
         <div className="lounge-command-grid">
           <div className="lounge-main-stack">
