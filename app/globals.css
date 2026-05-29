@@ -551,14 +551,6 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* ── Mobile app-shell experience ─────────────────────────────────────── */
-@keyframes mems-sheet-up {
-  0%   { transform: translateY(28px); opacity: 0; }
-  100% { transform: translateY(0);    opacity: 1; }
-}
-@keyframes mems-sheet-fade {
-  0%   { opacity: 0; }
-  100% { opacity: 1; }
-}
 
 /* Buttery scroll + no double-tap zoom delay on phones */
 html {
@@ -571,20 +563,10 @@ body {
 }
 
 @media (max-width: 767px) {
-  /* Show the bottom tab bar on phones */
-  .mems-mobile-tabbar {
-    display: block !important;
-  }
-
-  /* Reserve room below content so the tab bar never overlaps */
+  /* Reserve room below content so Nav.tsx's MobileBottomNav doesn't
+     overlap the page footer or tail content */
   .mems-main-pad {
     padding-bottom: calc(78px + env(safe-area-inset-bottom));
-  }
-
-  /* The floating Lounge button overlaps the tab bar — tuck it into the
-     "More" sheet instead by hiding the floater on phones */
-  a[aria-label="Employee Lounge"] {
-    display: none !important;
   }
 
   /* Bigger, more legible default sizing for body copy */

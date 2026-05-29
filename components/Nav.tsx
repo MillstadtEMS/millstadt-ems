@@ -51,6 +51,7 @@ const MENU_GROUPS = [
 const QUICK_LINKS = [
   { href: "/", label: "Home" },
   { href: "/contact", label: "Contact Us" },
+  { href: "/lounge", label: "Employee Lounge", featured: true },
 ];
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -125,14 +126,16 @@ export default function Nav() {
           <div className="wrap py-5">
 
             {/* Quick links row */}
-            <div className="flex gap-2 mb-5 pb-5 border-b border-white/6">
+            <div className="flex flex-wrap gap-2 mb-5 pb-5 border-b border-white/6">
               {QUICK_LINKS.map(l => (
                 <Link
                   key={l.href}
                   href={l.href}
                   onClick={() => setOpen(false)}
                   className={`px-5 py-2.5 rounded-xl font-black text-sm transition-colors border ${
-                    isActive(l.href)
+                    l.featured
+                      ? "bg-[#f0b429] text-[#040d1a] border-[#f0b429] hover:bg-[#fcd34d]"
+                      : isActive(l.href)
                       ? "bg-[#f0b429]/10 text-[#f0b429] border-[#f0b429]/20"
                       : "text-slate-300 hover:text-white border-white/10 hover:border-white/20 hover:bg-white/5"
                   }`}
@@ -198,7 +201,7 @@ function MobileBottomNav({
     { href: "/", label: "Home", icon: <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg> },
     { href: "/weather", label: "Weather", icon: <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg> },
     { href: "/whats-happening", label: "Community", icon: <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg> },
-    { href: "/donate", label: "Donate", icon: <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> },
+    { href: "/lounge", label: "Lounge", icon: <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M4 18v-2a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v2h1v2H3v-2h1zm2 0h12v-2a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v2zm1-7V7a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v4h-2V7a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v4H7z"/></svg> },
   ];
 
   return (

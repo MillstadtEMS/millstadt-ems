@@ -1,8 +1,6 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import LoungeButton from "./LoungeButton";
-import MobileTabBar from "./MobileTabBar";
 
 export default function SiteShell({
   header,
@@ -37,8 +35,6 @@ export default function SiteShell({
         {children}
       </main>
       {footer}
-      <LoungeButton />
-      <MobileTabBar />
     </>
   );
 }
