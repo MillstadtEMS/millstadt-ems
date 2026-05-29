@@ -66,30 +66,65 @@ export async function PUT(req: NextRequest) {
     return t === "" ? null : t;
   };
 
-  await updateEmployee(session.id, {
-    email: s(body.email),
-    phone: s(body.phone),
-    dob: s(body.dob),
-    addressStreet: s(body.addressStreet),
-    addressCity: s(body.addressCity),
-    addressState: s(body.addressState),
-    addressZip: s(body.addressZip),
-    driverLicenseNum: s(body.driverLicenseNum),
-    driverLicenseState: s(body.driverLicenseState),
-    ecName: s(body.ecName),
-    ecRelationship: s(body.ecRelationship),
-    ecPhone: s(body.ecPhone),
-    ec2Name: s(body.ec2Name),
-    ec2Relationship: s(body.ec2Relationship),
-    ec2Phone: s(body.ec2Phone),
-    shirtSize: s(body.shirtSize),
-    pantSize: s(body.pantSize),
-    jacketSize: s(body.jacketSize),
-    allergies: s(body.allergies),
-    medicalConditions: s(body.medicalConditions),
-    bloodType: s(body.bloodType),
-    markProfileCompleted: true,
-  });
+  try {
+    await updateEmployee(session.id, {
+      email: s(body.email),
+      phone: s(body.phone),
+      dob: s(body.dob),
+      addressStreet: s(body.addressStreet),
+      addressCity: s(body.addressCity),
+      addressState: s(body.addressState),
+      addressZip: s(body.addressZip),
+      driverLicenseNum: s(body.driverLicenseNum),
+      driverLicenseState: s(body.driverLicenseState),
+      ecName: s(body.ecName),
+      ecRelationship: s(body.ecRelationship),
+      ecPhone: s(body.ecPhone),
+      ec2Name: s(body.ec2Name),
+      ec2Relationship: s(body.ec2Relationship),
+      ec2Phone: s(body.ec2Phone),
+      shirtSize: s(body.shirtSize),
+      pantSize: s(body.pantSize),
+      jacketSize: s(body.jacketSize),
+      allergies: s(body.allergies),
+      medicalConditions: s(body.medicalConditions),
+      bloodType: s(body.bloodType),
+      markProfileCompleted: true,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Unknown error";
+    console.error("[me/profile PUT] updateEmployee failed:", e);
+    return NextResponse.json({ error: `Save failed: ${msg}` }, { status: 500 });
+  }
 
-  return NextResponse.json({ ok: true });
+  // Echo the saved state back so the client can confirm what's actually
+  // in the database instead of trusting its own form state.
+  const row = await getEmployee(session.id);
+  return NextResponse.json({
+    ok: true,
+    profile: row ? {
+      email: row.email,
+      phone: row.phone,
+      dob: row.dob,
+      addressStreet: row.addressStreet,
+      addressCity: row.addressCity,
+      addressState: row.addressState,
+      addressZip: row.addressZip,
+      driverLicenseNum: row.driverLicenseNum,
+      driverLicenseState: row.driverLicenseState,
+      ecName: row.ecName,
+      ecRelationship: row.ecRelationship,
+      ecPhone: row.ecPhone,
+      ec2Name: row.ec2Name,
+      ec2Relationship: row.ec2Relationship,
+      ec2Phone: row.ec2Phone,
+      shirtSize: row.shirtSize,
+      pantSize: row.pantSize,
+      jacketSize: row.jacketSize,
+      allergies: row.allergies,
+      medicalConditions: row.medicalConditions,
+      bloodType: row.bloodType,
+      profileCompletedAt: row.profileCompletedAt,
+    } : null,
+  });
 }

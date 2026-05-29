@@ -38,6 +38,7 @@ interface ProfileInitial {
 export default function AboutMeForm({ initial }: { initial: ProfileInitial }) {
   const router = useRouter();
   const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const photoCameraRef = useRef<HTMLInputElement | null>(null);
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<null | "ok" | "err">(null);
@@ -107,7 +108,12 @@ export default function AboutMeForm({ initial }: { initial: ProfileInitial }) {
     setPhotoBusy(true);
     setPhotoStatus(null);
     try {
-      if (!file.type.startsWith("image/")) {
+      // macOS Safari sometimes gives HEIC files an empty MIME — fall back
+      // to the filename extension so we don't reject real camera files.
+      const looksLikeImage =
+        (file.type || "").toLowerCase().startsWith("image/") ||
+        /\.(jpe?g|png|webp|gif|heic|heif|avif|bmp|tiff?)$/i.test(file.name || "");
+      if (!looksLikeImage) {
         setPhotoStatus({ kind: "err", message: "Choose an image file." });
         return;
       }
@@ -191,8 +197,48 @@ export default function AboutMeForm({ initial }: { initial: ProfileInitial }) {
           bloodType: form.bloodType,
         }),
       });
-      setSaved(res.ok ? "ok" : "err");
-    } catch {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSaved("err");
+        console.error("[AboutMe save] failed:", data?.error || res.status);
+      } else {
+        setSaved("ok");
+        // Sync our local form state to whatever actually landed in the DB
+        // so the user immediately sees the persisted values.
+        if (data?.profile) {
+          const p = data.profile;
+          setForm((s) => ({
+            ...s,
+            email: p.email ?? "",
+            phone: p.phone ?? "",
+            dob: p.dob ?? "",
+            addressStreet: p.addressStreet ?? "",
+            addressCity: p.addressCity ?? "",
+            addressState: p.addressState ?? "",
+            addressZip: p.addressZip ?? "",
+            driverLicenseNum: p.driverLicenseNum ?? "",
+            driverLicenseState: p.driverLicenseState ?? "",
+            ecName: p.ecName ?? "",
+            ecRelationship: p.ecRelationship ?? "",
+            ecPhone: p.ecPhone ?? "",
+            ec2Name: p.ec2Name ?? "",
+            ec2Relationship: p.ec2Relationship ?? "",
+            ec2Phone: p.ec2Phone ?? "",
+            shirtSize: p.shirtSize ?? "",
+            pantSize: p.pantSize ?? "",
+            jacketSize: p.jacketSize ?? "",
+            allergies: p.allergies ?? "",
+            medicalConditions: p.medicalConditions ?? "",
+            bloodType: p.bloodType ?? "",
+            profileCompletedAt: p.profileCompletedAt ?? s.profileCompletedAt,
+          }));
+        }
+        // Refresh the route so server-rendered initial state on the next
+        // mount reflects the save.
+        router.refresh();
+      }
+    } catch (err) {
+      console.error("[AboutMe save] threw:", err);
       setSaved("err");
     } finally {
       setSaving(false);
@@ -234,10 +280,24 @@ export default function AboutMeForm({ initial }: { initial: ProfileInitial }) {
             <p style={{ color: "#cbd5e1", fontSize: 14, lineHeight: 1.55, margin: "0 0 14px" }}>
               Add a headshot for the Wall, comments, Messenger, and your lounge identity chip.
             </p>
+            {/* Library / file picker — accepts HEIC, JPG, PNG, WebP, AVIF… */}
             <input
               ref={photoInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
+              accept="image/*,.heic,.heif,.avif"
+              style={{ display: "none" }}
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0] ?? null;
+                event.currentTarget.value = "";
+                if (file) void uploadPhoto(file);
+              }}
+            />
+            {/* Camera capture — iPhone / Android browsers open the camera */}
+            <input
+              ref={photoCameraRef}
+              type="file"
+              accept="image/*"
+              capture="user"
               style={{ display: "none" }}
               onChange={(event) => {
                 const file = event.currentTarget.files?.[0] ?? null;
@@ -246,6 +306,26 @@ export default function AboutMeForm({ initial }: { initial: ProfileInitial }) {
               }}
             />
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <button
+                type="button"
+                disabled={photoBusy}
+                onClick={() => photoCameraRef.current?.click()}
+                style={{
+                  padding: "10px 16px",
+                  background: photoBusy ? "rgba(56,189,248,0.40)" : "#38bdf8",
+                  color: "#040d1a",
+                  border: 0,
+                  borderRadius: 11,
+                  fontSize: 12,
+                  fontWeight: 900,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  cursor: photoBusy ? "wait" : "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                📷 Take photo
+              </button>
               <button
                 type="button"
                 disabled={photoBusy}
@@ -264,7 +344,7 @@ export default function AboutMeForm({ initial }: { initial: ProfileInitial }) {
                   fontFamily: "inherit",
                 }}
               >
-                {photoBusy ? "Working..." : photoUrl ? "Change photo" : "Upload photo"}
+                {photoBusy ? "Working..." : photoUrl ? "Change photo" : "Choose photo"}
               </button>
               {photoUrl && (
                 <button

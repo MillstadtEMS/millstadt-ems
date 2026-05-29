@@ -15,12 +15,22 @@ export const runtime = "nodejs";
 
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 
-function extensionFor(type: string): string | null {
-  if (type === "image/jpeg" || type === "image/jpg") return "jpg";
-  if (type === "image/png") return "png";
-  if (type === "image/webp") return "webp";
-  if (type === "image/gif") return "gif";
-  return null;
+// Accept anything the browser considers an image — including HEIC/HEIF
+// straight off an iPhone camera roll, AVIF from newer Android, plus
+// macOS Safari which sometimes sends an empty content-type. Falls back
+// to the filename extension when MIME is missing.
+function extensionFor(type: string, fileName: string): string {
+  const t = (type || "").toLowerCase();
+  if (t === "image/jpeg" || t === "image/jpg") return "jpg";
+  if (t === "image/png") return "png";
+  if (t === "image/webp") return "webp";
+  if (t === "image/gif") return "gif";
+  if (t === "image/heic" || t === "image/heif") return "heic";
+  if (t === "image/avif") return "avif";
+  if (t === "image/bmp") return "bmp";
+  if (t === "image/tiff" || t === "image/tif") return "tif";
+  const m = (fileName || "").toLowerCase().match(/\.([a-z0-9]{2,5})$/);
+  return m ? m[1] : "img";
 }
 
 export async function POST(req: NextRequest) {
@@ -37,15 +47,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Image too large. Max size is 8 MB." }, { status: 400 });
   }
 
-  const ext = extensionFor(file.type);
-  if (!ext) {
-    return NextResponse.json({ error: "Use a JPG, PNG, WebP, or GIF image." }, { status: 400 });
+  // Reject only when the upload clearly isn't an image at all.
+  const looksLikeImage =
+    (file.type || "").toLowerCase().startsWith("image/") ||
+    /\.(jpe?g|png|webp|gif|heic|heif|avif|bmp|tiff?)$/i.test(file.name || "");
+  if (!looksLikeImage) {
+    return NextResponse.json({ error: "Choose an image (JPG, PNG, HEIC, etc.)" }, { status: 400 });
   }
 
+  const ext = extensionFor(file.type, file.name);
   const path = `lounge/employees/${session.id}/profile-${Date.now()}.${ext}`;
   const blob = await put(path, file, {
     access: "public",
-    contentType: file.type,
+    contentType: file.type || "application/octet-stream",
   });
 
   if (employee.photoUrl && employee.photoUrl !== blob.url) {
