@@ -180,13 +180,30 @@ function Composer({
     if (!files || files.length === 0) return;
     setUploading(true);
     try {
+      // Client-side upload via signed token — required for any file over
+      // ~4MB (phone videos especially), since Vercel's function body cap
+      // refuses larger multipart POSTs.
+      const { upload } = await import("@vercel/blob/client");
       for (const f of Array.from(files)) {
-        const form = new FormData();
-        form.append("file", f);
-        const r = await fetch("/api/lounge/feed/media", { method: "POST", body: form });
-        if (r.ok) {
-          const d = await r.json();
-          setMedia((s) => [...s, { url: d.url, kind: d.kind, name: d.name }]);
+        try {
+          const pathname = `lounge-wall/${Date.now()}-${(f.name || "upload").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 100)}`;
+          const blob = await upload(pathname, f, {
+            access: "public",
+            handleUploadUrl: "/api/lounge/feed/media",
+            contentType: f.type || undefined,
+            clientPayload: JSON.stringify({ mime: f.type || "" }),
+            multipart: true,
+          });
+          const kind = (f.type || "").startsWith("video/")
+            ? "video"
+            : (f.type || "").startsWith("image/")
+              ? "image"
+              : /\.(mp4|mov|webm|m4v|3gp|avi)$/i.test(f.name)
+                ? "video"
+                : "image";
+          setMedia((s) => [...s, { url: blob.url, kind, name: f.name }]);
+        } catch (e) {
+          console.error("[wall upload]", e);
         }
       }
     } finally {
