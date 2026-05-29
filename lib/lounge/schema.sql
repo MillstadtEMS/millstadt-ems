@@ -69,6 +69,103 @@ ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS allergies           TEXT;
 ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS medical_conditions  TEXT;
 ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS profile_completed_at TIMESTAMPTZ;
 
+-- ═══════════════════════════════════════════════════════════════════════
+-- PERSONNEL RECORDS (admin-only personnel file)
+-- ═══════════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS lounge_personnel_records (
+    id                       TEXT PRIMARY KEY,
+    employee_id              TEXT NOT NULL REFERENCES lounge_employees(id) ON DELETE CASCADE,
+    category                 TEXT NOT NULL,   -- 'conduct' | 'performance' | 'attendance' | 'accommodations' | 'clinical' | 'positive' | 'attachments'
+    record_type              TEXT NOT NULL,   -- e.g. 'verbal_counseling', 'written_warning', 'commendation', 'ada_accommodation', ...
+    title                    TEXT NOT NULL,
+    summary                  TEXT,
+    action_taken             TEXT,
+    severity                 TEXT NOT NULL DEFAULT 'informational',  -- informational | coaching | minor | moderate | serious | critical
+    status                   TEXT NOT NULL DEFAULT 'active',          -- draft | active | pending_review | resolved | archived
+    incident_date            DATE,
+    created_by               TEXT REFERENCES lounge_employees(id) ON DELETE SET NULL,
+    supervisor_id            TEXT REFERENCES lounge_employees(id) ON DELETE SET NULL,
+    witnesses                TEXT,
+    related_unit             TEXT,
+    related_call             TEXT,
+    follow_up_required       BOOLEAN NOT NULL DEFAULT FALSE,
+    follow_up_due_date       DATE,
+    follow_up_completed_at   TIMESTAMPTZ,
+    employee_visible         BOOLEAN NOT NULL DEFAULT FALSE,
+    restricted_visibility    BOOLEAN NOT NULL DEFAULT FALSE,  -- medical/ADA/accommodation — HR-only
+    acknowledgment_required  BOOLEAN NOT NULL DEFAULT FALSE,
+    acknowledged_at          TIMESTAMPTZ,
+    acknowledged_signature   TEXT,           -- base64 PNG
+    employee_response        TEXT,
+    related_policy           TEXT,
+    related_record_id        TEXT REFERENCES lounge_personnel_records(id) ON DELETE SET NULL,
+    locked                   BOOLEAN NOT NULL DEFAULT FALSE,
+    retention_category       TEXT,
+    archive_date             DATE,
+    -- Accommodation-specific fields (used only when category='accommodations')
+    accommodation_type       TEXT,
+    accommodation_start      DATE,
+    accommodation_end        DATE,
+    accommodation_review     DATE,
+    work_limitations         TEXT,
+    approved_by              TEXT REFERENCES lounge_employees(id) ON DELETE SET NULL,
+    admin_notes              TEXT,
+    created_at               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS lounge_pr_employee_idx
+    ON lounge_personnel_records (employee_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS lounge_pr_category_idx
+    ON lounge_personnel_records (category, status);
+CREATE INDEX IF NOT EXISTS lounge_pr_ack_idx
+    ON lounge_personnel_records (employee_id, acknowledgment_required)
+    WHERE acknowledgment_required = TRUE AND acknowledged_at IS NULL;
+CREATE INDEX IF NOT EXISTS lounge_pr_followup_idx
+    ON lounge_personnel_records (follow_up_due_date)
+    WHERE follow_up_required = TRUE AND follow_up_completed_at IS NULL;
+CREATE INDEX IF NOT EXISTS lounge_pr_accommodation_review_idx
+    ON lounge_personnel_records (accommodation_review)
+    WHERE category = 'accommodations' AND status = 'active';
+
+CREATE TABLE IF NOT EXISTS lounge_personnel_attachments (
+    id                  TEXT PRIMARY KEY,
+    record_id           TEXT NOT NULL REFERENCES lounge_personnel_records(id) ON DELETE CASCADE,
+    employee_id         TEXT NOT NULL REFERENCES lounge_employees(id) ON DELETE CASCADE,
+    file_name           TEXT NOT NULL,
+    file_url            TEXT NOT NULL,    -- Vercel Blob URL
+    file_mime           TEXT,
+    file_size           INTEGER,
+    document_category   TEXT,
+    visibility_level    TEXT NOT NULL DEFAULT 'admin', -- 'admin' | 'employee' | 'restricted_hr'
+    admin_notes         TEXT,
+    employee_notes      TEXT,
+    replaced_by_id      TEXT REFERENCES lounge_personnel_attachments(id) ON DELETE SET NULL,
+    uploaded_by         TEXT REFERENCES lounge_employees(id) ON DELETE SET NULL,
+    uploaded_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS lounge_pa_record_idx
+    ON lounge_personnel_attachments (record_id, uploaded_at DESC);
+CREATE INDEX IF NOT EXISTS lounge_pa_employee_idx
+    ON lounge_personnel_attachments (employee_id);
+
+-- Audit log: who touched a personnel record/attachment and what they did.
+CREATE TABLE IF NOT EXISTS lounge_personnel_audit (
+    id              BIGSERIAL PRIMARY KEY,
+    record_id       TEXT REFERENCES lounge_personnel_records(id) ON DELETE CASCADE,
+    attachment_id   TEXT REFERENCES lounge_personnel_attachments(id) ON DELETE CASCADE,
+    employee_id     TEXT REFERENCES lounge_employees(id) ON DELETE SET NULL,  -- subject employee
+    actor_id        TEXT REFERENCES lounge_employees(id) ON DELETE SET NULL,  -- who did the action
+    action          TEXT NOT NULL,   -- view | create | update | upload | download | delete | archive | visibility_change | acknowledge
+    detail          JSONB,
+    ip              TEXT,
+    user_agent      TEXT,
+    at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS lounge_paudit_record_idx
+    ON lounge_personnel_audit (record_id, at DESC);
+CREATE INDEX IF NOT EXISTS lounge_paudit_employee_idx
+    ON lounge_personnel_audit (employee_id, at DESC);
+
 -- Per-employee captured signatures (truck check + inventory submissions).
 CREATE TABLE IF NOT EXISTS lounge_signatures (
     id              TEXT PRIMARY KEY,

@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import PersonnelRecordsPanel from "@/components/admin/PersonnelRecordsPanel";
 
 interface EmpDto {
   id: string;
@@ -528,6 +529,9 @@ export default function EmployeeDetailPage() {
             </div>
           )}
         </Card>
+
+        {/* ── Personnel Records (admin-only) ── */}
+        <PersonnelRecordsPanel employeeId={emp.id} />
 
         {/* ── Files ── */}
         <Card title="Files (certs, licenses, write-ups)">

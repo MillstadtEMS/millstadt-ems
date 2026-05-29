@@ -25,6 +25,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { href: "/lounge",              label: "The Wall",        emoji: "📰", eyebrow: "Home" },
   { href: "/lounge/about-me",     label: "About Me",        emoji: "🪪" },
+  { href: "/lounge/my-file",      label: "My Employee File", emoji: "🗂️" },
   { href: "/lounge/open-shifts",  label: "Open Shifts",     emoji: "📅" },
   { href: "/lounge/acks",         label: "Acknowledgments", emoji: "✅" },
   { href: "/lounge/incidents",    label: "Maintenance & Reports", emoji: "🛠️" },
