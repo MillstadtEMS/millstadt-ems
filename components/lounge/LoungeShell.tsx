@@ -27,29 +27,60 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { href: "/lounge",              label: "The Wall",         icon: "newspaper", eyebrow: "Home" },
-  { href: "/lounge/notifications", label: "Notifications",   icon: "bell" },
-  { href: "/lounge/games",        label: "Games",            icon: "gamepad" },
-  { href: "/lounge/about-me",     label: "About Me",         icon: "badge" },
-  { href: "/lounge/certs",        label: "My Certifications", icon: "certificate" },
-  { href: "/lounge/my-file",      label: "My Employee File", icon: "folder" },
-  { href: "/lounge/messages",     label: "Messages",         icon: "message" },
-  { href: "/lounge/acks",         label: "Acknowledgments",  icon: "checkCircle" },
-  { href: "/lounge/incidents",    label: "Incident Reports",   icon: "alert" },
-  { href: "/lounge/maintenance",  label: "Maintenance Request", icon: "wrench" },
-  { href: "/lounge/truckwash",    label: "Truck Wash Log",     icon: "droplet" },
-  { href: "/lounge/hospitals",    label: "Hospitals",          icon: "hospital" },
+  { href: "/lounge",              label: "The Wall",        icon: "newspaper", eyebrow: "Home" },
+  { href: "/lounge/notifications", label: "Notifications",  icon: "bell" },
+  { href: "/lounge/messages",     label: "Messages",        icon: "message" },
+  { href: "/lounge/acks",         label: "Acknowledgments", icon: "checkCircle" },
+  { href: "/lounge/my-file",      label: "My File",         icon: "folder" },
+  { href: "/lounge/certs",        label: "Certifications",  icon: "certificate" },
+  { href: "/lounge/about-me",     label: "Profile & Photo", icon: "badge" },
+  { href: "/lounge/incidents",    label: "Incident Reports", icon: "alert" },
+  { href: "/lounge/maintenance",  label: "Maintenance",     icon: "wrench" },
+  { href: "/lounge/truckwash",    label: "Truck Wash Log",  icon: "droplet" },
+  { href: "/lounge/hospitals",    label: "Hospitals",       icon: "hospital" },
   { href: "/api/lounge/sso/truckcheck", label: "Truck Check", icon: "ambulance", external: true },
   { href: "/api/lounge/sso/inventory",  label: "Inventory",   icon: "box", external: true },
+  { href: "/lounge/games",        label: "Training Games",  icon: "gamepad" },
   // Admin section — collapsed under "Admin Tools" group in the sidebar.
+  { href: "/admin/calls",                 label: "Ticker Editor",         icon: "ticker", adminOnly: true },
+  { href: "/admin/employees",             label: "Employee Records",      icon: "users", adminOnly: true },
   { href: "/admin/filing-cabinet",        label: "Filing Cabinet",        icon: "archive", adminOnly: true },
+  { href: "/admin/website-config",        label: "Website Configuration", icon: "gear", adminOnly: true },
   { href: "/admin/incidents",             label: "Incident Reports",      icon: "alert", adminOnly: true },
   { href: "/admin/truckwash",             label: "Truck Wash Log",        icon: "droplet", adminOnly: true },
   { href: "/admin/hospitals",             label: "Hospitals Directory",   icon: "hospital", adminOnly: true },
   { href: "/admin/hospitals/suggestions", label: "Hospital Suggestions",  icon: "mail", adminOnly: true },
   { href: "/admin/polls",                 label: "Polls & Surveys",       icon: "chart", adminOnly: true },
-  { href: "/admin/calls",                 label: "Ticker Editor",         icon: "ticker", adminOnly: true },
-  { href: "/admin/website-config",        label: "Website Configuration", icon: "gear", adminOnly: true },
+];
+
+const CREW_NAV_SECTIONS = [
+  {
+    title: "Command",
+    hrefs: ["/lounge", "/lounge/notifications", "/lounge/messages"],
+  },
+  {
+    title: "Required",
+    hrefs: ["/lounge/acks", "/lounge/my-file", "/lounge/certs", "/lounge/about-me"],
+  },
+  {
+    title: "Forms & Reports",
+    hrefs: ["/lounge/incidents", "/lounge/maintenance", "/lounge/truckwash"],
+  },
+  {
+    title: "Resources",
+    hrefs: ["/lounge/hospitals", "/api/lounge/sso/truckcheck", "/api/lounge/sso/inventory", "/lounge/games"],
+  },
+];
+
+const ADMIN_NAV_SECTIONS = [
+  {
+    title: "Command",
+    hrefs: ["/admin/calls", "/admin/employees", "/admin/filing-cabinet", "/admin/website-config"],
+  },
+  {
+    title: "Operations",
+    hrefs: ["/admin/incidents", "/admin/truckwash", "/admin/hospitals", "/admin/hospitals/suggestions", "/admin/polls"],
+  },
 ];
 
 export default function LoungeShell({
@@ -195,7 +226,7 @@ export default function LoungeShell({
               animation: "lounge-drawer-in 220ms cubic-bezier(0.22,1,0.36,1)",
             }}
           >
-            <SidebarBody me={me} items={items} pathname={pathname} onNavigate={() => setDrawerOpen(false)} />
+            <SidebarBody me={me} items={items} pathname={pathname} mobile onNavigate={() => setDrawerOpen(false)} />
           </div>
         </div>
       )}
@@ -216,7 +247,7 @@ export default function LoungeShell({
           className="lounge-sidebar-desktop"
           style={{
             borderRight: "1px solid rgba(255,255,255,0.06)",
-            padding: "26px 18px",
+            padding: "20px 14px",
             position: "sticky",
             top: 0,
             alignSelf: "start",
@@ -332,19 +363,26 @@ type BottomTab =
 const BOTTOM_TABS: BottomTab[] = [
   { kind: "link", href: "/lounge",            label: "Wall",      icon: "newspaper", match: (p) => p === "/lounge" || p === "/lounge/" },
   { kind: "link", href: "/lounge/messages",   label: "Chat",      icon: "message", match: (p) => p.startsWith("/lounge/messages") },
-  { kind: "link", href: "/lounge/hospitals",  label: "Hospitals", icon: "hospital", match: (p) => p.startsWith("/lounge/hospitals") },
+  { kind: "link", href: "/lounge/acks",       label: "Acks",      icon: "checkCircle", match: (p) => p.startsWith("/lounge/acks") },
   { kind: "link", href: "/lounge/my-file",    label: "My File",   icon: "folder", match: (p) => p.startsWith("/lounge/my-file") || p.startsWith("/lounge/certs") || p.startsWith("/lounge/about-me") },
   { kind: "more", href: "#more",              label: "More",      icon: "menu" },
 ];
 
 function SidebarBody({
-  me, items, pathname, onNavigate,
+  me, items, pathname, onNavigate, mobile = false,
 }: {
   me: SidebarMe;
   items: NavItem[];
   pathname: string;
   onNavigate?: () => void;
+  /** True only when this sidebar instance is the phone drawer. The
+   *  "View desktop site" toggle is only meaningful on small screens, so
+   *  we hide it on the persistent desktop sidebar. */
+  mobile?: boolean;
 }) {
+  const crewItems = items.filter((n) => !n.adminOnly);
+  const adminItems = items.filter((n) => n.adminOnly);
+
   return (
     <>
       <div style={{
@@ -352,14 +390,14 @@ function SidebarBody({
         flexDirection: "column",
         alignItems: "center",
         gap: 8,
-        marginBottom: 18,
-        padding: "14px 12px 16px",
+        marginBottom: 14,
+        padding: "11px 10px 13px",
         background: "linear-gradient(180deg, rgba(240,180,41,0.06) 0%, transparent 100%)",
         border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: 16,
+        borderRadius: 14,
       }}>
         <div style={{ filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.45)) drop-shadow(0 0 18px rgba(60,120,255,0.20))" }}>
-          <Image src="/images/millstadt-ems/crest.png" alt="" width={76} height={76} style={{ display: "block", objectFit: "contain" }} />
+          <Image src="/images/millstadt-ems/crest.png" alt="" width={62} height={62} style={{ display: "block", objectFit: "contain" }} />
         </div>
         <div style={{ lineHeight: 1.1, textAlign: "center" }}>
           <div style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.30em", textTransform: "uppercase" }}>
@@ -374,19 +412,27 @@ function SidebarBody({
         <SignOutButton />
       </div>
 
-      <ViewModeToggle />
+      {mobile && <ViewModeToggle />}
 
-      <nav style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 2 }}>
-        {/* Crew section header */}
-        <div style={navSection}>Crew</div>
-        {items.filter((n) => !n.adminOnly).map((n) => (
-          <NavRow key={n.href} item={n} active={isActive(pathname, n)} onNavigate={onNavigate} />
-        ))}
+      <nav style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 9 }}>
+        {CREW_NAV_SECTIONS.map((section) => {
+          const sectionItems = pickNavItems(crewItems, section.hrefs);
+          if (sectionItems.length === 0) return null;
+          return (
+            <NavSection
+              key={section.title}
+              title={section.title}
+              items={sectionItems}
+              pathname={pathname}
+              onNavigate={onNavigate}
+            />
+          );
+        })}
 
         {/* Collapsible Admin Tools group */}
-        {items.some((n) => n.adminOnly) && (
+        {adminItems.length > 0 && (
           <AdminToolsGroup
-            items={items.filter((n) => n.adminOnly)}
+            items={adminItems}
             pathname={pathname}
             onNavigate={onNavigate}
           />
@@ -397,13 +443,42 @@ function SidebarBody({
   );
 }
 
+function pickNavItems(items: NavItem[], hrefs: string[]): NavItem[] {
+  return hrefs
+    .map((href) => items.find((item) => item.href === href))
+    .filter((item): item is NavItem => Boolean(item));
+}
+
+function NavSection({
+  title, items, pathname, onNavigate,
+}: {
+  title: string;
+  items: NavItem[];
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <div style={navSection}>{title}</div>
+      {items.map((item) => (
+        <NavRow
+          key={item.href}
+          item={item}
+          active={isActive(pathname, item)}
+          onNavigate={onNavigate}
+        />
+      ))}
+    </div>
+  );
+}
+
 const navSection: React.CSSProperties = {
   color: "#94a3b8",
   fontSize: 10,
   fontWeight: 900,
-  letterSpacing: "0.30em",
+  letterSpacing: "0.24em",
   textTransform: "uppercase",
-  padding: "4px 12px 6px",
+  padding: "1px 10px 4px",
 };
 
 function NavRow({ item, active, onNavigate }: { item: NavItem; active: boolean; onNavigate?: () => void }) {
@@ -416,8 +491,8 @@ function NavRow({ item, active, onNavigate }: { item: NavItem; active: boolean; 
         display: "flex",
         alignItems: "center",
         gap: 12,
-        padding: "10px 12px",
-        borderRadius: 12,
+        padding: "8px 10px",
+        borderRadius: 11,
         color: active ? "#f0b429" : isAdminLink ? "#fde68a" : "#cbd5e1",
         background: active ? "rgba(240,180,41,0.12)" : "transparent",
         textDecoration: "none",
@@ -430,7 +505,7 @@ function NavRow({ item, active, onNavigate }: { item: NavItem; active: boolean; 
       <span
         aria-hidden
         style={{
-          width: 30, height: 30, borderRadius: 8,
+          width: 28, height: 28, borderRadius: 8,
           display: "inline-flex", alignItems: "center", justifyContent: "center",
           background: active ? "rgba(240,180,41,0.18)" : "rgba(255,255,255,0.045)",
           border: `1px solid ${active ? "rgba(240,180,41,0.34)" : "rgba(255,255,255,0.07)"}`,
@@ -499,10 +574,20 @@ function AdminToolsGroup({
         <span aria-hidden style={{ fontSize: 11, color: "#94a3b8" }}>{open ? "▾" : "▸"}</span>
       </button>
       {open && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 4, paddingLeft: 10, borderLeft: "1px solid rgba(253,186,116,0.20)" }}>
-          {items.map((n) => (
-            <NavRow key={n.href} item={n} active={isActive(pathname, n)} onNavigate={onNavigate} />
-          ))}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8, paddingLeft: 10, borderLeft: "1px solid rgba(253,186,116,0.20)" }}>
+          {ADMIN_NAV_SECTIONS.map((section) => {
+            const sectionItems = pickNavItems(items, section.hrefs);
+            if (sectionItems.length === 0) return null;
+            return (
+              <NavSection
+                key={section.title}
+                title={section.title}
+                items={sectionItems}
+                pathname={pathname}
+                onNavigate={onNavigate}
+              />
+            );
+          })}
         </div>
       )}
     </div>
@@ -632,6 +717,7 @@ type LoungeIconName =
   | "newspaper"
   | "ticker"
   | "toolbox"
+  | "users"
   | "wrench";
 
 function LoungeIcon({ name, size = 18 }: { name: LoungeIconName; size?: number }) {
@@ -663,6 +749,7 @@ function LoungeIcon({ name, size = 18 }: { name: LoungeIconName; size?: number }
     newspaper: <><path d="M4 5h14a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2V5Z" /><path d="M8 9h8" /><path d="M8 13h8" /><path d="M8 17h5" /></>,
     ticker: <><path d="M4 6h16v12H4z" /><path d="M7 10h5" /><path d="M14 10h3" /><path d="M7 14h10" /></>,
     toolbox: <><path d="M9 6V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1" /><path d="M4 8h16v11H4z" /><path d="M4 12h16" /><path d="M12 12v3" /></>,
+    users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" /><path d="M22 21v-2a4 4 0 0 0-3-3.9" /><path d="M16 3.1a4 4 0 0 1 0 7.8" /></>,
     wrench: <><path d="M14.7 6.3a4 4 0 0 0-5 5L3 18l3 3 6.7-6.7a4 4 0 0 0 5-5l-2.8 2.8-3-3 2.8-2.8Z" /></>,
   };
 
