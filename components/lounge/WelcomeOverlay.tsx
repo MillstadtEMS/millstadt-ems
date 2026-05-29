@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Drop the full-color crest at this path and it'll render through the
 // welcome animation. Until then we fall back to the white star-of-life SVG.
@@ -24,9 +24,17 @@ const TOTAL_MS = 5500;
 export default function WelcomeOverlay({ name, customImage }: { name: string; customImage?: string | null }) {
   const [phase, setPhase] = useState<"idle" | "playing" | "done">("idle");
   const [crestOk, setCrestOk] = useState(true);
+  const checked = useRef(false);
   const imageSrc = customImage || CREST_SRC;
 
   useEffect(() => {
+    // React 19 / Next 16 Strict Mode runs effects twice. Without this
+    // guard the first pass would consume the sessionStorage flag and
+    // the second pass would skip the animation, causing the intro to
+    // flicker for less than a second. The ref makes activation
+    // idempotent so the 5.5-second timeline always runs to completion.
+    if (checked.current) return;
+    checked.current = true;
     let active = false;
     try {
       if (sessionStorage.getItem("lounge:welcome") === "1") {

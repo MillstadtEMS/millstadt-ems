@@ -24,11 +24,13 @@ interface Reaction {
   firstName: string;
   lastName: string;
 }
+interface Mention { id: string; firstName: string; lastName: string }
 interface Post {
   id: string;
   author: Author;
   body: string;
   subject: string | null;
+  mentions: Mention[];
   media: { url: string; kind: "image" | "video" | "file"; name?: string }[];
   pinned: boolean;
   highlighted: boolean;
@@ -38,6 +40,8 @@ interface Post {
   createdAt: string;
   updatedAt: string;
 }
+
+interface RosterMember { id: string; firstName: string; lastName: string }
 
 const WALL_SUBJECT_TAGS = [
   "Agency announcements",
@@ -103,11 +107,12 @@ export default function Wall({ me }: { me: WallMe }) {
     body: string,
     media: { url: string; kind: "image" | "video" | "file"; name?: string }[],
     subject: WallSubjectTag | null,
+    mentions: string[],
   ) {
     const res = await fetch("/api/lounge/feed", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body, media, subject }),
+      body: JSON.stringify({ body, media, subject, mentions }),
     });
     if (res.ok) {
       const d = await res.json();
@@ -273,6 +278,7 @@ function Composer({
     body: string,
     media: { url: string; kind: "image" | "video" | "file"; name?: string }[],
     subject: WallSubjectTag | null,
+    mentions: string[],
   ) => Promise<void>;
 }) {
   return <ComposerInner me={me} onCreate={onCreate} />;
@@ -287,6 +293,7 @@ function ComposerInner({
     body: string,
     media: { url: string; kind: "image" | "video" | "file"; name?: string }[],
     subject: WallSubjectTag | null,
+    mentions: string[],
   ) => Promise<void>;
 }) {
   const [body, setBody] = useState("");
@@ -294,7 +301,61 @@ function ComposerInner({
   const [media, setMedia] = useState<{ url: string; kind: "image" | "video" | "file"; name?: string }[]>([]);
   const [uploading, setUploading] = useState(false);
   const [subject, setSubject] = useState<WallSubjectTag | null>(null);
+  const [roster, setRoster] = useState<RosterMember[]>([]);
+  const [mentioned, setMentioned] = useState<RosterMember[]>([]);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionAnchor, setMentionAnchor] = useState<number>(0);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    fetch("/api/lounge/roster")
+      .then((r) => r.ok ? r.json() : { employees: [] })
+      .then((d) => setRoster(Array.isArray(d.employees) ? d.employees : []));
+  }, []);
+
+  // Watch for @… mention triggers in the textarea
+  function onBodyChange(value: string) {
+    setBody(value);
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const caret = ta.selectionStart ?? value.length;
+    // Look back from caret for the most recent @
+    const beforeCaret = value.slice(0, caret);
+    const atIdx = beforeCaret.lastIndexOf("@");
+    if (atIdx === -1) { setMentionQuery(null); return; }
+    // Only trigger if @ is at start or after whitespace
+    if (atIdx > 0 && !/\s/.test(beforeCaret[atIdx - 1])) { setMentionQuery(null); return; }
+    const between = beforeCaret.slice(atIdx + 1);
+    if (/\s/.test(between)) { setMentionQuery(null); return; }
+    if (between.length > 30) { setMentionQuery(null); return; }
+    setMentionQuery(between.toLowerCase());
+    setMentionAnchor(atIdx);
+  }
+
+  const mentionMatches = mentionQuery === null
+    ? []
+    : roster
+        .filter((r) => `${r.firstName} ${r.lastName}`.toLowerCase().includes(mentionQuery))
+        .slice(0, 6);
+
+  function pickMention(r: RosterMember) {
+    const ta = textareaRef.current;
+    const before = body.slice(0, mentionAnchor);
+    const after = body.slice((ta?.selectionStart ?? body.length));
+    const display = `@${r.firstName} ${r.lastName}`;
+    const next = `${before}${display} ${after}`;
+    setBody(next);
+    setMentioned((s) => (s.find((m) => m.id === r.id) ? s : [...s, r]));
+    setMentionQuery(null);
+    // Restore caret after the inserted mention
+    requestAnimationFrame(() => {
+      if (!textareaRef.current) return;
+      const pos = (before + display + " ").length;
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(pos, pos);
+    });
+  }
 
   async function pickMedia() {
     fileRef.current?.click();
@@ -341,10 +402,17 @@ function ComposerInner({
     if ((!body.trim() && media.length === 0) || posting) return;
     setPosting(true);
     try {
-      await onCreate(body.trim(), media, subject);
+      // Only count mentions whose @First Last is still in the body
+      // text — if the user typed @ then deleted it, we shouldn't ping.
+      const liveMentions = mentioned.filter((m) =>
+        body.includes(`@${m.firstName} ${m.lastName}`)
+      );
+      await onCreate(body.trim(), media, subject, liveMentions.map((m) => m.id));
       setBody("");
       setMedia([]);
       setSubject(null);
+      setMentioned([]);
+      setMentionQuery(null);
     } finally {
       setPosting(false);
     }
@@ -361,28 +429,54 @@ function ComposerInner({
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
       }}
     >
-      <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+      <div style={{ display: "flex", gap: 12, alignItems: "flex-start", position: "relative" }}>
         <Avatar firstName={me.firstName} lastName={me.lastName} photoUrl={me.photoUrl} size={40} />
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit(); }}
-          placeholder="What's going on this shift?"
-          rows={2}
-          style={{
-            flex: 1,
-            background: "rgba(255,255,255,0.045)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: 14,
-            color: "white",
-            padding: "12px 14px",
-            fontSize: "0.95rem",
-            outline: "none",
-            fontFamily: "inherit",
-            resize: "vertical",
-            minHeight: 58,
-          }}
-        />
+        <div style={{ flex: 1, position: "relative" }}>
+          <textarea
+            ref={textareaRef}
+            value={body}
+            onChange={(e) => onBodyChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape" && mentionQuery !== null) { setMentionQuery(null); return; }
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
+            }}
+            placeholder="What's going on this shift? Type @ to tag someone."
+            rows={2}
+            style={{
+              width: "100%",
+              background: "rgba(255,255,255,0.045)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 14,
+              color: "white",
+              padding: "12px 14px",
+              fontSize: "0.95rem",
+              outline: "none",
+              fontFamily: "inherit",
+              resize: "vertical",
+              minHeight: 58,
+            }}
+          />
+          {mentionMatches.length > 0 && (
+            <div style={{
+              position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, zIndex: 30,
+              background: "#040d1a", border: "1px solid rgba(240,180,41,0.30)", borderRadius: 12,
+              boxShadow: "0 14px 30px rgba(0,0,0,0.45)", padding: 4, maxHeight: 240, overflowY: "auto",
+            }}>
+              {mentionMatches.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => pickMention(m)}
+                  style={{ display: "flex", width: "100%", gap: 10, alignItems: "center", padding: "8px 10px", background: "transparent", border: 0, color: "white", textAlign: "left", cursor: "pointer", borderRadius: 8, fontFamily: "inherit" }}
+                  onMouseOver={(e) => (e.currentTarget.style.background = "rgba(240,180,41,0.10)")}
+                  onMouseOut={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  <span style={{ fontSize: 13, fontWeight: 800 }}>{m.firstName} {m.lastName}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       {media.length > 0 && (
         <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
@@ -550,7 +644,7 @@ function PostCard({
       )}
 
       <p style={{ whiteSpace: "pre-wrap", margin: "12px 0 0", fontSize: "0.95rem", lineHeight: 1.55, color: "#e2e8f0" }}>
-        {post.body}
+        {renderBodyWithMentions(post.body, post.mentions)}
       </p>
 
       {post.media.length > 0 && (() => {
@@ -829,3 +923,37 @@ const ghostBtn: React.CSSProperties = {
   fontWeight: 700,
   fontFamily: "inherit",
 };
+
+// ── @-mention rendering ─────────────────────────────────────────────────
+// Splits the body on every matching "@First Last" substring and wraps
+// each hit in a highlighted span. Mentions are matched by exact display
+// name; if someone hand-types "@John" without picking John from the
+// suggest list, no highlight — that's intentional (avoids false hits).
+function renderBodyWithMentions(body: string, mentions: { id: string; firstName: string; lastName: string }[]) {
+  if (!mentions || mentions.length === 0) return body;
+  // Build a regex that matches any of the mention display names.
+  const names = Array.from(new Set(mentions.map((m) => `@${m.firstName} ${m.lastName}`)));
+  if (names.length === 0) return body;
+  const escaped = names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const re = new RegExp(`(${escaped.join("|")})`, "g");
+  const parts = body.split(re);
+  return parts.map((part, i) => {
+    const m = mentions.find((mm) => `@${mm.firstName} ${mm.lastName}` === part);
+    if (!m) return <span key={i}>{part}</span>;
+    return (
+      <span
+        key={i}
+        style={{
+          color: "#f0b429",
+          background: "rgba(240,180,41,0.10)",
+          padding: "1px 6px",
+          borderRadius: 6,
+          fontWeight: 800,
+        }}
+        title={`Mentioned: ${m.firstName} ${m.lastName}`}
+      >
+        {part}
+      </span>
+    );
+  });
+}

@@ -48,11 +48,14 @@ export const WALL_SUBJECT_TAGS = [
 ] as const;
 export type WallSubjectTag = (typeof WALL_SUBJECT_TAGS)[number];
 
+export interface FeedMention { id: string; firstName: string; lastName: string }
+
 export interface FeedPost {
   id: string;
   author: FeedAuthor;
   body: string;
   subject: WallSubjectTag | null;
+  mentions: FeedMention[];
   media: { url: string; kind: "image" | "video" | "file"; name?: string }[];
   pinned: boolean;
   highlighted: boolean;
@@ -68,6 +71,7 @@ interface DbPostRow {
   author_id: string;
   body: string;
   subject: string | null;
+  mentioned_ids: string[] | null;
   media: unknown;
   pinned: boolean;
   highlighted: boolean;
@@ -104,6 +108,7 @@ function rowToPost(
   viewerId: string,
   reactions: FeedReaction[],
   commentCount: number,
+  mentions: FeedMention[],
 ): FeedPost {
   return {
     id: r.id,
@@ -118,6 +123,7 @@ function rowToPost(
     },
     body: r.body,
     subject: (r.subject as WallSubjectTag | null) ?? null,
+    mentions,
     media: parseMedia(r.media),
     pinned: r.pinned,
     highlighted: r.highlighted,
@@ -129,13 +135,24 @@ function rowToPost(
   };
 }
 
+async function loadMentionMap(ids: string[]): Promise<Map<string, FeedMention>> {
+  if (ids.length === 0) return new Map();
+  const db = sql();
+  const rows = (await db`
+    SELECT id, first_name, last_name FROM lounge_employees WHERE id = ANY(${ids}::text[])
+  `) as unknown as { id: string; first_name: string; last_name: string }[];
+  const m = new Map<string, FeedMention>();
+  for (const r of rows) m.set(r.id, { id: r.id, firstName: r.first_name, lastName: r.last_name });
+  return m;
+}
+
 // ── Posts ──────────────────────────────────────────────────────────────
 
 export async function listFeed(viewerId: string, limit = 50): Promise<FeedPost[]> {
   const db = sql();
   const rows = (await db`
     SELECT p.id, p.author_id, p.body, p.media, p.pinned, p.highlighted,
-           p.saved_by, p.created_at, p.updated_at, p.subject,
+           p.saved_by, p.created_at, p.updated_at, p.subject, p.mentioned_ids,
            e.first_name AS author_first_name,
            e.last_name AS author_last_name,
            e.certification AS author_certification,
@@ -177,8 +194,17 @@ export async function listFeed(viewerId: string, limit = 50): Promise<FeedPost[]
   const cByPost = new Map<string, number>();
   for (const r of await cmtRows) cByPost.set(r.post_id, r.c);
 
+  const allMentionIds = Array.from(new Set(rows.flatMap((r) => r.mentioned_ids ?? [])));
+  const mentionMap = await loadMentionMap(allMentionIds);
+
   return rows.map((r) =>
-    rowToPost(r, viewerId, rxByPost.get(r.id) ?? [], cByPost.get(r.id) ?? 0),
+    rowToPost(
+      r,
+      viewerId,
+      rxByPost.get(r.id) ?? [],
+      cByPost.get(r.id) ?? 0,
+      (r.mentioned_ids ?? []).map((mid) => mentionMap.get(mid)).filter((m): m is FeedMention => !!m),
+    ),
   );
 }
 
@@ -189,7 +215,7 @@ export async function getPost(
   const db = sql();
   const rows = (await db`
     SELECT p.id, p.author_id, p.body, p.media, p.pinned, p.highlighted,
-           p.saved_by, p.created_at, p.updated_at, p.subject,
+           p.saved_by, p.created_at, p.updated_at, p.subject, p.mentioned_ids,
            e.first_name AS author_first_name,
            e.last_name AS author_last_name,
            e.certification AS author_certification,
@@ -221,7 +247,10 @@ export async function getPost(
     lastName: r.last_name,
   }));
   const count = (await cmtRows)[0]?.c ?? 0;
-  return rowToPost(rows[0], viewerId, reactions, count);
+  const mentionIds = rows[0].mentioned_ids ?? [];
+  const mentionMap = await loadMentionMap(mentionIds);
+  const mentions = mentionIds.map((mid) => mentionMap.get(mid)).filter((m): m is FeedMention => !!m);
+  return rowToPost(rows[0], viewerId, reactions, count, mentions);
 }
 
 let columnsEnsured = false;
@@ -229,6 +258,7 @@ async function ensurePostColumns() {
   if (columnsEnsured) return;
   const db = sql();
   await db`ALTER TABLE lounge_feed_posts ADD COLUMN IF NOT EXISTS subject TEXT`;
+  await db`ALTER TABLE lounge_feed_posts ADD COLUMN IF NOT EXISTS mentioned_ids TEXT[]`;
   await db`CREATE INDEX IF NOT EXISTS lounge_feed_posts_subject_idx ON lounge_feed_posts (subject)`;
   columnsEnsured = true;
 }
@@ -237,6 +267,7 @@ export async function createPost(input: {
   authorId: string;
   body: string;
   subject?: WallSubjectTag | null;
+  mentions?: string[];
   media?: { url: string; kind: "image" | "video" | "file"; name?: string }[];
 }): Promise<FeedPost> {
   await ensurePostColumns();
@@ -245,9 +276,13 @@ export async function createPost(input: {
   const subject = input.subject && (WALL_SUBJECT_TAGS as readonly string[]).includes(input.subject)
     ? input.subject
     : null;
+  const mentionedIds = Array.isArray(input.mentions)
+    ? Array.from(new Set(input.mentions.filter((m) => typeof m === "string" && m.length > 0)))
+    : [];
   await db`
-    INSERT INTO lounge_feed_posts (id, author_id, body, subject, media)
+    INSERT INTO lounge_feed_posts (id, author_id, body, subject, mentioned_ids, media)
     VALUES (${id}, ${input.authorId}, ${input.body}, ${subject},
+            ${mentionedIds}::text[],
             ${input.media ? JSON.stringify(input.media) : null}::jsonb)
   `;
   const post = await getPost(id, input.authorId);

@@ -28,10 +28,14 @@ export async function POST(req: NextRequest) {
     typeof body.subject === "string" && (WALL_SUBJECT_TAGS as readonly string[]).includes(body.subject)
       ? (body.subject as WallSubjectTag)
       : null;
+  const mentions = Array.isArray(body.mentions)
+    ? body.mentions.filter((m: unknown): m is string => typeof m === "string")
+    : [];
   const post = await createPost({
     authorId: me.id,
     body: text,
     subject,
+    mentions,
     media: Array.isArray(body.media) ? body.media : undefined,
   });
   return NextResponse.json({ post });
