@@ -22,36 +22,33 @@ const CREST_SRC = "/images/millstadt-ems/crest.png";
  */
 const TOTAL_MS = 5500;
 export default function WelcomeOverlay({ name, customImage }: { name: string; customImage?: string | null }) {
-  const [phase, setPhase] = useState<"idle" | "playing" | "done">("idle");
+  // Initialize phase synchronously from sessionStorage so the very first
+  // render paints the black curtain — otherwise React would briefly
+  // paint the dashboard underneath before the effect could swap phase
+  // to "playing", which is the "flash dashboard → black → dashboard"
+  // glitch the user reported. Server render always starts at "idle"
+  // (no window) and hydrates to "playing" if the flag is present.
+  const [phase, setPhase] = useState<"idle" | "playing" | "done">(() => {
+    if (typeof window === "undefined") return "idle";
+    try {
+      if (sessionStorage.getItem("lounge:welcome") === "1") {
+        sessionStorage.removeItem("lounge:welcome");
+        return "playing";
+      }
+    } catch { /* ignore */ }
+    return "done";
+  });
   const [crestOk, setCrestOk] = useState(true);
   const checked = useRef(false);
   const imageSrc = customImage || CREST_SRC;
 
   useEffect(() => {
-    // React 19 / Next 16 Strict Mode runs effects twice. Without this
-    // guard the first pass would consume the sessionStorage flag and
-    // the second pass would skip the animation, causing the intro to
-    // flicker for less than a second. The ref makes activation
-    // idempotent so the 5.5-second timeline always runs to completion.
     if (checked.current) return;
     checked.current = true;
-    let active = false;
-    try {
-      if (sessionStorage.getItem("lounge:welcome") === "1") {
-        sessionStorage.removeItem("lounge:welcome");
-        active = true;
-      }
-    } catch {
-      // sessionStorage unavailable — never animate
-    }
-    if (!active) {
-      setPhase("done");
-      return;
-    }
-    setPhase("playing");
+    if (phase !== "playing") return;
     const t = setTimeout(() => setPhase("done"), TOTAL_MS);
     return () => clearTimeout(t);
-  }, []);
+  }, [phase]);
 
   if (phase !== "playing") return null;
 
@@ -178,10 +175,11 @@ const KEYFRAMES = `
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes lounge-curtain {
-  /* 5500ms total: 1000ms fade in, ~3500ms hold, 1000ms fade out.
-     Long enough that phones don't blink through it. */
-  0%                  { opacity: 0; }
-  18%                 { opacity: 1; }
+  /* 5500ms total: the page should already be dark when this fires (the
+     login screen handed off black), so we hold full opacity for the
+     first 82% then fade out 1s. No fade-in — that previously caused a
+     "flash dashboard → black" blink on phones. */
+  0%                  { opacity: 1; }
   82%                 { opacity: 1; }
   100%                { opacity: 0; }
 }

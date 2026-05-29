@@ -9,6 +9,7 @@ export default function LoungeLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [handingOff, setHandingOff] = useState(false);
   const router = useRouter();
 
   // 2FA state
@@ -112,6 +113,7 @@ export default function LoungeLogin() {
         return;
       }
       try { sessionStorage.setItem("lounge:welcome", "1"); } catch {}
+      setHandingOff(true);
       router.push("/lounge");
     } catch {
       setError("Connection error");
@@ -131,6 +133,18 @@ export default function LoungeLogin() {
           "radial-gradient(1200px 600px at 50% -10%, rgba(240,180,41,0.07), transparent 60%), #040d1a",
       }}
     >
+      {handingOff && (
+        // Full-screen black blanket the moment 2FA succeeds. Bridges
+        // the gap between this page and the lounge page so the user
+        // never sees the dashboard underneath the welcome intro.
+        <div
+          aria-hidden
+          style={{
+            position: "fixed", inset: 0, background: "#000", zIndex: 99999,
+            pointerEvents: "auto",
+          }}
+        />
+      )}
       <div style={{ width: "100%", maxWidth: 400 }}>
         {/* Logo + branding */}
         <div style={{ textAlign: "center", marginBottom: 28 }}>
@@ -352,6 +366,7 @@ function DevShortcut() {
   const [pin, setPin] = useState("");
   const [busy, setBusy] = useState<"admin" | "employee" | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [handingOff, setHandingOff] = useState(false);
 
   async function login(role: "admin" | "employee") {
     setErr(null);
@@ -365,6 +380,7 @@ function DevShortcut() {
       const d = await r.json();
       if (!r.ok) { setErr(d.error || "Login failed"); return; }
       try { sessionStorage.setItem("lounge:welcome", "1"); } catch {}
+      setHandingOff(true);
       router.push("/lounge");
     } catch {
       setErr("Connection error");
@@ -374,6 +390,13 @@ function DevShortcut() {
   }
 
   return (
+    <>
+    {handingOff && (
+      <div
+        aria-hidden
+        style={{ position: "fixed", inset: 0, background: "#000", zIndex: 99999 }}
+      />
+    )}
     <div
       style={{
         marginTop: 22,
@@ -420,6 +443,7 @@ function DevShortcut() {
         <p style={{ color: "#fca5a5", fontSize: 12, marginTop: 8, marginBottom: 0 }}>{err}</p>
       )}
     </div>
+    </>
   );
 }
 

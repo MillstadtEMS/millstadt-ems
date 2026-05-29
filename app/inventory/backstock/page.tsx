@@ -311,10 +311,13 @@ export default function InventoryDashboard() {
       <header className="shrink-0 bg-slate-900 border-b border-slate-700">
         <div className="max-w-[1200px] mx-auto px-4 sm:px-8 py-2.5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-yellow-400"><path d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/></svg>
-            </div>
-            <div className="hidden sm:block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/millstadt-ems/crest.png"
+              alt="Millstadt EMS"
+              style={{ width: 36, height: 36, objectFit: "contain", filter: "drop-shadow(0 3px 8px rgba(0,0,0,0.45))" }}
+            />
+            <div>
               <div className="text-white font-black text-sm leading-none">Inventory</div>
               <div className="text-yellow-400/60 text-[9px] font-bold uppercase tracking-widest mt-0.5">Millstadt EMS</div>
             </div>

@@ -100,8 +100,19 @@ export default function AboutMeForm({ initial }: { initial: ProfileInitial }) {
     } finally { setVerifyBusy(false); }
   }
 
+  // Debounced auto-save. Whenever a tracked field changes we wait ~700ms
+  // of quiet and then PUT the profile, no Save button required. Solves
+  // the recurring "I typed my birthday and it didn't stick" reports —
+  // the field now persists the moment you tab away.
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function autosave() {
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(() => { void save(); }, 700);
+  }
+
   function set<K extends keyof ProfileInitial>(key: K, value: ProfileInitial[K]) {
     setForm((s) => ({ ...s, [key]: value }));
+    autosave();
   }
 
   async function uploadPhoto(file: File) {
@@ -626,7 +637,7 @@ function Grid({ children }: { children: React.ReactNode }) {
 }
 
 function Field({
-  label, value, onChange, type = "text", placeholder, full, multiline,
+  label, value, onChange, type = "text", placeholder, full, multiline, onBlur,
 }: {
   label: string;
   value: string;
@@ -635,6 +646,7 @@ function Field({
   placeholder?: string;
   full?: boolean;
   multiline?: boolean;
+  onBlur?: () => void;
 }) {
   const sharedStyle: React.CSSProperties = {
     width: "100%",
@@ -656,6 +668,7 @@ function Field({
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
           rows={3}
           placeholder={placeholder}
           style={{ ...sharedStyle, resize: "vertical", minHeight: 72 }}
@@ -665,6 +678,7 @@ function Field({
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
           placeholder={placeholder}
           style={sharedStyle}
         />
