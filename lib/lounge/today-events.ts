@@ -5,8 +5,12 @@
  *
  * Cached for 5 minutes in-process so a busy shift doesn't hammer
  * Google for every page load.
+ *
+ * node-ical is intentionally lazy-imported inside the function: it calls
+ * BigInt() during module load, which throws inside Next.js's page-data
+ * collection phase (Turbopack worker doesn't expose BigInt in that
+ * sandbox) and breaks the Vercel build.
  */
-import * as ical from "node-ical";
 
 const CALENDAR_ID =
   "10235a6f36b714b6c4670bc575e228e67be3024e97feb44585a33e4171fecc86@group.calendar.google.com";
@@ -74,15 +78,31 @@ function overlapsToday(s: Date, e: Date, dayStart: Date, dayEnd: Date): boolean 
   return s < dayEnd && e > dayStart;
 }
 
+interface VEventLike {
+  type: string;
+  uid: string;
+  summary?: string | { val?: string };
+  location?: string;
+  description?: string;
+  start: Date;
+  end: Date;
+  rrule?: { between: (start: Date, end: Date, inclusive: boolean) => Date[] };
+  exdate?: Record<string, unknown>;
+}
+
 export async function getTodayEvents(): Promise<TodayEvent[]> {
   if (cache && Date.now() - cache.ts < CACHE_MS) return cache.events;
   try {
+    // Lazy import — see comment above the file's top.
+    const ical = (await import("node-ical")) as unknown as {
+      async: { fromURL(url: string): Promise<Record<string, VEventLike>> };
+    };
     const data = await ical.async.fromURL(ICAL_URL);
     const { start: dayStart, end: dayEnd } = chicagoBoundsForToday();
     const out: TodayEvent[] = [];
 
     for (const key of Object.keys(data)) {
-      const item = data[key] as ical.VEvent;
+      const item = data[key];
       if (!item || item.type !== "VEVENT") continue;
 
       // Handle recurring events by walking the rule across today's window.
