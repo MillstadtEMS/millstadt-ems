@@ -648,26 +648,28 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   return (
     <section
       style={{
-        marginTop: 18,
+        marginTop: 22,
         background: "#071428",
         border: "1px solid rgba(255,255,255,0.06)",
         borderRadius: 18,
-        padding: "22px 24px",
+        padding: "28px 30px",
       }}
     >
       <div
         style={{
           color: "#f0b429",
-          fontSize: "0.7rem",
+          fontSize: "0.72rem",
           fontWeight: 900,
           letterSpacing: "0.22em",
           textTransform: "uppercase",
-          marginBottom: 16,
+          marginBottom: 22,
+          paddingBottom: 14,
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
         }}
       >
         {title}
       </div>
-      <div style={{ display: "grid", gap: 12 }}>{children}</div>
+      <div style={{ display: "grid", gap: 22 }}>{children}</div>
     </section>
   );
 }
@@ -676,13 +678,13 @@ function SubHeading({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        color: "#94a3b8",
-        fontSize: 11,
-        fontWeight: 800,
-        letterSpacing: "0.16em",
+        color: "#f0b429",
+        fontSize: 12,
+        fontWeight: 900,
+        letterSpacing: "0.18em",
         textTransform: "uppercase",
-        marginTop: 4,
-        marginBottom: -2,
+        marginTop: 10,
+        marginBottom: 4,
       }}
     >
       {children}
@@ -695,8 +697,8 @@ function FormGrid({ children }: { children: React.ReactNode }) {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: 10,
+        gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+        gap: "18px 20px",
       }}
     >
       {children}
@@ -720,7 +722,7 @@ function InlineField({
   const [v, setV] = useState(value);
   useEffect(() => setV(value), [value]);
   return (
-    <label style={{ display: "grid", gap: 5 }}>
+    <label style={{ display: "grid", gap: 8 }}>
       <span style={fieldLabelStyle}>{label}</span>
       <input
         type={type}
@@ -749,14 +751,14 @@ function InlineTextarea({
   const [v, setV] = useState(value);
   useEffect(() => setV(value), [value]);
   return (
-    <label style={{ display: "grid", gap: 5, marginTop: 4 }}>
+    <label style={{ display: "grid", gap: 8, marginTop: 8 }}>
       <span style={fieldLabelStyle}>{label}</span>
       <textarea
         value={v}
         onChange={(e) => setV(e.target.value)}
         onBlur={() => v !== value && onSave(v)}
         rows={3}
-        style={{ ...fieldInputStyle, resize: "vertical", fontFamily: "inherit" }}
+        style={{ ...fieldInputStyle, resize: "vertical", fontFamily: "inherit", padding: "12px 14px" }}
       />
     </label>
   );
@@ -1092,21 +1094,22 @@ const backLinkStyle: React.CSSProperties = {
 };
 const fieldLabelStyle: React.CSSProperties = {
   color: "#94a3b8",
-  fontSize: "0.7rem",
+  fontSize: "0.72rem",
   fontWeight: 800,
-  letterSpacing: "0.14em",
+  letterSpacing: "0.16em",
   textTransform: "uppercase",
 };
 const fieldInputStyle: React.CSSProperties = {
   width: "100%",
-  padding: "10px 12px",
+  padding: "14px 16px",
   background: "#040d1a",
   border: "1px solid rgba(255,255,255,0.10)",
-  borderRadius: 8,
+  borderRadius: 10,
   color: "white",
-  fontSize: "0.92rem",
+  fontSize: "0.95rem",
   outline: "none",
   fontFamily: "inherit",
+  lineHeight: 1.3,
 };
 const smallBtn: React.CSSProperties = {
   padding: "6px 12px",

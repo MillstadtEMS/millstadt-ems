@@ -437,6 +437,7 @@ function SignOutButton({ compact }: { compact?: boolean } = {}) {
 
 function IdentityChip({ me, compact }: { me: SidebarMe; compact?: boolean }) {
   const initials = (me.firstName[0] + me.lastName[0]).toUpperCase();
+  const accessLabel = me.isAdmin ? "Admin" : "User";
   return (
     <div
       style={{
@@ -453,8 +454,8 @@ function IdentityChip({ me, compact }: { me: SidebarMe; compact?: boolean }) {
       <div
         style={{
           position: "relative",
-          width: compact ? 32 : 40,
-          height: compact ? 32 : 40,
+          width: compact ? 36 : 44,
+          height: compact ? 36 : 44,
           borderRadius: "50%",
           overflow: "hidden",
           flexShrink: 0,
@@ -465,7 +466,7 @@ function IdentityChip({ me, compact }: { me: SidebarMe; compact?: boolean }) {
           alignItems: "center",
           justifyContent: "center",
           fontWeight: 900,
-          fontSize: compact ? 11 : 13,
+          fontSize: compact ? 12 : 14,
         }}
       >
         {me.photoUrl ? (
@@ -474,33 +475,28 @@ function IdentityChip({ me, compact }: { me: SidebarMe; compact?: boolean }) {
           initials
         )}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.15, minWidth: 0 }}>
-        <span style={{ fontSize: compact ? 12 : 13, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+      <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.18, minWidth: 0, flex: 1 }}>
+        <span style={{ fontSize: compact ? 13 : 14, fontWeight: 800, color: "white" }}>
           {me.firstName} {me.lastName}
         </span>
-        <span style={{ color: "#94a3b8", fontSize: compact ? 10 : 11, marginTop: 1 }}>
-          {me.certification ?? "Crew"}
-        </span>
-      </div>
-      {me.isAdmin && (
         <span
           style={{
-            marginLeft: "auto",
+            marginTop: 4,
+            alignSelf: "flex-start",
             fontSize: 9,
             fontWeight: 900,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            padding: "2px 7px",
+            padding: "2px 8px",
             borderRadius: 999,
-            background: "rgba(240,180,41,0.18)",
-            color: "#f0b429",
-            border: "1px solid rgba(240,180,41,0.35)",
-            flexShrink: 0,
+            background: me.isAdmin ? "rgba(240,180,41,0.18)" : "rgba(148,163,184,0.15)",
+            color: me.isAdmin ? "#f0b429" : "#cbd5e1",
+            border: `1px solid ${me.isAdmin ? "rgba(240,180,41,0.35)" : "rgba(148,163,184,0.30)"}`,
           }}
         >
-          Admin
+          {accessLabel}
         </span>
-      )}
+      </div>
     </div>
   );
 }

@@ -205,7 +205,14 @@ export async function getEmployee(id: string): Promise<AdminEmployeeRow | null> 
   const rows = (await db`
     SELECT id, username, first_name, last_name, certification, position,
            email, phone, dob, ssn_encrypted, photo_url, hire_date, notes,
-           is_admin, is_active, must_change_password, created_at, updated_at
+           is_admin, is_active, must_change_password,
+           address_street, address_city, address_state, address_zip,
+           driver_license_num, driver_license_state,
+           ec_name, ec_relationship, ec_phone,
+           ec2_name, ec2_relationship, ec2_phone,
+           shirt_size, pant_size, jacket_size, allergies, medical_conditions,
+           blood_type, phone_verified_at, profile_completed_at,
+           created_at, updated_at
     FROM lounge_employees
     WHERE id = ${id}
     LIMIT 1
@@ -316,11 +323,41 @@ export interface UpdateEmployeeInput {
   markProfileCompleted?: boolean;
 }
 
+// Cache so we only run the column-repair once per process.
+let columnsEnsured = false;
+async function ensureAboutMeColumns() {
+  if (columnsEnsured) return;
+  const db = sql();
+  // Idempotent — every column the About-Me form touches.
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS address_street      TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS address_city        TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS address_state       TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS address_zip         TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS driver_license_num  TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS driver_license_state TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS ec_name             TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS ec_relationship     TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS ec_phone            TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS ec2_name            TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS ec2_relationship    TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS ec2_phone           TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS shirt_size          TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS pant_size           TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS jacket_size         TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS allergies           TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS medical_conditions  TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS blood_type          TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS profile_completed_at TIMESTAMPTZ`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS phone_verified_at    TIMESTAMPTZ`;
+  columnsEnsured = true;
+}
+
 export async function updateEmployee(
   id: string,
   input: UpdateEmployeeInput,
 ): Promise<AdminEmployeeRow | null> {
   const db = sql();
+  await ensureAboutMeColumns();
 
   // Build dynamic update. neon supports tagged-template only for whole
   // statements; we'll do per-field updates in a transaction-like batch.

@@ -69,7 +69,6 @@ const sprinter = (num: string, name: string, description: string): UnitSpec => (
 export const UNITS: UnitSpec[] = [
   dually("3935", "M3935", "Paramedic Unit — 2025 Ford E450 Demers"),
   dually("3926", "M3926", "Paramedic Unit — Ford E450 Demers"),
-  dually("3026", "M3026", "Paramedic Unit — Ford dually"),
   sprinter("3925", "M3925", "Reserve Unit — Demers Sprinter Van"),
 ];
 

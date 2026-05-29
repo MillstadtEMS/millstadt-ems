@@ -47,6 +47,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       severity: "informational",
       incidentDate: new Date().toISOString().slice(0, 10),
       createdBy: me.id,
+      employeeVisible: true,
       adminNotes: `Auto-created from notice ack. Notice id: ${ack.id}. IP: ${ip ?? "?"}. UA: ${(ua ?? "?").slice(0, 200)}.`,
     });
 
@@ -58,7 +59,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         fileUrl: signature,
         fileMime: "image/png",
         documentCategory: "notice_acknowledgment",
-        visibilityLevel: "admin",
+        visibilityLevel: "employee",
+        employeeNotes: `Signed copy of "${ack.title}"`,
         uploadedBy: me.id,
       });
     }

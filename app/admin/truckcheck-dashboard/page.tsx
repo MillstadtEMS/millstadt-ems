@@ -163,7 +163,6 @@ function Filters({
           <option value="">All</option>
           <option value="3935">3935</option>
           <option value="3926">3926</option>
-          <option value="3026">3026</option>
           <option value="3925">3925</option>
         </select>
       </FilterField>

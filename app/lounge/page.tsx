@@ -42,7 +42,7 @@ export default async function LoungeHome() {
       <div className="lounge-command-page">
         <CommandHeader
           firstName={session.firstName}
-          role={emp?.certification ?? "Crew"}
+          rank={emp?.position ?? emp?.certification ?? "Crew"}
           isAdmin={session.isAdmin}
           pendingAcks={pendingAcks.length}
           expiringCerts={expiring.length}
@@ -81,32 +81,32 @@ export default async function LoungeHome() {
 
 function CommandHeader({
   firstName,
-  role,
+  rank,
   isAdmin,
   pendingAcks,
   expiringCerts,
 }: {
   firstName: string;
-  role: string;
+  rank: string;
   isAdmin: boolean;
   pendingAcks: number;
   expiringCerts: number;
 }) {
   const now = new Date();
   const statusChips = [
-    { label: "Available", value: "Crew portal" },
     { label: "Pending Items", value: `${pendingAcks + expiringCerts}` },
-    { label: isAdmin ? "Admin" : "Employee", value: role },
+    { label: "Rank", value: rank },
+    { label: "Access", value: isAdmin ? "Admin" : "User" },
   ];
 
   return (
     <header className="lounge-hero">
       <div className="lounge-hero-copy">
         <div className="lounge-eyebrow">{formatDateLine(now)}</div>
-        <div className="lounge-hero-title-row">
-          <h1>Employee Lounge</h1>
-          <p>Welcome back, {firstName}. Crew posts, messages, acknowledgments, and admin tools.</p>
-        </div>
+        <h1 className="lounge-hero-title">Employee Lounge</h1>
+        <p className="lounge-hero-welcome">
+          Welcome back, {firstName}. Crew posts, messages, acknowledgments, and admin tools.
+        </p>
         <div className="lounge-status-strip">
           {statusChips.map((chip) => (
             <div key={chip.label}>
@@ -263,11 +263,22 @@ const LOUNGE_HOME_CSS = `
   flex: 1;
   min-width: 0;
 }
-.lounge-hero-title-row {
-  display: flex;
-  align-items: end;
-  gap: 18px;
-  justify-content: space-between;
+.lounge-hero-title {
+  margin: 7px 0 0;
+  color: white;
+  font-size: clamp(2.15rem, 4vw, 4rem);
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+  font-weight: 950;
+  white-space: nowrap;
+}
+.lounge-hero-welcome {
+  max-width: 540px;
+  margin: 12px 0 0;
+  color: #cbd5e1;
+  font-size: 1rem;
+  line-height: 1.55;
+  font-weight: 650;
 }
 .lounge-eyebrow,
 .lounge-cert-banner span,
@@ -289,10 +300,10 @@ const LOUNGE_HOME_CSS = `
   white-space: nowrap;
 }
 .lounge-hero p {
-  max-width: 430px;
-  margin: 0;
+  max-width: 540px;
+  margin: 12px 0 0;
   color: #cbd5e1;
-  font-size: 0.92rem;
+  font-size: 1rem;
   line-height: 1.55;
   font-weight: 650;
 }
