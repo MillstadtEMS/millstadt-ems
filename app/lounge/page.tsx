@@ -441,18 +441,23 @@ const LOUNGE_HOME_CSS = `
   gap: 10px;
 }
 .lounge-rail-card {
-  padding: 14px;
+  padding: 18px 18px 20px;
 }
 .lounge-rail-metric {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px;
+  gap: 14px;
+  padding: 16px 18px;
   text-decoration: none;
 }
 .lounge-rail-metric + .lounge-rail-metric {
-  margin-top: 8px;
+  margin-top: 10px;
+}
+.lounge-rail-metric span {
+  flex: 1;
+  min-width: 0;
+  padding-right: 8px;
 }
 .lounge-rail-metric strong {
   color: #f0b429;

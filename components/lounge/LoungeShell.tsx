@@ -257,14 +257,13 @@ function SidebarBody({
           <NavRow key={n.href} item={n} active={isActive(pathname, n)} onNavigate={onNavigate} />
         ))}
 
-        {/* Admin section header */}
+        {/* Collapsible Admin Tools group */}
         {items.some((n) => n.adminOnly) && (
-          <>
-            <div style={{ ...navSection, marginTop: 16, color: "#fdba74" }}>Admin</div>
-            {items.filter((n) => n.adminOnly).map((n) => (
-              <NavRow key={n.href} item={n} active={isActive(pathname, n)} onNavigate={onNavigate} />
-            ))}
-          </>
+          <AdminToolsGroup
+            items={items.filter((n) => n.adminOnly)}
+            pathname={pathname}
+            onNavigate={onNavigate}
+          />
         )}
       </nav>
 
@@ -319,6 +318,66 @@ function NavRow({ item, active, onNavigate }: { item: NavItem; active: boolean; 
         <span aria-hidden style={{ fontSize: 11, color: "#64748b" }}>↗</span>
       )}
     </Link>
+  );
+}
+
+function AdminToolsGroup({
+  items, pathname, onNavigate,
+}: {
+  items: NavItem[];
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const anyActive = items.some((n) => isActive(pathname, n));
+  // Open if a child is active so the user always sees where they are.
+  const [open, setOpen] = useState<boolean>(anyActive);
+  useEffect(() => { if (anyActive) setOpen(true); }, [anyActive]);
+
+  return (
+    <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 2 }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "10px 12px",
+          borderRadius: 12,
+          background: "transparent",
+          border: "1px solid rgba(255,255,255,0.06)",
+          color: anyActive ? "#fde68a" : "#fdba74",
+          fontWeight: 800,
+          fontSize: 13,
+          letterSpacing: "0.16em",
+          textTransform: "uppercase",
+          cursor: "pointer",
+          fontFamily: "inherit",
+          width: "100%",
+          justifyContent: "space-between",
+        }}
+      >
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+          <span aria-hidden style={{
+            width: 30, height: 30, borderRadius: 8,
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            background: "rgba(253,186,116,0.10)",
+            border: "1px solid rgba(253,186,116,0.25)",
+            fontSize: 16,
+          }}>🧰</span>
+          Admin Tools
+        </span>
+        <span aria-hidden style={{ fontSize: 11, color: "#94a3b8" }}>{open ? "▾" : "▸"}</span>
+      </button>
+      {open && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 4, paddingLeft: 10, borderLeft: "1px solid rgba(253,186,116,0.20)" }}>
+          {items.map((n) => (
+            <NavRow key={n.href} item={n} active={isActive(pathname, n)} onNavigate={onNavigate} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
