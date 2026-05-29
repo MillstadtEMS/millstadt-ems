@@ -64,6 +64,37 @@ export async function createNotifications(items: CreateNotification[]): Promise<
   const db = sql();
   for (const n of items) {
     if (n.recipientId === n.actorId) continue; // never notify yourself about your own action
+
+    // Message-kind dedupe. When the same actor sends multiple messages in
+    // the same conversation, collapse them into one unread notification
+    // that updates in place — so a flurry of 8 DMs from one person shows
+    // up as a single "X messaged you" row, not eight stacked entries.
+    // We only collapse against rows that are still UNREAD; once read, a
+    // brand new message creates a fresh row again.
+    if (n.kind === "message" && n.sourceId) {
+      const existing = (await db`
+        SELECT id FROM lounge_notifications
+        WHERE recipient_id = ${n.recipientId}
+          AND kind = 'message'
+          AND source_id = ${n.sourceId}
+          AND actor_id = ${n.actorId ?? null}
+          AND read_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT 1
+      `) as unknown as { id: string }[];
+      if (existing[0]) {
+        await db`
+          UPDATE lounge_notifications
+          SET title = ${n.title},
+              body_preview = ${n.bodyPreview ?? ""},
+              link_url = ${n.linkUrl},
+              created_at = NOW()
+          WHERE id = ${existing[0].id}
+        `;
+        continue;
+      }
+    }
+
     await db`
       INSERT INTO lounge_notifications
         (id, recipient_id, kind, title, body_preview, link_url, source_id, actor_id)

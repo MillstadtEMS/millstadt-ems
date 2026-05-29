@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import SignaturePad from "./SignaturePad";
+import LoungePageHeader from "./LoungePageHeader";
 
 interface RosterMember {
   id: string;
@@ -156,18 +157,16 @@ export default function TruckWashClient({ currentUser }: { currentUser: CurrentU
 
   return (
     <div>
-      <header style={{ marginBottom: 18 }}>
-        <div style={{ color: "#f0b429", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-          Truck Wash Log
-        </div>
-        <h1 style={{ margin: "4px 0 6px", fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.015em" }}>
-          Log a wash for the rotation
-        </h1>
-        <p style={{ color: "#94a3b8", fontSize: "0.95rem", lineHeight: 1.55 }}>
-          You&apos;re auto-logged as a participant. Add anyone else who helped with the <strong>+</strong>{" "}
-          button, then sign at the bottom to record the wash.
-        </p>
-      </header>
+      <LoungePageHeader
+        kicker="Truck Wash Log"
+        title="Log a wash for the rotation"
+        description={
+          <>
+            You&apos;re auto-logged as a participant. Add anyone else who helped with the{" "}
+            <strong>+</strong> button, then sign at the bottom to record the wash.
+          </>
+        }
+      />
 
       <Notice>
         <strong style={{ color: "#fbbf24" }}>Mandatory.</strong>{" "}

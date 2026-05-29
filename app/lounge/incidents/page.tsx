@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import LoungePageHeader from "@/components/lounge/LoungePageHeader";
 
 type Status = "pending" | "under_review" | "resolved" | "dismissed";
 interface Author {
@@ -121,16 +122,15 @@ export default function IncidentsPage() {
     <div style={pageStyle}>
       <div style={{ maxWidth: 820, margin: "0 auto" }}>
         <Link href="/lounge" style={backLinkStyle}>← Back to Lounge</Link>
-        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 16, flexWrap: "wrap", gap: 10 }}>
-          <div>
-            <div style={eyebrowStyle}>Safety / Quality</div>
-            <h1 style={titleStyle}>Incident Reports</h1>
-            <p style={{ color: "#94a3b8", fontSize: "0.92rem", marginTop: 6 }}>
-              {me.isAdmin ? "All reports across the crew." : "Your reports. Only admins can see them."}
-            </p>
-          </div>
-          <button type="button" onClick={() => setComposing(true)} style={goldBtn}>+ New Report</button>
-        </header>
+        <LoungePageHeader
+          kicker="Safety / Quality"
+          title="Incident Reports"
+          description={me.isAdmin ? "All reports across the crew." : "Your reports. Only admins can see them."}
+          actions={
+            <button type="button" onClick={() => setComposing(true)} style={goldBtn}>+ New Report</button>
+          }
+          className="mas-incident-header"
+        />
 
         {composing && <Composer me={me} onCancel={() => setComposing(false)} onCreate={create} />}
 

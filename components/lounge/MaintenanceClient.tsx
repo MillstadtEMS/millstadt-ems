@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import LoungePageHeader from "./LoungePageHeader";
 
 type Kind = "vehicle" | "building";
 type Status = "open" | "in_progress" | "resolved" | "dismissed";
@@ -90,18 +91,18 @@ export default function MaintenanceClient({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div>
-      <header style={{ marginBottom: 18 }}>
-        <div style={{ color: "#f0b429", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-          Maintenance Request
-        </div>
-        <h1 style={{ margin: "4px 0 6px", fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.015em" }}>
-          Trucks, station, and everything in between
-        </h1>
-        <p style={{ color: "#94a3b8", fontSize: "0.95rem", lineHeight: 1.55 }}>
-          Spot something broken? Submit a ticket here. Leadership will see it on the dashboard
-          and update its status as it&apos;s worked.
-        </p>
-      </header>
+      <LoungePageHeader
+        kicker="Maintenance"
+        title="Trucks, station, and everything in between"
+        description={
+          <>
+            Spot something broken? Open a ticket. Leadership sees it on the dashboard and
+            updates the status as it&apos;s worked.
+          </>
+        }
+        photo="/lounge/brand/compartment.jpg"
+        photoPosition="center 55%"
+      />
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 14 }}>
         <button type="button" onClick={() => setComposing(true)} style={goldBtn}>+ New Request</button>

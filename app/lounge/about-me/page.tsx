@@ -3,6 +3,7 @@ import { currentEmployee } from "@/lib/lounge/auth";
 import { getEmployee } from "@/lib/lounge/employees";
 import LoungeShell from "@/components/lounge/LoungeShell";
 import AboutMeForm from "@/components/lounge/AboutMeForm";
+import LoungePageHeader from "@/components/lounge/LoungePageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -55,19 +56,17 @@ export default async function AboutMePage() {
 
   return (
     <LoungeShell me={me}>
-      <header style={{ marginBottom: 22 }}>
-        <div style={{ color: "#f0b429", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-          About Me
-        </div>
-        <h1 style={{ margin: "4px 0 6px", fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.015em" }}>
-          Your personnel record
-        </h1>
-        <p style={{ color: "#94a3b8", fontSize: "0.95rem", lineHeight: 1.55 }}>
-          Keep your contact info, emergency contacts, and sizing up to date so management has what
-          they need. Changes save instantly. Your SSN, write-ups, and admin notes are managed
-          separately by leadership and not editable here.
-        </p>
-      </header>
+      <LoungePageHeader
+        kicker="About Me"
+        title="Your personnel record"
+        description={
+          <>
+            Keep your contact info, emergency contacts, and sizing up to date so leadership has
+            what they need. Changes save instantly. Your SSN, write-ups, and admin notes are
+            managed separately by leadership and not editable here.
+          </>
+        }
+      />
       <AboutMeForm initial={initial} />
     </LoungeShell>
   );

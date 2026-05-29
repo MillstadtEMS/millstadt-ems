@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import LoungePageHeader from "./LoungePageHeader";
 
 interface CertType {
   id: string;
@@ -104,20 +105,17 @@ export default function MyCertsClient() {
 
   return (
     <div>
-      <header style={{ marginBottom: 18 }}>
-        <div style={{ color: "#f0b429", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-          My Certifications
-        </div>
-        <h1 style={{ margin: "4px 0 6px", fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.015em" }}>
-          Licenses, certs, vaccines & exemptions
-        </h1>
-        <p style={{ color: "#94a3b8", fontSize: "0.92rem", lineHeight: 1.55, maxWidth: 640 }}>
-          Upload a copy of each cert you carry — Driver&apos;s License, your EMS
-          licensure, ACLS / BLS / PALS / ITLS, NIMS, vaccination proof, or your
-          exemption. Anything required by your class shows a blue REQUIRED badge.
-          The system reminds you 120 days out before each one expires.
-        </p>
-      </header>
+      <LoungePageHeader
+        kicker="My Certifications"
+        title="Licenses, certs, vaccines & exemptions"
+        description={
+          <>
+            Upload a copy of every credential you carry — driver&apos;s license, EMS licensure,
+            ACLS / BLS / PALS / ITLS, NIMS, vaccination proof, exemptions. Anything required by
+            your class is flagged with a blue badge. You&apos;re reminded 120 days before each one expires.
+          </>
+        }
+      />
 
       {requiredMissing.length > 0 && (
         <section style={{ marginBottom: 18, padding: "14px 16px", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.25)", borderLeft: "4px solid #38bdf8", borderRadius: 12 }}>

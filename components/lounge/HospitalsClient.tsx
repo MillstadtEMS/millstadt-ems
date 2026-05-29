@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Hospital } from "@/lib/lounge/hospitals";
+import LoungePageHeader from "./LoungePageHeader";
 
 interface H extends Hospital { miles: number }
 
@@ -66,18 +67,16 @@ export default function HospitalsClient({
 
   return (
     <div>
-      <header style={{ marginBottom: 18 }}>
-        <div style={{ color: "#f0b429", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-          Hospitals
-        </div>
-        <h1 style={{ margin: "4px 0 6px", fontSize: "1.85rem", fontWeight: 900, letterSpacing: "-0.015em" }}>
-          Receiving facilities directory
-        </h1>
-        <p style={{ color: "#94a3b8", fontSize: "0.95rem", lineHeight: 1.55 }}>
-          Tap a hospital for patch line, door codes, and GPS routing. Distance and ETA estimates
-          are from the station — not the truck&apos;s current location.
-        </p>
-      </header>
+      <LoungePageHeader
+        kicker="Hospitals"
+        title="Receiving facilities directory"
+        description={
+          <>
+            Tap a hospital for patch line, door codes, and GPS routing. Distance and ETA estimates
+            are from the station — not the truck&apos;s current location.
+          </>
+        }
+      />
 
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 14 }}>
         <input

@@ -112,6 +112,47 @@ export default function LoungeShell({
     return () => { cancelled = true; };
   }, [pathname, router]);
 
+  // Unread badge counts for Notifications + Messages nav items. Polled
+  // every 30 s; visibility change forces an immediate refresh so the
+  // badge updates the moment the user comes back to the tab. We sum
+  // unread message counts across conversations from the same shape the
+  // messenger already uses, so there's no new endpoint to maintain.
+  const [badges, setBadges] = useState<{ notifications: number; messages: number }>({ notifications: 0, messages: 0 });
+  useEffect(() => {
+    let cancelled = false;
+    async function refresh() {
+      try {
+        const [nRes, mRes] = await Promise.all([
+          fetch("/api/lounge/notifications", { cache: "no-store" }),
+          fetch("/api/lounge/messages", { cache: "no-store" }),
+        ]);
+        if (cancelled) return;
+        let nUnread = 0;
+        let mUnread = 0;
+        if (nRes.ok) {
+          const nd = await nRes.json();
+          nUnread = typeof nd.unread === "number" ? nd.unread : 0;
+        }
+        if (mRes.ok) {
+          const md = await mRes.json();
+          if (Array.isArray(md.conversations)) {
+            for (const c of md.conversations) mUnread += Number(c.unreadCount) || 0;
+          }
+        }
+        if (!cancelled) setBadges({ notifications: nUnread, messages: mUnread });
+      } catch { /* swallow; next tick will retry */ }
+    }
+    refresh();
+    const id = setInterval(refresh, 30_000);
+    const onVis = () => { if (document.visibilityState === "visible") refresh(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, []);
+
   // Slide the session forward while the user is active. The cookie has a
   // 15-minute TTL; we ping every 5 minutes IF the user has interacted
   // recently (mouse, keyboard, touch) so idle tabs eventually time out
@@ -226,7 +267,7 @@ export default function LoungeShell({
               animation: "lounge-drawer-in 220ms cubic-bezier(0.22,1,0.36,1)",
             }}
           >
-            <SidebarBody me={me} items={items} pathname={pathname} mobile onNavigate={() => setDrawerOpen(false)} />
+            <SidebarBody me={me} items={items} pathname={pathname} mobile badges={badges} onNavigate={() => setDrawerOpen(false)} />
           </div>
         </div>
       )}
@@ -255,7 +296,7 @@ export default function LoungeShell({
             overflowY: "auto",
           }}
         >
-          <SidebarBody me={me} items={items} pathname={pathname} />
+          <SidebarBody me={me} items={items} pathname={pathname} badges={badges} />
         </aside>
 
         {/* Main content */}
@@ -313,6 +354,43 @@ export default function LoungeShell({
               cursor: "pointer",
               fontFamily: "inherit",
             };
+            // The bottom tab bar doesn't surface every nav row; Notifications
+            // lives behind the More drawer, so we route its unread badge to
+            // the More tab and the messages count to the Chat tab.
+            let bottomBadge = 0;
+            if (tab.kind === "link" && tab.href === "/lounge/messages") bottomBadge = badges.messages;
+            if (tab.kind === "more") bottomBadge = badges.notifications;
+            const iconNode = (
+              <span style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                <LoungeIcon name={tab.icon} size={21} />
+                {bottomBadge > 0 && (
+                  <span
+                    aria-label={`${bottomBadge} unread`}
+                    style={{
+                      position: "absolute",
+                      top: -4,
+                      right: -8,
+                      minWidth: 16,
+                      height: 16,
+                      padding: "0 5px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 999,
+                      background: "#ef4444",
+                      color: "white",
+                      fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
+                      fontSize: 9.5,
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      boxShadow: "0 0 0 2px rgba(2,9,18,0.96)",
+                    }}
+                  >
+                    {bottomBadge > 99 ? "99+" : bottomBadge}
+                  </span>
+                )}
+              </span>
+            );
             if (tab.kind === "more") {
               return (
                 <button
@@ -322,14 +400,14 @@ export default function LoungeShell({
                   onClick={() => setDrawerOpen(true)}
                   style={sharedStyle}
                 >
-                  <LoungeIcon name={tab.icon} size={21} />
+                  {iconNode}
                   <span>{tab.label}</span>
                 </button>
               );
             }
             return (
               <Link key={tab.href} href={tab.href} style={sharedStyle}>
-                <LoungeIcon name={tab.icon} size={21} />
+                {iconNode}
                 <span>{tab.label}</span>
               </Link>
             );
@@ -369,7 +447,7 @@ const BOTTOM_TABS: BottomTab[] = [
 ];
 
 function SidebarBody({
-  me, items, pathname, onNavigate, mobile = false,
+  me, items, pathname, onNavigate, mobile = false, badges,
 }: {
   me: SidebarMe;
   items: NavItem[];
@@ -379,6 +457,9 @@ function SidebarBody({
    *  "View desktop site" toggle is only meaningful on small screens, so
    *  we hide it on the persistent desktop sidebar. */
   mobile?: boolean;
+  /** Unread counts pulled by the shell — Notifications + Messages rows
+   *  render a red Facebook-style pill when their count is > 0. */
+  badges?: { notifications: number; messages: number };
 }) {
   const crewItems = items.filter((n) => !n.adminOnly);
   const adminItems = items.filter((n) => n.adminOnly);
@@ -425,6 +506,7 @@ function SidebarBody({
               items={sectionItems}
               pathname={pathname}
               onNavigate={onNavigate}
+              badges={badges}
             />
           );
         })}
@@ -450,12 +532,13 @@ function pickNavItems(items: NavItem[], hrefs: string[]): NavItem[] {
 }
 
 function NavSection({
-  title, items, pathname, onNavigate,
+  title, items, pathname, onNavigate, badges,
 }: {
   title: string;
   items: NavItem[];
   pathname: string;
   onNavigate?: () => void;
+  badges?: { notifications: number; messages: number };
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -466,10 +549,18 @@ function NavSection({
           item={item}
           active={isActive(pathname, item)}
           onNavigate={onNavigate}
+          badge={badgeForItem(item, badges)}
         />
       ))}
     </div>
   );
+}
+
+function badgeForItem(item: NavItem, badges?: { notifications: number; messages: number }): number {
+  if (!badges) return 0;
+  if (item.href === "/lounge/notifications") return badges.notifications;
+  if (item.href === "/lounge/messages") return badges.messages;
+  return 0;
 }
 
 const navSection: React.CSSProperties = {
@@ -482,7 +573,7 @@ const navSection: React.CSSProperties = {
   fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
 };
 
-function NavRow({ item, active, onNavigate }: { item: NavItem; active: boolean; onNavigate?: () => void }) {
+function NavRow({ item, active, onNavigate, badge = 0 }: { item: NavItem; active: boolean; onNavigate?: () => void; badge?: number }) {
   const isAdminLink = item.adminOnly === true;
   return (
     <Link
@@ -501,11 +592,13 @@ function NavRow({ item, active, onNavigate }: { item: NavItem; active: boolean; 
         fontSize: 14,
         border: active ? "1px solid rgba(240,180,41,0.30)" : "1px solid transparent",
         transition: "background 0.12s, color 0.12s",
+        position: "relative",
       }}
     >
       <span
         aria-hidden
         style={{
+          position: "relative",
           width: 28, height: 28, borderRadius: 8,
           display: "inline-flex", alignItems: "center", justifyContent: "center",
           background: active ? "rgba(240,180,41,0.18)" : "rgba(255,255,255,0.045)",
@@ -514,13 +607,73 @@ function NavRow({ item, active, onNavigate }: { item: NavItem; active: boolean; 
         }}
       >
         <LoungeIcon name={item.icon} size={17} />
+        {badge > 0 && <UnreadDot count={badge} corner />}
       </span>
       <span style={{ flex: 1 }}>{item.label}</span>
+      {badge > 0 && <UnreadPill count={badge} />}
       {item.external && (
         <span aria-hidden style={{ fontSize: 11, color: "#64748b" }}>↗</span>
       )}
     </Link>
   );
+}
+
+/**
+ * Numeric red pill — Facebook-style — for the trailing edge of the nav
+ * row. Above 99, collapses to "99+".
+ */
+function UnreadPill({ count }: { count: number }) {
+  const label = count > 99 ? "99+" : String(count);
+  return (
+    <span
+      aria-label={`${count} unread`}
+      style={{
+        minWidth: 18,
+        height: 18,
+        padding: "0 6px",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 999,
+        background: "#ef4444",
+        color: "white",
+        fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
+        fontSize: 10.5,
+        fontWeight: 700,
+        letterSpacing: 0,
+        lineHeight: 1,
+        boxShadow: "0 0 0 2px #040d1a",
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+/**
+ * Tiny red dot anchored to the corner of the row's icon tile — meant
+ * for the icon-only badge surface (bottom tab bar + drawer triggers).
+ * Renders no number when `corner` is true; otherwise can include a count.
+ */
+function UnreadDot({ corner, count }: { corner?: boolean; count?: number }) {
+  if (corner) {
+    return (
+      <span
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: -2,
+          right: -2,
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          background: "#ef4444",
+          boxShadow: "0 0 0 2px #040d1a",
+        }}
+      />
+    );
+  }
+  return <UnreadPill count={count ?? 1} />;
 }
 
 function AdminToolsGroup({
