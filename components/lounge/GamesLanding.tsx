@@ -12,31 +12,52 @@ interface ScoreRow {
   details: Record<string, unknown>;
 }
 
-const LEVELS: { id: "beginner" | "intermediate" | "expert"; label: string; color: string }[] = [
+type LevelId = "beginner" | "intermediate" | "expert";
+
+const LEVELS: { id: LevelId; label: string; color: string }[] = [
   { id: "beginner",     label: "Beginner",     color: "#2ff587" },
   { id: "intermediate", label: "Intermediate", color: "#7dd3fc" },
   { id: "expert",       label: "Expert",       color: "#f2b84b" },
 ];
 
+interface GameDef {
+  key: string;
+  href: string;
+  title: string;
+  iconSrc: string;
+  alt: string;
+  apiBase: string;
+  borderColor: string;
+  shadow: string;
+  captionColor: string;
+}
+
+const GAMES: GameDef[] = [
+  {
+    key: "lead-ii",
+    href: "/lounge/games/lead-ii",
+    title: "Lead II",
+    iconSrc: "/lounge/games/lead-ii-icon.png",
+    alt: "Lead II",
+    apiBase: "/api/lounge/games/lead-ii",
+    borderColor: "rgba(47,245,135,0.40)",
+    shadow: "0 18px 40px rgba(47,245,135,0.18)",
+    captionColor: "#8adf9d",
+  },
+  {
+    key: "abg-sim",
+    href: "/lounge/games/abg-sim",
+    title: "ABG Simulator",
+    iconSrc: "/lounge/games/abg-sim-icon.png",
+    alt: "ABG Simulator",
+    apiBase: "/api/lounge/games/abg-sim",
+    borderColor: "rgba(220,38,38,0.45)",
+    shadow: "0 18px 40px rgba(220,38,38,0.18)",
+    captionColor: "#fca5a5",
+  },
+];
+
 export default function GamesLanding({ meId }: { meId: string }) {
-  const [level, setLevel] = useState<"beginner" | "intermediate" | "expert">("beginner");
-  const [scores, setScores] = useState<ScoreRow[]>([]);
-  const [myBest, setMyBest] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState(false);
-
-  useEffect(() => {
-    setLoading(true);
-    fetch(`/api/lounge/games/lead-ii/leaderboard?level=${level}`)
-      .then((r) => r.ok ? r.json() : { scores: [], myBest: 0 })
-      .then((d) => {
-        setScores(Array.isArray(d.scores) ? d.scores : []);
-        setMyBest(typeof d.myBest === "number" ? d.myBest : 0);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [level]);
-
   return (
     <div>
       <header style={{ marginBottom: 18 }}>
@@ -48,15 +69,43 @@ export default function GamesLanding({ meId }: { meId: string }) {
         </h1>
       </header>
 
+      <div style={{ display: "grid", gap: 36 }}>
+        {GAMES.map((g) => <GameSection key={g.key} game={g} meId={meId} />)}
+      </div>
+    </div>
+  );
+}
+
+function GameSection({ game, meId }: { game: GameDef; meId: string }) {
+  const [level, setLevel] = useState<LevelId>("beginner");
+  const [scores, setScores] = useState<ScoreRow[]>([]);
+  const [myBest, setMyBest] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`${game.apiBase}/leaderboard?level=${level}`)
+      .then((r) => r.ok ? r.json() : { scores: [], myBest: 0 })
+      .then((d) => {
+        setScores(Array.isArray(d.scores) ? d.scores : []);
+        setMyBest(typeof d.myBest === "number" ? d.myBest : 0);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [level, game.apiBase]);
+
+  return (
+    <div>
       <Link
-        href="/lounge/games/lead-ii"
+        href={game.href}
         style={{
           display: "block",
           borderRadius: 18,
           overflow: "hidden",
           background: "#030503",
-          border: "2px solid rgba(47,245,135,0.40)",
-          boxShadow: "0 18px 40px rgba(47,245,135,0.18)",
+          border: `2px solid ${game.borderColor}`,
+          boxShadow: game.shadow,
           textDecoration: "none",
           color: "inherit",
           maxWidth: 520,
@@ -67,15 +116,15 @@ export default function GamesLanding({ meId }: { meId: string }) {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/lounge/games/lead-ii-icon.png"
-          alt="Lead II"
+          src={game.iconSrc}
+          alt={game.alt}
           style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
         />
         <div style={{
           position: "absolute", left: 0, right: 0, bottom: 0,
           padding: "10px 14px",
           background: "linear-gradient(0deg, rgba(3,5,3,0.95), rgba(3,5,3,0))",
-          color: "#8adf9d", fontFamily: "VT323, ui-monospace, monospace", fontSize: 22, letterSpacing: "0.12em", textAlign: "center",
+          color: game.captionColor, fontFamily: "VT323, ui-monospace, monospace", fontSize: 22, letterSpacing: "0.12em", textAlign: "center",
         }}>
           TAP TO PLAY
         </div>
@@ -91,7 +140,7 @@ export default function GamesLanding({ meId }: { meId: string }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
           <div>
             <div style={{ color: "#94a3b8", fontSize: 10.5, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase" }}>
-              Leaderboard — Lead II
+              Leaderboard — {game.title}
             </div>
             <h3 style={{ margin: "4px 0 0", color: "white", fontSize: 16, fontWeight: 900 }}>
               Your best ({LEVELS.find((l) => l.id === level)?.label}): <span style={{ color: "#86efac", fontFamily: "ui-monospace, SFMono-Regular, monospace" }}>{myBest}</span>
@@ -102,7 +151,7 @@ export default function GamesLanding({ meId }: { meId: string }) {
               <button
                 key={l.id}
                 type="button"
-                onClick={() => setLevel(l.id)}
+                onClick={() => { setLevel(l.id); setExpanded(false); }}
                 style={{
                   padding: "5px 11px", borderRadius: 999,
                   background: level === l.id ? l.color : "transparent",
