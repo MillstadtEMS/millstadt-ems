@@ -42,21 +42,29 @@ export async function POST(req: NextRequest) {
   const totpEnrolled = !!secret && !!enrolledAt;
   const preauth = makePreauthToken(emp.id);
 
-  // SMS is preferred when the employee has a verified mobile on file —
-  // no QR code, no second app, just a text. Falls back to TOTP setup
-  // for accounts that don't have a phone verified yet.
-  const phoneRows = (await sql()`
-    SELECT phone, phone_verified_at FROM lounge_employees WHERE id = ${emp.id} LIMIT 1
-  `) as unknown as { phone: string | null; phone_verified_at: string | null }[];
-  const hasVerifiedPhone = !!(phoneRows[0]?.phone && phoneRows[0]?.phone_verified_at);
+  // SMS-via-Twilio is only used when:
+  //   1. Twilio env vars are configured (so we're not paying for fallback
+  //      "would-have-sent" placeholders that just confuse the user), AND
+  //   2. The employee has a verified mobile on file.
+  // Otherwise we stick with Microsoft Authenticator (TOTP) — free, no
+  // per-message cost, and the experience users already know.
+  const twilioConfigured =
+    !!process.env.TWILIO_ACCOUNT_SID &&
+    !!process.env.TWILIO_AUTH_TOKEN &&
+    !!process.env.TWILIO_FROM_NUMBER;
+  let hasVerifiedPhone = false;
+  if (twilioConfigured) {
+    const phoneRows = (await sql()`
+      SELECT phone, phone_verified_at FROM lounge_employees WHERE id = ${emp.id} LIMIT 1
+    `) as unknown as { phone: string | null; phone_verified_at: string | null }[];
+    hasVerifiedPhone = !!(phoneRows[0]?.phone && phoneRows[0]?.phone_verified_at);
+  }
 
-  // Decide which 2FA path to send the user down.
   let step: "verify_sms" | "verify_2fa" | "setup_2fa";
   let phoneTail: string | null = null;
   let smsDevCode: string | undefined;
-  if (hasVerifiedPhone) {
+  if (twilioConfigured && hasVerifiedPhone) {
     step = "verify_sms";
-    // Fire off the code now so it lands during the brief navigation.
     const sent = await sendLoginCode(emp.id);
     phoneTail = sent.phoneTail ?? null;
     if (sent.via === "fallback" && sent.devCode) smsDevCode = sent.devCode;

@@ -28,11 +28,11 @@ function mapsDirUrl(destLat: number, destLng: number) {
 
 export default function HospitalsClient({
   hospitals,
-  emsDoorCode,
 }: { hospitals: H[]; stationLat: number; stationLng: number; emsDoorCode: string }) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState<H | null>(null);
   const [liveEtas, setLiveEtas] = useState<Record<string, LiveEta>>({});
+  const [newFacilityOpen, setNewFacilityOpen] = useState(false);
 
   // Pull a real driving ETA for every hospital on mount. Each request is
   // small + cached server-side so this stays cheap. The "ETA 44 min" the
@@ -86,9 +86,13 @@ export default function HospitalsClient({
           placeholder="Search by name, city, address…"
           style={{ flex: 1, minWidth: 200, padding: "12px 14px", background: "#071428", border: "1px solid rgba(255,255,255,0.10)", color: "white", borderRadius: 12, fontSize: 14, outline: "none", fontFamily: "inherit" }}
         />
-        <div style={{ padding: "10px 14px", background: "rgba(240,180,41,0.08)", border: "1px solid rgba(240,180,41,0.25)", borderRadius: 12, color: "#f0b429", fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-          EMS door {emsDoorCode}
-        </div>
+        <button
+          type="button"
+          onClick={() => setNewFacilityOpen(true)}
+          style={{ padding: "10px 16px", background: "transparent", border: "1px solid rgba(56,189,248,0.40)", color: "#7dd3fc", borderRadius: 12, fontSize: 12, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase", cursor: "pointer", fontFamily: "inherit" }}
+        >
+          + Suggest Facility
+        </button>
       </div>
 
       <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
@@ -127,13 +131,15 @@ export default function HospitalsClient({
         })}
       </ul>
 
-      {open && <DetailModal h={open} liveEta={liveEtas[open.id]} emsDoorCode={emsDoorCode} onClose={() => setOpen(null)} />}
+      {open && <DetailModal h={open} liveEta={liveEtas[open.id]} onClose={() => setOpen(null)} />}
+      {newFacilityOpen && <NewFacilityModal onClose={() => setNewFacilityOpen(false)} />}
     </div>
   );
 }
 
-function DetailModal({ h, liveEta, emsDoorCode, onClose }: { h: H; liveEta?: LiveEta; emsDoorCode: string; onClose: () => void }) {
+function DetailModal({ h, liveEta, onClose }: { h: H; liveEta?: LiveEta; onClose: () => void }) {
   const eta = estEtaMin(h.miles);
+  const [suggestOpen, setSuggestOpen] = useState(false);
   return (
     <div onClick={onClose} style={overlay}>
       <div onClick={(e) => e.stopPropagation()} style={modal}>
@@ -176,16 +182,24 @@ function DetailModal({ h, liveEta, emsDoorCode, onClose }: { h: H; liveEta?: Liv
         </div>
 
         <section style={{ marginTop: 18 }}>
-          <div style={sectionLabel}>Access Codes</div>
-          <div style={{ display: "grid", gap: 6 }}>
-            <CodeRow label="EMS Door (Millstadt)" value={emsDoorCode} accent="#86efac" />
-            {h.doorCode && <CodeRow label="Hospital ER Door" value={h.doorCode} />}
-            {h.emsRoomCode && <CodeRow label="Hospital EMS Room" value={h.emsRoomCode} />}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={sectionLabel}>Access Codes</div>
+            <button
+              type="button"
+              onClick={() => setSuggestOpen(true)}
+              style={{ background: "transparent", border: "1px solid rgba(56,189,248,0.30)", color: "#7dd3fc", padding: "5px 12px", borderRadius: 999, fontSize: 11, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase", cursor: "pointer", fontFamily: "inherit" }}
+            >
+              ✎ Suggest change
+            </button>
+          </div>
+          <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+            {h.doorCode && <CodeRow label="ER Door" value={h.doorCode} />}
+            {h.emsRoomCode && <CodeRow label="EMS Room / Back Entry" value={h.emsRoomCode} />}
             {h.codes?.map((c, i) => (
               <CodeRow key={i} label={c.kind} value={c.value} note={c.note} />
             ))}
             {!h.doorCode && !h.emsRoomCode && !h.codes?.length && (
-              <div style={{ color: "#64748b", fontSize: 12 }}>No hospital-side codes on file.</div>
+              <div style={{ color: "#64748b", fontSize: 12 }}>No codes on file. Have one? Tap Suggest change.</div>
             )}
           </div>
         </section>
@@ -195,6 +209,10 @@ function DetailModal({ h, liveEta, emsDoorCode, onClose }: { h: H; liveEta?: Liv
             <div style={sectionLabel}>Notes</div>
             <div style={{ color: "#e2e8f0", fontSize: 13.5, lineHeight: 1.5 }}>{h.notes}</div>
           </section>
+        )}
+
+        {suggestOpen && (
+          <SuggestCodeModal h={h} onClose={() => setSuggestOpen(false)} />
         )}
       </div>
     </div>
@@ -261,4 +279,207 @@ const smallNote: React.CSSProperties = {
 const sectionLabel: React.CSSProperties = {
   color: "#f0b429", fontSize: 11, fontWeight: 900, letterSpacing: "0.18em",
   textTransform: "uppercase", marginBottom: 8,
+};
+
+// ── Suggest a code change modal ──────────────────────────────────────────
+function SuggestCodeModal({ h, onClose }: { h: H; onClose: () => void }) {
+  const [codeKind, setCodeKind] = useState<"ER" | "EMS Room" | "Non-ER" | "Nursing Home">("ER");
+  const [newValue, setNewValue] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<null | { kind: "ok" | "err"; msg: string }>(null);
+
+  async function submit() {
+    if (!newValue.trim()) return;
+    setBusy(true); setStatus(null);
+    try {
+      const r = await fetch("/api/lounge/hospitals/suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "code_change", hospitalId: h.id,
+          codeKind, newValue: newValue.trim(), note: note.trim() || undefined,
+        }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setStatus({ kind: "err", msg: d.error || "Could not submit." }); return; }
+      setStatus({ kind: "ok", msg: "Sent to admin for approval." });
+      setTimeout(onClose, 1400);
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div onClick={onClose} style={overlay}>
+      <div onClick={(e) => e.stopPropagation()} style={{ ...modal, maxWidth: 480 }}>
+        <button type="button" onClick={onClose} style={closeBtn}>×</button>
+        <div style={{ color: "#7dd3fc", fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase" }}>
+          Suggest change
+        </div>
+        <h3 style={{ margin: "4px 0 4px", fontSize: 18, fontWeight: 900, color: "white" }}>{h.name}</h3>
+        <p style={{ color: "#94a3b8", fontSize: 12.5, lineHeight: 1.5, margin: "0 0 14px" }}>
+          Spotted a code that doesn&apos;t work or got updated? Tell admin and they&apos;ll review it.
+        </p>
+
+        <div style={{ display: "grid", gap: 12 }}>
+          <div>
+            <div style={smallLabel}>Which code?</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+              {(["ER", "EMS Room", "Non-ER", "Nursing Home"] as const).map((k) => (
+                <button key={k} type="button" onClick={() => setCodeKind(k)} style={pill(codeKind === k)}>
+                  {k}
+                </button>
+              ))}
+            </div>
+          </div>
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={smallLabel}>New value</span>
+            <input value={newValue} onChange={(e) => setNewValue(e.target.value)} placeholder="e.g. 911*" style={inp} />
+          </label>
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={smallLabel}>Note (optional)</span>
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="How did you find this out? Anything else admin should know?" style={{ ...inp, resize: "vertical", minHeight: 70, fontFamily: "inherit" }} />
+          </label>
+        </div>
+
+        {status && (
+          <div style={{ marginTop: 12, padding: 10, borderRadius: 10, background: status.kind === "ok" ? "rgba(134,239,172,0.10)" : "rgba(252,165,165,0.10)", border: `1px solid ${status.kind === "ok" ? "rgba(134,239,172,0.30)" : "rgba(252,165,165,0.30)"}`, color: status.kind === "ok" ? "#86efac" : "#fca5a5", fontSize: 13, fontWeight: 700 }}>
+            {status.msg}
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+          <button type="button" onClick={onClose} style={ghostBtn}>Cancel</button>
+          <button type="button" onClick={submit} disabled={busy || !newValue.trim()} style={{ ...submitBtn, opacity: busy || !newValue.trim() ? 0.5 : 1 }}>
+            {busy ? "Sending…" : "Send to admin"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Suggest a brand-new facility modal ───────────────────────────────────
+function NewFacilityModal({ onClose }: { onClose: () => void }) {
+  const [form, setForm] = useState({
+    name: "", city: "", state: "",
+    primaryLabel: "EMS Patch" as "EMS Patch" | "ED" | "Report Line",
+    primaryPhone: "",
+    address: "",
+    doorCode: "", emsRoomCode: "",
+    note: "",
+  });
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<null | { kind: "ok" | "err"; msg: string }>(null);
+
+  function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
+    setForm((s) => ({ ...s, [k]: v }));
+  }
+
+  async function submit() {
+    if (!form.name.trim() || !form.city.trim() || !form.state.trim() || !form.primaryPhone.trim() || !form.address.trim()) return;
+    setBusy(true); setStatus(null);
+    try {
+      const r = await fetch("/api/lounge/hospitals/suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "new_facility", ...form }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setStatus({ kind: "err", msg: d.error || "Could not submit." }); return; }
+      setStatus({ kind: "ok", msg: "Sent to admin for approval." });
+      setTimeout(onClose, 1400);
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div onClick={onClose} style={overlay}>
+      <div onClick={(e) => e.stopPropagation()} style={{ ...modal, maxWidth: 540 }}>
+        <button type="button" onClick={onClose} style={closeBtn}>×</button>
+        <div style={{ color: "#7dd3fc", fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase" }}>
+          Suggest a new facility
+        </div>
+        <h3 style={{ margin: "4px 0 4px", fontSize: 18, fontWeight: 900, color: "white" }}>Add to the directory</h3>
+        <p style={{ color: "#94a3b8", fontSize: 12.5, lineHeight: 1.5, margin: "0 0 14px" }}>
+          Fill in what you know. Admin will review it, add the lat/lng, and publish it for the crew.
+        </p>
+
+        <div style={{ display: "grid", gap: 12 }}>
+          <label style={{ display: "grid", gap: 6 }}><span style={smallLabel}>Facility name *</span>
+            <input value={form.name} onChange={(e) => set("name", e.target.value)} style={inp} /></label>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+            <label style={{ display: "grid", gap: 6 }}><span style={smallLabel}>City *</span>
+              <input value={form.city} onChange={(e) => set("city", e.target.value)} style={inp} /></label>
+            <label style={{ display: "grid", gap: 6 }}><span style={smallLabel}>State *</span>
+              <input value={form.state} onChange={(e) => set("state", e.target.value)} placeholder="IL / MO" style={inp} /></label>
+          </div>
+          <label style={{ display: "grid", gap: 6 }}><span style={smallLabel}>Full address *</span>
+            <input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="123 Main St, City, ST 12345" style={inp} /></label>
+
+          <div>
+            <div style={smallLabel}>Primary line</div>
+            <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+              {(["EMS Patch", "ED", "Report Line"] as const).map((l) => (
+                <button key={l} type="button" onClick={() => set("primaryLabel", l)} style={pill(form.primaryLabel === l)}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <label style={{ display: "grid", gap: 6 }}><span style={smallLabel}>Primary phone *</span>
+            <input value={form.primaryPhone} onChange={(e) => set("primaryPhone", e.target.value)} placeholder="(555) 555-5555" style={inp} /></label>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+            <label style={{ display: "grid", gap: 6 }}><span style={smallLabel}>ER door code</span>
+              <input value={form.doorCode} onChange={(e) => set("doorCode", e.target.value)} placeholder="if you know it" style={inp} /></label>
+            <label style={{ display: "grid", gap: 6 }}><span style={smallLabel}>EMS room code</span>
+              <input value={form.emsRoomCode} onChange={(e) => set("emsRoomCode", e.target.value)} placeholder="if you know it" style={inp} /></label>
+          </div>
+          <label style={{ display: "grid", gap: 6 }}><span style={smallLabel}>Note for admin</span>
+            <textarea value={form.note} onChange={(e) => set("note", e.target.value)} rows={3} placeholder="Where did you learn about this place? Specialties to know? Etc." style={{ ...inp, resize: "vertical", minHeight: 70, fontFamily: "inherit" }} /></label>
+        </div>
+
+        {status && (
+          <div style={{ marginTop: 12, padding: 10, borderRadius: 10, background: status.kind === "ok" ? "rgba(134,239,172,0.10)" : "rgba(252,165,165,0.10)", border: `1px solid ${status.kind === "ok" ? "rgba(134,239,172,0.30)" : "rgba(252,165,165,0.30)"}`, color: status.kind === "ok" ? "#86efac" : "#fca5a5", fontSize: 13, fontWeight: 700 }}>
+            {status.msg}
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+          <button type="button" onClick={onClose} style={ghostBtn}>Cancel</button>
+          <button type="button" onClick={submit} disabled={busy} style={{ ...submitBtn, opacity: busy ? 0.5 : 1 }}>
+            {busy ? "Sending…" : "Send to admin"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── shared bits ──────────────────────────────────────────────────────────
+const smallLabel: React.CSSProperties = {
+  color: "#94a3b8", fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase",
+};
+const inp: React.CSSProperties = {
+  width: "100%", padding: "11px 13px", background: "#040d1a",
+  border: "1px solid rgba(255,255,255,0.10)", color: "white", borderRadius: 10,
+  fontSize: 14, outline: "none", fontFamily: "inherit",
+};
+function pill(active: boolean): React.CSSProperties {
+  return {
+    padding: "7px 14px", borderRadius: 999,
+    background: active ? "#7dd3fc" : "transparent",
+    color: active ? "#040d1a" : "#cbd5e1",
+    border: `1px solid ${active ? "#7dd3fc" : "rgba(255,255,255,0.14)"}`,
+    fontFamily: "inherit", fontSize: 12, fontWeight: 800, cursor: "pointer",
+  };
+}
+const ghostBtn: React.CSSProperties = {
+  padding: "10px 16px", background: "transparent",
+  border: "1px solid rgba(255,255,255,0.14)", color: "#cbd5e1",
+  borderRadius: 10, fontFamily: "inherit", fontSize: 13, fontWeight: 800, cursor: "pointer",
+};
+const submitBtn: React.CSSProperties = {
+  flex: 1, padding: "10px 18px", background: "#7dd3fc", color: "#040d1a",
+  border: 0, borderRadius: 10, fontFamily: "inherit", fontSize: 13, fontWeight: 900,
+  letterSpacing: "0.10em", textTransform: "uppercase", cursor: "pointer",
 };
