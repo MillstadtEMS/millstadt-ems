@@ -196,6 +196,21 @@ export default function EmployeeDetailPage() {
     }
   }
 
+  async function reset2fa() {
+    if (!emp) return;
+    if (!confirm(
+      `Reset 2FA for ${emp.firstName} ${emp.lastName}?\n\n` +
+      `This wipes their Microsoft Authenticator enrollment, any SMS code in flight, ` +
+      `and any biometric passkeys on their devices. Next time they sign in they'll ` +
+      `be walked through the QR-code setup again. Use this if they lost their phone, ` +
+      `if you suspect their account was enrolled by someone else, or if they're ` +
+      `rotating to a new authenticator.`,
+    )) return;
+    const res = await fetch(`/api/admin/employees/${id}/reset-2fa`, { method: "POST" });
+    if (res.ok) alert("2FA cleared. They'll set it back up on next sign-in.");
+    else alert("Reset failed.");
+  }
+
   async function resetPassword() {
     if (!emp) return;
     const def = `${emp.username}3935`;
@@ -291,6 +306,7 @@ export default function EmployeeDetailPage() {
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 18 }}>
               <Button onClick={resetPassword}>Reset Password</Button>
+              <Button onClick={reset2fa}>Reset 2FA</Button>
               <Button onClick={revealSsn}>Reveal SSN</Button>
               {me?.id !== emp.id && (
                 <Button danger onClick={deactivate}>
