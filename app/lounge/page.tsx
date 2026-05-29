@@ -11,6 +11,7 @@ import Wall from "@/components/lounge/Wall";
 import PasskeyPrompt from "@/components/lounge/PasskeyPrompt";
 import TodayEventsWidget from "@/components/lounge/TodayEventsWidget";
 import BirthdayBanner from "@/components/lounge/BirthdayBanner";
+import PollsWidget from "@/components/lounge/PollsWidget";
 import { listTodaysBirthdays } from "@/lib/lounge/birthdays";
 import WelcomeOverlay from "@/components/lounge/WelcomeOverlay";
 import CoffeePrankOverlay from "@/components/lounge/CoffeePrankOverlay";
@@ -68,6 +69,7 @@ export default async function LoungeHome() {
         {expiring.length > 0 && <CertAlertsBanner certs={expiring} />}
 
         <TodayEventsWidget />
+        <PollsWidget />
 
         <div className="lounge-command-grid">
           <div className="lounge-main-stack">
