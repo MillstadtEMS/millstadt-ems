@@ -66,6 +66,8 @@ export default async function AboutMePage() {
             managed separately by leadership and not editable here.
           </>
         }
+        photo="/lounge/brand/crew-providers.jpg"
+        photoPosition="center 30%"
       />
       <AboutMeForm initial={initial} />
     </LoungeShell>

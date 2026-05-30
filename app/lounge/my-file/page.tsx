@@ -31,6 +31,8 @@ export default async function MyFilePage() {
             your acknowledgment is highlighted at the top.
           </>
         }
+        photo="/lounge/brand/unit-3926-front.jpg"
+        photoPosition="center 55%"
       />
       <MyFileClient />
     </LoungeShell>

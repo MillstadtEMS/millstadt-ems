@@ -108,6 +108,8 @@ export default function AcksClient() {
             </>
           ) : null
         }
+        photo="/lounge/brand/ambulance-night.jpg"
+        photoPosition="center 55%"
       />
 
       {composing && (

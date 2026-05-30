@@ -76,6 +76,8 @@ export default function HospitalsClient({
             are from the station — not the truck&apos;s current location.
           </>
         }
+        photo="/lounge/brand/st-elizabeths.jpg"
+        photoPosition="center 40%"
       />
 
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 14 }}>

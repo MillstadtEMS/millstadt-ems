@@ -126,6 +126,8 @@ export default function IncidentsClient() {
         actions={
           <button type="button" onClick={() => setComposing(true)} style={goldBtn}>+ New Report</button>
         }
+        photo="/lounge/brand/incident-scene.jpg"
+        photoPosition="center 40%"
       />
 
       {composing && <Composer me={me} onCancel={() => setComposing(false)} onCreate={create} />}

@@ -115,6 +115,8 @@ export default function MyCertsClient() {
             your class is flagged with a blue badge. You&apos;re reminded 120 days before each one expires.
           </>
         }
+        photo="/lounge/brand/skills-demo.jpg"
+        photoPosition="center 35%"
       />
 
       {requiredMissing.length > 0 && (
