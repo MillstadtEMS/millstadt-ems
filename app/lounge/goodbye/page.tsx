@@ -16,18 +16,20 @@ export default async function LoungeGoodbyePage({
         <div className="goodbye-logo-wrap">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/images/millstadt-ems/crest.png" alt="Millstadt EMS" className="goodbye-logo" />
-          <span className="goodbye-wave" aria-hidden>
-            👋
-          </span>
         </div>
         <div className="goodbye-copy">
           <span>Signed out</span>
-          <h1>{name ? `See ya next time, ${name}.` : "See ya next time."}</h1>
+          <h1>{name ? `See ya later, ${name}.` : "See ya later."}</h1>
           <p>Your Employee Lounge session is closed.</p>
         </div>
-        <Link href="/lounge/login" className="goodbye-button">
-          Back to sign in
-        </Link>
+        <div className="goodbye-actions">
+          <Link href="/lounge/login" className="goodbye-button is-primary">
+            Back to sign in
+          </Link>
+          <Link href="/" className="goodbye-button is-secondary">
+            Click here to head back to MillstadtEMS.org
+          </Link>
+        </div>
       </section>
     </main>
   );
@@ -63,8 +65,8 @@ const GOODBYE_CSS = `
 }
 .goodbye-logo-wrap {
   position: relative;
-  width: 238px;
-  height: 238px;
+  width: 200px;
+  height: 200px;
   display: grid;
   place-items: center;
   margin-bottom: 4px;
@@ -78,23 +80,6 @@ const GOODBYE_CSS = `
   object-fit: contain;
   animation: goodbye-logo-float 2600ms ease-in-out infinite;
 }
-.goodbye-wave {
-  position: absolute;
-  right: 16px;
-  top: 24px;
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  background: #f0b429;
-  border: 2px solid rgba(255,255,255,0.74);
-  color: #040d1a;
-  font-size: 1.65rem;
-  box-shadow: 0 16px 28px rgba(0,0,0,0.34);
-  transform-origin: 70% 70%;
-  animation: goodbye-wave 1200ms ease-in-out 240ms 3;
-}
 .goodbye-copy span {
   display: block;
   color: #f0b429;
@@ -106,16 +91,22 @@ const GOODBYE_CSS = `
 .goodbye-copy h1 {
   margin: 8px 0 0;
   color: white;
-  font-size: clamp(1.8rem, 8vw, 2.65rem);
-  line-height: 0.96;
-  letter-spacing: -0.045em;
+  font-size: clamp(1.8rem, 8vw, 2.5rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
   font-weight: 950;
 }
 .goodbye-copy p {
   margin: 12px 0 0;
   color: #94a3b8;
-  font-size: 0.96rem;
+  font-size: 0.95rem;
   line-height: 1.5;
+}
+.goodbye-actions {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin-top: 22px;
 }
 .goodbye-button {
   width: 100%;
@@ -123,15 +114,35 @@ const GOODBYE_CSS = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-top: 22px;
   border-radius: 13px;
+  text-decoration: none;
+  font-weight: 800;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  transition: transform 120ms ease-out, filter 120ms ease-out, background 120ms ease-out, border-color 120ms ease-out, color 120ms ease-out;
+}
+.goodbye-button.is-primary {
   background: #f0b429;
   color: #040d1a;
-  text-decoration: none;
-  font-size: 0.86rem;
-  font-weight: 950;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: 0.84rem;
+}
+.goodbye-button.is-primary:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+.goodbye-button.is-secondary {
+  background: transparent;
+  color: #cbd5e1;
+  border: 1px solid rgba(255,255,255,0.16);
+  padding: 0 14px;
+  font-size: 0.72rem;
+  text-align: center;
+  line-height: 1.2;
+}
+.goodbye-button.is-secondary:hover {
+  background: rgba(255,255,255,0.04);
+  color: white;
+  border-color: rgba(255,255,255,0.28);
 }
 @keyframes goodbye-card-in {
   from { opacity: 0; transform: translateY(14px) scale(0.98); }
@@ -141,17 +152,9 @@ const GOODBYE_CSS = `
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-5px); }
 }
-@keyframes goodbye-wave {
-  0%, 100% { transform: rotate(0deg); }
-  18% { transform: rotate(18deg); }
-  36% { transform: rotate(-10deg); }
-  54% { transform: rotate(16deg); }
-  72% { transform: rotate(-6deg); }
-}
 @media (prefers-reduced-motion: reduce) {
   .goodbye-card,
-  .goodbye-logo,
-  .goodbye-wave {
+  .goodbye-logo {
     animation: none;
   }
 }
