@@ -107,12 +107,13 @@ export default function MyCertsClient() {
     <div>
       <LoungePageHeader
         kicker="My Certifications"
-        title="Licenses, certs, vaccines & exemptions"
+        title="Track your certifications"
         description={
           <>
-            Upload a copy of every credential you carry — driver&apos;s license, EMS licensure,
-            ACLS / BLS / PALS / ITLS, NIMS, vaccination proof, exemptions. Anything required by
-            your class is flagged with a blue badge. You&apos;re reminded 120 days before each one expires.
+            Add each card you carry — driver&apos;s license, EMS licensure, ACLS, BLS, PALS, ITLS,
+            NIMS, vaccinations, exemptions — and snap a photo of the front. Cards required for
+            your role show a blue badge so you know which ones are mandatory, and the system
+            reminds you 120 days before any of them expire.
           </>
         }
         photo="/lounge/brand/skills-demo.jpg"
@@ -122,7 +123,7 @@ export default function MyCertsClient() {
       {requiredMissing.length > 0 && (
         <section style={{ marginBottom: 18, padding: "14px 16px", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.25)", borderLeft: "4px solid #38bdf8", borderRadius: 12 }}>
           <div style={{ color: "#7dd3fc", fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 4 }}>
-            Required by your class — not yet uploaded
+            Required for your role — not yet uploaded
           </div>
           <div style={{ color: "#e2e8f0", fontSize: 13.5 }}>
             {requiredMissing.map((r) => r.certType.name).join(" · ")}

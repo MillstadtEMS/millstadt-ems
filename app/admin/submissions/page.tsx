@@ -100,7 +100,7 @@ function SubmissionsContent() {
           <div className="flex items-center gap-3 mb-2"><span className="h-px w-8 bg-[#f0b429]" /><span className="text-[#f0b429] text-xs font-black tracking-[0.25em] uppercase">Forms</span></div>
           <div className="flex items-center gap-4">
             <h1 className="text-3xl font-black text-white">Form Submissions</h1>
-            {totalUnread > 0 && <span className="bg-[#f0b429] text-[#020810] text-xs font-black px-2.5 py-1 rounded-full">{totalUnread} unread</span>}
+            {totalUnread > 0 && <span className="bg-red-500 text-white text-xs font-black px-2.5 py-1 rounded-full">{totalUnread} unread</span>}
           </div>
           <p className="text-slate-400 text-sm mt-2">All website form submissions, grouped by type.</p>
         </div>
@@ -112,13 +112,23 @@ function SubmissionsContent() {
               return (
                 <Link key={cat.formType} href={`/admin/submissions?type=${encodeURIComponent(cat.formType)}`}
                   className={`group bg-[#071428] border border-white/10 hover:border-[#f0b429]/30 rounded-2xl p-6 flex items-start gap-4 transition-colors ${isEmpty ? "opacity-60 hover:opacity-100" : ""}`}>
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${m.color}`}>
+                  <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center border ${m.color}`}>
                     <SiteIcon name={m.icon} className="w-6 h-6" />
+                    {cat.unread > 0 && (
+                      <span
+                        aria-hidden
+                        className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 ring-2 ring-[#071428]"
+                      />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-white font-bold text-base leading-tight">{m.short}</span>
-                      {cat.unread > 0 && <span className="bg-[#f0b429] text-[#020810] text-[10px] font-black px-1.5 py-0.5 rounded-full">{cat.unread}</span>}
+                      {cat.unread > 0 && (
+                        <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full bg-red-500 text-white text-[10px] font-black leading-none">
+                          {cat.unread > 99 ? "99+" : cat.unread}
+                        </span>
+                      )}
                     </div>
                     <div className="text-slate-500 text-xs">
                       {isEmpty ? "No submissions yet" : `${cat.total} total · latest ${timeAgo(cat.latest)}`}

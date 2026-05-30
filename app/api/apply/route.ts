@@ -3,6 +3,7 @@ import { google } from "googleapis";
 import { jsPDF } from "jspdf";
 import { createFormSubmission } from "@/lib/db";
 import { buildApplicationFlags } from "@/lib/application-flags";
+import { notifyAdminsInLounge } from "@/lib/lounge/notify-admins";
 
 export const runtime = "nodejs";
 // Multipart uploads + Gmail API can exceed the 10s default timeout
@@ -466,8 +467,10 @@ export async function POST(req: NextRequest) {
     if (attachments.length > 0) {
       dbFields.attached_files = attachments.map(a => `${a.filename} (${(a.content.length / 1024).toFixed(0)}KB)`).join(", ");
     }
+    let submissionId: string | null = null;
     try {
-      await createFormSubmission("Employment Application", dbFields);
+      const sub = await createFormSubmission("Employment Application", dbFields);
+      submissionId = sub.id;
     } catch (e) {
       console.error("[apply] DB save failed (continuing with email):", e);
     }
@@ -508,6 +511,24 @@ export async function POST(req: NextRequest) {
       }
     } catch (flagErr) {
       console.error("[apply] Flag PDF generation failed:", flagErr);
+    }
+
+    // Light the admin bell + Form Submissions sidebar badge. Best-effort —
+    // never blocks the email send. Body preview avoids leaking PII.
+    if (submissionId) {
+      const position = (fields.position || "Position not specified").toString();
+      const flagText = flagCount > 0 ? ` · ${flagCount} flag${flagCount === 1 ? "" : "s"}` : "";
+      try {
+        await notifyAdminsInLounge({
+          kind: "post",
+          title: `New Employment Application: ${fullName}`,
+          bodyPreview: `${position}${flagText}`,
+          linkUrl: `/admin/submissions/${submissionId}`,
+          sourceId: submissionId,
+        });
+      } catch (notifyErr) {
+        console.error("[apply] notify admins failed:", notifyErr);
+      }
     }
 
     const raw = buildRawMime({

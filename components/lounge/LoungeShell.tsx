@@ -50,6 +50,7 @@ const NAV: NavItem[] = [
   { href: "/admin/truckwash",             label: "Truck Wash Log",        icon: "droplet", adminOnly: true },
   { href: "/admin/hospitals",             label: "Hospitals Directory",   icon: "hospital", adminOnly: true },
   { href: "/admin/hospitals/suggestions", label: "Hospital Suggestions",  icon: "mail", adminOnly: true },
+  { href: "/admin/submissions",           label: "Form Submissions",      icon: "inbox", adminOnly: true },
   { href: "/admin/polls",                 label: "Polls & Surveys",       icon: "chart", adminOnly: true },
 ];
 
@@ -79,7 +80,7 @@ const ADMIN_NAV_SECTIONS = [
   },
   {
     title: "Operations",
-    hrefs: ["/admin/incidents", "/admin/truckwash", "/admin/hospitals", "/admin/hospitals/suggestions", "/admin/polls"],
+    hrefs: ["/admin/incidents", "/admin/truckwash", "/admin/hospitals", "/admin/hospitals/suggestions", "/admin/submissions", "/admin/polls"],
   },
 ];
 
@@ -117,18 +118,23 @@ export default function LoungeShell({
   // badge updates the moment the user comes back to the tab. We sum
   // unread message counts across conversations from the same shape the
   // messenger already uses, so there's no new endpoint to maintain.
-  const [badges, setBadges] = useState<{ notifications: number; messages: number }>({ notifications: 0, messages: 0 });
+  const [badges, setBadges] = useState<{ notifications: number; messages: number; submissions: number }>({ notifications: 0, messages: 0, submissions: 0 });
+  const isAdmin = me.isAdmin;
   useEffect(() => {
     let cancelled = false;
     async function refresh() {
       try {
-        const [nRes, mRes] = await Promise.all([
+        const requests: Promise<Response>[] = [
           fetch("/api/lounge/notifications", { cache: "no-store" }),
           fetch("/api/lounge/messages", { cache: "no-store" }),
-        ]);
+        ];
+        if (isAdmin) requests.push(fetch("/api/admin/submissions", { cache: "no-store" }));
+        const results = await Promise.all(requests);
         if (cancelled) return;
+        const [nRes, mRes, sRes] = results;
         let nUnread = 0;
         let mUnread = 0;
+        let sUnread = 0;
         if (nRes.ok) {
           const nd = await nRes.json();
           nUnread = typeof nd.unread === "number" ? nd.unread : 0;
@@ -139,7 +145,13 @@ export default function LoungeShell({
             for (const c of md.conversations) mUnread += Number(c.unreadCount) || 0;
           }
         }
-        if (!cancelled) setBadges({ notifications: nUnread, messages: mUnread });
+        if (sRes && sRes.ok) {
+          const sd = await sRes.json();
+          if (Array.isArray(sd.categories)) {
+            for (const c of sd.categories) sUnread += Number(c.unread) || 0;
+          }
+        }
+        if (!cancelled) setBadges({ notifications: nUnread, messages: mUnread, submissions: sUnread });
       } catch { /* swallow; next tick will retry */ }
     }
     refresh();
@@ -151,7 +163,7 @@ export default function LoungeShell({
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, []);
+  }, [isAdmin]);
 
   // Slide the session forward while the user is active. The cookie has a
   // 15-minute TTL; we ping every 5 minutes IF the user has interacted
@@ -480,7 +492,7 @@ function SidebarBody({
   mobile?: boolean;
   /** Unread counts pulled by the shell — Notifications + Messages rows
    *  render a red Facebook-style pill when their count is > 0. */
-  badges?: { notifications: number; messages: number };
+  badges?: { notifications: number; messages: number; submissions: number };
 }) {
   const crewItems = items.filter((n) => !n.adminOnly);
   const adminItems = items.filter((n) => n.adminOnly);
@@ -538,6 +550,7 @@ function SidebarBody({
             items={adminItems}
             pathname={pathname}
             onNavigate={onNavigate}
+            badges={badges}
           />
         )}
       </nav>
@@ -559,7 +572,7 @@ function NavSection({
   items: NavItem[];
   pathname: string;
   onNavigate?: () => void;
-  badges?: { notifications: number; messages: number };
+  badges?: { notifications: number; messages: number; submissions: number };
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -577,10 +590,11 @@ function NavSection({
   );
 }
 
-function badgeForItem(item: NavItem, badges?: { notifications: number; messages: number }): number {
+function badgeForItem(item: NavItem, badges?: { notifications: number; messages: number; submissions: number }): number {
   if (!badges) return 0;
   if (item.href === "/lounge/notifications") return badges.notifications;
   if (item.href === "/lounge/messages") return badges.messages;
+  if (item.href === "/admin/submissions") return badges.submissions;
   return 0;
 }
 
@@ -698,11 +712,12 @@ function UnreadDot({ corner, count }: { corner?: boolean; count?: number }) {
 }
 
 function AdminToolsGroup({
-  items, pathname, onNavigate,
+  items, pathname, onNavigate, badges,
 }: {
   items: NavItem[];
   pathname: string;
   onNavigate?: () => void;
+  badges?: { notifications: number; messages: number; submissions: number };
 }) {
   const anyActive = items.some((n) => isActive(pathname, n));
   // Open if a child is active so the user always sees where they are.
@@ -760,6 +775,7 @@ function AdminToolsGroup({
                 items={sectionItems}
                 pathname={pathname}
                 onNavigate={onNavigate}
+                badges={badges}
               />
             );
           })}
@@ -886,6 +902,7 @@ type LoungeIconName =
   | "gamepad"
   | "gear"
   | "hospital"
+  | "inbox"
   | "mail"
   | "menu"
   | "message"
@@ -918,6 +935,7 @@ function LoungeIcon({ name, size = 18 }: { name: LoungeIconName; size?: number }
     gamepad: <><path d="M6 12h4" /><path d="M8 10v4" /><path d="M15 12h.01" /><path d="M18 10h.01" /><path d="M5.5 8h13a3.5 3.5 0 0 1 3.2 4.9l-1.4 3.4a2.5 2.5 0 0 1-4.2.7L14.8 16H9.2l-1.3 1a2.5 2.5 0 0 1-4.2-.7l-1.4-3.4A3.5 3.5 0 0 1 5.5 8Z" /></>,
     gear: <><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2 3-.2-.1a1.7 1.7 0 0 0-1.9-.2 1.7 1.7 0 0 0-1 1.5V21h-3.4v-.3a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.2l-.2.1-2-3 .1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H5v-3.4h.3a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 2-3 .2.1a1.7 1.7 0 0 0 1.9.2 1.7 1.7 0 0 0 1-1.5V3h3.4v.3a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.2l.2-.1 2 3-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.3V14h-.3a1.7 1.7 0 0 0-1.7 1Z" /></>,
     hospital: <><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16" /><path d="M3 21h18" /><path d="M10 8h4" /><path d="M12 6v4" /><path d="M9 21v-5h6v5" /></>,
+    inbox: <><path d="M22 12h-6l-2 3h-4l-2-3H2" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z" /></>,
     mail: <><path d="M4 6h16v12H4z" /><path d="m4 7 8 6 8-6" /></>,
     menu: <><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></>,
     message: <><path d="M4 5h16v11H8l-4 4V5Z" /></>,

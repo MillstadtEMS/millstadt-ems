@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { createFormSubmission } from "@/lib/db";
 import { encodeMimeSubject } from "@/lib/reports/subject";
+import { notifyAdminsInLounge } from "@/lib/lounge/notify-admins";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -33,11 +34,30 @@ export async function POST(req: NextRequest) {
 
     // Always save to DB FIRST so submissions aren't lost if email fails
     let dbSaved = false;
+    let submissionId: string | null = null;
     try {
-      await createFormSubmission(formType, fields);
+      const sub = await createFormSubmission(formType, fields);
+      submissionId = sub.id;
       dbSaved = true;
     } catch (e) {
       console.error("[contact] DB store failed:", e);
+    }
+
+    // Light the admin bell + sidebar badge — best-effort, never blocks the
+    // submission. Body preview deliberately omits PII like emails/phones.
+    if (submissionId) {
+      const submitterName = pickSubmitterName(fields);
+      try {
+        await notifyAdminsInLounge({
+          kind: "post",
+          title: `New ${formType}${submitterName ? `: ${submitterName}` : ""}`,
+          bodyPreview: previewForFormType(formType, fields),
+          linkUrl: `/admin/submissions/${submissionId}`,
+          sourceId: submissionId,
+        });
+      } catch (e) {
+        console.error("[contact] notify admins failed:", e);
+      }
     }
 
     // Build a readable plain-text email body from form fields
@@ -96,4 +116,19 @@ export async function POST(req: NextRequest) {
       error: "Could not submit form. Please try again or email millstadtems@gmail.com directly.",
     }, { status: 500 });
   }
+}
+
+function pickSubmitterName(fields: Record<string, string | string[]>): string {
+  const first = String(fields.first_name ?? fields.firstName ?? "").trim();
+  const last  = String(fields.last_name  ?? fields.lastName  ?? "").trim();
+  const name  = String(fields.name ?? "").trim();
+  return [first, last].filter(Boolean).join(" ") || name;
+}
+
+function previewForFormType(formType: string, fields: Record<string, string | string[]>): string {
+  const date = String(fields.event_date ?? fields.preferred_date ?? fields.date ?? "").trim();
+  const subject = String(fields.subject ?? fields.topic ?? "").trim();
+  if (date) return `Requested date: ${date}`;
+  if (subject) return subject;
+  return `New ${formType} submitted from millstadtems.org`;
 }
