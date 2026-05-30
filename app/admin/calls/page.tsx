@@ -32,55 +32,74 @@ function CallRow({
   onToggleActive: (c: Call) => void;
 }) {
   return (
-    <div className={`border rounded-xl px-5 py-4 ${highlight ? "bg-red-400/5 border-red-400/25" : "bg-white/2 border-white/6"}`}>
+    <div className={`border rounded-xl px-4 py-3 sm:px-5 sm:py-4 ${highlight ? "bg-red-400/5 border-red-400/25" : "bg-white/2 border-white/6"}`}>
       {isEditing ? (
         <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <span className="text-slate-500 text-xs tabular-nums font-mono">{c.dispatchDate} {c.dispatchTime}</span>
             {c.eventNumber && <span className="text-slate-600 text-xs font-mono">{c.eventNumber}</span>}
           </div>
+          <input
+            autoFocus
+            value={editValue}
+            onChange={e => onEditChange(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") onSave(c.id); if (e.key === "Escape") onCancel(); }}
+            className="w-full bg-[#040d1a] border border-[#f0b429]/50 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#f0b429]/80"
+          />
           <div className="flex items-center gap-2">
-            <input
-              autoFocus
-              value={editValue}
-              onChange={e => onEditChange(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") onSave(c.id); if (e.key === "Escape") onCancel(); }}
-              className="flex-1 bg-[#040d1a] border border-[#f0b429]/50 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#f0b429]/80"
-            />
             <button onClick={() => onSave(c.id)} disabled={saving}
-              className="bg-[#f0b429] hover:bg-[#f5c842] disabled:opacity-50 text-[#020810] font-black px-4 py-2.5 rounded-xl text-sm transition-colors shrink-0">
+              className="flex-1 sm:flex-none bg-[#f0b429] hover:bg-[#f5c842] disabled:opacity-50 text-[#020810] font-black px-5 py-2.5 rounded-xl text-sm transition-colors">
               {saving ? "Saving…" : "Save"}
             </button>
             <button onClick={onCancel}
-              className="text-slate-500 hover:text-slate-300 px-3 py-2.5 rounded-xl text-sm transition-colors shrink-0">
+              className="flex-1 sm:flex-none text-slate-400 hover:text-slate-200 border border-white/10 px-4 py-2.5 rounded-xl text-sm transition-colors">
               Cancel
             </button>
           </div>
-          <p className="text-slate-600 text-xs">This will update the live ticker on the site within 30 seconds.</p>
+          <p className="text-slate-600 text-xs">Updates the live ticker on the site within 30 seconds.</p>
         </div>
       ) : (
-        <div className="flex items-center gap-4">
-          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${highlight ? "bg-red-400" : "bg-slate-700"}`} />
-          <span className="text-slate-500 text-xs tabular-nums font-mono w-20 shrink-0">{c.dispatchDate}</span>
-          <span className="text-slate-400 text-xs tabular-nums font-mono w-12 shrink-0">{c.dispatchTime}</span>
-          <span className={`text-sm font-bold flex-1 truncate ${highlight ? "text-red-300" : "text-slate-300"}`}>{c.dispatchNature}</span>
-          {c.eventNumber && <span className="text-slate-600 text-xs font-mono shrink-0 hidden sm:block">{c.eventNumber}</span>}
-          <button
-            onClick={() => onToggleActive(c)}
-            disabled={toggling}
-            title={highlight ? "Mark as completed (remove from ticker)" : "Mark as active (show on ticker)"}
-            className={`min-w-[92px] text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded border shrink-0 transition-colors disabled:opacity-50 ${highlight ? "text-red-300 bg-red-400/10 border-red-400/25 hover:bg-red-400/20" : "text-slate-400 bg-white/3 border-white/8 hover:text-[#f0b429] hover:border-[#f0b429]/40"}`}
-          >
-            {toggling ? "…" : highlight ? "On ticker" : "Show ticker"}
-          </button>
-          <button onClick={() => onEdit(c)} title="Edit call description"
-            className="text-slate-600 hover:text-[#f0b429] transition-colors p-1 shrink-0">
-            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-          </button>
-          <button onClick={() => onDelete(c.id)} title="Remove from log"
-            className="text-slate-700 hover:text-red-400 transition-colors p-1 shrink-0">
-            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-          </button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          {/* Metadata row — full width on mobile, inline on desktop */}
+          <div className="flex items-center gap-3 min-w-0 sm:flex-1">
+            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${highlight ? "bg-red-400" : "bg-slate-700"}`} aria-hidden />
+            <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+              <span className={`text-sm font-bold leading-snug break-words ${highlight ? "text-red-300" : "text-slate-300"}`}>
+                {c.dispatchNature}
+              </span>
+              <span className="text-slate-500 text-[11px] tabular-nums font-mono flex items-center gap-2 flex-wrap">
+                <span>{c.dispatchDate}</span>
+                <span className="text-slate-700">·</span>
+                <span>{c.dispatchTime}</span>
+                {c.eventNumber && (
+                  <>
+                    <span className="text-slate-700">·</span>
+                    <span className="text-slate-600">{c.eventNumber}</span>
+                  </>
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* Actions row — wraps on mobile under the metadata */}
+          <div className="flex items-center gap-2 sm:gap-3 sm:shrink-0">
+            <button
+              onClick={() => onToggleActive(c)}
+              disabled={toggling}
+              title={highlight ? "Mark as completed (remove from ticker)" : "Mark as active (show on ticker)"}
+              className={`flex-1 sm:flex-none min-h-[36px] sm:min-w-[100px] text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded border transition-colors disabled:opacity-50 ${highlight ? "text-red-300 bg-red-400/10 border-red-400/25 hover:bg-red-400/20" : "text-slate-400 bg-white/3 border-white/8 hover:text-[#f0b429] hover:border-[#f0b429]/40"}`}
+            >
+              {toggling ? "…" : highlight ? "On ticker" : "Show ticker"}
+            </button>
+            <button onClick={() => onEdit(c)} title="Edit call description" aria-label="Edit"
+              className="text-slate-500 hover:text-[#f0b429] transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg hover:bg-white/[0.03] shrink-0">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" aria-hidden><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            </button>
+            <button onClick={() => onDelete(c.id)} title="Remove from log" aria-label="Delete"
+              className="text-slate-600 hover:text-red-400 transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg hover:bg-red-400/[0.04] shrink-0">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" aria-hidden><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -181,52 +200,52 @@ export default function CallsAdmin() {
 
   return (
     <div className="max-w-5xl">
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-3 mb-2">
           <span className="h-px w-8 bg-[#f0b429]" />
           <span className="text-[#f0b429] text-xs font-black tracking-[0.25em] uppercase">Dispatch</span>
         </div>
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-black text-white">Live Call Ticker Editor</h1>
-            <p className="text-slate-400 text-sm mt-1">
-              {new Date().getFullYear()} — {calls.length} calls. Active calls show in the public top ticker; edits update within 30 seconds.
+            <h1 className="text-2xl sm:text-3xl font-black text-white leading-tight">Live Call Ticker Editor</h1>
+            <p className="text-slate-400 text-sm mt-1.5 leading-relaxed">
+              {new Date().getFullYear()} — {calls.length} calls. Active calls show on the public top ticker; edits update within 30 seconds.
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 sm:shrink-0">
             <ForcePollButton onAfter={() => load()} />
             <button
               onClick={() => setShowAdd(v => !v)}
-              className="shrink-0 flex items-center gap-2 bg-[#f0b429]/10 hover:bg-[#f0b429]/20 border border-[#f0b429]/25 text-[#f0b429] font-black text-sm px-4 py-2.5 rounded-xl transition-colors"
+              className="flex items-center justify-center gap-2 bg-[#f0b429]/10 hover:bg-[#f0b429]/20 border border-[#f0b429]/25 text-[#f0b429] font-black text-sm px-4 py-3 sm:py-2.5 rounded-xl transition-colors"
             >
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" aria-hidden><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
               Add ticker/log item
             </button>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3 mb-8">
-        <div className="rounded-2xl border border-red-400/20 bg-red-400/5 p-4">
-          <span className="text-red-300 text-[10px] font-black uppercase tracking-[0.2em]">Live ticker</span>
-          <strong className="block text-white text-2xl mt-1">{active.length}</strong>
-          <p className="text-slate-500 text-xs mt-1">Showing on the public top strip now.</p>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6 sm:mb-8">
+        <div className="rounded-xl sm:rounded-2xl border border-red-400/20 bg-red-400/5 p-3 sm:p-4">
+          <span className="text-red-300 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.16em] sm:tracking-[0.2em] leading-tight block">Live ticker</span>
+          <strong className="block text-white text-xl sm:text-2xl mt-1 tabular-nums">{active.length}</strong>
+          <p className="text-slate-500 text-[10px] sm:text-xs mt-1 leading-tight hidden sm:block">Showing on the public top strip now.</p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-          <span className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Completed log</span>
-          <strong className="block text-white text-2xl mt-1">{complete.length}</strong>
-          <p className="text-slate-500 text-xs mt-1">Stored history, not on the ticker.</p>
+        <div className="rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-4">
+          <span className="text-slate-400 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.16em] sm:tracking-[0.2em] leading-tight block">Completed</span>
+          <strong className="block text-white text-xl sm:text-2xl mt-1 tabular-nums">{complete.length}</strong>
+          <p className="text-slate-500 text-[10px] sm:text-xs mt-1 leading-tight hidden sm:block">Stored history, not on the ticker.</p>
         </div>
-        <div className="rounded-2xl border border-[#f0b429]/20 bg-[#f0b429]/5 p-4">
-          <span className="text-[#f0b429] text-[10px] font-black uppercase tracking-[0.2em]">Update timing</span>
-          <strong className="block text-white text-2xl mt-1">30s</strong>
-          <p className="text-slate-500 text-xs mt-1">Ticker refresh window after edits.</p>
+        <div className="rounded-xl sm:rounded-2xl border border-[#f0b429]/20 bg-[#f0b429]/5 p-3 sm:p-4">
+          <span className="text-[#f0b429] text-[9px] sm:text-[10px] font-black uppercase tracking-[0.16em] sm:tracking-[0.2em] leading-tight block">Refresh</span>
+          <strong className="block text-white text-xl sm:text-2xl mt-1 tabular-nums">30s</strong>
+          <p className="text-slate-500 text-[10px] sm:text-xs mt-1 leading-tight hidden sm:block">Ticker refresh window after edits.</p>
         </div>
       </div>
 
       {/* Add call form */}
       {showAdd && (
-        <div className="bg-[#071428] border border-[#f0b429]/20 rounded-2xl p-6 mb-8">
+        <div className="bg-[#071428] border border-[#f0b429]/20 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8">
           <h2 className="text-white font-black text-base mb-2">Add ticker/log item</h2>
           <p className="text-slate-400 text-sm mb-5">
             Use this for a corrected dispatch entry or a manual public ticker item. Gmail polling and cron jobs are unchanged.
@@ -270,14 +289,14 @@ export default function CallsAdmin() {
               </span>
             </span>
           </label>
-          <div className="flex items-center gap-3">
-            <button onClick={addCall} disabled={adding || !addForm.dispatchNature.trim()}
-              className="bg-[#f0b429] hover:bg-[#f5c842] disabled:opacity-40 text-[#020810] font-black px-6 py-2.5 rounded-xl text-sm transition-colors">
-              {adding ? "Adding…" : addForm.active ? "Add to live ticker" : "Add to log"}
-            </button>
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2 sm:gap-3">
             <button onClick={() => setShowAdd(false)}
-              className="text-slate-500 hover:text-slate-300 px-4 py-2.5 rounded-xl text-sm transition-colors">
+              className="text-slate-400 hover:text-slate-200 border border-white/10 px-4 py-3 sm:py-2.5 rounded-xl text-sm transition-colors">
               Cancel
+            </button>
+            <button onClick={addCall} disabled={adding || !addForm.dispatchNature.trim()}
+              className="bg-[#f0b429] hover:bg-[#f5c842] disabled:opacity-40 text-[#020810] font-black px-6 py-3 sm:py-2.5 rounded-xl text-sm transition-colors">
+              {adding ? "Adding…" : addForm.active ? "Add to live ticker" : "Add to log"}
             </button>
           </div>
         </div>
@@ -347,16 +366,16 @@ function ForcePollButton({ onAfter }: { onAfter: () => void }) {
     }
   }
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
       <button
         onClick={go}
         disabled={busy}
-        className="flex items-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-black text-sm px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+        className="flex items-center justify-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-black text-sm px-4 py-3 sm:py-2.5 rounded-xl transition-colors disabled:opacity-50"
       >
-        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.74 9.99h-2.07A6 6 0 1 1 12 6a5.85 5.85 0 0 1 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" aria-hidden><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.74 9.99h-2.07A6 6 0 1 1 12 6a5.85 5.85 0 0 1 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
         {busy ? "Polling…" : "Poll Gmail now"}
       </button>
-      {msg && <span className="text-slate-300 text-xs">{msg}</span>}
+      {msg && <span className="text-slate-300 text-xs leading-relaxed">{msg}</span>}
     </div>
   );
 }

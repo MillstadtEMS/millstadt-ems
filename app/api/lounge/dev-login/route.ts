@@ -34,10 +34,14 @@ export async function POST(req: NextRequest) {
   if (role === "admin") {
     emp = (await findEmployeeByUsername("kjames")) ?? (await findEmployeeByUsername("jgoetz"));
   } else {
-    // Dev "employee" slot is pinned to Dylan Spencer so we always test
-    // against his account (and his custom welcome image).
-    emp = await findEmployeeByUsername("dspencer");
+    // Dev "employee" slot points at a synthetic "Test User" account so the
+    // shortcut never logs anyone in as a real crew member. Created by
+    // scripts/ensure-test-user.ts.
+    emp = await findEmployeeByUsername("testuser");
     if (!emp) {
+      // Last-ditch fallback if the test user was deleted — pick any non-admin
+      // active account so the dev shortcut still works locally. Production
+      // should always have testuser present.
       const db = sql();
       const rows = (await db`
         SELECT username FROM lounge_employees
