@@ -34,6 +34,7 @@ const NAV: NavItem[] = [
   { href: "/lounge/my-file",      label: "My File",         icon: "folder" },
   { href: "/lounge/certs",        label: "Certifications",  icon: "certificate" },
   { href: "/lounge/about-me",     label: "Profile & Photo", icon: "badge" },
+  { href: "/lounge/security",     label: "Sign-in & Devices", icon: "shield" },
   { href: "/lounge/incidents",    label: "Incident Reports", icon: "alert" },
   { href: "/lounge/maintenance",  label: "Maintenance",     icon: "wrench" },
   { href: "/lounge/truckwash",    label: "Truck Wash Log",  icon: "droplet" },
@@ -61,7 +62,7 @@ const CREW_NAV_SECTIONS = [
   },
   {
     title: "Required",
-    hrefs: ["/lounge/acks", "/lounge/my-file", "/lounge/certs", "/lounge/about-me"],
+    hrefs: ["/lounge/acks", "/lounge/my-file", "/lounge/certs", "/lounge/about-me", "/lounge/security"],
   },
   {
     title: "Forms & Reports",
@@ -927,6 +928,7 @@ type LoungeIconName =
   | "menu"
   | "message"
   | "newspaper"
+  | "shield"
   | "ticker"
   | "toolbox"
   | "users"
@@ -960,6 +962,7 @@ function LoungeIcon({ name, size = 18 }: { name: LoungeIconName; size?: number }
     menu: <><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></>,
     message: <><path d="M4 5h16v11H8l-4 4V5Z" /></>,
     newspaper: <><path d="M4 5h14a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2V5Z" /><path d="M8 9h8" /><path d="M8 13h8" /><path d="M8 17h5" /></>,
+    shield: <><path d="M12 3 4 6v6c0 4.4 3.2 8.4 8 9 4.8-.6 8-4.6 8-9V6l-8-3Z" /><path d="m9 12 2 2 4-4" /></>,
     ticker: <><path d="M4 6h16v12H4z" /><path d="M7 10h5" /><path d="M14 10h3" /><path d="M7 14h10" /></>,
     toolbox: <><path d="M9 6V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1" /><path d="M4 8h16v11H4z" /><path d="M4 12h16" /><path d="M12 12v3" /></>,
     users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" /><path d="M22 21v-2a4 4 0 0 0-3-3.9" /><path d="M16 3.1a4 4 0 0 1 0 7.8" /></>,

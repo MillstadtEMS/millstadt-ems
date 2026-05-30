@@ -4,10 +4,25 @@ import { useEffect, useState } from "react";
 import { startRegistration as browserStartRegistration } from "@simplewebauthn/browser";
 
 /**
- * Shows a one-time "Enable Face ID / Touch ID for next time?" banner the
- * first time a logged-in user lands on the lounge without any passkeys
- * enrolled. Banner persists dismissal in localStorage so we don't nag.
+ * Shows an "Enable Face ID / Touch ID for next time?" banner the first
+ * time a logged-in user lands on the lounge from a device that hasn't
+ * been offered the prompt yet. We keep dismissals in localStorage so we
+ * don't nag — but the key is scoped per-device, so adding a passkey on
+ * the laptop doesn't suppress the banner on the phone or tablet.
  */
+const DISMISS_KEY = "lounge.passkeyDismissed";
+
+function thisDeviceLabel(): string {
+  if (typeof navigator === "undefined") return "This device";
+  const ua = navigator.userAgent;
+  if (/iPhone/.test(ua)) return "iPhone Face ID";
+  if (/iPad/.test(ua)) return "iPad Face ID";
+  if (/Android/.test(ua)) return "Android fingerprint";
+  if (/Macintosh/.test(ua)) return "Mac Touch ID";
+  if (/Windows/.test(ua)) return "Windows Hello";
+  return "This device";
+}
+
 export default function PasskeyPrompt() {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -16,20 +31,16 @@ export default function PasskeyPrompt() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!window.PublicKeyCredential) return;
-    if (window.localStorage.getItem("lounge.passkeyDismissed") === "1") return;
-    (async () => {
-      try {
-        const r = await fetch("/api/lounge/webauthn/credentials");
-        if (!r.ok) return;
-        const d = await r.json();
-        if (Array.isArray(d.credentials) && d.credentials.length === 0) setShow(true);
-      } catch { /* ignore */ }
-    })();
+    if (window.localStorage.getItem(DISMISS_KEY) === "1") return;
+    // Show the prompt on every device the user hasn't dismissed yet,
+    // regardless of how many credentials they've already enrolled on
+    // OTHER devices — we just check this browser/device's local flag.
+    setShow(true);
   }, []);
 
   function dismiss() {
     setShow(false);
-    try { window.localStorage.setItem("lounge.passkeyDismissed", "1"); } catch { /* ignore */ }
+    try { window.localStorage.setItem(DISMISS_KEY, "1"); } catch { /* ignore */ }
   }
 
   async function enable() {
@@ -43,10 +54,7 @@ export default function PasskeyPrompt() {
       }
       const { options } = await startRes.json();
       const attested = await browserStartRegistration({ optionsJSON: options });
-      const label = navigator.userAgent.match(/iPhone|iPad/) ? "iPhone Face ID"
-                  : navigator.userAgent.match(/Android/) ? "Android fingerprint"
-                  : navigator.userAgent.match(/Mac/) ? "Mac Touch ID"
-                  : "This device";
+      const label = thisDeviceLabel();
       const finishRes = await fetch("/api/lounge/webauthn/register-finish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
