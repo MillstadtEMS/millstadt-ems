@@ -33,6 +33,9 @@ const MESSAGE_REACTIONS: { kind: MessageReactionKind; emoji: string; label: stri
   { kind: "sad",   emoji: "😢", label: "Sad" },
   { kind: "angry", emoji: "😡", label: "Angry" },
 ];
+const MAX_MESSENGER_UPLOAD_BYTES = 500 * 1024 * 1024;
+const SMALL_UPLOAD_FALLBACK_BYTES = 4 * 1024 * 1024;
+
 interface MessageReaction { userId: string; firstName: string; lastName: string; kind: MessageReactionKind }
 interface MessageReplyTo { id: string; authorFirstName: string; authorLastName: string; bodyPreview: string; hasMedia: boolean }
 interface Message {
@@ -57,6 +60,105 @@ interface RosterEntry {
 
 const POLL_MS = 4000;
 
+type UploadProgressState = { name: string; index: number; total: number; percent: number; fallback?: boolean };
+
+function cleanAttachmentName(name: string): string {
+  return (name || "upload").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "upload";
+}
+
+function uploadNonce(): string {
+  return globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
+}
+
+function mediaKindForFile(file: File): MessageMediaKind {
+  const mime = (file.type || "").toLowerCase();
+  const name = (file.name || "").toLowerCase();
+  if (mime.startsWith("image/") || /\.(jpe?g|png|webp|gif|heic|heif|avif|bmp|tiff?)$/i.test(name)) return "image";
+  if (mime.startsWith("video/") || /\.(mp4|mov|m4v|webm|3gp|3gpp|avi|mpeg|mpg)$/i.test(name)) return "video";
+  if (mime.startsWith("audio/") || /\.(m4a|mp3|wav|ogg|webm|aac|caf)$/i.test(name)) return "audio";
+  return "file";
+}
+
+function mimeForFile(file: File): string {
+  if (file.type) return file.type;
+  const name = (file.name || "").toLowerCase();
+  if (name.endsWith(".mov")) return "video/quicktime";
+  if (name.endsWith(".m4v")) return "video/x-m4v";
+  if (name.endsWith(".mp4")) return "video/mp4";
+  if (name.endsWith(".webm")) return "video/webm";
+  if (name.endsWith(".heic")) return "image/heic";
+  if (name.endsWith(".heif")) return "image/heif";
+  if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "image/jpeg";
+  if (name.endsWith(".png")) return "image/png";
+  if (name.endsWith(".webp")) return "image/webp";
+  if (name.endsWith(".gif")) return "image/gif";
+  if (name.endsWith(".pdf")) return "application/pdf";
+  if (name.endsWith(".m4a")) return "audio/mp4";
+  if (name.endsWith(".mp3")) return "audio/mpeg";
+  if (name.endsWith(".wav")) return "audio/wav";
+  return "application/octet-stream";
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(kb >= 100 ? 0 : 1)} KB`;
+  const mb = kb / 1024;
+  return `${mb.toFixed(mb >= 100 ? 0 : 1)} MB`;
+}
+
+async function uploadMessengerFile(
+  file: File,
+  index: number,
+  total: number,
+  setProgress: (state: UploadProgressState | null) => void,
+): Promise<MessageMedia> {
+  if (file.size > MAX_MESSENGER_UPLOAD_BYTES) {
+    throw new Error(`File is ${formatBytes(file.size)}. Messenger limit is ${formatBytes(MAX_MESSENGER_UPLOAD_BYTES)}.`);
+  }
+
+  const mime = mimeForFile(file);
+  const kind = mediaKindForFile(file);
+  const name = file.name || "Attachment";
+  const pathname = `lounge-messages/${Date.now()}-${uploadNonce()}-${cleanAttachmentName(name)}`;
+  setProgress({ name, index, total, percent: 0 });
+
+  try {
+    const { upload } = await import("@vercel/blob/client");
+    const blob = await upload(pathname, file, {
+      access: "public",
+      handleUploadUrl: "/api/lounge/messages/media",
+      contentType: mime,
+      clientPayload: JSON.stringify({ mime, name, size: file.size, kind }),
+      multipart: file.size > 8 * 1024 * 1024,
+      onUploadProgress: ({ percentage }) => {
+        setProgress({ name, index, total, percent: Math.max(1, Math.min(100, Math.round(percentage))) });
+      },
+    });
+    setProgress({ name, index, total, percent: 100 });
+    return { url: blob.url, kind, name, mime: blob.contentType || mime };
+  } catch (e) {
+    if (file.size > SMALL_UPLOAD_FALLBACK_BYTES) {
+      const reason = e instanceof Error ? e.message : "Upload failed";
+      throw new Error(`${reason}. Large videos need the direct Blob upload token to be working.`);
+    }
+
+    setProgress({ name, index, total, percent: 5, fallback: true });
+    const form = new FormData();
+    form.append("file", file, name);
+    const res = await fetch("/api/lounge/messages/media", { method: "POST", body: form });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "Upload failed.");
+    setProgress({ name, index, total, percent: 100, fallback: true });
+    return {
+      url: String(json.url),
+      kind: (json.kind === "video" || json.kind === "audio" || json.kind === "file" || json.kind === "image") ? json.kind : kind,
+      name: typeof json.name === "string" ? json.name : name,
+      mime: typeof json.mime === "string" ? json.mime : mime,
+    };
+  }
+}
+
 export default function MessengerClient({ meId }: { meId: string }) {
   const [conversations, setConversations] = useState<ConversationPreview[]>([]);
   const [roster, setRoster] = useState<RosterEntry[]>([]);
@@ -69,6 +171,8 @@ export default function MessengerClient({ meId }: { meId: string }) {
   const [search, setSearch] = useState("");
   const [pendingMedia, setPendingMedia] = useState<MessageMedia[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgressState | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
   const [presence, setPresence] = useState<Record<string, { online: boolean; lastActivityAt: string | null }>>({});
   const [createMode, setCreateMode] = useState<"dm" | "group">("dm");
@@ -195,31 +299,27 @@ export default function MessengerClient({ meId }: { meId: string }) {
 
   async function onFilesPicked(files: FileList | null) {
     if (!files || files.length === 0) return;
+    const picked = Array.from(files);
     setUploadingMedia(true);
+    setUploadError(null);
+    setUploadProgress(null);
     try {
-      const { upload } = await import("@vercel/blob/client");
-      for (const f of Array.from(files)) {
+      const uploaded: MessageMedia[] = [];
+      const errors: string[] = [];
+      for (let i = 0; i < picked.length; i++) {
+        const f = picked[i];
         try {
-          const pathname = `lounge-messages/${Date.now()}-${(f.name || "upload").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120)}`;
-          const blob = await upload(pathname, f, {
-            access: "public",
-            handleUploadUrl: "/api/lounge/messages/media",
-            contentType: f.type || undefined,
-            clientPayload: JSON.stringify({ mime: f.type || "" }),
-            multipart: true,
-          });
-          const kind: MessageMediaKind =
-            (f.type || "").startsWith("video/") ? "video" :
-            (f.type || "").startsWith("audio/") ? "audio" :
-            (f.type || "").startsWith("image/") ? "image" :
-            /\.(mp4|mov|webm)$/i.test(f.name) ? "video" :
-            /\.(m4a|mp3|wav|ogg|webm|aac)$/i.test(f.name) ? "audio" :
-            "image";
-          setPendingMedia((s) => [...s, { url: blob.url, kind, name: f.name, mime: f.type || undefined }]);
+          const media = await uploadMessengerFile(f, i + 1, picked.length, setUploadProgress);
+          uploaded.push(media);
         } catch (e) {
           console.error("[chat upload]", e);
+          const msg = e instanceof Error ? e.message : "Upload failed.";
+          errors.push(`${f.name || "Attachment"}: ${msg}`);
         }
       }
+      if (uploaded.length > 0) setPendingMedia((s) => [...s, ...uploaded]);
+      if (errors.length > 0) setUploadError(errors.join(" "));
+      setUploadProgress(null);
     } finally { setUploadingMedia(false); }
   }
 
@@ -665,6 +765,29 @@ export default function MessengerClient({ meId }: { meId: string }) {
                   </div>
                 )}
 
+                {(uploadingMedia || uploadProgress || uploadError) && (
+                  <div className={uploadError ? "mas-msgr-upload-status is-error" : "mas-msgr-upload-status"} role="status">
+                    {uploadError ? (
+                      <>
+                        <span>{uploadError}</span>
+                        <button type="button" onClick={() => setUploadError(null)}>Dismiss</button>
+                      </>
+                    ) : uploadProgress ? (
+                      <>
+                        <span>
+                          {uploadProgress.fallback ? "Finishing" : "Uploading"} {uploadProgress.index}/{uploadProgress.total}: {uploadProgress.name}
+                        </span>
+                        <strong>{uploadProgress.percent}%</strong>
+                        <span className="mas-msgr-upload-bar" aria-hidden>
+                          <span style={{ width: `${uploadProgress.percent}%` }} />
+                        </span>
+                      </>
+                    ) : (
+                      <span>Preparing attachment…</span>
+                    )}
+                  </div>
+                )}
+
                 <div className="mas-msgr-composer-row">
                   <button
                     type="button"
@@ -688,7 +811,7 @@ export default function MessengerClient({ meId }: { meId: string }) {
                     ref={fileRef}
                     type="file"
                     multiple
-                    accept="image/*,video/*,audio/*"
+                    accept="image/*,video/*,audio/*,application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
                     style={{ display: "none" }}
                     onChange={(e) => { onFilesPicked(e.target.files); if (fileRef.current) fileRef.current.value = ""; }}
                   />
@@ -1670,6 +1793,64 @@ const MESSENGER_CSS = `
   width: 9px; height: 9px; border-radius: 50%;
   background: var(--mas-critical);
   animation: mas-pulse 1.2s ease-in-out infinite;
+}
+
+.mas-msgr-upload-status {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px 10px;
+  align-items: center;
+  padding: 9px 12px;
+  background: color-mix(in srgb, var(--mas-info) 12%, var(--mas-surface-well));
+  border: 1px solid color-mix(in srgb, var(--mas-info) 34%, var(--mas-border));
+  border-radius: var(--mas-r-2);
+  color: var(--mas-ink-muted);
+  font-size: 12.5px;
+  font-weight: 650;
+}
+.mas-msgr-upload-status > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mas-msgr-upload-status strong {
+  color: var(--mas-brand-gold);
+  font-family: var(--mas-font-mono);
+  font-size: 11px;
+}
+.mas-msgr-upload-status.is-error {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  background: color-mix(in srgb, var(--mas-critical) 11%, transparent);
+  border-color: color-mix(in srgb, var(--mas-critical) 38%, var(--mas-border));
+  color: var(--mas-critical);
+}
+.mas-msgr-upload-status button {
+  flex-shrink: 0;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.mas-msgr-upload-bar {
+  grid-column: 1 / -1;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+}
+.mas-msgr-upload-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--mas-brand-gold), var(--mas-info));
+  transition: width 160ms var(--mas-ease);
 }
 
 .mas-msgr-composer-row {

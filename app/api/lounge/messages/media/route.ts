@@ -14,6 +14,21 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const MAX_BYTES = 500 * 1024 * 1024; // 500MB — long videos OK
+const ALLOWED_CONTENT_TYPES = [
+  "image/*",
+  "video/*",
+  "audio/*",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/plain",
+  "text/csv",
+  "application/octet-stream",
+];
 
 function kindFor(contentType: string | null | undefined, name: string): "image" | "video" | "audio" | "file" {
   const t = (contentType || "").toLowerCase();
@@ -50,7 +65,7 @@ export async function POST(req: NextRequest) {
           // iPhone "video/quicktime", and HEIC photos all pass without an
           // exact-string match. The maximum size still caps abuse.
           return {
-            allowedContentTypes: ["image/*", "video/*", "audio/*", "application/octet-stream"],
+            allowedContentTypes: ALLOWED_CONTENT_TYPES,
             maximumSizeInBytes: MAX_BYTES,
             addRandomSuffix: true,
             tokenPayload: JSON.stringify({ employeeId: me.id, name: safeName, mime }),
