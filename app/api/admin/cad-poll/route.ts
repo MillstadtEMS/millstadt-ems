@@ -31,7 +31,7 @@ export async function POST() {
     }
     return NextResponse.json({ ok: true, ...data });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Unknown error";
-    return NextResponse.json({ error: `Poll request failed: ${msg}` }, { status: 502 });
+    console.error("[admin/cad-poll]", e);
+    return NextResponse.json({ error: "Could not reach the CAD poller. Try again in a moment." }, { status: 502 });
   }
 }

@@ -2,6 +2,34 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken as verifyAdminToken } from "@/lib/admin/auth";
 import { verifySessionToken as verifyTruckCheckToken } from "@/lib/truckcheck/auth";
 
+/**
+ * Attach a conservative set of security headers to every response so
+ * they're applied uniformly without each route having to remember them.
+ *
+ * - X-Content-Type-Options: nosniff           -> blocks MIME sniffing
+ * - X-Frame-Options: DENY                     -> blocks iframe embeds
+ * - Referrer-Policy: strict-origin-when-cross-origin
+ * - Permissions-Policy: camera + microphone allowed on same origin
+ *   (microphone for the inventory voice input); geolocation/payment off
+ * - Strict-Transport-Security: 2-year HSTS, production only
+ */
+function withSecurityHeaders(res: NextResponse): NextResponse {
+  res.headers.set("X-Content-Type-Options", "nosniff");
+  res.headers.set("X-Frame-Options", "DENY");
+  res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.headers.set(
+    "Permissions-Policy",
+    "camera=(self), microphone=(self), geolocation=(), payment=(), interest-cohort=()",
+  );
+  if (process.env.NODE_ENV === "production") {
+    res.headers.set(
+      "Strict-Transport-Security",
+      "max-age=63072000; includeSubDomains; preload",
+    );
+  }
+  return res;
+}
+
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -18,7 +46,7 @@ export function proxy(req: NextRequest) {
       const url = req.nextUrl.clone();
       url.pathname = "/admin/login";
       url.searchParams.set("from", pathname);
-      return NextResponse.redirect(url);
+      return withSecurityHeaders(NextResponse.redirect(url));
     }
   }
 
@@ -32,13 +60,16 @@ export function proxy(req: NextRequest) {
     if (!token || !verifyTruckCheckToken(token)) {
       const url = req.nextUrl.clone();
       url.pathname = "/truckcheck/login";
-      return NextResponse.redirect(url);
+      return withSecurityHeaders(NextResponse.redirect(url));
     }
   }
 
-  return NextResponse.next();
+  return withSecurityHeaders(NextResponse.next());
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/truckcheck/:path*"],
+  // Cover pages + API routes for both the auth gates and the security
+  // headers. Skip Next.js' internal asset paths and any request that
+  // looks like a static file (has an extension).
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };

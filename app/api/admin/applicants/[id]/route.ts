@@ -10,6 +10,7 @@ import {
   getFormSubmission,
 } from "@/lib/db";
 import { APPLICANT_STATUSES, type ApplicantStatus } from "@/lib/applicant-workflow";
+import { requireAdmin } from "@/lib/admin/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +20,7 @@ export const dynamic = "force-dynamic";
  * Returns workflow + form submission for the given submission id.
  */
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const denied = await requireAdmin(); if (denied) return denied;
   const { id } = await ctx.params;
   try {
     const submission = await getFormSubmission(id);
@@ -29,8 +31,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     return NextResponse.json({ submission, workflow });
   } catch (err) {
     console.error("[applicants GET]", err);
-    const msg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: "Could not load applicant" }, { status: 500 });
   }
 }
 
@@ -43,6 +44,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
  *   { onboarding: { ...partial } }
  */
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const denied = await requireAdmin(); if (denied) return denied;
   const { id } = await ctx.params;
   try {
     const body = await req.json().catch(() => null);
@@ -93,8 +95,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     return NextResponse.json({ workflow });
   } catch (err) {
     console.error("[applicants PATCH]", err);
-    const msg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: "Could not update applicant" }, { status: 500 });
   }
 }
 
