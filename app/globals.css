@@ -609,13 +609,308 @@ body {
   --mems-blue: #1b58c9;
   --mems-cyan: #22d3ee;
   --mems-gold: #f0b429;
+  --mems-red: #ef4444;
+  --mems-green: #22c55e;
+  --mems-purple: #a78bfa;
   --mems-line: rgba(148, 163, 184, 0.18);
   --mems-glass: rgba(7, 20, 40, 0.76);
+}
+
+.mems-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9rem;
+  color: var(--mems-gold);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.24em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.mems-eyebrow span {
+  display: inline-block;
+  width: 2rem;
+  height: 1px;
+  background: linear-gradient(90deg, var(--mems-gold), rgba(34, 211, 238, 0.72));
+  box-shadow: 0 0 20px rgba(240, 180, 41, 0.42);
+}
+
+.mems-page-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 2rem 0 1.1rem;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(34, 211, 238, 0.14), transparent 28rem),
+    radial-gradient(circle at 88% 0%, rgba(240, 180, 41, 0.14), transparent 24rem),
+    linear-gradient(180deg, rgba(7, 20, 40, 0.86), rgba(4, 13, 26, 0.92));
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.mems-page-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(34, 211, 238, 0.18), transparent 32%, rgba(240, 180, 41, 0.12)),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 74px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 74px);
+  opacity: 0.32;
+  mask-image: linear-gradient(180deg, black 0%, transparent 92%);
+}
+
+.mems-page-hero__grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.35fr);
+  gap: clamp(1.25rem, 4vw, 3.5rem);
+  align-items: end;
+}
+
+.mems-page-hero__copy {
+  max-width: 780px;
+}
+
+.mems-page-hero h1 {
+  margin: 1.05rem 0 0;
+  color: white;
+  font-size: clamp(3rem, 8vw, 6.4rem);
+  line-height: 0.9;
+  letter-spacing: -0.065em;
+  font-weight: 950;
+}
+
+.mems-page-hero h1 span {
+  display: block;
+  color: var(--mems-gold);
+  text-shadow: 0 0 42px rgba(240, 180, 41, 0.18);
+}
+
+.mems-page-hero p {
+  max-width: 63ch;
+  margin: 1.2rem 0 0;
+  color: #cbd5e1;
+  font-size: clamp(1rem, 1.7vw, 1.22rem);
+  line-height: 1.7;
+  font-weight: 550;
+}
+
+.mems-page-hero__aside {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mems-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 275px), 1fr));
+  gap: 1rem;
+}
+
+.mems-action-card,
+.mems-callout,
+.mems-metric {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background:
+    linear-gradient(145deg, rgba(14, 31, 59, 0.95), rgba(3, 9, 20, 0.96)),
+    radial-gradient(circle at 0% 0%, rgba(34, 211, 238, 0.16), transparent 17rem);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.075);
+}
+
+.mems-action-card::before,
+.mems-callout::before,
+.mems-metric::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(240, 180, 41, 0.24), rgba(34, 211, 238, 0.20), transparent 42%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 28px);
+  opacity: 0.18;
+}
+
+.mems-action-card > *,
+.mems-callout > *,
+.mems-metric > * {
+  position: relative;
+  z-index: 1;
+}
+
+.mems-action-card {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  padding: clamp(1.25rem, 3.5vw, 2rem);
+  border-radius: 1.35rem;
+  color: white;
+  text-decoration: none;
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mems-action-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.mems-icon-tile {
+  width: 3.35rem;
+  height: 3.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--mems-gold);
+  border-radius: 1rem;
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  background:
+    linear-gradient(145deg, rgba(27, 88, 201, 0.28), rgba(2, 7, 19, 0.58));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 0 28px rgba(34,211,238,0.12);
+}
+
+.mems-icon-tile svg {
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
+.mems-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 180, 41, 0.3);
+  background: rgba(240, 180, 41, 0.1);
+  color: #f8d980;
+  font-size: 0.66rem;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.mems-action-card h2,
+.mems-callout h2 {
+  margin: 0;
+  color: white;
+  font-size: clamp(1.28rem, 2vw, 1.75rem);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  font-weight: 950;
+}
+
+.mems-action-card p,
+.mems-callout p {
+  margin: 0.65rem 0 0;
+  color: #aebbd0;
+  font-size: 0.95rem;
+  line-height: 1.58;
+}
+
+.mems-card-link {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--mems-gold);
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.mems-card-link svg {
+  width: 1rem;
+  height: 1rem;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mems-action-card:hover .mems-card-link svg,
+.mems-callout:hover .mems-card-link svg {
+  transform: translate(2px, -2px);
+}
+
+.mems-action-card.tone-cyan .mems-icon-tile,
+.mems-metric.tone-cyan { color: var(--mems-cyan); }
+.mems-action-card.tone-green .mems-icon-tile,
+.mems-metric.tone-green { color: var(--mems-green); }
+.mems-action-card.tone-purple .mems-icon-tile { color: var(--mems-purple); }
+.mems-action-card.tone-red .mems-icon-tile,
+.mems-metric.tone-red { color: var(--mems-red); }
+.mems-action-card.tone-gold .mems-icon-tile,
+.mems-metric.tone-gold { color: var(--mems-gold); }
+
+.mems-metric {
+  display: grid;
+  gap: 0.22rem;
+  min-height: 5.2rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+}
+
+.mems-metric strong {
+  color: currentColor;
+  font-size: clamp(1.55rem, 3.5vw, 2.25rem);
+  line-height: 1;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+}
+
+.mems-metric span {
+  color: #aebbd0;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mems-callout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 1.1rem;
+  align-items: center;
+  padding: clamp(1.2rem, 3vw, 1.75rem);
+  border-radius: 1.35rem;
+  color: white;
+  text-decoration: none;
+}
+
+.mems-callout__eyebrow {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: var(--mems-gold);
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mems-action-card:hover,
+  .mems-callout:hover {
+    transform: translateY(-3px);
+    border-color: rgba(34, 211, 238, 0.34);
+    box-shadow:
+      0 34px 96px rgba(0, 0, 0, 0.36),
+      0 0 0 1px rgba(34, 211, 238, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
 }
 
 .mems-main-pad {
   position: relative;
   isolation: isolate;
+  padding-bottom: 2.75rem;
   background:
     radial-gradient(circle at 12% 8%, rgba(34, 211, 238, 0.14), transparent 28rem),
     radial-gradient(circle at 88% 2%, rgba(240, 180, 41, 0.12), transparent 26rem),
@@ -819,6 +1114,31 @@ body {
 }
 
 @media (max-width: 767px) {
+  .mems-page-hero {
+    padding: 1.55rem 0 0.9rem;
+  }
+
+  .mems-page-hero__grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .mems-page-hero h1 {
+    font-size: clamp(2.7rem, 15vw, 4.4rem);
+  }
+
+  .mems-page-hero__aside {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mems-action-card {
+    min-height: 210px;
+  }
+
+  .mems-callout {
+    grid-template-columns: 1fr;
+  }
+
   .mems-main-pad::before {
     background-size: 40px 40px, 40px 40px, auto;
     opacity: 0.72;

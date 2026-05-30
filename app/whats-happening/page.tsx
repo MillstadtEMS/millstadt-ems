@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import SectionDivider from "@/components/SectionDivider";
+import { PublicActionCard, PublicMetric, PublicPageHero } from "@/components/site/PublicChrome";
+import type { SiteIconName } from "@/components/site/SiteIcon";
 
 export const metadata: Metadata = {
   title: "What's Happening in Millstadt",
@@ -10,90 +10,87 @@ export const metadata: Metadata = {
 const cards = [
   {
     href: "/events",
-    emoji: "📅",
+    icon: "calendar",
     title: "Events Calendar",
     desc: "Upcoming community events, public appearances, and local happenings around Millstadt.",
-    color: "border-blue-500/20 bg-blue-500/5 hover:border-blue-400/40",
+    tone: "blue",
     label: "View Calendar",
   },
   {
     href: "/kids-club",
-    emoji: "🚑",
+    icon: "ambulance",
     title: "Kids Club",
     desc: "Monthly safety activities, games, and our own Millstadt EMS coloring pages for kids.",
-    color: "border-cyan-500/20 bg-cyan-500/5 hover:border-cyan-400/40",
+    tone: "cyan",
     label: "Enter Kids Club",
   },
   {
     href: "/senior-center",
-    emoji: "🏠",
+    icon: "home",
     title: "Senior Center",
     desc: "Monthly menus, activity schedules, and newsletters from the Millstadt Senior Center.",
-    color: "border-amber-500/20 bg-amber-500/5 hover:border-amber-400/40",
+    tone: "gold",
     label: "Visit Senior Center",
   },
   {
     href: "/commercial-club",
-    emoji: "📰",
+    icon: "newspaper",
     title: "Commercial Club",
     desc: "The latest newsletter and news from the Millstadt Commercial Club.",
-    color: "border-emerald-500/20 bg-emerald-500/5 hover:border-emerald-400/40",
+    tone: "green",
     label: "Read Newsletter",
   },
   {
     href: "/bulletin",
-    emoji: "📌",
+    icon: "pin",
     title: "Bulletin Board",
     desc: "Posts and updates from Millstadt Ambulance Service.",
-    color: "border-purple-500/20 bg-purple-500/5 hover:border-purple-400/40",
+    tone: "purple",
     label: "View Posts",
   },
   {
     href: "/news",
-    emoji: "🗞️",
+    icon: "newspaper",
     title: "Millstadt News",
     desc: "Latest stories and headlines pulled directly from millstadtnews.com.",
-    color: "border-red-500/20 bg-red-500/5 hover:border-red-400/40",
+    tone: "red",
     label: "Read News",
   },
-];
+] satisfies {
+  href: string;
+  icon: SiteIconName;
+  title: string;
+  desc: string;
+  tone: "blue" | "gold" | "cyan" | "green" | "purple" | "red";
+  label: string;
+}[];
 
 export default function WhatsHappeningPage() {
   return (
     <>
-      <section className="bg-gradient-to-b from-[#071428] to-[#040d1a] border-b border-white/5" style={{ paddingTop: 32, paddingBottom: 0 }}>
-        <div className="wrap">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="h-px w-8 bg-[#f0b429]" />
-            <span className="text-[#f0b429] text-sm font-black tracking-[0.25em] uppercase">Community Hub</span>
-          </div>
-          <h1 className="text-5xl md:text-6xl font-black text-white leading-tight mb-4">
-            What&apos;s Happening<br />
-            <span className="text-[#f0b429]">in Millstadt</span>
-          </h1>
-          <p className="text-slate-400 text-lg max-w-xl">Everything going on in our community — all in one place.</p>
-        </div>
-      </section>
+      <PublicPageHero
+        eyebrow="Community Hub"
+        title="What's Happening"
+        accent="in Millstadt"
+        description="A cleaner starting point for local events, Kids Club, senior resources, community posts, and Millstadt news."
+      >
+        <PublicMetric label="Community areas" value={cards.length} tone="gold" />
+        <PublicMetric label="Updated paths" value="Live" tone="cyan" />
+      </PublicPageHero>
 
       <section className="py-16 bg-[#040d1a]">
         <div className="wrap">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="mems-action-grid">
             {cards.map(card => (
-              <Link
+              <PublicActionCard
                 key={card.href}
                 href={card.href}
-                className={`group border ${card.color} rounded-2xl p-7 flex flex-col gap-4 transition-all duration-200 hover:scale-[1.02]`}
-              >
-                <div className="text-4xl">{card.emoji}</div>
-                <div>
-                  <h2 className="text-white font-black text-xl mb-2">{card.title}</h2>
-                  <p className="text-slate-400 text-sm leading-relaxed">{card.desc}</p>
-                </div>
-                <div className="flex items-center gap-2 text-slate-400 group-hover:text-white text-sm font-bold mt-auto transition-colors">
-                  {card.label}
-                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current group-hover:translate-x-1 transition-transform"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
-                </div>
-              </Link>
+                title={card.title}
+                description={card.desc}
+                label={card.label}
+                icon={card.icon}
+                tone={card.tone}
+              />
             ))}
           </div>
         </div>

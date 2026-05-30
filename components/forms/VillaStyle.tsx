@@ -3,10 +3,10 @@
 import Link from "next/link";
 
 const GOLD = "#f0b429";
-const SECTION_BG = "#111111";
-const FIELD_BG = "#1a1a1a";
-const BORDER = "rgba(255,255,255,0.08)";
-const SECTION_BORDER = "rgba(255,255,255,0.05)";
+const SECTION_BG = "linear-gradient(145deg, rgba(14,31,59,0.96), rgba(3,9,20,0.96))";
+const FIELD_BG = "rgba(2,9,18,0.72)";
+const BORDER = "rgba(148,163,184,0.20)";
+const SECTION_BORDER = "rgba(148,163,184,0.16)";
 
 export function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
@@ -31,7 +31,7 @@ export function Input(props: InputProps) {
     <input
       {...props}
       className="w-full px-4 py-3 text-white text-sm outline-none transition-colors"
-      style={{ background: FIELD_BG, border: `1px solid ${BORDER}` }}
+      style={{ background: FIELD_BG, border: `1px solid ${BORDER}`, borderRadius: 14, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)" }}
       onFocus={(e) => (e.currentTarget.style.borderColor = GOLD)}
       onBlur={(e) => (e.currentTarget.style.borderColor = BORDER)}
     />
@@ -51,7 +51,7 @@ export function Textarea({
       maxLength={maxLength}
       onChange={onChange}
       className="w-full px-4 py-3 text-white text-sm outline-none transition-colors resize-none"
-      style={{ background: FIELD_BG, border: `1px solid ${BORDER}` }}
+      style={{ background: FIELD_BG, border: `1px solid ${BORDER}`, borderRadius: 14, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)" }}
       onFocus={(e) => (e.currentTarget.style.borderColor = GOLD)}
       onBlur={(e) => (e.currentTarget.style.borderColor = BORDER)}
     />
@@ -68,7 +68,7 @@ export function RadioGroup({
         <label
           key={opt.value}
           className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors"
-          style={{ background: FIELD_BG, border: `1px solid ${BORDER}` }}
+          style={{ background: FIELD_BG, border: `1px solid ${BORDER}`, borderRadius: 14 }}
           onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(240,180,41,0.3)")}
           onMouseLeave={(e) => (e.currentTarget.style.borderColor = BORDER)}
         >
@@ -90,7 +90,7 @@ export function CheckGroup({
         <label
           key={opt}
           className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors"
-          style={{ background: FIELD_BG, border: `1px solid ${BORDER}` }}
+          style={{ background: FIELD_BG, border: `1px solid ${BORDER}`, borderRadius: 14 }}
           onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(240,180,41,0.3)")}
           onMouseLeave={(e) => (e.currentTarget.style.borderColor = BORDER)}
         >
@@ -106,8 +106,8 @@ export function SectionHeader({ number, title, subtitle }: { number: string | nu
   return (
     <div className="flex items-start gap-5 mb-8">
       <div
-        className="shrink-0 flex items-center justify-center w-10 h-10 font-bold text-[#040d1a] text-base"
-        style={{ background: GOLD }}
+        className="shrink-0 flex items-center justify-center w-10 h-10 font-black text-[#040d1a] text-base"
+        style={{ background: `linear-gradient(135deg, #ffdf7f, ${GOLD})`, borderRadius: 12, boxShadow: "0 14px 34px rgba(240,180,41,0.18)" }}
       >
         {number}
       </div>
@@ -122,8 +122,8 @@ export function SectionHeader({ number, title, subtitle }: { number: string | nu
 export function Section({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="p-8 mb-2"
-      style={{ background: SECTION_BG, border: `1px solid ${SECTION_BORDER}` }}
+      className="p-8 mb-3"
+      style={{ background: SECTION_BG, border: `1px solid ${SECTION_BORDER}`, borderRadius: 22, boxShadow: "0 24px 70px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.07)" }}
     >
       {children}
     </div>
@@ -149,25 +149,32 @@ export function PageHeader({ eyebrow, title, intro }: { eyebrow: string; title: 
   const intros = !intro ? [] : Array.isArray(intro) ? intro : [intro];
   return (
     <section
-      style={{ background: GOLD, paddingTop: "7rem", paddingBottom: "3rem", overflow: "hidden" }}
+      style={{
+        background:
+          "radial-gradient(circle at 16% 12%, rgba(34,211,238,0.16), transparent 28rem), radial-gradient(circle at 88% 0%, rgba(240,180,41,0.16), transparent 24rem), linear-gradient(180deg, #071428, #040d1a)",
+        paddingTop: "5rem",
+        paddingBottom: "2.75rem",
+        overflow: "hidden",
+        borderBottom: "1px solid rgba(148,163,184,0.16)",
+      }}
     >
       <div className="wrap">
-        <Link href="/forms" className="inline-flex items-center gap-2 text-[#040d1a]/70 hover:text-[#040d1a] text-xs font-bold uppercase tracking-widest mb-6 transition-colors">
+        <Link href="/forms" className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-xs font-bold uppercase tracking-widest mb-6 transition-colors">
           ← Back to Forms
         </Link>
-        <p className="text-[0.65rem] tracking-[0.35em] uppercase font-semibold mb-4 text-[#040d1a]/60">
+        <p className="text-[0.65rem] tracking-[0.35em] uppercase font-black mb-4 text-[#f0b429]">
           Millstadt Ambulance Service · {eyebrow}
         </p>
         <h1
-          className="text-[#040d1a] uppercase font-black"
-          style={{ fontSize: "clamp(2.25rem, 6vw, 4.5rem)", lineHeight: 0.95 }}
+          className="text-white uppercase font-black"
+          style={{ fontSize: "clamp(2.25rem, 6vw, 4.7rem)", lineHeight: 0.92, letterSpacing: "-0.055em" }}
         >
           {title}
         </h1>
         {intros.length > 0 && (
           <div className="mt-8 max-w-3xl space-y-3">
             {intros.map((line) => (
-              <p key={line} className="text-[#040d1a]/80 text-base leading-relaxed">{line}</p>
+              <p key={line} className="text-slate-300 text-base leading-relaxed">{line}</p>
             ))}
           </div>
         )}

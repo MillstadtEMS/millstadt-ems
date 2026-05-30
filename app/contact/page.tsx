@@ -4,6 +4,7 @@ import Link from "next/link";
 import EmbedSection from "../EmbedSection";
 import { getContent } from "@/lib/db";
 import SectionDivider from "@/components/SectionDivider";
+import { PublicMetric, PublicPageHero } from "@/components/site/PublicChrome";
 
 export const dynamic = "force-dynamic";
 
@@ -39,20 +40,15 @@ export default async function ContactPage({
 
   return (
     <>
-      {/* Page Header */}
-      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
-        <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
-        <div className="relative wrap">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="h-px w-8 bg-[#f0b429]" />
-            <span className="text-[#f0b429] text-sm font-black tracking-[0.25em] uppercase">Get in Touch</span>
-          </div>
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-10">
-            Contact Us
-          </h1>
-        </div>
-      </section>
+      <PublicPageHero
+        eyebrow="Get in Touch"
+        title="Contact"
+        accent="Millstadt EMS"
+        description="Station contact information, emergency guidance, local public safety numbers, and directions."
+      >
+        <PublicMetric label="Emergency" value="911" tone="red" />
+        <PublicMetric label="Non-emergency" value="Station" tone="gold" />
+      </PublicPageHero>
 
       {/* Emergency Banner */}
       <section className="bg-[#0a0f1f] border-y border-white/8">

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { buildApplicationFlags } from "@/lib/application-flags";
+import SiteIcon, { type SiteIconName } from "@/components/site/SiteIcon";
 
 interface Category { formType: string; total: number; unread: number; latest: string | null; }
 interface Submission { id: string; formType: string; fields: Record<string, string | string[]>; submittedAt: string; readAt: string | null; }
@@ -19,15 +20,15 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
-const TYPE_META: Record<string, { short: string; icon: string; color: string }> = {
-  "Birthday Party Appearance Request": { short: "Birthday Appearance", icon: "🎂", color: "text-pink-400 bg-pink-400/10 border-pink-400/20" },
-  "Birthday Party at Station Request": { short: "Birthday at Station", icon: "🎉", color: "text-purple-400 bg-purple-400/10 border-purple-400/20" },
-  "Ride Along Request":               { short: "Ride Along",          icon: "🚑", color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
-  "Event Appearance Request":         { short: "Event Appearance",    icon: "📅", color: "text-amber-400 bg-amber-400/10 border-amber-400/20" },
-  "Employment Application":           { short: "Employment",          icon: "📋", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
-  "Education Request":                { short: "Education",           icon: "🎓", color: "text-cyan-400 bg-cyan-400/10 border-cyan-400/20" },
-  "Equipment Request":                { short: "Equipment",           icon: "🛠️", color: "text-orange-400 bg-orange-400/10 border-orange-400/20" },
-  "Run Number Request":               { short: "Run Number",          icon: "🧾", color: "text-rose-400 bg-rose-400/10 border-rose-400/20" },
+const TYPE_META: Record<string, { short: string; icon: SiteIconName; color: string }> = {
+  "Birthday Party Appearance Request": { short: "Birthday Appearance", icon: "cake", color: "text-pink-300 bg-pink-500/10 border-pink-400/25" },
+  "Birthday Party at Station Request": { short: "Birthday at Station", icon: "home", color: "text-purple-300 bg-purple-500/10 border-purple-400/25" },
+  "Ride Along Request":               { short: "Ride Along",          icon: "ambulance", color: "text-blue-300 bg-blue-500/10 border-blue-400/25" },
+  "Event Appearance Request":         { short: "Event Appearance",    icon: "calendar", color: "text-amber-300 bg-amber-500/10 border-amber-400/25" },
+  "Employment Application":           { short: "Employment",          icon: "clipboard", color: "text-emerald-300 bg-emerald-500/10 border-emerald-400/25" },
+  "Education Request":                { short: "Education",           icon: "education", color: "text-cyan-300 bg-cyan-500/10 border-cyan-400/25" },
+  "Equipment Request":                { short: "Equipment",           icon: "tools", color: "text-orange-300 bg-orange-500/10 border-orange-400/25" },
+  "Run Number Request":               { short: "Run Number",          icon: "file", color: "text-rose-300 bg-rose-500/10 border-rose-400/25" },
 };
 // Always show these categories on the admin index, even when there are 0 submissions
 const EXPECTED_TYPES = [
@@ -40,7 +41,7 @@ const EXPECTED_TYPES = [
   "Birthday Party Appearance Request",
   "Birthday Party at Station Request",
 ];
-function getMeta(t: string) { return TYPE_META[t] ?? { short: t, icon: "📄", color: "text-slate-400 bg-white/5 border-white/10" }; }
+function getMeta(t: string) { return TYPE_META[t] ?? { short: t, icon: "file" as SiteIconName, color: "text-slate-300 bg-white/5 border-white/10" }; }
 
 // First name from fields
 function nameFromFields(fields: Record<string, string | string[]>) {
@@ -111,7 +112,9 @@ function SubmissionsContent() {
               return (
                 <Link key={cat.formType} href={`/admin/submissions?type=${encodeURIComponent(cat.formType)}`}
                   className={`group bg-[#071428] border border-white/10 hover:border-[#f0b429]/30 rounded-2xl p-6 flex items-start gap-4 transition-colors ${isEmpty ? "opacity-60 hover:opacity-100" : ""}`}>
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl border ${m.color}`}>{m.icon}</div>
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${m.color}`}>
+                    <SiteIcon name={m.icon} className="w-6 h-6" />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-white font-bold text-base leading-tight">{m.short}</span>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getContent } from "@/lib/db";
+import { PublicMetric, PublicPageHero } from "@/components/site/PublicChrome";
 
 export const dynamic = "force-dynamic";
 
@@ -190,21 +191,14 @@ export default async function CareersPage({
 
   return (
     <>
-      {/* Page Header */}
-      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
-        <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
-        <div className="relative wrap">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="h-px w-8 bg-[#f0b429]" />
-            <span className="text-[#f0b429] text-sm font-black tracking-[0.25em] uppercase">Join the Team</span>
-          </div>
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6">
-            {pageTitle}
-          </h1>
-          <p className="text-slate-400 text-xl max-w-2xl leading-relaxed">{subtitle}</p>
-        </div>
-      </section>
+      <PublicPageHero
+        eyebrow="Join the Team"
+        title={pageTitle}
+        description={subtitle}
+      >
+        <PublicMetric label="Provider levels" value={positions.length} tone="gold" />
+        <PublicMetric label="Clinical direction" value="ALS" tone="cyan" />
+      </PublicPageHero>
 
       {/* Position Listings */}
       <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>

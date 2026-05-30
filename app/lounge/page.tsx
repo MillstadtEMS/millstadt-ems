@@ -9,7 +9,6 @@ import { listAcksForViewer, type Ack } from "@/lib/lounge/acks";
 import LoungeShell from "@/components/lounge/LoungeShell";
 import Wall from "@/components/lounge/Wall";
 import PasskeyPrompt from "@/components/lounge/PasskeyPrompt";
-import TodayEventsWidget from "@/components/lounge/TodayEventsWidget";
 import BirthdayBanner from "@/components/lounge/BirthdayBanner";
 import PollsWidget from "@/components/lounge/PollsWidget";
 import { listTodaysBirthdays } from "@/lib/lounge/birthdays";
@@ -65,10 +64,6 @@ export default async function LoungeHome() {
         />
 
         {blockingCerts.length > 0 && <CertAlertsBanner certs={expiring} />}
-
-        <div className="mas-home-events">
-          <TodayEventsWidget />
-        </div>
 
         <div className="mas-home-grid">
           <div className="mas-home-main">
@@ -432,11 +427,6 @@ const LANDING_CSS = `
   transition: transform var(--mas-fast) var(--mas-ease), filter var(--mas-fast) var(--mas-ease);
 }
 .mas-cert-strip-cta:hover { transform: translateY(-1px); filter: brightness(1.06); }
-
-/* ── Today events strip wrapper ──────────────────────────────────── */
-.mas-home-events > * {
-  border-radius: var(--mas-r-3);
-}
 
 /* ── Main grid (Wall + sidebar) ──────────────────────────────────── */
 .mas-home-grid {

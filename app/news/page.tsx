@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import SectionDivider from "@/components/SectionDivider";
+import { PublicMetric, PublicPageHero } from "@/components/site/PublicChrome";
+import SiteIcon from "@/components/site/SiteIcon";
 
 function StorySeparator() {
   return (
@@ -61,25 +62,23 @@ export default function NewsPage() {
 
   return (
     <>
-      <section className="bg-gradient-to-b from-[#071428] to-[#040d1a] border-b border-white/5" style={{ paddingTop: 32, paddingBottom: 0 }}>
-        <div className="wrap">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="h-px w-8 bg-[#f0b429]" />
-            <span className="text-[#f0b429] text-sm font-black tracking-[0.25em] uppercase">Local News</span>
-          </div>
-          <h1 className="text-5xl md:text-6xl font-black text-white leading-tight mb-4">
-            Millstadt<br />
-            <span className="text-[#f0b429]">News</span>
-          </h1>
-          <p className="text-slate-400 text-lg">
+      <PublicPageHero
+        eyebrow="Local News"
+        title="Millstadt"
+        accent="News"
+        description={(
+          <>
             Latest stories from{" "}
-            <a href="https://www.millstadtnews.com" target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-white underline underline-offset-2 transition-colors">
+            <a href="https://www.millstadtnews.com" target="_blank" rel="noopener noreferrer" className="text-slate-200 hover:text-white underline underline-offset-4 transition-colors">
               millstadtnews.com
             </a>
             , updated automatically.
-          </p>
-        </div>
-      </section>
+          </>
+        )}
+      >
+        <PublicMetric label="Source" value="Local" tone="gold" />
+        <PublicMetric label="Refresh" value="Auto" tone="cyan" />
+      </PublicPageHero>
 
       <section className="py-14 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
@@ -92,17 +91,17 @@ export default function NewsPage() {
           )}
 
           {!loading && error && (
-            <div className="text-center py-20 border border-white/6 rounded-2xl">
-              <div className="text-4xl mb-4">📡</div>
-              <p className="text-slate-500 font-bold">Couldn&apos;t load news right now.</p>
+            <div className="text-center py-20 border border-white/10 rounded-2xl bg-[#071428]/60">
+              <span className="mems-icon-tile mx-auto mb-4"><SiteIcon name="newspaper" /></span>
+              <p className="text-slate-300 font-bold">Couldn&apos;t load news right now.</p>
               <p className="text-slate-700 text-sm mt-2">Check back in a few minutes or visit millstadtnews.com directly.</p>
             </div>
           )}
 
           {!loading && !error && items.length === 0 && (
-            <div className="text-center py-20 border border-white/6 rounded-2xl">
-              <div className="text-4xl mb-4">🗞️</div>
-              <p className="text-slate-500 font-bold">No news stories found.</p>
+            <div className="text-center py-20 border border-white/10 rounded-2xl bg-[#071428]/60">
+              <span className="mems-icon-tile mx-auto mb-4"><SiteIcon name="file" /></span>
+              <p className="text-slate-300 font-bold">No news stories found.</p>
             </div>
           )}
 
@@ -137,7 +136,7 @@ export default function NewsPage() {
                         <span className="text-slate-500 text-xs">{timeAgo(item.pubDate)}</span>
                         <span className="flex items-center gap-1 text-slate-500 group-hover:text-[#f0b429] text-xs font-bold transition-colors">
                           Read more
-                          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current group-hover:translate-x-0.5 transition-transform"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                          <SiteIcon name="external" className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                         </span>
                       </div>
                     </div>
@@ -157,7 +156,7 @@ export default function NewsPage() {
                 className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-sm font-bold transition-colors"
               >
                 View all stories on millstadtnews.com
-                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+                <SiteIcon name="external" className="w-4 h-4" />
               </a>
             </div>
           )}

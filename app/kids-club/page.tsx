@@ -6,9 +6,9 @@ import { PARTNER_LINKS } from "@/lib/kids/activities";
 const featureCards = [
   {
     href: "/kids-club/activities",
-    eyebrow: "Monthly Missions",
-    title: "Two activities every month",
-    text: "Simple EMS safety activities families can do together at home.",
+    eyebrow: "Safety Missions",
+    title: "24 EMS safety activities",
+    text: "Age-track missions for 2-5 and 6-11 with useful safety concepts families can practice.",
     cta: "Open Missions",
     image: "/images/millstadt-ems/IMG_9307.jpeg",
   },

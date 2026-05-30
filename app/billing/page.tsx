@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { getContent } from "@/lib/db";
 import SectionDivider from "@/components/SectionDivider";
+import { PublicMetric, PublicPageHero } from "@/components/site/PublicChrome";
 
 export const dynamic = "force-dynamic";
 
@@ -26,31 +26,14 @@ export default async function BillingPage({
 
   return (
     <>
-      {/* Page Header */}
-      <section className="relative bg-[#040d1a] overflow-hidden" style={{ paddingTop: 32, paddingBottom: 0 }}>
-        <div className="absolute inset-0 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#f0b429]/30 to-transparent" />
-        <div className="relative wrap">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="h-px w-8 bg-[#f0b429]" />
-            <span className="text-[#f0b429] text-sm font-black tracking-[0.25em] uppercase">Patient Services</span>
-          </div>
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-10">
-            {pageTitle}
-          </h1>
-          <ul className="space-y-5 max-w-2xl">
-            {[
-              "Pay your bill securely online or contact us with any questions about your account.",
-              "Most major insurance plans, Medicare, and Medicaid cover emergency ambulance services.",
-            ].map((text) => (
-              <li key={text} className="flex items-start gap-4">
-                <Image src="/images/millstadt-ems/crest.png" alt="" width={20} height={20} className="shrink-0 mt-1" style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
-                <span className="text-slate-300 text-xl leading-relaxed">{text}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+      <PublicPageHero
+        eyebrow="Patient Services"
+        title={pageTitle}
+        description="Pay your bill securely online, request a run number, or contact us with questions about your account."
+      >
+        <PublicMetric label="Secure portal" value="EMSMC" tone="gold" />
+        <PublicMetric label="Assistance" value="Local" tone="cyan" />
+      </PublicPageHero>
 
       {/* ── VOID ── */}
       <SectionDivider />
