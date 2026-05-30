@@ -175,6 +175,75 @@ function buildPdf(fields: Record<string, string>): Buffer {
     blockText("Skipped Files", fields.skipped_files_note);
   }
 
+  // ── Applicant signature ────────────────────────────────────────────
+  // Drop the captured signature image directly onto the PDF so the
+  // applicant's mark is preserved verbatim. Reserve enough space so
+  // it never lands on top of the footer.
+  const SIG_BLOCK_HEIGHT = 130;
+  checkPageBreak(SIG_BLOCK_HEIGHT + 24);
+  sectionHeader("Applicant Signature");
+
+  const signatureDataUrl = fields.signature_data_url || "";
+  const sigBoxX = margin;
+  const sigBoxY = y;
+  const sigBoxW = pageWidth - margin * 2;
+  const sigBoxH = 80;
+
+  // Light card behind the signature for definition on print.
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(sigBoxX, sigBoxY, sigBoxW, sigBoxH, 6, 6);
+
+  if (signatureDataUrl.startsWith("data:image/")) {
+    try {
+      // jsPDF auto-detects PNG vs JPEG from the data URL.
+      const format = signatureDataUrl.includes("image/jpeg") ? "JPEG" : "PNG";
+      // Preserve aspect ratio: signature canvas is ~ rect.width × 180px,
+      // we render it up to 360 × 64 inside the card centered vertically.
+      const targetW = Math.min(sigBoxW - 32, 360);
+      const targetH = 60;
+      const x = sigBoxX + (sigBoxW - targetW) / 2;
+      const yImg = sigBoxY + (sigBoxH - targetH) / 2;
+      doc.addImage(signatureDataUrl, format, x, yImg, targetW, targetH, undefined, "FAST");
+    } catch (err) {
+      console.error("[apply pdf] failed to embed signature:", err);
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(9);
+      doc.setTextColor(180, 60, 60);
+      doc.text("Signature could not be rendered. See application metadata.", sigBoxX + 12, sigBoxY + sigBoxH / 2 + 3);
+    }
+  } else {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.setTextColor(120, 120, 120);
+    doc.text("No signature captured.", sigBoxX + 12, sigBoxY + sigBoxH / 2 + 3);
+  }
+
+  y = sigBoxY + sigBoxH + 12;
+
+  // Signed-by + signed-at line under the box.
+  const signedBy = [fields.first_name, fields.middle_name, fields.last_name].filter(Boolean).join(" ") || "Applicant";
+  const signedAt = fields.applicant_signed_at || new Date().toLocaleString("en-US", { timeZone: "America/Chicago" }) + " CDT";
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  doc.text("SIGNED BY", margin, y);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(20, 20, 20);
+  doc.text(signedBy, margin + 90, y);
+  y += lineHeight;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  doc.text("SIGNED AT", margin, y);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(20, 20, 20);
+  doc.text(signedAt, margin + 90, y);
+  y += lineHeight + 4;
+
   // Footer on last page
   doc.setFontSize(8);
   doc.setTextColor(120, 120, 120);

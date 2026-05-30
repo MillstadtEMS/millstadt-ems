@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
+import SignaturePad from "@/components/lounge/SignaturePad";
 
 /* ── Reusable field components — Villa Hills pattern, EMS gold ─────── */
 
@@ -176,6 +177,7 @@ export default function ApplicationForm() {
   const [colleges, setColleges] = useState<College[]>([defaultCollege()]);
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [signature, setSignature] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   function updateCert(i: number, field: keyof Cert, val: string | boolean) {
@@ -225,6 +227,14 @@ export default function ApplicationForm() {
     fd.set("college_education", colleges.map((c, i) =>
       `College #${i + 1}: ${c.name} | Degree: ${c.degree} | Grad: ${c.gradYear} | Honors: ${c.honors} | GPA: ${c.gpa}`
     ).join("\n"));
+
+    if (!signature) {
+      setErrorMsg("Please sign at the bottom of the form before submitting.");
+      setStatus("error");
+      return;
+    }
+    fd.set("signature_data_url", signature);
+    fd.set("applicant_signed_at", new Date().toLocaleString("en-US", { timeZone: "America/Chicago" }) + " CDT");
 
     try {
       const res = await fetch("/api/apply", { method: "POST", body: fd });
@@ -771,13 +781,34 @@ export default function ApplicationForm() {
                 </span>
               </label>
             </div>
+
+            {/* ── Applicant signature ── */}
+            <div className="mt-8 p-5 bg-white border border-[#f0b429]/30 rounded-lg">
+              <p className="text-[#040d1a] text-sm leading-relaxed font-semibold mb-1">
+                Applicant signature
+              </p>
+              <p className="text-slate-700 text-xs leading-relaxed mb-4">
+                Sign below to certify everything above. Your signature is recorded on the application PDF that is sent to
+                Millstadt EMS along with the date and time of signing.
+              </p>
+              <SignaturePad
+                value={signature}
+                onChange={setSignature}
+                label="Sign here"
+                height={170}
+              />
+              <p className="mt-3 text-slate-600 text-xs">
+                {signature ? "Signature captured. You may resign if you need to redo it." : "A signature is required to submit."}
+              </p>
+            </div>
           </Section>
 
           {/* ── SUBMIT ── */}
           <div className="mt-8 flex flex-col sm:flex-row gap-3">
             <button
               type="submit"
-              disabled={status === "sending"}
+              disabled={status === "sending" || !signature}
+              title={!signature ? "Add your signature above before submitting." : undefined}
               className="bg-[#f0b429] text-[#040d1a] font-black uppercase tracking-wider px-8 py-4 hover:bg-[#f7c847] transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm sm:text-base"
             >
               {status === "sending" ? "Submitting…" : "Submit Application"}
