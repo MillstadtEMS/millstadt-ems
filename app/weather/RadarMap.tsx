@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { Map as LeafletMap, TileLayer as LeafletTileLayer } from "leaflet";
+// `leaflet` is loaded dynamically below so we don't pay for it on first paint;
+// we still pull in the type namespace to keep the refs honest.
+import type * as L from "leaflet";
 
 interface RadarFrame { time: number; path: string; }
 
@@ -35,12 +39,9 @@ export default function RadarMap() {
   const [framesReady, setFramesReady] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const lRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const layersRef = useRef<any[]>([]);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const lRef = useRef<typeof L | null>(null);
+  const layersRef = useRef<LeafletTileLayer[]>([]);
   const playTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ── Init map ──────────────────────────────────────────────────────────────

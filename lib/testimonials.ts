@@ -1,10 +1,4 @@
-import { neon } from "@neondatabase/serverless";
-
-function sql() {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL not set");
-  return neon(url);
-}
+import { sql } from "@/lib/neon";
 
 export type Testimonial = {
   id: string;
@@ -81,5 +75,12 @@ export async function getApproved(): Promise<Testimonial[]> {
     WHERE status = 'approved'
     ORDER BY submitted_at DESC
   `;
+  return (rows as Record<string, unknown>[]).map(rowToTestimonial);
+}
+
+export async function getAllTestimonials(): Promise<Testimonial[]> {
+  await ensureSchema();
+  const db = sql();
+  const rows = await db`SELECT * FROM testimonials ORDER BY submitted_at DESC`;
   return (rows as Record<string, unknown>[]).map(rowToTestimonial);
 }

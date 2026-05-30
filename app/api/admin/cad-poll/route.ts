@@ -5,15 +5,13 @@
  */
 
 import { NextResponse } from "next/server";
-import { isAdminAuthed } from "@/lib/admin/auth";
+import { requireAdmin } from "@/lib/admin/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST() {
-  if (!(await isAdminAuthed())) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const denied = await requireAdmin(); if (denied) return denied;
 
   const secret = process.env.CAD_POLL_SECRET;
   if (!secret) {

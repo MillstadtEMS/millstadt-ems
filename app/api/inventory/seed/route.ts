@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminAuthed } from "@/lib/admin/auth";
+import { requireAdmin } from "@/lib/admin/auth";
 import { createCategory, createItem, clearInventoryData, ensureInventorySchema } from "@/lib/inventory/db";
 import { logChange } from "@/lib/db";
 
@@ -22,10 +22,7 @@ interface SeedCategory {
 }
 
 export async function POST(req: NextRequest) {
-  const authed = await isAdminAuthed();
-  if (!authed) {
-    return NextResponse.json({ error: "Admin access required" }, { status: 401 });
-  }
+  const denied = await requireAdmin(); if (denied) return denied;
 
   try {
     const body = await req.json().catch(() => null);

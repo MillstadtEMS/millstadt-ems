@@ -1,16 +1,13 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminAuthed } from "@/lib/admin/auth";
+import { requireAdmin } from "@/lib/admin/auth";
 import { getItems, getCategories, getReports, saveReport, getAuditLog, getSubmissions } from "@/lib/inventory/db";
 import { generateOrderReport, generateExpiredReport, generateFullInventoryReport } from "@/lib/inventory/pdf";
 import { put } from "@vercel/blob";
 
 export async function GET(req: NextRequest) {
-  const authed = await isAdminAuthed();
-  if (!authed) {
-    return NextResponse.json({ error: "Admin access required" }, { status: 401 });
-  }
+  const denied = await requireAdmin(); if (denied) return denied;
 
   const { searchParams } = new URL(req.url);
   const type = searchParams.get("type");
@@ -32,10 +29,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const authed = await isAdminAuthed();
-  if (!authed) {
-    return NextResponse.json({ error: "Admin access required" }, { status: 401 });
-  }
+  const denied = await requireAdmin(); if (denied) return denied;
 
   try {
     const { reportType } = await req.json();

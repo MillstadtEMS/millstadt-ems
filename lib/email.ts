@@ -4,7 +4,8 @@ import type { Testimonial } from "./testimonials";
 import { encodeMimeSubject } from "./reports/subject";
 
 export function signToken(id: string, action: string): string {
-  const secret = process.env.APPROVAL_SECRET ?? "dev-secret-change-me";
+  const secret = process.env.APPROVAL_SECRET;
+  if (!secret) throw new Error("APPROVAL_SECRET is not configured");
   return createHmac("sha256", secret)
     .update(`${id}:${action}`)
     .digest("hex")
@@ -63,8 +64,6 @@ export async function sendApprovalEmail(t: Testimonial) {
     </div>
   `;
 
-  // Build RFC 2822 message with HTML body
-  const boundary = "boundary_ems_" + Date.now();
   const raw = Buffer.from(
     `From: Millstadt EMS Website <${from}>\r\n` +
     `To: ${to}\r\n` +
@@ -78,7 +77,4 @@ export async function sendApprovalEmail(t: Testimonial) {
 
   const gmail = google.gmail({ version: "v1", auth: getAuth() });
   await gmail.users.messages.send({ userId: from, requestBody: { raw } });
-
-  // suppress unused var warning
-  void boundary;
 }

@@ -7,10 +7,14 @@ import {
   addGalleryImage,
   deleteGalleryImage,
 } from "@/lib/db";
+import { requireAdmin } from "@/lib/admin/auth";
 
 export const runtime = "nodejs";
 
-// GET /api/admin/media — returns named slots + gallery collections
+// GET /api/admin/media — returns named slots + gallery collections.
+// Public read is intentional: the homepage hero carousel and the public
+// gallery page call this; the returned values are CDN URLs that are
+// already publicly addressable.
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const collection = searchParams.get("collection");
@@ -24,6 +28,7 @@ export async function GET(req: NextRequest) {
 
 // POST /api/admin/media — set named image OR add to gallery
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin(); if (denied) return denied;
   const body = await req.json() as { key?: string; url?: string; collection?: string; altText?: string; brightness?: number };
   if (body.collection && body.url) {
     const img = await addGalleryImage(body.collection, body.url, body.altText ?? "", body.brightness ?? 0.45);
@@ -38,6 +43,7 @@ export async function POST(req: NextRequest) {
 
 // DELETE /api/admin/media
 export async function DELETE(req: NextRequest) {
+  const denied = await requireAdmin(); if (denied) return denied;
   const body = await req.json() as { key?: string; id?: string };
   if (body.id) {
     await deleteGalleryImage(body.id);

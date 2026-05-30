@@ -5,7 +5,7 @@
  * Body: { month: "april", year: "2026" }
  */
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminAuthed } from "@/lib/admin/auth";
+import { requireAdmin } from "@/lib/admin/auth";
 import { put } from "@vercel/blob";
 
 export const runtime = "nodejs";
@@ -14,9 +14,7 @@ const CHAMBER_NEWSLETTERS = "https://millstadtchamber.org/monthly-newsletters";
 const CHAMBER_BASE        = "https://millstadtchamber.org";
 
 export async function POST(req: NextRequest) {
-  if (!(await isAdminAuthed())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = await requireAdmin(); if (denied) return denied;
 
   const { month, year } = await req.json() as { month: string; year: string };
   if (!month || !year) {

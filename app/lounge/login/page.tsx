@@ -347,7 +347,7 @@ export default function LoungeLogin() {
           Don&apos;t have your password? Contact management.
         </p>
 
-        <DevShortcut />
+        {process.env.NODE_ENV !== "production" && <DevShortcut />}
       </div>
     </div>
   );

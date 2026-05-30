@@ -4,10 +4,12 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
+import { requireAdmin } from "@/lib/admin/auth";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin(); if (denied) return denied;
   const form = await req.formData();
   const file = form.get("file") as File | null;
   if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });

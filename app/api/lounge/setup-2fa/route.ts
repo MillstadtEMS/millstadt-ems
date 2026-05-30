@@ -43,9 +43,8 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json({ otpauth: otp, secret, issuer, account, authenticator: "microsoft" });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Unknown server error";
     console.error("[setup-2fa GET] failed:", e);
-    return NextResponse.json({ error: `Setup failed: ${msg}` }, { status: 500 });
+    return NextResponse.json({ error: "Could not start two-factor setup. Please try again." }, { status: 500 });
   }
 }
 

@@ -3,13 +3,7 @@
  * Tables: testimonials, bulletin_posts, announcements
  */
 
-import { neon } from "@neondatabase/serverless";
-
-function sql() {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL not set");
-  return neon(url);
-}
+import { sql } from "@/lib/neon";
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -19,17 +13,8 @@ function uid() {
 
 export async function ensureSiteSchema() {
   const db = sql();
-  await db`
-    CREATE TABLE IF NOT EXISTS testimonials (
-      id          TEXT PRIMARY KEY,
-      name        TEXT NOT NULL,
-      role        TEXT NOT NULL DEFAULT '',
-      quote       TEXT NOT NULL,
-      rating      INTEGER NOT NULL DEFAULT 5,
-      approved    BOOLEAN NOT NULL DEFAULT true,
-      created_at  TIMESTAMPTZ DEFAULT NOW()
-    )
-  `;
+  // Note: the testimonials table is owned by lib/testimonials.ts (which
+  // ensures its own schema). This module does not touch it.
   await db`
     CREATE TABLE IF NOT EXISTS bulletin_posts (
       id          TEXT PRIMARY KEY,
@@ -109,16 +94,6 @@ export async function ensureSiteSchema() {
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-export interface Testimonial {
-  id: string;
-  name: string;
-  role: string;
-  quote: string;
-  rating: number;
-  approved: boolean;
-  createdAt: string;
-}
-
 export interface BulletinPost {
   id: string;
   author: string;
@@ -141,54 +116,12 @@ export interface Announcement {
 // ── Row mappers ────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function toTestimonial(r: any): Testimonial {
-  return { id: r.id, name: r.name, role: r.role, quote: r.quote, rating: Number(r.rating), approved: Boolean(r.approved), createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at) };
-}
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toBulletin(r: any): BulletinPost {
   return { id: r.id, author: r.author, title: r.title, body: r.body, category: r.category, approved: Boolean(r.approved), createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at) };
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toAnnouncement(r: any): Announcement {
   return { id: r.id, title: r.title, body: r.body, severity: r.severity, active: Boolean(r.active), createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at) };
-}
-
-// ── Testimonials ───────────────────────────────────────────────────────────
-
-export async function getTestimonials(all = false): Promise<Testimonial[]> {
-  await ensureSiteSchema();
-  const db = sql();
-  const rows = all
-    ? await db`SELECT * FROM testimonials ORDER BY created_at DESC`
-    : await db`SELECT * FROM testimonials WHERE approved = true ORDER BY created_at DESC`;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (rows as any[]).map(toTestimonial);
-}
-
-export async function createTestimonial(data: Omit<Testimonial, "id" | "createdAt">): Promise<Testimonial> {
-  await ensureSiteSchema();
-  const db = sql();
-  const id = uid();
-  await db`INSERT INTO testimonials (id, name, role, quote, rating, approved) VALUES (${id}, ${data.name}, ${data.role}, ${data.quote}, ${data.rating}, ${data.approved})`;
-  const rows = await db`SELECT * FROM testimonials WHERE id = ${id}`;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return toTestimonial((rows as any[])[0]);
-}
-
-export async function updateTestimonial(id: string, data: Partial<Omit<Testimonial, "id" | "createdAt">>): Promise<void> {
-  await ensureSiteSchema();
-  const db = sql();
-  if (data.approved !== undefined) await db`UPDATE testimonials SET approved = ${data.approved} WHERE id = ${id}`;
-  if (data.name)  await db`UPDATE testimonials SET name  = ${data.name}  WHERE id = ${id}`;
-  if (data.role !== undefined)  await db`UPDATE testimonials SET role  = ${data.role}  WHERE id = ${id}`;
-  if (data.quote) await db`UPDATE testimonials SET quote = ${data.quote} WHERE id = ${id}`;
-  if (data.rating) await db`UPDATE testimonials SET rating = ${data.rating} WHERE id = ${id}`;
-}
-
-export async function deleteTestimonial(id: string): Promise<void> {
-  await ensureSiteSchema();
-  const db = sql();
-  await db`DELETE FROM testimonials WHERE id = ${id}`;
 }
 
 // ── Bulletin posts ─────────────────────────────────────────────────────────

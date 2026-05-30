@@ -149,26 +149,16 @@ async function loadMentionMap(ids: string[]): Promise<Map<string, FeedMention>> 
 
 // ── Posts ──────────────────────────────────────────────────────────────
 
-export async function listFeed(viewerId: string, limit = 50): Promise<FeedPost[]> {
-  const db = sql();
-  const rows = (await db`
-    SELECT p.id, p.author_id, p.body, p.media, p.pinned, p.highlighted,
-           p.saved_by, p.created_at, p.updated_at, p.subject, p.mentioned_ids,
-           e.first_name AS author_first_name,
-           e.last_name AS author_last_name,
-           e.certification AS author_certification,
-           e.position AS author_position,
-           e.photo_url AS author_photo_url,
-           e.is_admin AS author_is_admin
-    FROM lounge_feed_posts p
-    JOIN lounge_employees e ON e.id = p.author_id
-    ORDER BY p.pinned DESC, p.created_at DESC
-    LIMIT ${limit}
-  `) as unknown as DbPostRow[];
-
+/**
+ * Given the post rows already fetched via the post+author SELECT, load the
+ * reactions / comment counts / mentions and assemble the FeedPost view
+ * objects. Shared between listFeed (many) and getPost (one).
+ */
+async function hydratePostRows(rows: DbPostRow[], viewerId: string): Promise<FeedPost[]> {
   if (rows.length === 0) return [];
-
+  const db = sql();
   const ids = rows.map((r) => r.id);
+
   const [rxRows, cmtRows] = await Promise.all([
     db`
       SELECT r.post_id, r.user_id, r.kind, e.first_name, e.last_name
@@ -209,6 +199,25 @@ export async function listFeed(viewerId: string, limit = 50): Promise<FeedPost[]
   );
 }
 
+export async function listFeed(viewerId: string, limit = 50): Promise<FeedPost[]> {
+  const db = sql();
+  const rows = (await db`
+    SELECT p.id, p.author_id, p.body, p.media, p.pinned, p.highlighted,
+           p.saved_by, p.created_at, p.updated_at, p.subject, p.mentioned_ids,
+           e.first_name AS author_first_name,
+           e.last_name AS author_last_name,
+           e.certification AS author_certification,
+           e.position AS author_position,
+           e.photo_url AS author_photo_url,
+           e.is_admin AS author_is_admin
+    FROM lounge_feed_posts p
+    JOIN lounge_employees e ON e.id = p.author_id
+    ORDER BY p.pinned DESC, p.created_at DESC
+    LIMIT ${limit}
+  `) as unknown as DbPostRow[];
+  return hydratePostRows(rows, viewerId);
+}
+
 export async function getPost(
   postId: string,
   viewerId: string,
@@ -228,30 +237,8 @@ export async function getPost(
     WHERE p.id = ${postId}
     LIMIT 1
   `) as unknown as DbPostRow[];
-  if (!rows[0]) return null;
-
-  const [rxRows, cmtRows] = await Promise.all([
-    db`
-      SELECT r.user_id, r.kind, e.first_name, e.last_name
-      FROM lounge_feed_post_reactions r
-      JOIN lounge_employees e ON e.id = r.user_id
-      WHERE r.post_id = ${postId}
-    ` as unknown as Promise<
-      { user_id: string; kind: string; first_name: string; last_name: string }[]
-    >,
-    db`SELECT COUNT(*)::int AS c FROM lounge_feed_post_comments WHERE post_id = ${postId}` as unknown as Promise<{ c: number }[]>,
-  ]);
-  const reactions: FeedReaction[] = (await rxRows).map((r) => ({
-    userId: r.user_id,
-    kind: r.kind,
-    firstName: r.first_name,
-    lastName: r.last_name,
-  }));
-  const count = (await cmtRows)[0]?.c ?? 0;
-  const mentionIds = rows[0].mentioned_ids ?? [];
-  const mentionMap = await loadMentionMap(mentionIds);
-  const mentions = mentionIds.map((mid) => mentionMap.get(mid)).filter((m): m is FeedMention => !!m);
-  return rowToPost(rows[0], viewerId, reactions, count, mentions);
+  const [post] = await hydratePostRows(rows, viewerId);
+  return post ?? null;
 }
 
 let columnsEnsured = false;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminAuthed } from "@/lib/admin/auth";
-import { neon } from "@neondatabase/serverless";
+import { requireAdmin } from "@/lib/admin/auth";
+import { sql } from "@/lib/neon";
 
 export const runtime = "nodejs";
 
@@ -9,7 +9,7 @@ function uid() {
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await isAdminAuthed())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = await requireAdmin(); if (denied) return denied;
   const { dispatchDate, dispatchTime, dispatchNature, eventNumber, active } = await req.json();
   if (!dispatchDate || !dispatchTime || !dispatchNature?.trim()) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   const dispatchDatetime = `${dispatchDate}T${dispatchTime}:00`;
   const sourceYear = parseInt(year, 10);
   const completedAt = active === true ? null : new Date();
-  const db = neon(process.env.DATABASE_URL!);
+  const db = sql();
   await db`
     INSERT INTO cad_calls
       (id, gmail_message_id, event_number, dispatch_datetime, dispatch_date, dispatch_time,
@@ -35,11 +35,11 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  if (!(await isAdminAuthed())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = await requireAdmin(); if (denied) return denied;
   const body = await req.json();
   const { id, dispatchNature, active } = body as { id?: string; dispatchNature?: string; active?: boolean };
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
-  const db = neon(process.env.DATABASE_URL!);
+  const db = sql();
   if (typeof dispatchNature === "string") {
     await db`UPDATE cad_calls SET dispatch_nature = ${dispatchNature.trim()} WHERE id = ${id}`;
   }
@@ -54,9 +54,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  if (!(await isAdminAuthed())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = await requireAdmin(); if (denied) return denied;
   const { id } = await req.json();
-  const db = neon(process.env.DATABASE_URL!);
+  const db = sql();
   await db`DELETE FROM cad_calls WHERE id = ${id}`;
   return NextResponse.json({ ok: true });
 }

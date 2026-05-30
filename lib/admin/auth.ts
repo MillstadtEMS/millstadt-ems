@@ -1,12 +1,14 @@
 import { createHmac } from "crypto";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 import { currentEmployee } from "@/lib/lounge/auth";
 
 const COOKIE = "mas_admin";
 const MAX_AGE = 60 * 60 * 8; // 8 hours
 
 function sign(value: string): string {
-  const secret = process.env.ADMIN_PASSWORD ?? "changeme";
+  const secret = process.env.ADMIN_PASSWORD;
+  if (!secret) throw new Error("ADMIN_PASSWORD is not configured");
   return createHmac("sha256", secret).update(value).digest("hex");
 }
 
@@ -50,4 +52,18 @@ export function sessionCookieOptions(token: string) {
     maxAge: MAX_AGE,
     path: "/",
   };
+}
+
+/**
+ * Drop-in guard for API routes that must run as admin. Returns a 401
+ * response if the caller is not authed; otherwise returns null so the
+ * caller can proceed.
+ *
+ * Usage:
+ *   const denied = await requireAdmin();
+ *   if (denied) return denied;
+ */
+export async function requireAdmin(): Promise<NextResponse | null> {
+  if (await isAdminAuthed()) return null;
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }

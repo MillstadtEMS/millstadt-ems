@@ -147,9 +147,8 @@ export default function LoungeShell({
         }
         if (sRes && sRes.ok) {
           const sd = await sRes.json();
-          if (Array.isArray(sd.categories)) {
-            for (const c of sd.categories) sUnread += Number(c.unread) || 0;
-          }
+          const list: Array<{ unread?: number }> = Array.isArray(sd) ? sd : Array.isArray(sd?.categories) ? sd.categories : [];
+          for (const c of list) sUnread += Number(c.unread) || 0;
         }
         if (!cancelled) setBadges({ notifications: nUnread, messages: mUnread, submissions: sUnread });
       } catch { /* swallow; next tick will retry */ }

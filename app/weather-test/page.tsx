@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 // ─── Mock alert scenarios ────────────────────────────────────────────────────
 
@@ -125,6 +126,13 @@ function tickerStyles(alerts: readonly { properties: { event: string; severity: 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function WeatherTestPage() {
+  const router = useRouter();
+  // Internal-only simulator. Bounce visitors to the real weather page if
+  // this somehow ships to production.
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") router.replace("/weather");
+  }, [router]);
+
   const [active, setActive] = useState(0);
   const scenario = SCENARIOS[active];
   const alerts = scenario.alerts as readonly { properties: { event: string; headline: string; severity: string; urgency: string; expires: string; areaDesc: string } }[];

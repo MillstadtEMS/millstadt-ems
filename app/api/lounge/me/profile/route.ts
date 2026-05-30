@@ -92,9 +92,8 @@ export async function PUT(req: NextRequest) {
       markProfileCompleted: true,
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Unknown error";
     console.error("[me/profile PUT] updateEmployee failed:", e);
-    return NextResponse.json({ error: `Save failed: ${msg}` }, { status: 500 });
+    return NextResponse.json({ error: "Could not save your profile. Please try again." }, { status: 500 });
   }
 
   // Echo the saved state back so the client can confirm what's actually

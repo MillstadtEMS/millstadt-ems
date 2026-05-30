@@ -24,36 +24,6 @@ const LOCATIONS = [
       <svg viewBox="0 0 24 24" className="w-7 h-7 fill-current"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
     ),
   },
-  {
-    id: "m3935",
-    name: "M3935",
-    desc: "Paramedic Unit — 2025 Ford E450 Demers",
-    href: "/inventory/m3935",
-    ready: false,
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-7 h-7 fill-current"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
-    ),
-  },
-  {
-    id: "m3926",
-    name: "M3926",
-    desc: "ALS Upgradeable — Demers F350",
-    href: "/inventory/m3926",
-    ready: false,
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-7 h-7 fill-current"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
-    ),
-  },
-  {
-    id: "m3925",
-    name: "M3925",
-    desc: "Reserve Unit — Demers Sprinter Van",
-    href: "/inventory/m3925",
-    ready: false,
-    icon: (
-      <svg viewBox="0 0 24 24" className="w-7 h-7 fill-current"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
-    ),
-  },
 ];
 
 export default function InventoryMenu() {

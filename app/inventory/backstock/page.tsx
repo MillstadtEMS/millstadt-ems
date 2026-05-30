@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import SignaturePad from "@/components/lounge/SignaturePad";
+import { useSpeech } from "@/components/inventory/useSpeech";
 
 interface Item {
   id: string;
@@ -29,99 +30,6 @@ function calcNeed(item: Item): number {
   if (item.skipOrder) return 0;
   const usable = Math.max(0, item.currentStock - item.expiredQty);
   return Math.max(0, item.par - usable);
-}
-
-/* ── Continuous speech ──────────────────────────────────────────────────── */
-
-function useSpeech(onResult: (t: string) => void) {
-  const [listening, setListening] = useState(false);
-  const [supported, setSupported] = useState(false);
-  const [lastHeard, setLastHeard] = useState("");
-  const activeRef = useRef(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recRef = useRef<any>(null);
-  const cbRef = useRef(onResult);
-  cbRef.current = onResult;
-
-  // Detect iOS — continuous mode doesn't work there
-  const isIOS = useRef(false);
-
-  useEffect(() => {
-    isIOS.current = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-
-    const SR = (window as unknown as Record<string, unknown>).SpeechRecognition ||
-               (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
-    setSupported(!!SR);
-    if (!SR) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const r = new (SR as any)();
-    // iOS: single-shot mode only. Android/Desktop: continuous.
-    r.continuous = !isIOS.current;
-    r.interimResults = false;
-    r.lang = "en-US";
-    r.maxAlternatives = 1;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    r.onresult = (e: any) => {
-      // Get the latest final result
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) {
-          const t = e.results[i][0]?.transcript?.trim();
-          if (t) {
-            setLastHeard(t);
-            cbRef.current(t);
-          }
-        }
-      }
-    };
-    r.onend = () => {
-      // Auto-restart if still active
-      if (activeRef.current) {
-        // Small delay before restart to prevent rapid cycling
-        setTimeout(() => {
-          if (activeRef.current) {
-            try { r.start(); } catch { /* already running or denied */ }
-          }
-        }, 300);
-      } else {
-        setListening(false);
-      }
-    };
-    r.onerror = (ev: { error: string }) => {
-      if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
-        activeRef.current = false;
-        setListening(false);
-        setLastHeard("Microphone access denied");
-      }
-      // "no-speech", "aborted", "network" — onend will auto-restart
-    };
-    recRef.current = r;
-  }, []);
-
-  const toggle = useCallback(() => {
-    if (!recRef.current) return;
-    if (activeRef.current) {
-      activeRef.current = false;
-      try { recRef.current.stop(); } catch {}
-      setListening(false);
-      setLastHeard("");
-    } else {
-      activeRef.current = true;
-      setLastHeard("Listening...");
-      try {
-        recRef.current.start();
-        setListening(true);
-      } catch {
-        // Might already be started, try stop then start
-        try { recRef.current.stop(); } catch {}
-        setTimeout(() => {
-          try { recRef.current.start(); setListening(true); } catch { activeRef.current = false; setLastHeard("Could not start mic"); }
-        }, 200);
-      }
-    }
-  }, []);
-
-  return { listening, supported, toggle, lastHeard };
 }
 
 /* ── Main ───────────────────────────────────────────────────────────────── */
@@ -179,7 +87,6 @@ export default function InventoryDashboard() {
       } catch {}
     }, 4000);
     return () => clearInterval(iv);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saving]);
 
   const saveItem = useCallback(async (item: Item, updates: { currentStock?: number; expiredQty?: number; notes?: string }) => {

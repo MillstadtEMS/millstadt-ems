@@ -1,15 +1,12 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminAuthed } from "@/lib/admin/auth";
+import { requireAdmin } from "@/lib/admin/auth";
 import { getItems, getCategories, getQrTokens, createQrToken } from "@/lib/inventory/db";
 import { generateQrSheetPdf } from "@/lib/inventory/qr-pdf";
 
 export async function POST(req: NextRequest) {
-  const authed = await isAdminAuthed();
-  if (!authed) {
-    return NextResponse.json({ error: "Admin access required" }, { status: 401 });
-  }
+  const denied = await requireAdmin(); if (denied) return denied;
 
   try {
     const { categorySlug } = await req.json();

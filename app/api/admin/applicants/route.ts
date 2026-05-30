@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAllApplicantWorkflows } from "@/lib/db";
+import { requireAdmin } from "@/lib/admin/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
  * submissions list to show status badges + per-status counts.
  */
 export async function GET() {
+  const denied = await requireAdmin(); if (denied) return denied;
   try {
     const all = await getAllApplicantWorkflows();
     // Build a map keyed by submission ID for quick lookup

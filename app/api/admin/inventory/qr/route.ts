@@ -1,22 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminAuthed } from "@/lib/admin/auth";
+import { requireAdmin } from "@/lib/admin/auth";
 import { createQrToken, getQrTokens, revokeQrToken, getItems } from "@/lib/inventory/db";
 import QRCode from "qrcode";
 
 export async function GET() {
-  const authed = await isAdminAuthed();
-  if (!authed) {
-    return NextResponse.json({ error: "Admin access required" }, { status: 401 });
-  }
+  const denied = await requireAdmin(); if (denied) return denied;
   const tokens = await getQrTokens();
   return NextResponse.json(tokens);
 }
 
 export async function POST(req: NextRequest) {
-  const authed = await isAdminAuthed();
-  if (!authed) {
-    return NextResponse.json({ error: "Admin access required" }, { status: 401 });
-  }
+  const denied = await requireAdmin(); if (denied) return denied;
 
   try {
     const { itemId, label, bulkCategorySlug } = await req.json();
@@ -51,10 +45,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const authed = await isAdminAuthed();
-  if (!authed) {
-    return NextResponse.json({ error: "Admin access required" }, { status: 401 });
-  }
+  const denied = await requireAdmin(); if (denied) return denied;
 
   const { id } = await req.json();
   if (!id) {

@@ -1,9 +1,7 @@
 /**
  * Dev shortcut login. Skips password + 2FA when the developer supplies the
- * matching PIN. Intentionally minimal: just two roles (admin / employee).
- *
- * Pin: 9572. When the user is finished developing, set DISABLE_DEV_LOGIN=1
- * in Vercel env (or delete this file) to turn it off entirely.
+ * matching PIN. Active only when NODE_ENV !== "production" so it can never
+ * be hit on the live site even if the env-toggle is forgotten.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -20,8 +18,8 @@ export const runtime = "nodejs";
 const DEV_PIN = "9572";
 
 export async function POST(req: NextRequest) {
-  if (process.env.DISABLE_DEV_LOGIN === "1") {
-    return NextResponse.json({ error: "Dev login disabled" }, { status: 403 });
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   const body = await req.json().catch(() => ({}));
