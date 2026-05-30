@@ -263,14 +263,37 @@ function TimedScreen({ level, playerName, onExit }: { level: LevelId; playerName
   const [correctRevealed, setCorrectRevealed] = useState(false);
   const startRef = useRef<number>(0);
   const submittedToBoard = useRef(false);
+  // Shuffled-bag rotation: every rhythm in the pool gets drawn before any
+  // repeat the bag refills with a new Fisher-Yates shuffle. When a refill
+  // happens we also guarantee the first item isn't the same as the last
+  // one shown, so the seam between bags can't accidentally repeat.
+  const bagRef = useRef<RhythmId[]>([]);
+  const lastShownRef = useRef<RhythmId | null>(null);
+
+  function drawFromBag(): RhythmId {
+    if (bagRef.current.length === 0) {
+      const fresh = [...pool];
+      for (let i = fresh.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [fresh[i], fresh[j]] = [fresh[j], fresh[i]];
+      }
+      if (lastShownRef.current && fresh.length > 1 && fresh[0] === lastShownRef.current) {
+        [fresh[0], fresh[1]] = [fresh[1], fresh[0]];
+      }
+      bagRef.current = fresh;
+    }
+    const next = bagRef.current.shift()!;
+    lastShownRef.current = next;
+    return next;
+  }
 
   const subject = RHYTHM_BY_ID.get(current);
   const bpm = useMemo(() => defaultBpmFor(current), [current]);
   const canvasWidth = useResponsiveWidth();
   const canvasHeight = 220;
 
-  function nextQuestion(prev: RhythmId) {
-    const next = pickRhythm(pool, prev);
+  function nextQuestion(_prev: RhythmId) {
+    const next = drawFromBag();
     setCurrent(next);
     setChoices(buildChoices(next));
     setWrongAttempts(0);
@@ -318,7 +341,10 @@ function TimedScreen({ level, playerName, onExit }: { level: LevelId; playerName
     setScore(0); setStreak(0); setSecondsLeft(roundSeconds);
     setStats({ correct: 0, wrong: 0, bestStreak: 0 });
     setWrongAttempts(0); setLockedOut(new Set());
-    const next = pickRhythm(pool);
+    // Reset the bag for a fresh shuffle every round.
+    bagRef.current = [];
+    lastShownRef.current = null;
+    const next = drawFromBag();
     setCurrent(next);
     setChoices(buildChoices(next));
     startRef.current = performance.now();
