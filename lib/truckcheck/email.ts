@@ -4,6 +4,7 @@
  */
 
 import { google } from "googleapis";
+import { encodeMimeSubject } from "@/lib/reports/subject";
 
 const RECIPIENTS = ["millstadtems@gmail.com"];
 
@@ -84,15 +85,15 @@ export async function sendTruckCheckEmail(input: SendInput) {
   const raw =
     `From: Millstadt EMS Truck Check <${from}>\r\n` +
     `To: ${RECIPIENTS.join(", ")}\r\n` +
-    `Subject: ${subject}\r\n` +
+    `Subject: ${encodeMimeSubject(subject)}\r\n` +
     `MIME-Version: 1.0\r\n` +
     `Content-Type: multipart/mixed; boundary="${boundary}"\r\n` +
     `\r\n` +
     `--${boundary}\r\n` +
-    `Content-Type: text/html; charset=utf-8\r\n` +
-    `Content-Transfer-Encoding: 7bit\r\n` +
+    `Content-Type: text/html; charset=UTF-8\r\n` +
+    `Content-Transfer-Encoding: base64\r\n` +
     `\r\n` +
-    `${html}\r\n` +
+    `${Buffer.from(html, "utf8").toString("base64").replace(/(.{76})/g, "$1\r\n")}\r\n` +
     `--${boundary}\r\n` +
     `Content-Type: application/pdf; name="${pdfName}"\r\n` +
     `Content-Transfer-Encoding: base64\r\n` +

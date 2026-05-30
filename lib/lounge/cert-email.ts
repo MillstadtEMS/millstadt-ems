@@ -8,6 +8,7 @@
  */
 import { google } from "googleapis";
 import type { EmployeeCert } from "./certs";
+import { encodeMimeSubject } from "@/lib/reports/subject";
 
 function gmailAuth() {
   const auth = new google.auth.OAuth2(
@@ -23,11 +24,12 @@ async function sendRaw(to: string[], subject: string, html: string) {
   const raw = Buffer.from(
     `From: Millstadt EMS Lounge <${from}>\r\n` +
       `To: ${to.join(", ")}\r\n` +
-      `Subject: ${subject}\r\n` +
+      `Subject: ${encodeMimeSubject(subject)}\r\n` +
       `MIME-Version: 1.0\r\n` +
       `Content-Type: text/html; charset=utf-8\r\n` +
+      `Content-Transfer-Encoding: base64\r\n` +
       `\r\n` +
-      html,
+      Buffer.from(html, "utf8").toString("base64").replace(/(.{76})/g, "$1\r\n"),
   ).toString("base64url");
   const gmail = google.gmail({ version: "v1", auth: gmailAuth() });
   await gmail.users.messages.send({ userId: from, requestBody: { raw } });

@@ -61,7 +61,7 @@ export default async function LoungeHome() {
           firstName={session.firstName}
           rank={emp?.position ?? emp?.certification ?? "Crew"}
           pendingAcks={pendingAcks.length}
-          dueCerts={blockingCerts.length}
+          accessLabel={session.isAdmin ? "Admin" : "User"}
         />
 
         {blockingCerts.length > 0 && <CertAlertsBanner certs={expiring} />}
@@ -104,12 +104,12 @@ function HomeHero({
   firstName,
   rank,
   pendingAcks,
-  dueCerts,
+  accessLabel,
 }: {
   firstName: string;
   rank: string;
   pendingAcks: number;
-  dueCerts: number;
+  accessLabel: string;
 }) {
   const now = new Date();
   const dateLine = now.toLocaleDateString("en-US", {
@@ -140,20 +140,18 @@ function HomeHero({
         </p>
         <dl className="mas-hero-meta">
           <div>
-            <dt>Position</dt>
+            <dt>Pending</dt>
+            <dd className={pendingAcks > 0 ? "is-warn" : ""}>
+              <span className="mas-numeric">{pendingAcks}</span>
+            </dd>
+          </div>
+          <div>
+            <dt>Rank</dt>
             <dd>{rank}</dd>
           </div>
           <div>
-            <dt>Acknowledgments</dt>
-            <dd className={pendingAcks > 0 ? "is-warn" : ""}>
-              <span className="mas-numeric">{pendingAcks}</span> pending
-            </dd>
-          </div>
-          <div>
-            <dt>Credentials due</dt>
-            <dd className={dueCerts > 0 ? "is-warn" : ""}>
-              <span className="mas-numeric">{dueCerts}</span> {dueCerts === 1 ? "item" : "items"}
-            </dd>
+            <dt>Access</dt>
+            <dd>{accessLabel}</dd>
           </div>
         </dl>
       </div>
@@ -341,11 +339,20 @@ const LANDING_CSS = `
 .mas-hero-meta {
   margin: var(--mas-s-3) 0 0;
   padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--mas-s-2) var(--mas-s-5);
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  gap: var(--mas-s-2);
 }
-.mas-hero-meta div { display: grid; gap: 2px; }
+.mas-hero-meta div {
+  min-width: 112px;
+  display: grid;
+  gap: 2px;
+  padding: 10px 16px;
+  border-radius: var(--mas-r-pill);
+  background: rgba(2, 9, 18, 0.58);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
 .mas-hero-meta dt {
   color: var(--mas-ink-soft);
   font-size: 10.5px;
@@ -359,6 +366,9 @@ const LANDING_CSS = `
   color: var(--mas-ink);
   font-size: 0.92rem;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .mas-hero-meta dd.is-warn { color: var(--mas-warn); }
 
@@ -558,6 +568,21 @@ const LANDING_CSS = `
   .mas-hero-copy { padding: var(--mas-s-5) var(--mas-s-5) var(--mas-s-4); }
   .mas-hero-veil {
     background: linear-gradient(180deg, rgba(4,13,26,0.85) 35%, rgba(4,13,26,0.92) 100%);
+  }
+  .mas-hero-meta {
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.12fr) minmax(0, 0.72fr);
+    gap: 8px;
+  }
+  .mas-hero-meta div {
+    min-width: 0;
+    padding: 9px 10px;
+  }
+  .mas-hero-meta dt {
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+  }
+  .mas-hero-meta dd {
+    font-size: 0.84rem;
   }
   .mas-cert-strip { grid-template-columns: 1fr; }
   .mas-cert-strip-cta { justify-self: start; }

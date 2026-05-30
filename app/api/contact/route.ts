@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { createFormSubmission } from "@/lib/db";
+import { encodeMimeSubject } from "@/lib/reports/subject";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -60,10 +61,12 @@ export async function POST(req: NextRequest) {
     const raw = Buffer.from(
       `From: Millstadt EMS Website <${from}>\r\n` +
       `To: ${to}\r\n` +
-      `Subject: ${subject}\r\n` +
-      `Content-Type: text/plain; charset=utf-8\r\n` +
+      `Subject: ${encodeMimeSubject(subject)}\r\n` +
+      `MIME-Version: 1.0\r\n` +
+      `Content-Type: text/plain; charset=UTF-8\r\n` +
+      `Content-Transfer-Encoding: base64\r\n` +
       `\r\n` +
-      emailBody
+      Buffer.from(emailBody, "utf8").toString("base64").replace(/(.{76})/g, "$1\r\n")
     ).toString("base64url");
 
     try {

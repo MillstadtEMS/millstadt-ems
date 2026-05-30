@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { createHmac } from "crypto";
 import type { Testimonial } from "./testimonials";
+import { encodeMimeSubject } from "./reports/subject";
 
 export function signToken(id: string, action: string): string {
   const secret = process.env.APPROVAL_SECRET ?? "dev-secret-change-me";
@@ -67,11 +68,12 @@ export async function sendApprovalEmail(t: Testimonial) {
   const raw = Buffer.from(
     `From: Millstadt EMS Website <${from}>\r\n` +
     `To: ${to}\r\n` +
-    `Subject: ${subject}\r\n` +
+    `Subject: ${encodeMimeSubject(subject)}\r\n` +
     `MIME-Version: 1.0\r\n` +
     `Content-Type: text/html; charset=utf-8\r\n` +
+    `Content-Transfer-Encoding: base64\r\n` +
     `\r\n` +
-    html
+    Buffer.from(html, "utf8").toString("base64").replace(/(.{76})/g, "$1\r\n")
   ).toString("base64url");
 
   const gmail = google.gmail({ version: "v1", auth: getAuth() });

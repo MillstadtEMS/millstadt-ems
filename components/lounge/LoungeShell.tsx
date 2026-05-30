@@ -40,7 +40,7 @@ const NAV: NavItem[] = [
   { href: "/lounge/hospitals",    label: "Hospitals",       icon: "hospital" },
   { href: "/api/lounge/sso/truckcheck", label: "Truck Check", icon: "ambulance", external: true },
   { href: "/api/lounge/sso/inventory",  label: "Inventory",   icon: "box", external: true },
-  { href: "/lounge/games",        label: "Training Games",  icon: "gamepad" },
+  { href: "/lounge/games",        label: "Games",           icon: "gamepad" },
   // Admin section — collapsed under "Admin Tools" group in the sidebar.
   { href: "/admin/calls",                 label: "Ticker Editor",         icon: "ticker", adminOnly: true },
   { href: "/admin/employees",             label: "Employee Records",      icon: "users", adminOnly: true },
@@ -338,11 +338,12 @@ export default function LoungeShell({
                 ? tab.match(pathname)
                 : pathname === tab.href;
             const sharedStyle: React.CSSProperties = {
+              position: "relative",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               gap: 2,
-              padding: "8px 6px 6px",
+              padding: "8px 6px 9px",
               color: active ? "#f0b429" : "#94a3b8",
               textDecoration: "none",
               background: "transparent",
@@ -402,6 +403,7 @@ export default function LoungeShell({
                 >
                   {iconNode}
                   <span>{tab.label}</span>
+                  {active && <BottomTabIndicator />}
                 </button>
               );
             }
@@ -409,6 +411,7 @@ export default function LoungeShell({
               <Link key={tab.href} href={tab.href} style={sharedStyle}>
                 {iconNode}
                 <span>{tab.label}</span>
+                {active && <BottomTabIndicator />}
               </Link>
             );
           })}
@@ -441,10 +444,28 @@ type BottomTab =
 const BOTTOM_TABS: BottomTab[] = [
   { kind: "link", href: "/lounge",            label: "Wall",      icon: "newspaper", match: (p) => p === "/lounge" || p === "/lounge/" },
   { kind: "link", href: "/lounge/messages",   label: "Chat",      icon: "message", match: (p) => p.startsWith("/lounge/messages") },
-  { kind: "link", href: "/lounge/acks",       label: "Acks",      icon: "checkCircle", match: (p) => p.startsWith("/lounge/acks") },
+  { kind: "link", href: "/lounge/acks",       label: "Acks",      icon: "checkCircle", match: (p) => p === "/lounge/acks" || p.startsWith("/lounge/acks/") },
   { kind: "link", href: "/lounge/my-file",    label: "My File",   icon: "folder", match: (p) => p.startsWith("/lounge/my-file") || p.startsWith("/lounge/certs") || p.startsWith("/lounge/about-me") },
   { kind: "more", href: "#more",              label: "More",      icon: "menu" },
 ];
+
+function BottomTabIndicator() {
+  return (
+    <span
+      aria-hidden
+      style={{
+        position: "absolute",
+        left: "24%",
+        right: "24%",
+        bottom: 1,
+        height: 3,
+        borderRadius: 999,
+        background: "#f0b429",
+        boxShadow: "0 0 16px rgba(240,180,41,0.46)",
+      }}
+    />
+  );
+}
 
 function SidebarBody({
   me, items, pathname, onNavigate, mobile = false, badges,
@@ -922,7 +943,7 @@ function isActive(pathname: string, item: NavItem): boolean {
 
 function currentPageLabel(pathname: string): string {
   for (const n of NAV) {
-    if (!n.external && (pathname === n.href || pathname.startsWith(n.href + "/"))) {
+    if (!n.external && isActive(pathname, n)) {
       return n.label;
     }
   }

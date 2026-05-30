@@ -1,11 +1,25 @@
 /**
- * Email a completed incident report PDF to leadership. Uses the same
- * Gmail OAuth pattern as the truck check + inventory mailers.
+ * Email a completed Incident Report to leadership at millstadtems@gmail.com.
+ *
+ * The presentation layer goes through the shared report system in
+ * /lib/reports (subject encoder, email shell, sanitizers, filename
+ * builder). The Gmail OAuth + multipart-MIME wiring stays put — only
+ * the rendered HTML and the subject line move.
  */
 
 import { google } from "googleapis";
+import { renderEmailShell } from "@/lib/reports/email-shell";
+import {
+  asciiSafe,
+  buildReportSubject,
+  encodeMimeSubject,
+  isoChicagoDate,
+} from "@/lib/reports/subject";
+import { buildReportFilename } from "@/lib/reports/filename";
+import { fallbackText, normalizePunctuation } from "@/lib/reports/sanitize";
 
 const RECIPIENTS = ["millstadtems@gmail.com"];
+const ADMIN_URL_ROOT = "https://millstadtems.org/admin/incidents";
 
 function getAuth() {
   const auth = new google.auth.OAuth2(
@@ -14,14 +28,6 @@ function getAuth() {
   );
   auth.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
   return auth;
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) =>
-    c === "&" ? "&amp;" :
-    c === "<" ? "&lt;"  :
-    c === ">" ? "&gt;"  :
-    c === '"' ? "&quot;" : "&#39;");
 }
 
 export interface IncidentEmailInput {
@@ -37,46 +43,86 @@ export interface IncidentEmailInput {
   pdfBytes: Buffer;
 }
 
+function shortReportId(id: string): string {
+  const seg = id.split("-")[0];
+  return seg ? seg.toUpperCase() : id.toUpperCase();
+}
+
 export async function sendIncidentReportEmail(input: IncidentEmailInput) {
-  const from = process.env.GMAIL_USER ?? "millstadtcad@gmail.com";
-  const subject = `Incident Report — ${input.unit ?? "—"} · ${input.city ?? "Millstadt"} · ${input.submittedBy}`;
+  const fromAddress = process.env.GMAIL_USER ?? "millstadtcad@gmail.com";
+  const submittedDate = isoChicagoDate(new Date());
+  const incidentDateIso = input.incidentDate ? isoChicagoDate(input.incidentDate) : "";
+  const reportIdLabel = shortReportId(input.reportId);
 
-  const involvedHtml = input.involvedEmployees.length
-    ? `<p style="color:#cbd5e1;font-size:13px;margin:14px 0 0;"><strong style="color:#f0b429;">Employees involved:</strong> ${input.involvedEmployees.map((e) => escapeHtml(e.name)).join(", ")}</p>`
-    : "";
+  // ── Subject (ASCII pipes, sanitized, then MIME-encoded for safety) ───
+  const subjectPlain = buildReportSubject({
+    type: "Incident Report Submitted",
+    unit: input.unit ? input.unit.trim() : null,
+    location: input.city ? input.city.trim() : null,
+    date: incidentDateIso || submittedDate,
+    submitter: input.submittedBy.trim(),
+  });
+  const subjectHeader = encodeMimeSubject(subjectPlain);
 
-  const html = `
-    <div style="font-family:system-ui,sans-serif;max-width:640px;margin:0 auto;background:#040d1a;color:#f1f5f9;padding:32px;border-radius:16px;">
-      <div style="margin-bottom:8px;">
-        <span style="color:#fca5a5;font-size:11px;font-weight:900;letter-spacing:0.22em;text-transform:uppercase;">Incident Report</span>
-      </div>
-      <h1 style="color:#ffffff;font-size:22px;font-weight:900;margin:0 0 6px;">${escapeHtml(input.unit ?? "—")} · ${escapeHtml(input.city ?? "Millstadt")}</h1>
-      <p style="color:#94a3b8;font-size:13px;margin:0 0 18px;">${escapeHtml(input.incidentDate ?? "—")} ${escapeHtml(input.incidentTime ?? "")} · Submitted by ${escapeHtml(input.submittedBy)}</p>
-      <div style="background:#071428;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px 18px;">
-        <p style="color:#cbd5e1;font-size:13.5px;line-height:1.55;margin:0;white-space:pre-wrap;">${escapeHtml(input.summary)}</p>
-      </div>
-      ${involvedHtml}
-      <p style="color:#94a3b8;font-size:12px;margin-top:14px;">${input.photoCount} photo${input.photoCount === 1 ? "" : "s"} attached in the PDF.</p>
-      <p style="color:#475569;font-size:11px;margin-top:24px;">Full PDF is attached. View / manage the report at <a href="https://millstadtems.org/admin/incidents/${encodeURIComponent(input.reportId)}" style="color:#f0b429;">admin/incidents/${input.reportId}</a></p>
-    </div>
-  `;
+  // ── PDF filename ─────────────────────────────────────────────────────
+  const pdfName = buildReportFilename({
+    type: "Incident Report",
+    unit: input.unit,
+    date: incidentDateIso || submittedDate,
+    extra: reportIdLabel,
+  });
 
+  // ── HTML body via the shared shell ───────────────────────────────────
+  const cleanSummary = normalizePunctuation(input.summary?.trim() || "");
+  const summaryPreview = cleanSummary.length > 320
+    ? cleanSummary.slice(0, 317).replace(/\s+\S*$/, "") + "..."
+    : (cleanSummary || "No summary provided.");
+  const employeeList = input.involvedEmployees.length > 0
+    ? input.involvedEmployees.map((e) => e.name).join(", ")
+    : fallbackText(null, "noneReported");
+
+  const html = renderEmailShell({
+    preheader: `Unit ${input.unit ?? "—"} · ${input.city ?? "Millstadt"} — submitted by ${input.submittedBy}`,
+    kicker: "Incident Report",
+    title: input.city ? `Unit ${input.unit ?? "—"} — ${input.city}` : "Incident Report",
+    subtitle: `Submitted by ${asciiSafe(input.submittedBy)} on ${submittedDate}`,
+    meta: [
+      { label: "Report ID",      value: reportIdLabel, mono: true },
+      { label: "Incident date",  value: input.incidentDate ?? fallbackText(null, "notProvided") },
+      { label: "Incident time",  value: input.incidentTime ?? fallbackText(null, "notProvided") },
+      { label: "Unit involved",  value: input.unit ?? fallbackText(null, "notProvided") },
+      { label: "City",           value: input.city ?? fallbackText(null, "notProvided") },
+      { label: "Crew involved",  value: employeeList },
+      { label: "Attachments",    value: input.photoCount === 0 ? "None" : `${input.photoCount} file${input.photoCount === 1 ? "" : "s"} (included in attached PDF)` },
+    ],
+    callout: {
+      label: "Summary preview",
+      text: summaryPreview,
+    },
+    cta: {
+      label: "Open report in admin",
+      url: `${ADMIN_URL_ROOT}/${encodeURIComponent(input.reportId)}`,
+    },
+    pdfNote: `Full report attached: ${pdfName}`,
+    footerNote: "Millstadt EMS · Official agency report · This message was sent automatically by the lounge incident-reporting system.",
+  });
+
+  // ── Multipart MIME (HTML + PDF) ──────────────────────────────────────
   const boundary = `mems_ir_${Date.now()}`;
-  const pdfBase64 = input.pdfBytes.toString("base64");
-  const pdfName = `IncidentReport_${input.reportId}.pdf`;
+  const pdfBase64 = input.pdfBytes.toString("base64").replace(/(.{76})/g, "$1\r\n");
 
   const raw =
-    `From: Millstadt EMS Incident <${from}>\r\n` +
+    `From: Millstadt EMS Reports <${fromAddress}>\r\n` +
     `To: ${RECIPIENTS.join(", ")}\r\n` +
-    `Subject: ${subject}\r\n` +
+    `Subject: ${subjectHeader}\r\n` +
     `MIME-Version: 1.0\r\n` +
     `Content-Type: multipart/mixed; boundary="${boundary}"\r\n` +
     `\r\n` +
     `--${boundary}\r\n` +
-    `Content-Type: text/html; charset=utf-8\r\n` +
-    `Content-Transfer-Encoding: 7bit\r\n` +
+    `Content-Type: text/html; charset=UTF-8\r\n` +
+    `Content-Transfer-Encoding: base64\r\n` +
     `\r\n` +
-    `${html}\r\n` +
+    `${Buffer.from(html, "utf8").toString("base64").replace(/(.{76})/g, "$1\r\n")}\r\n` +
     `--${boundary}\r\n` +
     `Content-Type: application/pdf; name="${pdfName}"\r\n` +
     `Content-Transfer-Encoding: base64\r\n` +
@@ -87,7 +133,7 @@ export async function sendIncidentReportEmail(input: IncidentEmailInput) {
 
   const gmail = google.gmail({ version: "v1", auth: getAuth() });
   await gmail.users.messages.send({
-    userId: from,
-    requestBody: { raw: Buffer.from(raw, "utf-8").toString("base64url") },
+    userId: fromAddress,
+    requestBody: { raw: Buffer.from(raw, "utf8").toString("base64url") },
   });
 }

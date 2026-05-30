@@ -1,9 +1,35 @@
 /**
- * Build a printable PDF of an incident report. Each photo is downloaded
- * from its Blob URL and embedded full-width on its own page.
+ * Build the printable PDF for an Incident Report.
+ *
+ * Layout follows the agency report template defined in /lib/reports:
+ *   - Navy + gold official header with the EMS crest.
+ *   - Title block: "Incident Report — {Unit}".
+ *   - Metadata grid (Report ID, dates, submitter, location).
+ *   - Crew involved bullet list.
+ *   - Summary in a gold-edged callout.
+ *   - Patient / Witnesses / Actions sections with "None reported" fallbacks.
+ *   - Attachment manifest at the end of the main report.
+ *   - Each image attachment on its own page, scaled proportionally.
+ *   - Footer with generated timestamp, report id, "Page N of N".
  */
 
-import { jsPDF } from "jspdf";
+import {
+  newDoc,
+  drawOfficialHeader,
+  drawTitleBlock,
+  drawMetadataGrid,
+  drawSectionHeading,
+  drawBulletList,
+  drawCallout,
+  drawBodyText,
+  drawAttachmentSummary,
+  drawImagePage,
+  stampFooter,
+  type Cursor,
+  type AttachmentImage,
+  type AttachmentSummary,
+} from "@/lib/reports/pdf-system";
+import { fallbackText, normalizePunctuation } from "@/lib/reports/sanitize";
 
 export interface IncidentPdfInput {
   id: string;
@@ -22,167 +48,179 @@ export interface IncidentPdfInput {
   submittedAt: string;
 }
 
-function fmt(iso: string) {
+const TZ = "America/Chicago";
+
+function formatSubmittedAt(iso: string): string {
   return new Date(iso).toLocaleString("en-US", {
-    timeZone: "America/Chicago",
+    timeZone: TZ,
     month: "short", day: "numeric", year: "numeric",
     hour: "numeric", minute: "2-digit",
   });
 }
 
+function formatGeneratedAt(): string {
+  return new Date().toLocaleString("en-US", {
+    timeZone: TZ,
+    month: "short", day: "numeric", year: "numeric",
+    hour: "numeric", minute: "2-digit",
+  });
+}
+
+function shortReportId(id: string): string {
+  // First chunk of a UUID is plenty for readability without dominating the page.
+  const seg = id.split("-")[0];
+  return seg ? seg.toUpperCase() : id.toUpperCase();
+}
+
 export async function buildIncidentPdf(input: IncidentPdfInput): Promise<Buffer> {
-  const doc = new jsPDF({ unit: "pt", format: "letter" });
-  const W = doc.internal.pageSize.getWidth();
-  const H = doc.internal.pageSize.getHeight();
-  let y = 48;
+  const doc = newDoc();
+  const c: Cursor = { doc, y: 0 };
 
-  // ── Header ──────────────────────────────────────────────────────────
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(220, 38, 38);
-  doc.text("MILLSTADT EMS · INCIDENT REPORT", 48, y);
-  y += 6;
-  doc.setDrawColor(220, 38, 38);
-  doc.setLineWidth(1.5);
-  doc.line(48, y, W - 48, y);
-  y += 14;
+  const unitLabel = input.unitInvolved ? input.unitInvolved.trim() : "";
+  const reportIdLabel = shortReportId(input.id);
 
-  doc.setFontSize(20);
-  doc.setTextColor(20, 30, 60);
-  const title = `${input.unitInvolved ? `Unit ${input.unitInvolved} — ` : ""}${input.city ?? "Incident"}`;
-  doc.text(title, 48, y); y += 24;
+  // ── Official header band ──────────────────────────────────────────────
+  await drawOfficialHeader(c, {
+    reportType: "Incident Report",
+    reportSubtitle: `ID ${reportIdLabel}`,
+  });
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(80);
-  const meta = [
-    ["Report ID", input.id],
-    ["Submitted by", input.createdBy.name],
-    ["Submitted at", fmt(input.submittedAt)],
-    ["Incident date", input.incidentDate ?? "—"],
-    ["Incident time", input.incidentTime ?? "—"],
-    ["City", input.city ?? "—"],
-    ["Specific location", input.specificLocation ?? "—"],
-    ["Unit involved", input.unitInvolved ?? "—"],
-  ];
-  for (const [k, v] of meta) {
-    doc.setFont("helvetica", "bold");
-    doc.text(`${k}:`, 48, y);
-    doc.setFont("helvetica", "normal");
-    const lines = doc.splitTextToSize(v, W - 200);
-    doc.text(lines, 160, y);
-    y += 12 * lines.length;
-  }
-  y += 6;
+  // ── Title block ───────────────────────────────────────────────────────
+  const titleUnit = unitLabel ? `Unit ${unitLabel}` : "Incident";
+  const titleLoc = input.city ? ` — ${input.city.trim()}` : "";
+  drawTitleBlock(c, {
+    title: `${titleUnit}${titleLoc}`,
+    subtitle: `Submitted by ${input.createdBy.name} on ${formatSubmittedAt(input.submittedAt)}`,
+  });
 
-  // ── Involved employees ──────────────────────────────────────────────
+  // ── Metadata grid ─────────────────────────────────────────────────────
+  drawMetadataGrid(c, [
+    { label: "Report ID",         value: reportIdLabel },
+    { label: "Submitted",         value: formatSubmittedAt(input.submittedAt) },
+    { label: "Incident date",     value: fallbackText(input.incidentDate, "notProvided") },
+    { label: "Incident time",     value: fallbackText(input.incidentTime, "notProvided") },
+    { label: "City",              value: fallbackText(input.city, "notProvided") },
+    { label: "Specific location", value: fallbackText(input.specificLocation, "notProvided") },
+    { label: "Unit involved",     value: fallbackText(unitLabel, "notProvided") },
+    { label: "Submitted by",      value: input.createdBy.name },
+  ]);
+
+  // ── Crew involved ─────────────────────────────────────────────────────
   if (input.involvedEmployees.length > 0) {
-    if (y > H - 120) { doc.addPage(); y = 48; }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(20, 30, 60);
-    doc.text("Employees involved", 48, y); y += 14;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(40);
-    for (const e of input.involvedEmployees) {
-      doc.text(`• ${e.name}`, 56, y);
-      y += 13;
-    }
-    y += 6;
+    drawSectionHeading(c, "Crew involved");
+    drawBulletList(c, input.involvedEmployees.map((e) => e.name));
   }
 
-  // ── Narrative blocks ────────────────────────────────────────────────
-  y = block(doc, "Summary", input.summary || "—", 48, y, W);
-  if (input.patientInvolved) y = block(doc, "Patient involved", input.patientInvolved, 48, y, W);
-  if (input.witnesses)        y = block(doc, "Witnesses", input.witnesses, 48, y, W);
-  if (input.actionsTaken)     y = block(doc, "Actions taken at scene / immediately after", input.actionsTaken, 48, y, W);
+  // ── Summary (callout) ─────────────────────────────────────────────────
+  drawSectionHeading(c, "Summary");
+  drawCallout(c, normalizePunctuation(input.summary?.trim() || "No summary provided."));
 
-  // ── Photos: each gets its own page, full width ──────────────────────
-  for (const photo of input.photos) {
+  // ── Patient / Witnesses / Actions ────────────────────────────────────
+  drawSectionHeading(c, "Patient involved");
+  drawBodyText(c, fallbackText(input.patientInvolved, "noneReported"));
+
+  drawSectionHeading(c, "Witnesses");
+  drawBodyText(c, fallbackText(input.witnesses, "noWitnesses"));
+
+  drawSectionHeading(c, "Actions taken");
+  drawBodyText(c, fallbackText(input.actionsTaken, "noActions"));
+
+  // ── Resolve attachments (fetch bytes, identify format) ───────────────
+  const resolved = await Promise.all(input.photos.map(async (att, idx) => {
     try {
-      const bytes = await fetchAsArrayBuffer(photo.url);
-      const format = detectFormat(photo.url);
-      const dims = await imageDims(bytes, format);
-
-      doc.addPage();
-      const padding = 36;
-      const captionH = 30;
-      const maxW = W - padding * 2;
-      const maxH = H - padding * 2 - captionH - 18;
-      const scale = Math.min(maxW / dims.width, maxH / dims.height);
-      const w = dims.width * scale;
-      const h = dims.height * scale;
-      const x = (W - w) / 2;
-      const py = padding;
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(20, 30, 60);
-      doc.text(photo.name || "Photo", padding, py - 8);
-
-      try {
-        const dataUri = bufferToDataUri(bytes, format);
-        doc.addImage(dataUri, format.toUpperCase(), x, py, w, h, undefined, "FAST");
-      } catch {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        doc.setTextColor(120);
-        doc.text("(unable to render photo — view it at the URL below)", padding, py + 20);
-      }
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(120);
-      doc.text(photo.url, padding, H - padding - 10);
-    } catch (e) {
-      console.error("[incident-pdf] photo embed failed:", e);
+      const bytes = await fetchBytes(att.url);
+      const kind = sniffKind(bytes);
+      return { idx: idx + 1, name: att.name ?? `Attachment ${idx + 1}`, url: att.url, bytes, kind };
+    } catch (err) {
+      console.error("[incident-pdf] attachment fetch failed:", err);
+      return { idx: idx + 1, name: att.name ?? `Attachment ${idx + 1}`, url: att.url, bytes: null, kind: "unknown" as const };
     }
+  }));
+
+  // ── Attachment manifest ───────────────────────────────────────────────
+  if (resolved.length > 0) {
+    drawSectionHeading(c, "Attachments");
+    const summary: AttachmentSummary[] = resolved.map((r) => ({
+      index: r.idx,
+      name: r.name,
+      meta: attachmentMeta(r),
+    }));
+    drawAttachmentSummary(c, summary);
+  } else {
+    drawSectionHeading(c, "Attachments");
+    drawBodyText(c, fallbackText(null, "noAttachments"));
   }
 
-  const out = doc.output("arraybuffer");
-  return Buffer.from(out);
+  // ── Image attachment pages ────────────────────────────────────────────
+  const imageAtts = resolved.filter((r) => r.bytes !== null && (r.kind === "jpeg" || r.kind === "png"));
+  for (let i = 0; i < imageAtts.length; i++) {
+    const r = imageAtts[i];
+    const bytes = r.bytes!;
+    const format = r.kind === "png" ? "PNG" : "JPEG";
+    const dims = r.kind === "png" ? pngDims(bytes) : jpegDims(bytes);
+    if (!dims) continue;
+    const page: AttachmentImage = {
+      index: i + 1,
+      total: imageAtts.length,
+      name: r.name,
+      caption: `Source: ${r.url}`,
+      dataUri: `data:image/${r.kind};base64,${Buffer.from(bytes).toString("base64")}`,
+      format,
+      pxW: dims.width,
+      pxH: dims.height,
+    };
+    drawImagePage(c, page);
+  }
+
+  // ── Footer (generated stamp + page number) ────────────────────────────
+  stampFooter(doc, {
+    reportId: reportIdLabel,
+    generatedAt: formatGeneratedAt(),
+  });
+
+  return Buffer.from(doc.output("arraybuffer"));
 }
 
-function block(doc: jsPDF, label: string, value: string, x: number, yIn: number, W: number): number {
-  let y = yIn;
-  if (y > 700) { doc.addPage(); y = 48; }
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(20, 30, 60);
-  doc.text(label, x, y); y += 14;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(40);
-  const lines = doc.splitTextToSize(value, W - 96);
-  doc.text(lines, x, y);
-  y += 12 * lines.length + 10;
-  return y;
+// ── Helpers ─────────────────────────────────────────────────────────────
+
+function attachmentMeta(r: { kind: string; bytes: Uint8Array | null; url: string }): string | undefined {
+  const kindLabel =
+    r.kind === "jpeg" ? "Image (JPEG)" :
+    r.kind === "png"  ? "Image (PNG)" :
+    r.kind === "pdf"  ? "PDF document" :
+    r.kind === "unknown" ? "File" : `File (${r.kind})`;
+  const size = r.bytes ? formatBytes(r.bytes.byteLength) : null;
+  return [kindLabel, size, r.url].filter(Boolean).join(" · ");
 }
 
-async function fetchAsArrayBuffer(url: string): Promise<Uint8Array> {
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
+
+async function fetchBytes(url: string): Promise<Uint8Array> {
   const r = await fetch(url, { cache: "no-store" });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return new Uint8Array(await r.arrayBuffer());
 }
 
-function detectFormat(url: string): "jpeg" | "png" {
-  const u = url.toLowerCase();
-  if (u.includes(".png")) return "png";
-  return "jpeg";
+/** Identify the file type by reading the magic bytes. */
+function sniffKind(bytes: Uint8Array): "jpeg" | "png" | "pdf" | "unknown" {
+  if (bytes.length < 4) return "unknown";
+  if (bytes[0] === 0xff && bytes[1] === 0xd8) return "jpeg";
+  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return "png";
+  if (bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) return "pdf";
+  return "unknown";
 }
 
-function bufferToDataUri(bytes: Uint8Array, format: "jpeg" | "png"): string {
-  const b64 = Buffer.from(bytes).toString("base64");
-  return `data:image/${format};base64,${b64}`;
+function pngDims(bytes: Uint8Array): { width: number; height: number } | null {
+  if (bytes.length < 24) return null;
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  return { width: dv.getUint32(16), height: dv.getUint32(20) };
 }
 
-async function imageDims(bytes: Uint8Array, format: "jpeg" | "png"): Promise<{ width: number; height: number }> {
-  // PNG: 16-byte signature, then IHDR (4 byte length, "IHDR", width, height)
-  if (format === "png") {
-    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-    return { width: dv.getUint32(16), height: dv.getUint32(20) };
-  }
-  // JPEG: scan for SOF (0xFFC0..0xFFCF, excluding 0xC4, 0xC8, 0xCC)
+function jpegDims(bytes: Uint8Array): { width: number; height: number } | null {
   let i = 2;
   while (i < bytes.length) {
     if (bytes[i] !== 0xff) { i++; continue; }
@@ -195,5 +233,5 @@ async function imageDims(bytes: Uint8Array, format: "jpeg" | "png"): Promise<{ w
     const segLen = (bytes[i + 2] << 8) | bytes[i + 3];
     i += 2 + segLen;
   }
-  return { width: 1600, height: 1200 }; // fallback
+  return null;
 }
