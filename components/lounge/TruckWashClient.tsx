@@ -166,6 +166,8 @@ export default function TruckWashClient({ currentUser }: { currentUser: CurrentU
             <strong>+</strong> button, then sign at the bottom to record the wash.
           </>
         }
+        photo="/lounge/brand/truck-3926-clean.jpg"
+        photoPosition="center 60%"
       />
 
       <Notice>
