@@ -29,6 +29,7 @@ export const dynamic = "force-dynamic";
 export default async function LoungeHome() {
   const session = await currentEmployee();
   if (!session) redirect("/lounge/login");
+  if (session.mustChangePassword) redirect("/lounge/change-password");
 
   const [emp, expiring, acks, birthdays] = await Promise.all([
     getEmployee(session.id),

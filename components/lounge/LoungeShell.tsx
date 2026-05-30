@@ -95,12 +95,33 @@ export default function LoungeShell({
   const pathname = usePathname() || "/lounge";
   const router = useRouter();
 
+  // First-login password lockdown: new employees get a default password
+  // (`firstInitial + lastName + 3935`) and must replace it before they can
+  // use the lounge. /api/lounge/me carries the must_change_password flag
+  // straight off the session. We send everyone whose flag is true to
+  // /lounge/change-password — except the change-password page itself and
+  // the login page, so we don't infinite-loop.
+  useEffect(() => {
+    if (pathname.startsWith("/lounge/change-password")
+        || pathname.startsWith("/lounge/login")) return;
+    let cancelled = false;
+    fetch("/api/lounge/me", { cache: "no-store" }).then(async (r) => {
+      if (!r.ok) return;
+      const d = await r.json().catch(() => null);
+      if (!cancelled && d?.employee?.mustChangePassword === true) {
+        router.replace("/lounge/change-password");
+      }
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [pathname, router]);
+
   // Required-ack lockdown: if there's at least one un-acknowledged required
   // notice, push the user to /lounge/acks until they sign. Admin pages
   // (/admin/*) stay accessible so leadership can post + manage notices
   // without being trapped.
   useEffect(() => {
     if (pathname.startsWith("/lounge/acks") || pathname.startsWith("/lounge/login")
+        || pathname.startsWith("/lounge/change-password")
         || pathname.startsWith("/admin")) return;
     let cancelled = false;
     fetch("/api/lounge/me/required-acks").then(async (r) => {
