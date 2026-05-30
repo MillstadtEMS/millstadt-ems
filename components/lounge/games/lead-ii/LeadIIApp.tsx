@@ -476,9 +476,6 @@ function TimedScreen({ level, playerName, onExit }: { level: LevelId; playerName
             : `Out of attempts — moving on.`}
         </p>
       )}
-      <p style={{ color: LEAD_II_COLORS.phosphorDim, textAlign: "center", marginTop: 14, fontSize: 14 }}>
-        Subject: {displayNameFor(current)} · tier {tierForRhythm(current) ?? "?"}
-      </p>
     </div>
   );
 }
