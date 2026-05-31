@@ -86,6 +86,18 @@ export default function EmployeeFormsHub() {
 
   useEffect(() => { setMounted(true); load(); }, [load]);
 
+  // When the sidebar sub-list links to /lounge/forms?request=<formId>
+  // we treat that as the user explicitly asking to request that form.
+  // We pre-select it so they only have to confirm + (optionally) add a
+  // message. Without this query param the form-request panel doesn't
+  // render at all — entry happens exclusively through the sidebar.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const u = new URL(window.location.href);
+    const req = u.searchParams.get("request");
+    if (req) setPick(req);
+  }, []);
+
   async function submitRequest() {
     if (!pick) { setStatus({ kind: "err", text: "Pick a form to request." }); return; }
     setBusy(true); setStatus(null);
@@ -99,6 +111,15 @@ export default function EmployeeFormsHub() {
       if (!r.ok) { setStatus({ kind: "err", text: d?.error ?? "Could not submit request." }); return; }
       setStatus({ kind: "ok", text: "Request sent. An administrator will review it shortly." });
       setPick(""); setMessage("");
+      // Clean ?request= off the URL so a refresh doesn't relaunch the
+      // confirmation panel after a successful send.
+      if (typeof window !== "undefined") {
+        const u = new URL(window.location.href);
+        if (u.searchParams.has("request")) {
+          u.searchParams.delete("request");
+          window.history.replaceState({}, "", u.toString());
+        }
+      }
       load();
     } finally {
       setBusy(false);
@@ -143,51 +164,56 @@ export default function EmployeeFormsHub() {
         </Card>
       )}
 
-      {/* Request a form */}
-      <Card kicker="Need a form" title="Request a form" accent="gold">
-        <p style={{ color: "#cbd5e1", fontSize: 13, lineHeight: 1.55, margin: "0 0 10px" }}>
-          Everyday requests stay here for quick access. Sensitive HR, injury, damage, return-to-work,
-          complaint, and separation forms are sent by leadership when they are needed.
-        </p>
-        <div style={{ display: "grid", gap: 10 }}>
-          <label style={{ display: "block" }}>
-            <span style={{ display: "block", color: "#94a3b8", fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 4 }}>Form</span>
-            <select
-              value={pick}
-              onChange={(e) => setPick(e.target.value)}
-              style={fieldStyle}
-            >
-              <option value="">Choose a form…</option>
-              {catalog.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-            </select>
-            {pick && (
-              <p style={{ color: "#94a3b8", fontSize: 12, marginTop: 4 }}>
-                {catalog.find((c) => c.id === pick)?.blurb}
-              </p>
+      {/* Confirm-and-send request panel. Only renders when the sidebar
+          sub-list has pre-selected a form (?request=<id>). Otherwise
+          there is no entry point on this page — the sidebar IS the
+          form picker now. */}
+      {pick && catalog.find((c) => c.id === pick) && (
+        <Card kicker="Confirm request" title={catalog.find((c) => c.id === pick)!.label} accent="gold">
+          <p style={{ color: "#cbd5e1", fontSize: 13, lineHeight: 1.55, margin: "0 0 10px" }}>
+            {catalog.find((c) => c.id === pick)!.blurb}
+          </p>
+          <div style={{ display: "grid", gap: 10 }}>
+            <label style={{ display: "block" }}>
+              <span style={{ display: "block", color: "#94a3b8", fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 4 }}>Message (optional)</span>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={2}
+                placeholder="Anything leadership should know…"
+                style={{ ...fieldStyle, resize: "vertical" }}
+              />
+            </label>
+            {status && (
+              <div style={{ padding: "10px 12px", borderRadius: 10, fontSize: 13, background: status.kind === "ok" ? "rgba(16,185,129,0.12)" : "rgba(248,113,113,0.12)", color: status.kind === "ok" ? "#34d399" : "#fca5a5" }}>
+                {status.text}
+              </div>
             )}
-          </label>
-          <label style={{ display: "block" }}>
-            <span style={{ display: "block", color: "#94a3b8", fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 4 }}>Message (optional)</span>
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={2}
-              placeholder="Anything leadership should know…"
-              style={{ ...fieldStyle, resize: "vertical" }}
-            />
-          </label>
-          {status && (
-            <div style={{ padding: "10px 12px", borderRadius: 10, fontSize: 13, background: status.kind === "ok" ? "rgba(16,185,129,0.12)" : "rgba(248,113,113,0.12)", color: status.kind === "ok" ? "#34d399" : "#fca5a5" }}>
-              {status.text}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button type="button" disabled={busy} onClick={submitRequest} style={primaryBtn}>
+                {busy ? "Sending…" : "Send request"}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setPick("");
+                  setMessage("");
+                  setStatus(null);
+                  if (typeof window !== "undefined") {
+                    const u = new URL(window.location.href);
+                    u.searchParams.delete("request");
+                    window.history.replaceState({}, "", u.toString());
+                  }
+                }}
+                style={{ ...primaryBtn, background: "transparent", color: "#cbd5e1", border: "1px solid rgba(255,255,255,0.12)" }}
+              >
+                Cancel
+              </button>
             </div>
-          )}
-          <div>
-            <button type="button" disabled={busy || !pick} onClick={submitRequest} style={primaryBtn}>
-              {busy ? "Sending…" : "Send request"}
-            </button>
           </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       {/* Your request history */}
       {requests.length > 0 && (
@@ -234,11 +260,11 @@ export default function EmployeeFormsHub() {
         </Card>
       )}
 
-      {pending.length === 0 && drafts.length === 0 && visible.length === 0 && requests.length === 0 && (
+      {pending.length === 0 && drafts.length === 0 && visible.length === 0 && requests.length === 0 && !pick && (
         <Card kicker="Forms" title="Nothing here yet" accent="gold">
           <p style={{ color: "#cbd5e1", fontSize: 13.5 }}>
-            When leadership sends you something to sign, or you request a form above, it shows up
-            on this page.
+            When leadership sends you something to sign, or you request a form from the
+            <strong> Forms &amp; Paperwork</strong> menu in the sidebar, it shows up on this page.
           </p>
         </Card>
       )}
