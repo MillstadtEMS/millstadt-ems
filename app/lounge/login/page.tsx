@@ -379,7 +379,7 @@ export default function LoungeLogin() {
           Don&apos;t have your password? Contact management.
         </p>
 
-        {process.env.NEXT_PUBLIC_LOUNGE_DEV_LOGIN === "1" && <DevShortcut />}
+        <DevShortcut />{/* PIN-gated dev shortcut — see /api/lounge/dev-login/route.ts */}
       </div>
     </div>
   );

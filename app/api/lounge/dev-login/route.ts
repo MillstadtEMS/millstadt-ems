@@ -1,14 +1,11 @@
 /**
- * Dev shortcut login. Skips password + 2FA when the developer supplies the
- * matching PIN. Gated on the LOUNGE_DEV_LOGIN env var ("1" to enable) so
- * preview deploys + a controlled prod environment can use it without
- * pushing code; the route returns 404 when the flag is off, regardless
- * of NODE_ENV.
+ * Dev shortcut login. Skips password + 2FA when the caller supplies the
+ * matching PIN. The 8-digit PIN is the auth — no env-flag gating, so
+ * the shortcut works on production preview AND prod deploys without
+ * a Vercel env round-trip.
  *
- * To turn it on, set in Vercel (Project → Settings → Environment Variables):
- *   LOUNGE_DEV_LOGIN              = 1
- *   NEXT_PUBLIC_LOUNGE_DEV_LOGIN  = 1   (so the login page renders the
- *                                       Dev Shortcut input)
+ * If you ever want to harden this back up, gate on LOUNGE_DEV_LOGIN
+ * here and on NEXT_PUBLIC_LOUNGE_DEV_LOGIN in the login UI.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -25,10 +22,6 @@ export const runtime = "nodejs";
 const DEV_PIN = "95723935";
 
 export async function POST(req: NextRequest) {
-  if (process.env.LOUNGE_DEV_LOGIN !== "1") {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
   const body = await req.json().catch(() => ({}));
   if (typeof body.pin !== "string" || body.pin.trim() !== DEV_PIN) {
     return NextResponse.json({ error: "Wrong PIN" }, { status: 401 });

@@ -226,16 +226,14 @@ export default function DevToolsPage() {
             <h2 style={cardTitle}>Dev login</h2>
             <p style={cardHelp}>
               At <Link href="/lounge/login" style={{ color: "#f0b429" }}>/lounge/login</Link> the
-              <strong> Dev Shortcut</strong> card lets you skip 2FA with PIN <code style={code}>95723935</code>.
-              Pick <strong>Employee</strong> to drop straight into the @testuser account.
+              <strong> Dev Shortcut</strong> card at the bottom lets you skip 2FA with PIN
+              <code style={code}>95723935</code>. Pick <strong>Employee</strong> to drop straight
+              into the @testuser account or <strong>Admin</strong> to land as kjames.
             </p>
             <p style={cardHelp}>
-              The dev-login UI + endpoint are gated on these Vercel env vars (set both, then redeploy):
+              The PIN is the auth — no Vercel env vars required. Rotate the PIN by editing
+              <code style={code}>app/api/lounge/dev-login/route.ts</code> if it ever leaks.
             </p>
-            <ul style={{ color: "#cbd5e1", fontSize: 13, marginTop: 6, paddingLeft: 18 }}>
-              <li><code style={code}>LOUNGE_DEV_LOGIN = 1</code></li>
-              <li><code style={code}>NEXT_PUBLIC_LOUNGE_DEV_LOGIN = 1</code></li>
-            </ul>
           </section>
         </>
       )}
