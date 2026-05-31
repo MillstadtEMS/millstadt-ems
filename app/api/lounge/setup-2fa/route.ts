@@ -67,7 +67,9 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const code = typeof body.code === "string" ? body.code.trim() : "";
-  const trustDevice = body.trustDevice === true;
+  // Implicit trust-this-device on first enrollment — same reasoning as
+  // verify-2fa. Default opt-in unless the client explicitly sends false.
+  const trustDevice = body.trustDevice !== false;
   if (!/^\d{6}$/.test(code)) return NextResponse.json({ error: "6-digit code required" }, { status: 400 });
 
   const emp = await findEmployeeById(session.employeeId);

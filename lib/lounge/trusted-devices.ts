@@ -13,7 +13,10 @@ import { createHash, randomBytes } from "crypto";
 import { sql } from "./db";
 
 export const TRUST_COOKIE_NAME = "mas_lounge_trust";
-export const TRUST_TTL_DAYS = 30;
+// Lifted from 30 → 365 days so users only have to clear 2FA once per
+// device. Server still validates the row + auto-deletes on expiry, so
+// extending the cookie life can't be used to bypass a revoked device.
+export const TRUST_TTL_DAYS = 365;
 export const TRUST_TTL_SECONDS = TRUST_TTL_DAYS * 24 * 60 * 60;
 
 let schemaEnsured = false;

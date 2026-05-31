@@ -30,7 +30,9 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const code = typeof body.code === "string" ? body.code.trim() : "";
-  const trustDevice = body.trustDevice === true;
+  // SMS 2FA also auto-trusts the device by default (matches the TOTP
+  // route behavior). User can revoke from /lounge/security.
+  const trustDevice = body.trustDevice !== false;
   const result = await verifyLoginCode(session.employeeId, code);
   if (!result.ok) return NextResponse.json({ error: result.reason ?? "Wrong code." }, { status: 401 });
 

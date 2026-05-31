@@ -32,7 +32,10 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const code = typeof body.code === "string" ? body.code.trim() : "";
-  const trustDevice = body.trustDevice === true;
+  // The trust-device opt-in is now implicit on every successful 2FA
+  // verify — clearing the code once on a device is enough. Users can
+  // still revoke any device from /lounge/security if a phone is lost.
+  const trustDevice = body.trustDevice !== false;
   if (!/^\d{6}$/.test(code)) return NextResponse.json({ error: "6-digit code required" }, { status: 400 });
 
   const emp = await findEmployeeById(session.employeeId);
