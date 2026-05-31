@@ -89,17 +89,20 @@ export function TickerControlLogin() {
       <style>{TICKER_CONTROL_CSS}</style>
       <section className="ticker-login-card">
         <BrandMark />
-        <span className="ticker-kicker">KJ only</span>
+        <span className="ticker-kicker">Ticker Editor</span>
         <h1>Live Ticker Control</h1>
         <p>
-          Open this from your phone home screen, sign in with Face ID, and update the call ticker without entering the full Lounge.
+          Save this page to your home screen for quick updates to the live call ticker without opening the full Lounge.
         </p>
         <button className="ticker-primary-button" type="button" onClick={signIn} disabled={!supported || busy}>
           <LockIcon />
-          {busy ? "Opening Face ID..." : supported ? "Sign in with Face ID" : "Face ID unavailable"}
+          {busy ? "Opening Face ID..." : supported ? "Sign in with Face ID (kjames)" : "Face ID unavailable"}
         </button>
         {error && <div className="ticker-error">{error}</div>}
-        <a className="ticker-subtle-link" href="/lounge/login">Use full Lounge login instead</a>
+        <a className="ticker-primary-link" href="/lounge/login?next=/lounge/ticker-control">Use full Lounge login</a>
+        <p className="ticker-fineprint">
+          Other ticker editors: use the full Lounge login above. The Face ID shortcut is wired to the `kjames` passkey only.
+        </p>
         <InstallHint />
       </section>
     </main>
@@ -113,8 +116,8 @@ export function TickerControlDenied() {
       <section className="ticker-login-card">
         <BrandMark />
         <span className="ticker-kicker">Restricted</span>
-        <h1>Not available on this account.</h1>
-        <p>This shortcut is locked to the `kjames` Lounge account.</p>
+        <h1>This account doesn't have ticker access.</h1>
+        <p>Ticker editing is granted per-employee by an administrator. Ask leadership to flip the <code>can_edit_ticker</code> flag on your account.</p>
         <a className="ticker-primary-link" href="/lounge">Back to Lounge</a>
       </section>
     </main>
@@ -642,6 +645,21 @@ const TICKER_CONTROL_CSS = `
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
+}
+.ticker-fineprint {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  margin: 0;
+  text-align: center;
+}
+.ticker-fineprint code {
+  background: rgba(255,255,255,0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  font-size: 11px;
 }
 .ticker-error,
 .ticker-status {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentEmployee } from "@/lib/lounge/auth";
+import { canEditTicker } from "@/lib/admin/auth";
 import { sql } from "@/lib/neon";
 
 export const runtime = "nodejs";
@@ -44,20 +45,26 @@ function rowToCall(row: CadCallRow) {
   };
 }
 
-async function requireKjames() {
+/**
+ * Gate every method in this route on the same can_edit_ticker
+ * permission used by /lounge/ticker-control's page-level check.
+ * Without this they diverged: page lets Dylan in, API doesn't, so the
+ * client got 403 on its first poll and reload-looped forever.
+ */
+async function gate() {
   const me = await currentEmployee();
   if (!me) {
     return { response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
-  if (me.username.toLowerCase() !== "kjames") {
+  if (!(await canEditTicker())) {
     return { response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
   return { me };
 }
 
 export async function GET() {
-  const gate = await requireKjames();
-  if ("response" in gate) return gate.response;
+  const g = await gate();
+  if ("response" in g) return g.response;
 
   const db = sql();
   const year = currentChicagoYear();
@@ -73,8 +80,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const gate = await requireKjames();
-  if ("response" in gate) return gate.response;
+  const g = await gate();
+  if ("response" in g) return g.response;
 
   const body = await req.json().catch(() => ({}));
   const dispatchDate = typeof body.dispatchDate === "string" ? body.dispatchDate.trim() : "";
@@ -107,8 +114,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const gate = await requireKjames();
-  if ("response" in gate) return gate.response;
+  const g = await gate();
+  if ("response" in g) return g.response;
 
   const body = await req.json().catch(() => ({}));
   const id = typeof body.id === "string" ? body.id.trim() : "";
@@ -140,8 +147,8 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const gate = await requireKjames();
-  if ("response" in gate) return gate.response;
+  const g = await gate();
+  if ("response" in g) return g.response;
 
   const body = await req.json().catch(() => ({}));
   const id = typeof body.id === "string" ? body.id.trim() : "";
