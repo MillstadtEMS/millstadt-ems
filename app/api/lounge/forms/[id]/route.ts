@@ -14,7 +14,7 @@ import { currentEmployee } from "@/lib/lounge/auth";
 import { getEmployee } from "@/lib/lounge/employees";
 import { createAttachment, createRecord } from "@/lib/lounge/personnel";
 import { sendEmployeeEmail } from "@/lib/lounge/employee-email";
-import { emailAdmins } from "@/lib/lounge/notify-admins";
+import { emailAdmins, notifyAdminsInLounge } from "@/lib/lounge/notify-admins";
 import {
   getForm,
   logFormAudit,
@@ -124,6 +124,37 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       await autoFinalize(updated, spec, me);
       const fresh = await getForm(id);
       return NextResponse.json({ form: fresh, finalized: true });
+    }
+
+    // If the employee just signed an employee-initiated form (no
+    // assignment, no admin signature yet, but they've signed their own
+    // line), notify every admin so leadership knows there's a draft
+    // awaiting review.
+    const employeeJustSigned = Array.isArray(body.signatures) && body.signatures.some((s) => s.who === "employee");
+    const awaitingAdmin = updated.assignmentId === null
+      && updated.signatures.some((s) => s.who === "employee")
+      && !updated.signatures.some((s) => s.who !== "employee");
+    if (employeeJustSigned && awaitingAdmin) {
+      try {
+        await notifyAdminsInLounge({
+          kind: "post",
+          title: `New ${spec.label} from ${me.firstName} ${me.lastName}`,
+          bodyPreview: spec.blurb,
+          linkUrl: `/admin/employees/${updated.employeeId}/forms/${updated.id}`,
+          sourceId: updated.id,
+          actorId: me.id,
+        });
+        if (updated.share.emailAdminInbox) {
+          await emailAdmins({
+            kicker: spec.label,
+            headline: `${spec.label} — ${me.firstName} ${me.lastName}`,
+            meta: `Submitted ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })} CT · Awaiting administrator review`,
+            bodyText: `${me.firstName} ${me.lastName} submitted a ${spec.label.toLowerCase()} for review.\n\nReview & finalize: https://www.millstadtems.org/admin/employees/${updated.employeeId}/forms/${updated.id}`,
+            link: { url: `https://www.millstadtems.org/admin/employees/${updated.employeeId}/forms/${updated.id}`, label: "Open in admin" },
+            subject: `Millstadt EMS - ${spec.label} - ${me.firstName} ${me.lastName} - ${new Date().toISOString().slice(0,10)}`,
+          });
+        }
+      } catch (e) { console.error("[forms] admin notify failed:", e); }
     }
   }
 

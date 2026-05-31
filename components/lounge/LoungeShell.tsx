@@ -31,6 +31,7 @@ const NAV: NavItem[] = [
   { href: "/lounge/notifications", label: "Notifications",  icon: "bell" },
   { href: "/lounge/messages",     label: "Messages",        icon: "message" },
   { href: "/lounge/acks",         label: "Acknowledgments", icon: "checkCircle" },
+  { href: "/lounge/forms",        label: "Forms & Paperwork", icon: "inbox" },
   { href: "/lounge/my-file",      label: "My File",         icon: "folder" },
   { href: "/lounge/certs",        label: "Certifications",  icon: "certificate" },
   { href: "/lounge/about-me",     label: "Profile & Photo", icon: "badge" },
@@ -63,7 +64,7 @@ const CREW_NAV_SECTIONS = [
   },
   {
     title: "Required",
-    hrefs: ["/lounge/acks", "/lounge/my-file", "/lounge/certs", "/lounge/about-me", "/lounge/security"],
+    hrefs: ["/lounge/acks", "/lounge/forms", "/lounge/my-file", "/lounge/certs", "/lounge/about-me", "/lounge/security"],
   },
   {
     title: "Forms & Reports",

@@ -928,7 +928,102 @@ export const FORM_REGISTRY: FormSpec[] = [
     ],
   },
 
-  // 22. Promotion / Role Change / Assignment
+  // 22. Corrective Action / Write-Up — the unified-framework version of the
+  //     stand-alone write-up generator. New write-ups should use this; the
+  //     legacy /admin/employees/[id]/writeups/[writeupId] route is kept for
+  //     existing finalized records.
+  {
+    id: "corrective_action",
+    label: "Corrective Action / Write-Up",
+    blurb: "Document a corrective action — coaching through termination recommendation.",
+    pdfTitle: "Employee Corrective Action / Write-Up",
+    filenamePrefix: "EmployeeWriteUp",
+    defaultFileTab: "corrective_actions",
+    confidentiality: "open",
+    bulkAssignable: false,
+    defaults: { saveToFile: true, visibleToEmployee: true, emailEmployee: false, emailAdminInbox: true },
+    sections: [
+      {
+        title: "Employee & incident",
+        fields: [
+          { key: "dateIssued", label: "Date write-up issued", type: "date", required: true },
+          { key: "incidentDate", label: "Date / time of incident", type: "datetime", required: true },
+          { key: "incidentLocation", label: "Location of incident", type: "text" },
+          { key: "correctiveActionType", label: "Type of corrective action", type: "select", required: true, options: [
+            "Documented verbal counseling",
+            "Written warning",
+            "Final written warning",
+            "Suspension recommendation",
+            "Performance improvement plan",
+            "Termination recommendation",
+            "Other",
+          ] },
+          { key: "issueCategory", label: "Category of issue", type: "select", required: true, options: [
+            "Attendance / tardiness",
+            "Performance concern",
+            "Policy violation",
+            "Safety issue",
+            "Conduct / professionalism",
+            "Documentation issue",
+            "Patient care concern",
+            "Equipment / property issue",
+            "Insubordination",
+            "Confidentiality / HIPAA concern",
+            "Workplace behavior",
+            "Other",
+          ] },
+        ],
+      },
+      {
+        title: "Issue details",
+        fields: [
+          { key: "factualDescription", label: "Factual description of incident", type: "longtext", rows: 6, required: true,
+            helpText: "Describe only what was observed, reported, documented, or confirmed. Avoid opinions, labels, or emotional language." },
+          { key: "policyViolated", label: "Policy / SOP / expectation violated", type: "longtext", rows: 4, required: true,
+            helpText: "Identify the specific policy, SOP, job description duty, or known workplace expectation involved." },
+        ],
+      },
+      {
+        title: "Evidence, prior notice, impact",
+        fields: [
+          { key: "evidenceReviewed", label: "Evidence or sources reviewed", type: "longtext", rows: 3 },
+          { key: "priorNoticeOfExpectation", label: "How the employee was previously informed of this expectation", type: "longtext", rows: 3 },
+          { key: "priorRelatedDiscipline", label: "Prior related discipline (if applicable)", type: "longtext", rows: 3 },
+          { key: "operationalImpact", label: "Operational, safety, or workplace impact", type: "longtext", rows: 3 },
+        ],
+      },
+      {
+        title: "Corrective expectations",
+        fields: [
+          { key: "correctiveExpectations", label: "Corrective expectations going forward", type: "longtext", rows: 4, required: true,
+            helpText: "Specific, measurable, and time-bound." },
+          { key: "actionPlan", label: "Action plan / remediation steps", type: "longtext", rows: 3 },
+          { key: "improvementTimeline", label: "Timeline for improvement", type: "text", required: true },
+          { key: "consequencesStatement", label: "Consequences if not corrected", type: "longtext", rows: 3, required: true },
+        ],
+      },
+      {
+        title: "Employee response",
+        fields: [
+          { key: "responseStatus", label: "Response status", type: "select", options: [
+            "Provided written response",
+            "Declined to provide a response",
+            "Will submit response later",
+            "Refused to participate",
+            "Unavailable at time of review",
+          ] },
+          { key: "employeeResponseText", label: "Employee statement (if provided)", type: "longtext", rows: 5 },
+        ],
+      },
+    ],
+    signatures: [
+      { who: "manager",  label: "Issuing supervisor", required: true, certificationText: ACK_MANAGER },
+      { who: "employee", label: "Employee", required: true, certificationText: ACK_EMPLOYEE, allowRefusal: true },
+      { who: "witness",  label: "Witness (optional)", required: false, certificationText: ACK_EMPLOYEE },
+    ],
+  },
+
+  // 23. Promotion / Role Change / Assignment
   {
     id: "promotion_role_change",
     label: "Promotion / Role Change",

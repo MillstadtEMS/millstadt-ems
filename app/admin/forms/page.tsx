@@ -118,6 +118,8 @@ export default function FormsAdminPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-5 py-6 space-y-5">
+        <AwaitingReviewCard />
+
         <section className="bg-[rgba(7,20,40,0.55)] border border-white/8 rounded-2xl p-5">
           <h2 className="text-white font-black text-lg mb-3">1. Pick the form</h2>
           <div className="grid sm:grid-cols-2 gap-2">
@@ -232,5 +234,65 @@ export default function FormsAdminPage() {
         )}
       </main>
     </div>
+  );
+}
+
+// ── Awaiting-review card ───────────────────────────────────────────────
+
+interface AwaitingItem {
+  formId: string;
+  formType: string;
+  formLabel: string;
+  employeeId: string;
+  employeeName: string;
+  employeeCertification: string | null;
+  submittedAt: string;
+}
+
+function AwaitingReviewCard() {
+  const [items, setItems] = useState<AwaitingItem[] | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/forms/awaiting-review", { cache: "no-store" })
+      .then(async (r) => {
+        if (!r.ok) { setItems([]); return; }
+        const d = await r.json();
+        setItems(Array.isArray(d.items) ? d.items : []);
+      })
+      .catch(() => setItems([]));
+  }, []);
+
+  if (items === null) {
+    return (
+      <section className="bg-[rgba(7,20,40,0.55)] border border-white/8 rounded-2xl p-5">
+        <div className="text-slate-500 text-sm">Loading awaiting-review queue…</div>
+      </section>
+    );
+  }
+  if (items.length === 0) return null;
+
+  return (
+    <section className="bg-amber-500/5 border border-amber-500/30 rounded-2xl p-5">
+      <div className="flex flex-wrap items-baseline gap-3 mb-3">
+        <span className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-300">Action needed</span>
+        <h2 className="text-white font-black text-lg">{items.length} employee submission{items.length === 1 ? "" : "s"} awaiting your review</h2>
+      </div>
+      <ul className="space-y-2">
+        {items.map((it) => (
+          <li key={it.formId}>
+            <Link
+              href={`/admin/employees/${it.employeeId}/forms/${it.formId}`}
+              className="flex flex-wrap items-center gap-3 px-3 py-2 bg-[#071428] border border-white/10 rounded-xl hover:border-amber-400/40 text-sm"
+            >
+              <span className="text-white font-bold">{it.employeeName}</span>
+              {it.employeeCertification && <span className="text-slate-500 text-xs">· {it.employeeCertification}</span>}
+              <span className="text-amber-300 text-xs uppercase tracking-wider">{it.formLabel}</span>
+              <span className="text-slate-500 text-xs ml-auto">Submitted {fmtDate(it.submittedAt)}</span>
+              <span className="text-[#f0b429] text-xs font-bold uppercase tracking-wider">Review →</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

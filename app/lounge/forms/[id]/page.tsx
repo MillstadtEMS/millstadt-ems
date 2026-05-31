@@ -24,6 +24,7 @@ interface FormDto {
   data: Record<string, unknown>;
   signatures: FormSignature[];
   refusedToSign: string[];
+  assignmentId: string | null;
   pdfUrl: string | null;
   pdfFilename: string | null;
   finalizedAt: string | null;
@@ -91,9 +92,19 @@ export default function EmployeeFormFillPage() {
           </div>
         )}
 
-        {/* Render each section (read-only for employee-pushed acknowledgments,
-            because admins already filled the substance during push). */}
-        {spec.sections.map((section) => (
+        {/* Field rendering:
+            - Admin-pushed acknowledgments (assignmentId set): all admin-
+              filled fields are read-only; the only fields the employee
+              can type into are employeeComments / employeeResponse.
+            - Employee-initiated drafts (assignmentId null AND no
+              non-employee signature yet): the employee is filling this
+              out for the first time — every field is editable.
+            - Once a non-employee signer has signed OR the form is
+              finalized, everything locks. */}
+        {spec.sections.map((section) => {
+          const hasNonEmployeeSig = form.signatures.some((s) => s.who !== "employee");
+          const employeeOwns = form.assignmentId === null && !hasNonEmployeeSig && !finalized;
+          return (
           <section key={section.title} className="bg-[rgba(7,20,40,0.55)] border border-white/8 rounded-2xl p-5">
             <h2 className="text-white font-black text-lg">{section.title}</h2>
             {section.intro && <p className="text-slate-400 text-sm mt-1">{section.intro}</p>}
@@ -101,12 +112,45 @@ export default function EmployeeFormFillPage() {
               {section.fields.map((field) => {
                 const value = form.data[field.key];
                 const display = value === null || value === undefined || value === "" ? "—" : String(value);
-                const editable = !finalized && (field.key === "employeeComments" || field.key === "employeeResponse");
+                const explicitlyEditable = !finalized && (field.key === "employeeComments" || field.key === "employeeResponse");
+                const editable = explicitlyEditable || employeeOwns;
                 if (editable) {
+                  if (field.type === "longtext") {
+                    return (
+                      <label key={field.key} className="block">
+                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">{field.label}{field.required && " *"}</span>
+                        {field.helpText && <span className="block text-xs text-slate-500 mt-1">{field.helpText}</span>}
+                        <textarea rows={field.rows ?? 4} value={String(value ?? "")} onChange={(e) => setData(field.key, e.target.value)}
+                          className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm" />
+                      </label>
+                    );
+                  }
+                  if (field.type === "select") {
+                    return (
+                      <label key={field.key} className="block">
+                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">{field.label}{field.required && " *"}</span>
+                        <select value={String(value ?? "")} onChange={(e) => setData(field.key, e.target.value)}
+                          className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm">
+                          <option value="">Select…</option>
+                          {field.options?.map((o) => <option key={o} value={o}>{o}</option>)}
+                        </select>
+                      </label>
+                    );
+                  }
+                  if (field.type === "checkbox") {
+                    return (
+                      <label key={field.key} className="flex items-center gap-2 text-sm text-slate-300">
+                        <input type="checkbox" checked={Boolean(value)} onChange={(e) => setData(field.key, e.target.checked)} style={{ accentColor: "#f0b429" }} />
+                        <span>{field.label}{field.required && " *"}</span>
+                      </label>
+                    );
+                  }
+                  const inputType = field.type === "date" ? "date" : field.type === "datetime" ? "datetime-local" : field.type === "number" ? "number" : "text";
                   return (
                     <label key={field.key} className="block">
                       <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">{field.label}{field.required && " *"}</span>
-                      <textarea rows={3} value={String(value ?? "")} onChange={(e) => setData(field.key, e.target.value)}
+                      {field.helpText && <span className="block text-xs text-slate-500 mt-1">{field.helpText}</span>}
+                      <input type={inputType} value={String(value ?? "")} onChange={(e) => setData(field.key, e.target.value)}
                         className="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm" />
                     </label>
                   );
@@ -120,7 +164,8 @@ export default function EmployeeFormFillPage() {
               })}
             </div>
           </section>
-        ))}
+          );
+        })}
 
         {employeeSigSpec && !finalized && (
           <EmployeeSign
