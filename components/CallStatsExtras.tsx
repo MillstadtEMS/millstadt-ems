@@ -131,21 +131,60 @@ export default function CallStatsExtras() {
       ? Math.round(avgPerDay * daysInYear)
       : 0;
 
-    // Per-month breakdown — counts. We iterate all 12 months so the
-    // tooltip shows the whole year; future months render as "—" so it's
-    // obvious there's no data yet.
-    const monthlyBreakdown: { month: string; count: number; isCurrent: boolean; isFuture: boolean }[] = [];
-    // Per-month breakdown — daily average (completed = full days-in-month;
-    // current month = MTD using today's day-of-month; future = none).
-    const dailyAvgByMonth: { month: string; avgPerDay: number; isCurrent: boolean; isFuture: boolean }[] = [];
+    // Per-month breakdown with YoY comparison vs the 2025 baseline.
+    // Every value here is REAL ticker data, not a projection:
+    //   - Past months: actual completed count.
+    //   - Current month: actual month-to-date count (labeled MTD so
+    //     the partial-month nature is obvious — its Δ vs the prior-
+    //     year full month is honest even though it's apples-to-
+    //     full-oranges until the month closes).
+    //   - Future months: render "—" for the current value + Δ so we
+    //     don't fabricate numbers.
+    // For the avg/day breakdown, the denominator on the current month
+    // is day-of-month (MTD avg) — also a real running average, not a
+    // projection.
+    const monthlyBreakdown: {
+      month: string;
+      count: number;            // current-year actual (or MTD on current month)
+      prevCount: number;        // 2025 actual for the same month
+      isCurrent: boolean;
+      isFuture: boolean;
+      isMTD: boolean;
+    }[] = [];
+    const dailyAvgByMonth: {
+      month: string;
+      avgPerDay: number;        // current-year actual avg/day (or MTD)
+      prevAvgPerDay: number;    // 2025 actual avg/day for the same month
+      isCurrent: boolean;
+      isFuture: boolean;
+      isMTD: boolean;
+    }[] = [];
+
     for (let i = 0; i < 12; i++) {
       const key = `${y}-${String(i + 1).padStart(2, "0")}`;
-      const count = monthCounts.get(key) ?? 0;
+      const rawCount = monthCounts.get(key) ?? 0;
       const isCurrent = i === monthIdx;
       const isFuture = i > monthIdx;
-      monthlyBreakdown.push({ month: MONTH_NAMES[i], count, isCurrent, isFuture });
-      const denom = isCurrent ? Math.max(1, now.getDate()) : new Date(y, i + 1, 0).getDate();
-      dailyAvgByMonth.push({ month: MONTH_NAMES[i], avgPerDay: isFuture ? 0 : count / denom, isCurrent, isFuture });
+      const daysInMonth = new Date(y, i + 1, 0).getDate();
+      const denom = isCurrent ? Math.max(1, now.getDate()) : daysInMonth;
+      const prevCount = CALLS_2025_MONTHLY[i] ?? 0;
+      const daysInPrevMonth = new Date(BASELINE_YEAR, i + 1, 0).getDate();
+      monthlyBreakdown.push({
+        month: MONTH_NAMES[i],
+        count: rawCount,
+        prevCount,
+        isCurrent,
+        isFuture,
+        isMTD: isCurrent,
+      });
+      dailyAvgByMonth.push({
+        month: MONTH_NAMES[i],
+        avgPerDay: isFuture ? 0 : rawCount / denom,
+        prevAvgPerDay: prevCount / daysInPrevMonth,
+        isCurrent,
+        isFuture,
+        isMTD: isCurrent,
+      });
     }
 
     // ── Previous-year comparison ───────────────────────────────────
@@ -242,24 +281,18 @@ export default function CallStatsExtras() {
         onHoverClose={scheduleClose}
         tooltip={
           <>
-            <CompareBlock
-              kind="monthly"
-              accent="gold"
-              previousYearActual={stats.compare.monthly.previousYearActual}
-              currentYearProjected={stats.compare.monthly.currentYearProjected}
-              prevLabel={`${stats.compare.monthly.monthLabel} ${BASELINE_YEAR}`}
-              currLabel={`${stats.compare.monthly.monthLabel} ${stats.year} (proj.)`}
-              note={`Current month projection: ${stats.thisMonthCount.toLocaleString()} so far ÷ ${stats.dayOfMonth} day${stats.dayOfMonth === 1 ? "" : "s"} × ${stats.daysInCurrentMonth}.`}
-            />
-            <PerMonthTable
-              title={`${stats.year} · monthly totals`}
+            <ComparisonTable
+              title={`Monthly totals · ${BASELINE_YEAR} vs ${stats.year}`}
               accent="gold"
               rows={stats.monthlyBreakdown.map((m) => ({
                 label: m.month,
-                value: m.isFuture ? "—" : m.count.toLocaleString(),
+                prev: m.prevCount,
+                curr: m.isFuture ? null : m.count,
                 isCurrent: m.isCurrent,
                 isFuture: m.isFuture,
+                isMTD: m.isMTD,
               }))}
+              fmt={(n) => Math.round(n).toLocaleString()}
             />
             <FormulaFooter accent="gold" />
           </>
@@ -278,24 +311,18 @@ export default function CallStatsExtras() {
         onHoverClose={scheduleClose}
         tooltip={
           <>
-            <CompareBlock
-              kind="avg"
-              accent="sky"
-              previousYearActual={stats.compare.avgPerDay.previousYearActual}
-              currentYearProjected={stats.compare.avgPerDay.currentYearProjected}
-              prevLabel={`${BASELINE_YEAR} actual`}
-              currLabel={`${stats.year} projected`}
-              decimals={2}
-            />
-            <PerMonthTable
-              title={`${stats.year} · avg / day by month`}
+            <ComparisonTable
+              title={`Calls per day · ${BASELINE_YEAR} vs ${stats.year}`}
               accent="sky"
               rows={stats.dailyAvgByMonth.map((m) => ({
                 label: m.month + (m.isCurrent ? "  (MTD)" : ""),
-                value: m.isFuture ? "—" : m.avgPerDay.toFixed(1),
+                prev: m.prevAvgPerDay,
+                curr: m.isFuture ? null : m.avgPerDay,
                 isCurrent: m.isCurrent,
                 isFuture: m.isFuture,
+                isMTD: m.isMTD,
               }))}
+              fmt={(n) => n.toFixed(1)}
             />
             <FormulaFooter accent="sky" />
           </>
@@ -755,7 +782,101 @@ function Row({ label, value, highlight }: { label: string; value: string; highli
 }
 
 // ── Formula + disclaimer footer ───────────────────────────────────────
-function FormulaFooter({ accent }: { accent: Accent }) {
+// ── Per-month comparison table (4-column: month / prev / curr / Δ) ────
+//
+// Used for the "This <month>" and "Avg / day" tooltips so the user can
+// scan the entire year at a glance:
+//
+//   Month     2025    2026    Δ
+//   January    66      80    +21%
+//   February   71      72     +1%
+//   May *      65      92    +41%   ← current month, projected
+//
+// Past months show actuals; current month shows the rest-of-month
+// projection (so-far ÷ day-of-month × days-in-month); future months
+// render "—" for current + Δ so the row still appears but doesn't
+// fabricate a comparison.
+function ComparisonTable({
+  title, accent, rows, fmt,
+}: {
+  title: string;
+  accent: Accent;
+  rows: {
+    label: string;
+    prev: number;
+    curr: number | null;
+    isCurrent: boolean;
+    isFuture: boolean;
+    isMTD: boolean;
+  }[];
+  fmt: (n: number) => string;
+}) {
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{
+        color: accentColor(accent), fontSize: 10, fontWeight: 900,
+        letterSpacing: "0.22em", textTransform: "uppercase", marginBottom: 8,
+      }}>
+        {title}
+      </div>
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr)",
+        rowGap: 2,
+        columnGap: 6,
+        fontSize: 12,
+        fontVariantNumeric: "tabular-nums",
+      }}>
+        {/* header row */}
+        <span style={hdr}>&nbsp;</span>
+        <span style={{ ...hdr, textAlign: "right" }}>{BASELINE_YEAR}</span>
+        <span style={{ ...hdr, textAlign: "right" }}>now</span>
+        <span style={{ ...hdr, textAlign: "right" }}>Δ</span>
+
+        {rows.map((r) => {
+          const change = r.curr === null ? null : percentChange(r.prev, r.curr);
+          const changeLabel = r.curr === null ? "—" : formatPercentChange(r.prev, r.curr);
+          const chipFg = change === null ? "#64748b"
+            : change >= 0 ? "#34d399" : "#fca5a5";
+          const rowBg = r.isCurrent ? `${accentColor(accent)}14` : "transparent";
+          const labelColor = r.isCurrent ? "white" : r.isFuture ? "#475569" : "#cbd5e1";
+          const numColor   = r.isCurrent ? "white" : r.isFuture ? "#475569" : "#e2e8f0";
+          return (
+            <span key={r.label + "-row"} style={{ display: "contents" }}>
+              <span style={{ ...cell, color: labelColor, background: rowBg, fontWeight: r.isCurrent ? 800 : 500 }}>
+                {r.label}{r.isMTD ? " · MTD" : ""}
+              </span>
+              <span style={{ ...cell, color: numColor, background: rowBg, textAlign: "right" }}>
+                {fmt(r.prev)}
+              </span>
+              <span style={{ ...cell, color: numColor, background: rowBg, textAlign: "right", fontWeight: r.isCurrent ? 800 : 500 }}>
+                {r.curr === null ? "—" : fmt(r.curr)}
+              </span>
+              <span style={{ ...cell, color: chipFg, background: rowBg, textAlign: "right", fontWeight: 800 }}>
+                {changeLabel}
+              </span>
+            </span>
+          );
+        })}
+      </div>
+      <p style={{ color: "#64748b", fontSize: 10, lineHeight: 1.4, margin: "8px 0 0" }}>
+        <span style={{ color: accentColor(accent) }}>MTD</span> = month-to-date (real ticker count through today). All other values are actual completed months.
+      </p>
+    </div>
+  );
+}
+
+const hdr: React.CSSProperties = {
+  color: "#94a3b8", fontSize: 9.5, fontWeight: 800,
+  letterSpacing: "0.18em", textTransform: "uppercase",
+  padding: "2px 6px 6px",
+};
+const cell: React.CSSProperties = {
+  padding: "4px 6px",
+  borderRadius: 5,
+};
+
+function FormulaFooter({ accent, note }: { accent: Accent; note?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div style={{ marginTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
@@ -783,6 +904,9 @@ function FormulaFooter({ accent }: { accent: Accent }) {
           <p style={{ margin: "0 0 8px" }}>
             Projected call totals are calculated using current year-to-date call volume and average calls per day, compared against {BASELINE_YEAR} actual totals. These projections are estimates only and may change as additional call data is entered.
           </p>
+          {note && (
+            <p style={{ margin: "0 0 8px", color: "#94a3b8" }}>{note}</p>
+          )}
           <div style={{
             fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
             fontSize: 10.5, color: "#94a3b8", display: "grid", gap: 4,
