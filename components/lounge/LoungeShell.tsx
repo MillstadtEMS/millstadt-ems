@@ -847,22 +847,22 @@ function NavSection({
   badges?: ShellBadges;
 }) {
   const containsActive = items.some((i) => isActive(pathname, i));
-  const storageKey = `lounge-sidebar:v2:${title}`;
-  const [open, setOpen] = useState<boolean>(() => false);
+  // Sidebar sections always start collapsed on a fresh visit. The
+  // previous version persisted open state in localStorage, so coming
+  // back to the site re-opened every group the user had ever expanded
+  // and made the sidebar feel cluttered. Now a fresh page-load is
+  // always tidy; sections only stay open within the current session
+  // for the group that owns the active route (see effect below).
+  const [open, setOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    try {
-      const v = window.localStorage.getItem(storageKey);
-      setOpen(v === "1");
-    } catch { /* ignore */ }
-  }, [storageKey]);
+    // Auto-expand the section that contains the page the user is on so
+    // they can see where they are. Other sections stay closed.
+    if (containsActive) setOpen(true);
+  }, [containsActive]);
 
   function toggle() {
-    setOpen((cur) => {
-      const next = !cur;
-      try { window.localStorage.setItem(storageKey, next ? "1" : "0"); } catch { /* ignore */ }
-      return next;
-    });
+    setOpen((cur) => !cur);
   }
 
   // Aggregate unread badge for the whole section so a collapsed section
@@ -1009,24 +1009,20 @@ function SubNavDisclosure({
   storageKey: string;
   children: React.ReactNode;
 }) {
-  const scopedStorageKey = `${storageKey}:v2`;
-  const [open, setOpen] = useState<boolean>(() => false);
+  // Same policy as NavSection: always start collapsed on a fresh
+  // page-load, only auto-expand if the user is currently on a route
+  // inside this group. Removing the localStorage persistence keeps
+  // the sidebar tidy when the user navigates back to the site.
+  const [open, setOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(scopedStorageKey);
-      if (saved === "1") setOpen(true);
-      else setOpen(false);
-    } catch { /* ignore */ }
-  }, [scopedStorageKey]);
+    if (active) setOpen(true);
+  }, [active]);
 
   function toggle() {
-    setOpen((cur) => {
-      const next = !cur;
-      try { window.localStorage.setItem(scopedStorageKey, next ? "1" : "0"); } catch { /* ignore */ }
-      return next;
-    });
+    setOpen((cur) => !cur);
   }
+  void storageKey; // retained for compatibility — no longer used
 
   return (
     <div style={{ margin: "2px 0 6px 39px", display: "grid", gap: 4 }}>
