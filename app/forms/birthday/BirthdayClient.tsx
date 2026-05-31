@@ -74,7 +74,7 @@ export default function BirthdayClient() {
         ]}
       />
 
-      <div className="wrap pt-16 max-w-[920px]">
+      <div className="wrap pt-8 sm:pt-12 max-w-[920px]">
         <ContactFormWrapper
           formType="Birthday Party Appearance Request"
           disclaimer="All submissions are subject to unit and crew availability. There is no fee for this service."

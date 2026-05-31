@@ -852,19 +852,10 @@ function NavSection({
   badges?: ShellBadges;
 }) {
   const containsActive = items.some((i) => isActive(pathname, i));
-  // Sidebar sections always start collapsed on a fresh visit. The
-  // previous version persisted open state in localStorage, so coming
-  // back to the site re-opened every group the user had ever expanded
-  // and made the sidebar feel cluttered. Now a fresh page-load is
-  // always tidy; sections only stay open within the current session
-  // for the group that owns the active route (see effect below).
+  // Sidebar sections always start collapsed on a fresh visit. The active
+  // page is still shown in the mobile/desktop header context, but the
+  // long lists stay tucked away until the user asks for them.
   const [open, setOpen] = useState<boolean>(false);
-
-  useEffect(() => {
-    // Auto-expand the section that contains the page the user is on so
-    // they can see where they are. Other sections stay closed.
-    if (containsActive) setOpen(true);
-  }, [containsActive]);
 
   function toggle() {
     setOpen((cur) => !cur);
@@ -1015,14 +1006,9 @@ function SubNavDisclosure({
   children: React.ReactNode;
 }) {
   // Same policy as NavSection: always start collapsed on a fresh
-  // page-load, only auto-expand if the user is currently on a route
-  // inside this group. Removing the localStorage persistence keeps
-  // the sidebar tidy when the user navigates back to the site.
+  // page-load. Removing the localStorage persistence keeps the sidebar
+  // tidy when the user navigates back to the site.
   const [open, setOpen] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (active) setOpen(true);
-  }, [active]);
 
   function toggle() {
     setOpen((cur) => !cur);

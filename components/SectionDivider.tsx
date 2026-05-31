@@ -11,7 +11,28 @@ export default function SectionDivider({
       : "#040d1a";
 
   return (
-    <div style={{ background, paddingTop: 14, paddingBottom: 14, position: "relative" }}>
+    <div
+      style={{
+        background,
+        paddingTop: 10,
+        paddingBottom: 10,
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          width: 220,
+          height: 1,
+          transform: "translate(-50%, -50%)",
+          background: "linear-gradient(90deg, transparent, rgba(125,211,252,0.32), transparent)",
+          filter: "blur(0.2px)",
+        }}
+      />
       <div
         style={{
           maxWidth: 1200,

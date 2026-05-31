@@ -43,7 +43,7 @@ export default function EducationRequestPage() {
         ]}
       />
 
-      <div className="wrap pt-16 max-w-[920px]">
+      <div className="wrap pt-8 sm:pt-12 max-w-[920px]">
         <ContactFormWrapper
           formType="Education Request"
           disclaimer="All instruction is subject to instructor availability. A coordinator will follow up to confirm details, class size, and any course fees."

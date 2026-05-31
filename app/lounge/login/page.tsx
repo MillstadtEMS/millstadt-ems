@@ -174,7 +174,7 @@ export default function LoungeLogin() {
           }}
         />
       )}
-      <div style={{ width: "100%", maxWidth: 400 }}>
+      <div style={{ width: "min(100%, 400px)", maxWidth: "calc(100vw - 32px)", overflow: "hidden" }}>
         {/* Logo + branding */}
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <div
@@ -182,8 +182,8 @@ export default function LoungeLogin() {
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              width: 240,
-              height: 240,
+              width: "clamp(172px, 54vw, 240px)",
+              height: "clamp(172px, 54vw, 240px)",
               marginBottom: 4,
               filter: "drop-shadow(0 18px 40px rgba(0,0,0,0.6)) drop-shadow(0 0 50px rgba(60,120,255,0.40))",
             }}
@@ -588,9 +588,9 @@ function TrustDeviceCheckbox({
         style={{ width: 18, height: 18, accentColor: "#f0b429" }}
       />
       <span>
-        Trust this device for 30 days.
+        Trust this device for 365 days.
         <span style={{ color: "#94a3b8", display: "block", fontSize: 11.5, marginTop: 2 }}>
-          Skip the 2FA code on this device next time. You can revoke from <em>Sign-in &amp; Devices</em>.
+        Skip the 2FA code on this device next time. You can revoke it from <em>Sign-in &amp; Devices</em>.
         </span>
       </span>
     </label>
@@ -736,14 +736,16 @@ function BiometricSignIn({
         border: "1px solid rgba(240,180,41,0.40)",
         borderRadius: 12,
         fontWeight: 900,
-        fontSize: 13,
+        fontSize: 12,
         letterSpacing: "0.10em",
+        lineHeight: 1.2,
         textTransform: "uppercase",
         cursor: busy ? "wait" : "pointer",
         fontFamily: "inherit",
+        whiteSpace: "normal",
       }}
     >
-      {busy ? "Waking your authenticator…" : "🔓 Sign in with Face ID / fingerprint"}
+      {busy ? "Waking your authenticator…" : "Sign in with Face ID / fingerprint"}
     </button>
   );
 }

@@ -30,7 +30,7 @@ export default function EventRequestPage() {
         ]}
       />
 
-      <div className="wrap pt-16 max-w-[920px]">
+      <div className="wrap pt-8 sm:pt-12 max-w-[920px]">
         <ContactFormWrapper
           formType="Event Appearance Request"
           disclaimer="Requests are subject to unit and crew availability. We will contact you to confirm."

@@ -8,7 +8,7 @@ import SignaturePad from "@/components/lounge/SignaturePad";
 
 function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
-    <label className="block text-xs font-semibold tracking-widest uppercase mb-2 text-slate-400">
+    <label className="block text-[10.5px] font-black tracking-[0.18em] uppercase mb-2 text-slate-400">
       {children} {required && <span className="text-[#f0b429]">*</span>}
     </label>
   );
@@ -29,7 +29,7 @@ function Input({ name, value, onChange, type = "text", placeholder, required, ma
       placeholder={placeholder}
       required={required}
       maxLength={maxLength}
-      className="w-full px-4 py-3 text-white text-sm sm:text-sm bg-[#1a1a1a] border border-white/10 outline-none transition-colors focus:border-[#f0b429] placeholder:text-slate-600"
+      className="w-full rounded-xl px-4 py-3.5 text-white text-sm sm:text-sm bg-[#020912]/75 border border-white/15 outline-none transition-all focus:border-[#f0b429] focus:ring-4 focus:ring-[#f0b429]/10 placeholder:text-slate-600"
     />
   );
 }
@@ -47,7 +47,7 @@ function Textarea({ name, value, onChange, placeholder, rows = 3 }: {
       onChange={onChange}
       placeholder={placeholder}
       rows={rows}
-      className="w-full px-4 py-3 text-white text-sm bg-[#1a1a1a] border border-white/10 outline-none transition-colors focus:border-[#f0b429] resize-none placeholder:text-slate-600"
+      className="w-full rounded-xl px-4 py-3.5 text-white text-sm bg-[#020912]/75 border border-white/15 outline-none transition-all focus:border-[#f0b429] focus:ring-4 focus:ring-[#f0b429]/10 resize-y min-h-[7rem] placeholder:text-slate-600"
     />
   );
 }
@@ -57,11 +57,11 @@ function RadioGroup({ name, options }: {
   options: { label: string; value: string }[];
 }) {
   return (
-    <div className="flex flex-wrap gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {options.map((opt) => (
-        <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+        <label key={opt.value} className="flex items-center gap-3 cursor-pointer rounded-xl border border-white/15 bg-[#020912]/75 px-4 py-3.5 transition-colors hover:border-[#f0b429]/40">
           <input type="radio" name={name} value={opt.value} className="accent-[#f0b429] w-4 h-4" />
-          <span className="text-sm text-slate-300">{opt.label}</span>
+          <span className="text-sm font-semibold leading-snug text-slate-300">{opt.label}</span>
         </label>
       ))}
     </div>
@@ -77,9 +77,9 @@ function CheckGroup({ name, options, columns = 2 }: {
   return (
     <div className={`grid ${colClass} gap-3`}>
       {options.map((opt) => (
-        <label key={opt} className="flex items-center gap-2 cursor-pointer">
+        <label key={opt} className="flex items-center gap-3 cursor-pointer rounded-xl border border-white/15 bg-[#020912]/75 px-4 py-3.5 transition-colors hover:border-[#f0b429]/40">
           <input type="checkbox" name={name} value={opt} className="accent-[#f0b429] w-4 h-4" />
-          <span className="text-sm text-slate-300">{opt}</span>
+          <span className="text-sm font-semibold leading-snug text-slate-300">{opt}</span>
         </label>
       ))}
     </div>
@@ -93,8 +93,8 @@ function SectionHeader({ number, title, subtitle }: { number: string; title: str
         {number}
       </div>
       <div>
-        <h2 className="text-white uppercase font-black text-xl sm:text-2xl tracking-wide">{title}</h2>
-        {subtitle && <p className="text-slate-500 text-sm mt-1">{subtitle}</p>}
+        <h2 className="text-white uppercase font-black text-xl sm:text-2xl tracking-wide leading-tight">{title}</h2>
+        {subtitle && <p className="text-slate-400 text-sm mt-1 leading-relaxed">{subtitle}</p>}
       </div>
     </div>
   );
@@ -102,7 +102,14 @@ function SectionHeader({ number, title, subtitle }: { number: string; title: str
 
 function Section({ children }: { children: React.ReactNode }) {
   return (
-    <div className="p-6 sm:p-8 mb-2 bg-[#111111] border border-white/5">
+    <div
+      className="p-5 sm:p-8 mb-4 rounded-[1.15rem] border border-white/10"
+      style={{
+        background:
+          "radial-gradient(circle at 8% 0%, rgba(34,211,238,0.12), transparent 18rem), linear-gradient(145deg, rgba(14,31,59,0.96), rgba(3,9,20,0.98))",
+        boxShadow: "0 22px 64px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.08)",
+      }}
+    >
       {children}
     </div>
   );
@@ -114,7 +121,7 @@ function Divider() {
 
 function DisclaimerBox({ children }: { children: React.ReactNode }) {
   return (
-    <div className="p-4 mt-4 bg-[#0d0d0d] border border-[#f0b429]/40 border-l-4 border-l-[#f0b429]">
+    <div className="p-4 mt-4 rounded-xl bg-[#f0b429]/10 border border-[#f0b429]/40 border-l-4 border-l-[#f0b429]">
       <p className="text-xs leading-relaxed text-slate-400">{children}</p>
     </div>
   );

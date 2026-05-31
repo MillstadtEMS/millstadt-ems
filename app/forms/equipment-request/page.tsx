@@ -40,7 +40,7 @@ export default function EquipmentRequestPage() {
         ]}
       />
 
-      <div className="wrap pt-16 max-w-[920px]">
+      <div className="wrap pt-8 sm:pt-12 max-w-[920px]">
         <ContactFormWrapper
           formType="Equipment Request"
           disclaimer="All equipment loans are subject to availability and a signed usage agreement. Items must be returned in the same condition and may be recalled if needed for emergency operations."
