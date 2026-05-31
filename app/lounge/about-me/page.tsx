@@ -6,6 +6,7 @@ import LoungeShell from "@/components/lounge/LoungeShell";
 import LoungePageHeader from "@/components/lounge/LoungePageHeader";
 import AboutMeReadOnly, { type AboutMeSnapshot } from "@/components/lounge/AboutMeReadOnly";
 import NotificationPreferences from "@/components/lounge/NotificationPreferences";
+import PhotoSelfEditor from "@/components/lounge/PhotoSelfEditor";
 import RequestProfileChange from "@/components/lounge/RequestProfileChange";
 import { REQUESTABLE_FIELDS } from "@/lib/lounge/profile-change-requests";
 
@@ -91,6 +92,13 @@ export default async function AboutMePage() {
         </div>
       )}
 
+      <PhotoSelfEditor
+        initialPhotoUrl={row.photoUrl}
+        firstName={row.firstName}
+        lastName={row.lastName}
+      />
+
+      <div style={{ height: 18 }} />
       <AboutMeReadOnly p={snapshot} />
 
       <div style={{ height: 18 }} />
