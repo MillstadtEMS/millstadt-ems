@@ -140,7 +140,7 @@ export default function WelcomeOverlay({ name, customImage }: { name: string; cu
           Hi, {name}.
         </h1>
 
-        {/* "Welcome to the Employee Lounge" */}
+        {/* Lounge welcome copy */}
         <p
           style={{
             color: "#f0b429",
@@ -154,7 +154,23 @@ export default function WelcomeOverlay({ name, customImage }: { name: string; cu
             animation: "lounge-rise 1000ms 2000ms cubic-bezier(0.22,0.61,0.36,1) forwards",
           }}
         >
-          Welcome to the Employee Lounge
+          Welcome to the Millstadt Ambulance Service Employee Lounge
+        </p>
+        <p
+          style={{
+            color: "#e2e8f0",
+            margin: "10px 0 0",
+            fontWeight: 900,
+            fontSize: "clamp(1rem, 2vw, 1.35rem)",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            opacity: 0,
+            transform: "translateY(14px)",
+            animation: "lounge-rise 1000ms 2300ms cubic-bezier(0.22,0.61,0.36,1) forwards",
+            textShadow: "0 4px 26px rgba(56,189,248,0.35)",
+          }}
+        >
+          Virtual Breakroom
         </p>
       </div>
     </div>

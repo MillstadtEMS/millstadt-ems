@@ -131,10 +131,12 @@ function HomeHero({
       <div className="mas-hero-copy">
         <span className="mas-hero-eyebrow">{dateLine} · Millstadt EMS</span>
         <h1 className="mas-hero-title">
-          On duty, {firstName}.
+          <span>Millstadt Ambulance Service</span>
+          <span>Employee Lounge</span>
         </h1>
+        <p className="mas-hero-vibe">Virtual Breakroom</p>
         <p className="mas-hero-sub">
-          The station wall, shift events, and crew tools.
+          Welcome back, {firstName}. The station wall, shift events, messages, and crew tools are ready.
         </p>
         <dl className="mas-hero-meta">
           <div>
@@ -321,11 +323,29 @@ const LANDING_CSS = `
 }
 .mas-hero-title {
   margin: 0;
-  font-size: clamp(2.2rem, 4.4vw, 3.4rem);
+  font-size: clamp(2rem, 4vw, 3.25rem);
   line-height: 1.04;
   letter-spacing: -0.02em;
   font-weight: 700;
   color: var(--mas-ink);
+}
+.mas-hero-title span {
+  display: block;
+}
+.mas-hero-vibe {
+  width: fit-content;
+  margin: 0;
+  padding: 7px 12px;
+  border-radius: var(--mas-r-pill);
+  border: 1px solid rgba(240,180,41,0.38);
+  background: linear-gradient(135deg, rgba(240,180,41,0.18), rgba(56,189,248,0.10));
+  color: var(--mas-brand-gold);
+  font-family: var(--mas-font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  box-shadow: 0 0 22px rgba(240,180,41,0.14);
 }
 .mas-hero-sub {
   margin: 0;

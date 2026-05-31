@@ -185,6 +185,9 @@ export default function LoungeLogin() {
           >
             Employee Lounge
           </h1>
+          <p style={{ color: "#f0b429", fontSize: "0.78rem", marginTop: 6, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
+            Virtual Breakroom
+          </p>
           <p style={{ color: "#94a3b8", fontSize: "0.875rem", marginTop: 6 }}>
             Millstadt Ambulance Service
           </p>

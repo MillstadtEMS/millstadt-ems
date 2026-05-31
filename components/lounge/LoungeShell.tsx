@@ -326,7 +326,7 @@ export default function LoungeShell({
         </button>
         <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
           <span style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-            Employee Lounge
+            Virtual Breakroom
           </span>
           <span style={{ fontSize: 14, fontWeight: 800, color: "white" }}>
             {currentPageLabel(pathname)}
@@ -608,7 +608,8 @@ function SidebarBody({
           <div className="mas-mono" style={{ color: "#f0b429", fontSize: 10, fontWeight: 600, letterSpacing: "0.22em", textTransform: "uppercase" }}>
             Employee Lounge
           </div>
-          <div className="mas-display" style={{ color: "white", fontWeight: 700, fontSize: 17, marginTop: 5, letterSpacing: "-0.015em" }}>Millstadt EMS</div>
+          <div className="mas-display" style={{ color: "white", fontWeight: 700, fontSize: 17, marginTop: 5, letterSpacing: "-0.015em" }}>Virtual Breakroom</div>
+          <div className="mas-mono" style={{ color: "rgba(226,232,240,0.62)", fontSize: 9, fontWeight: 700, letterSpacing: "0.16em", marginTop: 5, textTransform: "uppercase" }}>Millstadt Ambulance Service</div>
         </div>
       </div>
 
