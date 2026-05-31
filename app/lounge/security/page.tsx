@@ -4,6 +4,7 @@ import { getEmployee } from "@/lib/lounge/employees";
 import LoungeShell from "@/components/lounge/LoungeShell";
 import LoungePageHeader from "@/components/lounge/LoungePageHeader";
 import SignInDevices from "@/components/lounge/SignInDevices";
+import TrustedDevices from "@/components/lounge/TrustedDevices";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,8 @@ export default async function SecurityPage() {
         }
       />
       <SignInDevices />
+      <div style={{ height: 18 }} />
+      <TrustedDevices />
     </LoungeShell>
   );
 }

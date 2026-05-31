@@ -6,11 +6,20 @@ import { startRegistration as browserStartRegistration } from "@simplewebauthn/b
 /**
  * Shows an "Enable Face ID / Touch ID for next time?" banner the first
  * time a logged-in user lands on the lounge from a device that hasn't
- * been offered the prompt yet. We keep dismissals in localStorage so we
- * don't nag — but the key is scoped per-device, so adding a passkey on
- * the laptop doesn't suppress the banner on the phone or tablet.
+ * been offered the prompt yet. We keep state in localStorage:
+ *  - lounge.passkeyDismissed: "1"   — user clicked "Don't ask again"
+ *  - lounge.passkeyEnrolled:  "1"   — passkey successfully enrolled on this device
+ *
+ * The flags are scoped per-browser/device, so enrolling on the laptop
+ * doesn't silence the banner on the phone or tablet. Both flags
+ * independently suppress future prompts on the current device.
  */
-const DISMISS_KEY = "lounge.passkeyDismissed";
+const DISMISS_KEY  = "lounge.passkeyDismissed";
+const ENROLLED_KEY = "lounge.passkeyEnrolled";
+
+export function markPasskeyEnrolledOnThisDevice() {
+  try { window.localStorage.setItem(ENROLLED_KEY, "1"); } catch { /* ignore */ }
+}
 
 function thisDeviceLabel(): string {
   if (typeof navigator === "undefined") return "This device";
@@ -32,15 +41,17 @@ export default function PasskeyPrompt() {
     if (typeof window === "undefined") return;
     if (!window.PublicKeyCredential) return;
     if (window.localStorage.getItem(DISMISS_KEY) === "1") return;
-    // Show the prompt on every device the user hasn't dismissed yet,
-    // regardless of how many credentials they've already enrolled on
-    // OTHER devices — we just check this browser/device's local flag.
+    if (window.localStorage.getItem(ENROLLED_KEY) === "1") return;
     setShow(true);
   }, []);
 
-  function dismiss() {
+  function dismissForever() {
     setShow(false);
     try { window.localStorage.setItem(DISMISS_KEY, "1"); } catch { /* ignore */ }
+  }
+
+  function hideForNow() {
+    setShow(false);
   }
 
   async function enable() {
@@ -66,7 +77,8 @@ export default function PasskeyPrompt() {
         return;
       }
       setStatus({ kind: "ok", msg: "Saved. You can sign in with biometrics next time." });
-      setTimeout(dismiss, 1800);
+      markPasskeyEnrolledOnThisDevice();
+      setTimeout(hideForNow, 1800);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Cancelled.";
       if (!/NotAllowed|cancel/i.test(msg)) setStatus({ kind: "err", msg });
@@ -97,8 +109,9 @@ export default function PasskeyPrompt() {
           Saves you from typing your password and 2FA every time on this device.
         </div>
       </div>
-      <div style={{ display: "flex", gap: 8 }}>
-        <button type="button" onClick={dismiss} style={ghost}>Not now</button>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <button type="button" onClick={hideForNow} style={ghost}>Not now</button>
+        <button type="button" onClick={dismissForever} style={ghost}>Don&apos;t ask again</button>
         <button type="button" onClick={enable} disabled={busy} style={primary}>
           {busy ? "Enrolling…" : "Enable"}
         </button>

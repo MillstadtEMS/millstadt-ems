@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  cookieOptions,
   findEmployeeByUsername,
   verifyPassword,
   logLogin,
   getTotpEnrollment,
   makePreauthToken,
+  makeSessionToken,
   preauthCookieOptions,
 } from "@/lib/lounge/auth";
 import { sql } from "@/lib/lounge/db";
 import { sendLoginCode } from "@/lib/lounge/sms-login";
+import {
+  TRUST_COOKIE_NAME,
+  verifyTrustedDevice,
+} from "@/lib/lounge/trusted-devices";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +42,33 @@ export async function POST(req: NextRequest) {
   if (!emp || !emp.isActive || !verifyPassword(password, emp.passwordHash)) {
     await logLogin(emp?.id ?? null, username, false, ip, ua);
     return NextResponse.json({ error: "Invalid username or password" }, { status: 401 });
+  }
+
+  // Trust-this-device shortcut: if the caller carries a valid trust
+  // cookie for this employee, skip the whole 2FA dance and issue the
+  // session straight away. Cookie is rotated... well, not rotated yet,
+  // but it does have a hard 30-day expiry enforced server-side.
+  const trustCookie = req.cookies.get(TRUST_COOKIE_NAME)?.value;
+  if (trustCookie) {
+    const trusted = await verifyTrustedDevice(emp.id, trustCookie);
+    if (trusted) {
+      await logLogin(emp.id, emp.username, true, ip, ua);
+      const sessionToken = makeSessionToken(emp);
+      const sOpts = cookieOptions(sessionToken);
+      const trustedRes = NextResponse.json({
+        ok: true,
+        step: "trusted",
+        employee: { id: emp.id, firstName: emp.firstName, lastName: emp.lastName, isAdmin: emp.isAdmin },
+      });
+      trustedRes.cookies.set(sOpts.name, sOpts.value, {
+        httpOnly: sOpts.httpOnly,
+        secure: sOpts.secure,
+        sameSite: sOpts.sameSite,
+        maxAge: sOpts.maxAge,
+        path: sOpts.path,
+      });
+      return trustedRes;
+    }
   }
 
   const { secret, enrolledAt } = await getTotpEnrollment(emp.id);

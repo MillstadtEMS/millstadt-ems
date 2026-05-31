@@ -11,6 +11,17 @@ import {
   logLogin,
 } from "@/lib/lounge/auth";
 import { generateSecret, otpauthUrl, verifyCode } from "@/lib/lounge/totp";
+import { issueTrustedDevice, trustCookieOptions } from "@/lib/lounge/trusted-devices";
+
+function uaToDeviceLabel(ua: string | null): string | null {
+  if (!ua) return null;
+  if (/iPhone/.test(ua)) return "iPhone";
+  if (/iPad/.test(ua)) return "iPad";
+  if (/Android/.test(ua)) return "Android";
+  if (/Macintosh/.test(ua)) return "Mac";
+  if (/Windows/.test(ua)) return "Windows PC";
+  return null;
+}
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -56,6 +67,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const code = typeof body.code === "string" ? body.code.trim() : "";
+  const trustDevice = body.trustDevice === true;
   if (!/^\d{6}$/.test(code)) return NextResponse.json({ error: "6-digit code required" }, { status: 400 });
 
   const emp = await findEmployeeById(session.employeeId);
@@ -83,5 +95,19 @@ export async function POST(req: NextRequest) {
   });
   // Burn the preauth cookie
   res.cookies.set(LOUNGE_PREAUTH_COOKIE_NAME, "", { path: "/", maxAge: 0 });
+
+  if (trustDevice) {
+    const label = uaToDeviceLabel(req.headers.get("user-agent"));
+    const trustToken = await issueTrustedDevice(emp.id, label);
+    const tOpts = trustCookieOptions(trustToken);
+    res.cookies.set(tOpts.name, tOpts.value, {
+      httpOnly: tOpts.httpOnly,
+      secure: tOpts.secure,
+      sameSite: tOpts.sameSite,
+      maxAge: tOpts.maxAge,
+      path: tOpts.path,
+    });
+  }
+
   return res;
 }

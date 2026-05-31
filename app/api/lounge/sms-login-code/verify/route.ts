@@ -8,9 +8,20 @@ import {
   verifyPreauthToken,
 } from "@/lib/lounge/auth";
 import { verifyLoginCode } from "@/lib/lounge/sms-login";
+import { issueTrustedDevice, trustCookieOptions } from "@/lib/lounge/trusted-devices";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+function uaToDeviceLabel(ua: string | null): string | null {
+  if (!ua) return null;
+  if (/iPhone/.test(ua)) return "iPhone";
+  if (/iPad/.test(ua)) return "iPad";
+  if (/Android/.test(ua)) return "Android";
+  if (/Macintosh/.test(ua)) return "Mac";
+  if (/Windows/.test(ua)) return "Windows PC";
+  return null;
+}
 
 export async function POST(req: NextRequest) {
   const cookie = req.cookies.get(LOUNGE_PREAUTH_COOKIE_NAME)?.value;
@@ -19,6 +30,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const code = typeof body.code === "string" ? body.code.trim() : "";
+  const trustDevice = body.trustDevice === true;
   const result = await verifyLoginCode(session.employeeId, code);
   if (!result.ok) return NextResponse.json({ error: result.reason ?? "Wrong code." }, { status: 401 });
 
@@ -49,5 +61,19 @@ export async function POST(req: NextRequest) {
     path: opts.path,
   });
   res.cookies.set(LOUNGE_PREAUTH_COOKIE_NAME, "", { path: "/", maxAge: 0 });
+
+  if (trustDevice) {
+    const label = uaToDeviceLabel(req.headers.get("user-agent"));
+    const trustToken = await issueTrustedDevice(emp.id, label);
+    const tOpts = trustCookieOptions(trustToken);
+    res.cookies.set(tOpts.name, tOpts.value, {
+      httpOnly: tOpts.httpOnly,
+      secure: tOpts.secure,
+      sameSite: tOpts.sameSite,
+      maxAge: tOpts.maxAge,
+      path: tOpts.path,
+    });
+  }
+
   return res;
 }

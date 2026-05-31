@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { startRegistration as browserStartRegistration } from "@simplewebauthn/browser";
+import { markPasskeyEnrolledOnThisDevice } from "./PasskeyPrompt";
 
 interface Credential {
   id: string;
@@ -68,9 +69,10 @@ export default function SignInDevices() {
         return;
       }
       setStatus({ kind: "ok", msg: "Added. You can sign in with biometrics on this device next time." });
-      // Mark this device as having been offered a passkey so the global
-      // banner stops nagging here too.
-      try { localStorage.setItem("lounge.passkeyDismissed", "1"); } catch { /* ignore */ }
+      // Mark this device as enrolled so the global PasskeyPrompt banner
+      // stops appearing here. Multi-device still works — other phones /
+      // tablets / laptops keep their own flag and prompt independently.
+      markPasskeyEnrolledOnThisDevice();
       await load();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Cancelled.";

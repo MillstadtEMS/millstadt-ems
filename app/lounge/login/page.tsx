@@ -15,6 +15,7 @@ export default function LoungeLogin() {
   // 2FA state
   const [step, setStep] = useState<"password" | "verify_sms" | "verify_2fa" | "setup_2fa">("password");
   const [code, setCode] = useState("");
+  const [trustDevice, setTrustDevice] = useState(true);
   const [qr, setQr] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
@@ -68,6 +69,13 @@ export default function LoungeLogin() {
         setLoading(false);
         return;
       }
+      if (data.step === "trusted") {
+        // Trust cookie matched on the server — skip 2FA entirely.
+        try { sessionStorage.setItem("lounge:welcome", "1"); } catch {}
+        setHandingOff(true);
+        router.push("/lounge");
+        return;
+      }
       if (data.step === "verify_sms") {
         setStep("verify_sms");
         setPhoneTail(data.phoneTail ?? null);
@@ -104,7 +112,7 @@ export default function LoungeLogin() {
       const r = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: code.trim() }),
+        body: JSON.stringify({ code: code.trim(), trustDevice }),
       });
       const d = await r.json();
       if (!r.ok) {
@@ -251,6 +259,7 @@ export default function LoungeLogin() {
               </div>
             )}
             {error && <ErrorBanner>{error}</ErrorBanner>}
+            <TrustDeviceCheckbox trustDevice={trustDevice} setTrustDevice={setTrustDevice} />
             <button type="submit" disabled={loading || code.length !== 6} style={{ ...buttonStyle, opacity: loading || code.length !== 6 ? 0.5 : 1, cursor: loading || code.length !== 6 ? "not-allowed" : "pointer" }}>
               {loading ? "Verifying…" : "Verify & sign in"}
             </button>
@@ -287,6 +296,7 @@ export default function LoungeLogin() {
               style={{ ...inputStyle, fontVariantNumeric: "tabular-nums", letterSpacing: "0.42em", textAlign: "center", fontSize: 24, padding: "16px 16px" }}
             />
             {error && <ErrorBanner>{error}</ErrorBanner>}
+            <TrustDeviceCheckbox trustDevice={trustDevice} setTrustDevice={setTrustDevice} />
             <button type="submit" disabled={loading || code.length !== 6} style={{ ...buttonStyle, opacity: loading || code.length !== 6 ? 0.5 : 1, cursor: loading || code.length !== 6 ? "not-allowed" : "pointer" }}>
               {loading ? "Verifying…" : "Verify & sign in"}
             </button>
@@ -328,6 +338,7 @@ export default function LoungeLogin() {
               style={{ ...inputStyle, fontVariantNumeric: "tabular-nums", letterSpacing: "0.42em", textAlign: "center", fontSize: 24, padding: "16px 16px" }}
             />
             {error && <ErrorBanner>{error}</ErrorBanner>}
+            <TrustDeviceCheckbox trustDevice={trustDevice} setTrustDevice={setTrustDevice} />
             <button type="submit" disabled={loading || code.length !== 6} style={{ ...buttonStyle, opacity: loading || code.length !== 6 ? 0.5 : 1, cursor: loading || code.length !== 6 ? "not-allowed" : "pointer" }}>
               {loading ? "Activating…" : "Activate 2FA & sign in"}
             </button>
@@ -523,6 +534,45 @@ function AuthenticatorSetupGuide() {
         </a>
       </div>
     </div>
+  );
+}
+
+function TrustDeviceCheckbox({
+  trustDevice,
+  setTrustDevice,
+}: {
+  trustDevice: boolean;
+  setTrustDevice: (v: boolean) => void;
+}) {
+  return (
+    <label
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "10px 12px",
+        background: "rgba(56,189,248,0.06)",
+        border: "1px solid rgba(56,189,248,0.20)",
+        borderRadius: 11,
+        color: "#cbd5e1",
+        fontSize: 13,
+        cursor: "pointer",
+        userSelect: "none",
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={trustDevice}
+        onChange={(e) => setTrustDevice(e.target.checked)}
+        style={{ width: 18, height: 18, accentColor: "#f0b429" }}
+      />
+      <span>
+        Trust this device for 30 days.
+        <span style={{ color: "#94a3b8", display: "block", fontSize: 11.5, marginTop: 2 }}>
+          Skip the 2FA code on this device next time. You can revoke from <em>Sign-in &amp; Devices</em>.
+        </span>
+      </span>
+    </label>
   );
 }
 
