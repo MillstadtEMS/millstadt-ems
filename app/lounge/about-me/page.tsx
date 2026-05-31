@@ -17,8 +17,38 @@ export default async function AboutMePage() {
   if (!session) redirect("/lounge/login");
   if (session.mustChangePassword) redirect("/lounge/change-password");
 
-  const row = await getEmployee(session.id);
-  if (!row) redirect("/lounge");
+  // Defensive: never let a single DB hiccup turn the About Me page
+  // into a Chrome "this page couldn't load" error. If the employee row
+  // fails to load, render a minimal fallback using session data so the
+  // page still draws something useful.
+  let row: Awaited<ReturnType<typeof getEmployee>> = null;
+  try {
+    row = await getEmployee(session.id);
+  } catch (e) {
+    console.error("[about-me] getEmployee threw:", e);
+  }
+  if (!row) {
+    return (
+      <LoungeShell me={{ firstName: session.firstName, lastName: session.lastName, certification: null, photoUrl: null, isAdmin: session.isAdmin }}>
+        <LoungePageHeader
+          kicker="About Me"
+          title="Your personnel record"
+          description={<>We hit a snag loading your record. Try reloading — if it keeps happening, ping an admin.</>}
+        />
+        <div style={{
+          padding: 20,
+          background: "rgba(239,68,68,0.06)",
+          border: "1px solid rgba(239,68,68,0.20)",
+          borderRadius: 14,
+          color: "#fecaca",
+          fontSize: 14,
+        }}>
+          Your About Me record couldn&apos;t be loaded just now. The rest of the lounge is fine —
+          this is just this page. Please reload, or come back in a minute.
+        </div>
+      </LoungeShell>
+    );
+  }
 
   const me = {
     firstName: session.firstName,

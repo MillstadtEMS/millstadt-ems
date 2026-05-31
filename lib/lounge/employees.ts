@@ -172,7 +172,6 @@ function toAdminEmployee(row: DbEmployeeRow): AdminEmployeeRow {
 export async function listEmployees(opts?: {
   includeInactive?: boolean;
 }): Promise<AdminEmployeeRow[]> {
-  await ensureAboutMeColumns();
   const db = sql();
   const rows = opts?.includeInactive
     ? ((await db`
@@ -210,7 +209,6 @@ export async function listEmployees(opts?: {
 }
 
 export async function getEmployee(id: string): Promise<AdminEmployeeRow | null> {
-  await ensureAboutMeColumns();
   const db = sql();
   const rows = (await db`
     SELECT id, username, first_name, last_name, certification, position,
