@@ -118,12 +118,18 @@ export async function listTrustedDevices(employeeId: string): Promise<TrustedDev
     WHERE employee_id = ${employeeId}
     ORDER BY created_at DESC
   `) as unknown as { id: string; device_label: string | null; created_at: string; last_used_at: string | null; expires_at: string }[];
+  const dt = (v: unknown): string | null => {
+    if (v === null || v === undefined) return null;
+    if (typeof v === "string") return v;
+    if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.toISOString();
+    return String(v);
+  };
   return rows.map((r) => ({
     id: r.id,
     deviceLabel: r.device_label,
-    createdAt: r.created_at,
-    lastUsedAt: r.last_used_at,
-    expiresAt: r.expires_at,
+    createdAt: dt(r.created_at) ?? "",
+    lastUsedAt: dt(r.last_used_at),
+    expiresAt: dt(r.expires_at) ?? "",
   }));
 }
 

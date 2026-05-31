@@ -122,6 +122,21 @@ interface RecordRow {
   updated_at: string;
 }
 
+// Neon returns DATE / TIMESTAMPTZ as JS Date objects. Coerce so the
+// downstream string-typed consumers don't call .match() on a Date.
+function dateOnly(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.toISOString().slice(0, 10);
+  return String(v);
+}
+function dateTime(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.toISOString();
+  return String(v);
+}
+
 function toRecord(r: RecordRow): PersonnelRecord {
   return {
     id: r.id,
@@ -133,34 +148,34 @@ function toRecord(r: RecordRow): PersonnelRecord {
     actionTaken: r.action_taken,
     severity: r.severity as PersonnelSeverity,
     status: r.status as PersonnelStatus,
-    incidentDate: r.incident_date,
+    incidentDate: dateTime(r.incident_date),
     createdBy: r.created_by,
     supervisorId: r.supervisor_id,
     witnesses: r.witnesses,
     relatedUnit: r.related_unit,
     relatedCall: r.related_call,
     followUpRequired: r.follow_up_required,
-    followUpDueDate: r.follow_up_due_date,
-    followUpCompletedAt: r.follow_up_completed_at,
+    followUpDueDate: dateOnly(r.follow_up_due_date),
+    followUpCompletedAt: dateTime(r.follow_up_completed_at),
     employeeVisible: r.employee_visible,
     restrictedVisibility: r.restricted_visibility,
     acknowledgmentRequired: r.acknowledgment_required,
-    acknowledgedAt: r.acknowledged_at,
+    acknowledgedAt: dateTime(r.acknowledged_at),
     acknowledgedSignature: r.acknowledged_signature,
     employeeResponse: r.employee_response,
     relatedPolicy: r.related_policy,
     locked: r.locked,
     retentionCategory: r.retention_category,
-    archiveDate: r.archive_date,
+    archiveDate: dateOnly(r.archive_date),
     accommodationType: r.accommodation_type,
-    accommodationStart: r.accommodation_start,
-    accommodationEnd: r.accommodation_end,
-    accommodationReview: r.accommodation_review,
+    accommodationStart: dateOnly(r.accommodation_start),
+    accommodationEnd: dateOnly(r.accommodation_end),
+    accommodationReview: dateOnly(r.accommodation_review),
     workLimitations: r.work_limitations,
     approvedBy: r.approved_by,
     adminNotes: r.admin_notes,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
+    createdAt: dateTime(r.created_at) ?? "",
+    updatedAt: dateTime(r.updated_at) ?? "",
   };
 }
 

@@ -160,6 +160,21 @@ interface DbRow {
   updated_at: string;
 }
 
+// Neon returns DATE / TIMESTAMPTZ as JS Date objects. Coerce so the
+// downstream string-typed consumers don't .match() on a Date.
+function dateOnly(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.toISOString().slice(0, 10);
+  return String(v);
+}
+function dateTime(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.toISOString();
+  return String(v);
+}
+
 function toWriteUp(r: DbRow): WriteUp {
   return {
     id: r.id,
@@ -170,8 +185,8 @@ function toWriteUp(r: DbRow): WriteUp {
     employeeDepartment: r.employee_department,
     supervisorId: r.supervisor_id,
     supervisorName: r.supervisor_name,
-    dateIssued: r.date_issued,
-    incidentDate: r.incident_date,
+    dateIssued: dateOnly(r.date_issued),
+    incidentDate: dateTime(r.incident_date),
     incidentLocation: r.incident_location,
     correctiveActionType: r.corrective_action_type as CorrectiveActionType | null,
     issueCategory: r.issue_category as IssueCategory | null,
@@ -197,10 +212,10 @@ function toWriteUp(r: DbRow): WriteUp {
     pdfFilename: r.pdf_filename,
     personnelRecordId: r.personnel_record_id,
     createdById: r.created_by_id,
-    finalizedAt: r.finalized_at,
+    finalizedAt: dateTime(r.finalized_at),
     finalizedById: r.finalized_by_id,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
+    createdAt: dateTime(r.created_at) ?? "",
+    updatedAt: dateTime(r.updated_at) ?? "",
   };
 }
 

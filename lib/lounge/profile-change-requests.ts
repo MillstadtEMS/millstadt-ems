@@ -51,6 +51,13 @@ interface DbRow {
   created_at: string;
 }
 
+function dateTime(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.toISOString();
+  return String(v);
+}
+
 function toReq(r: DbRow): ProfileChangeRequest {
   return {
     id: r.id,
@@ -65,9 +72,9 @@ function toReq(r: DbRow): ProfileChangeRequest {
     shareWithEmployee: Boolean(r.share_with_employee),
     status: r.status,
     adminDecisionNotes: r.admin_decision_notes,
-    decidedAt: r.decided_at,
+    decidedAt: dateTime(r.decided_at),
     decidedById: r.decided_by_id,
-    createdAt: r.created_at,
+    createdAt: dateTime(r.created_at) ?? "",
   };
 }
 

@@ -84,6 +84,15 @@ interface DbRow {
   updated_at: string;
 }
 
+// Neon returns TIMESTAMPTZ as JS Date objects. Coerce so downstream
+// string-typed consumers don't call .match() / .slice() on a Date.
+function dateTime(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.toISOString();
+  return String(v);
+}
+
 function toFormInstance(r: DbRow): FormInstance {
   return {
     id: r.id,
@@ -105,18 +114,18 @@ function toFormInstance(r: DbRow): FormInstance {
     personnelRecordId: r.personnel_record_id,
     emailedToEmployee: r.emailed_to_employee,
     emailedToAdminInbox: r.emailed_to_admin_inbox,
-    emailedAt: r.emailed_at,
-    finalizedAt: r.finalized_at,
+    emailedAt: dateTime(r.emailed_at),
+    finalizedAt: dateTime(r.finalized_at),
     finalizedById: r.finalized_by_id,
-    rescindedAt: r.rescinded_at,
+    rescindedAt: dateTime(r.rescinded_at),
     rescindedById: r.rescinded_by_id,
     rescindedReason: r.rescinded_reason,
     rescindedByName: r.rescinded_by_name,
     correctedById: r.corrected_by_id,
     correctsId: r.corrects_id,
     createdById: r.created_by_id,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
+    createdAt: dateTime(r.created_at) ?? "",
+    updatedAt: dateTime(r.updated_at) ?? "",
   };
 }
 

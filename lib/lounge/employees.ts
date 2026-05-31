@@ -114,6 +114,25 @@ interface DbEmployeeRow {
   updated_at: string;
 }
 
+/**
+ * Neon's pg parser returns DATE columns as JS Date objects and
+ * TIMESTAMPTZ columns as Date objects too. The rest of the codebase
+ * (UI components, PDF builders, About Me ReadOnly, etc.) assumes
+ * `string | null`. Normalize here so the type signature matches reality.
+ */
+function dateOnly(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.toISOString().slice(0, 10);
+  return String(v);
+}
+function dateTime(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.toISOString();
+  return String(v);
+}
+
 function toAdminEmployee(row: DbEmployeeRow): AdminEmployeeRow {
   let last4: string | null = null;
   if (row.ssn_encrypted) {
@@ -132,10 +151,10 @@ function toAdminEmployee(row: DbEmployeeRow): AdminEmployeeRow {
     position: row.position,
     email: row.email,
     phone: row.phone,
-    dob: row.dob,
+    dob: dateOnly(row.dob),
     ssnLast4: last4,
     photoUrl: row.photo_url,
-    hireDate: row.hire_date,
+    hireDate: dateOnly(row.hire_date),
     notes: row.notes,
     isAdmin: row.is_admin,
     isActive: row.is_active,
@@ -158,12 +177,12 @@ function toAdminEmployee(row: DbEmployeeRow): AdminEmployeeRow {
     allergies: row.allergies,
     medicalConditions: row.medical_conditions,
     bloodType: row.blood_type,
-    phoneVerifiedAt: row.phone_verified_at,
-    profileCompletedAt: row.profile_completed_at,
+    phoneVerifiedAt: dateTime(row.phone_verified_at),
+    profileCompletedAt: dateTime(row.profile_completed_at),
     emailSecondary: row.email_secondary,
     emailSecondaryAlerts: Boolean(row.email_secondary_alerts),
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: dateTime(row.created_at) ?? "",
+    updatedAt: dateTime(row.updated_at) ?? "",
   };
 }
 
