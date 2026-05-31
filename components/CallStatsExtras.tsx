@@ -368,16 +368,18 @@ function useMobileAppLike() {
         window.matchMedia("(display-mode: fullscreen)").matches ||
         ("standalone" in window.navigator &&
           (window.navigator as Navigator & { standalone?: boolean }).standalone === true);
+      // Only flip to the tap-only / bottom-sheet UI when the device
+      // ACTUALLY can't hover (real touch or PWA). A narrow desktop
+      // browser window has a mouse — we want hover to keep working
+      // there instead of being silently disabled.
       const touch = window.matchMedia("(hover: none), (pointer: coarse)").matches;
-      const narrow = window.matchMedia("(max-width: 760px)").matches;
-      setMobileAppLike(standalone || touch || narrow);
+      setMobileAppLike(standalone || touch);
     }
 
     const queries = [
       window.matchMedia("(display-mode: standalone)"),
       window.matchMedia("(display-mode: fullscreen)"),
       window.matchMedia("(hover: none), (pointer: coarse)"),
-      window.matchMedia("(max-width: 760px)"),
     ];
     update();
     for (const query of queries) query.addEventListener("change", update);
