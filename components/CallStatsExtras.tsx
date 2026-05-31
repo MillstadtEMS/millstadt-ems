@@ -55,6 +55,7 @@ export default function CallStatsExtras() {
   const [openTip, setOpenTip] = useState<OpenTip>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mobileAppLike = useMobileAppLike();
 
   // Mount + fetch. Nothing here runs during SSR.
   useEffect(() => {
@@ -78,12 +79,14 @@ export default function CallStatsExtras() {
   // Close popup when clicking outside the stats row.
   useEffect(() => {
     if (!openTip) return;
-    function onDown(e: MouseEvent) {
+    function onDown(e: PointerEvent) {
       if (!wrapperRef.current) return;
+      const target = e.target as Element | null;
+      if (target?.closest("[data-callstats-popout='true']")) return;
       if (!wrapperRef.current.contains(e.target as Node)) setOpenTip(null);
     }
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
   }, [openTip]);
 
   const stats = useMemo(() => {
@@ -186,6 +189,7 @@ export default function CallStatsExtras() {
         accent="gold"
         clickable
         isOpen={openTip === "monthly"}
+        mobileAppLike={mobileAppLike}
         onToggle={() => toggle("monthly")}
         onHoverOpen={() => openHover("monthly")}
         onHoverClose={scheduleClose}
@@ -209,6 +213,7 @@ export default function CallStatsExtras() {
         accent="sky"
         clickable
         isOpen={openTip === "avg"}
+        mobileAppLike={mobileAppLike}
         onToggle={() => toggle("avg")}
         onHoverOpen={() => openHover("avg")}
         onHoverClose={scheduleClose}
@@ -236,6 +241,41 @@ export default function CallStatsExtras() {
   );
 }
 
+function useMobileAppLike() {
+  const [mobileAppLike, setMobileAppLike] = useState(false);
+
+  useEffect(() => {
+    function update() {
+      const standalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.matchMedia("(display-mode: fullscreen)").matches ||
+        ("standalone" in window.navigator &&
+          (window.navigator as Navigator & { standalone?: boolean }).standalone === true);
+      const touch = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+      const narrow = window.matchMedia("(max-width: 760px)").matches;
+      setMobileAppLike(standalone || touch || narrow);
+    }
+
+    const queries = [
+      window.matchMedia("(display-mode: standalone)"),
+      window.matchMedia("(display-mode: fullscreen)"),
+      window.matchMedia("(hover: none), (pointer: coarse)"),
+      window.matchMedia("(max-width: 760px)"),
+    ];
+    update();
+    for (const query of queries) query.addEventListener("change", update);
+    window.addEventListener("orientationchange", update);
+    window.addEventListener("resize", update);
+    return () => {
+      for (const query of queries) query.removeEventListener("change", update);
+      window.removeEventListener("orientationchange", update);
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  return mobileAppLike;
+}
+
 // ── Stat tile ──────────────────────────────────────────────────────────
 
 type Accent = "gold" | "sky" | "emerald";
@@ -250,6 +290,7 @@ function Stat({
   accent,
   clickable,
   isOpen,
+  mobileAppLike,
   onToggle,
   onHoverOpen,
   onHoverClose,
@@ -261,6 +302,7 @@ function Stat({
   accent: Accent;
   clickable?: boolean;
   isOpen?: boolean;
+  mobileAppLike?: boolean;
   onToggle?: () => void;
   onHoverOpen?: () => void;
   onHoverClose?: () => void;
@@ -272,6 +314,13 @@ function Stat({
   const [portalReady, setPortalReady] = useState(false);
 
   useEffect(() => { setPortalReady(true); }, []);
+
+  useEffect(() => {
+    if (!isOpen || !mobileAppLike) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [isOpen, mobileAppLike]);
 
   // Recompute fixed coords when the tooltip is open. The stats row
   // sits inside the hero section which has overflow:hidden — using
@@ -308,10 +357,10 @@ function Stat({
       tabIndex={clickable ? 0 : undefined}
       onClick={clickable ? onToggle : undefined}
       onKeyDown={(e) => { if (clickable && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onToggle?.(); } }}
-      onMouseEnter={clickable ? onHoverOpen : undefined}
-      onMouseLeave={clickable ? onHoverClose : undefined}
-      onFocus={clickable ? onHoverOpen : undefined}
-      onBlur={clickable ? onHoverClose : undefined}
+      onMouseEnter={clickable && !mobileAppLike ? onHoverOpen : undefined}
+      onMouseLeave={clickable && !mobileAppLike ? onHoverClose : undefined}
+      onFocus={clickable && !mobileAppLike ? onHoverOpen : undefined}
+      onBlur={clickable && !mobileAppLike ? onHoverClose : undefined}
       style={tileStyle}
       title={title}
       aria-expanded={clickable ? !!isOpen : undefined}
@@ -357,33 +406,127 @@ function Stat({
         )}
       </div>
 
-      {isOpen && tooltip && portalReady && coords && createPortal(
-        <div
-          role="dialog"
-          aria-modal="false"
-          onClick={(e) => e.stopPropagation()}
-          onMouseEnter={onHoverOpen}
-          onMouseLeave={onHoverClose}
-          style={{
-            position: "fixed",
-            top: coords.top,
-            left: coords.left,
-            transform: "translateX(-50%)",
-            zIndex: 9999,
-            minWidth: 240,
-            maxHeight: "calc(100vh - 80px)",
-            overflowY: "auto",
-            background: "#020912",
-            border: `1px solid ${accentColor(accent)}40`,
-            borderRadius: 12,
-            boxShadow: "0 18px 40px rgba(0,0,0,0.65)",
-            padding: 12,
-            textAlign: "left",
-          }}
-        >
-          {tooltip}
-        </div>,
-        document.body,
+      {isOpen && tooltip && portalReady && (
+        mobileAppLike
+          ? createPortal(
+            <div
+              data-callstats-popout="true"
+              role="presentation"
+              onClick={(e) => { e.stopPropagation(); onToggle?.(); }}
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 9999,
+                display: "flex",
+                alignItems: "flex-end",
+                justifyContent: "center",
+                padding: "18px 12px max(env(safe-area-inset-bottom), 18px)",
+                background: "rgba(2,9,18,0.66)",
+                backdropFilter: "blur(10px)",
+                WebkitBackdropFilter: "blur(10px)",
+              }}
+            >
+              <section
+                role="dialog"
+                aria-modal="false"
+                aria-label={label}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: "min(100%, 430px)",
+                  maxHeight: "min(76vh, 620px)",
+                  overflowY: "auto",
+                  borderRadius: "24px 24px 18px 18px",
+                  background:
+                    "linear-gradient(180deg, rgba(7,20,40,0.98), rgba(2,9,18,0.98))",
+                  border: `1px solid ${accentColor(accent)}55`,
+                  boxShadow: "0 28px 70px rgba(0,0,0,0.72), inset 0 1px 0 rgba(255,255,255,0.08)",
+                  padding: "10px 14px 14px",
+                  textAlign: "left",
+                }}
+              >
+                <div
+                  aria-hidden
+                  style={{
+                    width: 46,
+                    height: 5,
+                    borderRadius: 999,
+                    background: "rgba(255,255,255,0.22)",
+                    margin: "0 auto 12px",
+                  }}
+                />
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    marginBottom: 10,
+                    paddingBottom: 10,
+                    borderBottom: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  <div>
+                    <div style={{ color: accentColor(accent), fontSize: 11, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>
+                      {label}
+                    </div>
+                    <div style={{ color: "white", fontSize: 24, lineHeight: 1, fontWeight: 950, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
+                      {number}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onToggle}
+                    style={{
+                      minWidth: 76,
+                      minHeight: 38,
+                      borderRadius: 999,
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      background: "rgba(255,255,255,0.06)",
+                      color: "white",
+                      fontFamily: "inherit",
+                      fontSize: 12,
+                      fontWeight: 900,
+                      letterSpacing: "0.10em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Close
+                  </button>
+                </div>
+                {tooltip}
+              </section>
+            </div>,
+            document.body,
+          )
+          : coords && createPortal(
+            <div
+              data-callstats-popout="true"
+              role="dialog"
+              aria-modal="false"
+              onClick={(e) => e.stopPropagation()}
+              onMouseEnter={onHoverOpen}
+              onMouseLeave={onHoverClose}
+              style={{
+                position: "fixed",
+                top: coords.top,
+                left: coords.left,
+                transform: "translateX(-50%)",
+                zIndex: 9999,
+                minWidth: 240,
+                maxHeight: "calc(100vh - 80px)",
+                overflowY: "auto",
+                background: "#020912",
+                border: `1px solid ${accentColor(accent)}40`,
+                borderRadius: 12,
+                boxShadow: "0 18px 40px rgba(0,0,0,0.65)",
+                padding: 12,
+                textAlign: "left",
+              }}
+            >
+              {tooltip}
+            </div>,
+            document.body,
+          )
       )}
     </div>
   );
