@@ -1,0 +1,290 @@
+/**
+ * Initial template content for the EMS onboarding checklist.
+ *
+ * This is the canonical 13-section EMS-specific checklist requested by
+ * the agency. It is seeded once on first run (ensureSchemaAndSeed in
+ * db.ts). Once seeded, admins edit the live structure via the template
+ * editor — re-running the seed will NOT overwrite their changes; the
+ * seeder checks for the template marker row before inserting.
+ *
+ * Items marked `hasUpload` / `hasExpiration` get the document upload
+ * and expiration-date capture in the per-record UI.
+ */
+
+export interface SeedItem {
+  label: string;
+  required?: boolean;
+  hasUpload?: boolean;
+  hasExpiration?: boolean;
+  hasVerification?: boolean;
+  shareSaveToFile?: boolean;
+  shareEmailEmployee?: boolean;
+  shareEmailAdmin?: boolean;
+}
+
+export interface SeedSection {
+  title: string;
+  items: SeedItem[];
+}
+
+export const SEED_SECTIONS: SeedSection[] = [
+  {
+    title: "Employment and Administrative Setup",
+    items: [
+      { label: "Employee application completed and reviewed", required: true, shareSaveToFile: true },
+      { label: "Offer of employment accepted", required: true },
+      { label: "Employee demographic / contact information verified", required: true },
+      { label: "Emergency contact information completed", required: true },
+      { label: "Employee entered into ADP" },
+      { label: "Federal W-4 completed", required: true, hasUpload: true, shareSaveToFile: true },
+      { label: "Illinois / state tax withholding forms completed", required: true, hasUpload: true, shareSaveToFile: true },
+      { label: "Form I-9 completed", required: true, hasUpload: true, shareSaveToFile: true },
+      { label: "Required I-9 identification documents reviewed and verified", required: true, hasUpload: true, hasVerification: true, shareSaveToFile: true },
+      { label: "W-2 / payroll-related information completed as applicable" },
+      { label: "Direct deposit information completed" },
+      { label: "Employee added to scheduling software" },
+      { label: "Employee added to Google Workspace" },
+      { label: "Employee issued a millstadtems.org email address" },
+      { label: "Employee added to Employee Lounge / intranet" },
+      { label: "Employee provided login instructions for required systems" },
+      { label: "Employee instructed on two-factor authentication requirements" },
+      { label: "Employee added to appropriate internal communication groups" },
+      { label: "Employee reviewed expectations for professional use of agency systems" },
+    ],
+  },
+  {
+    title: "Policy, Handbook, and Governance Acknowledgment",
+    items: [
+      { label: "Employee taught where to access the Employee Handbook", required: true },
+      { label: "Employee taught where to access the Policy Manual", required: true },
+      { label: "Employee taught where to access the Bylaws", required: true },
+      { label: "Employee taught where to access standard operating guidelines / procedures", required: true },
+      { label: "Employee shown how to submit questions or requests for clarification" },
+      { label: "Employee advised that policies may be updated and must be reviewed as assigned" },
+      { label: "Employee advised that electronic acknowledgment may be required for future policy updates" },
+      { label: "Employee introduced to the Just Culture Algorithm" },
+      { label: "Employee reviewed hygiene, grooming, and appearance expectations" },
+      { label: "Employee reviewed conduct and professionalism expectations" },
+      { label: "Employee reviewed chain-of-command expectations" },
+      { label: "Employee reviewed reporting expectations for incidents, complaints, safety issues, and equipment concerns" },
+      { label: "Employee reviewed policy expectations for responding from home, if applicable" },
+      { label: "Employee reviewed policy expectations for employees living within five minutes of base" },
+    ],
+  },
+  {
+    title: "Identification, Licensure, and Driving Requirements",
+    items: [
+      { label: "Driver's license received and copied / uploaded", required: true, hasUpload: true, hasExpiration: true, shareSaveToFile: true },
+      { label: "Driver's license verified as a valid driver's license and not only a state ID", required: true, hasVerification: true },
+      { label: "Driver's license expiration date documented", required: true, hasExpiration: true },
+      { label: "Driver's license current and not expired", required: true, hasVerification: true },
+      { label: "Driving history / MVR reviewed if required by agency policy", hasUpload: true, shareSaveToFile: true },
+      { label: "Employee authorized to operate agency vehicles, if applicable" },
+      { label: "Illinois EMS license received and placed on file", required: true, hasUpload: true, hasExpiration: true, shareSaveToFile: true },
+      { label: "Illinois EMS license number documented", required: true },
+      { label: "Illinois EMS license expiration date documented", required: true, hasExpiration: true },
+      { label: "Illinois EMS license verified as valid and current", required: true, hasVerification: true },
+      { label: "SWIL EMS System good standing verified", required: true, hasVerification: true },
+      { label: "Reciprocity status verified, if applicable" },
+      { label: "Employee cleared to function within the SWIL EMS System", required: true, hasVerification: true },
+      { label: "Any scope limitations or credential restrictions reviewed and documented" },
+      { label: "CPR certification received and placed on file", required: true, hasUpload: true, hasExpiration: true, shareSaveToFile: true },
+      { label: "ACLS certification received and placed on file, if applicable", hasUpload: true, hasExpiration: true, shareSaveToFile: true },
+      { label: "PALS certification received and placed on file, if applicable", hasUpload: true, hasExpiration: true, shareSaveToFile: true },
+      { label: "PHTLS / ITLS or trauma certification received and placed on file, if applicable", hasUpload: true, hasExpiration: true, shareSaveToFile: true },
+      { label: "Critical care credential received and placed on file, if applicable", hasUpload: true, hasExpiration: true, shareSaveToFile: true },
+    ],
+  },
+  {
+    title: "Required Training and Compliance Courses",
+    items: [
+      { label: "EVOC training completed and on file", required: true, hasUpload: true, hasExpiration: true, shareSaveToFile: true },
+      { label: "HIPAA training completed and on file", required: true, hasUpload: true, hasExpiration: true, shareSaveToFile: true },
+      { label: "Bloodborne pathogen training completed and on file", required: true, hasUpload: true, hasExpiration: true, shareSaveToFile: true },
+      { label: "Hazardous materials awareness course completed and on file", required: true, hasUpload: true, hasExpiration: true, shareSaveToFile: true },
+      { label: "FEMA IS-100 completed and on file", required: true, hasUpload: true, shareSaveToFile: true },
+      { label: "FEMA IS-200 completed and on file", required: true, hasUpload: true, shareSaveToFile: true },
+      { label: "FEMA IS-700 completed and on file", required: true, hasUpload: true, shareSaveToFile: true },
+      { label: "FEMA IS-800 completed and on file", required: true, hasUpload: true, shareSaveToFile: true },
+      { label: "Workplace safety orientation completed" },
+      { label: "Infection control expectations reviewed" },
+      { label: "PPE expectations reviewed" },
+      { label: "Exposure reporting process reviewed" },
+      { label: "Fit testing completed, if required", hasUpload: true, hasExpiration: true },
+      { label: "Employee understands where training records are maintained" },
+      { label: "Employee entered into EMS1 training software" },
+      { label: "Employee assigned required training modules" },
+      { label: "Employee understands training completion deadlines" },
+    ],
+  },
+  {
+    title: "Narcotic, Medication, and Controlled Access Systems",
+    items: [
+      { label: "Employee added to Narc Safe / narc box website" },
+      { label: "Employee added to narcotic tracking system" },
+      { label: "Employee cleared by SWIL EMS System for narcotic access, if applicable", hasVerification: true },
+      { label: "Employee received narcotic access education" },
+      { label: "Employee reviewed controlled substance accountability expectations" },
+      { label: "Employee reviewed wasting, discrepancy, and reporting procedures" },
+      { label: "Employee reviewed medication refrigerator / security expectations" },
+      { label: "Employee reviewed medication restocking procedures" },
+      { label: "Employee reviewed medication expiration check expectations" },
+      { label: "Employee reviewed agency-specific medication storage expectations" },
+    ],
+  },
+  {
+    title: "Software, Documentation, and Digital Access",
+    items: [
+      { label: "Employee added to ESO Suite" },
+      { label: "ESO profile reflects correct licensure level and credentials", hasVerification: true },
+      { label: "Employee trained on ESO login and documentation access" },
+      { label: "Employee reviewed PCR documentation expectations" },
+      { label: "Employee reviewed incident reporting process" },
+      { label: "Employee reviewed refusal / treat-no-transport documentation expectations" },
+      { label: "Employee reviewed billing-related documentation requirements" },
+      { label: "Employee added to Employee Lounge / intranet" },
+      { label: "Employee completed website overview and training" },
+      { label: "Employee shown where to access forms, schedules, announcements, and policies" },
+      { label: "Employee shown how to submit internal requests" },
+      { label: "Employee shown how to complete truck checks / inventory forms, if digital" },
+      { label: "Employee given appropriate access to scheduling software" },
+      { label: "Employee instructed on password security and account responsibility" },
+    ],
+  },
+  {
+    title: "Facility Access and Assigned Property",
+    items: [
+      { label: "Uniform shirts issued: 2 short sleeve" },
+      { label: "Uniform shirts issued: 2 long sleeve" },
+      { label: "Jacket or job shirt issued" },
+      { label: "Hat issued" },
+      { label: "Badge / ID issued, if applicable" },
+      { label: "Gas card access provided" },
+      { label: "Gas card code issued" },
+      { label: "Fuel access expectations reviewed" },
+      { label: "Door key fob issued" },
+      { label: "Door key fob number logged" },
+      { label: "Employee added to MyQ garage door system" },
+      { label: "Employee shown appropriate door / garage access procedures" },
+      { label: "Employee shown station security expectations" },
+      { label: "Employee shown alarm / security system expectations, if applicable" },
+      { label: "Employee shown where supplies, forms, and equipment are stored" },
+      { label: "Employee shown station cleaning expectations" },
+      { label: "Employee shown bunk room / day room / kitchen expectations" },
+      { label: "Employee shown laundry and linen procedures" },
+      { label: "Employee shown trash, sharps, biohazard, and cleaning supply locations" },
+    ],
+  },
+  {
+    title: "Pager and Home Response Requirements",
+    items: [
+      { label: "Employee lives within five minutes of base (yes / no)", hasVerification: true },
+      { label: "Employee reviewed home response policy" },
+      { label: "Employee reviewed expectations for responding directly to quarters" },
+      { label: "Employee reviewed expectations for availability and safety while responding" },
+      { label: "Pager issued, if applicable" },
+      { label: "Pager serial number documented" },
+      { label: "Pager function tested", hasVerification: true },
+      { label: "Pager return expectations reviewed" },
+      { label: "Employee understands pager remains agency property" },
+    ],
+  },
+  {
+    title: "District and Community Familiarization",
+    items: [
+      { label: "District familiarization completed" },
+      { label: "Primary response area reviewed" },
+      { label: "Mutual aid expectations reviewed" },
+      { label: "Common response locations reviewed" },
+      { label: "Hospital destination expectations reviewed" },
+      { label: "Employee introduced to Police Chief, if possible" },
+      { label: "Employee introduced to Police Lieutenant, if possible" },
+      { label: "Employee introduced to Fire Chief, if possible" },
+      { label: "Employee introduced to fire officers, if possible" },
+      { label: "Employee introduced to Medical Director, if possible" },
+      { label: "Employee introduced to agency leadership" },
+      { label: "Employee introduced to available crew members and station personnel" },
+      { label: "Employee shown station layout" },
+      { label: "Employee shown local fuel locations" },
+      { label: "Employee shown key district landmarks and high-risk locations" },
+      { label: "Employee shown common access issues, gated areas, or known response concerns" },
+    ],
+  },
+  {
+    title: "Vehicle, Fuel, and Station Operations",
+    items: [
+      { label: "Employee taught which trucks are gasoline" },
+      { label: "Employee taught which trucks are diesel" },
+      { label: "Employee taught the difference between gasoline and diesel pumps" },
+      { label: "Employee taught how to identify diesel versus gasoline fuel" },
+      { label: "Employee reviewed fueling procedures" },
+      { label: "Employee reviewed expectations for fuel receipts or fuel documentation, if applicable" },
+      { label: "Employee reviewed vehicle inspection expectations" },
+      { label: "Employee reviewed restocking trucks" },
+      { label: "Employee reviewed how to obtain restock from hospitals" },
+      { label: "Employee reviewed inventory / truck check expectations" },
+      { label: "Employee reviewed truck washing schedule and expectations" },
+      { label: "Employee reviewed vehicle cleanliness expectations" },
+      { label: "Employee reviewed reporting procedures for vehicle damage, warning lights, mechanical issues, and equipment concerns" },
+    ],
+  },
+  {
+    title: "Equipment Orientation",
+    items: [
+      { label: "Hamilton T1 ventilator overview completed" },
+      { label: "Zoll X Series monitor overview completed" },
+      { label: "LUCAS device overview completed" },
+      { label: "GlideScope video laryngoscope overview completed" },
+      { label: "Bag familiarization completed" },
+      { label: "Airway bag reviewed" },
+      { label: "Medication bag reviewed" },
+      { label: "Trauma bag reviewed" },
+      { label: "Pediatric equipment reviewed" },
+      { label: "OB kit location reviewed" },
+      { label: "Suction equipment reviewed" },
+      { label: "Oxygen system reviewed" },
+      { label: "CPAP / BiPAP equipment reviewed, if applicable" },
+      { label: "Stair chair reviewed" },
+      { label: "Power-load / stretcher operations reviewed" },
+      { label: "Radio operations reviewed" },
+      { label: "Hospital radio use reviewed, if applicable" },
+      { label: "Battery charging expectations reviewed" },
+      { label: "Equipment cleaning expectations reviewed" },
+      { label: "Equipment failure reporting process reviewed" },
+    ],
+  },
+  {
+    title: "Clinical and Operational Expectations",
+    items: [
+      { label: "Employee reviewed clinical scope of practice expectations" },
+      { label: "Employee reviewed SWIL EMS System protocol access" },
+      { label: "Employee reviewed medical control expectations" },
+      { label: "Employee reviewed when to contact medical control" },
+      { label: "Employee reviewed refusal procedure expectations" },
+      { label: "Employee reviewed patient care documentation expectations" },
+      { label: "Employee reviewed safe driving expectations" },
+      { label: "Employee reviewed emergency vehicle operation expectations" },
+      { label: "Employee reviewed scene safety expectations" },
+      { label: "Employee reviewed law enforcement / fire department coordination expectations" },
+      { label: "Employee reviewed lift assist expectations" },
+      { label: "Employee reviewed infection control and decontamination expectations" },
+      { label: "Employee reviewed station duty expectations" },
+      { label: "Employee reviewed professional communication expectations" },
+      { label: "Employee reviewed social media / confidentiality expectations" },
+    ],
+  },
+  {
+    title: "Final Review and Clarification",
+    items: [
+      { label: "Admin / preceptor clarified any ambiguities on policies or standard operating guidelines" },
+      { label: "Employee given opportunity to ask questions" },
+      { label: "Employee understands where to locate policies, forms, and training resources" },
+      { label: "Employee understands who to contact for scheduling issues" },
+      { label: "Employee understands who to contact for payroll / ADP issues" },
+      { label: "Employee understands who to contact for clinical / protocol questions" },
+      { label: "Employee understands who to contact for equipment / vehicle issues" },
+      { label: "Employee understands chain of command" },
+      { label: "Employee understands that completion of onboarding does not waive ongoing policy compliance", required: true },
+    ],
+  },
+];

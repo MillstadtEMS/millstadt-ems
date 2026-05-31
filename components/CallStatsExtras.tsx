@@ -25,6 +25,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface Call {
   id: string;
@@ -266,6 +267,31 @@ function Stat({
   tooltip?: React.ReactNode;
   title?: string;
 }) {
+  const tileRef = useRef<HTMLDivElement | null>(null);
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [portalReady, setPortalReady] = useState(false);
+
+  useEffect(() => { setPortalReady(true); }, []);
+
+  // Recompute fixed coords when the tooltip is open. The stats row
+  // sits inside the hero section which has overflow:hidden — using
+  // position:fixed via a portal escapes that clip so 12 months show.
+  useEffect(() => {
+    if (!isOpen || !tileRef.current) return;
+    function update() {
+      if (!tileRef.current) return;
+      const r = tileRef.current.getBoundingClientRect();
+      setCoords({ top: r.bottom + 8, left: r.left + r.width / 2, width: r.width });
+    }
+    update();
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [isOpen]);
+
   const tileStyle: React.CSSProperties = {
     background: "rgba(7,20,40,0.55)",
     border: `1px solid ${isOpen ? accentColor(accent) : "rgba(255,255,255,0.08)"}`,
@@ -277,6 +303,7 @@ function Stat({
   };
   return (
     <div
+      ref={tileRef}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
       onClick={clickable ? onToggle : undefined}
@@ -330,7 +357,7 @@ function Stat({
         )}
       </div>
 
-      {isOpen && tooltip && (
+      {isOpen && tooltip && portalReady && coords && createPortal(
         <div
           role="dialog"
           aria-modal="false"
@@ -338,24 +365,25 @@ function Stat({
           onMouseEnter={onHoverOpen}
           onMouseLeave={onHoverClose}
           style={{
-            position: "absolute",
-            top: "calc(100% + 8px)",
-            left: "50%",
+            position: "fixed",
+            top: coords.top,
+            left: coords.left,
             transform: "translateX(-50%)",
-            zIndex: 60,
+            zIndex: 9999,
             minWidth: 240,
-            maxHeight: 400,
+            maxHeight: "calc(100vh - 80px)",
             overflowY: "auto",
             background: "#020912",
             border: `1px solid ${accentColor(accent)}40`,
             borderRadius: 12,
-            boxShadow: "0 18px 40px rgba(0,0,0,0.55)",
+            boxShadow: "0 18px 40px rgba(0,0,0,0.65)",
             padding: 12,
             textAlign: "left",
           }}
         >
           {tooltip}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
