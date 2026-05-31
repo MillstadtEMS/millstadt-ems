@@ -140,7 +140,7 @@ export default function CoffeePrankOverlay({ name }: { name: string }) {
           textAlign: "center",
         }}
       >
-        Welcome to the Millstadt Ambulance Service Employee Lounge
+        Welcome to the Employee Lounge
       </p>
 
       <p

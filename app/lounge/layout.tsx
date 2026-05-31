@@ -39,7 +39,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: { default: "Millstadt Ambulance Service Employee Lounge", template: "%s · MAS Lounge" },
+  title: { default: "Employee Lounge", template: "%s · MAS Lounge" },
   robots: "noindex,nofollow",
   manifest: "/lounge/manifest.webmanifest",
   appleWebApp: {

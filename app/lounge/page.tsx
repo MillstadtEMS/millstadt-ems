@@ -131,8 +131,7 @@ function HomeHero({
       <div className="mas-hero-copy">
         <span className="mas-hero-eyebrow">{dateLine} · Millstadt EMS</span>
         <h1 className="mas-hero-title">
-          <span>Millstadt Ambulance Service</span>
-          <span>Employee Lounge</span>
+          Employee Lounge
         </h1>
         <p className="mas-hero-vibe">Virtual Breakroom</p>
         <p className="mas-hero-sub">

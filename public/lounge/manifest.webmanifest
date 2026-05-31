@@ -1,7 +1,7 @@
 {
-  "name": "Millstadt Ambulance Service Employee Lounge",
+  "name": "Millstadt EMS Employee Lounge",
   "short_name": "Breakroom",
-  "description": "Virtual Breakroom and crew portal for Millstadt Ambulance Service",
+  "description": "Virtual Breakroom and crew portal.",
   "start_url": "/lounge",
   "scope": "/lounge",
   "display": "standalone",

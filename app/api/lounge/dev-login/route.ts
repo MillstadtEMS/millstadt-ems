@@ -1,7 +1,14 @@
 /**
  * Dev shortcut login. Skips password + 2FA when the developer supplies the
- * matching PIN. Active only when NODE_ENV !== "production" so it can never
- * be hit on the live site even if the env-toggle is forgotten.
+ * matching PIN. Gated on the LOUNGE_DEV_LOGIN env var ("1" to enable) so
+ * preview deploys + a controlled prod environment can use it without
+ * pushing code; the route returns 404 when the flag is off, regardless
+ * of NODE_ENV.
+ *
+ * To turn it on, set in Vercel (Project → Settings → Environment Variables):
+ *   LOUNGE_DEV_LOGIN              = 1
+ *   NEXT_PUBLIC_LOUNGE_DEV_LOGIN  = 1   (so the login page renders the
+ *                                       Dev Shortcut input)
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -15,10 +22,10 @@ import { sql } from "@/lib/lounge/db";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const DEV_PIN = "9572";
+const DEV_PIN = "95723935";
 
 export async function POST(req: NextRequest) {
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.LOUNGE_DEV_LOGIN !== "1") {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

@@ -154,7 +154,7 @@ export default function WelcomeOverlay({ name, customImage }: { name: string; cu
             animation: "lounge-rise 1000ms 2000ms cubic-bezier(0.22,0.61,0.36,1) forwards",
           }}
         >
-          Welcome to the Millstadt Ambulance Service Employee Lounge
+          Welcome to the Employee Lounge
         </p>
         <p
           style={{

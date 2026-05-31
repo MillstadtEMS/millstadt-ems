@@ -188,9 +188,6 @@ export default function LoungeLogin() {
           <p style={{ color: "#f0b429", fontSize: "0.78rem", marginTop: 6, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
             Virtual Breakroom
           </p>
-          <p style={{ color: "#94a3b8", fontSize: "0.875rem", marginTop: 6 }}>
-            Millstadt Ambulance Service
-          </p>
         </div>
 
         {step === "password" && (
@@ -361,7 +358,7 @@ export default function LoungeLogin() {
           Don&apos;t have your password? Contact management.
         </p>
 
-        {process.env.NODE_ENV !== "production" && <DevShortcut />}
+        {process.env.NEXT_PUBLIC_LOUNGE_DEV_LOGIN === "1" && <DevShortcut />}
       </div>
     </div>
   );

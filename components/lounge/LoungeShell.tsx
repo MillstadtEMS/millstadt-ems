@@ -609,7 +609,6 @@ function SidebarBody({
             Employee Lounge
           </div>
           <div className="mas-display" style={{ color: "white", fontWeight: 700, fontSize: 17, marginTop: 5, letterSpacing: "-0.015em" }}>Virtual Breakroom</div>
-          <div className="mas-mono" style={{ color: "rgba(226,232,240,0.62)", fontSize: 9, fontWeight: 700, letterSpacing: "0.16em", marginTop: 5, textTransform: "uppercase" }}>Millstadt Ambulance Service</div>
         </div>
       </div>
 
