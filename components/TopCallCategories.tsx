@@ -3,8 +3,8 @@
 /**
  * Public "Top Call Categories" tile that mounts directly below the
  * existing call-stats row on the homepage. Shows the top 3 categories
- * for the current month with their counts + percentages. On hover/tap
- * a popover lists every category in that month ranked high → low.
+ * year-to-date with their counts + percentages. On hover/tap a popover
+ * lists the top 5 categories ranked high → low.
  *
  * The popover uses a portal (same pattern as CallStatsExtras) so the
  * hero section's overflow:hidden can't clip it.
@@ -17,11 +17,9 @@ import { createPortal } from "react-dom";
 
 interface Cat { name: string; count: number; pct: number }
 
-const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
 export default function TopCallCategories() {
   const [mounted, setMounted] = useState(false);
-  const [data, setData] = useState<{ categories: Cat[]; total: number; year: number; month: number } | null>(null);
+  const [data, setData] = useState<{ categories: Cat[]; total: number; year: number } | null>(null);
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -74,8 +72,8 @@ export default function TopCallCategories() {
     <div
       ref={wrapRef}
       style={{
-        width: "100%", maxWidth: 720,
-        margin: "14px auto 0", padding: "0 16px",
+        width: "100%", maxWidth: 480,
+        margin: "16px auto 0", padding: "0 16px",
         position: "relative",
       }}
     >
@@ -91,18 +89,19 @@ export default function TopCallCategories() {
         style={{
           background: "rgba(7,20,40,0.55)",
           border: `1px solid ${open ? "#f0b429" : "rgba(255,255,255,0.08)"}`,
-          borderRadius: 14, padding: "12px 14px",
+          borderRadius: 14, padding: "12px 16px",
           cursor: "pointer",
           transition: "border-color 0.15s",
+          textAlign: "left",
         }}
         aria-expanded={open}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8, gap: 10 }}>
           <span style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
             Top Call Categories
           </span>
-          <span style={{ color: "#94a3b8", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" }}>
-            {MONTH_NAMES[data.month - 1]} {data.year} · {data.total} calls
+          <span style={{ color: "#94a3b8", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+            {data.year} YTD · {data.total} calls
           </span>
         </div>
         <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 5 }}>
@@ -116,7 +115,7 @@ export default function TopCallCategories() {
                 fontSize: 11.5,
               }}>{i + 1}.</span>
               <span style={{ color: "white", fontWeight: 700, fontSize: 13.5, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</span>
-              <span style={{ color: "#cbd5e1", fontSize: 12, fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ color: "#cbd5e1", fontSize: 12, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
                 {c.count} <span style={{ color: "#64748b" }}>· {c.pct.toFixed(1)}%</span>
               </span>
             </li>
@@ -124,7 +123,7 @@ export default function TopCallCategories() {
         </ol>
       </div>
 
-      {/* Hover popover with full ranking */}
+      {/* Hover popover with top 5 ranking */}
       {open && coords && createPortal(
         <div
           role="dialog"
@@ -133,7 +132,7 @@ export default function TopCallCategories() {
           style={{
             position: "fixed", top: coords.top, left: coords.left,
             transform: "translateX(-50%)",
-            zIndex: 9999, width: Math.min(420, Math.max(280, coords.width + 40)),
+            zIndex: 9999, width: Math.min(440, Math.max(300, coords.width + 40)),
             maxHeight: "calc(100vh - 80px)", overflowY: "auto",
             background: "#020912", border: "1px solid rgba(240,180,41,0.40)",
             borderRadius: 12, boxShadow: "0 18px 40px rgba(0,0,0,0.65)",
@@ -141,14 +140,14 @@ export default function TopCallCategories() {
           }}
         >
           <div style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase", marginBottom: 8 }}>
-            {MONTH_NAMES[data.month - 1]} {data.year} · All categories
+            {data.year} YTD · Top 5 categories
           </div>
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 3 }}>
-            {data.categories.map((c, i) => (
+            {data.categories.slice(0, 5).map((c, i) => (
               <li
                 key={c.name}
                 style={{
-                  display: "flex", justifyContent: "space-between",
+                  display: "flex", justifyContent: "space-between", gap: 8,
                   padding: "4px 6px", borderRadius: 6,
                   background: i < 3 ? "rgba(240,180,41,0.08)" : "transparent",
                   fontSize: 12.5,
@@ -157,7 +156,7 @@ export default function TopCallCategories() {
                 }}
               >
                 <span>{i + 1}. {c.name}</span>
-                <span style={{ fontVariantNumeric: "tabular-nums", color: "#94a3b8" }}>
+                <span style={{ fontVariantNumeric: "tabular-nums", color: "#94a3b8", whiteSpace: "nowrap" }}>
                   {c.count} · {c.pct.toFixed(1)}%
                 </span>
               </li>
@@ -175,7 +174,7 @@ export default function TopCallCategories() {
               fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
               fontSize: 10, color: "#475569",
             }}>
-              <span style={{ color: "#f0b429" }}>Category %</span> = category count ÷ total calls for month × 100
+              <span style={{ color: "#f0b429" }}>Category %</span> = category count ÷ total calls year-to-date × 100
             </div>
           </div>
         </div>,

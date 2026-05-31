@@ -1,9 +1,10 @@
 /**
- * GET /api/cad/top-categories?year=YYYY&month=MM
+ * GET /api/cad/top-categories?year=YYYY
  *
  * Public-readable rollup of categories for the homepage tile. No
  * employee identity is exposed — only categorical counts. Defaults to
- * the current Chicago-month so the tile auto-updates as time passes.
+ * the current Chicago-year (YTD) so the tile reflects everything
+ * dispatched so far this calendar year.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/neon";
@@ -16,13 +17,10 @@ export async function GET(req: NextRequest) {
   await ensureCadStructuredSchema();
   const q = req.nextUrl.searchParams;
   const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Chicago" }));
-  const year  = q.get("year")  ? parseInt(q.get("year")!,  10) : now.getFullYear();
-  const month = q.get("month") ? parseInt(q.get("month")!, 10) : now.getMonth() + 1;
+  const year = q.get("year") ? parseInt(q.get("year")!, 10) : now.getFullYear();
 
-  const start = `${year}-${String(month).padStart(2, "0")}-01T00:00:00`;
-  const endY  = month === 12 ? year + 1 : year;
-  const endM  = month === 12 ? 1 : month + 1;
-  const end   = `${endY}-${String(endM).padStart(2, "0")}-01T00:00:00`;
+  const start = `${year}-01-01T00:00:00`;
+  const end   = `${year + 1}-01-01T00:00:00`;
 
   const db = sql();
   const rows = (await db`
@@ -42,7 +40,7 @@ export async function GET(req: NextRequest) {
   const total = totalRow[0]?.n ?? 0;
 
   return NextResponse.json({
-    year, month, total,
+    year, scope: "ytd", total,
     categories: rows.map((r) => ({
       name: r.category,
       count: r.n,
