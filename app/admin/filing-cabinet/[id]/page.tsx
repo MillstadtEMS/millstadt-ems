@@ -52,6 +52,23 @@ interface EmpCert {
   status: string;
 }
 
+interface EmpForm {
+  id: string;
+  formType: string;
+  formLabel: string;
+  fileTab: string;
+  fileTabLabel: string;
+  confidentiality: string;
+  status: "draft" | "finalized" | "rescinded";
+  assignmentId: string | null;
+  pdfUrl: string | null;
+  pdfFilename: string | null;
+  finalizedAt: string | null;
+  createdAt: string;
+  hasEmployeeSignature: boolean;
+  awaitingAdmin: boolean;
+}
+
 export default function FilingCabinetEmployeePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -59,6 +76,7 @@ export default function FilingCabinetEmployeePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [certs, setCerts] = useState<EmpCert[]>([]);
   const [certTypes, setCertTypes] = useState<CertType[]>([]);
+  const [forms, setForms] = useState<EmpForm[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Add-cert modal
@@ -75,14 +93,16 @@ export default function FilingCabinetEmployeePage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [p, co, ct] = await Promise.all([
+    const [p, co, ct, fm] = await Promise.all([
       fetch(`/api/admin/employees/${id}`).then((r) => r.ok ? r.json() : null),
       fetch(`/api/admin/employees/${id}/certs-overview`).then((r) => r.ok ? r.json() : null),
       fetch("/api/admin/cert-types").then((r) => r.ok ? r.json() : null),
+      fetch(`/api/admin/employees/${id}/forms`).then((r) => r.ok ? r.json() : null),
     ]);
     if (p?.employee) setProfile(p.employee);
     if (co?.certs) setCerts(co.certs);
     if (ct?.certTypes) setCertTypes(ct.certTypes);
+    if (Array.isArray(fm?.forms)) setForms(fm.forms);
     setLoading(false);
   }, [id]);
 
@@ -198,6 +218,8 @@ export default function FilingCabinetEmployeePage() {
         )}
       </Section>
 
+      <FormsOnFile employeeId={profile.id} forms={forms} />
+
       {showAdd && (
         <AddCertModal
           employeeId={profile.id}
@@ -207,6 +229,122 @@ export default function FilingCabinetEmployeePage() {
         />
       )}
     </div>
+  );
+}
+
+function FormsOnFile({ employeeId, forms }: { employeeId: string; forms: EmpForm[] }) {
+  const finalized = forms.filter((f) => f.status === "finalized");
+  const drafts = forms.filter((f) => f.status === "draft");
+  const rescinded = forms.filter((f) => f.status === "rescinded");
+
+  const byTab = new Map<string, EmpForm[]>();
+  for (const f of finalized) {
+    const key = f.fileTabLabel;
+    if (!byTab.has(key)) byTab.set(key, []);
+    byTab.get(key)!.push(f);
+  }
+
+  return (
+    <Section
+      title={`Forms & documents (${finalized.length}${drafts.length ? ` · ${drafts.length} pending` : ""})`}
+      action={
+        <Link
+          href={`/admin/forms`}
+          style={{ background: "rgba(240,180,41,0.15)", color: "#f0b429", padding: "6px 12px", borderRadius: 10, fontWeight: 800, fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", textDecoration: "none" }}
+        >
+          Push new form →
+        </Link>
+      }
+    >
+      {drafts.length > 0 && (
+        <>
+          <SubHead>Pending / awaiting</SubHead>
+          <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
+            {drafts.map((f) => (
+              <Link
+                key={f.id}
+                href={`/admin/employees/${employeeId}/forms/${f.id}`}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 12px", background: "#040d1a", border: `1px solid ${f.awaitingAdmin ? "rgba(251,191,36,0.35)" : "rgba(255,255,255,0.06)"}`, borderRadius: 10, textDecoration: "none" }}
+              >
+                <div>
+                  <div style={{ fontWeight: 800, color: "white", fontSize: 14 }}>{f.formLabel}</div>
+                  <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 2 }}>
+                    {f.awaitingAdmin
+                      ? "Employee signed — awaiting your countersign"
+                      : f.assignmentId
+                        ? "Assigned to employee — awaiting signature"
+                        : "In progress"}
+                  </div>
+                </div>
+                <span style={{ color: f.awaitingAdmin ? "#fbbf24" : "#7dd3fc", fontSize: 11, fontWeight: 900, letterSpacing: "0.10em", textTransform: "uppercase" }}>
+                  {f.awaitingAdmin ? "Review →" : "Open →"}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
+
+      {finalized.length === 0 && drafts.length === 0 && rescinded.length === 0 ? (
+        <p style={{ color: "#94a3b8", margin: 0 }}>No forms on file yet.</p>
+      ) : (
+        <>
+          {Array.from(byTab.entries()).map(([tabLabel, group]) => (
+            <div key={tabLabel} style={{ marginBottom: 12 }}>
+              <SubHead>{tabLabel}</SubHead>
+              <div style={{ display: "grid", gap: 8 }}>
+                {group.map((f) => (
+                  <div key={f.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 12px", background: "#040d1a", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10 }}>
+                    <div>
+                      <div style={{ fontWeight: 800, color: "white", fontSize: 14 }}>{f.formLabel}</div>
+                      <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 2 }}>
+                        Signed {f.finalizedAt ? new Date(f.finalizedAt).toLocaleDateString() : "—"}
+                        {f.confidentiality !== "open" && <span style={{ marginLeft: 8, color: "#fca5a5", fontWeight: 700 }}>· Confidential</span>}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                      <Link
+                        href={`/admin/employees/${employeeId}/forms/${f.id}`}
+                        style={{ color: "#cbd5e1", fontSize: 12, fontWeight: 800, textDecoration: "none" }}
+                      >
+                        Detail
+                      </Link>
+                      {f.pdfUrl && (
+                        <a href={f.pdfUrl} target="_blank" rel="noreferrer" style={{ color: "#38bdf8", fontSize: 12, fontWeight: 800, textDecoration: "none" }}>
+                          Open PDF ↗
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {rescinded.length > 0 && (
+        <>
+          <SubHead>Rescinded</SubHead>
+          <div style={{ display: "grid", gap: 8 }}>
+            {rescinded.map((f) => (
+              <div key={f.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 12px", background: "#040d1a", border: "1px solid rgba(252,165,165,0.15)", borderRadius: 10 }}>
+                <div>
+                  <div style={{ fontWeight: 800, color: "#fda4af", fontSize: 14 }}>{f.formLabel}</div>
+                  <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 2 }}>Rescinded</div>
+                </div>
+                <Link
+                  href={`/admin/employees/${employeeId}/forms/${f.id}`}
+                  style={{ color: "#cbd5e1", fontSize: 12, fontWeight: 800, textDecoration: "none" }}
+                >
+                  Detail
+                </Link>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </Section>
   );
 }
 

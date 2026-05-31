@@ -118,6 +118,7 @@ export default function FormsAdminPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-5 py-6 space-y-5">
+        <InsightsCard />
         <AwaitingReviewCard />
 
         <section className="bg-[rgba(7,20,40,0.55)] border border-white/8 rounded-2xl p-5">
@@ -293,6 +294,139 @@ function AwaitingReviewCard() {
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+// ── Insights card ──────────────────────────────────────────────────────
+
+interface InsightsDto {
+  finalizedThisMonth: number;
+  finalizedYtd: number;
+  pendingAssigned: number;
+  awaitingAdminReview: number;
+  overdueAssignments: number;
+  draftAssignments: number;
+  byTypeLast30: { formType: string; formLabel: string; count: number }[];
+  recentActivity: {
+    formId: string;
+    formType: string;
+    formLabel: string;
+    employeeId: string;
+    employeeName: string;
+    action: "finalized" | "awaiting_admin";
+    when: string;
+  }[];
+}
+
+function timeAgo(iso: string): string {
+  if (!iso) return "—";
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return iso;
+  const s = Math.max(1, Math.floor((Date.now() - t) / 1000));
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 48) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
+}
+
+function InsightsCard() {
+  const [data, setData] = useState<InsightsDto | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/forms/insights", { cache: "no-store" })
+      .then(async (r) => {
+        if (!r.ok) { setData(null); return; }
+        setData(await r.json());
+      })
+      .catch(() => setData(null));
+  }, []);
+
+  if (data === null) return null;
+
+  const tiles: { label: string; value: number; tone: "gold" | "sky" | "amber" | "emerald" | "rose" }[] = [
+    { label: "Finalized this month", value: data.finalizedThisMonth, tone: "emerald" },
+    { label: "Finalized YTD", value: data.finalizedYtd, tone: "gold" },
+    { label: "Pending signature", value: data.pendingAssigned, tone: "sky" },
+    { label: "Awaiting admin review", value: data.awaitingAdminReview, tone: "amber" },
+    { label: "Overdue assignments", value: data.overdueAssignments, tone: "rose" },
+    { label: "Open assignments", value: data.draftAssignments, tone: "sky" },
+  ];
+
+  const toneClass = (tone: typeof tiles[number]["tone"]) => ({
+    gold:    "border-[#f0b429]/30 text-[#f0b429]",
+    sky:     "border-sky-500/30 text-sky-300",
+    amber:   "border-amber-400/30 text-amber-300",
+    emerald: "border-emerald-500/30 text-emerald-300",
+    rose:    "border-rose-500/30 text-rose-300",
+  }[tone]);
+
+  const maxCount = Math.max(1, ...data.byTypeLast30.map((r) => r.count));
+
+  return (
+    <section className="bg-[rgba(7,20,40,0.55)] border border-white/8 rounded-2xl p-5">
+      <div className="flex flex-wrap items-baseline gap-3 mb-4">
+        <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#f0b429]">HR snapshot</span>
+        <h2 className="text-white font-black text-lg">Forms activity</h2>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-5" style={{ gap: 8 }}>
+        {tiles.map((t) => (
+          <div key={t.label} className={`rounded-xl border bg-[#040d1a]/40 ${toneClass(t.tone)}`} style={{ padding: "12px 14px" }}>
+            <div className="text-[10px] font-black uppercase" style={{ letterSpacing: "0.18em" }}>{t.label}</div>
+            <div className="text-white font-black tabular-nums" style={{ fontSize: 26, marginTop: 4 }}>{t.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4" style={{ gap: 16 }}>
+        <div>
+          <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 mb-2">Top forms · last 30 days</div>
+          {data.byTypeLast30.length === 0 ? (
+            <p className="text-slate-500 text-sm">No finalized forms yet this month.</p>
+          ) : (
+            <ul className="space-y-2">
+              {data.byTypeLast30.map((r) => (
+                <li key={r.formType}>
+                  <div className="flex items-baseline justify-between gap-2 mb-1">
+                    <span className="text-slate-200 text-sm font-bold">{r.formLabel}</span>
+                    <span className="text-slate-400 text-xs tabular-nums">{r.count}</span>
+                  </div>
+                  <div className="h-1.5 bg-white/5 rounded">
+                    <div className="h-full rounded bg-[#f0b429]" style={{ width: `${(r.count / maxCount) * 100}%` }} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div>
+          <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 mb-2">Recent activity</div>
+          {data.recentActivity.length === 0 ? (
+            <p className="text-slate-500 text-sm">Nothing recent.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {data.recentActivity.map((r) => (
+                <li key={`${r.action}-${r.formId}`}>
+                  <Link
+                    href={`/admin/employees/${r.employeeId}/forms/${r.formId}`}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 text-sm"
+                  >
+                    <span className={r.action === "finalized" ? "text-emerald-300" : "text-amber-300"} style={{ fontSize: 11 }}>●</span>
+                    <span className="text-white font-bold truncate flex-1">{r.employeeName}</span>
+                    <span className="text-slate-400 text-xs truncate">{r.formLabel}</span>
+                    <span className="text-slate-500 text-xs">{timeAgo(r.when)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </section>
   );
 }

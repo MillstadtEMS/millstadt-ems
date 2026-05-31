@@ -556,3 +556,133 @@ export async function progressForAssignment(assignmentId: string): Promise<{ ass
   const r = rows[0] ?? { assigned: 0, finalized: 0, pending: 0 };
   return { assigned: r.assigned, finalized: r.finalized, pending: r.pending };
 }
+
+// ── Admin insights ─────────────────────────────────────────────────────
+
+export interface AdminFormsInsights {
+  finalizedThisMonth: number;
+  finalizedYtd: number;
+  pendingAssigned: number;
+  awaitingAdminReview: number;
+  overdueAssignments: number;
+  draftAssignments: number;
+  byTypeLast30: { formType: string; count: number }[];
+  recentActivity: {
+    formId: string;
+    formType: string;
+    employeeId: string;
+    action: "finalized" | "awaiting_admin";
+    when: string;
+  }[];
+}
+
+export async function adminFormsInsights(): Promise<AdminFormsInsights> {
+  await ensureSchema();
+  const db = sql();
+
+  const counts = (await db`
+    SELECT
+      COUNT(*) FILTER (
+        WHERE status = 'finalized'
+          AND finalized_at >= date_trunc('month', CURRENT_DATE)
+      )::int AS finalized_month,
+      COUNT(*) FILTER (
+        WHERE status = 'finalized'
+          AND finalized_at >= date_trunc('year', CURRENT_DATE)
+      )::int AS finalized_ytd,
+      COUNT(*) FILTER (
+        WHERE status = 'draft' AND assignment_id IS NOT NULL
+      )::int AS pending_assigned,
+      COUNT(*) FILTER (
+        WHERE status = 'draft'
+          AND assignment_id IS NULL
+          AND signatures @> '[{"who":"employee"}]'::jsonb
+      )::int AS awaiting_review
+    FROM lounge_forms
+  `) as unknown as {
+    finalized_month: number;
+    finalized_ytd: number;
+    pending_assigned: number;
+    awaiting_review: number;
+  }[];
+  const c = counts[0] ?? { finalized_month: 0, finalized_ytd: 0, pending_assigned: 0, awaiting_review: 0 };
+
+  const overdueRows = (await db`
+    SELECT a.id
+    FROM lounge_form_assignments a
+    WHERE a.closed_at IS NULL
+      AND a.due_at IS NOT NULL
+      AND a.due_at < NOW()
+      AND EXISTS (
+        SELECT 1 FROM lounge_forms f
+        WHERE f.assignment_id = a.id AND f.status = 'draft'
+      )
+  `) as unknown as { id: string }[];
+
+  const draftAssignRows = (await db`
+    SELECT COUNT(DISTINCT a.id)::int AS n
+    FROM lounge_form_assignments a
+    WHERE a.closed_at IS NULL
+      AND EXISTS (
+        SELECT 1 FROM lounge_forms f
+        WHERE f.assignment_id = a.id AND f.status = 'draft'
+      )
+  `) as unknown as { n: number }[];
+
+  const byType = (await db`
+    SELECT form_type, COUNT(*)::int AS count
+    FROM lounge_forms
+    WHERE finalized_at >= NOW() - INTERVAL '30 days'
+    GROUP BY form_type
+    ORDER BY count DESC
+    LIMIT 6
+  `) as unknown as { form_type: string; count: number }[];
+
+  const recentFinalized = (await db`
+    SELECT id, form_type, employee_id, finalized_at AS ts
+    FROM lounge_forms
+    WHERE status = 'finalized'
+    ORDER BY finalized_at DESC NULLS LAST
+    LIMIT 6
+  `) as unknown as { id: string; form_type: string; employee_id: string; ts: unknown }[];
+
+  const recentAwaiting = (await db`
+    SELECT id, form_type, employee_id, created_at AS ts
+    FROM lounge_forms
+    WHERE status = 'draft'
+      AND assignment_id IS NULL
+      AND signatures @> '[{"who":"employee"}]'::jsonb
+    ORDER BY created_at DESC
+    LIMIT 6
+  `) as unknown as { id: string; form_type: string; employee_id: string; ts: unknown }[];
+
+  const recentActivity: AdminFormsInsights["recentActivity"] = [
+    ...recentFinalized.map((r) => ({
+      formId: r.id,
+      formType: r.form_type,
+      employeeId: r.employee_id,
+      action: "finalized" as const,
+      when: dateTime(r.ts) ?? "",
+    })),
+    ...recentAwaiting.map((r) => ({
+      formId: r.id,
+      formType: r.form_type,
+      employeeId: r.employee_id,
+      action: "awaiting_admin" as const,
+      when: dateTime(r.ts) ?? "",
+    })),
+  ]
+    .sort((a, b) => b.when.localeCompare(a.when))
+    .slice(0, 8);
+
+  return {
+    finalizedThisMonth: c.finalized_month,
+    finalizedYtd: c.finalized_ytd,
+    pendingAssigned: c.pending_assigned,
+    awaitingAdminReview: c.awaiting_review,
+    overdueAssignments: overdueRows.length,
+    draftAssignments: draftAssignRows[0]?.n ?? 0,
+    byTypeLast30: byType.map((r) => ({ formType: r.form_type, count: r.count })),
+    recentActivity,
+  };
+}
