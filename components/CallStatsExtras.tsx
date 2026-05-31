@@ -271,7 +271,7 @@ export default function CallStatsExtras() {
     >
       <Stat
         number={stats.thisMonthCount.toLocaleString()}
-        label={`This ${stats.monthLabel}`}
+        label="Current month"
         accent="gold"
         clickable
         isOpen={openTip === "monthly"}
