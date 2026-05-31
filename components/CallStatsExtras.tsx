@@ -96,6 +96,11 @@ export default function CallStatsExtras() {
       projected = Math.round(ytdTotal * (daysInYear / elapsedDays));
     }
 
+    // Daily average — year-to-date calls divided by days elapsed in the
+    // year. Same denominator the projection uses, so the three numbers
+    // stay consistent. One decimal place.
+    const avgPerDay = ytdTotal > 0 ? ytdTotal / elapsedDays : 0;
+
     const monthlyBreakdown: { month: string; count: number; isCurrent: boolean }[] = [];
     for (let i = 0; i <= monthIdx; i++) {
       const key = `${y}-${String(i + 1).padStart(2, "0")}`;
@@ -105,7 +110,7 @@ export default function CallStatsExtras() {
         isCurrent: i === monthIdx,
       });
     }
-    return { thisMonthCount, projected, monthlyBreakdown, monthLabel: MONTH_NAMES[monthIdx] };
+    return { thisMonthCount, projected, avgPerDay, monthlyBreakdown, monthLabel: MONTH_NAMES[monthIdx] };
   }, [calls, now]);
 
   // SSR (and first client render) emit nothing — no hydration risk.
@@ -149,6 +154,19 @@ export default function CallStatsExtras() {
           </ul>
         </div>
       </div>
+
+      {/* Daily average — YTD calls ÷ days elapsed in the year. Same
+          denominator as the projection so the three numbers agree. */}
+      {stats.avgPerDay > 0 && (
+        <div
+          className="text-white font-bold"
+          style={{ fontSize: "0.95rem" }}
+          title="Year-to-date calls divided by days elapsed."
+        >
+          <span className="text-sky-300 font-black tabular-nums">{stats.avgPerDay.toFixed(1)}</span>{" "}
+          <span className="uppercase tracking-widest text-xs">avg / day</span>
+        </div>
+      )}
 
       {/* Projected year-end total */}
       {stats.projected > 0 && (
