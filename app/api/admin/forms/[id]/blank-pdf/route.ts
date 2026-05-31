@@ -1,11 +1,14 @@
 /**
- * GET /api/admin/forms/[formType]/blank-pdf
- *   Streams a blank "Draft preview" PDF of a registry form type. Used by
- *   admins to print an unfilled form for paper handoff to a new hire or
- *   for in-person interviews where digital signing isn't practical.
+ * GET /api/admin/forms/[id]/blank-pdf
+ *   Streams a blank "Draft preview" PDF of a registry form type. The
+ *   `[id]` segment is the form-type id (e.g. "policy_acknowledgment").
+ *   The slug name matches the sibling routes (finalize / rescind / pdf)
+ *   because Next.js requires consistent slug names at the same depth.
  *
- *   The PDF renders the spec's title block, section structure, and
- *   signature panels with no field values — admins fill in by hand.
+ *   Used by admins to print an unfilled form for paper handoff to a new
+ *   hire or for in-person interviews where digital signing isn't
+ *   practical. The PDF renders the spec's title block, section
+ *   structure, and signature panels with fillable blank lines.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/auth";
@@ -16,9 +19,9 @@ import type { FormInstance } from "@/lib/lounge/forms/db";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest, ctx: { params: Promise<{ formType: string }> }) {
+export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const denied = await requireAdmin(); if (denied) return denied;
-  const { formType } = await ctx.params;
+  const { id: formType } = await ctx.params;
 
   const spec = getFormSpec(formType);
   if (!spec) return NextResponse.json({ error: "Unknown form type" }, { status: 404 });

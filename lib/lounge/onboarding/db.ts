@@ -450,13 +450,6 @@ function toRecord(r: RecordDbRow): OnboardingRecord {
   };
 }
 
-const RECORD_SELECT = `
-  r.*,
-  e.first_name AS employee_first_name, e.last_name AS employee_last_name,
-  p.first_name AS preceptor_first_name, p.last_name AS preceptor_last_name,
-  w.first_name AS witness_first_name,   w.last_name AS witness_last_name
-`;
-
 export async function listRecords(): Promise<OnboardingRecord[]> {
   await ensureSchemaAndSeed();
   const db = sql();
@@ -766,5 +759,3 @@ export async function deleteSignature(recordId: string, who: SignerWho): Promise
   const db = sql();
   await db`DELETE FROM lounge_onboarding_signatures WHERE record_id = ${recordId} AND who = ${who}`;
 }
-
-void RECORD_SELECT; // reserved for re-use; keeps linters quiet if removed

@@ -10,8 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { currentEmployee } from "@/lib/lounge/auth";
 import { createRequest, listRequestsForEmployee } from "@/lib/lounge/form-requests";
 import { FORM_REGISTRY, getFormSpec } from "@/lib/lounge/forms/registry";
-import { notifyAdminsInLounge } from "@/lib/lounge/notify-admins";
-import { emailAdmins } from "@/lib/lounge/notify-admins";
+import { emailAdmins, notifyAdminsInLounge } from "@/lib/lounge/notify-admins";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

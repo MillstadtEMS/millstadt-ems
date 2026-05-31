@@ -21,7 +21,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 interface FormItem {
   id: string;
@@ -54,7 +53,6 @@ function fmtDate(iso: string | null): string {
 }
 
 export default function EmployeeFormsHub() {
-  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [pending, setPending] = useState<FormItem[]>([]);
   const [drafts, setDrafts] = useState<FormItem[]>([]);
@@ -87,8 +85,6 @@ export default function EmployeeFormsHub() {
   }, []);
 
   useEffect(() => { setMounted(true); load(); }, [load]);
-  // Keep linter happy; router is intentionally available for future use.
-  void router;
 
   async function submitRequest() {
     if (!pick) { setStatus({ kind: "err", text: "Pick a form to request." }); return; }
