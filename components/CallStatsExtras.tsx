@@ -350,7 +350,7 @@ export default function CallStatsExtras() {
               prevLabel={`${BASELINE_YEAR} actual total`}
               currLabel={`${stats.year} projected total`}
             />
-            <FormulaFooter accent="emerald" />
+            <FormulaFooter accent="emerald" mode="projection" />
           </>
         }
       />
@@ -876,7 +876,9 @@ const cell: React.CSSProperties = {
   borderRadius: 5,
 };
 
-function FormulaFooter({ accent, note }: { accent: Accent; note?: string }) {
+type FooterMode = "actual" | "projection";
+
+function FormulaFooter({ accent, note, mode = "actual" }: { accent: Accent; note?: string; mode?: FooterMode }) {
   const [open, setOpen] = useState(false);
   return (
     <div style={{ marginTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
@@ -901,9 +903,15 @@ function FormulaFooter({ accent, note }: { accent: Accent; note?: string }) {
           background: "rgba(255,255,255,0.03)",
           color: "#cbd5e1", fontSize: 11.5, lineHeight: 1.55,
         }}>
-          <p style={{ margin: "0 0 8px" }}>
-            Projected call totals are calculated using current year-to-date call volume and average calls per day, compared against {BASELINE_YEAR} actual totals. These projections are estimates only and may change as additional call data is entered.
-          </p>
+          {mode === "projection" ? (
+            <p style={{ margin: "0 0 8px" }}>
+              Year-end projection is calculated by extrapolating year-to-date call volume to a full 365 days, then compared against {BASELINE_YEAR} actual totals. The projection is an estimate that updates every time a new call lands on the ticker.
+            </p>
+          ) : (
+            <p style={{ margin: "0 0 8px" }}>
+              Every value in this table is real ticker data. Past months are the completed totals; the current month is the live month-to-date count through today. {BASELINE_YEAR} numbers come from the monthly ESO 911 Call Volume reports.
+            </p>
+          )}
           {note && (
             <p style={{ margin: "0 0 8px", color: "#94a3b8" }}>{note}</p>
           )}
@@ -911,9 +919,18 @@ function FormulaFooter({ accent, note }: { accent: Accent; note?: string }) {
             fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
             fontSize: 10.5, color: "#94a3b8", display: "grid", gap: 4,
           }}>
-            <div><span style={{ color: accentColor(accent) }}>projected annual</span> = ytd calls ÷ days elapsed × 365</div>
-            <div><span style={{ color: accentColor(accent) }}>calls per day</span> = ytd calls ÷ days elapsed</div>
-            <div><span style={{ color: accentColor(accent) }}>% change</span> = ((current projected − prev actual) ÷ prev actual) × 100</div>
+            {mode === "projection" ? (
+              <>
+                <div><span style={{ color: accentColor(accent) }}>projected annual</span> = ytd calls ÷ days elapsed × 365</div>
+                <div><span style={{ color: accentColor(accent) }}>% change</span> = ((projected − prev actual) ÷ prev actual) × 100</div>
+              </>
+            ) : (
+              <>
+                <div><span style={{ color: accentColor(accent) }}>monthly value</span> = real ticker count (current month is month-to-date)</div>
+                <div><span style={{ color: accentColor(accent) }}>calls per day</span> = monthly count ÷ days in that month (or day-of-month on the current row)</div>
+                <div><span style={{ color: accentColor(accent) }}>% change</span> = ((current − prev actual) ÷ prev actual) × 100</div>
+              </>
+            )}
           </div>
         </div>
       )}
