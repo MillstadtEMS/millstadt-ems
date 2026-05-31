@@ -102,15 +102,32 @@ export default function CallStatsExtras() {
     const avgPerDay = ytdTotal > 0 ? ytdTotal / elapsedDays : 0;
 
     const monthlyBreakdown: { month: string; count: number; isCurrent: boolean }[] = [];
+    const dailyAvgByMonth: { month: string; avgPerDay: number; isCurrent: boolean; denominator: number }[] = [];
     for (let i = 0; i <= monthIdx; i++) {
       const key = `${y}-${String(i + 1).padStart(2, "0")}`;
+      const count = monthCounts.get(key) ?? 0;
+      const isCurrent = i === monthIdx;
       monthlyBreakdown.push({
         month: MONTH_NAMES[i],
-        count: monthCounts.get(key) ?? 0,
-        isCurrent: i === monthIdx,
+        count,
+        isCurrent,
+      });
+      // For completed months: denominator is the full days-in-month so
+      // the row shows the actual finished average. For the current
+      // month: denominator is today's day-of-month so the row shows the
+      // month-to-date pace (which is what's actually informative while
+      // the month is still running).
+      const denominator = isCurrent
+        ? Math.max(1, now.getDate())
+        : new Date(y, i + 1, 0).getDate();
+      dailyAvgByMonth.push({
+        month: MONTH_NAMES[i],
+        avgPerDay: count / denominator,
+        isCurrent,
+        denominator,
       });
     }
-    return { thisMonthCount, projected, avgPerDay, monthlyBreakdown, monthLabel: MONTH_NAMES[monthIdx] };
+    return { thisMonthCount, projected, avgPerDay, monthlyBreakdown, dailyAvgByMonth, monthLabel: MONTH_NAMES[monthIdx] };
   }, [calls, now]);
 
   // SSR (and first client render) emit nothing — no hydration risk.
@@ -155,16 +172,47 @@ export default function CallStatsExtras() {
         </div>
       </div>
 
-      {/* Daily average — YTD calls ÷ days elapsed in the year. Same
-          denominator as the projection so the three numbers agree. */}
+      {/* Daily average — YTD calls ÷ days elapsed. Hover reveals the
+          per-month average (using each month's full days for completed
+          months and month-to-date pace for the current month). */}
       {stats.avgPerDay > 0 && (
-        <div
-          className="text-white font-bold"
-          style={{ fontSize: "0.95rem" }}
-          title="Year-to-date calls divided by days elapsed."
-        >
-          <span className="text-sky-300 font-black tabular-nums">{stats.avgPerDay.toFixed(1)}</span>{" "}
-          <span className="uppercase tracking-widest text-xs">avg / day</span>
+        <div className="relative group">
+          <button
+            type="button"
+            className="cursor-help text-white font-bold underline decoration-dotted decoration-sky-300/40 underline-offset-4"
+            style={{ fontSize: "0.95rem" }}
+            aria-label="Year-to-date calls per day. Hover for the per-month average."
+          >
+            <span className="text-sky-300 font-black tabular-nums">{stats.avgPerDay.toFixed(1)}</span>{" "}
+            <span className="uppercase tracking-widest text-xs">avg / day</span>
+          </button>
+
+          <div
+            role="tooltip"
+            className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 hidden group-hover:block z-50 w-64 rounded-xl border border-white/10 bg-[#020912] shadow-2xl shadow-black/60 p-3 text-left"
+          >
+            <div className="text-[10px] font-black tracking-[0.2em] uppercase text-sky-300 mb-2">
+              {now!.getFullYear()} avg / day by month
+            </div>
+            <ul className="space-y-1 m-0 p-0 list-none">
+              {stats.dailyAvgByMonth.map((m) => (
+                <li
+                  key={m.month}
+                  className={`flex items-center justify-between text-xs ${m.isCurrent ? "text-white font-bold" : "text-slate-300"}`}
+                >
+                  <span>
+                    {m.month}
+                    {m.isCurrent && (
+                      <span className="ml-1 text-[9px] uppercase tracking-widest text-sky-300/80 font-bold">
+                        MTD
+                      </span>
+                    )}
+                  </span>
+                  <span className="tabular-nums">{m.avgPerDay.toFixed(1)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
 
