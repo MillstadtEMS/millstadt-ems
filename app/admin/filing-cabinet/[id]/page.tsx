@@ -127,15 +127,29 @@ export default function FilingCabinetEmployeePage() {
             {!profile.isActive && <span style={{ marginLeft: 10, color: "#fca5a5", fontWeight: 800 }}>Inactive</span>}
           </div>
         </div>
-        <ActiveToggle
-          employeeId={profile.id}
-          isActive={profile.isActive}
-          onChanged={(next) => setProfile((p) => p ? { ...p, isActive: next } : p)}
-        />
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <Link
+            href={`/admin/employees/${profile.id}`}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              background: "#f0b429", color: "#040d1a",
+              padding: "9px 14px", borderRadius: 10,
+              fontWeight: 900, fontSize: 12, letterSpacing: "0.12em",
+              textTransform: "uppercase", textDecoration: "none",
+            }}
+          >
+            ✎ Edit info
+          </Link>
+          <ActiveToggle
+            employeeId={profile.id}
+            isActive={profile.isActive}
+            onChanged={(next) => setProfile((p) => p ? { ...p, isActive: next } : p)}
+          />
+        </div>
       </header>
 
-      {/* About Me — read-only */}
-      <Section title="About Me (employee-supplied — read-only)">
+      {/* About Me — view-only here; use the Edit Info button above to change */}
+      <Section title="About Me (view-only — use Edit Info to change)">
         <ReadGrid>
           <Read label="Email" value={profile.email} />
           <Read label="Phone" value={profile.phone} verified={!!profile.phoneVerifiedAt} />
