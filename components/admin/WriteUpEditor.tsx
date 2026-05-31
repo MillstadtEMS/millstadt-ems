@@ -110,7 +110,10 @@ export default function WriteUpEditor({
   const [audit, setAudit] = useState<AuditEntry[]>(initialAudit);
   const [status, setStatus] = useState<null | { kind: "ok" | "err"; text: string }>(null);
   const [busy, setBusy] = useState(false);
-  const locked = w.status === "finalized";
+  // Both finalized and rescinded are locked — rescinded keeps the
+  // record visible to admins for the audit trail but never reopens
+  // for edits.
+  const locked = w.status !== "draft";
 
   const set = useCallback(<K extends keyof WriteUpDto>(k: K, v: WriteUpDto[K]) => {
     setW((s) => ({ ...s, [k]: v }));
@@ -220,6 +223,39 @@ export default function WriteUpEditor({
     if (!confirm("Discard this draft write-up? This cannot be undone.")) return;
     const r = await fetch(`/api/admin/writeups/${w.id}`, { method: "DELETE" });
     if (r.ok) router.push(`/admin/employees/${w.employeeId}#writeups`);
+  }
+
+  async function rescindWriteUp() {
+    const reason = window.prompt(
+      "Reason for rescinding this write-up?\n\n" +
+      "Heads up: email cannot be truly unsent once delivered. Instead we will:\n" +
+      "  • Delete the PDF + attachment from the employee's personnel file\n" +
+      "  • Send the employee an in-lounge notification\n" +
+      "  • Email them a rescission notice they can keep alongside the original\n\n" +
+      "Type a reason to continue (or Cancel to abort):"
+    );
+    if (!reason || !reason.trim()) return;
+    setBusy(true); setStatus(null);
+    try {
+      const r = await fetch(`/api/admin/writeups/${w.id}/rescind`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason.trim() }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setStatus({ kind: "err", text: d?.error ?? "Could not rescind." });
+        return;
+      }
+      const parts: string[] = ["Rescinded."];
+      if (d.attachmentsDeleted) parts.push(`${d.attachmentsDeleted} attachment(s) deleted.`);
+      if (d.rescissionEmailed) parts.push("Rescission email sent.");
+      else if (w.saveToFile) parts.push("Email couldn't be sent — please follow up by phone.");
+      setStatus({ kind: "ok", text: parts.join(" ") });
+      // Bounce back to the employee record after a short pause so the
+      // admin can see the confirmation.
+      setTimeout(() => router.push(`/admin/employees/${w.employeeId}#writeups`), 1200);
+    } finally { setBusy(false); }
   }
 
   // Force a flush whenever the page is about to navigate / close.
@@ -497,6 +533,11 @@ export default function WriteUpEditor({
           )}
           {!locked && (
             <button type="button" onClick={discardDraft} style={destructiveBtn}>Discard draft</button>
+          )}
+          {locked && w.status === "finalized" && (
+            <button type="button" onClick={rescindWriteUp} disabled={busy} style={destructiveBtn}>
+              {busy ? "Working…" : "Remove & rescind"}
+            </button>
           )}
         </div>
 

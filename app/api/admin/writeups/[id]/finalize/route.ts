@@ -19,6 +19,9 @@ import {
 } from "@/lib/lounge/writeups";
 import { buildWriteUpPdf, writeUpFilename } from "@/lib/lounge/writeup-pdf";
 import { createRecord, createAttachment } from "@/lib/lounge/personnel";
+import { sendEmployeeEmail } from "@/lib/lounge/employee-email";
+import { emailAdmins } from "@/lib/lounge/notify-admins";
+import { createNotifications } from "@/lib/lounge/notifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -119,11 +122,92 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     action: "finalized",
   });
 
+  // Distribute the finalized write-up. When the admin chose to share
+  // with the employee (saveToFile = true), the employee gets:
+  //   1. an in-lounge notification (the red bell badge)
+  //   2. an email with the PDF link to their primary inbox (and to
+  //      their secondary inbox if they opted into duplicate alerts)
+  // The admin inbox (millstadtems@gmail.com) always gets a record-keeping
+  // copy on finalize so leadership has a paper trail outside the app.
+  // All distribution is best-effort: a Gmail blip never blocks the
+  // finalize from succeeding.
+  const employeeName = `${first} ${last}`.trim();
+  const subjectStamp = wu.dateIssued ?? new Date().toISOString().slice(0, 10);
+  let emailedEmployee = false;
+  let notifiedEmployee = false;
+
+  if (wu.saveToFile) {
+    try {
+      await createNotifications([{
+        recipientId: wu.employeeId,
+        kind: "message",
+        title: "A write-up has been filed to your personnel record",
+        bodyPreview: `${wu.correctiveActionType ?? "Corrective action"} — open to review.`,
+        linkUrl: "/lounge/my-file",
+        sourceId: id,
+        actorId: me.id,
+      }]);
+      notifiedEmployee = true;
+      await logWriteUpAudit({
+        writeupId: id, actorId: me.id, actorName: `${me.firstName} ${me.lastName}`.trim(),
+        action: "notified_employee", details: "lounge notification",
+      });
+    } catch (e) {
+      console.error("[writeups finalize] notify employee failed:", e);
+    }
+
+    if (emp.email) {
+      try {
+        const recipients = emp.emailSecondary && emp.emailSecondaryAlerts ? [emp.email, emp.emailSecondary] : [emp.email];
+        await sendEmployeeEmail({
+          to: recipients,
+          subject: `Millstadt EMS — Write-up on file — ${employeeName} — ${subjectStamp}`,
+          kicker: "Personnel Record",
+          headline: `${wu.correctiveActionType ?? "Corrective action"} placed in your file`,
+          meta: `Document ID ${id.slice(0, 8)} · ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })} CT`,
+          bodyText:
+            `A write-up has been finalized and placed in your personnel file.\n\n` +
+            `Subject: ${wu.correctiveActionType ?? "Corrective action"}\n` +
+            `Issue category: ${wu.issueCategory ?? "—"}\n\n` +
+            `You can review the signed PDF using the link below, and you'll also find it in the Employee Lounge under "My File".\n\n` +
+            `If anything in this document is inaccurate, contact leadership before signing your acknowledgment.`,
+          link: { url: blob.url, label: "Open the signed PDF" },
+        });
+        emailedEmployee = true;
+        await logWriteUpAudit({
+          writeupId: id, actorId: me.id, actorName: `${me.firstName} ${me.lastName}`.trim(),
+          action: "emailed_employee", details: recipients.join(", "),
+        });
+      } catch (e) {
+        console.error("[writeups finalize] email employee failed:", e);
+      }
+    }
+  }
+
+  try {
+    await emailAdmins({
+      kicker: "Personnel Record · Filed",
+      headline: `Write-up filed for ${employeeName}`,
+      meta: `Document ID ${id.slice(0, 8)} · ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })} CT · By ${me.firstName} ${me.lastName}`,
+      bodyText:
+        `Subject: ${wu.correctiveActionType ?? "Corrective action"}\n` +
+        `Issue: ${wu.issueCategory ?? "—"}\n` +
+        `Employee acknowledged: ${wu.employeeSignature ? "yes" : wu.employeeRefusedToSign ? "refused" : "pending"}\n` +
+        `Shared with employee: ${wu.saveToFile ? "yes" : "no (admin-only)"}\n`,
+      link: { url: blob.url, label: "Open PDF" },
+      subject: `[EMS HR] Write-up filed — ${employeeName} — ${subjectStamp}`,
+    });
+  } catch (e) {
+    console.error("[writeups finalize] email admin inbox failed:", e);
+  }
+
   return NextResponse.json({
     writeup: finalized,
     pdfUrl: blob.url,
     pdfFilename: filename,
     personnelRecordId,
+    emailedEmployee,
+    notifiedEmployee,
   });
 }
 

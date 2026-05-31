@@ -51,7 +51,7 @@ export const RESPONSE_STATUS = [
 ] as const;
 export type ResponseStatus = (typeof RESPONSE_STATUS)[number];
 
-export type WriteUpStatus = "draft" | "finalized";
+export type WriteUpStatus = "draft" | "finalized" | "rescinded";
 
 export interface WriteUpSignature {
   printedName: string;
@@ -296,7 +296,11 @@ export type WriteUpAuditAction =
   | "witness_signed"
   | "finalized"
   | "saved_to_file"
-  | "pdf_generated";
+  | "pdf_generated"
+  | "notified_employee"
+  | "emailed_employee"
+  | "rescinded"
+  | "rescission_email_sent";
 
 export async function logWriteUpAudit(input: {
   writeupId: string;
@@ -445,6 +449,26 @@ export async function deleteWriteUp(id: string): Promise<void> {
   await ensureSchema();
   const db = sql();
   await db`DELETE FROM lounge_writeups WHERE id = ${id} AND status = 'draft'`;
+}
+
+/**
+ * Set a write-up's status (e.g. flip a finalized one to 'rescinded')
+ * with an optional clearing of pdf_url so stale download buttons
+ * disappear after a rescind. Audit logging is the caller's
+ * responsibility — this is a pure data update.
+ */
+export async function setWriteUpStatus(input: {
+  id: string;
+  status: WriteUpStatus;
+  pdfUrl?: string | null;
+}): Promise<WriteUp | null> {
+  await ensureSchema();
+  const db = sql();
+  await db`UPDATE lounge_writeups SET status = ${input.status}, updated_at = NOW() WHERE id = ${input.id}`;
+  if (input.pdfUrl !== undefined) {
+    await db`UPDATE lounge_writeups SET pdf_url = ${input.pdfUrl}, updated_at = NOW() WHERE id = ${input.id}`;
+  }
+  return getWriteUp(input.id);
 }
 
 export async function finalizeWriteUp(input: {
