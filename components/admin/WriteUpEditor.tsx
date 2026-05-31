@@ -118,27 +118,29 @@ export default function WriteUpEditor({
 
   // Debounced auto-save for textual fields so a half-finished draft
   // doesn't vanish if the manager closes the tab.
+  //
+  // We store the actual pending VALUES (not just the keys) in a ref so
+  // the flush sees the latest user input instead of a stale `w` snapshot
+  // captured when scheduleAutosave was called. Without this fix, picking
+  // a value from a <select> could "snap back" to its prior state because
+  // the patch sent to the server was built from the prior render's `w`.
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dirtyKeysRef = useRef<Set<keyof WriteUpDto>>(new Set());
+  const dirtyRef = useRef<Partial<WriteUpDto>>({});
 
   function scheduleAutosave<K extends keyof WriteUpDto>(k: K, v: WriteUpDto[K]) {
     if (locked) return;
     set(k, v);
-    dirtyKeysRef.current.add(k);
+    (dirtyRef.current as Record<string, unknown>)[k as string] = v;
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     autosaveTimer.current = setTimeout(() => { void flushAutosave(); }, 800);
   }
 
   async function flushAutosave() {
     if (locked) return;
-    if (dirtyKeysRef.current.size === 0) return;
-    const patch: Partial<WriteUpDto> = {};
-    const wAny = w as unknown as Record<string, unknown>;
-    for (const k of dirtyKeysRef.current) {
-      (patch as Record<string, unknown>)[k as string] = wAny[k as string];
-    }
-    dirtyKeysRef.current.clear();
-    await persist(patch);
+    const dirty = { ...dirtyRef.current };
+    if (Object.keys(dirty).length === 0) return;
+    dirtyRef.current = {};
+    await persist(dirty);
   }
 
   async function persist(patch: Partial<WriteUpDto>): Promise<boolean> {
@@ -153,7 +155,10 @@ export default function WriteUpEditor({
         setStatus({ kind: "err", text: d?.error ?? "Save failed." });
         return false;
       }
-      if (d.writeup) setW(d.writeup);
+      // Merge any field the user has touched since this save started over
+      // the server's response. Without this, a slow round-trip would
+      // clobber whatever the user just typed.
+      if (d.writeup) setW({ ...d.writeup, ...dirtyRef.current });
       return true;
     } catch {
       setStatus({ kind: "err", text: "Save failed." });
@@ -430,16 +435,41 @@ export default function WriteUpEditor({
 
       {/* Step 7 — Save & finalize */}
       <Step number={7} title="Save & finalize">
-        <label style={refusalRow}>
-          <input
-            type="checkbox"
-            checked={w.saveToFile}
-            disabled={locked}
-            onChange={(e) => scheduleAutosave("saveToFile", e.target.checked)}
-            style={{ accentColor: "#f0b429", width: 18, height: 18 }}
-          />
-          <span>Save generated PDF to this employee&apos;s personnel file when finalized.</span>
-        </label>
+        <div style={{ display: "grid", gap: 10, marginBottom: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 900, color: "#f0b429", letterSpacing: "0.20em", textTransform: "uppercase" }}>
+            Who can see this when finalized?
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <button
+              type="button"
+              disabled={locked}
+              onClick={() => !locked && scheduleAutosave("saveToFile", false)}
+              style={!w.saveToFile ? visibilityCardActive("#fda4af") : visibilityCardIdle}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <span style={{ fontSize: 18 }}>🔒</span>
+                <strong style={{ color: !w.saveToFile ? "#fda4af" : "#cbd5e1", fontSize: 14, letterSpacing: "0.02em" }}>Admin only</strong>
+              </div>
+              <p style={{ color: "#94a3b8", fontSize: 12, margin: 0, lineHeight: 1.45 }}>
+                The PDF stays internal. The employee will <strong>not</strong> see this write-up on their personnel file.
+              </p>
+            </button>
+            <button
+              type="button"
+              disabled={locked}
+              onClick={() => !locked && scheduleAutosave("saveToFile", true)}
+              style={w.saveToFile ? visibilityCardActive("#86efac") : visibilityCardIdle}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <span style={{ fontSize: 18 }}>👤</span>
+                <strong style={{ color: w.saveToFile ? "#86efac" : "#cbd5e1", fontSize: 14, letterSpacing: "0.02em" }}>Visible to employee</strong>
+              </div>
+              <p style={{ color: "#94a3b8", fontSize: 12, margin: 0, lineHeight: 1.45 }}>
+                Saves the PDF to the employee&apos;s personnel file. They will see it on <em>My File</em> in the lounge.
+              </p>
+            </button>
+          </div>
+        </div>
 
         {missing.length > 0 && !locked && (
           <div style={missingBox}>
@@ -763,6 +793,25 @@ const refusalRow: React.CSSProperties = {
   fontSize: 13.5,
   cursor: "pointer",
 };
+const visibilityCardIdle: React.CSSProperties = {
+  textAlign: "left",
+  background: "rgba(255,255,255,0.025)",
+  border: "1px solid rgba(255,255,255,0.10)",
+  borderRadius: 12,
+  padding: "14px 16px",
+  cursor: "pointer",
+  fontFamily: "inherit",
+  color: "#cbd5e1",
+  transition: "border-color 0.15s, background 0.15s",
+};
+function visibilityCardActive(accent: string): React.CSSProperties {
+  return {
+    ...visibilityCardIdle,
+    background: `${accent}15`,
+    border: `1.5px solid ${accent}`,
+    boxShadow: `0 0 0 2px ${accent}25`,
+  };
+}
 const sigBlock: React.CSSProperties = {
   padding: 14,
   background: "rgba(255,255,255,0.02)",

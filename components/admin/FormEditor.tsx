@@ -78,6 +78,13 @@ export default function FormEditor({ form, spec, audit, basePath }: {
   const [rescindEmail, setRescindEmail] = useState(true);
   const locked = f.status !== "draft";
 
+  // Keep a ref synced to the latest form state so the debounced persist
+  // never reads a stale snapshot. Without this, picking from a <select>
+  // would appear to "snap back" because the autosave fired 700ms after
+  // the user's input was captured into stale closure scope.
+  const fRef = useRef(f);
+  fRef.current = f;
+
   function setData<K extends string>(k: K, v: unknown) {
     setF((s) => ({ ...s, data: { ...s.data, [k]: v } }));
     scheduleSave();
@@ -97,17 +104,21 @@ export default function FormEditor({ form, spec, audit, basePath }: {
   const persist = useCallback(async (override?: Partial<FormDto>) => {
     if (locked) return true;
     try {
-      const payload = override ?? { data: f.data, share: f.share, signatures: f.signatures, refusedToSign: f.refusedToSign };
-      const r = await fetch(`/api/admin/forms/${f.id}`, {
+      const cur = fRef.current;
+      const payload = override ?? { data: cur.data, share: cur.share, signatures: cur.signatures, refusedToSign: cur.refusedToSign };
+      const r = await fetch(`/api/admin/forms/${cur.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) { setStatus({ kind: "err", text: d?.error ?? "Save failed." }); return false; }
-      if (d.form) setF(d.form);
+      // Merge any user input that landed during the round-trip over the
+      // server response, so a slow save can't clobber a freshly typed
+      // value.
+      if (d.form) setF((latest) => ({ ...d.form, data: { ...d.form.data, ...latest.data }, share: { ...d.form.share, ...latest.share } }));
       return true;
     } catch { setStatus({ kind: "err", text: "Save failed." }); return false; }
-  }, [f.id, f.data, f.share, f.signatures, f.refusedToSign, locked]);
+  }, [locked]);
 
   async function reloadAudit() {
     try {
