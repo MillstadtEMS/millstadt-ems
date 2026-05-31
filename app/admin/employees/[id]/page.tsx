@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import PersonnelRecordsPanel from "@/components/admin/PersonnelRecordsPanel";
 import EmployeeChangeRequests from "@/components/admin/EmployeeChangeRequests";
+import EmployeeWriteUps from "@/components/admin/EmployeeWriteUps";
 
 interface EmpDto {
   id: string;
@@ -587,6 +588,11 @@ export default function EmployeeDetailPage() {
         {/* ── Profile change requests submitted by the employee ── */}
         <Card title="About Me change requests">
           <EmployeeChangeRequests employeeId={emp.id} />
+        </Card>
+
+        {/* ── Disciplinary write-ups / corrective actions ── */}
+        <Card title="Corrective actions / write-ups">
+          <EmployeeWriteUps employeeId={emp.id} />
         </Card>
 
         {toast && (
