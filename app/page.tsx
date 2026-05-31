@@ -4,6 +4,7 @@ import HolidayOverlay from "@/components/HolidayOverlay";
 import HeroCarousel from "@/components/HeroCarousel";
 import CallVolumeCounter from "@/components/CallVolumeCounter";
 import CallStatsExtras from "@/components/CallStatsExtras";
+import TopCallCategories from "@/components/TopCallCategories";
 import SectionDivider from "@/components/SectionDivider";
 import { getContent } from "@/lib/db";
 
@@ -119,6 +120,9 @@ export default async function Home({
                 and only mounts after first paint, so it cannot trigger a
                 hydration mismatch. */}
             <CallStatsExtras />
+            {/* Top Call Categories tile — real ticker data, current
+                month, hover/tap reveals the full ranking + disclaimer. */}
+            <TopCallCategories />
           </div>
 
           {/* ── hero-bottom: stats bar ── */}

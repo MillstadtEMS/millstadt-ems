@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTickerEditor } from "@/lib/admin/auth";
 import { sql } from "@/lib/neon";
+import {
+  CallStructured,
+  ensureCadStructuredSchema,
+  formatDispatchNature,
+  HemsOutcome,
+  MILLSTADT_UNITS,
+  MillstadtUnit,
+  MUTUAL_AID_AGENCIES,
+  MutualAidAgency,
+} from "@/lib/cad/structured";
 
 export const runtime = "nodejs";
 
@@ -8,15 +18,84 @@ function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+interface StructuredPayload {
+  units?: string[];
+  category?: string;
+  notes?: string | null;
+  mutualAidReceived?: boolean;
+  mutualAidReceivedAgency?: string | null;
+  mutualAidGiven?: boolean;
+  hemsRequested?: boolean;
+  hemsOutcome?: string | null;
+}
+
+/**
+ * Sanitize + clamp incoming structured fields to the canonical shape.
+ * Anything off-list is dropped so the database never carries a
+ * non-canonical unit / agency / outcome value.
+ */
+function normalize(p: StructuredPayload | null | undefined): CallStructured {
+  const units = Array.isArray(p?.units)
+    ? (p!.units as string[]).filter((u): u is MillstadtUnit => (MILLSTADT_UNITS as readonly string[]).includes(u))
+    : [];
+  const agency = p?.mutualAidReceivedAgency && (MUTUAL_AID_AGENCIES as readonly string[]).includes(p.mutualAidReceivedAgency)
+    ? (p.mutualAidReceivedAgency as MutualAidAgency)
+    : null;
+  const outcome: HemsOutcome | null = p?.hemsOutcome === "handoff" || p?.hemsOutcome === "disregarded"
+    ? p.hemsOutcome
+    : null;
+  return {
+    units: Array.from(new Set(units)),
+    category: (p?.category ?? "").trim(),
+    notes: p?.notes ? String(p.notes).trim() || null : null,
+    mutualAidReceived: !!agency || p?.mutualAidReceived === true,
+    mutualAidReceivedAgency: agency,
+    mutualAidGiven: !!p?.mutualAidGiven,
+    hemsRequested: !!p?.hemsRequested,
+    hemsOutcome: outcome,
+  };
+}
+
 export async function POST(req: NextRequest) {
   const denied = await requireTickerEditor(); if (denied) return denied;
-  const { dispatchDate, dispatchTime, dispatchNature, eventNumber, active } = await req.json();
-  if (!dispatchDate || !dispatchTime || !dispatchNature?.trim()) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  await ensureCadStructuredSchema();
+  const body = await req.json();
+  const {
+    dispatchDate, dispatchTime, eventNumber, active,
+    dispatchNature: rawNature,
+    structured,
+  } = body as {
+    dispatchDate?: string; dispatchTime?: string; eventNumber?: string;
+    active?: boolean;
+    dispatchNature?: string;
+    structured?: StructuredPayload;
+  };
+
+  if (!dispatchDate || !dispatchTime) {
+    return NextResponse.json({ error: "Date + time required" }, { status: 400 });
   }
+
+  // If the caller sent structured fields, regenerate dispatchNature from
+  // them so the live ticker text always matches what's in the structured
+  // columns. Otherwise (legacy clients) we accept the raw text and parse
+  // nothing — admin can still edit it after the fact.
+  const struct = normalize(structured);
+  const dispatchNature = structured
+    ? formatDispatchNature(struct)
+    : (rawNature ?? "").trim();
+
+  if (!dispatchNature) {
+    return NextResponse.json({ error: "Pick at least a unit or a category" }, { status: 400 });
+  }
+  if (struct.hemsRequested && struct.hemsOutcome === null && structured) {
+    return NextResponse.json(
+      { error: "HEMS requested needs an outcome: Patient handoff or Disregarded." },
+      { status: 400 },
+    );
+  }
+
   const id = uid();
   const gmailMessageId = `manual-${id}`;
-  // dispatchDate comes in as YYYY-MM-DD from the date input; convert to MM/DD/YYYY to match CAD format
   const [year, month, day] = dispatchDate.split("-");
   const formattedDate = `${month}/${day}/${year}`;
   const dispatchDatetime = `${dispatchDate}T${dispatchTime}:00`;
@@ -26,23 +105,66 @@ export async function POST(req: NextRequest) {
   await db`
     INSERT INTO cad_calls
       (id, gmail_message_id, event_number, dispatch_datetime, dispatch_date, dispatch_time,
-       dispatch_nature, source_year, parse_status, completed_at)
+       dispatch_nature, source_year, parse_status, completed_at,
+       units, category, notes,
+       mutual_aid_received, mutual_aid_received_agency, mutual_aid_given,
+       hems_requested, hems_outcome)
     VALUES
       (${id}, ${gmailMessageId}, ${eventNumber?.trim() || null}, ${dispatchDatetime},
-       ${formattedDate}, ${dispatchTime}, ${dispatchNature.trim()}, ${sourceYear}, 'manual', ${completedAt})
+       ${formattedDate}, ${dispatchTime}, ${dispatchNature}, ${sourceYear}, 'manual', ${completedAt},
+       ${JSON.stringify(struct.units)}::jsonb, ${struct.category || null}, ${struct.notes},
+       ${struct.mutualAidReceived}, ${struct.mutualAidReceivedAgency}, ${struct.mutualAidGiven},
+       ${struct.hemsRequested}, ${struct.hemsOutcome})
   `;
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, id });
 }
 
 export async function PATCH(req: NextRequest) {
   const denied = await requireTickerEditor(); if (denied) return denied;
+  await ensureCadStructuredSchema();
   const body = await req.json();
-  const { id, dispatchNature, active } = body as { id?: string; dispatchNature?: string; active?: boolean };
+  const {
+    id, dispatchNature, active,
+    structured,
+  } = body as {
+    id?: string; dispatchNature?: string; active?: boolean;
+    structured?: StructuredPayload;
+  };
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
   const db = sql();
-  if (typeof dispatchNature === "string") {
+
+  // Structured edit path — regenerate the text from the structured fields
+  // and persist both. This is how the new editor saves.
+  if (structured) {
+    const struct = normalize(structured);
+    if (struct.hemsRequested && struct.hemsOutcome === null) {
+      return NextResponse.json(
+        { error: "HEMS requested needs an outcome: Patient handoff or Disregarded." },
+        { status: 400 },
+      );
+    }
+    const text = formatDispatchNature(struct);
+    await db`
+      UPDATE cad_calls SET
+        dispatch_nature             = ${text},
+        units                       = ${JSON.stringify(struct.units)}::jsonb,
+        category                    = ${struct.category || null},
+        notes                       = ${struct.notes},
+        mutual_aid_received         = ${struct.mutualAidReceived},
+        mutual_aid_received_agency  = ${struct.mutualAidReceivedAgency},
+        mutual_aid_given            = ${struct.mutualAidGiven},
+        hems_requested              = ${struct.hemsRequested},
+        hems_outcome                = ${struct.hemsOutcome}
+      WHERE id = ${id}
+    `;
+  } else if (typeof dispatchNature === "string") {
+    // Legacy: caller only sent the raw text. Keep the row text in sync
+    // but leave the structured columns alone — the backfill parser may
+    // have populated them already.
     await db`UPDATE cad_calls SET dispatch_nature = ${dispatchNature.trim()} WHERE id = ${id}`;
   }
+
   if (typeof active === "boolean") {
     if (active) {
       await db`UPDATE cad_calls SET completed_at = NULL WHERE id = ${id}`;

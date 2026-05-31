@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import StructuredCallForm, {
+  EMPTY_STRUCTURED,
+  previewDispatchNature,
+  type StructuredValue,
+} from "@/components/admin/StructuredCallForm";
 
 interface Call {
   id: string; dispatchDate: string; dispatchTime: string;
@@ -122,11 +128,12 @@ export default function CallsAdmin() {
   const [addForm, setAddForm] = useState({
     dispatchDate: todayLocal(),
     dispatchTime: nowTimeLocal(),
-    dispatchNature: "",
     eventNumber: "",
     active: false,
   });
+  const [structured, setStructured] = useState<StructuredValue>(EMPTY_STRUCTURED);
   const [adding, setAdding]   = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
 
   async function load() {
     const r = await fetch("/api/cad/log");
@@ -174,16 +181,34 @@ export default function CallsAdmin() {
   }
 
   async function addCall() {
-    if (!addForm.dispatchNature.trim()) return;
-    setAdding(true);
-    await fetch("/api/admin/calls", {
+    const preview = previewDispatchNature(structured);
+    if (!preview) { setAddError("Pick at least a unit or category before saving."); return; }
+    if (structured.hemsRequested && !structured.hemsOutcome) {
+      setAddError("HEMS requested needs an outcome: Patient handoff or Disregarded.");
+      return;
+    }
+    if (structured.mutualAidReceived && !structured.mutualAidReceivedAgency) {
+      setAddError("Mutual aid received needs the assisting agency.");
+      return;
+    }
+    setAdding(true); setAddError(null);
+    const r = await fetch("/api/admin/calls", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(addForm),
+      body: JSON.stringify({
+        dispatchDate: addForm.dispatchDate,
+        dispatchTime: addForm.dispatchTime,
+        eventNumber: addForm.eventNumber,
+        active: addForm.active,
+        structured,
+      }),
     });
     setAdding(false);
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { setAddError(d?.error ?? "Could not save."); return; }
     setShowAdd(false);
-    setAddForm({ dispatchDate: todayLocal(), dispatchTime: nowTimeLocal(), dispatchNature: "", eventNumber: "", active: false });
+    setAddForm({ dispatchDate: todayLocal(), dispatchTime: nowTimeLocal(), eventNumber: "", active: false });
+    setStructured(EMPTY_STRUCTURED);
     await load();
   }
 
@@ -214,6 +239,11 @@ export default function CallsAdmin() {
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 sm:shrink-0">
             <ForcePollButton onAfter={() => load()} />
+            <Link href="/admin/calls/reports"
+              className="flex items-center justify-center gap-2 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/25 text-sky-300 font-black text-sm px-4 py-3 sm:py-2.5 rounded-xl transition-colors">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" aria-hidden><path d="M4 19V5h2v14H4zm4 0v-8h2v8H8zm4 0V9h2v10h-2zm4 0v-6h2v6h-2z"/></svg>
+              Reports
+            </Link>
             <button
               onClick={() => setShowAdd(v => !v)}
               className="flex items-center justify-center gap-2 bg-[#f0b429]/10 hover:bg-[#f0b429]/20 border border-[#f0b429]/25 text-[#f0b429] font-black text-sm px-4 py-3 sm:py-2.5 rounded-xl transition-colors"
@@ -246,11 +276,11 @@ export default function CallsAdmin() {
       {/* Add call form */}
       {showAdd && (
         <div className="bg-[#071428] border border-[#f0b429]/20 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8">
-          <h2 className="text-white font-black text-base mb-2">Add ticker/log item</h2>
+          <h2 className="text-white font-black text-base mb-2">Add ticker / log item</h2>
           <p className="text-slate-400 text-sm mb-5">
-            Use this for a corrected dispatch entry or a manual public ticker item. Gmail polling and cron jobs are unchanged.
+            Build the entry from the structured fields below — the public ticker line is generated automatically so the format stays consistent. Gmail polling and cron jobs are unchanged.
           </p>
-          <div className="grid sm:grid-cols-2 gap-4 mb-4">
+          <div className="grid sm:grid-cols-3 gap-4 mb-4">
             <div>
               <label className={lbl}>Date</label>
               <input type="date" value={addForm.dispatchDate} onChange={e => setAddForm(f => ({...f, dispatchDate: e.target.value}))} className={inp} />
@@ -259,23 +289,13 @@ export default function CallsAdmin() {
               <label className={lbl}>Time</label>
               <input type="time" value={addForm.dispatchTime} onChange={e => setAddForm(f => ({...f, dispatchTime: e.target.value}))} className={inp} />
             </div>
+            <div>
+              <label className={lbl}>Event # <span className="text-slate-600 font-normal normal-case">(optional)</span></label>
+              <input value={addForm.eventNumber} onChange={e => setAddForm(f => ({...f, eventNumber: e.target.value}))} placeholder="e.g. 2026-00123" className={inp} />
+            </div>
           </div>
-          <div className="mb-4">
-            <label className={lbl}>Call Type / Description</label>
-            <input
-              autoFocus
-              value={addForm.dispatchNature}
-              onChange={e => setAddForm(f => ({...f, dispatchNature: e.target.value}))}
-              onKeyDown={e => { if (e.key === "Enter") addCall(); if (e.key === "Escape") setShowAdd(false); }}
-              placeholder="e.g. Medical Emergency"
-              className={inp}
-            />
-          </div>
-          <div className="mb-5">
-            <label className={lbl}>Event Number <span className="text-slate-600 font-normal normal-case">(optional)</span></label>
-            <input value={addForm.eventNumber} onChange={e => setAddForm(f => ({...f, eventNumber: e.target.value}))} placeholder="e.g. 2026-00123" className={inp} />
-          </div>
-          <label className="mb-5 flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 cursor-pointer">
+          <StructuredCallForm value={structured} onChange={setStructured} />
+          <label className="mt-5 mb-5 flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 cursor-pointer">
             <input
               type="checkbox"
               checked={addForm.active}
@@ -289,12 +309,17 @@ export default function CallsAdmin() {
               </span>
             </span>
           </label>
+          {addError && (
+            <div className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 text-red-200 text-sm px-4 py-3">
+              {addError}
+            </div>
+          )}
           <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2 sm:gap-3">
-            <button onClick={() => setShowAdd(false)}
+            <button onClick={() => { setShowAdd(false); setAddError(null); }}
               className="text-slate-400 hover:text-slate-200 border border-white/10 px-4 py-3 sm:py-2.5 rounded-xl text-sm transition-colors">
               Cancel
             </button>
-            <button onClick={addCall} disabled={adding || !addForm.dispatchNature.trim()}
+            <button onClick={addCall} disabled={adding}
               className="bg-[#f0b429] hover:bg-[#f5c842] disabled:opacity-40 text-[#020810] font-black px-6 py-3 sm:py-2.5 rounded-xl text-sm transition-colors">
               {adding ? "Adding…" : addForm.active ? "Add to live ticker" : "Add to log"}
             </button>
