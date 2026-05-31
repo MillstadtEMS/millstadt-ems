@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 interface Call {
   id: string;
@@ -172,55 +172,6 @@ export default function CallTicker() {
 
   const totalCalls = callCount ?? 0;
 
-  // ── Monthly stats — derived from allCalls so any add/edit/delete in the
-  //    underlying call log updates these numbers on the next /api/cad/log
-  //    poll. Pure derivation; touches none of the dispatch/active logic.
-  const { thisMonthCount, avgPerDay, monthlyBreakdown } = useMemo(() => {
-    const monthCounts = new Map<string, number>(); // "YYYY-MM" -> count
-    for (const c of allCalls) {
-      // dispatchDate is "MM/DD/YYYY" per the API.
-      const m = c.dispatchDate.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-      if (!m) continue;
-      const key = `${m[3]}-${m[1]}`; // YYYY-MM
-      monthCounts.set(key, (monthCounts.get(key) ?? 0) + 1);
-    }
-    const y = now.getFullYear();
-    const monthIdx = now.getMonth(); // 0-11
-    const thisKey = `${y}-${String(monthIdx + 1).padStart(2, "0")}`;
-    const thisMonthCount = monthCounts.get(thisKey) ?? 0;
-
-    // Day-of-month denominator: today's day-of-month, never less than 1.
-    // Once the month is over, use the full count of days so the average
-    // becomes the true monthly average instead of decaying.
-    const daysInMonth = new Date(y, monthIdx + 1, 0).getDate();
-    const isCurrentMonth = (() => {
-      // No months in the future, so the only time monthIdx < real-month is
-      // if `now` ticked forward past a month boundary. Treat any month
-      // older than `now` as "completed".
-      return monthIdx === now.getMonth();
-    })();
-    const denom = isCurrentMonth ? Math.max(now.getDate(), 1) : daysInMonth;
-    const avgPerDay = thisMonthCount > 0 ? thisMonthCount / denom : 0;
-
-    // Per-month breakdown for the current year, ordered Jan→Dec, filtered
-    // to months that have either calls OR are <= current month so the
-    // table doesn't sprawl with empty rows.
-    const monthNames = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December",
-    ];
-    const monthlyBreakdown: { month: string; count: number; isCurrent: boolean }[] = [];
-    for (let i = 0; i <= monthIdx; i++) {
-      const key = `${y}-${String(i + 1).padStart(2, "0")}`;
-      monthlyBreakdown.push({
-        month: monthNames[i],
-        count: monthCounts.get(key) ?? 0,
-        isCurrent: i === monthIdx,
-      });
-    }
-    return { thisMonthCount, avgPerDay, monthlyBreakdown };
-  }, [allCalls, now]);
-
   return (
     <div ref={wrapperRef} className="fixed top-0 left-0 right-0 z-[60]">
 
@@ -238,42 +189,14 @@ export default function CallTicker() {
                   {currentYear} Dispatch Log
                 </span>
               </div>
-              <div className="flex items-center gap-3 flex-wrap justify-end">
+              <div className="flex items-center gap-3">
                 {allCalls[0]?.dispatchDatetime && (
                   <span className="text-slate-400 text-xs tabular-nums">
                     Last: {timeAgo(new Date(allCalls[0].dispatchDatetime))}
                   </span>
                 )}
-                {/* Monthly total — hover reveals per-month breakdown for
-                    the current year. Derived from allCalls, so the API
-                    poll keeps it in sync. */}
-                <span className="relative group">
-                  <span className="text-[#f0b429] text-sm font-black cursor-help underline decoration-dotted decoration-[#f0b429]/40 underline-offset-4">
-                    {thisMonthCount} this {now.toLocaleString("en-US", { month: "long" })}
-                  </span>
-                  <span
-                    className="hidden group-hover:block absolute right-0 top-full mt-2 w-56 z-50 rounded-xl border border-white/10 bg-[#020912] shadow-2xl shadow-black/60 p-3"
-                    aria-hidden
-                  >
-                    <span className="block text-[10px] font-black tracking-[0.2em] uppercase text-[#f0b429] mb-2">
-                      {now.getFullYear()} by month
-                    </span>
-                    {monthlyBreakdown.map((m) => (
-                      <span
-                        key={m.month}
-                        className={`flex items-center justify-between py-1 text-xs ${m.isCurrent ? "text-white font-bold" : "text-slate-300"}`}
-                      >
-                        <span>{m.month}</span>
-                        <span className="tabular-nums">{m.count}</span>
-                      </span>
-                    ))}
-                  </span>
-                </span>
                 <span className="text-red-500 text-sm font-black">
                   {totalCalls} call{totalCalls !== 1 ? "s" : ""} this year
-                </span>
-                <span className="text-emerald-400 text-sm font-black tabular-nums">
-                  {avgPerDay.toFixed(1)} avg / day
                 </span>
               </div>
             </div>
