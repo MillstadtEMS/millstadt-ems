@@ -212,13 +212,18 @@ export default function FormsAdminPage() {
             ) : (
               <ul className="space-y-2">
                 {assignments.map((a) => (
-                  <li key={a.id} className="border border-white/10 rounded-xl px-4 py-3 bg-[#071428]">
-                    <div className="flex flex-wrap items-center gap-3 text-sm">
-                      <span className="text-white font-bold">{a.title}</span>
-                      <span className="text-slate-400 text-xs">Pushed {fmtDate(a.createdAt)} by {a.createdByName ?? "—"}</span>
-                      <span className="ml-auto text-xs text-emerald-300">{a.progress.finalized}/{a.progress.assigned} signed</span>
-                      {a.progress.pending > 0 && <span className="text-xs text-amber-300">{a.progress.pending} pending</span>}
-                    </div>
+                  <li key={a.id}>
+                    <Link
+                      href={`/admin/forms/${a.id}`}
+                      className="block border border-white/10 hover:border-[#f0b429]/40 rounded-xl px-4 py-3 bg-[#071428] transition-colors"
+                    >
+                      <div className="flex flex-wrap items-center gap-3 text-sm">
+                        <span className="text-white font-bold">{a.title}</span>
+                        <span className="text-slate-400 text-xs">Pushed {fmtDate(a.createdAt)} by {a.createdByName ?? "—"}</span>
+                        <span className="ml-auto text-xs text-emerald-300">{a.progress.finalized}/{a.progress.assigned} signed</span>
+                        {a.progress.pending > 0 && <span className="text-xs text-amber-300">{a.progress.pending} pending</span>}
+                      </div>
+                    </Link>
                   </li>
                 ))}
               </ul>

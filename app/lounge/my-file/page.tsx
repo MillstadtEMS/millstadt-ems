@@ -3,6 +3,7 @@ import { currentEmployee } from "@/lib/lounge/auth";
 import { getEmployee } from "@/lib/lounge/employees";
 import LoungeShell from "@/components/lounge/LoungeShell";
 import MyFileClient from "@/components/lounge/MyFileClient";
+import MyFileForms from "@/components/lounge/MyFileForms";
 import LoungePageHeader from "@/components/lounge/LoungePageHeader";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +35,7 @@ export default async function MyFilePage() {
         photo="/lounge/brand/unit-3926-front.jpg"
         photoPosition="center 55%"
       />
+      <MyFileForms />
       <MyFileClient />
     </LoungeShell>
   );

@@ -542,6 +542,422 @@ export const FORM_REGISTRY: FormSpec[] = [
       { who: "employee", label: "Employee (if available)", required: false, certificationText: ACK_EMPLOYEE, allowRefusal: true },
     ],
   },
+
+  // 13. Performance Improvement Plan
+  {
+    id: "performance_improvement_plan",
+    label: "Performance Improvement Plan",
+    blurb: "Document recurring or significant performance issues with measurable goals + review dates.",
+    pdfTitle: "Performance Improvement Plan",
+    filenamePrefix: "PerformanceImprovementPlan",
+    defaultFileTab: "personnel_records",
+    confidentiality: "open",
+    bulkAssignable: false,
+    defaults: { saveToFile: true, visibleToEmployee: true, emailEmployee: false, emailAdminInbox: true },
+    sections: [
+      {
+        title: "Concern",
+        fields: [
+          { key: "performanceConcern", label: "Performance concern", type: "longtext", rows: 4, required: true,
+            helpText: "What specific performance is below standard? Stick to observed, measurable facts." },
+          { key: "specificExamples", label: "Specific examples", type: "longtext", rows: 5,
+            helpText: "Dates, calls, incidents, documentation issues — anything concrete." },
+          { key: "expectedStandard", label: "Expected standard", type: "longtext", rows: 3, required: true,
+            helpText: "What does meeting the expectation actually look like?" },
+        ],
+      },
+      {
+        title: "Plan & timeline",
+        fields: [
+          { key: "measurableGoals", label: "Measurable goals", type: "longtext", rows: 4, required: true,
+            helpText: "Each goal should be specific, measurable, and time-bound." },
+          { key: "supportOffered", label: "Support / training offered", type: "longtext", rows: 3 },
+          { key: "reviewDates", label: "Review dates", type: "longtext", rows: 2,
+            helpText: "Schedule of check-ins (e.g. 30 / 60 / 90 day reviews)." },
+          { key: "consequencesIfNotMet", label: "Consequences if expectations are not met", type: "longtext", rows: 2, required: true },
+        ],
+      },
+      {
+        title: "Outcome",
+        fields: [
+          { key: "progressNotes", label: "Progress notes (updated as reviews happen)", type: "longtext", rows: 4 },
+          { key: "outcome", label: "Outcome / next step", type: "select", options: ["In progress", "Met expectations", "Partial progress", "Not met — further action", "Closed"] },
+          { key: "employeeResponse", label: "Employee response", type: "longtext", rows: 3 },
+        ],
+      },
+    ],
+    signatures: [
+      { who: "manager", label: "Issuing supervisor", required: true, certificationText: ACK_MANAGER },
+      { who: "employee", label: "Employee", required: true, certificationText: ACK_EMPLOYEE, allowRefusal: true },
+    ],
+  },
+
+  // 14. Annual Performance Evaluation
+  {
+    id: "annual_performance_evaluation",
+    label: "Annual Performance Evaluation",
+    blurb: "Year-end review across clinical, operational, and professional dimensions.",
+    pdfTitle: "Annual Performance Evaluation",
+    filenamePrefix: "AnnualEvaluation",
+    defaultFileTab: "personnel_records",
+    confidentiality: "open",
+    bulkAssignable: false,
+    defaults: { saveToFile: true, visibleToEmployee: true, emailEmployee: false, emailAdminInbox: false },
+    sections: [
+      {
+        title: "Review period",
+        fields: [
+          { key: "reviewStart", label: "Review period — start", type: "date", required: true },
+          { key: "reviewEnd",   label: "Review period — end",   type: "date", required: true },
+          { key: "reviewer",    label: "Reviewer",              type: "text", required: true },
+        ],
+      },
+      {
+        title: "Performance ratings",
+        intro: "Rate each area: Exceeds · Meets · Needs improvement · Unsatisfactory · Not applicable.",
+        fields: [
+          { key: "clinicalPerformance",  label: "Clinical performance",  type: "select", options: ["Exceeds", "Meets", "Needs improvement", "Unsatisfactory", "N/A"] },
+          { key: "documentationQuality", label: "Documentation quality", type: "select", options: ["Exceeds", "Meets", "Needs improvement", "Unsatisfactory", "N/A"] },
+          { key: "attendanceReliability",label: "Attendance / reliability", type: "select", options: ["Exceeds", "Meets", "Needs improvement", "Unsatisfactory", "N/A"] },
+          { key: "teamwork",             label: "Teamwork", type: "select", options: ["Exceeds", "Meets", "Needs improvement", "Unsatisfactory", "N/A"] },
+          { key: "professionalism",      label: "Professionalism", type: "select", options: ["Exceeds", "Meets", "Needs improvement", "Unsatisfactory", "N/A"] },
+          { key: "drivingSafety",        label: "Driving / safety", type: "select", options: ["Exceeds", "Meets", "Needs improvement", "Unsatisfactory", "N/A"] },
+          { key: "policyCompliance",     label: "Policy compliance", type: "select", options: ["Exceeds", "Meets", "Needs improvement", "Unsatisfactory", "N/A"] },
+          { key: "communication",        label: "Communication", type: "select", options: ["Exceeds", "Meets", "Needs improvement", "Unsatisfactory", "N/A"] },
+          { key: "initiative",           label: "Initiative", type: "select", options: ["Exceeds", "Meets", "Needs improvement", "Unsatisfactory", "N/A"] },
+          { key: "leadershipPotential",  label: "Leadership potential", type: "select", options: ["Exceeds", "Meets", "Needs improvement", "Unsatisfactory", "N/A"] },
+        ],
+      },
+      {
+        title: "Narrative",
+        fields: [
+          { key: "strengths",         label: "Strengths", type: "longtext", rows: 4 },
+          { key: "areasForImprovement", label: "Areas for improvement", type: "longtext", rows: 4 },
+          { key: "goalsNextYear",     label: "Goals for next review period", type: "longtext", rows: 4 },
+          { key: "employeeComments",  label: "Employee comments", type: "longtext", rows: 4 },
+        ],
+      },
+    ],
+    signatures: [
+      { who: "manager", label: "Reviewer", required: true, certificationText: ACK_MANAGER },
+      { who: "employee", label: "Employee", required: true, certificationText: ACK_EMPLOYEE, allowRefusal: true },
+    ],
+  },
+
+  // 15. Employee Complaint / Concern  (confidential HR)
+  {
+    id: "employee_complaint",
+    label: "Employee Complaint / Concern",
+    blurb: "Submit a workplace concern. Routed to leadership for review.",
+    pdfTitle: "Employee Complaint / Concern",
+    filenamePrefix: "EmployeeComplaint",
+    defaultFileTab: "confidential_hr",
+    confidentiality: "confidential_hr",
+    bulkAssignable: false,
+    employeeFillable: true,
+    defaults: { saveToFile: true, visibleToEmployee: false, emailEmployee: false, emailAdminInbox: true },
+    sections: [
+      {
+        title: "Concern",
+        fields: [
+          { key: "concernType", label: "Type of concern", type: "select", required: true, options: [
+            "Workplace behavior",
+            "Communication issue",
+            "Schedule / scheduling",
+            "Operational",
+            "Safety",
+            "Equipment / supplies",
+            "Patient care",
+            "Other",
+          ] },
+          { key: "peopleInvolved", label: "People involved (if any)", type: "longtext", rows: 2,
+            helpText: "Optional. Names or roles." },
+          { key: "incidentDate", label: "Date / time", type: "datetime" },
+          { key: "incidentLocation", label: "Location", type: "text" },
+          { key: "description", label: "Description", type: "longtext", rows: 6, required: true,
+            helpText: "Describe what happened factually. Avoid labels or opinions." },
+          { key: "priorAttempts", label: "Prior attempts to resolve (if any)", type: "longtext", rows: 3 },
+          { key: "requestedFollowUp", label: "What follow-up are you requesting?", type: "longtext", rows: 3 },
+          { key: "confidentialityRequest", label: "Confidentiality request", type: "select", options: ["No special request", "Please keep confidential where possible"] },
+        ],
+      },
+      {
+        title: "Admin review",
+        intro: "For admin completion after submission.",
+        fields: [
+          { key: "adminReviewNotes", label: "Review notes", type: "longtext", rows: 4 },
+          { key: "resolution", label: "Resolution / action taken", type: "longtext", rows: 4 },
+          { key: "resolutionDate", label: "Resolution date", type: "date" },
+        ],
+      },
+    ],
+    signatures: [
+      { who: "employee", label: "Submitting employee", required: true, certificationText: ACK_EMPLOYEE },
+      { who: "manager",  label: "Reviewing supervisor", required: true, certificationText: ACK_MANAGER },
+    ],
+  },
+
+  // 16. Harassment / Discrimination / Retaliation Complaint (highest confidentiality)
+  {
+    id: "harassment_complaint",
+    label: "Harassment / Discrimination Complaint",
+    blurb: "Formal sensitive-complaint reporting. Restricted to authorized investigators.",
+    pdfTitle: "Harassment / Discrimination / Retaliation Complaint",
+    filenamePrefix: "SensitiveComplaint",
+    defaultFileTab: "confidential_hr",
+    confidentiality: "confidential_hr",
+    bulkAssignable: false,
+    employeeFillable: true,
+    defaults: { saveToFile: true, visibleToEmployee: false, emailEmployee: false, emailAdminInbox: true },
+    sections: [
+      {
+        title: "Complaint",
+        fields: [
+          { key: "complaintType", label: "Complaint type", type: "select", required: true, options: [
+            "Harassment",
+            "Sexual harassment",
+            "Discrimination",
+            "Retaliation",
+            "Hostile work environment",
+            "Other",
+          ] },
+          { key: "peopleInvolved", label: "People involved", type: "longtext", rows: 2 },
+          { key: "incidentDate", label: "Date(s) / time(s)", type: "longtext", rows: 2 },
+          { key: "incidentLocation", label: "Location(s)", type: "text" },
+          { key: "description", label: "Description of incident(s)", type: "longtext", rows: 8, required: true,
+            helpText: "Be as specific as you can about what was said and done." },
+          { key: "witnesses", label: "Witnesses (names + contact)", type: "longtext", rows: 3 },
+          { key: "evidence", label: "Evidence / supporting documents (describe; admin will collect uploads separately)", type: "longtext", rows: 3 },
+          { key: "requestedAction", label: "Requested action / outcome", type: "longtext", rows: 3 },
+          { key: "antiRetaliationAck", label: "I understand Millstadt EMS prohibits retaliation for good-faith complaints.", type: "checkbox" },
+        ],
+      },
+      {
+        title: "Investigation (admin)",
+        fields: [
+          { key: "investigatorAssigned", label: "Investigator assigned", type: "text" },
+          { key: "investigationStatus", label: "Status", type: "select", options: ["Received", "Under investigation", "Action recommended", "Resolved", "No action — unfounded"] },
+          { key: "investigationNotes", label: "Investigation notes", type: "longtext", rows: 6 },
+          { key: "resolution", label: "Resolution / outcome", type: "longtext", rows: 4 },
+          { key: "resolutionDate", label: "Resolution date", type: "date" },
+        ],
+      },
+    ],
+    signatures: [
+      { who: "employee", label: "Complainant", required: true, certificationText: ACK_EMPLOYEE },
+      { who: "manager",  label: "Investigator / reviewing administrator", required: true, certificationText: ACK_MANAGER },
+    ],
+  },
+
+  // 17. Return-to-Work / Fitness-for-Duty
+  {
+    id: "return_to_work",
+    label: "Return-to-Work / Fitness-for-Duty",
+    blurb: "Document return from leave + provider restrictions.",
+    pdfTitle: "Return-to-Work / Fitness-for-Duty",
+    filenamePrefix: "ReturnToWork",
+    defaultFileTab: "confidential_medical",
+    confidentiality: "confidential_medical",
+    bulkAssignable: false,
+    employeeFillable: true,
+    defaults: { saveToFile: true, visibleToEmployee: false, emailEmployee: false, emailAdminInbox: true },
+    sections: [
+      {
+        title: "Leave",
+        fields: [
+          { key: "dateOffWork", label: "Date off work", type: "date", required: true },
+          { key: "returnDate",  label: "Return date",  type: "date", required: true },
+          { key: "restrictionsYesNo", label: "Restrictions?", type: "select", options: ["No", "Yes"] },
+          { key: "restrictionDetails", label: "Restriction details", type: "longtext", rows: 3 },
+          { key: "restrictionEndDate", label: "Restrictions end date (estimated)", type: "date" },
+          { key: "providerNoteUrl", label: "Provider note URL (Vercel Blob or shared link)", type: "text" },
+        ],
+      },
+      {
+        title: "Clearance (admin)",
+        fields: [
+          { key: "clearedForDuty", label: "Cleared for duty?", type: "select", options: ["Yes", "Yes with restrictions", "Not cleared"] },
+          { key: "adminReviewNotes", label: "Admin notes", type: "longtext", rows: 3 },
+        ],
+      },
+    ],
+    signatures: [
+      { who: "employee", label: "Employee", required: true, certificationText: ACK_EMPLOYEE },
+      { who: "manager",  label: "Administrator review", required: true, certificationText: ACK_MANAGER },
+    ],
+  },
+
+  // 18. Accommodation Request
+  {
+    id: "accommodation_request",
+    label: "Accommodation Request",
+    blurb: "Document a workplace accommodation request and the interactive process.",
+    pdfTitle: "Workplace Accommodation Request",
+    filenamePrefix: "AccommodationRequest",
+    defaultFileTab: "confidential_medical",
+    confidentiality: "confidential_medical",
+    bulkAssignable: false,
+    employeeFillable: true,
+    defaults: { saveToFile: true, visibleToEmployee: false, emailEmployee: false, emailAdminInbox: true },
+    sections: [
+      {
+        title: "Request",
+        fields: [
+          { key: "accommodationRequested", label: "Accommodation requested", type: "longtext", rows: 4, required: true,
+            helpText: "Describe what would help you perform your job duties." },
+          { key: "jobDutyAffected", label: "Job duty / function affected", type: "longtext", rows: 3 },
+          { key: "expectedDuration", label: "Expected duration", type: "text" },
+          { key: "employeeStatement", label: "Additional information from employee", type: "longtext", rows: 4 },
+        ],
+      },
+      {
+        title: "Interactive process (admin)",
+        fields: [
+          { key: "interactiveProcessNotes", label: "Interactive process notes", type: "longtext", rows: 5 },
+          { key: "decision", label: "Decision", type: "select", options: ["Approved", "Denied", "Approved (alternative)", "Pending"] },
+          { key: "alternativeOffered", label: "Alternative accommodation offered (if applicable)", type: "longtext", rows: 3 },
+          { key: "reviewDate", label: "Next review date", type: "date" },
+        ],
+      },
+    ],
+    signatures: [
+      { who: "employee", label: "Employee", required: true, certificationText: ACK_EMPLOYEE },
+      { who: "manager",  label: "Administrator", required: true, certificationText: ACK_MANAGER },
+    ],
+  },
+
+  // 19. Shift Trade / Coverage Request
+  {
+    id: "shift_trade",
+    label: "Shift Trade / Coverage Request",
+    blurb: "Two-employee shift trade or one-way coverage request.",
+    pdfTitle: "Shift Trade / Coverage Request",
+    filenamePrefix: "ShiftTrade",
+    defaultFileTab: "payroll_scheduling",
+    confidentiality: "open",
+    bulkAssignable: false,
+    employeeFillable: true,
+    defaults: { saveToFile: true, visibleToEmployee: true, emailEmployee: false, emailAdminInbox: true },
+    sections: [
+      {
+        title: "Trade details",
+        fields: [
+          { key: "requestingEmployee", label: "Requesting employee", type: "text", required: true },
+          { key: "coveringEmployee",   label: "Covering / trading employee", type: "text", required: true },
+          { key: "originalShift", label: "Original shift (date, time, unit)", type: "text", required: true },
+          { key: "coveringShift", label: "Covering shift (date, time, unit)", type: "text" },
+          { key: "tradeDetails", label: "Trade details / notes", type: "longtext", rows: 3 },
+          { key: "bothPartiesAck", label: "Both employees acknowledge this trade.", type: "checkbox" },
+        ],
+      },
+    ],
+    signatures: [
+      { who: "employee", label: "Requesting employee", required: true, certificationText: ACK_EMPLOYEE },
+      { who: "witness",  label: "Covering employee", required: true, certificationText: ACK_EMPLOYEE },
+      { who: "manager",  label: "Supervisor approval", required: true, certificationText: ACK_MANAGER },
+    ],
+  },
+
+  // 20. Uniform / Equipment Issue
+  {
+    id: "uniform_equipment_issue",
+    label: "Uniform / Equipment Issue",
+    blurb: "Track items issued or returned: uniforms, radios, keys, devices.",
+    pdfTitle: "Uniform / Equipment Issue Record",
+    filenamePrefix: "EquipmentIssue",
+    defaultFileTab: "equipment_property",
+    confidentiality: "open",
+    bulkAssignable: false,
+    defaults: { saveToFile: true, visibleToEmployee: true, emailEmployee: false, emailAdminInbox: false },
+    sections: [
+      {
+        title: "Issued",
+        fields: [
+          { key: "itemIssued", label: "Item issued", type: "text", required: true },
+          { key: "sizeSerial", label: "Size / serial number", type: "text" },
+          { key: "condition", label: "Condition", type: "select", options: ["New", "Like new", "Used — good", "Used — fair", "Used — poor"] },
+          { key: "dateIssued", label: "Date issued", type: "date", required: true },
+          { key: "replacement", label: "Replacement for prior item?", type: "select", options: ["No", "Yes"] },
+          { key: "replacementReason", label: "Reason for replacement", type: "longtext", rows: 2 },
+        ],
+      },
+      {
+        title: "Return (when applicable)",
+        fields: [
+          { key: "returnDate", label: "Return date", type: "date" },
+          { key: "returnCondition", label: "Condition on return", type: "select", options: ["—", "New", "Like new", "Used — good", "Used — fair", "Used — poor", "Damaged", "Not returned"] },
+          { key: "adminVerification", label: "Admin verification notes", type: "longtext", rows: 2 },
+        ],
+      },
+    ],
+    signatures: [
+      { who: "employee", label: "Employee", required: true, certificationText: ACK_EMPLOYEE },
+      { who: "manager",  label: "Issuing supervisor", required: true, certificationText: ACK_MANAGER },
+    ],
+  },
+
+  // 21. Exit Interview
+  {
+    id: "exit_interview",
+    label: "Exit Interview",
+    blurb: "Collect feedback from a departing employee.",
+    pdfTitle: "Exit Interview",
+    filenamePrefix: "ExitInterview",
+    defaultFileTab: "confidential_hr",
+    confidentiality: "confidential_hr",
+    bulkAssignable: false,
+    employeeFillable: true,
+    defaults: { saveToFile: true, visibleToEmployee: false, emailEmployee: false, emailAdminInbox: true },
+    sections: [
+      {
+        title: "Reasons & feedback",
+        fields: [
+          { key: "reasonForLeaving", label: "Reason for leaving", type: "longtext", rows: 3 },
+          { key: "whatWorkedWell",   label: "What worked well",   type: "longtext", rows: 4 },
+          { key: "whatNeedsImprovement", label: "What needs improvement", type: "longtext", rows: 4 },
+          { key: "supervisorFeedback", label: "Supervisor feedback",  type: "longtext", rows: 3 },
+          { key: "cultureFeedback",  label: "Culture feedback",      type: "longtext", rows: 3 },
+          { key: "wouldReapply", label: "Would you reapply someday?", type: "select", options: ["Yes", "Maybe", "No"] },
+          { key: "additionalComments", label: "Additional comments", type: "longtext", rows: 4 },
+        ],
+      },
+    ],
+    signatures: [
+      { who: "employee", label: "Departing employee (optional)", required: false, certificationText: ACK_EMPLOYEE, allowRefusal: true },
+      { who: "manager",  label: "Administrator", required: true, certificationText: ACK_MANAGER },
+    ],
+  },
+
+  // 22. Promotion / Role Change / Assignment
+  {
+    id: "promotion_role_change",
+    label: "Promotion / Role Change",
+    blurb: "Document a role change, promotion, or shift assignment change.",
+    pdfTitle: "Promotion / Role Change",
+    filenamePrefix: "RoleChange",
+    defaultFileTab: "personnel_records",
+    confidentiality: "open",
+    bulkAssignable: false,
+    defaults: { saveToFile: true, visibleToEmployee: true, emailEmployee: true, emailAdminInbox: false },
+    sections: [
+      {
+        title: "Change",
+        fields: [
+          { key: "currentRole", label: "Current role", type: "text", required: true },
+          { key: "newRole",     label: "New role / assignment", type: "text", required: true },
+          { key: "effectiveDate", label: "Effective date", type: "date", required: true },
+          { key: "payStatusChange", label: "Pay or status change (if applicable)", type: "longtext", rows: 2 },
+          { key: "reason", label: "Reason for change", type: "longtext", rows: 3 },
+          { key: "requiredCredentials", label: "Required credentials / training", type: "longtext", rows: 3 },
+          { key: "probationaryReview", label: "Probationary review date (if applicable)", type: "date" },
+        ],
+      },
+    ],
+    signatures: [
+      { who: "manager",  label: "Administrator", required: true, certificationText: ACK_MANAGER },
+      { who: "employee", label: "Employee", required: true, certificationText: ACK_EMPLOYEE },
+    ],
+  },
 ];
 
 export function getFormSpec(id: string): FormSpec | null {

@@ -532,6 +532,17 @@ export async function listAssignmentsForType(formType: string, includeClosed = f
   return rows.map(toAssignment);
 }
 
+export async function listFormsForAssignment(assignmentId: string): Promise<FormInstance[]> {
+  await ensureSchema();
+  const db = sql();
+  const rows = (await db`
+    SELECT * FROM lounge_forms
+    WHERE assignment_id = ${assignmentId}
+    ORDER BY status ASC, created_at ASC
+  `) as unknown as DbRow[];
+  return rows.map(toFormInstance);
+}
+
 export async function progressForAssignment(assignmentId: string): Promise<{ assigned: number; finalized: number; pending: number }> {
   await ensureSchema();
   const db = sql();
