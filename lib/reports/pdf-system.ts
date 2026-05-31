@@ -168,22 +168,28 @@ export interface TitleBlockOpts {
 
 export function drawTitleBlock(c: Cursor, opts: TitleBlockOpts): void {
   const doc = c.doc;
-  ensureSpace(c, 60);
+  ensureSpace(c, 80);
+  // Title baseline at +22 (matches 22pt font), per-line stride 28pt so
+  // multi-line titles don't crash into each other.
   doc.setFont("times", "bold");
   doc.setFontSize(22);
   doc.setTextColor(...COLORS.navy);
   const titleLines = doc.splitTextToSize(opts.title, CONTENT_W);
-  doc.text(titleLines, M, c.y + 18);
-  c.y += 18 + (titleLines.length - 1) * 22;
+  doc.text(titleLines, M, c.y + 22);
+  c.y += 22 + (titleLines.length - 1) * 28;
 
   if (opts.subtitle) {
+    // 14pt gap clears the title's descenders (lowercase "g", "y") so
+    // the subtitle never rides on top of them.
+    c.y += 16;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.setTextColor(...COLORS.inkMuted);
-    c.y += 8;
-    doc.text(opts.subtitle, M, c.y);
+    const subLines = doc.splitTextToSize(opts.subtitle, CONTENT_W);
+    doc.text(subLines, M, c.y);
+    c.y += (subLines.length - 1) * 14;
   }
-  c.y += 16;
+  c.y += 18;
 }
 
 // ── Metadata grid ──────────────────────────────────────────────────────

@@ -107,6 +107,49 @@ function drawSignatureBlock(c: Cursor, label: string, sig: FormSignature) {
   c.y += blockH + 12;
 }
 
+function drawEmptySignatureBlock(c: Cursor, label: string) {
+  // Used for drafts and blank-print PDFs — renders the same outer
+  // panel as a filled signature block but with handwritten-style lines
+  // for signature / printed name / date / role so admins printing the
+  // blank PDF have proper write-on areas.
+  const doc = c.doc;
+  const blockH = 96;
+  ensureSpace(c, blockH + 14);
+  doc.setDrawColor(...COLORS.rule);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(M, c.y, CONTENT_W, blockH, 6, 6);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...COLORS.inkSoft);
+  doc.text(label.toUpperCase(), M + 14, c.y + 16);
+
+  const sigBoxX = M + 14;
+  const sigBoxY = c.y + 24;
+  const sigBoxW = CONTENT_W * 0.55;
+  const sigBoxH = 48;
+
+  // Signature line
+  doc.setDrawColor(...COLORS.rule);
+  doc.setLineWidth(0.6);
+  doc.line(sigBoxX, sigBoxY + sigBoxH + 2, sigBoxX + sigBoxW, sigBoxY + sigBoxH + 2);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...COLORS.inkSoft);
+  doc.text("Signature", sigBoxX, sigBoxY + sigBoxH + 14);
+
+  // Printed name, role, date columns on the right
+  const rcX = M + 14 + sigBoxW + 22;
+  const colW = CONTENT_W - (sigBoxW + 36 + 14);
+  doc.line(rcX, sigBoxY + 14, rcX + colW, sigBoxY + 14);
+  doc.text("Printed name", rcX, sigBoxY + 26);
+  doc.line(rcX, sigBoxY + 38, rcX + colW, sigBoxY + 38);
+  doc.text("Role / title", rcX, sigBoxY + 50);
+  doc.line(rcX, sigBoxY + 62, rcX + colW, sigBoxY + 62);
+  doc.text("Date", rcX, sigBoxY + 74);
+
+  c.y += blockH + 12;
+}
+
 function drawRefusalBlock(c: Cursor, who: SignerRole, label: string) {
   const doc = c.doc;
   const blockH = 64;
@@ -243,6 +286,10 @@ export async function buildFormPdf({ spec, form, employee }: BuildFormPdfInput):
       drawSignatureBlock(c, sigSpec.label, signed);
     } else if (form.refusedToSign.includes(sigSpec.who)) {
       drawRefusalBlock(c, sigSpec.who, sigSpec.label);
+    } else {
+      // Draft / blank-print: render an empty signature panel with
+      // fillable lines so the page is useful when printed on paper.
+      drawEmptySignatureBlock(c, sigSpec.label);
     }
   }
 

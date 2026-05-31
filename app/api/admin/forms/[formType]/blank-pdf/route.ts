@@ -24,14 +24,17 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ formType: 
   if (!spec) return NextResponse.json({ error: "Unknown form type" }, { status: 404 });
 
   // Synthesize an empty form so buildFormPdf can render the section
-  // structure, field labels, and signature panels with no values. The
-  // existing renderer drops most empty scalar fields — to keep the PDF
-  // useful as a printable blank, we pre-seed each field key with an
-  // empty string so it shows the field label + a blank value line.
+  // structure, field labels, and signature panels with blank fillable
+  // lines. The default renderer drops empty scalars — to keep the PDF
+  // useful as a printable blank, we seed each field key with a long
+  // run of underscores so it renders as a line you can write on.
+  const BLANK_LINE = "________________________________";
   const seedData: Record<string, unknown> = {};
   for (const section of spec.sections) {
     for (const field of section.fields) {
-      seedData[field.key] = field.type === "checkbox" ? false : "";
+      if (field.type === "checkbox") seedData[field.key] = false;
+      else if (field.type === "longtext") seedData[field.key] = "\n" + BLANK_LINE + "\n" + BLANK_LINE + "\n" + BLANK_LINE;
+      else seedData[field.key] = BLANK_LINE;
     }
   }
 
@@ -70,7 +73,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ formType: 
     employee: {
       firstName: "",
       lastName: "",
-      fullName: "_________________________",
+      fullName: "(blank — fill in by hand)",
       position: null,
       employeeId: null,
     },

@@ -54,6 +54,7 @@ const NAV: NavItem[] = [
   { href: "/admin/hospitals/suggestions", label: "Hospital Suggestions",  icon: "mail", adminOnly: true },
   { href: "/admin/submissions",           label: "Form Submissions",      icon: "inbox", adminOnly: true },
   { href: "/admin/forms",                 label: "Forms & Documentation", icon: "folder", adminOnly: true },
+  { href: "/admin/onboarding",            label: "Onboarding",            icon: "checkCircle", adminOnly: true },
   { href: "/admin/polls",                 label: "Polls & Surveys",       icon: "chart", adminOnly: true },
 ];
 
@@ -83,7 +84,7 @@ const ADMIN_NAV_SECTIONS = [
   },
   {
     title: "Operations",
-    hrefs: ["/admin/incidents", "/admin/truckwash", "/admin/hospitals", "/admin/hospitals/suggestions", "/admin/submissions", "/admin/forms", "/admin/polls"],
+    hrefs: ["/admin/incidents", "/admin/truckwash", "/admin/hospitals", "/admin/hospitals/suggestions", "/admin/submissions", "/admin/forms", "/admin/onboarding", "/admin/polls"],
   },
 ];
 
