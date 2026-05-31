@@ -146,7 +146,8 @@ export default function EmployeeFormsHub() {
       {/* Request a form */}
       <Card kicker="Need a form" title="Request a form" accent="gold">
         <p style={{ color: "#cbd5e1", fontSize: 13, lineHeight: 1.55, margin: "0 0 10px" }}>
-          Forms aren't visible on this page until an administrator approves your request. Pick the form you need below — leadership will receive your request and send it to you.
+          Everyday requests stay here for quick access. Sensitive HR, injury, damage, return-to-work,
+          complaint, and separation forms are sent by leadership when they are needed.
         </p>
         <div style={{ display: "grid", gap: 10 }}>
           <label style={{ display: "block" }}>

@@ -1,8 +1,8 @@
 /**
  * GET  /api/lounge/forms      — pending + visible-finalized forms + draft-by-self
- *                                + the catalog of employee-fillable form types
- * POST /api/lounge/forms      — employee starts their own form
- *                                body: { formType }
+ *                                + the catalog of employee-requestable form types
+ * POST /api/lounge/forms      — disabled; employees request forms through
+ *                                /api/lounge/form-requests
  */
 import { NextRequest, NextResponse } from "next/server";
 import { currentEmployee } from "@/lib/lounge/auth";
@@ -11,7 +11,7 @@ import {
   listFormsForEmployee,
   listPendingForEmployee,
 } from "@/lib/lounge/forms/db";
-import { FORM_REGISTRY } from "@/lib/lounge/forms/registry";
+import { FORM_REGISTRY, isEmployeeRequestableForm } from "@/lib/lounge/forms/registry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,15 +31,13 @@ export async function GET() {
     return list.map((f) => ({ ...f, formLabel: labelByType.get(f.formType) ?? f.formType }));
   }
 
-  // Forms the employee started themselves (no assignment_id) that are
-  // still draft — distinct from "pending" which only counts admin-pushed
-  // forms. Crew want to see their in-progress complaints / injury
-  // reports / leave requests separately.
+  // Forms without an assignment_id that are still draft. These are usually
+  // admin-created individual forms or older employee-started drafts.
   const myDrafts = decorate(allMyForms.filter((f) => f.status === "draft" && f.assignmentId === null));
 
-  // Catalog of form types this employee can start themselves.
+  // Catalog of form types this employee can request from leadership.
   const startable = FORM_REGISTRY
-    .filter((f) => f.employeeFillable === true)
+    .filter(isEmployeeRequestableForm)
     .map((f) => ({
       id: f.id,
       label: f.label,

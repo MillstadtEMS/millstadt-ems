@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentEmployee } from "@/lib/lounge/auth";
 import { createRequest, listRequestsForEmployee } from "@/lib/lounge/form-requests";
-import { FORM_REGISTRY, getFormSpec } from "@/lib/lounge/forms/registry";
+import { FORM_REGISTRY, getFormSpec, isEmployeeRequestableForm } from "@/lib/lounge/forms/registry";
 import { emailAdmins, notifyAdminsInLounge } from "@/lib/lounge/notify-admins";
 
 export const runtime = "nodejs";
@@ -22,7 +22,7 @@ export async function GET() {
   const requests = await listRequestsForEmployee(me.id);
   const labelByType = new Map(FORM_REGISTRY.map((f) => [f.id, f.label]));
   const catalog = FORM_REGISTRY
-    .filter((f) => f.employeeFillable)
+    .filter(isEmployeeRequestableForm)
     .map((f) => ({ id: f.id, label: f.label, blurb: f.blurb }));
 
   return NextResponse.json({
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "formType required" }, { status: 400 });
   }
   const spec = getFormSpec(body.formType);
-  if (!spec || !spec.employeeFillable) {
+  if (!spec || !isEmployeeRequestableForm(spec)) {
     return NextResponse.json({ error: "Form is not requestable by employees." }, { status: 400 });
   }
 

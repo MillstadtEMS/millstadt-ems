@@ -29,8 +29,9 @@ export default async function FormsHubPage() {
         description={
           <>
             Acknowledgments leadership has pushed out, drafts you&apos;ve started yourself, and a
-            catalog of forms you can submit any time — leave requests, injury reports, complaints,
-            shift trades, and more.
+            catalog of everyday requests like leave, missed punches, shift trades, and accommodations.
+            Sensitive incident, complaint, return-to-work, injury, damage, and separation paperwork
+            is sent by leadership when needed.
           </>
         }
         photo="/lounge/brand/crew-providers.jpg"

@@ -83,6 +83,8 @@ export interface FormSpec {
   bulkAssignable: boolean;
   /** When true, the form is filled by the employee, not an admin. */
   employeeFillable?: boolean;
+  /** When false, the form can still be admin-sent but does not appear in the employee request menu. */
+  employeeRequestable?: boolean;
   /** Default sharing toggles for the share controls at finalize time. */
   defaults: {
     saveToFile: boolean;
@@ -273,6 +275,7 @@ export const FORM_REGISTRY: FormSpec[] = [
     confidentiality: "confidential_medical",
     bulkAssignable: false,
     employeeFillable: true,
+    employeeRequestable: false,
     defaults: { saveToFile: true, visibleToEmployee: true, emailEmployee: false, emailAdminInbox: true },
     sections: [
       {
@@ -316,6 +319,7 @@ export const FORM_REGISTRY: FormSpec[] = [
     confidentiality: "open",
     bulkAssignable: false,
     employeeFillable: true,
+    employeeRequestable: false,
     defaults: { saveToFile: false, visibleToEmployee: false, emailEmployee: false, emailAdminInbox: true },
     sections: [
       {
@@ -655,6 +659,7 @@ export const FORM_REGISTRY: FormSpec[] = [
     confidentiality: "confidential_hr",
     bulkAssignable: false,
     employeeFillable: true,
+    employeeRequestable: false,
     defaults: { saveToFile: true, visibleToEmployee: false, emailEmployee: false, emailAdminInbox: true },
     sections: [
       {
@@ -708,6 +713,7 @@ export const FORM_REGISTRY: FormSpec[] = [
     confidentiality: "confidential_hr",
     bulkAssignable: false,
     employeeFillable: true,
+    employeeRequestable: false,
     defaults: { saveToFile: true, visibleToEmployee: false, emailEmployee: false, emailAdminInbox: true },
     sections: [
       {
@@ -760,6 +766,7 @@ export const FORM_REGISTRY: FormSpec[] = [
     confidentiality: "confidential_medical",
     bulkAssignable: false,
     employeeFillable: true,
+    employeeRequestable: false,
     defaults: { saveToFile: true, visibleToEmployee: false, emailEmployee: false, emailAdminInbox: true },
     sections: [
       {
@@ -837,6 +844,7 @@ export const FORM_REGISTRY: FormSpec[] = [
     confidentiality: "open",
     bulkAssignable: false,
     employeeFillable: true,
+    employeeRequestable: true,
     defaults: { saveToFile: true, visibleToEmployee: true, emailEmployee: false, emailAdminInbox: true },
     sections: [
       {
@@ -907,6 +915,7 @@ export const FORM_REGISTRY: FormSpec[] = [
     confidentiality: "confidential_hr",
     bulkAssignable: false,
     employeeFillable: true,
+    employeeRequestable: false,
     defaults: { saveToFile: true, visibleToEmployee: false, emailEmployee: false, emailAdminInbox: true },
     sections: [
       {
@@ -1057,6 +1066,10 @@ export const FORM_REGISTRY: FormSpec[] = [
 
 export function getFormSpec(id: string): FormSpec | null {
   return FORM_REGISTRY.find((f) => f.id === id) ?? null;
+}
+
+export function isEmployeeRequestableForm(form: FormSpec): boolean {
+  return (form.employeeRequestable ?? form.employeeFillable) === true;
 }
 
 export function fileTabLabel(tab: PersonnelFileTab): string {

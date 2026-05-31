@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
       confidentiality: f.confidentiality,
       bulkAssignable: f.bulkAssignable,
       employeeFillable: !!f.employeeFillable,
+      employeeRequestable: (f.employeeRequestable ?? f.employeeFillable) === true,
     })),
   });
 }
