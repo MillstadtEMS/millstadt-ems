@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { currentEmployee } from "@/lib/lounge/auth";
+import { canEditTicker } from "@/lib/admin/auth";
 import TickerControlClient, {
   TickerControlDenied,
   TickerControlLogin,
@@ -33,6 +34,9 @@ export const viewport: Viewport = {
 export default async function TickerControlPage() {
   const me = await currentEmployee();
   if (!me) return <TickerControlLogin />;
-  if (me.username.toLowerCase() !== "kjames") return <TickerControlDenied />;
+  // Gate: admins always pass; non-admin employees pass if their
+  // can_edit_ticker flag is TRUE. Lets specific crew members curate
+  // the ticker without needing global admin rights.
+  if (!(await canEditTicker())) return <TickerControlDenied />;
   return <TickerControlClient firstName={me.firstName} />;
 }

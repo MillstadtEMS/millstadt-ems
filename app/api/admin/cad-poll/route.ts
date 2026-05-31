@@ -5,13 +5,13 @@
  */
 
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireTickerEditor } from "@/lib/admin/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST() {
-  const denied = await requireAdmin(); if (denied) return denied;
+  const denied = await requireTickerEditor(); if (denied) return denied;
 
   const secret = process.env.CAD_POLL_SECRET;
   if (!secret) {

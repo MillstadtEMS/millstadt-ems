@@ -67,3 +67,30 @@ export async function requireAdmin(): Promise<NextResponse | null> {
   if (await isAdminAuthed()) return null;
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }
+
+/**
+ * True when the caller is allowed to edit the live CAD ticker. Admins
+ * always pass; non-admin employees pass if their `can_edit_ticker` flag
+ * on lounge_employees is TRUE. Used by /api/admin/calls and
+ * /api/admin/cad-poll so a non-admin "ticker editor" employee can
+ * curate the front-page ticker without needing global admin rights.
+ */
+export async function canEditTicker(): Promise<boolean> {
+  if (await isAdminAuthed()) return true;
+  const emp = await currentEmployee();
+  if (!emp || !emp.isActive) return false;
+  // currentEmployee returns a lean snapshot, so re-read the live flag
+  // from the DB rather than trusting a stale field.
+  const { sql } = await import("@/lib/lounge/db");
+  const db = sql();
+  const rows = (await db`
+    SELECT COALESCE(can_edit_ticker, FALSE) AS can_edit_ticker
+    FROM lounge_employees WHERE id = ${emp.id} LIMIT 1
+  `) as unknown as { can_edit_ticker: boolean }[];
+  return rows[0]?.can_edit_ticker ?? false;
+}
+
+export async function requireTickerEditor(): Promise<NextResponse | null> {
+  if (await canEditTicker()) return null;
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
