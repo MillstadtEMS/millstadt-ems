@@ -1074,3 +1074,26 @@ export function fileTabLabel(tab: PersonnelFileTab): string {
     case "separation_records":     return "Separation Records";
   }
 }
+
+/**
+ * Maps a form type to a personnel-records severity. Used when the form
+ * is saved-to-file and creates a corresponding personnel record, so the
+ * record sorts correctly in the personnel dashboard rollups.
+ */
+export type PersonnelRecordSeverity =
+  | "informational" | "coaching" | "minor" | "moderate" | "serious" | "critical";
+
+export function severityForFormType(formType: string): PersonnelRecordSeverity {
+  switch (formType) {
+    case "harassment_complaint":            return "serious";
+    case "corrective_action":               return "moderate";
+    case "performance_improvement_plan":    return "moderate";
+    case "employee_complaint":              return "minor";
+    case "vehicle_accident":                return "moderate";
+    case "coaching_note":                   return "coaching";
+    case "workplace_injury":                return "informational";
+    case "equipment_damage":                return "informational";
+    case "controlled_substance_access":     return "informational";
+    default:                                return "informational";
+  }
+}

@@ -125,12 +125,25 @@ export default function FormsAdminPage() {
           <h2 className="text-white font-black text-lg mb-3">1. Pick the form</h2>
           <div className="grid sm:grid-cols-2 gap-2">
             {bulkOnly.map((r) => (
-              <button key={r.id} type="button"
-                onClick={() => { setSelected(r.id); setTitle(r.label); }}
-                className={`text-left rounded-xl px-4 py-3 border transition ${selected === r.id ? "border-[#f0b429] bg-[#f0b429]/10" : "border-white/10 bg-[#071428] hover:border-[#f0b429]/30"}`}>
-                <div className="text-white font-bold text-sm">{r.label}</div>
-                <div className="text-slate-400 text-xs mt-1">{r.blurb}</div>
-              </button>
+              <div
+                key={r.id}
+                className={`rounded-xl px-4 py-3 border transition ${selected === r.id ? "border-[#f0b429] bg-[#f0b429]/10" : "border-white/10 bg-[#071428] hover:border-[#f0b429]/30"}`}
+              >
+                <button type="button"
+                  onClick={() => { setSelected(r.id); setTitle(r.label); }}
+                  className="text-left w-full"
+                >
+                  <div className="text-white font-bold text-sm">{r.label}</div>
+                  <div className="text-slate-400 text-xs mt-1">{r.blurb}</div>
+                </button>
+                <a
+                  href={`/api/admin/forms/${r.id}/blank-pdf`}
+                  className="inline-block mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-sky-300 hover:text-sky-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  ↓ Print blank PDF
+                </a>
+              </div>
             ))}
           </div>
         </section>

@@ -25,6 +25,7 @@ import {
 import {
   fileTabLabel,
   getFormSpec,
+  severityForFormType,
   type FormSpec,
 } from "@/lib/lounge/forms/registry";
 import { buildFormPdf, formFilename } from "@/lib/lounge/forms/pdf";
@@ -192,7 +193,7 @@ async function autoFinalize(form: Awaited<ReturnType<typeof getForm>>, spec: For
       recordType: spec.id,
       title: spec.label,
       summary: spec.blurb,
-      severity: "informational",
+      severity: severityForFormType(spec.id),
       status: "active",
       createdBy: me.id,
       employeeVisible: form.share.visibleToEmployee,

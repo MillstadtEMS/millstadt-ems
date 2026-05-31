@@ -20,6 +20,7 @@ import {
 import {
   fileTabLabel,
   getFormSpec,
+  severityForFormType,
 } from "@/lib/lounge/forms/registry";
 import { buildFormPdf, formFilename } from "@/lib/lounge/forms/pdf";
 
@@ -109,7 +110,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
       recordType: spec.id,
       title: spec.label,
       summary: spec.blurb,
-      severity: "informational",
+      severity: severityForFormType(spec.id),
       status: "active",
       createdBy: me.id,
       supervisorId: me.id,
