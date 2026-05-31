@@ -26,6 +26,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import {
+  BASELINE_YEAR,
+  CALLS_2025_ANNUAL,
+  CALLS_2025_AVG_PER_DAY,
+  CALLS_2025_MONTHLY,
+  formatPercentChange,
+  percentChange,
+} from "@/lib/baseline/calls-2025";
 
 interface Call {
   id: string;
@@ -46,7 +54,7 @@ const MONTH_SHORT = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-type OpenTip = null | "monthly" | "avg";
+type OpenTip = null | "monthly" | "avg" | "projected";
 
 export default function CallStatsExtras() {
   const [mounted, setMounted] = useState(false);
@@ -140,6 +148,42 @@ export default function CallStatsExtras() {
       dailyAvgByMonth.push({ month: MONTH_NAMES[i], avgPerDay: isFuture ? 0 : count / denom, isCurrent, isFuture });
     }
 
+    // ── Previous-year comparison ───────────────────────────────────
+    // The baseline below (lib/baseline/calls-2025.ts) is the 2025
+    // monthly/annual actual totals transcribed from the ESO PDF
+    // reports. We compare:
+    //   - this-month tile  → prev-year same-month actual  vs current
+    //                        same-month projection (so-far / day-of-
+    //                        month × days-in-month)
+    //   - avg/day tile     → prev-year annual avg/day      vs current
+    //                        YTD avg/day (which IS the projected
+    //                        annual avg/day, since projected = avg ×
+    //                        days_in_year, so projected/days = avg)
+    //   - projected tile   → prev-year annual TOTAL         vs current
+    //                        year-end projection
+    const prevMonthActual = CALLS_2025_MONTHLY[monthIdx] ?? 0;
+    const daysInCurrentMonth = new Date(y, monthIdx + 1, 0).getDate();
+    const dayOfMonth = Math.max(1, now.getDate());
+    const monthProjected = thisMonthCount > 0
+      ? Math.round((thisMonthCount / dayOfMonth) * daysInCurrentMonth)
+      : 0;
+
+    const compare = {
+      monthly: {
+        previousYearActual: prevMonthActual,
+        currentYearProjected: monthProjected,
+        monthLabel: MONTH_NAMES[monthIdx],
+      },
+      avgPerDay: {
+        previousYearActual: CALLS_2025_AVG_PER_DAY,
+        currentYearProjected: avgPerDay,
+      },
+      projected: {
+        previousYearActual: CALLS_2025_ANNUAL,
+        currentYearProjected: projected,
+      },
+    };
+
     return {
       thisMonthCount,
       avgPerDay,
@@ -148,6 +192,9 @@ export default function CallStatsExtras() {
       dailyAvgByMonth,
       monthLabel: MONTH_SHORT[monthIdx],
       year: y,
+      compare,
+      daysInCurrentMonth,
+      dayOfMonth,
     };
   }, [calls, now]);
 
@@ -194,16 +241,28 @@ export default function CallStatsExtras() {
         onHoverOpen={() => openHover("monthly")}
         onHoverClose={scheduleClose}
         tooltip={
-          <PerMonthTable
-            title={`${stats.year} · monthly totals`}
-            accent="gold"
-            rows={stats.monthlyBreakdown.map((m) => ({
-              label: m.month,
-              value: m.isFuture ? "—" : m.count.toLocaleString(),
-              isCurrent: m.isCurrent,
-              isFuture: m.isFuture,
-            }))}
-          />
+          <>
+            <CompareBlock
+              kind="monthly"
+              accent="gold"
+              previousYearActual={stats.compare.monthly.previousYearActual}
+              currentYearProjected={stats.compare.monthly.currentYearProjected}
+              prevLabel={`${stats.compare.monthly.monthLabel} ${BASELINE_YEAR}`}
+              currLabel={`${stats.compare.monthly.monthLabel} ${stats.year} (proj.)`}
+              note={`Current month projection: ${stats.thisMonthCount.toLocaleString()} so far ÷ ${stats.dayOfMonth} day${stats.dayOfMonth === 1 ? "" : "s"} × ${stats.daysInCurrentMonth}.`}
+            />
+            <PerMonthTable
+              title={`${stats.year} · monthly totals`}
+              accent="gold"
+              rows={stats.monthlyBreakdown.map((m) => ({
+                label: m.month,
+                value: m.isFuture ? "—" : m.count.toLocaleString(),
+                isCurrent: m.isCurrent,
+                isFuture: m.isFuture,
+              }))}
+            />
+            <FormulaFooter accent="gold" />
+          </>
         }
       />
 
@@ -218,16 +277,28 @@ export default function CallStatsExtras() {
         onHoverOpen={() => openHover("avg")}
         onHoverClose={scheduleClose}
         tooltip={
-          <PerMonthTable
-            title={`${stats.year} · avg / day by month`}
-            accent="sky"
-            rows={stats.dailyAvgByMonth.map((m) => ({
-              label: m.month + (m.isCurrent ? "  (MTD)" : ""),
-              value: m.isFuture ? "—" : m.avgPerDay.toFixed(1),
-              isCurrent: m.isCurrent,
-              isFuture: m.isFuture,
-            }))}
-          />
+          <>
+            <CompareBlock
+              kind="avg"
+              accent="sky"
+              previousYearActual={stats.compare.avgPerDay.previousYearActual}
+              currentYearProjected={stats.compare.avgPerDay.currentYearProjected}
+              prevLabel={`${BASELINE_YEAR} actual`}
+              currLabel={`${stats.year} projected`}
+              decimals={2}
+            />
+            <PerMonthTable
+              title={`${stats.year} · avg / day by month`}
+              accent="sky"
+              rows={stats.dailyAvgByMonth.map((m) => ({
+                label: m.month + (m.isCurrent ? "  (MTD)" : ""),
+                value: m.isFuture ? "—" : m.avgPerDay.toFixed(1),
+                isCurrent: m.isCurrent,
+                isFuture: m.isFuture,
+              }))}
+            />
+            <FormulaFooter accent="sky" />
+          </>
         }
       />
 
@@ -235,7 +306,26 @@ export default function CallStatsExtras() {
         number={stats.projected.toLocaleString()}
         label="Projected"
         accent="emerald"
+        clickable
+        isOpen={openTip === "projected"}
+        mobileAppLike={mobileAppLike}
+        onToggle={() => toggle("projected")}
+        onHoverOpen={() => openHover("projected")}
+        onHoverClose={scheduleClose}
         title="Year-end projection: year-to-date pace × days in year."
+        tooltip={
+          <>
+            <CompareBlock
+              kind="annual"
+              accent="emerald"
+              previousYearActual={stats.compare.projected.previousYearActual}
+              currentYearProjected={stats.compare.projected.currentYearProjected}
+              prevLabel={`${BASELINE_YEAR} actual total`}
+              currLabel={`${stats.year} projected total`}
+            />
+            <FormulaFooter accent="emerald" />
+          </>
+        }
       />
     </div>
   );
@@ -575,6 +665,134 @@ function PerMonthTable({
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+// ── Compare block (prev-year actual vs current-year projected) ────────
+function CompareBlock({
+  kind, accent,
+  previousYearActual, currentYearProjected,
+  prevLabel, currLabel,
+  decimals = 0,
+  note,
+}: {
+  kind: "monthly" | "avg" | "annual";
+  accent: Accent;
+  previousYearActual: number;
+  currentYearProjected: number;
+  prevLabel: string;
+  currLabel: string;
+  decimals?: number;
+  note?: string;
+}) {
+  const change = percentChange(previousYearActual, currentYearProjected);
+  const changeLabel = formatPercentChange(previousYearActual, currentYearProjected);
+  // Color the % chip green when projected goes up, rose when it drops,
+  // slate when we can't compute (N/A).
+  const chip = change === null
+    ? { bg: "rgba(148,163,184,0.18)", fg: "#cbd5e1" }
+    : change >= 0
+      ? { bg: "rgba(16,185,129,0.18)", fg: "#34d399" }
+      : { bg: "rgba(248,113,113,0.18)", fg: "#fca5a5" };
+  const fmt = (n: number) => decimals > 0 ? n.toFixed(decimals) : Math.round(n).toLocaleString();
+  const kindLabel = kind === "monthly" ? "Monthly calls" : kind === "avg" ? "Calls per day" : "Projected annual calls";
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div
+        style={{
+          color: accentColor(accent),
+          fontSize: 10,
+          fontWeight: 900,
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+          marginBottom: 8,
+        }}
+      >
+        {kindLabel} · YoY
+      </div>
+      <div style={{ display: "grid", gap: 4 }}>
+        <Row label={prevLabel}  value={fmt(previousYearActual)} />
+        <Row label={currLabel}  value={fmt(currentYearProjected)} highlight={accent} />
+        <div style={{
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          padding: "5px 6px", marginTop: 2,
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+        }}>
+          <span style={{ color: "#94a3b8", fontSize: 12, fontWeight: 700 }}>Change</span>
+          <span style={{
+            background: chip.bg, color: chip.fg,
+            fontSize: 12, fontWeight: 900, letterSpacing: "0.04em",
+            padding: "3px 9px", borderRadius: 999,
+            fontVariantNumeric: "tabular-nums",
+          }}>{changeLabel}</span>
+        </div>
+      </div>
+      {note && (
+        <p style={{ color: "#64748b", fontSize: 11, lineHeight: 1.4, margin: "8px 0 0" }}>
+          {note}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Row({ label, value, highlight }: { label: string; value: string; highlight?: Accent }) {
+  return (
+    <div style={{
+      display: "flex", justifyContent: "space-between",
+      padding: "4px 6px", borderRadius: 6,
+      background: highlight ? `${accentColor(highlight)}10` : "transparent",
+    }}>
+      <span style={{ color: "#cbd5e1", fontSize: 12.5 }}>{label}</span>
+      <span style={{
+        color: "white", fontSize: 13.5, fontWeight: 800,
+        fontVariantNumeric: "tabular-nums",
+      }}>{value}</span>
+    </div>
+  );
+}
+
+// ── Formula + disclaimer footer ───────────────────────────────────────
+function FormulaFooter({ accent }: { accent: Accent }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ marginTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        style={{
+          background: "transparent", border: 0, padding: 0,
+          color: "#94a3b8", fontSize: 11, fontWeight: 800,
+          letterSpacing: "0.14em", textTransform: "uppercase",
+          cursor: "pointer", fontFamily: "inherit",
+          display: "inline-flex", alignItems: "center", gap: 6,
+        }}
+        aria-expanded={open}
+      >
+        <span style={{ color: accentColor(accent) }}>{open ? "▾" : "▸"}</span>
+        How this is calculated
+      </button>
+      {open && (
+        <div style={{
+          marginTop: 8, padding: 10, borderRadius: 8,
+          background: "rgba(255,255,255,0.03)",
+          color: "#cbd5e1", fontSize: 11.5, lineHeight: 1.55,
+        }}>
+          <p style={{ margin: "0 0 8px" }}>
+            Projected call totals are calculated using current year-to-date call volume and average calls per day, compared against {BASELINE_YEAR} actual totals. These projections are estimates only and may change as additional call data is entered.
+          </p>
+          <div style={{
+            fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
+            fontSize: 10.5, color: "#94a3b8", display: "grid", gap: 4,
+          }}>
+            <div><span style={{ color: accentColor(accent) }}>projected annual</span> = ytd calls ÷ days elapsed × 365</div>
+            <div><span style={{ color: accentColor(accent) }}>calls per day</span> = ytd calls ÷ days elapsed</div>
+            <div><span style={{ color: accentColor(accent) }}>% change</span> = ((current projected − prev actual) ÷ prev actual) × 100</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
