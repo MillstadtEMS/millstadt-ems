@@ -139,13 +139,15 @@ export default function FormsAdminPage() {
                 className={`rounded-xl px-4 py-3 border transition ${selected === r.id ? "border-[#f0b429] bg-[#f0b429]/10" : "border-white/10 bg-[#071428] hover:border-[#f0b429]/30"}`}
               >
                 <button type="button"
-                  onClick={() => { if (r.bulkAssignable) { setSelected(r.id); setTitle(r.label); } }}
+                  onClick={() => { setSelected(r.id); setTitle(r.label); if (!r.bulkAssignable) setTargetKind("explicit"); }}
                   className="text-left w-full"
-                  disabled={!r.bulkAssignable}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-white font-bold text-sm flex-1">{r.label}</span>
-                    {r.bulkAssignable && <span className="text-[9px] font-black uppercase tracking-[0.16em] text-[#f0b429] bg-[#f0b429]/10 border border-[#f0b429]/30 px-1.5 py-0.5 rounded">Bulk</span>}
+                    {r.bulkAssignable
+                      ? <span className="text-[9px] font-black uppercase tracking-[0.16em] text-[#f0b429] bg-[#f0b429]/10 border border-[#f0b429]/30 px-1.5 py-0.5 rounded">Bulk</span>
+                      : <span className="text-[9px] font-black uppercase tracking-[0.16em] text-sky-300 bg-sky-500/10 border border-sky-500/30 px-1.5 py-0.5 rounded">One-on-one</span>
+                    }
                   </div>
                   <div className="text-slate-400 text-xs mt-1">{r.blurb}</div>
                 </button>
@@ -182,18 +184,27 @@ export default function FormsAdminPage() {
 
             <div className="space-y-2">
               <span className="text-slate-400 text-xs uppercase tracking-wider">Send to</span>
-              {[
-                { v: "all", label: "All active employees" },
-                { v: "crew", label: "All crew (non-admin)" },
-                { v: "admin", label: "All admins" },
-                { v: "explicit", label: "Specific employees" },
-              ].map((opt) => (
-                <label key={opt.v} className="flex items-center gap-2 text-sm text-slate-300">
-                  <input type="radio" name="targetKind" checked={targetKind === opt.v}
-                    onChange={() => setTargetKind(opt.v as typeof targetKind)} style={{ accentColor: "#f0b429" }} />
-                  {opt.label}
-                </label>
-              ))}
+              {(() => {
+                const selectedSpec = registry.find((r) => r.id === selected);
+                const isBulk = selectedSpec?.bulkAssignable ?? false;
+                const options: { v: typeof targetKind; label: string }[] = isBulk
+                  ? [
+                      { v: "all",      label: "All active employees" },
+                      { v: "crew",     label: "All crew (non-admin)" },
+                      { v: "admin",    label: "All admins" },
+                      { v: "explicit", label: "Specific employees" },
+                    ]
+                  : [
+                      { v: "explicit", label: "Specific employee(s)" },
+                    ];
+                return options.map((opt) => (
+                  <label key={opt.v} className="flex items-center gap-2 text-sm text-slate-300">
+                    <input type="radio" name="targetKind" checked={targetKind === opt.v}
+                      onChange={() => setTargetKind(opt.v)} style={{ accentColor: "#f0b429" }} />
+                    {opt.label}
+                  </label>
+                ));
+              })()}
               {targetKind === "explicit" && (
                 <div className="grid sm:grid-cols-2 gap-1 max-h-64 overflow-y-auto bg-[#040d1a]/40 border border-white/5 rounded-xl p-2">
                   {employees.map((e) => (

@@ -59,7 +59,17 @@ export async function POST(req: NextRequest) {
   }
   const spec = getFormSpec(body.formType);
   if (!spec) return NextResponse.json({ error: "Unknown form type" }, { status: 400 });
-  if (!spec.bulkAssignable) return NextResponse.json({ error: "This form is not bulk-assignable." }, { status: 400 });
+  // Non-bulk forms (e.g. corrective action, exit interview) can still be
+  // pushed — but only to one or more EXPLICIT employees. Mass targets
+  // ("all", "crew", "admin") remain restricted to bulkAssignable forms
+  // so leadership can't accidentally fire a disciplinary doc at the
+  // whole crew.
+  if (!spec.bulkAssignable && body.targetKind !== "explicit") {
+    return NextResponse.json(
+      { error: "This form can only be sent to specific employees. Choose 'Specific employees' as the audience." },
+      { status: 400 },
+    );
+  }
 
   // Resolve target employees.
   const allActive = await listEmployees();
