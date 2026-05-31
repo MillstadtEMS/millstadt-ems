@@ -846,27 +846,16 @@ function NavSection({
   onNavigate?: () => void;
   badges?: ShellBadges;
 }) {
-  // Collapsed-by-default persists per-section in localStorage so the
-  // crew's preferred drawer state survives navigation. A section that
-  // contains the active link opens automatically so the user isn't
-  // surprised by where they are.
   const containsActive = items.some((i) => isActive(pathname, i));
-  const storageKey = `lounge-sidebar:${title}`;
-  const [open, setOpen] = useState<boolean>(() => true);
+  const storageKey = `lounge-sidebar:v2:${title}`;
+  const [open, setOpen] = useState<boolean>(() => false);
 
   useEffect(() => {
     try {
       const v = window.localStorage.getItem(storageKey);
-      if (v === "0") setOpen(false);
-      else if (v === "1") setOpen(true);
+      setOpen(v === "1");
     } catch { /* ignore */ }
   }, [storageKey]);
-
-  useEffect(() => {
-    // Always re-open when the user navigates INTO a section so they
-    // see where they are. The setter is a no-op when already open.
-    if (containsActive) setOpen(true);
-  }, [containsActive]);
 
   function toggle() {
     setOpen((cur) => {
@@ -889,8 +878,9 @@ function NavSection({
         style={{
           ...navSection,
           width: "100%",
-          background: "transparent",
-          border: 0,
+          background: containsActive && !open ? "rgba(240,180,41,0.06)" : "transparent",
+          border: containsActive && !open ? "1px solid rgba(240,180,41,0.16)" : "1px solid transparent",
+          borderRadius: 10,
           textAlign: "left",
           cursor: "pointer",
           fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
@@ -1019,24 +1009,21 @@ function SubNavDisclosure({
   storageKey: string;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState<boolean>(() => active);
+  const scopedStorageKey = `${storageKey}:v2`;
+  const [open, setOpen] = useState<boolean>(() => false);
 
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem(storageKey);
+      const saved = window.localStorage.getItem(scopedStorageKey);
       if (saved === "1") setOpen(true);
-      if (saved === "0" && !active) setOpen(false);
+      else setOpen(false);
     } catch { /* ignore */ }
-  }, [active, storageKey]);
-
-  useEffect(() => {
-    if (active) setOpen(true);
-  }, [active]);
+  }, [scopedStorageKey]);
 
   function toggle() {
     setOpen((cur) => {
       const next = !cur;
-      try { window.localStorage.setItem(storageKey, next ? "1" : "0"); } catch { /* ignore */ }
+      try { window.localStorage.setItem(scopedStorageKey, next ? "1" : "0"); } catch { /* ignore */ }
       return next;
     });
   }
@@ -1366,9 +1353,7 @@ function AdminToolsGroup({
   const adminBadge = (badges?.submissions ?? 0)
     + (badges?.formRequests ?? 0)
     + (badges?.profileRequests ?? 0);
-  // Open if a child is active so the user always sees where they are.
-  const [open, setOpen] = useState<boolean>(anyActive);
-  useEffect(() => { if (anyActive) setOpen(true); }, [anyActive]);
+  const [open, setOpen] = useState<boolean>(() => false);
 
   return (
     <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 2 }}>
