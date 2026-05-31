@@ -50,10 +50,10 @@ export async function GET() {
   });
 }
 
-// PUT — let the logged-in employee update their own personal info.
-// They CAN edit: address, phone, email, emergency contacts, sizes, medical, DL.
-// They CANNOT edit: name, hire date, admin flag, position, SSN — those are
-// employer-set and admins manage them via /admin/employees/[id].
+// PUT — the only About Me fields an employee can self-edit are now
+// notification preferences (secondary email + alert opt-in). Every
+// other field is managed by admins via /admin/employees/[id]; crew
+// submit change requests through /api/lounge/profile-change-requests.
 export async function PUT(req: NextRequest) {
   const session = await currentEmployee();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -68,62 +68,20 @@ export async function PUT(req: NextRequest) {
 
   try {
     await updateEmployee(session.id, {
-      email: s(body.email),
-      phone: s(body.phone),
-      dob: s(body.dob),
-      addressStreet: s(body.addressStreet),
-      addressCity: s(body.addressCity),
-      addressState: s(body.addressState),
-      addressZip: s(body.addressZip),
-      driverLicenseNum: s(body.driverLicenseNum),
-      driverLicenseState: s(body.driverLicenseState),
-      ecName: s(body.ecName),
-      ecRelationship: s(body.ecRelationship),
-      ecPhone: s(body.ecPhone),
-      ec2Name: s(body.ec2Name),
-      ec2Relationship: s(body.ec2Relationship),
-      ec2Phone: s(body.ec2Phone),
-      shirtSize: s(body.shirtSize),
-      pantSize: s(body.pantSize),
-      jacketSize: s(body.jacketSize),
-      allergies: s(body.allergies),
-      medicalConditions: s(body.medicalConditions),
-      bloodType: s(body.bloodType),
-      markProfileCompleted: true,
+      emailSecondary: s(body.emailSecondary),
+      emailSecondaryAlerts: typeof body.emailSecondaryAlerts === "boolean" ? body.emailSecondaryAlerts : undefined,
     });
   } catch (e) {
     console.error("[me/profile PUT] updateEmployee failed:", e);
     return NextResponse.json({ error: "Could not save your profile. Please try again." }, { status: 500 });
   }
 
-  // Echo the saved state back so the client can confirm what's actually
-  // in the database instead of trusting its own form state.
   const row = await getEmployee(session.id);
   return NextResponse.json({
     ok: true,
     profile: row ? {
-      email: row.email,
-      phone: row.phone,
-      dob: row.dob,
-      addressStreet: row.addressStreet,
-      addressCity: row.addressCity,
-      addressState: row.addressState,
-      addressZip: row.addressZip,
-      driverLicenseNum: row.driverLicenseNum,
-      driverLicenseState: row.driverLicenseState,
-      ecName: row.ecName,
-      ecRelationship: row.ecRelationship,
-      ecPhone: row.ecPhone,
-      ec2Name: row.ec2Name,
-      ec2Relationship: row.ec2Relationship,
-      ec2Phone: row.ec2Phone,
-      shirtSize: row.shirtSize,
-      pantSize: row.pantSize,
-      jacketSize: row.jacketSize,
-      allergies: row.allergies,
-      medicalConditions: row.medicalConditions,
-      bloodType: row.bloodType,
-      profileCompletedAt: row.profileCompletedAt,
+      emailSecondary: row.emailSecondary,
+      emailSecondaryAlerts: row.emailSecondaryAlerts,
     } : null,
   });
 }

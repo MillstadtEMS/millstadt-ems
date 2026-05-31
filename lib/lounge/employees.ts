@@ -50,6 +50,8 @@ export interface AdminEmployeeRow {
   bloodType: string | null;
   phoneVerifiedAt: string | null;
   profileCompletedAt: string | null;
+  emailSecondary: string | null;
+  emailSecondaryAlerts: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -106,6 +108,8 @@ interface DbEmployeeRow {
   blood_type: string | null;
   phone_verified_at: string | null;
   profile_completed_at: string | null;
+  email_secondary: string | null;
+  email_secondary_alerts: boolean | null;
   created_at: string;
   updated_at: string;
 }
@@ -156,6 +160,8 @@ function toAdminEmployee(row: DbEmployeeRow): AdminEmployeeRow {
     bloodType: row.blood_type,
     phoneVerifiedAt: row.phone_verified_at,
     profileCompletedAt: row.profile_completed_at,
+    emailSecondary: row.email_secondary,
+    emailSecondaryAlerts: Boolean(row.email_secondary_alerts),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -178,6 +184,7 @@ export async function listEmployees(opts?: {
                ec2_name, ec2_relationship, ec2_phone,
                shirt_size, pant_size, jacket_size, allergies, medical_conditions,
                blood_type, phone_verified_at, profile_completed_at,
+               email_secondary, email_secondary_alerts,
                created_at, updated_at
         FROM lounge_employees
         ORDER BY last_name ASC, first_name ASC
@@ -192,6 +199,7 @@ export async function listEmployees(opts?: {
                ec2_name, ec2_relationship, ec2_phone,
                shirt_size, pant_size, jacket_size, allergies, medical_conditions,
                blood_type, phone_verified_at, profile_completed_at,
+               email_secondary, email_secondary_alerts,
                created_at, updated_at
         FROM lounge_employees
         WHERE is_active = TRUE
@@ -212,6 +220,7 @@ export async function getEmployee(id: string): Promise<AdminEmployeeRow | null> 
            ec2_name, ec2_relationship, ec2_phone,
            shirt_size, pant_size, jacket_size, allergies, medical_conditions,
            blood_type, phone_verified_at, profile_completed_at,
+           email_secondary, email_secondary_alerts,
            created_at, updated_at
     FROM lounge_employees
     WHERE id = ${id}
@@ -320,6 +329,8 @@ export interface UpdateEmployeeInput {
   allergies?: string | null;
   medicalConditions?: string | null;
   bloodType?: string | null;
+  emailSecondary?: string | null;
+  emailSecondaryAlerts?: boolean;
   markProfileCompleted?: boolean;
 }
 
@@ -349,6 +360,8 @@ async function ensureAboutMeColumns() {
   await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS blood_type          TEXT`;
   await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS profile_completed_at TIMESTAMPTZ`;
   await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS phone_verified_at    TIMESTAMPTZ`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS email_secondary      TEXT`;
+  await db`ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS email_secondary_alerts BOOLEAN NOT NULL DEFAULT FALSE`;
   columnsEnsured = true;
 }
 
@@ -429,6 +442,10 @@ export async function updateEmployee(
     await db`UPDATE lounge_employees SET medical_conditions = ${input.medicalConditions}, updated_at = NOW() WHERE id = ${id}`;
   if (input.bloodType !== undefined)
     await db`UPDATE lounge_employees SET blood_type = ${input.bloodType}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.emailSecondary !== undefined)
+    await db`UPDATE lounge_employees SET email_secondary = ${input.emailSecondary}, updated_at = NOW() WHERE id = ${id}`;
+  if (input.emailSecondaryAlerts !== undefined)
+    await db`UPDATE lounge_employees SET email_secondary_alerts = ${input.emailSecondaryAlerts}, updated_at = NOW() WHERE id = ${id}`;
   if (input.markProfileCompleted)
     await db`UPDATE lounge_employees SET profile_completed_at = NOW(), updated_at = NOW() WHERE id = ${id}`;
 

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import PersonnelRecordsPanel from "@/components/admin/PersonnelRecordsPanel";
+import EmployeeChangeRequests from "@/components/admin/EmployeeChangeRequests";
 
 interface EmpDto {
   id: string;
@@ -41,6 +42,8 @@ interface EmpDto {
   allergies: string | null;
   medicalConditions: string | null;
   bloodType: string | null;
+  emailSecondary: string | null;
+  emailSecondaryAlerts: boolean;
   profileCompletedAt: string | null;
 }
 interface FileDto {
@@ -353,6 +356,19 @@ export default function EmployeeDetailPage() {
               onSave={(v) => patch({ phone: v || null })}
             />
             <InlineField
+              label="Secondary email"
+              type="email"
+              value={emp.emailSecondary ?? ""}
+              onSave={(v) => patch({ emailSecondary: v || null })}
+            />
+            <Toggle
+              label="Send lounge alerts to secondary email"
+              description="Mirror notifications + change-request emails to the secondary inbox above."
+              value={emp.emailSecondaryAlerts}
+              disabled={!emp.emailSecondary}
+              onChange={(v) => patch({ emailSecondaryAlerts: v })}
+            />
+            <InlineField
               label="Date of birth"
               type="date"
               value={emp.dob ?? ""}
@@ -566,6 +582,11 @@ export default function EmployeeDetailPage() {
               if (res.ok) setFiles((s) => s.filter((f) => f.id !== fileId));
             }}
           />
+        </Card>
+
+        {/* ── Profile change requests submitted by the employee ── */}
+        <Card title="About Me change requests">
+          <EmployeeChangeRequests employeeId={emp.id} />
         </Card>
 
         {toast && (
