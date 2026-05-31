@@ -30,7 +30,7 @@ export default function BirthdayBanner({ people }: { people: BirthdayPerson[] })
 
   // One sentence, big text. Duplicated once so the marquee loops
   // seamlessly without ever showing a gap.
-  const phrase = `🎂  Happy birthday, ${names}!  🎈`;
+  const phrase = `Happy birthday, ${names} - from the Millstadt EMS crew.`;
 
   return (
     <div
@@ -39,7 +39,7 @@ export default function BirthdayBanner({ people }: { people: BirthdayPerson[] })
         position: "relative",
         marginBottom: 14,
         padding: "14px 0",
-        background: "linear-gradient(90deg, rgba(240,180,41,0.18), rgba(244,114,182,0.18), rgba(56,189,248,0.18), rgba(240,180,41,0.18))",
+        background: "linear-gradient(90deg, rgba(240,180,41,0.18), rgba(56,189,248,0.16), rgba(52,211,153,0.14), rgba(240,180,41,0.18))",
         border: "1px solid rgba(240,180,41,0.30)",
         borderRadius: 14,
         overflow: "hidden",

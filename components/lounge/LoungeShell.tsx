@@ -26,6 +26,30 @@ interface NavItem {
   adminOnly?: boolean;
 }
 
+interface ShellBadges {
+  notifications: number;
+  messages: number;
+  submissions: number;
+  applications: number;
+  visits: number;
+  birthdayRequests: number;
+  formRequests: number;
+  profileRequests: number;
+  birthdays: number;
+}
+
+const EMPTY_BADGES: ShellBadges = {
+  notifications: 0,
+  messages: 0,
+  submissions: 0,
+  applications: 0,
+  visits: 0,
+  birthdayRequests: 0,
+  formRequests: 0,
+  profileRequests: 0,
+  birthdays: 0,
+};
+
 const NAV: NavItem[] = [
   { href: "/lounge",              label: "The Wall",        icon: "newspaper", eyebrow: "Home" },
   { href: "/lounge/notifications", label: "Notifications",  icon: "bell" },
@@ -62,19 +86,19 @@ const NAV: NavItem[] = [
 
 const CREW_NAV_SECTIONS = [
   {
-    title: "Command",
+    title: "Home Base",
     hrefs: ["/lounge", "/lounge/notifications", "/lounge/messages"],
   },
   {
-    title: "Required",
-    hrefs: ["/lounge/acks", "/lounge/forms", "/lounge/my-file", "/lounge/certs", "/lounge/about-me", "/lounge/security"],
+    title: "My Desk",
+    hrefs: ["/lounge/acks", "/lounge/my-file", "/lounge/certs", "/lounge/about-me", "/lounge/security"],
   },
   {
     title: "Forms & Reports",
-    hrefs: ["/lounge/incidents", "/lounge/maintenance", "/lounge/truckwash"],
+    hrefs: ["/lounge/forms", "/lounge/incidents", "/lounge/maintenance", "/lounge/truckwash"],
   },
   {
-    title: "Resources",
+    title: "Station Tools",
     hrefs: ["/lounge/hospitals", "/lounge/policies", "/api/lounge/sso/truckcheck", "/api/lounge/sso/inventory", "/lounge/games"],
   },
 ];
@@ -82,15 +106,15 @@ const CREW_NAV_SECTIONS = [
 const ADMIN_NAV_SECTIONS = [
   {
     title: "Command",
-    hrefs: ["/admin/calls", "/admin/employees", "/admin/filing-cabinet", "/admin/website-config"],
+    hrefs: ["/admin/submissions", "/admin/forms", "/admin/calls", "/admin/employees"],
   },
   {
     title: "Operations",
-    hrefs: ["/admin/incidents", "/admin/truckwash", "/admin/hospitals", "/admin/hospitals/suggestions", "/admin/submissions", "/admin/forms", "/admin/onboarding", "/admin/polls"],
+    hrefs: ["/admin/incidents", "/admin/truckwash", "/admin/hospitals", "/admin/hospitals/suggestions", "/admin/onboarding", "/admin/polls"],
   },
   {
-    title: "Analytics",
-    hrefs: ["/admin/login-analytics"],
+    title: "Control Room",
+    hrefs: ["/admin/filing-cabinet", "/admin/website-config", "/admin/login-analytics"],
   },
 ];
 
@@ -149,40 +173,65 @@ export default function LoungeShell({
   // badge updates the moment the user comes back to the tab. We sum
   // unread message counts across conversations from the same shape the
   // messenger already uses, so there's no new endpoint to maintain.
-  const [badges, setBadges] = useState<{ notifications: number; messages: number; submissions: number }>({ notifications: 0, messages: 0, submissions: 0 });
+  const [badges, setBadges] = useState<ShellBadges>(EMPTY_BADGES);
   const isAdmin = me.isAdmin;
   useEffect(() => {
     let cancelled = false;
-    async function refresh() {
+    async function getJson<T>(url: string): Promise<T | null> {
       try {
-        const requests: Promise<Response>[] = [
-          fetch("/api/lounge/notifications", { cache: "no-store" }),
-          fetch("/api/lounge/messages", { cache: "no-store" }),
-        ];
-        if (isAdmin) requests.push(fetch("/api/admin/submissions", { cache: "no-store" }));
-        const results = await Promise.all(requests);
+        const r = await fetch(url, { cache: "no-store" });
+        if (!r.ok) return null;
+        return (await r.json()) as T;
+      } catch {
+        return null;
+      }
+    }
+    async function refresh() {
+      const [nData, mData, bData] = await Promise.all([
+        getJson<{ unread?: number }>("/api/lounge/notifications"),
+        getJson<{ conversations?: Array<{ unreadCount?: number }> }>("/api/lounge/messages"),
+        getJson<{ count?: number; people?: unknown[] }>("/api/lounge/birthdays/today"),
+      ]);
+      if (cancelled) return;
+
+      let next: ShellBadges = {
+        ...EMPTY_BADGES,
+        notifications: typeof nData?.unread === "number" ? nData.unread : 0,
+        messages: Array.isArray(mData?.conversations)
+          ? mData.conversations.reduce((sum, c) => sum + (Number(c.unreadCount) || 0), 0)
+          : 0,
+        birthdays: typeof bData?.count === "number"
+          ? bData.count
+          : Array.isArray(bData?.people)
+            ? bData.people.length
+            : 0,
+      };
+
+      if (isAdmin) {
+        const [sData, frData, prData] = await Promise.all([
+          getJson<SubmissionCategory[] | { categories?: SubmissionCategory[] }>("/api/admin/submissions"),
+          getJson<{ requests?: unknown[] }>("/api/admin/form-requests?status=pending"),
+          getJson<{ requests?: unknown[] }>("/api/admin/profile-change-requests"),
+        ]);
         if (cancelled) return;
-        const [nRes, mRes, sRes] = results;
-        let nUnread = 0;
-        let mUnread = 0;
-        let sUnread = 0;
-        if (nRes.ok) {
-          const nd = await nRes.json();
-          nUnread = typeof nd.unread === "number" ? nd.unread : 0;
-        }
-        if (mRes.ok) {
-          const md = await mRes.json();
-          if (Array.isArray(md.conversations)) {
-            for (const c of md.conversations) mUnread += Number(c.unreadCount) || 0;
-          }
-        }
-        if (sRes && sRes.ok) {
-          const sd = await sRes.json();
-          const list: Array<{ unread?: number }> = Array.isArray(sd) ? sd : Array.isArray(sd?.categories) ? sd.categories : [];
-          for (const c of list) sUnread += Number(c.unread) || 0;
-        }
-        if (!cancelled) setBadges({ notifications: nUnread, messages: mUnread, submissions: sUnread });
-      } catch { /* swallow; next tick will retry */ }
+
+        const categories = Array.isArray(sData)
+          ? sData
+          : !Array.isArray(sData) && Array.isArray(sData?.categories)
+            ? sData.categories
+            : [];
+        next = {
+          ...next,
+          submissions: categories.reduce((sum, c) => sum + (Number(c.unread) || 0), 0),
+          applications: categories.filter((c) => isApplicationSubmission(c.formType)).reduce((sum, c) => sum + (Number(c.unread) || 0), 0),
+          visits: categories.filter((c) => isVisitSubmission(c.formType)).reduce((sum, c) => sum + (Number(c.unread) || 0), 0),
+          birthdayRequests: categories.filter((c) => isBirthdaySubmission(c.formType)).reduce((sum, c) => sum + (Number(c.unread) || 0), 0),
+          formRequests: Array.isArray(frData?.requests) ? frData.requests.length : 0,
+          profileRequests: Array.isArray(prData?.requests) ? prData.requests.length : 0,
+        };
+      }
+
+      setBadges(next);
     }
     refresh();
     const id = setInterval(refresh, 30_000);
@@ -259,9 +308,21 @@ export default function LoungeShell({
           type="button"
           aria-label="Open lounge menu"
           onClick={() => setDrawerOpen(true)}
-          style={{ background: "transparent", border: 0, color: "#f0b429", fontSize: 22, cursor: "pointer", padding: 4 }}
+          style={{
+            width: 38,
+            height: 38,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(240,180,41,0.10)",
+            border: "1px solid rgba(240,180,41,0.24)",
+            borderRadius: 12,
+            color: "#f0b429",
+            cursor: "pointer",
+            padding: 0,
+          }}
         >
-          ☰
+          <LoungeIcon name="menu" size={20} />
         </button>
         <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
           <span style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
@@ -522,7 +583,7 @@ function SidebarBody({
   mobile?: boolean;
   /** Unread counts pulled by the shell — Notifications + Messages rows
    *  render a red Facebook-style pill when their count is > 0. */
-  badges?: { notifications: number; messages: number; submissions: number };
+  badges?: ShellBadges;
 }) {
   const crewItems = items.filter((n) => !n.adminOnly);
   const adminItems = items.filter((n) => n.adminOnly);
@@ -557,6 +618,8 @@ function SidebarBody({
       </div>
 
       {mobile && <ViewModeToggle />}
+
+      <SidebarPulse isAdmin={me.isAdmin} badges={badges ?? EMPTY_BADGES} onNavigate={onNavigate} />
 
       <nav style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 9 }}>
         {CREW_NAV_SECTIONS.map((section) => {
@@ -595,6 +658,184 @@ function pickNavItems(items: NavItem[], hrefs: string[]): NavItem[] {
     .filter((item): item is NavItem => Boolean(item));
 }
 
+function SidebarPulse({
+  isAdmin,
+  badges,
+  onNavigate,
+}: {
+  isAdmin: boolean;
+  badges: ShellBadges;
+  onNavigate?: () => void;
+}) {
+  const adminItems = [
+    { label: "New submissions", value: badges.submissions, href: "/admin/submissions", tone: "gold" as const },
+    { label: "Applications", value: badges.applications, href: "/admin/submissions?type=Employment%20Application", tone: "green" as const },
+    { label: "Visit requests", value: badges.visits, href: "/admin/submissions", tone: "cyan" as const },
+    { label: "Birthday requests", value: badges.birthdayRequests, href: "/admin/submissions", tone: "pink" as const },
+    { label: "Form approvals", value: badges.formRequests, href: "/admin/forms", tone: "gold" as const },
+    { label: "Profile edits", value: badges.profileRequests, href: "/admin/employees", tone: "cyan" as const },
+    { label: "Birthdays today", value: badges.birthdays, href: "/lounge", tone: "green" as const },
+  ];
+
+  const crewItems = [
+    { label: "Today", value: badges.birthdays, href: "/lounge", tone: "green" as const },
+    { label: "Notifications", value: badges.notifications, href: "/lounge/notifications", tone: "gold" as const },
+    { label: "Messages", value: badges.messages, href: "/lounge/messages", tone: "cyan" as const },
+  ].filter((item) => item.value > 0);
+
+  const items = isAdmin ? adminItems : crewItems;
+  if (!isAdmin && items.length === 0) return null;
+
+  const hasAction = items.some((item) => item.value > 0);
+  const pulseTotal = isAdmin
+    ? badges.submissions + badges.formRequests + badges.profileRequests + badges.birthdays
+    : items.reduce((sum, item) => sum + item.value, 0);
+
+  return (
+    <section
+      aria-label={isAdmin ? "Operations inbox" : "Lounge alerts"}
+      style={{
+        marginTop: 14,
+        padding: 12,
+        borderRadius: 16,
+        background:
+          "linear-gradient(145deg, rgba(12,35,64,0.82), rgba(2,9,18,0.92))",
+        border: `1px solid ${hasAction ? "rgba(240,180,41,0.22)" : "rgba(255,255,255,0.07)"}`,
+        boxShadow: hasAction
+          ? "0 14px 34px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.05)"
+          : "inset 0 1px 0 rgba(255,255,255,0.04)",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: "0 auto 0 0",
+          width: 3,
+          background: hasAction
+            ? "linear-gradient(180deg, #f0b429, #7dd3fc)"
+            : "rgba(148,163,184,0.22)",
+        }}
+      />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 9 }}>
+        <div>
+          <div className="mas-mono" style={{ color: "#f0b429", fontSize: 9.5, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" }}>
+            {isAdmin ? "Ops Inbox" : "Heads Up"}
+          </div>
+          <div className="mas-display" style={{ color: "white", fontSize: 14, fontWeight: 700, marginTop: 2 }}>
+            {hasAction ? "Needs eyes" : "All quiet"}
+          </div>
+        </div>
+        <span
+          className="mas-numeric"
+          style={{
+            minWidth: 36,
+            height: 32,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 999,
+            background: hasAction ? "rgba(240,180,41,0.16)" : "rgba(148,163,184,0.10)",
+            border: hasAction ? "1px solid rgba(240,180,41,0.35)" : "1px solid rgba(148,163,184,0.16)",
+            color: hasAction ? "#f0b429" : "#94a3b8",
+            fontSize: 15,
+            fontWeight: 800,
+          }}
+        >
+          {pulseTotal}
+        </span>
+      </div>
+
+      <div style={{ display: "grid", gap: 6 }}>
+        {items.map((item) => (
+          <PulseLink key={`${item.label}-${item.href}`} {...item} onNavigate={onNavigate} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function PulseLink({
+  label,
+  value,
+  href,
+  tone,
+  onNavigate,
+}: {
+  label: string;
+  value: number;
+  href: string;
+  tone: "gold" | "green" | "cyan" | "pink";
+  onNavigate?: () => void;
+}) {
+  const color = tone === "green" ? "#34d399" : tone === "cyan" ? "#7dd3fc" : tone === "pink" ? "#f9a8d4" : "#f0b429";
+  const active = value > 0;
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr auto",
+        alignItems: "center",
+        gap: 10,
+        minHeight: 34,
+        padding: "7px 9px",
+        borderRadius: 10,
+        textDecoration: "none",
+        background: active ? "rgba(255,255,255,0.055)" : "rgba(255,255,255,0.025)",
+        border: active ? `1px solid ${hexToRgba(color, 0.34)}` : "1px solid rgba(255,255,255,0.055)",
+        color: active ? "white" : "#94a3b8",
+      }}
+    >
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <span
+          aria-hidden
+          style={{
+            width: 7,
+            height: 7,
+            borderRadius: "50%",
+            background: active ? color : "rgba(148,163,184,0.36)",
+            boxShadow: active ? `0 0 14px ${hexToRgba(color, 0.68)}` : "none",
+            flexShrink: 0,
+          }}
+        />
+        <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12.5, fontWeight: 700 }}>
+          {label}
+        </span>
+      </span>
+      <span
+        className="mas-numeric"
+        style={{
+          minWidth: 24,
+          height: 22,
+          padding: "0 7px",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 999,
+          background: active ? hexToRgba(color, 0.15) : "rgba(148,163,184,0.08)",
+          color: active ? color : "#64748b",
+          fontSize: 12,
+          fontWeight: 800,
+        }}
+      >
+        {value > 99 ? "99+" : value}
+      </span>
+    </Link>
+  );
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const clean = hex.replace("#", "");
+  const r = Number.parseInt(clean.slice(0, 2), 16);
+  const g = Number.parseInt(clean.slice(2, 4), 16);
+  const b = Number.parseInt(clean.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 function NavSection({
   title, items, pathname, onNavigate, badges,
 }: {
@@ -602,7 +843,7 @@ function NavSection({
   items: NavItem[];
   pathname: string;
   onNavigate?: () => void;
-  badges?: { notifications: number; messages: number; submissions: number };
+  badges?: ShellBadges;
 }) {
   // Collapsed-by-default persists per-section in localStorage so the
   // crew's preferred drawer state survives navigation. A section that
@@ -674,13 +915,33 @@ function NavSection({
             badge={badgeForItem(item, badges)}
           />
           {item.href === "/admin/submissions" && (
-            <SubmissionsSubList pathname={pathname} onNavigate={onNavigate} />
+            <SubNavDisclosure
+              title="Submission queues"
+              count={badges?.submissions ?? 0}
+              active={pathname.startsWith("/admin/submissions")}
+              storageKey="lounge-sidebar:admin-submissions"
+            >
+              <SubmissionsSubList pathname={pathname} onNavigate={onNavigate} />
+            </SubNavDisclosure>
           )}
           {item.href === "/admin/forms" && (
-            <FormsSubList pathname={pathname} onNavigate={onNavigate} />
+            <SubNavDisclosure
+              title="Form library"
+              count={badges?.formRequests ?? 0}
+              active={pathname.startsWith("/admin/forms")}
+              storageKey="lounge-sidebar:admin-forms"
+            >
+              <FormsSubList pathname={pathname} onNavigate={onNavigate} />
+            </SubNavDisclosure>
           )}
           {item.href === "/lounge/forms" && (
-            <CrewFormsSubList pathname={pathname} onNavigate={onNavigate} />
+            <SubNavDisclosure
+              title="Request forms"
+              active={pathname.startsWith("/lounge/forms")}
+              storageKey="lounge-sidebar:crew-forms"
+            >
+              <CrewFormsSubList pathname={pathname} onNavigate={onNavigate} />
+            </SubNavDisclosure>
           )}
         </Fragment>
       ))}
@@ -691,15 +952,23 @@ function NavSection({
 interface SubmissionCategory { formType: string; total: number; unread: number; latest: string | null }
 
 const SUBMISSION_LABELS: Record<string, string> = {
-  "birthday":          "Birthday Requests",
-  "ride-along":        "Ride-Along Requests",
-  "event-request":     "Event Appearances",
-  "education-request": "Education Requests",
+  "Birthday Party Appearance Request": "Birthday Visits",
+  "Birthday Party at Station Request": "Station Birthdays",
+  "Ride Along Request": "Ride-Alongs",
+  "Event Appearance Request": "Event Visits",
+  "Education Request": "Education Visits",
+  "Equipment Request": "Equipment Requests",
+  "Employment Application": "Applications",
+  "Run Number Request": "Run Number Requests",
+  birthday: "Birthday Visits",
+  "ride-along": "Ride-Alongs",
+  "event-request": "Event Visits",
+  "education-request": "Education Visits",
   "equipment-request": "Equipment Requests",
-  "employment":        "Job Applications",
-  "contact":           "Contact Messages",
-  "donate":            "Donations",
-  "birthday-station":  "Birthday at Station",
+  employment: "Applications",
+  contact: "Contact Messages",
+  donate: "Donations",
+  "birthday-station": "Station Birthdays",
 };
 
 function submissionLabel(formType: string): string {
@@ -709,8 +978,113 @@ function submissionLabel(formType: string): string {
     .join(" ");
 }
 
+function normalizedSubmissionType(formType: string): string {
+  return formType.toLowerCase().replace(/[_-]/g, " ");
+}
+
+function isApplicationSubmission(formType: string): boolean {
+  return normalizedSubmissionType(formType).includes("employment")
+    || normalizedSubmissionType(formType).includes("application");
+}
+
+function isBirthdaySubmission(formType: string): boolean {
+  return normalizedSubmissionType(formType).includes("birthday");
+}
+
+function isVisitSubmission(formType: string): boolean {
+  const t = normalizedSubmissionType(formType);
+  if (t.includes("birthday")) return false;
+  return t.includes("event")
+    || t.includes("education")
+    || t.includes("ride along")
+    || t.includes("ridealong")
+    || t.includes("visit")
+    || t.includes("appearance");
+}
+
 interface RegistryItem { id: string; label: string; bulkAssignable: boolean }
 interface FormsAdminPayload { registry: RegistryItem[] }
+
+function SubNavDisclosure({
+  title,
+  count = 0,
+  active,
+  storageKey,
+  children,
+}: {
+  title: string;
+  count?: number;
+  active: boolean;
+  storageKey: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState<boolean>(() => active);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(storageKey);
+      if (saved === "1") setOpen(true);
+      if (saved === "0" && !active) setOpen(false);
+    } catch { /* ignore */ }
+  }, [active, storageKey]);
+
+  useEffect(() => {
+    if (active) setOpen(true);
+  }, [active]);
+
+  function toggle() {
+    setOpen((cur) => {
+      const next = !cur;
+      try { window.localStorage.setItem(storageKey, next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
+  }
+
+  return (
+    <div style={{ margin: "2px 0 6px 39px", display: "grid", gap: 4 }}>
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          width: "100%",
+          minHeight: 30,
+          padding: "5px 9px",
+          borderRadius: 9,
+          border: active ? "1px solid rgba(240,180,41,0.22)" : "1px solid rgba(255,255,255,0.055)",
+          background: active ? "rgba(240,180,41,0.08)" : "rgba(255,255,255,0.025)",
+          color: active ? "#f0b429" : "#94a3b8",
+          fontFamily: "inherit",
+          fontSize: 11,
+          fontWeight: 800,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          cursor: "pointer",
+          textAlign: "left",
+        }}
+      >
+        <span aria-hidden style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform 0.14s var(--mas-ease)" }}>
+          ▸
+        </span>
+        <span style={{ flex: 1 }}>{title}</span>
+        {count > 0 && <UnreadPill count={count} />}
+      </button>
+      {open && (
+        <div style={{
+          display: "grid",
+          gap: 1,
+          padding: "2px 0 2px 8px",
+          borderLeft: "1px solid rgba(125,211,252,0.18)",
+        }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function FormsSubList({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
   const [registry, setRegistry] = useState<RegistryItem[] | null>(null);
@@ -731,7 +1105,7 @@ function FormsSubList({ pathname, onNavigate }: { pathname: string; onNavigate?:
   if (registry === null || registry.length === 0) return null;
   const activeOnFormsPage = pathname.startsWith("/admin/forms");
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 1, paddingLeft: 18, marginTop: 2 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 1, marginTop: 2 }}>
       {registry.map((r) => (
         <Link
           key={r.id}
@@ -776,7 +1150,7 @@ function CrewFormsSubList({ pathname, onNavigate }: { pathname: string; onNaviga
   if (catalog === null || catalog.length === 0) return null;
   const active = pathname.startsWith("/lounge/forms");
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 1, paddingLeft: 18, marginTop: 2 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 1, marginTop: 2 }}>
       <div style={{ color: "#94a3b8", fontSize: 9, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", padding: "2px 10px 4px" }}>
         Request a form
       </div>
@@ -821,7 +1195,7 @@ function SubmissionsSubList({ pathname, onNavigate }: { pathname: string; onNavi
 
   if (cats === null || cats.length === 0) return null;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 1, paddingLeft: 18, marginTop: 2 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 1, marginTop: 2 }}>
       {cats.map((c) => {
         const href = `/admin/submissions?type=${encodeURIComponent(c.formType)}`;
         const active = pathname.startsWith("/admin/submissions") && typeof window !== "undefined" && new URL(window.location.href).searchParams.get("type") === c.formType;
@@ -856,11 +1230,13 @@ function SubmissionsSubList({ pathname, onNavigate }: { pathname: string; onNavi
   );
 }
 
-function badgeForItem(item: NavItem, badges?: { notifications: number; messages: number; submissions: number }): number {
+function badgeForItem(item: NavItem, badges?: ShellBadges): number {
   if (!badges) return 0;
   if (item.href === "/lounge/notifications") return badges.notifications;
   if (item.href === "/lounge/messages") return badges.messages;
   if (item.href === "/admin/submissions") return badges.submissions;
+  if (item.href === "/admin/forms") return badges.formRequests;
+  if (item.href === "/admin/employees") return badges.profileRequests;
   return 0;
 }
 
@@ -983,9 +1359,12 @@ function AdminToolsGroup({
   items: NavItem[];
   pathname: string;
   onNavigate?: () => void;
-  badges?: { notifications: number; messages: number; submissions: number };
+  badges?: ShellBadges;
 }) {
   const anyActive = items.some((n) => isActive(pathname, n));
+  const adminBadge = (badges?.submissions ?? 0)
+    + (badges?.formRequests ?? 0)
+    + (badges?.profileRequests ?? 0);
   // Open if a child is active so the user always sees where they are.
   const [open, setOpen] = useState<boolean>(anyActive);
   useEffect(() => { if (anyActive) setOpen(true); }, [anyActive]);
@@ -1027,7 +1406,10 @@ function AdminToolsGroup({
           </span>
           Admin Tools
         </span>
-        <span aria-hidden style={{ fontSize: 11, color: "#94a3b8" }}>{open ? "▾" : "▸"}</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          {!open && adminBadge > 0 && <UnreadPill count={adminBadge} />}
+          <span aria-hidden style={{ fontSize: 11, color: "#94a3b8" }}>{open ? "▾" : "▸"}</span>
+        </span>
       </button>
       {open && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8, paddingLeft: 10, borderLeft: "1px solid rgba(253,186,116,0.20)" }}>
