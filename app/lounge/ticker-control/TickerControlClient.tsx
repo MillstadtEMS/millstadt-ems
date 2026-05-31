@@ -54,10 +54,14 @@ export function TickerControlLogin() {
     setBusy(true);
     setError("");
     try {
+      // Omit the username so WebAuthn does a fully-discoverable sign-in:
+      // each iPhone shows whichever passkey it has registered. That lets
+      // KJ AND any other granted ticker editor (e.g. Dylan) use the same
+      // Face ID button without us hard-coding a single username.
       const startRes = await fetch("/api/lounge/webauthn/assert-start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: "kjames" }),
+        body: JSON.stringify({}),
       });
       if (!startRes.ok) {
         setError("Face ID sign-in is not available yet. Open the Lounge once and add a passkey under Sign-in & Devices.");
@@ -96,12 +100,12 @@ export function TickerControlLogin() {
         </p>
         <button className="ticker-primary-button" type="button" onClick={signIn} disabled={!supported || busy}>
           <LockIcon />
-          {busy ? "Opening Face ID..." : supported ? "Sign in with Face ID (kjames)" : "Face ID unavailable"}
+          {busy ? "Opening Face ID..." : supported ? "Sign in with Face ID" : "Face ID unavailable"}
         </button>
         {error && <div className="ticker-error">{error}</div>}
         <a className="ticker-primary-link" href="/lounge/login?next=/lounge/ticker-control">Use full Lounge login</a>
         <p className="ticker-fineprint">
-          Other ticker editors: use the full Lounge login above. The Face ID shortcut is wired to the `kjames` passkey only.
+          Face ID uses whichever passkey this device has registered. Don't have one yet? Sign in via the full Lounge login first and add a passkey under <strong>Sign-in &amp; Devices</strong>.
         </p>
         <InstallHint />
       </section>

@@ -2,6 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+
+/**
+ * Pull a ?next= path off the URL and only honor it if it's a relative
+ * path inside the lounge (so an attacker can't redirect to a foreign
+ * host via the login screen).
+ */
+function safeNext(raw: string | null): string {
+  if (!raw) return "/lounge";
+  if (!raw.startsWith("/") || raw.startsWith("//")) return "/lounge";
+  if (!raw.startsWith("/lounge")) return "/lounge";
+  return raw;
+}
 import { startAuthentication as browserStartAuthentication } from "@simplewebauthn/browser";
 
 export default function LoungeLogin() {
@@ -11,6 +23,15 @@ export default function LoungeLogin() {
   const [loading, setLoading] = useState(false);
   const [handingOff, setHandingOff] = useState(false);
   const router = useRouter();
+  // Read ?next= from window.location once mounted to avoid the
+  // useSearchParams Suspense-bailout that breaks prerender.
+  const [next, setNext] = useState<string>("/lounge");
+  useEffect(() => {
+    try {
+      const u = new URL(window.location.href);
+      setNext(safeNext(u.searchParams.get("next")));
+    } catch { /* ignore */ }
+  }, []);
 
   // 2FA state
   const [step, setStep] = useState<"password" | "verify_sms" | "verify_2fa" | "setup_2fa">("password");
@@ -73,7 +94,7 @@ export default function LoungeLogin() {
         // Trust cookie matched on the server — skip 2FA entirely.
         try { sessionStorage.setItem("lounge:welcome", "1"); } catch {}
         setHandingOff(true);
-        router.push("/lounge");
+        router.push(next);
         return;
       }
       if (data.step === "verify_sms") {
@@ -122,7 +143,7 @@ export default function LoungeLogin() {
       }
       try { sessionStorage.setItem("lounge:welcome", "1"); } catch {}
       setHandingOff(true);
-      router.push("/lounge");
+      router.push(next);
     } catch {
       setError("Connection error");
       setLoading(false);
