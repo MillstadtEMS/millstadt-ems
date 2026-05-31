@@ -1247,7 +1247,7 @@ function NavRow({ item, active, onNavigate, badge = 0 }: { item: NavItem; active
         gap: 12,
         padding: "8px 10px",
         borderRadius: 11,
-        color: active ? "#f0b429" : isAdminLink ? "#fde68a" : "#cbd5e1",
+        color: active ? "#f0b429" : isAdminLink ? "#c4b5fd" : "#cbd5e1",
         background: active ? "rgba(240,180,41,0.12)" : "transparent",
         textDecoration: "none",
         fontWeight: active ? 800 : 600,
@@ -1265,7 +1265,7 @@ function NavRow({ item, active, onNavigate, badge = 0 }: { item: NavItem; active
           display: "inline-flex", alignItems: "center", justifyContent: "center",
           background: active ? "rgba(240,180,41,0.18)" : "rgba(255,255,255,0.045)",
           border: `1px solid ${active ? "rgba(240,180,41,0.34)" : "rgba(255,255,255,0.07)"}`,
-          color: active ? "#f0b429" : isAdminLink ? "#fde68a" : "#94a3b8",
+          color: active ? "#f0b429" : isAdminLink ? "#c4b5fd" : "#94a3b8",
         }}
       >
         <LoungeIcon name={item.icon} size={17} />
@@ -1366,7 +1366,7 @@ function AdminToolsGroup({
           borderRadius: 12,
           background: "transparent",
           border: "1px solid rgba(255,255,255,0.06)",
-          color: anyActive ? "#fde68a" : "#fdba74",
+          color: anyActive ? "#c4b5fd" : "#a78bfa",
           fontWeight: 800,
           fontSize: 13,
           letterSpacing: "0.16em",
@@ -1381,8 +1381,8 @@ function AdminToolsGroup({
           <span aria-hidden style={{
             width: 30, height: 30, borderRadius: 8,
             display: "inline-flex", alignItems: "center", justifyContent: "center",
-            background: "rgba(253,186,116,0.10)",
-            border: "1px solid rgba(253,186,116,0.25)",
+            background: "rgba(167,139,250,0.10)",
+            border: "1px solid rgba(167,139,250,0.25)",
             fontSize: 16,
           }}>
             <LoungeIcon name="toolbox" size={17} />
@@ -1395,7 +1395,7 @@ function AdminToolsGroup({
         </span>
       </button>
       {open && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8, paddingLeft: 10, borderLeft: "1px solid rgba(253,186,116,0.20)" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8, paddingLeft: 10, borderLeft: "1px solid rgba(167,139,250,0.20)" }}>
           {ADMIN_NAV_SECTIONS.map((section) => {
             const sectionItems = pickNavItems(items, section.hrefs);
             if (sectionItems.length === 0) return null;
