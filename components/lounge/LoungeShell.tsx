@@ -621,7 +621,11 @@ function SidebarBody({
 
       {mobile && <ViewModeToggle />}
 
-      <SidebarPulse isAdmin={me.isAdmin} badges={badges ?? EMPTY_BADGES} onNavigate={onNavigate} />
+      {/* Admins see the Ops Inbox on the wall's right rail now (see
+          components/lounge/OpsInboxCard.tsx) — leaving SidebarPulse
+          here for non-admins so the crew "alerts" mini-card still
+          works in the sidebar. */}
+      {!me.isAdmin && <SidebarPulse isAdmin={me.isAdmin} badges={badges ?? EMPTY_BADGES} onNavigate={onNavigate} />}
 
       <nav style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 9 }}>
         {CREW_NAV_SECTIONS.map((section) => {

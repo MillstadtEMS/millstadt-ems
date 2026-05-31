@@ -12,6 +12,7 @@ import PasskeyPrompt from "@/components/lounge/PasskeyPrompt";
 import PendingFormsWidget from "@/components/lounge/PendingFormsWidget";
 import BirthdayBanner from "@/components/lounge/BirthdayBanner";
 import PollsWidget from "@/components/lounge/PollsWidget";
+import OpsInboxCard from "@/components/lounge/OpsInboxCard";
 import { listTodaysBirthdays } from "@/lib/lounge/birthdays";
 import WelcomeOverlay from "@/components/lounge/WelcomeOverlay";
 import CoffeePrankOverlay from "@/components/lounge/CoffeePrankOverlay";
@@ -83,6 +84,11 @@ export default async function LoungeHome() {
 
           <aside className="mas-home-rail">
             <AtAGlanceCard pendingAcks={pendingAcks.length} dueCerts={expiring.length} />
+            {/* Ops Inbox lives here for admins (used to be in the
+                sidebar — moved per request so the left nav stays
+                tight). Polls its own data, never re-renders the
+                shell. */}
+            {session.isAdmin && <OpsInboxCard />}
             <LatestNoticeCard notice={latestNotice} />
             <PollsWidget />
             {session.isAdmin && <AdminQuickCard />}
