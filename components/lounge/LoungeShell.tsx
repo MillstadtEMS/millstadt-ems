@@ -80,6 +80,7 @@ const NAV: NavItem[] = [
   { href: "/admin/submissions",           label: "Form Submissions",      icon: "inbox", adminOnly: true },
   { href: "/admin/forms",                 label: "Forms & Documentation", icon: "folder", adminOnly: true },
   { href: "/admin/onboarding",            label: "Onboarding",            icon: "checkCircle", adminOnly: true },
+  { href: "/admin/volunteers",            label: "Volunteer Hours",       icon: "users", adminOnly: true },
   { href: "/admin/login-analytics",       label: "Login Activity",        icon: "chart", adminOnly: true },
   { href: "/admin/polls",                 label: "Polls & Surveys",       icon: "chart", adminOnly: true },
 ];
@@ -110,7 +111,7 @@ const ADMIN_NAV_SECTIONS = [
   },
   {
     title: "Operations",
-    hrefs: ["/admin/incidents", "/admin/truckwash", "/admin/hospitals", "/admin/hospitals/suggestions", "/admin/onboarding", "/admin/polls"],
+    hrefs: ["/admin/incidents", "/admin/truckwash", "/admin/hospitals", "/admin/hospitals/suggestions", "/admin/onboarding", "/admin/volunteers", "/admin/polls"],
   },
   {
     title: "Control Room",
