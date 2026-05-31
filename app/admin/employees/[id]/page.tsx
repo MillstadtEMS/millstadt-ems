@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import PersonnelRecordsPanel from "@/components/admin/PersonnelRecordsPanel";
 import EmployeeChangeRequests from "@/components/admin/EmployeeChangeRequests";
 import EmployeeWriteUps from "@/components/admin/EmployeeWriteUps";
+import EmployeeForms from "@/components/admin/EmployeeForms";
 
 interface EmpDto {
   id: string;
@@ -593,6 +594,11 @@ export default function EmployeeDetailPage() {
         {/* ── Disciplinary write-ups / corrective actions ── */}
         <Card title="Corrective actions / write-ups">
           <EmployeeWriteUps employeeId={emp.id} />
+        </Card>
+
+        {/* ── Employee forms (policy acks, training, complaints, leave, etc.) ── */}
+        <Card title="Forms & personnel documentation">
+          <EmployeeForms employeeId={emp.id} />
         </Card>
 
         {toast && (

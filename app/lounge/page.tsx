@@ -9,6 +9,7 @@ import { listAcksForViewer, type Ack } from "@/lib/lounge/acks";
 import LoungeShell from "@/components/lounge/LoungeShell";
 import Wall from "@/components/lounge/Wall";
 import PasskeyPrompt from "@/components/lounge/PasskeyPrompt";
+import PendingFormsWidget from "@/components/lounge/PendingFormsWidget";
 import BirthdayBanner from "@/components/lounge/BirthdayBanner";
 import PollsWidget from "@/components/lounge/PollsWidget";
 import { listTodaysBirthdays } from "@/lib/lounge/birthdays";
@@ -54,6 +55,7 @@ export default async function LoungeHome() {
     <LoungeShell me={me}>
       <style>{LANDING_CSS}</style>
       <BirthdayBanner people={birthdays} />
+      <PendingFormsWidget />
       <PasskeyPrompt />
 
       <div className="mas-home">
