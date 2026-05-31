@@ -6,15 +6,12 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { currentEmployee } from "@/lib/lounge/auth";
-import { getEmployee } from "@/lib/lounge/employees";
 import {
-  createForm,
   listEmployeeVisibleForms,
   listFormsForEmployee,
   listPendingForEmployee,
-  logFormAudit,
 } from "@/lib/lounge/forms/db";
-import { FORM_REGISTRY, getFormSpec } from "@/lib/lounge/forms/registry";
+import { FORM_REGISTRY } from "@/lib/lounge/forms/registry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,36 +55,13 @@ export async function GET() {
   });
 }
 
-export async function POST(req: NextRequest) {
-  const me = await currentEmployee();
-  if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const body = await req.json().catch(() => null) as null | { formType?: string };
-  if (!body?.formType) return NextResponse.json({ error: "formType required" }, { status: 400 });
-
-  const spec = getFormSpec(body.formType);
-  if (!spec) return NextResponse.json({ error: "Unknown form type" }, { status: 400 });
-  if (!spec.employeeFillable) {
-    return NextResponse.json({ error: "This form can only be started by an administrator." }, { status: 403 });
-  }
-
-  const emp = await getEmployee(me.id);
-  if (!emp) return NextResponse.json({ error: "Employee record not found" }, { status: 404 });
-
-  const form = await createForm({
-    formType: spec.id,
-    employeeId: me.id,
-    createdById: me.id,
-    data: { employeeFullName: `${emp.firstName} ${emp.lastName}`.trim() },
-    share: spec.defaults,
-  });
-  await logFormAudit({
-    formId: form.id,
-    actorId: me.id,
-    actorName: `${me.firstName} ${me.lastName}`.trim(),
-    action: "created",
-    details: `${spec.label} — started by employee`,
-  });
-
-  return NextResponse.json({ form });
+export async function POST(_req: NextRequest) {
+  // Direct self-start was removed when the request workflow was added.
+  // Employees can no longer create a form instance directly — they
+  // request the form via POST /api/lounge/form-requests, an admin
+  // approves it, and the resulting assignment seeds the draft.
+  return NextResponse.json(
+    { error: "Forms must be requested via /api/lounge/form-requests. Direct self-start is disabled." },
+    { status: 410 },
+  );
 }

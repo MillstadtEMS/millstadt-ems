@@ -1,12 +1,20 @@
 "use client";
 
 /**
- * Crew-facing forms hub. Pulls /api/lounge/forms which returns four
- * lists:
- *   - pending: admin-pushed forms awaiting employee signature
- *   - drafts:  forms the employee has started themselves
+ * Crew-facing forms hub.
+ *
+ * Behavior the agency wanted:
+ *   No forms are directly self-startable by crew. Instead they pick
+ *   a form from a dropdown and *request* it. Admins approve (which
+ *   spawns the assignment) or deny (with a reason). Once approved,
+ *   the assigned form appears in "Awaiting your signature" and is
+ *   fillable + signable from there.
+ *
+ * Lists rendered:
+ *   - pending: admin-pushed assignments awaiting employee signature
+ *   - drafts:  in-progress drafts
+ *   - requests: this employee's own request history
  *   - visible: finalized forms shared with the employee
- *   - startable: catalog of form types this employee can start
  *
  * Hydration-safe (renders nothing until mounted).
  */
@@ -24,11 +32,19 @@ interface FormItem {
   finalizedAt: string | null;
   pdfUrl: string | null;
 }
-interface StartableItem {
+interface CatalogItem {
   id: string;
   label: string;
   blurb: string;
-  confidentiality: "open" | "confidential_hr" | "confidential_medical";
+}
+interface RequestItem {
+  id: string;
+  formType: string;
+  formLabel: string;
+  message: string | null;
+  status: "pending" | "approved" | "denied";
+  deniedReason: string | null;
+  createdAt: string;
 }
 
 function fmtDate(iso: string | null): string {
@@ -43,38 +59,53 @@ export default function EmployeeFormsHub() {
   const [pending, setPending] = useState<FormItem[]>([]);
   const [drafts, setDrafts] = useState<FormItem[]>([]);
   const [visible, setVisible] = useState<FormItem[]>([]);
-  const [startable, setStartable] = useState<StartableItem[]>([]);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [catalog, setCatalog] = useState<CatalogItem[]>([]);
+  const [requests, setRequests] = useState<RequestItem[]>([]);
+  const [pick, setPick] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<null | { kind: "ok" | "err"; text: string }>(null);
 
   const load = useCallback(async () => {
     try {
-      const r = await fetch("/api/lounge/forms", { cache: "no-store" });
-      if (!r.ok) return;
-      const d = await r.json();
-      setPending(Array.isArray(d.pending) ? d.pending : []);
-      setDrafts(Array.isArray(d.drafts) ? d.drafts : []);
-      setVisible(Array.isArray(d.visible) ? d.visible : []);
-      setStartable(Array.isArray(d.startable) ? d.startable : []);
+      const [formsRes, requestsRes] = await Promise.all([
+        fetch("/api/lounge/forms", { cache: "no-store" }),
+        fetch("/api/lounge/form-requests", { cache: "no-store" }),
+      ]);
+      if (formsRes.ok) {
+        const d = await formsRes.json();
+        setPending(Array.isArray(d.pending) ? d.pending : []);
+        setDrafts(Array.isArray(d.drafts) ? d.drafts : []);
+        setVisible(Array.isArray(d.visible) ? d.visible : []);
+      }
+      if (requestsRes.ok) {
+        const d = await requestsRes.json();
+        setRequests(Array.isArray(d.requests) ? d.requests : []);
+        setCatalog(Array.isArray(d.catalog) ? d.catalog : []);
+      }
     } catch { /* ignore */ }
   }, []);
 
   useEffect(() => { setMounted(true); load(); }, [load]);
+  // Keep linter happy; router is intentionally available for future use.
+  void router;
 
-  async function start(formType: string) {
-    setBusy(formType);
-    setError(null);
+  async function submitRequest() {
+    if (!pick) { setStatus({ kind: "err", text: "Pick a form to request." }); return; }
+    setBusy(true); setStatus(null);
     try {
-      const r = await fetch("/api/lounge/forms", {
+      const r = await fetch("/api/lounge/form-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ formType }),
+        body: JSON.stringify({ formType: pick, message: message.trim() || null }),
       });
-      const d = await r.json();
-      if (!r.ok) { setError(d?.error ?? "Could not start that form."); return; }
-      router.push(`/lounge/forms/${d.form.id}`);
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setStatus({ kind: "err", text: d?.error ?? "Could not submit request." }); return; }
+      setStatus({ kind: "ok", text: "Request sent. An administrator will review it shortly." });
+      setPick(""); setMessage("");
+      load();
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   }
 
@@ -116,34 +147,69 @@ export default function EmployeeFormsHub() {
         </Card>
       )}
 
-      {/* Startable */}
-      {startable.length > 0 && (
-        <Card kicker="Submit something" title="Forms you can start" accent="gold">
-          {error && <div style={errorBox}>{error}</div>}
-          <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-            {startable.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => start(s.id)}
-                disabled={busy === s.id}
-                style={tile}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-                  <span style={{ color: "white", fontWeight: 800, fontSize: 14 }}>{s.label}</span>
-                  {s.confidentiality !== "open" && (
-                    <span style={confidentialPill}>
-                      {s.confidentiality === "confidential_medical" ? "Medical · confidential" : "Confidential"}
-                    </span>
-                  )}
-                </div>
-                <div style={{ color: "#94a3b8", fontSize: 12, lineHeight: 1.5 }}>{s.blurb}</div>
-                <div style={{ marginTop: 10, color: "#f0b429", fontSize: 11, fontWeight: 900, letterSpacing: "0.14em", textTransform: "uppercase" }}>
-                  {busy === s.id ? "Opening…" : "Start →"}
-                </div>
-              </button>
-            ))}
+      {/* Request a form */}
+      <Card kicker="Need a form" title="Request a form" accent="gold">
+        <p style={{ color: "#cbd5e1", fontSize: 13, lineHeight: 1.55, margin: "0 0 10px" }}>
+          Forms aren't visible on this page until an administrator approves your request. Pick the form you need below — leadership will receive your request and send it to you.
+        </p>
+        <div style={{ display: "grid", gap: 10 }}>
+          <label style={{ display: "block" }}>
+            <span style={{ display: "block", color: "#94a3b8", fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 4 }}>Form</span>
+            <select
+              value={pick}
+              onChange={(e) => setPick(e.target.value)}
+              style={fieldStyle}
+            >
+              <option value="">Choose a form…</option>
+              {catalog.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+            </select>
+            {pick && (
+              <p style={{ color: "#94a3b8", fontSize: 12, marginTop: 4 }}>
+                {catalog.find((c) => c.id === pick)?.blurb}
+              </p>
+            )}
+          </label>
+          <label style={{ display: "block" }}>
+            <span style={{ display: "block", color: "#94a3b8", fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 4 }}>Message (optional)</span>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={2}
+              placeholder="Anything leadership should know…"
+              style={{ ...fieldStyle, resize: "vertical" }}
+            />
+          </label>
+          {status && (
+            <div style={{ padding: "10px 12px", borderRadius: 10, fontSize: 13, background: status.kind === "ok" ? "rgba(16,185,129,0.12)" : "rgba(248,113,113,0.12)", color: status.kind === "ok" ? "#34d399" : "#fca5a5" }}>
+              {status.text}
+            </div>
+          )}
+          <div>
+            <button type="button" disabled={busy || !pick} onClick={submitRequest} style={primaryBtn}>
+              {busy ? "Sending…" : "Send request"}
+            </button>
           </div>
+        </div>
+      </Card>
+
+      {/* Your request history */}
+      {requests.length > 0 && (
+        <Card kicker="History" title="Your requests" accent="sky">
+          <ul style={list}>
+            {requests.map((r) => (
+              <li key={r.id} style={{ padding: "10px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, marginBottom: 6 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ color: "white", fontWeight: 800, fontSize: 14 }}>{r.formLabel}</span>
+                  <span style={{ ...requestPill, ...(r.status === "approved" ? requestPillApproved : r.status === "denied" ? requestPillDenied : requestPillPending) }}>
+                    {r.status === "approved" ? "Approved — check above" : r.status === "denied" ? "Denied" : "Pending review"}
+                  </span>
+                  <span style={{ marginLeft: "auto", color: "#94a3b8", fontSize: 12 }}>{fmtDate(r.createdAt)}</span>
+                </div>
+                {r.message && <div style={{ color: "#cbd5e1", fontSize: 12, marginTop: 4 }}>You wrote: {r.message}</div>}
+                {r.status === "denied" && r.deniedReason && <div style={{ color: "#fca5a5", fontSize: 12, marginTop: 4 }}>Reason: {r.deniedReason}</div>}
+              </li>
+            ))}
+          </ul>
         </Card>
       )}
 
@@ -171,10 +237,10 @@ export default function EmployeeFormsHub() {
         </Card>
       )}
 
-      {pending.length === 0 && drafts.length === 0 && startable.length === 0 && visible.length === 0 && (
+      {pending.length === 0 && drafts.length === 0 && visible.length === 0 && requests.length === 0 && (
         <Card kicker="Forms" title="Nothing here yet" accent="gold">
           <p style={{ color: "#cbd5e1", fontSize: 13.5 }}>
-            When leadership sends you something to sign, or you submit a form yourself, it shows up
+            When leadership sends you something to sign, or you request a form above, it shows up
             on this page.
           </p>
         </Card>
@@ -251,33 +317,33 @@ const row: React.CSSProperties = {
   textDecoration: "none",
   color: "#cbd5e1",
 };
-const tile: React.CSSProperties = {
-  textAlign: "left",
-  padding: 14,
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 12,
+const fieldStyle: React.CSSProperties = {
+  width: "100%",
+  background: "rgba(4,13,26,0.6)",
+  border: "1px solid rgba(255,255,255,0.10)",
+  borderRadius: 10,
+  padding: "10px 12px",
   color: "white",
+  fontSize: 14,
+  fontFamily: "inherit",
+};
+const primaryBtn: React.CSSProperties = {
+  background: "#f0b429",
+  color: "#040d1a",
+  border: 0,
+  padding: "10px 18px",
+  borderRadius: 10,
+  fontWeight: 900,
+  fontSize: 12,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
   cursor: "pointer",
   fontFamily: "inherit",
 };
-const confidentialPill: React.CSSProperties = {
-  fontSize: 9,
-  fontWeight: 900,
-  letterSpacing: "0.14em",
-  textTransform: "uppercase",
-  background: "rgba(239,68,68,0.15)",
-  color: "#fca5a5",
-  border: "1px solid rgba(239,68,68,0.35)",
-  padding: "2px 6px",
-  borderRadius: 4,
+const requestPill: React.CSSProperties = {
+  fontSize: 9, fontWeight: 900, letterSpacing: "0.14em", textTransform: "uppercase",
+  padding: "3px 8px", borderRadius: 6,
 };
-const errorBox: React.CSSProperties = {
-  marginBottom: 10,
-  padding: "8px 12px",
-  background: "rgba(239,68,68,0.10)",
-  border: "1px solid rgba(239,68,68,0.30)",
-  borderRadius: 10,
-  color: "#fecaca",
-  fontSize: 13,
-};
+const requestPillPending: React.CSSProperties  = { background: "rgba(125,211,252,0.14)", color: "#7dd3fc" };
+const requestPillApproved: React.CSSProperties = { background: "rgba(16,185,129,0.16)",  color: "#34d399" };
+const requestPillDenied: React.CSSProperties   = { background: "rgba(248,113,113,0.16)", color: "#fca5a5" };

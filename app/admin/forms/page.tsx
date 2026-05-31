@@ -119,6 +119,7 @@ export default function FormsAdminPage() {
 
       <main className="max-w-5xl mx-auto px-5 py-6 space-y-5">
         <InsightsCard />
+        <PendingRequestsCard />
         <AwaitingReviewCard />
 
         <section className="bg-[rgba(7,20,40,0.55)] border border-white/8 rounded-2xl p-5">
@@ -440,6 +441,100 @@ function InsightsCard() {
           )}
         </div>
       </div>
+    </section>
+  );
+}
+
+// ── Pending requests card ──────────────────────────────────────────────
+
+interface RequestItem {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  formType: string;
+  formLabel: string;
+  message: string | null;
+  status: "pending" | "approved" | "denied";
+  createdAt: string;
+}
+
+function PendingRequestsCard() {
+  const [items, setItems] = useState<RequestItem[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  async function refresh() {
+    const r = await fetch("/api/admin/form-requests?status=pending", { cache: "no-store" });
+    if (r.ok) {
+      const d = await r.json();
+      setItems(Array.isArray(d.requests) ? d.requests : []);
+    } else setItems([]);
+  }
+  useEffect(() => { refresh(); }, []);
+
+  async function approve(id: string) {
+    setBusy(id);
+    const r = await fetch(`/api/admin/form-requests/${id}/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    setBusy(null);
+    if (r.ok) refresh();
+    else { const d = await r.json().catch(() => ({})); alert(d.error ?? "Could not approve."); }
+  }
+  async function deny(id: string) {
+    const reason = window.prompt("Reason for denying this request? (the employee will see this)");
+    if (!reason || !reason.trim()) return;
+    setBusy(id);
+    const r = await fetch(`/api/admin/form-requests/${id}/deny`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: reason.trim() }),
+    });
+    setBusy(null);
+    if (r.ok) refresh();
+    else { const d = await r.json().catch(() => ({})); alert(d.error ?? "Could not deny."); }
+  }
+
+  if (items === null) return null;
+  if (items.length === 0) return null;
+
+  return (
+    <section className="bg-sky-500/5 border border-sky-500/30 rounded-2xl p-5">
+      <div className="flex flex-wrap items-baseline gap-3 mb-3">
+        <span className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-300">Action needed</span>
+        <h2 className="text-white font-black text-lg">{items.length} form request{items.length === 1 ? "" : "s"} pending</h2>
+      </div>
+      <ul className="space-y-2">
+        {items.map((it) => (
+          <li key={it.id} className="p-3 bg-[#071428] border border-white/10 rounded-xl">
+            <div className="flex flex-wrap items-baseline gap-3">
+              <span className="text-white font-bold">{it.employeeName}</span>
+              <span className="text-sky-300 text-xs uppercase tracking-wider">{it.formLabel}</span>
+              <span className="text-slate-500 text-xs ml-auto">Requested {fmtDate(it.createdAt)}</span>
+            </div>
+            {it.message && (
+              <p className="text-slate-300 text-sm mt-2">&ldquo;{it.message}&rdquo;</p>
+            )}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                disabled={busy === it.id}
+                onClick={() => approve(it.id)}
+                className="px-3 py-1.5 bg-[#f0b429] text-[#040d1a] rounded-lg text-[11px] font-black uppercase tracking-[0.12em] hover:bg-[#fbbf3a] disabled:opacity-60"
+              >
+                Approve & push
+              </button>
+              <button
+                disabled={busy === it.id}
+                onClick={() => deny(it.id)}
+                className="px-3 py-1.5 bg-transparent text-rose-300 border border-rose-500/30 rounded-lg text-[11px] font-black uppercase tracking-[0.12em] hover:bg-rose-500/10 disabled:opacity-60"
+              >
+                Deny
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
