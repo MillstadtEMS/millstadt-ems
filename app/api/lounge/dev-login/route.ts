@@ -54,6 +54,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No matching employee found" }, { status: 404 });
   }
 
+  // Dev shortcut should never trip the password-reset gate or any
+  // future "must change password" guards — it's a PIN-only express
+  // lane. Make sure the chosen account is clean every time.
+  try {
+    const db = sql();
+    await db`
+      UPDATE lounge_employees
+      SET must_change_password = FALSE, updated_at = NOW()
+      WHERE id = ${emp.id} AND must_change_password = TRUE
+    `;
+  } catch (e) {
+    console.error("[dev-login] could not clear password-reset flag:", e);
+  }
+
   const token = makeSessionToken(emp);
   const opts = cookieOptions(token);
   const res = NextResponse.json({
