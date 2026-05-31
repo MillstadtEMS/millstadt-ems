@@ -1,0 +1,25 @@
+{
+  "name": "Millstadt EMS Ticker Control",
+  "short_name": "Ticker",
+  "description": "KJ-only shortcut for editing the Millstadt EMS live call ticker.",
+  "start_url": "/lounge/ticker-control",
+  "scope": "/lounge/ticker-control",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#03101f",
+  "theme_color": "#03101f",
+  "icons": [
+    {
+      "src": "/images/millstadt-ems/pwa-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/millstadt-ems/pwa-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
