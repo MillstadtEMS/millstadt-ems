@@ -3,6 +3,7 @@ import Link from "next/link";
 import HolidayOverlay from "@/components/HolidayOverlay";
 import HeroCarousel from "@/components/HeroCarousel";
 import CallVolumeCounter from "@/components/CallVolumeCounter";
+import CallStatsExtras from "@/components/CallStatsExtras";
 import SectionDivider from "@/components/SectionDivider";
 import { getContent } from "@/lib/db";
 
@@ -114,6 +115,10 @@ export default async function Home({
           {/* ── hero-middle: call volume counter ── */}
           <div className="hero-middle w-full flex flex-col items-center justify-center text-center">
             <CallVolumeCounter />
+            {/* Monthly + projected year-end — renders nothing during SSR
+                and only mounts after first paint, so it cannot trigger a
+                hydration mismatch. */}
+            <CallStatsExtras />
           </div>
 
           {/* ── hero-bottom: stats bar ── */}
