@@ -676,6 +676,12 @@ function NavSection({
           {item.href === "/admin/submissions" && (
             <SubmissionsSubList pathname={pathname} onNavigate={onNavigate} />
           )}
+          {item.href === "/admin/forms" && (
+            <FormsSubList pathname={pathname} onNavigate={onNavigate} />
+          )}
+          {item.href === "/lounge/forms" && (
+            <CrewFormsSubList pathname={pathname} onNavigate={onNavigate} />
+          )}
         </Fragment>
       ))}
     </div>
@@ -701,6 +707,97 @@ function submissionLabel(formType: string): string {
     .split(/[-_]/)
     .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
     .join(" ");
+}
+
+interface RegistryItem { id: string; label: string; bulkAssignable: boolean }
+interface FormsAdminPayload { registry: RegistryItem[] }
+
+function FormsSubList({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  const [registry, setRegistry] = useState<RegistryItem[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const r = await fetch("/api/admin/forms", { cache: "no-store" });
+        if (!r.ok) { if (!cancelled) setRegistry([]); return; }
+        const d = (await r.json()) as FormsAdminPayload;
+        if (!cancelled) setRegistry(Array.isArray(d.registry) ? d.registry : []);
+      } catch { if (!cancelled) setRegistry([]); }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (registry === null || registry.length === 0) return null;
+  const activeOnFormsPage = pathname.startsWith("/admin/forms");
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 1, paddingLeft: 18, marginTop: 2 }}>
+      {registry.map((r) => (
+        <Link
+          key={r.id}
+          href={`/admin/forms?type=${encodeURIComponent(r.id)}`}
+          onClick={onNavigate}
+          style={{
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "5px 10px", borderRadius: 8,
+            color: activeOnFormsPage ? "#cbd5e1" : "#94a3b8",
+            background: "transparent",
+            textDecoration: "none", fontSize: 12, fontWeight: 600,
+          }}
+        >
+          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
+          {r.bulkAssignable && (
+            <span style={{ color: "#f0b429", fontSize: 8, fontWeight: 900, letterSpacing: "0.14em", background: "rgba(240,180,41,0.10)", border: "1px solid rgba(240,180,41,0.30)", padding: "1px 5px", borderRadius: 4 }}>BULK</span>
+          )}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+interface CatalogItem { id: string; label: string }
+
+function CrewFormsSubList({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  const [catalog, setCatalog] = useState<CatalogItem[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const r = await fetch("/api/lounge/form-requests", { cache: "no-store" });
+        if (!r.ok) { if (!cancelled) setCatalog([]); return; }
+        const d = await r.json();
+        if (!cancelled) setCatalog(Array.isArray(d.catalog) ? d.catalog : []);
+      } catch { if (!cancelled) setCatalog([]); }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (catalog === null || catalog.length === 0) return null;
+  const active = pathname.startsWith("/lounge/forms");
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 1, paddingLeft: 18, marginTop: 2 }}>
+      <div style={{ color: "#94a3b8", fontSize: 9, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", padding: "2px 10px 4px" }}>
+        Request a form
+      </div>
+      {catalog.map((c) => (
+        <Link
+          key={c.id}
+          href={`/lounge/forms?request=${encodeURIComponent(c.id)}`}
+          onClick={onNavigate}
+          style={{
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "5px 10px", borderRadius: 8,
+            color: active ? "#cbd5e1" : "#94a3b8",
+            background: "transparent",
+            textDecoration: "none", fontSize: 12, fontWeight: 600,
+          }}
+        >
+          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.label}</span>
+        </Link>
+      ))}
+    </div>
+  );
 }
 
 function SubmissionsSubList({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {

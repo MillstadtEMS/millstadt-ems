@@ -102,6 +102,11 @@ export default function FormsAdminPage() {
     } finally { setBusy(false); }
   }
 
+  // Show every form type — bulk-assignable ones can be pushed to many
+  // employees via the audience selector below, single-employee ones
+  // (e.g. corrective action) can still be opened to print a blank
+  // copy or seen here for reference. We mark which are bulk-assignable.
+  const allForms = registry;
   const bulkOnly = registry.filter((r) => r.bulkAssignable);
 
   return (
@@ -123,18 +128,25 @@ export default function FormsAdminPage() {
         <AwaitingReviewCard />
 
         <section className="bg-[rgba(7,20,40,0.55)] border border-white/8 rounded-2xl p-5">
-          <h2 className="text-white font-black text-lg mb-3">1. Pick the form</h2>
+          <h2 className="text-white font-black text-lg mb-1">1. Pick the form</h2>
+          <p className="text-slate-400 text-xs mb-3">
+            All {allForms.length} form types are listed. Forms marked <span className="text-[#f0b429] font-bold">Bulk</span> can be pushed to many employees at once via the audience selector below; others can be opened to print a blank.
+          </p>
           <div className="grid sm:grid-cols-2 gap-2">
-            {bulkOnly.map((r) => (
+            {allForms.map((r) => (
               <div
                 key={r.id}
                 className={`rounded-xl px-4 py-3 border transition ${selected === r.id ? "border-[#f0b429] bg-[#f0b429]/10" : "border-white/10 bg-[#071428] hover:border-[#f0b429]/30"}`}
               >
                 <button type="button"
-                  onClick={() => { setSelected(r.id); setTitle(r.label); }}
+                  onClick={() => { if (r.bulkAssignable) { setSelected(r.id); setTitle(r.label); } }}
                   className="text-left w-full"
+                  disabled={!r.bulkAssignable}
                 >
-                  <div className="text-white font-bold text-sm">{r.label}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white font-bold text-sm flex-1">{r.label}</span>
+                    {r.bulkAssignable && <span className="text-[9px] font-black uppercase tracking-[0.16em] text-[#f0b429] bg-[#f0b429]/10 border border-[#f0b429]/30 px-1.5 py-0.5 rounded">Bulk</span>}
+                  </div>
                   <div className="text-slate-400 text-xs mt-1">{r.blurb}</div>
                 </button>
                 <a
