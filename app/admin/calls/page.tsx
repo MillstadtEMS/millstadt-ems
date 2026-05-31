@@ -123,6 +123,14 @@ export default function CallsAdmin() {
   const [saving, setSaving]   = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
+  // Structured edit modal — replaces the legacy text-only inline edit
+  // for the pencil button on each row.
+  const [structEditCall, setStructEditCall] = useState<Call | null>(null);
+  const [structEditValue, setStructEditValue] = useState<StructuredValue>(EMPTY_STRUCTURED);
+  const [structEditLoading, setStructEditLoading] = useState(false);
+  const [structEditSaving, setStructEditSaving] = useState(false);
+  const [structEditError, setStructEditError] = useState<string | null>(null);
+
   // Add call form
   const [showAdd, setShowAdd] = useState(false);
   const [addForm, setAddForm] = useState({
@@ -142,6 +150,58 @@ export default function CallsAdmin() {
   useEffect(() => { load(); }, []);
 
   function startEdit(c: Call) { setEditingId(c.id); setEditValue(c.dispatchNature); }
+
+  async function openStructuredEdit(c: Call) {
+    setStructEditCall(c);
+    setStructEditValue(EMPTY_STRUCTURED);
+    setStructEditLoading(true);
+    setStructEditError(null);
+    try {
+      const r = await fetch(`/api/admin/calls/${c.id}`, { cache: "no-store" });
+      const d = await r.json();
+      if (r.ok && d.structured) {
+        setStructEditValue({
+          ...EMPTY_STRUCTURED,
+          ...d.structured,
+          mutualAidReceivedAgency: d.structured.mutualAidReceivedAgency ?? "",
+          hemsOutcome: d.structured.hemsOutcome ?? "",
+        });
+      }
+    } catch { /* keep defaults */ }
+    finally { setStructEditLoading(false); }
+  }
+  async function saveStructuredEdit() {
+    if (!structEditCall) return;
+    const preview = previewDispatchNature(structEditValue);
+    if (!preview) { setStructEditError("Pick at least a unit or category."); return; }
+    if (structEditValue.hemsRequested && !structEditValue.hemsOutcome) {
+      setStructEditError("HEMS requested needs an outcome.");
+      return;
+    }
+    if (structEditValue.mutualAidReceived && !structEditValue.mutualAidReceivedAgency) {
+      setStructEditError("Mutual aid received needs the assisting agency.");
+      return;
+    }
+    setStructEditSaving(true); setStructEditError(null);
+    const r = await fetch("/api/admin/calls", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: structEditCall.id, structured: structEditValue }),
+    });
+    setStructEditSaving(false);
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      setStructEditError(d?.error ?? "Could not save.");
+      return;
+    }
+    setStructEditCall(null);
+    await load();
+  }
+  function closeStructuredEdit() {
+    setStructEditCall(null);
+    setStructEditValue(EMPTY_STRUCTURED);
+    setStructEditError(null);
+  }
 
   async function saveEdit(id: string) {
     if (!editValue.trim()) return cancelEdit();
@@ -217,7 +277,10 @@ export default function CallsAdmin() {
 
   const rowProps = {
     editValue, saving,
-    onEdit: startEdit, onSave: saveEdit,
+    // Pencil now opens the structured editor — same flow as Add. The
+    // legacy text input flow is only kept around for the saveEdit /
+    // onChange callbacks so the type contract stays stable.
+    onEdit: openStructuredEdit, onSave: saveEdit,
     onCancel: cancelEdit, onDelete: del,
     onEditChange: setEditValue,
     onToggleActive: toggleActive,
@@ -360,6 +423,67 @@ export default function CallsAdmin() {
         </div>
       )}
       <p className="text-slate-700 text-xs mt-8">This editor only changes the display records in the call log table. CAD polling, the call ticker component, and cron behavior are untouched.</p>
+
+      {/* Structured edit modal — opens when the pencil on a row is clicked. */}
+      {structEditCall && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={closeStructuredEdit}
+          style={{
+            position: "fixed", inset: 0, zIndex: 200,
+            background: "rgba(2,9,18,0.75)",
+            display: "flex", alignItems: "flex-start", justifyContent: "center",
+            padding: "32px 12px 12px", overflowY: "auto",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%", maxWidth: 640,
+              background: "#071428", border: "1px solid rgba(240,180,41,0.25)",
+              borderRadius: 16, padding: 20,
+              boxShadow: "0 30px 80px rgba(0,0,0,0.55)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, gap: 12 }}>
+              <div>
+                <div style={{ color: "#7dd3fc", fontSize: 10, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>Edit ticker entry</div>
+                <div style={{ color: "white", fontSize: 14, fontWeight: 800, marginTop: 4, fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace" }}>
+                  {structEditCall.dispatchDate} · {structEditCall.dispatchTime}
+                </div>
+                <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 4 }}>
+                  Originally: <span style={{ color: "#cbd5e1", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace" }}>{structEditCall.dispatchNature}</span>
+                </div>
+              </div>
+              <button onClick={closeStructuredEdit} aria-label="Close" style={{ background: "transparent", border: 0, color: "#94a3b8", fontSize: 22, lineHeight: 1, cursor: "pointer" }}>×</button>
+            </div>
+
+            {structEditLoading ? (
+              <p style={{ color: "#94a3b8", padding: 16 }}>Loading structured fields…</p>
+            ) : (
+              <StructuredCallForm value={structEditValue} onChange={setStructEditValue} />
+            )}
+
+            {structEditError && (
+              <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 10, fontSize: 13, background: "rgba(239,68,68,0.10)", border: "1px solid rgba(239,68,68,0.30)", color: "#fecaca" }}>
+                {structEditError}
+              </div>
+            )}
+
+            <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "flex-end" }}>
+              <button onClick={closeStructuredEdit} disabled={structEditSaving}
+                style={{ background: "transparent", color: "#cbd5e1", border: "1px solid rgba(255,255,255,0.12)", padding: "9px 16px", borderRadius: 10, fontWeight: 800, fontSize: 12, letterSpacing: "0.10em", textTransform: "uppercase", cursor: "pointer", fontFamily: "inherit" }}>
+                Cancel
+              </button>
+              <button onClick={saveStructuredEdit} disabled={structEditSaving || structEditLoading}
+                style={{ background: "#f0b429", color: "#040d1a", border: 0, padding: "9px 18px", borderRadius: 10, fontWeight: 900, fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer", fontFamily: "inherit", opacity: structEditSaving || structEditLoading ? 0.6 : 1 }}>
+                {structEditSaving ? "Saving…" : "Save changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

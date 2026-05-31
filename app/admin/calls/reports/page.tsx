@@ -47,7 +47,27 @@ interface ReportData {
 
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-type Mode = "year" | "ym" | "range";
+type Mode = "ytd" | "thisMonth" | "thisQuarter" | "last30" | "ym" | "year" | "range";
+
+/** Compute the concrete YYYY-MM-DD pair for the simple presets. */
+function presetRange(mode: "ytd" | "thisMonth" | "thisQuarter" | "last30"): { from: string; to: string } {
+  const now = new Date();
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  if (mode === "ytd") {
+    return { from: iso(new Date(now.getFullYear(), 0, 1)), to: iso(now) };
+  }
+  if (mode === "thisMonth") {
+    return { from: iso(new Date(now.getFullYear(), now.getMonth(), 1)), to: iso(now) };
+  }
+  if (mode === "thisQuarter") {
+    const q = Math.floor(now.getMonth() / 3);
+    return { from: iso(new Date(now.getFullYear(), q * 3, 1)), to: iso(now) };
+  }
+  // last30
+  const start = new Date(now);
+  start.setDate(start.getDate() - 29);
+  return { from: iso(start), to: iso(now) };
+}
 
 export default function CallReportsPage() {
   const router = useRouter();
@@ -62,7 +82,7 @@ export default function CallReportsPage() {
   }, [router]);
 
   const now = new Date();
-  const [mode, setMode] = useState<Mode>("ym");
+  const [mode, setMode] = useState<Mode>("ytd");
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [from, setFrom] = useState<string>(now.toISOString().slice(0, 10));
@@ -82,8 +102,14 @@ export default function CallReportsPage() {
     setLoading(true);
     const p = new URLSearchParams();
     if (mode === "year") p.set("year", String(year));
-    if (mode === "ym") { p.set("year", String(year)); p.set("month", String(month)); }
-    if (mode === "range") { p.set("from", from); p.set("to", to); }
+    else if (mode === "ym") { p.set("year", String(year)); p.set("month", String(month)); }
+    else if (mode === "range") { p.set("from", from); p.set("to", to); }
+    else {
+      // ytd / thisMonth / thisQuarter / last30 — pure date-range presets
+      const r = presetRange(mode);
+      p.set("from", r.from);
+      p.set("to", r.to);
+    }
     if (unit)       p.set("unit", unit);
     if (agency)     p.set("agency", agency);
     if (category)   p.set("category", category);
@@ -102,7 +128,11 @@ export default function CallReportsPage() {
   const headline = useMemo(() => {
     if (mode === "year") return `${year}`;
     if (mode === "ym")   return `${MONTH_NAMES[month - 1]} ${year}`;
-    return `${from} → ${to}`;
+    if (mode === "range") return `${from} → ${to}`;
+    if (mode === "ytd") { const r = presetRange("ytd"); return `YTD · ${r.from} → ${r.to}`; }
+    if (mode === "thisMonth")   { const r = presetRange("thisMonth");   return `This month · ${r.from} → ${r.to}`; }
+    if (mode === "thisQuarter") { const r = presetRange("thisQuarter"); return `This quarter · ${r.from} → ${r.to}`; }
+    const r = presetRange("last30"); return `Last 30 days · ${r.from} → ${r.to}`;
   }, [mode, year, month, from, to]);
 
   const handoffRate = data && data.totals.hemsRequested > 0
@@ -131,9 +161,17 @@ export default function CallReportsPage() {
       {/* ── Range + filters ───────────────────────────────────────────── */}
       <section style={card}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-          {(["ym","year","range"] as Mode[]).map((m) => (
+          {([
+            ["ytd",         "YTD"],
+            ["thisMonth",   "This month"],
+            ["thisQuarter", "This quarter"],
+            ["last30",      "Last 30 days"],
+            ["ym",          "Year + month"],
+            ["year",        "Year"],
+            ["range",       "Custom range"],
+          ] as [Mode, string][]).map(([m, label]) => (
             <button key={m} type="button" onClick={() => setMode(m)} style={mode === m ? chipOn : chipOff}>
-              {m === "ym" ? "Year + month" : m === "year" ? "Year" : "Custom range"}
+              {label}
             </button>
           ))}
         </div>
