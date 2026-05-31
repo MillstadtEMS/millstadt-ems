@@ -172,10 +172,11 @@ export default function CallTicker() {
 
   const totalCalls = callCount ?? 0;
 
-  // ── Monthly stats — derived from allCalls so any add/edit/delete in the
-  //    underlying call log updates these numbers on the next /api/cad/log
-  //    poll. Pure derivation; touches none of the dispatch/active logic.
-  const { thisMonthCount, avgPerDay, monthlyBreakdown } = useMemo(() => {
+  // ── Monthly stats + year-end projection — all derived from allCalls so
+  //    any add/edit/delete in the underlying call log updates on the next
+  //    /api/cad/log poll. Pure derivation; touches none of the
+  //    dispatch / active-call / scroll logic.
+  const { thisMonthCount, projectedYearEnd, monthlyBreakdown } = useMemo(() => {
     const monthCounts = new Map<string, number>(); // "YYYY-MM" -> count
     for (const c of allCalls) {
       // dispatchDate is "MM/DD/YYYY" per the API.
@@ -189,22 +190,41 @@ export default function CallTicker() {
     const thisKey = `${y}-${String(monthIdx + 1).padStart(2, "0")}`;
     const thisMonthCount = monthCounts.get(thisKey) ?? 0;
 
-    // Day-of-month denominator: today's day-of-month, never less than 1.
-    // Once the month is over, use the full count of days so the average
-    // becomes the true monthly average instead of decaying.
-    const daysInMonth = new Date(y, monthIdx + 1, 0).getDate();
-    const isCurrentMonth = (() => {
-      // No months in the future, so the only time monthIdx < real-month is
-      // if `now` ticked forward past a month boundary. Treat any month
-      // older than `now` as "completed".
-      return monthIdx === now.getMonth();
-    })();
-    const denom = isCurrentMonth ? Math.max(now.getDate(), 1) : daysInMonth;
-    const avgPerDay = thisMonthCount > 0 ? thisMonthCount / denom : 0;
+    // ── Year-end projection ──────────────────────────────────────────────
+    // Model: take the daily pace from every COMPLETED month so far this
+    // year (steady-state), project that pace over the days that haven't
+    // happened yet, and add today's MTD. Using completed-month pace
+    // instead of YTD-including-MTD keeps the projection from swinging
+    // wildly when the current month is only a few days in.
+    //
+    // If no months are completed yet (we're still in January), fall back
+    // to plain YTD-pace × full-year so the projection still says
+    // something useful on day 5 of January.
+    const yearStartMs = new Date(y, 0, 1).getTime();
+    const yearEndMs   = new Date(y + 1, 0, 1).getTime();
+    const daysInYear  = Math.round((yearEndMs - yearStartMs) / 86_400_000); // 365 or 366
+    const elapsedDays = Math.max(1, (now.getTime() - yearStartMs) / 86_400_000);
 
-    // Per-month breakdown for the current year, ordered Jan→Dec, filtered
-    // to months that have either calls OR are <= current month so the
-    // table doesn't sprawl with empty rows.
+    let projectedYearEnd = 0;
+    let completedTotal = 0;
+    let completedDays = 0;
+    for (let i = 0; i < monthIdx; i++) {
+      const key = `${y}-${String(i + 1).padStart(2, "0")}`;
+      completedTotal += monthCounts.get(key) ?? 0;
+      completedDays  += new Date(y, i + 1, 0).getDate();
+    }
+    const ytdTotal = completedTotal + thisMonthCount;
+    if (completedDays >= 14) {
+      // Enough completed days to use a stable pace.
+      const ratePerDay = completedTotal / completedDays;
+      const daysRemaining = daysInYear - elapsedDays;
+      projectedYearEnd = Math.round(ytdTotal + ratePerDay * daysRemaining);
+    } else if (ytdTotal > 0) {
+      // Early-year fallback: extrapolate from YTD pace.
+      projectedYearEnd = Math.round(ytdTotal * (daysInYear / elapsedDays));
+    }
+
+    // Per-month breakdown for the current year, current month bolded.
     const monthNames = [
       "January", "February", "March", "April", "May", "June",
       "July", "August", "September", "October", "November", "December",
@@ -218,7 +238,7 @@ export default function CallTicker() {
         isCurrent: i === monthIdx,
       });
     }
-    return { thisMonthCount, avgPerDay, monthlyBreakdown };
+    return { thisMonthCount, projectedYearEnd, monthlyBreakdown };
   }, [allCalls, now]);
 
   return (
@@ -272,9 +292,14 @@ export default function CallTicker() {
                 <span className="text-red-500 text-sm font-black">
                   {totalCalls} call{totalCalls !== 1 ? "s" : ""} this year
                 </span>
-                <span className="text-emerald-400 text-sm font-black tabular-nums">
-                  {avgPerDay.toFixed(1)} avg / day
-                </span>
+                {projectedYearEnd > 0 && (
+                  <span
+                    className="text-emerald-400 text-sm font-black tabular-nums"
+                    title="Projected year-end total, based on the daily pace of completed months this year."
+                  >
+                    {projectedYearEnd.toLocaleString()} projected
+                  </span>
+                )}
               </div>
             </div>
 
