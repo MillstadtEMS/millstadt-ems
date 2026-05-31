@@ -40,6 +40,7 @@ const NAV: NavItem[] = [
   { href: "/lounge/maintenance",  label: "Maintenance",     icon: "wrench" },
   { href: "/lounge/truckwash",    label: "Truck Wash Log",  icon: "droplet" },
   { href: "/lounge/hospitals",    label: "Hospitals",       icon: "hospital" },
+  { href: "/lounge/policies",     label: "Policies & SOPs", icon: "book" },
   { href: "/api/lounge/sso/truckcheck", label: "Truck Check", icon: "ambulance", external: true },
   { href: "/api/lounge/sso/inventory",  label: "Inventory",   icon: "box", external: true },
   { href: "/lounge/games",        label: "Games",           icon: "gamepad" },
@@ -55,6 +56,7 @@ const NAV: NavItem[] = [
   { href: "/admin/submissions",           label: "Form Submissions",      icon: "inbox", adminOnly: true },
   { href: "/admin/forms",                 label: "Forms & Documentation", icon: "folder", adminOnly: true },
   { href: "/admin/onboarding",            label: "Onboarding",            icon: "checkCircle", adminOnly: true },
+  { href: "/admin/login-analytics",       label: "Login Activity",        icon: "chart", adminOnly: true },
   { href: "/admin/polls",                 label: "Polls & Surveys",       icon: "chart", adminOnly: true },
 ];
 
@@ -73,7 +75,7 @@ const CREW_NAV_SECTIONS = [
   },
   {
     title: "Resources",
-    hrefs: ["/lounge/hospitals", "/api/lounge/sso/truckcheck", "/api/lounge/sso/inventory", "/lounge/games"],
+    hrefs: ["/lounge/hospitals", "/lounge/policies", "/api/lounge/sso/truckcheck", "/api/lounge/sso/inventory", "/lounge/games"],
   },
 ];
 
@@ -85,6 +87,10 @@ const ADMIN_NAV_SECTIONS = [
   {
     title: "Operations",
     hrefs: ["/admin/incidents", "/admin/truckwash", "/admin/hospitals", "/admin/hospitals/suggestions", "/admin/submissions", "/admin/forms", "/admin/onboarding", "/admin/polls"],
+  },
+  {
+    title: "Analytics",
+    hrefs: ["/admin/login-analytics"],
   },
 ];
 
@@ -917,7 +923,9 @@ type LoungeIconName =
   | "archive"
   | "badge"
   | "bell"
+  | "book"
   | "box"
+  | "calendar"
   | "certificate"
   | "chart"
   | "checkCircle"
@@ -951,7 +959,9 @@ function LoungeIcon({ name, size = 18 }: { name: LoungeIconName; size?: number }
     archive: <><path d="M4 7h16" /><path d="M6 7v13h12V7" /><path d="M4 4h16v3H4z" /><path d="M10 11h4" /></>,
     badge: <><path d="M12 3 5 6v6c0 4.3 2.8 8.2 7 9 4.2-.8 7-4.7 7-9V6l-7-3Z" /><path d="M9 12h6" /><path d="M12 9v6" /></>,
     bell: <><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" /><path d="M10 21h4" /></>,
+    book: <><path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3Z" /><path d="M4 17a3 3 0 0 1 3-3h11" /><path d="M8 8h6" /></>,
     box: <><path d="m21 8-9-5-9 5 9 5 9-5Z" /><path d="M3 8v8l9 5 9-5V8" /><path d="M12 13v8" /></>,
+    calendar: <><path d="M4 6h16v14H4z" /><path d="M4 10h16" /><path d="M8 4v4" /><path d="M16 4v4" /></>,
     certificate: <><path d="M6 3h12v14H6z" /><path d="M9 7h6" /><path d="M9 11h6" /><path d="m10 17-1 4 3-2 3 2-1-4" /></>,
     chart: <><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 16v-5" /><path d="M12 16V8" /><path d="M16 16v-7" /></>,
     checkCircle: <><path d="M21 11.1V12a9 9 0 1 1-5.3-8.2" /><path d="m9 11 3 3L22 4" /></>,
