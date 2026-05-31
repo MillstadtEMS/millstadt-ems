@@ -53,6 +53,7 @@ export default function CallStatsExtras() {
   const [now, setNow] = useState<Date | null>(null);
   const [openTip, setOpenTip] = useState<OpenTip>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Mount + fetch. Nothing here runs during SSR.
   useEffect(() => {
@@ -118,18 +119,21 @@ export default function CallStatsExtras() {
       ? Math.round(avgPerDay * daysInYear)
       : 0;
 
-    // Per-month breakdown — counts.
-    const monthlyBreakdown: { month: string; count: number; isCurrent: boolean }[] = [];
+    // Per-month breakdown — counts. We iterate all 12 months so the
+    // tooltip shows the whole year; future months render as "—" so it's
+    // obvious there's no data yet.
+    const monthlyBreakdown: { month: string; count: number; isCurrent: boolean; isFuture: boolean }[] = [];
     // Per-month breakdown — daily average (completed = full days-in-month;
-    // current month = MTD using today's day-of-month).
-    const dailyAvgByMonth: { month: string; avgPerDay: number; isCurrent: boolean }[] = [];
-    for (let i = 0; i <= monthIdx; i++) {
+    // current month = MTD using today's day-of-month; future = none).
+    const dailyAvgByMonth: { month: string; avgPerDay: number; isCurrent: boolean; isFuture: boolean }[] = [];
+    for (let i = 0; i < 12; i++) {
       const key = `${y}-${String(i + 1).padStart(2, "0")}`;
       const count = monthCounts.get(key) ?? 0;
       const isCurrent = i === monthIdx;
-      monthlyBreakdown.push({ month: MONTH_NAMES[i], count, isCurrent });
+      const isFuture = i > monthIdx;
+      monthlyBreakdown.push({ month: MONTH_NAMES[i], count, isCurrent, isFuture });
       const denom = isCurrent ? Math.max(1, now.getDate()) : new Date(y, i + 1, 0).getDate();
-      dailyAvgByMonth.push({ month: MONTH_NAMES[i], avgPerDay: count / denom, isCurrent });
+      dailyAvgByMonth.push({ month: MONTH_NAMES[i], avgPerDay: isFuture ? 0 : count / denom, isCurrent, isFuture });
     }
 
     return {
@@ -148,6 +152,16 @@ export default function CallStatsExtras() {
 
   function toggle(which: OpenTip) {
     setOpenTip((cur) => (cur === which ? null : which));
+  }
+  // Hover-open + hover-close-with-grace-period so the cursor can travel
+  // from tile to tooltip without flicker.
+  function openHover(which: OpenTip) {
+    if (closeTimerRef.current) { clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
+    setOpenTip(which);
+  }
+  function scheduleClose() {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => setOpenTip(null), 180);
   }
 
   return (
@@ -172,14 +186,17 @@ export default function CallStatsExtras() {
         clickable
         isOpen={openTip === "monthly"}
         onToggle={() => toggle("monthly")}
+        onHoverOpen={() => openHover("monthly")}
+        onHoverClose={scheduleClose}
         tooltip={
           <PerMonthTable
             title={`${stats.year} · monthly totals`}
             accent="gold"
             rows={stats.monthlyBreakdown.map((m) => ({
               label: m.month,
-              value: m.count.toLocaleString(),
+              value: m.isFuture ? "—" : m.count.toLocaleString(),
               isCurrent: m.isCurrent,
+              isFuture: m.isFuture,
             }))}
           />
         }
@@ -192,14 +209,17 @@ export default function CallStatsExtras() {
         clickable
         isOpen={openTip === "avg"}
         onToggle={() => toggle("avg")}
+        onHoverOpen={() => openHover("avg")}
+        onHoverClose={scheduleClose}
         tooltip={
           <PerMonthTable
             title={`${stats.year} · avg / day by month`}
             accent="sky"
             rows={stats.dailyAvgByMonth.map((m) => ({
               label: m.month + (m.isCurrent ? "  (MTD)" : ""),
-              value: m.avgPerDay.toFixed(1),
+              value: m.isFuture ? "—" : m.avgPerDay.toFixed(1),
               isCurrent: m.isCurrent,
+              isFuture: m.isFuture,
             }))}
           />
         }
@@ -230,6 +250,8 @@ function Stat({
   clickable,
   isOpen,
   onToggle,
+  onHoverOpen,
+  onHoverClose,
   tooltip,
   title,
 }: {
@@ -239,6 +261,8 @@ function Stat({
   clickable?: boolean;
   isOpen?: boolean;
   onToggle?: () => void;
+  onHoverOpen?: () => void;
+  onHoverClose?: () => void;
   tooltip?: React.ReactNode;
   title?: string;
 }) {
@@ -257,6 +281,10 @@ function Stat({
       tabIndex={clickable ? 0 : undefined}
       onClick={clickable ? onToggle : undefined}
       onKeyDown={(e) => { if (clickable && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onToggle?.(); } }}
+      onMouseEnter={clickable ? onHoverOpen : undefined}
+      onMouseLeave={clickable ? onHoverClose : undefined}
+      onFocus={clickable ? onHoverOpen : undefined}
+      onBlur={clickable ? onHoverClose : undefined}
       style={tileStyle}
       title={title}
       aria-expanded={clickable ? !!isOpen : undefined}
@@ -307,13 +335,17 @@ function Stat({
           role="dialog"
           aria-modal="false"
           onClick={(e) => e.stopPropagation()}
+          onMouseEnter={onHoverOpen}
+          onMouseLeave={onHoverClose}
           style={{
             position: "absolute",
             top: "calc(100% + 8px)",
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 60,
-            minWidth: 220,
+            minWidth: 240,
+            maxHeight: 400,
+            overflowY: "auto",
             background: "#020912",
             border: `1px solid ${accentColor(accent)}40`,
             borderRadius: 12,
@@ -336,7 +368,7 @@ function PerMonthTable({
 }: {
   title: string;
   accent: Accent;
-  rows: { label: string; value: string; isCurrent: boolean }[];
+  rows: { label: string; value: string; isCurrent: boolean; isFuture: boolean }[];
 }) {
   return (
     <div>
@@ -363,7 +395,7 @@ function PerMonthTable({
               borderRadius: 6,
               background: r.isCurrent ? `${accentColor(accent)}14` : "transparent",
               fontSize: 13,
-              color: r.isCurrent ? "white" : "#cbd5e1",
+              color: r.isCurrent ? "white" : r.isFuture ? "#475569" : "#cbd5e1",
               fontWeight: r.isCurrent ? 800 : 500,
             }}
           >
