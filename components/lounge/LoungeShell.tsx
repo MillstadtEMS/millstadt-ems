@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import VersionWatcher from "./VersionWatcher";
 import PresenceHeartbeat from "./PresenceHeartbeat";
 import { NotificationsToast } from "./NotificationsCenter";
@@ -604,18 +604,157 @@ function NavSection({
   onNavigate?: () => void;
   badges?: { notifications: number; messages: number; submissions: number };
 }) {
+  // Collapsed-by-default persists per-section in localStorage so the
+  // crew's preferred drawer state survives navigation. A section that
+  // contains the active link opens automatically so the user isn't
+  // surprised by where they are.
+  const containsActive = items.some((i) => isActive(pathname, i));
+  const storageKey = `lounge-sidebar:${title}`;
+  const [open, setOpen] = useState<boolean>(() => true);
+
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem(storageKey);
+      if (v === "0") setOpen(false);
+      else if (v === "1") setOpen(true);
+    } catch { /* ignore */ }
+  }, [storageKey]);
+
+  useEffect(() => {
+    // Always re-open when the user navigates INTO a section so they
+    // see where they are. The setter is a no-op when already open.
+    if (containsActive) setOpen(true);
+  }, [containsActive]);
+
+  function toggle() {
+    setOpen((cur) => {
+      const next = !cur;
+      try { window.localStorage.setItem(storageKey, next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
+  }
+
+  // Aggregate unread badge for the whole section so a collapsed section
+  // still shows the unread crew dot.
+  const sectionBadge = items.reduce((sum, i) => sum + badgeForItem(i, badges), 0);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <div style={navSection}>{title}</div>
-      {items.map((item) => (
-        <NavRow
-          key={item.href}
-          item={item}
-          active={isActive(pathname, item)}
-          onNavigate={onNavigate}
-          badge={badgeForItem(item, badges)}
-        />
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        style={{
+          ...navSection,
+          width: "100%",
+          background: "transparent",
+          border: 0,
+          textAlign: "left",
+          cursor: "pointer",
+          fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        <span style={{ display: "inline-block", width: 10, color: "#f0b429", transform: open ? "rotate(90deg)" : "none", transition: "transform 0.15s" }}>▸</span>
+        <span style={{ flex: 1 }}>{title}</span>
+        {!open && sectionBadge > 0 && (
+          <span style={{ background: "#ef4444", color: "white", fontSize: 9, fontWeight: 900, padding: "1px 6px", borderRadius: 999, minWidth: 16, textAlign: "center" }}>
+            {sectionBadge}
+          </span>
+        )}
+      </button>
+      {open && items.map((item) => (
+        <Fragment key={item.href}>
+          <NavRow
+            item={item}
+            active={isActive(pathname, item)}
+            onNavigate={onNavigate}
+            badge={badgeForItem(item, badges)}
+          />
+          {item.href === "/admin/submissions" && (
+            <SubmissionsSubList pathname={pathname} onNavigate={onNavigate} />
+          )}
+        </Fragment>
       ))}
+    </div>
+  );
+}
+
+interface SubmissionCategory { formType: string; total: number; unread: number; latest: string | null }
+
+const SUBMISSION_LABELS: Record<string, string> = {
+  "birthday":          "Birthday Requests",
+  "ride-along":        "Ride-Along Requests",
+  "event-request":     "Event Appearances",
+  "education-request": "Education Requests",
+  "equipment-request": "Equipment Requests",
+  "employment":        "Job Applications",
+  "contact":           "Contact Messages",
+  "donate":            "Donations",
+  "birthday-station":  "Birthday at Station",
+};
+
+function submissionLabel(formType: string): string {
+  return SUBMISSION_LABELS[formType] ?? formType
+    .split(/[-_]/)
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join(" ");
+}
+
+function SubmissionsSubList({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  const [cats, setCats] = useState<SubmissionCategory[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const r = await fetch("/api/admin/submissions", { cache: "no-store" });
+        if (!r.ok) { if (!cancelled) setCats([]); return; }
+        const d = await r.json();
+        if (!cancelled) setCats(Array.isArray(d) ? d : []);
+      } catch {
+        if (!cancelled) setCats([]);
+      }
+    }
+    load();
+    const intervalId = setInterval(load, 60_000);
+    return () => { cancelled = true; clearInterval(intervalId); };
+  }, []);
+
+  if (cats === null || cats.length === 0) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 1, paddingLeft: 18, marginTop: 2 }}>
+      {cats.map((c) => {
+        const href = `/admin/submissions?type=${encodeURIComponent(c.formType)}`;
+        const active = pathname.startsWith("/admin/submissions") && typeof window !== "undefined" && new URL(window.location.href).searchParams.get("type") === c.formType;
+        return (
+          <Link
+            key={c.formType}
+            href={href}
+            onClick={onNavigate}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "5px 10px",
+              borderRadius: 8,
+              color: active ? "#f0b429" : "#cbd5e1",
+              background: active ? "rgba(240,180,41,0.10)" : "transparent",
+              textDecoration: "none",
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{submissionLabel(c.formType)}</span>
+            {c.unread > 0 && (
+              <span style={{ background: "#ef4444", color: "white", fontSize: 9, fontWeight: 900, padding: "1px 6px", borderRadius: 999, minWidth: 16, textAlign: "center" }}>
+                {c.unread}
+              </span>
+            )}
+          </Link>
+        );
+      })}
     </div>
   );
 }
