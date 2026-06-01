@@ -5,6 +5,7 @@ import HeroCarousel from "@/components/HeroCarousel";
 import CallVolumeCounter from "@/components/CallVolumeCounter";
 import CallStatsExtras from "@/components/CallStatsExtras";
 import TopCallCategories from "@/components/TopCallCategories";
+import DistrictMapStat from "@/components/DistrictMapStat";
 import SectionDivider from "@/components/SectionDivider";
 import { getContent } from "@/lib/db";
 
@@ -47,7 +48,7 @@ export default async function Home({
     getContent("homepage.stats.2.num",   "24 / 7",             isPreview),
     getContent("homepage.stats.2.label", "Emergency Response", isPreview),
     getContent("homepage.stats.3.num",   "Millstadt",          isPreview),
-    getContent("homepage.stats.3.label", "Service Area",       isPreview),
+    getContent("homepage.stats.3.label", "District",           isPreview),
   ]);
 
   return (
@@ -132,13 +133,15 @@ export default async function Home({
                 { num: stat0Num, label: stat0Label },
                 { num: stat1Num, label: stat1Label },
                 { num: stat2Num, label: stat2Label },
-                { num: stat3Num, label: stat3Label },
               ].map((s) => (
                 <div key={s.label} className="text-center px-6 py-2">
                   <div className="text-[#f0b429] font-black text-3xl tracking-tight">{s.num}</div>
                   <div className="text-slate-400 text-sm uppercase tracking-widest mt-2">{s.label}</div>
                 </div>
               ))}
+              {/* District tile is interactive — hover for a preview of the
+                  service-area map, click for the full zoomable view. */}
+              <DistrictMapStat num={stat3Num} label={stat3Label} />
             </div>
           </div>
 
