@@ -357,17 +357,17 @@ export default function TickerControlClient({ firstName }: { firstName: string }
         {showAdd && (
           <section className="ticker-panel">
             <span className="ticker-kicker">New ticker item</span>
-            <div className="ticker-form-grid">
-              <label>
+            <div className="ticker-meta-grid">
+              <label className="ticker-meta-field">
                 <span>Date</span>
                 <input type="date" value={addMeta.dispatchDate} onChange={(e) => setAddMeta((f) => ({ ...f, dispatchDate: e.target.value }))} />
               </label>
-              <label>
+              <label className="ticker-meta-field">
                 <span>Time</span>
                 <input type="time" value={addMeta.dispatchTime} onChange={(e) => setAddMeta((f) => ({ ...f, dispatchTime: e.target.value }))} />
               </label>
             </div>
-            <label>
+            <label className="ticker-meta-field">
               <span>Event number</span>
               <input value={addMeta.eventNumber} onChange={(e) => setAddMeta((f) => ({ ...f, eventNumber: e.target.value }))} placeholder="Optional" />
             </label>
@@ -450,7 +450,7 @@ export default function TickerControlClient({ firstName }: { firstName: string }
               <button className="ticker-ghost-button" type="button" onClick={cancelEdit} aria-label="Close">Close</button>
             </header>
             <div className="ticker-modal-body">
-              <label>
+              <label className="ticker-meta-field">
                 <span>Event number</span>
                 <input value={editEventNumber} onChange={(e) => setEditEventNumber(e.target.value)} placeholder="Optional" />
               </label>
@@ -822,13 +822,19 @@ const TICKER_CONTROL_CSS = `
   padding: 16px;
   margin-bottom: 18px;
 }
-.ticker-panel label,
-.ticker-edit-stack label {
+/* ── Meta fields (date / time / event number) ──────────────────────────
+   Scoped to .ticker-meta-field so the label/input styles never cascade
+   into the StructuredCallForm. The form ships its own inline-styled
+   checkboxes, labels, and inputs; a leaked descendant rule like
+   width:100% padding:13px 14px on every input rendered the form's
+   checkboxes as full-width boxes and forced every CheckRow label into
+   uppercase monospace with wide letter-spacing — see the user-reported
+   mobile bug fix on 2026-05-31. */
+.ticker-meta-field {
   display: grid;
   gap: 7px;
 }
-.ticker-panel label span,
-.ticker-edit-stack label span {
+.ticker-meta-field > span {
   color: #94a3b8;
   font-family: var(--mas-font-mono), ui-monospace, monospace;
   font-size: 10.5px;
@@ -836,10 +842,8 @@ const TICKER_CONTROL_CSS = `
   letter-spacing: 0.13em;
   text-transform: uppercase;
 }
-.ticker-panel input,
-.ticker-panel textarea,
-.ticker-edit-stack input,
-.ticker-edit-stack textarea {
+.ticker-meta-field > input,
+.ticker-meta-field > textarea {
   width: 100%;
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 15px;
@@ -849,19 +853,16 @@ const TICKER_CONTROL_CSS = `
   font: inherit;
   outline: none;
 }
-.ticker-panel textarea,
-.ticker-edit-stack textarea {
+.ticker-meta-field > textarea {
   resize: vertical;
   line-height: 1.45;
 }
-.ticker-panel input:focus,
-.ticker-panel textarea:focus,
-.ticker-edit-stack input:focus,
-.ticker-edit-stack textarea:focus {
+.ticker-meta-field > input:focus,
+.ticker-meta-field > textarea:focus {
   border-color: rgba(240,180,41,0.55);
   box-shadow: 0 0 0 3px rgba(240,180,41,0.10);
 }
-.ticker-form-grid {
+.ticker-meta-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
@@ -992,12 +993,42 @@ const TICKER_CONTROL_CSS = `
   padding: 12px;
   color: #e2e8f0;
 }
-.ticker-structured-wrap input,
+/* Inputs (text/date/time/select/textarea) — leave checkboxes + radios
+   alone. The structured form's CheckRows use real checkboxes and broke
+   horribly when an earlier descendant input rule sized them like
+   full-width text inputs. */
+.ticker-structured-wrap input:not([type="checkbox"]):not([type="radio"]),
 .ticker-structured-wrap select,
 .ticker-structured-wrap textarea {
   background: rgba(7,20,40,0.85);
   color: white;
   border-color: rgba(255,255,255,0.14);
+  font-size: 16px; /* prevents iOS Safari from auto-zooming on focus */
+}
+/* Defensive reset: scrub any inherited uppercase / monospace /
+   letter-spacing so labels inside the form render as designed. */
+.ticker-structured-wrap label,
+.ticker-structured-wrap label > span,
+.ticker-structured-wrap span {
+  text-transform: none;
+  letter-spacing: normal;
+}
+/* Wider tap targets + larger font on mobile so the structured form
+   doesn't feel like a desktop port shrunk to phone width. */
+@media (max-width: 520px) {
+  .ticker-structured-wrap input,
+  .ticker-structured-wrap select,
+  .ticker-structured-wrap textarea {
+    padding: 10px 12px !important;
+    font-size: 16px !important;
+  }
+  .ticker-structured-wrap select {
+    /* Override the inline width:130 on the UnitPicker dropdown so it
+       can flex to fill the row width on narrow screens. */
+    width: auto !important;
+    min-width: 130px;
+    flex: 1 1 auto;
+  }
 }
 
 /* ── Edit modal ───────────────────────────────────────────────────── */
@@ -1045,32 +1076,8 @@ const TICKER_CONTROL_CSS = `
   overflow-y: auto;
   display: grid;
   gap: 12px;
-}
-.ticker-modal-body label {
-  display: grid;
-  gap: 6px;
-}
-.ticker-modal-body label span {
-  color: #94a3b8;
-  font-family: var(--mas-font-mono), ui-monospace, monospace;
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-.ticker-modal-body input {
-  width: 100%;
-  background: rgba(2,9,18,0.70);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 15px;
-  color: white;
-  padding: 13px 14px;
-  font: inherit;
-  outline: none;
-}
-.ticker-modal-body input:focus {
-  border-color: rgba(240,180,41,0.55);
-  box-shadow: 0 0 0 3px rgba(240,180,41,0.10);
+  /* Stop iOS Safari from inflating the dropdown / input fonts. */
+  -webkit-text-size-adjust: 100%;
 }
 .ticker-modal-foot {
   display: grid;
