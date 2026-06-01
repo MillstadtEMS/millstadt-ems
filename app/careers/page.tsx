@@ -151,30 +151,6 @@ const positions = [
       "Good standing within the Southwestern Illinois EMS System or reciprocity required",
     ],
   },
-  {
-    title: "Prehospital Physician",
-    badge: "PHMD",
-    badgeColor: "text-red-400 border-red-400/30 bg-red-400/10",
-    description:
-      "PHMDs represent the pinnacle of prehospital clinical care. You'll respond to high-acuity calls and complex transports, working directly alongside our crews and medical director Dr. Leo Hsu.",
-    responsibilities: [
-      "Respond to 911 calls and perform care within physician scope of practice",
-      "Perform interfacility and critical care transports as assigned",
-      "Operate and assist in operating emergency vehicles",
-      "Complete accurate patient care reports (PCRs) for every call",
-      "Maintain unit readiness — equipment checks, cleaning, and restocking",
-      "Communicate with dispatch, medical control, hospital staff, and the public",
-      "Maintain all required licensure, certifications, and continuing education",
-    ],
-    requirements: [
-      "Current Illinois medical license (MD or DO) in good standing",
-      "Board certified or board eligible in Emergency Medicine, Anesthesiology, Surgery, or related specialty preferred",
-      "Current ACLS, PALS, and ATLS certifications",
-      "Prior EMS or prehospital experience strongly preferred",
-      "DEA license required",
-      "Good standing within the Southwestern Illinois EMS System or reciprocity required",
-    ],
-  },
 ];
 
 export default async function CareersPage({
@@ -186,7 +162,7 @@ export default async function CareersPage({
   const isPreview = params?.preview === "ve";
   const [pageTitle, subtitle] = await Promise.all([
     getContent("careers.header.title", "Careers at Millstadt EMS", isPreview),
-    getContent("careers.header.subtitle", "We are always looking for dedicated prehospital providers at every level — EMT through PHMD. Millstadt EMS offers a progressive clinical environment with physician medical direction through Dr. Leo Hsu.", isPreview),
+    getContent("careers.header.subtitle", "We are always looking for dedicated prehospital providers at every level — EMT through PHPA. Millstadt EMS offers a progressive clinical environment with physician medical direction through Dr. Leo Hsu.", isPreview),
   ]);
 
   return (
@@ -197,7 +173,7 @@ export default async function CareersPage({
         description={subtitle}
       >
         <PublicMetric label="Provider levels" value={positions.length} tone="gold" />
-        <PublicMetric label="Clinical direction" value="ALS" tone="cyan" />
+        <PublicMetric label="Direct paths" value={positions.length} tone="cyan" />
       </PublicPageHero>
 
       {/* Position Listings */}
@@ -263,7 +239,7 @@ export default async function CareersPage({
       <section className="bg-[#071428] border-t border-white/5" style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap flex flex-col items-center text-center gap-6">
           <h2 className="text-3xl font-black text-white">Ready to Apply?</h2>
-          <p className="text-slate-400 text-base max-w-md leading-relaxed">Submit your application online. All provider levels welcome — EMT through PHMD.</p>
+          <p className="text-slate-400 text-base max-w-md leading-relaxed">Submit your application online. All provider levels welcome — EMT through PHPA.</p>
           <div className="flex flex-col sm:flex-row gap-4 pt-2 w-full max-w-sm">
             <Link
               href="/careers/apply"

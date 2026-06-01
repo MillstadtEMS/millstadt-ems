@@ -50,14 +50,28 @@ export default function NewsPage() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetch("/api/millstadt-news")
-      .then(r => r.json())
-      .then(d => {
-        if (d.ok) setItems(d.items);
-        else setError(true);
-        setLoading(false);
-      })
-      .catch(() => { setError(true); setLoading(false); });
+    let cancelled = false;
+    async function load() {
+      try {
+        // cache: "no-store" so the browser actually re-hits the API
+        // on each interval tick — the server still throttles upstream
+        // via the 30 min revalidate cache, but the page sees fresh
+        // data the moment that cache rotates.
+        const r = await fetch("/api/millstadt-news", { cache: "no-store" });
+        const d = await r.json();
+        if (cancelled) return;
+        if (d.ok) { setItems(d.items); setError(false); }
+        else if (!items.length) setError(true);
+      } catch {
+        if (!cancelled && !items.length) setError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    const id = setInterval(load, 60_000);
+    return () => { cancelled = true; clearInterval(id); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

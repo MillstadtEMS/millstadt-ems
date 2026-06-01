@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getContent } from "@/lib/db";
 import SectionDivider from "@/components/SectionDivider";
-import { PublicMetric, PublicPageHero } from "@/components/site/PublicChrome";
+import { PublicPageHero } from "@/components/site/PublicChrome";
 
 export const dynamic = "force-dynamic";
 
@@ -30,10 +30,7 @@ export default async function BillingPage({
         eyebrow="Patient Services"
         title={pageTitle}
         description="Pay your bill securely online, request a run number, or contact us with questions about your account."
-      >
-        <PublicMetric label="Secure portal" value="EMSMC" tone="gold" />
-        <PublicMetric label="Assistance" value="Local" tone="cyan" />
-      </PublicPageHero>
+      />
 
       {/* ── VOID ── */}
       <SectionDivider />
@@ -85,45 +82,6 @@ export default async function BillingPage({
           <p className="text-slate-600 text-sm mt-8">
             Clicking Pay Bill Online will redirect you to emsecurepay.emsbilling.com — an external, secure billing portal.
           </p>
-        </div>
-      </section>
-
-      {/* ── VOID ── */}
-      <SectionDivider />
-
-      {/* FAQ / Info */}
-      <section className="bg-[#071428]" style={{ paddingTop: 24, paddingBottom: 24 }}>
-        <div className="wrap">
-          <div className="flex items-center gap-3 mb-8">
-            <span className="h-px w-8 bg-[#f0b429]" />
-            <span className="text-[#f0b429] text-sm font-black tracking-[0.25em] uppercase">Billing Information</span>
-          </div>
-          <h2 className="text-5xl font-black text-white mb-16">Common Questions</h2>
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl">
-            {[
-              {
-                q: "How do I pay my bill?",
-                a: "Visit emsecurepay.emsbilling.com to pay online securely. You can also call our station at (618) 476-1201 for billing assistance.",
-              },
-              {
-                q: "What information do I need to pay?",
-                a: "You will need your account number, which can be found on your billing statement or by contacting our office.",
-              },
-              {
-                q: "What if I have questions about my bill?",
-                a: "Contact us at (618) 476-1201 or email millstadtems@gmail.com. Our staff will be happy to assist with any billing questions.",
-              },
-              {
-                q: "Does insurance cover ambulance services?",
-                a: "Most major insurance plans, Medicare, and Medicaid cover emergency ambulance services, subject to your plan's terms and copay requirements.",
-              },
-            ].map((item) => (
-              <div key={item.q} className="p-12 rounded-2xl bg-[#040d1a] border border-white/8">
-                <h3 className="text-white font-bold text-lg mb-5">{item.q}</h3>
-                <p className="text-slate-400 text-base leading-relaxed">{item.a}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
