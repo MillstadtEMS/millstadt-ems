@@ -23,10 +23,21 @@ const MAP_W = 1244;
 const MAP_H = 1496;
 
 export default function DistrictMapStat({ num, label }: { num: string; label: string }) {
+  // ── Preview sizing (compact so it sits right above the tile instead
+  //    of stretching from top-of-viewport down to the tile).
+  const PREVIEW_W = 240;
+  const PREVIEW_PAD = 8;
+  const PREVIEW_BORDER = 1;
+  const CAPTION_H = 22;
+  // Natural aspect of the map is 1244 × 1496 → 1.203 tall per wide.
+  const previewImgW = PREVIEW_W - PREVIEW_PAD * 2 - PREVIEW_BORDER * 2;
+  const previewImgH = Math.round(previewImgW * (MAP_H / MAP_W));
+  const PREVIEW_H = previewImgH + PREVIEW_PAD * 2 + PREVIEW_BORDER * 2 + CAPTION_H;
+
   const [mounted, setMounted] = useState(false);
   const [hover, setHover] = useState(false);
   const [open, setOpen] = useState(false);
-  const [coords, setCoords] = useState<{ left: number; top: number; width: number } | null>(null);
+  const [coords, setCoords] = useState<{ left: number; top: number; placement: "above" | "below" } | null>(null);
   const tileRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
@@ -48,15 +59,19 @@ export default function DistrictMapStat({ num, label }: { num: string; label: st
   }, [open]);
 
   // Recompute the preview popover position whenever the tile or
-  // viewport moves while it's open.
+  // viewport moves while it's open. Prefer "above the tile" because
+  // the District stat sits at the bottom of the hero and that's where
+  // the user's eye is; flip "below the tile" only if there isn't
+  // room above without clipping the viewport.
   useEffect(() => {
     if (!hover || open || !tileRef.current) return;
     function update() {
       if (!tileRef.current) return;
       const r = tileRef.current.getBoundingClientRect();
-      // Place the preview above the bottom stats bar so it doesn't
-      // run off the page edge; centered horizontally on the tile.
-      setCoords({ left: r.left + r.width / 2, top: r.top - 12, width: r.width });
+      const wantAbove = r.top - 12 - PREVIEW_H >= 12;
+      const placement: "above" | "below" = wantAbove ? "above" : "below";
+      const top = placement === "above" ? r.top - 12 : r.bottom + 12;
+      setCoords({ left: r.left + r.width / 2, top, placement });
     }
     update();
     window.addEventListener("scroll", update, true);
@@ -65,7 +80,7 @@ export default function DistrictMapStat({ num, label }: { num: string; label: st
       window.removeEventListener("scroll", update, true);
       window.removeEventListener("resize", update);
     };
-  }, [hover, open]);
+  }, [hover, open, PREVIEW_H]);
 
   const stopHover = useCallback(() => setHover(false), []);
 
@@ -104,15 +119,20 @@ export default function DistrictMapStat({ num, label }: { num: string; label: st
             position: "fixed",
             top: coords.top,
             left: coords.left,
-            transform: "translate(-50%, -100%)",
+            // Above-placement anchors the box's BOTTOM at coords.top.
+            // Below-placement anchors the box's TOP at coords.top.
+            transform: coords.placement === "above"
+              ? "translate(-50%, -100%)"
+              : "translate(-50%, 0)",
             zIndex: 9998,
             pointerEvents: "none",
-            background: "#020912",
-            border: "1px solid rgba(240,180,41,0.40)",
+            background: "#ffffff",
+            border: "2px solid #f0b429",
             borderRadius: 12,
-            boxShadow: "0 18px 40px rgba(0,0,0,0.65)",
-            padding: 8,
-            width: 280,
+            boxShadow:
+              "0 22px 50px rgba(0,0,0,0.75), 0 0 0 4px rgba(240,180,41,0.18)",
+            padding: PREVIEW_PAD,
+            width: PREVIEW_W,
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -121,12 +141,20 @@ export default function DistrictMapStat({ num, label }: { num: string; label: st
             alt=""
             width={MAP_W}
             height={MAP_H}
-            style={{ display: "block", width: "100%", height: "auto", borderRadius: 6 }}
+            style={{
+              display: "block",
+              width: "100%",
+              height: previewImgH,
+              objectFit: "contain",
+              borderRadius: 6,
+              background: "#ffffff",
+            }}
           />
           <div style={{
-            color: "#94a3b8", fontSize: 10, fontWeight: 800,
+            color: "#0f172a", fontSize: 10, fontWeight: 900,
             letterSpacing: "0.18em", textTransform: "uppercase",
-            textAlign: "center", marginTop: 6,
+            textAlign: "center", marginTop: 4, height: CAPTION_H - 4,
+            display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             Click to open full map
           </div>
