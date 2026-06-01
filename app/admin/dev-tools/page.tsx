@@ -77,19 +77,17 @@ export default function DevToolsPage() {
     if (!tu) return;
     setBusy("ack"); setStatus(null);
     try {
-      const r = await fetch("/api/admin/acks", {
+      const r = await fetch("/api/admin/dev/test-user/ack", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Dev test notice",
           body: "This is a dev-tools test acknowledgment. Visible only to the @testuser dummy account.",
           requiresAcknowledgment: true,
-          targetKind: "explicit",
-          targetEmployeeIds: [tu.id],
         }),
       });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) { setStatus({ kind: "err", text: d?.error ?? "Ack push failed." }); return; }
+      if (!r.ok) { setStatus({ kind: "err", text: d?.error ?? `Ack push failed (HTTP ${r.status}).` }); return; }
       setStatus({ kind: "ok", text: "Acknowledgment pushed to Test User only." });
     } finally { setBusy(null); }
   }
@@ -106,12 +104,8 @@ export default function DevToolsPage() {
           body: "If you can see this in the @testuser bell, notifications work end-to-end.",
         }),
       });
-      if (!r.ok) {
-        // Fall back: hit the generic admin route for arbitrary notifs
-        // if/when it exists. For now just surface a clear "no route yet".
-        setStatus({ kind: "err", text: "Notification route not built yet. (Coming soon.)" });
-        return;
-      }
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setStatus({ kind: "err", text: d?.error ?? `Notification push failed (HTTP ${r.status}).` }); return; }
       setStatus({ kind: "ok", text: "Bell notification queued for Test User." });
     } finally { setBusy(null); }
   }

@@ -33,7 +33,11 @@ export async function POST() {
   await nuke("forms",                   () => db`DELETE FROM lounge_forms                  WHERE employee_id = ${id} RETURNING 1`);
   await nuke("form_requests",           () => db`DELETE FROM lounge_form_requests          WHERE employee_id = ${id} RETURNING 1`);
   await nuke("notifications",           () => db`DELETE FROM lounge_notifications          WHERE recipient_id = ${id} RETURNING 1`);
-  await nuke("ack_states",              () => db`DELETE FROM lounge_ack_states             WHERE employee_id = ${id} RETURNING 1`);
+  // lounge_ack_states keys on user_id (not employee_id) — see schema.sql.
+  await nuke("ack_states",              () => db`DELETE FROM lounge_ack_states             WHERE user_id = ${id} RETURNING 1`);
+  // Targeted "test-user only" acks pushed via dev-tools; cascading
+  // FK on lounge_ack_states wipes any per-row state automatically.
+  await nuke("targeted_acks",           () => db`DELETE FROM lounge_acks                   WHERE target_employee_id = ${id} RETURNING 1`);
   await nuke("onboarding_records",      () => db`DELETE FROM lounge_onboarding_records     WHERE employee_id = ${id} RETURNING 1`);
   await nuke("profile_change_requests", () => db`DELETE FROM lounge_profile_change_requests WHERE employee_id = ${id} RETURNING 1`);
 

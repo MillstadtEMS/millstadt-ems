@@ -2,9 +2,23 @@
  * Acknowledgments — "eyes-on" notices. Admin posts; every active employee
  * must mark them viewed (and acknowledged, when `requires_acknowledgment`).
  * Compliance roll-up lets admins see who's outstanding.
+ *
+ * Targeting: by default an ack is global (every active employee sees it).
+ * Set `target_employee_id` to a specific employee to scope visibility —
+ * used by the dev-tools "push test ack" flow so a dummy ack only shows
+ * up in the @testuser inbox.
  */
 import { randomUUID } from "crypto";
 import { sql } from "./db";
+
+let targetingSchemaEnsured = false;
+async function ensureAckTargetingSchema() {
+  if (targetingSchemaEnsured) return;
+  const db = sql();
+  await db`ALTER TABLE lounge_acks ADD COLUMN IF NOT EXISTS target_employee_id TEXT REFERENCES lounge_employees(id) ON DELETE CASCADE`;
+  await db`CREATE INDEX IF NOT EXISTS lounge_acks_target_idx ON lounge_acks (target_employee_id) WHERE target_employee_id IS NOT NULL`;
+  targetingSchemaEnsured = true;
+}
 
 export interface AckAuthor {
   id: string;
@@ -72,6 +86,7 @@ function rowToAck(r: DbAckRow): Ack {
 }
 
 export async function listAcksForViewer(viewerId: string): Promise<Ack[]> {
+  await ensureAckTargetingSchema();
   const db = sql();
   const rows = (await db`
     SELECT a.id, a.title, a.body, a.category, a.created_by,
@@ -82,6 +97,7 @@ export async function listAcksForViewer(viewerId: string): Promise<Ack[]> {
            e.photo_url AS author_photo_url
     FROM lounge_acks a
     JOIN lounge_employees e ON e.id = a.created_by
+    WHERE a.target_employee_id IS NULL OR a.target_employee_id = ${viewerId}
     ORDER BY a.created_at DESC
   `) as unknown as DbAckRow[];
 
@@ -104,6 +120,7 @@ export async function listAcksForViewer(viewerId: string): Promise<Ack[]> {
 }
 
 export async function listAcksAdminRollup(): Promise<Ack[]> {
+  await ensureAckTargetingSchema();
   const db = sql();
   const rows = (await db`
     SELECT a.id, a.title, a.body, a.category, a.created_by,
@@ -117,6 +134,7 @@ export async function listAcksAdminRollup(): Promise<Ack[]> {
            (SELECT COUNT(*)::int FROM lounge_ack_states WHERE ack_id = a.id AND acknowledged_at IS NOT NULL) AS acknowledged_count
     FROM lounge_acks a
     JOIN lounge_employees e ON e.id = a.created_by
+    WHERE a.target_employee_id IS NULL
     ORDER BY a.created_at DESC
   `) as unknown as (DbAckRow & { total_employees: number; viewed_count: number; acknowledged_count: number })[];
 
@@ -138,18 +156,20 @@ export async function createAck(input: {
   attachmentUri?: string;
   attachmentName?: string;
   attachmentType?: string;
+  targetEmployeeId?: string | null;
 }): Promise<Ack> {
+  await ensureAckTargetingSchema();
   const id = randomUUID();
   const db = sql();
   await db`
     INSERT INTO lounge_acks
       (id, title, body, category, created_by, requires_acknowledgment,
-       attachment_uri, attachment_name, attachment_type)
+       attachment_uri, attachment_name, attachment_type, target_employee_id)
     VALUES
       (${id}, ${input.title.trim()}, ${input.body}, ${input.category},
        ${input.authorId}, ${input.requiresAcknowledgment},
        ${input.attachmentUri ?? null}, ${input.attachmentName ?? null},
-       ${input.attachmentType ?? null})
+       ${input.attachmentType ?? null}, ${input.targetEmployeeId ?? null})
   `;
   const rows = (await db`
     SELECT a.id, a.title, a.body, a.category, a.created_by,
