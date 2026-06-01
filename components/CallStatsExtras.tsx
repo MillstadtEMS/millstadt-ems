@@ -251,7 +251,7 @@ export default function CallStatsExtras() {
   }
   function scheduleClose() {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
-    closeTimerRef.current = setTimeout(() => setOpenTip(null), 180);
+    closeTimerRef.current = setTimeout(() => setOpenTip(null), 320);
   }
 
   return (
@@ -454,7 +454,11 @@ function Stat({
     function update() {
       if (!tileRef.current) return;
       const r = tileRef.current.getBoundingClientRect();
-      setCoords({ top: r.bottom + 8, left: r.left + r.width / 2, width: r.width });
+      // Tooltip top sits flush with tile bottom (no void) so the
+      // cursor can't fall into a "no-element" gap that triggers
+      // mouseleave on the tile without immediately triggering
+      // mouseenter on the tooltip.
+      setCoords({ top: r.bottom, left: r.left + r.width / 2, width: r.width });
     }
     update();
     window.addEventListener("scroll", update, true);
