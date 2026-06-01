@@ -2,6 +2,22 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { startAuthentication as browserStartAuthentication } from "@simplewebauthn/browser";
+import StructuredCallForm, {
+  EMPTY_STRUCTURED,
+  previewDispatchNature,
+  type StructuredValue,
+} from "@/components/admin/StructuredCallForm";
+
+interface TickerStructured {
+  units: string[];
+  category: string;
+  notes: string;
+  mutualAidReceived: boolean;
+  mutualAidReceivedAgency: string;
+  mutualAidGiven: boolean;
+  hemsRequested: boolean;
+  hemsOutcome: string;
+}
 
 interface TickerCall {
   id: string;
@@ -13,6 +29,30 @@ interface TickerCall {
   sourceYear: number;
   completedAt: string | null;
   createdAt: string | null;
+  structured?: TickerStructured;
+}
+
+/** Coerce whatever the API returns for a row's structured columns into
+ *  the strict StructuredValue the editor expects. */
+function toStructuredValue(s: TickerStructured | undefined): StructuredValue {
+  if (!s) return { ...EMPTY_STRUCTURED };
+  const allowedUnits = ["M3925", "M3926", "M3935"] as const;
+  type AllowedUnit = (typeof allowedUnits)[number];
+  const units = (s.units ?? []).filter((u): u is AllowedUnit =>
+    (allowedUnits as readonly string[]).includes(u),
+  );
+  const outcome: "handoff" | "disregarded" | "" =
+    s.hemsOutcome === "handoff" || s.hemsOutcome === "disregarded" ? s.hemsOutcome : "";
+  return {
+    units,
+    category: s.category ?? "",
+    notes: s.notes ?? "",
+    mutualAidReceived: !!s.mutualAidReceived,
+    mutualAidReceivedAgency: (s.mutualAidReceivedAgency ?? "") as StructuredValue["mutualAidReceivedAgency"],
+    mutualAidGiven: !!s.mutualAidGiven,
+    hemsRequested: !!s.hemsRequested,
+    hemsOutcome: outcome,
+  };
 }
 
 function todayLocal() {
@@ -132,19 +172,22 @@ export default function TickerControlClient({ firstName }: { firstName: string }
   const [calls, setCalls] = useState<TickerCall[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState("");
-  const [draftEvent, setDraftEvent] = useState("");
   const [status, setStatus] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [adding, setAdding] = useState(false);
-  const [addForm, setAddForm] = useState({
+  const [addMeta, setAddMeta] = useState({
     dispatchDate: todayLocal(),
     dispatchTime: nowTimeLocal(),
-    dispatchNature: "",
     eventNumber: "",
     active: true,
   });
+  const [addStructured, setAddStructured] = useState<StructuredValue>({ ...EMPTY_STRUCTURED });
+
+  // Edit modal state — opens with the row's structured values prefilled.
+  const [editingCall, setEditingCall] = useState<TickerCall | null>(null);
+  const [editStructured, setEditStructured] = useState<StructuredValue>({ ...EMPTY_STRUCTURED });
+  const [editEventNumber, setEditEventNumber] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const active = useMemo(() => calls.filter((call) => !call.completedAt), [calls]);
   const recent = useMemo(() => calls.filter((call) => call.completedAt).slice(0, 8), [calls]);
@@ -168,36 +211,47 @@ export default function TickerControlClient({ firstName }: { firstName: string }
   }, []);
 
   function startEdit(call: TickerCall) {
-    setEditingId(call.id);
-    setDraft(call.dispatchNature);
-    setDraftEvent(call.eventNumber ?? "");
+    setEditingCall(call);
+    setEditStructured(toStructuredValue(call.structured));
+    setEditEventNumber(call.eventNumber ?? "");
     setStatus("");
   }
 
   function cancelEdit() {
-    setEditingId(null);
-    setDraft("");
-    setDraftEvent("");
+    setEditingCall(null);
+    setEditStructured({ ...EMPTY_STRUCTURED });
+    setEditEventNumber("");
   }
 
-  async function saveEdit(id: string) {
-    if (!draft.trim()) return;
-    setBusyId(id);
+  async function saveEdit() {
+    if (!editingCall) return;
+    const preview = previewDispatchNature(editStructured).trim();
+    if (!preview) {
+      setStatus("Pick at least a unit or a category before saving.");
+      return;
+    }
+    setSavingEdit(true);
+    setBusyId(editingCall.id);
     setStatus("");
     const res = await fetch("/api/lounge/ticker-control/calls", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, dispatchNature: draft.trim(), eventNumber: draftEvent.trim() }),
+      body: JSON.stringify({
+        id: editingCall.id,
+        eventNumber: editEventNumber.trim(),
+        structured: editStructured,
+      }),
     });
+    setSavingEdit(false);
     setBusyId(null);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setStatus(data.error || "Could not save ticker text.");
+      setStatus(data.error || "Could not save ticker entry.");
       return;
     }
-    setEditingId(null);
-    setDraft("");
-    setDraftEvent("");
+    setEditingCall(null);
+    setEditStructured({ ...EMPTY_STRUCTURED });
+    setEditEventNumber("");
     setStatus("Saved. Public ticker will pick it up on its next refresh.");
     await load({ quiet: true });
   }
@@ -221,13 +275,23 @@ export default function TickerControlClient({ firstName }: { firstName: string }
   }
 
   async function addCall() {
-    if (!addForm.dispatchNature.trim()) return;
+    const preview = previewDispatchNature(addStructured).trim();
+    if (!preview) {
+      setStatus("Pick at least a unit or a category before saving.");
+      return;
+    }
     setAdding(true);
     setStatus("");
     const res = await fetch("/api/lounge/ticker-control/calls", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(addForm),
+      body: JSON.stringify({
+        dispatchDate: addMeta.dispatchDate,
+        dispatchTime: addMeta.dispatchTime,
+        eventNumber: addMeta.eventNumber,
+        active: addMeta.active,
+        structured: addStructured,
+      }),
     });
     setAdding(false);
     if (!res.ok) {
@@ -236,7 +300,8 @@ export default function TickerControlClient({ firstName }: { firstName: string }
       return;
     }
     setShowAdd(false);
-    setAddForm({ dispatchDate: todayLocal(), dispatchTime: nowTimeLocal(), dispatchNature: "", eventNumber: "", active: true });
+    setAddMeta({ dispatchDate: todayLocal(), dispatchTime: nowTimeLocal(), eventNumber: "", active: true });
+    setAddStructured({ ...EMPTY_STRUCTURED });
     setStatus("Added. Public ticker will pick it up on its next refresh.");
     await load({ quiet: true });
   }
@@ -292,35 +357,28 @@ export default function TickerControlClient({ firstName }: { firstName: string }
         {showAdd && (
           <section className="ticker-panel">
             <span className="ticker-kicker">New ticker item</span>
-            <label>
-              <span>Ticker text</span>
-              <textarea
-                autoFocus
-                rows={3}
-                value={addForm.dispatchNature}
-                onChange={(e) => setAddForm((f) => ({ ...f, dispatchNature: e.target.value }))}
-                placeholder="Example: Medical Emergency"
-              />
-            </label>
             <div className="ticker-form-grid">
               <label>
                 <span>Date</span>
-                <input type="date" value={addForm.dispatchDate} onChange={(e) => setAddForm((f) => ({ ...f, dispatchDate: e.target.value }))} />
+                <input type="date" value={addMeta.dispatchDate} onChange={(e) => setAddMeta((f) => ({ ...f, dispatchDate: e.target.value }))} />
               </label>
               <label>
                 <span>Time</span>
-                <input type="time" value={addForm.dispatchTime} onChange={(e) => setAddForm((f) => ({ ...f, dispatchTime: e.target.value }))} />
+                <input type="time" value={addMeta.dispatchTime} onChange={(e) => setAddMeta((f) => ({ ...f, dispatchTime: e.target.value }))} />
               </label>
             </div>
             <label>
               <span>Event number</span>
-              <input value={addForm.eventNumber} onChange={(e) => setAddForm((f) => ({ ...f, eventNumber: e.target.value }))} placeholder="Optional" />
+              <input value={addMeta.eventNumber} onChange={(e) => setAddMeta((f) => ({ ...f, eventNumber: e.target.value }))} placeholder="Optional" />
             </label>
+            <div className="ticker-structured-wrap">
+              <StructuredCallForm value={addStructured} onChange={setAddStructured} />
+            </div>
             <label className="ticker-check">
-              <input type="checkbox" checked={addForm.active} onChange={(e) => setAddForm((f) => ({ ...f, active: e.target.checked }))} />
+              <input type="checkbox" checked={addMeta.active} onChange={(e) => setAddMeta((f) => ({ ...f, active: e.target.checked }))} />
               <span>Show on the public ticker immediately</span>
             </label>
-            <button className="ticker-primary-button" type="button" onClick={addCall} disabled={adding || !addForm.dispatchNature.trim()}>
+            <button className="ticker-primary-button" type="button" onClick={addCall} disabled={adding || !previewDispatchNature(addStructured).trim()}>
               {adding ? "Saving..." : "Save item"}
             </button>
           </section>
@@ -342,15 +400,8 @@ export default function TickerControlClient({ firstName }: { firstName: string }
                   key={call.id}
                   call={call}
                   live
-                  editing={editingId === call.id}
-                  draft={draft}
-                  draftEvent={draftEvent}
                   busy={busyId === call.id}
-                  onDraft={setDraft}
-                  onDraftEvent={setDraftEvent}
                   onEdit={() => startEdit(call)}
-                  onSave={() => saveEdit(call.id)}
-                  onCancel={cancelEdit}
                   onHide={() => setActive(call, false)}
                   onShow={() => setActive(call, true)}
                   onDelete={() => removeCall(call.id)}
@@ -374,15 +425,8 @@ export default function TickerControlClient({ firstName }: { firstName: string }
                   key={call.id}
                   call={call}
                   live={false}
-                  editing={editingId === call.id}
-                  draft={draft}
-                  draftEvent={draftEvent}
                   busy={busyId === call.id}
-                  onDraft={setDraft}
-                  onDraftEvent={setDraftEvent}
                   onEdit={() => startEdit(call)}
-                  onSave={() => saveEdit(call.id)}
-                  onCancel={cancelEdit}
                   onHide={() => setActive(call, false)}
                   onShow={() => setActive(call, true)}
                   onDelete={() => removeCall(call.id)}
@@ -394,6 +438,35 @@ export default function TickerControlClient({ firstName }: { firstName: string }
 
         <InstallHint />
       </section>
+
+      {editingCall && (
+        <div className="ticker-modal-bg" onClick={cancelEdit} role="dialog" aria-modal="true">
+          <div className="ticker-modal" onClick={(e) => e.stopPropagation()}>
+            <header className="ticker-modal-head">
+              <div>
+                <span className="ticker-kicker">Edit ticker entry</span>
+                <h2>{shortDate(editingCall.dispatchDate)} {editingCall.dispatchTime}</h2>
+              </div>
+              <button className="ticker-ghost-button" type="button" onClick={cancelEdit} aria-label="Close">Close</button>
+            </header>
+            <div className="ticker-modal-body">
+              <label>
+                <span>Event number</span>
+                <input value={editEventNumber} onChange={(e) => setEditEventNumber(e.target.value)} placeholder="Optional" />
+              </label>
+              <div className="ticker-structured-wrap">
+                <StructuredCallForm value={editStructured} onChange={setEditStructured} />
+              </div>
+            </div>
+            <footer className="ticker-modal-foot">
+              <button className="ticker-ghost-button" type="button" onClick={cancelEdit}>Cancel</button>
+              <button className="ticker-primary-button" type="button" onClick={saveEdit} disabled={savingEdit || !previewDispatchNature(editStructured).trim()}>
+                {savingEdit ? "Saving..." : "Save changes"}
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
@@ -401,79 +474,44 @@ export default function TickerControlClient({ firstName }: { firstName: string }
 function TickerCard({
   call,
   live,
-  editing,
-  draft,
-  draftEvent,
   busy,
-  onDraft,
-  onDraftEvent,
   onEdit,
-  onSave,
-  onCancel,
   onHide,
   onShow,
   onDelete,
 }: {
   call: TickerCall;
   live: boolean;
-  editing: boolean;
-  draft: string;
-  draftEvent: string;
   busy: boolean;
-  onDraft: (value: string) => void;
-  onDraftEvent: (value: string) => void;
   onEdit: () => void;
-  onSave: () => void;
-  onCancel: () => void;
   onHide: () => void;
   onShow: () => void;
   onDelete: () => void;
 }) {
   return (
     <article className={`ticker-call-card ${live ? "is-live" : ""}`}>
-      {editing ? (
-        <div className="ticker-edit-stack">
-          <label>
-            <span>Ticker text</span>
-            <textarea rows={3} value={draft} onChange={(e) => onDraft(e.target.value)} />
-          </label>
-          <label>
-            <span>Event number</span>
-            <input value={draftEvent} onChange={(e) => onDraftEvent(e.target.value)} placeholder="Optional" />
-          </label>
-          <div className="ticker-card-actions">
-            <button className="ticker-primary-button" type="button" onClick={onSave} disabled={busy || !draft.trim()}>
-              {busy ? "Saving..." : "Save"}
-            </button>
-            <button className="ticker-ghost-button" type="button" onClick={onCancel}>Cancel</button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="ticker-call-top">
-            <span className={`ticker-state ${live ? "live" : ""}`}>{live ? "Live" : "Log"}</span>
-            <span className="ticker-time">{shortDate(call.dispatchDate)} {call.dispatchTime}</span>
-          </div>
-          <h3>{call.dispatchNature}</h3>
-          <div className="ticker-call-meta">
-            {call.eventNumber && <span>{call.eventNumber}</span>}
-            <span>{live ? "Showing on ticker" : `Completed ${timeAgo(call.completedAt)}`}</span>
-          </div>
-          <div className="ticker-card-actions">
-            <button className="ticker-ghost-button" type="button" onClick={onEdit}>Edit text</button>
-            {live ? (
-              <button className="ticker-warn-button" type="button" onClick={onHide} disabled={busy}>
-                {busy ? "..." : "Remove live"}
-              </button>
-            ) : (
-              <button className="ticker-primary-button" type="button" onClick={onShow} disabled={busy}>
-                {busy ? "..." : "Show live"}
-              </button>
-            )}
-            <button className="ticker-danger-button" type="button" onClick={onDelete} disabled={busy}>Delete</button>
-          </div>
-        </>
-      )}
+      <div className="ticker-call-top">
+        <span className={`ticker-state ${live ? "live" : ""}`}>{live ? "Live" : "Log"}</span>
+        <span className="ticker-time">{shortDate(call.dispatchDate)} {call.dispatchTime}</span>
+      </div>
+      <h3>{call.dispatchNature}</h3>
+      <div className="ticker-call-meta">
+        {call.eventNumber && <span>{call.eventNumber}</span>}
+        <span>{live ? "Showing on ticker" : `Completed ${timeAgo(call.completedAt)}`}</span>
+      </div>
+      <div className="ticker-card-actions">
+        <button className="ticker-ghost-button" type="button" onClick={onEdit}>Edit</button>
+        {live ? (
+          <button className="ticker-warn-button" type="button" onClick={onHide} disabled={busy}>
+            {busy ? "..." : "Remove live"}
+          </button>
+        ) : (
+          <button className="ticker-primary-button" type="button" onClick={onShow} disabled={busy}>
+            {busy ? "..." : "Show live"}
+          </button>
+        )}
+        <button className="ticker-danger-button" type="button" onClick={onDelete} disabled={busy}>Delete</button>
+      </div>
     </article>
   );
 }
@@ -936,14 +974,110 @@ const TICKER_CONTROL_CSS = `
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
-.ticker-edit-stack {
-  display: grid;
-  gap: 11px;
-}
 .ticker-empty {
   padding: 18px;
   color: #94a3b8;
   text-align: center;
+}
+
+/* ── Structured form wrapper ──────────────────────────────────────────
+   The shared StructuredCallForm component (also used on /admin/calls)
+   ships its own inline-styled cards. Drop it inside this wrapper so it
+   inherits a slightly inset background + brighter text without us
+   having to fork the component for mobile. */
+.ticker-structured-wrap {
+  background: rgba(2,9,18,0.45);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 12px;
+  color: #e2e8f0;
+}
+.ticker-structured-wrap input,
+.ticker-structured-wrap select,
+.ticker-structured-wrap textarea {
+  background: rgba(7,20,40,0.85);
+  color: white;
+  border-color: rgba(255,255,255,0.14);
+}
+
+/* ── Edit modal ───────────────────────────────────────────────────── */
+.ticker-modal-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(2,9,18,0.74);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: grid;
+  align-items: stretch;
+  justify-items: center;
+  padding: max(env(safe-area-inset-top), 14px) 12px max(env(safe-area-inset-bottom), 14px);
+  overscroll-behavior: contain;
+}
+.ticker-modal {
+  width: min(100%, 520px);
+  max-height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: linear-gradient(180deg, rgba(7,20,40,0.97), rgba(2,9,18,0.97));
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 22px;
+  box-shadow: 0 32px 70px rgba(0,0,0,0.6);
+  overflow: hidden;
+}
+.ticker-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.ticker-modal-head h2 {
+  margin: 4px 0 0;
+  color: white;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+.ticker-modal-body {
+  padding: 14px 16px;
+  overflow-y: auto;
+  display: grid;
+  gap: 12px;
+}
+.ticker-modal-body label {
+  display: grid;
+  gap: 6px;
+}
+.ticker-modal-body label span {
+  color: #94a3b8;
+  font-family: var(--mas-font-mono), ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.ticker-modal-body input {
+  width: 100%;
+  background: rgba(2,9,18,0.70);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 15px;
+  color: white;
+  padding: 13px 14px;
+  font: inherit;
+  outline: none;
+}
+.ticker-modal-body input:focus {
+  border-color: rgba(240,180,41,0.55);
+  box-shadow: 0 0 0 3px rgba(240,180,41,0.10);
+}
+.ticker-modal-foot {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255,255,255,0.08);
 }
 @media (max-width: 430px) {
   .ticker-control-page { padding-left: 10px; padding-right: 10px; }
