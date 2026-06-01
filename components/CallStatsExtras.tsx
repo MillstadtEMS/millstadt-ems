@@ -246,14 +246,21 @@ export default function CallStatsExtras() {
   // District map) takes the focus — keeps only one open at a time so
   // the user can hover freely between them. MUST be declared before
   // the early returns below or React's hook-ordering rule fires.
+  //
+  // IMPORTANT: all three stat tiles share THIS component's `openTip`
+  // state, so when the user moves cursor from Monthly to Avg the
+  // openHover("avg") call broadcasts "stat-avg" synchronously.
+  // The listener closure still has the old openTip ("monthly") so
+  // myId comes out "stat-monthly", `activeId !== myId` is true, and
+  // we'd queue setOpenTip(null) right after openHover already queued
+  // setOpenTip("avg") — net result: tooltip never opens. Ignore any
+  // sibling stat-* broadcast and only react to truly external popovers.
   useEffect(() => {
     return onHeroPopoverChange((activeId) => {
       if (!activeId || !openTip) return;
-      const myId = channelIdFor(openTip);
-      if (activeId !== myId) {
-        if (closeTimerRef.current) { clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
-        setOpenTip(null);
-      }
+      if (activeId === "stat-monthly" || activeId === "stat-avg" || activeId === "stat-projected") return;
+      if (closeTimerRef.current) { clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
+      setOpenTip(null);
     });
   }, [openTip]);
 

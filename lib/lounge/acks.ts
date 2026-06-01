@@ -290,12 +290,14 @@ export async function deleteAck(ackId: string): Promise<void> {
 
 /** Returns just the outstanding-acks count for badge display. */
 export async function outstandingAckCount(viewerId: string): Promise<number> {
+  await ensureAckTargetingSchema();
   const db = sql();
   const rows = (await db`
     SELECT COUNT(*)::int AS c
     FROM lounge_acks a
     LEFT JOIN lounge_ack_states s ON s.ack_id = a.id AND s.user_id = ${viewerId}
     WHERE a.requires_acknowledgment = TRUE
+      AND (a.target_employee_id IS NULL OR a.target_employee_id = ${viewerId})
       AND s.acknowledged_at IS NULL
   `) as unknown as { c: number }[];
   return rows[0]?.c ?? 0;
