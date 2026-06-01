@@ -852,10 +852,24 @@ function NavSection({
   badges?: ShellBadges;
 }) {
   const containsActive = items.some((i) => isActive(pathname, i));
-  // Sidebar sections always start collapsed on a fresh visit. The active
-  // page is still shown in the mobile/desktop header context, but the
-  // long lists stay tucked away until the user asks for them.
-  const [open, setOpen] = useState<boolean>(false);
+  // Sections that contain the current page start expanded so the user
+  // can navigate between siblings (e.g., between Home Base tabs)
+  // without the menu collapsing on every click. Sections that don't
+  // contain the active route stay tucked away until the user opens
+  // them. On any navigation OUT of a category, that category collapses
+  // automatically because `containsActive` flips false at the new
+  // pathname.
+  const [open, setOpen] = useState<boolean>(containsActive);
+
+  // Re-sync the open state when the route changes — if the user
+  // navigates from one section into another, the previously-open
+  // section should close on its own rather than stay pinned by an
+  // earlier setState. Manual toggles still work because the user
+  // click happens AFTER the effect's initial sync for any given
+  // pathname.
+  useEffect(() => {
+    setOpen(containsActive);
+  }, [containsActive]);
 
   function toggle() {
     setOpen((cur) => !cur);
@@ -1340,7 +1354,12 @@ function AdminToolsGroup({
   const adminBadge = (badges?.submissions ?? 0)
     + (badges?.formRequests ?? 0)
     + (badges?.profileRequests ?? 0);
-  const [open, setOpen] = useState<boolean>(() => false);
+  // Expand the Admin Tools group whenever the user is actually on
+  // an admin route, and collapse it the moment they navigate out.
+  const [open, setOpen] = useState<boolean>(anyActive);
+  useEffect(() => {
+    setOpen(anyActive);
+  }, [anyActive]);
 
   return (
     <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 2 }}>
