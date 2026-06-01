@@ -66,13 +66,13 @@ export default function TopCallCategories() {
   }
 
   if (!mounted || !data || data.categories.length === 0) return null;
-  const top3 = data.categories.slice(0, 3);
+  const top5 = data.categories.slice(0, 5);
 
   return (
     <div
       ref={wrapRef}
       style={{
-        width: "100%", maxWidth: 480,
+        width: "100%", maxWidth: 500,
         margin: "16px auto 0", padding: "0 16px",
         position: "relative",
       }}
@@ -105,11 +105,11 @@ export default function TopCallCategories() {
           </span>
         </div>
         <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 5 }}>
-          {top3.map((c, i) => (
+          {top5.map((c, i) => (
             <li key={c.name} style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
               <span style={{
                 display: "inline-block", minWidth: 18, textAlign: "center",
-                color: ["#f0b429","#7dd3fc","#c4b5fd"][i] ?? "#94a3b8",
+                color: ["#f0b429","#7dd3fc","#c4b5fd","#86efac","#fda4af"][i] ?? "#94a3b8",
                 fontWeight: 900, fontVariantNumeric: "tabular-nums",
                 fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
                 fontSize: 11.5,
@@ -121,9 +121,17 @@ export default function TopCallCategories() {
             </li>
           ))}
         </ol>
+        <div style={{
+          marginTop: 8, paddingTop: 8,
+          borderTop: "1px solid rgba(255,255,255,0.05)",
+          color: "#64748b", fontSize: 10, fontWeight: 700,
+          letterSpacing: "0.14em", textTransform: "uppercase", textAlign: "center",
+        }}>
+          Hover for the full year-to-date list
+        </div>
       </div>
 
-      {/* Hover popover with top 5 ranking */}
+      {/* Hover popover with EVERY category for the year */}
       {open && coords && createPortal(
         <div
           role="dialog"
@@ -132,30 +140,37 @@ export default function TopCallCategories() {
           style={{
             position: "fixed", top: coords.top, left: coords.left,
             transform: "translateX(-50%)",
-            zIndex: 9999, width: Math.min(440, Math.max(300, coords.width + 40)),
+            zIndex: 9999, width: Math.min(460, Math.max(320, coords.width + 40)),
             maxHeight: "calc(100vh - 80px)", overflowY: "auto",
             background: "#020912", border: "1px solid rgba(240,180,41,0.40)",
             borderRadius: 12, boxShadow: "0 18px 40px rgba(0,0,0,0.65)",
             padding: 14, textAlign: "left",
           }}
         >
-          <div style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase", marginBottom: 8 }}>
-            {data.year} YTD · Top 5 categories
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, gap: 8 }}>
+            <span style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
+              {data.year} YTD · All categories
+            </span>
+            <span style={{ color: "#64748b", fontSize: 10.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+              {data.categories.length} types · {data.total} calls
+            </span>
           </div>
           <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 3 }}>
-            {data.categories.slice(0, 5).map((c, i) => (
+            {data.categories.map((c, i) => (
               <li
                 key={c.name}
                 style={{
                   display: "flex", justifyContent: "space-between", gap: 8,
                   padding: "4px 6px", borderRadius: 6,
-                  background: i < 3 ? "rgba(240,180,41,0.08)" : "transparent",
+                  background: i < 5 ? "rgba(240,180,41,0.08)" : "transparent",
                   fontSize: 12.5,
-                  color: i < 3 ? "white" : "#cbd5e1",
-                  fontWeight: i < 3 ? 800 : 500,
+                  color: i < 5 ? "white" : "#cbd5e1",
+                  fontWeight: i < 5 ? 800 : 500,
                 }}
               >
-                <span>{i + 1}. {c.name}</span>
+                <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {i + 1}. {c.name}
+                </span>
                 <span style={{ fontVariantNumeric: "tabular-nums", color: "#94a3b8", whiteSpace: "nowrap" }}>
                   {c.count} · {c.pct.toFixed(1)}%
                 </span>

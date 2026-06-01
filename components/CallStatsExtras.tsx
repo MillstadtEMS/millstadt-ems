@@ -24,7 +24,7 @@
  *      projected = round( (ytd / daysElapsed) * daysInYear )
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   BASELINE_YEAR,
@@ -444,7 +444,12 @@ function Stat({
   // Recompute fixed coords when the tooltip is open. The stats row
   // sits inside the hero section which has overflow:hidden — using
   // position:fixed via a portal escapes that clip so 12 months show.
-  useEffect(() => {
+  //
+  // useLayoutEffect (not useEffect) so coords land in the SAME frame
+  // that `isOpen` flips true. Otherwise the desktop branch renders
+  // nothing on the first pass (it requires `coords`), and a fast hover
+  // can mouse-leave the tile before the tooltip ever paints.
+  useLayoutEffect(() => {
     if (!isOpen || !tileRef.current) return;
     function update() {
       if (!tileRef.current) return;
