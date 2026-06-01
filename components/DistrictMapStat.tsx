@@ -17,6 +17,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { onHeroPopoverChange, openHeroPopover } from "./heroPopoverChannel";
 
 const MAP_SRC = "/images/millstadt-ems/district-map.png";
 const MAP_W = 1244;
@@ -83,6 +84,25 @@ export default function DistrictMapStat({ num, label }: { num: string; label: st
   }, [hover, open, PREVIEW_H]);
 
   const stopHover = useCallback(() => setHover(false), []);
+
+  // Broadcast on open + listen for sibling popovers so any of the call-
+  // stats tooltips or the Top Categories popover taking focus closes
+  // this preview, and vice versa.
+  useEffect(() => {
+    if (hover) openHeroPopover("district-map");
+  }, [hover]);
+  useEffect(() => {
+    if (open) openHeroPopover("district-map");
+  }, [open]);
+  useEffect(() => {
+    return onHeroPopoverChange((activeId) => {
+      if (activeId && activeId !== "district-map") {
+        setHover(false);
+        // Don't auto-close the full-screen zoom modal — the user
+        // explicitly opened it; only the hover preview dismisses.
+      }
+    });
+  }, []);
 
   return (
     <>

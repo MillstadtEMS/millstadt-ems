@@ -26,6 +26,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { onHeroPopoverChange, openHeroPopover, type PopoverId } from "./heroPopoverChannel";
 import {
   BASELINE_YEAR,
   CALLS_2025_ANNUAL,
@@ -55,6 +56,10 @@ const MONTH_SHORT = [
 ];
 
 type OpenTip = null | "monthly" | "avg" | "projected";
+
+function channelIdFor(tip: Exclude<OpenTip, null>): PopoverId {
+  return tip === "monthly" ? "stat-monthly" : tip === "avg" ? "stat-avg" : "stat-projected";
+}
 
 export default function CallStatsExtras() {
   const [mounted, setMounted] = useState(false);
@@ -237,17 +242,37 @@ export default function CallStatsExtras() {
     };
   }, [calls, now]);
 
+  // Close immediately when a sibling hero popover (Top Categories,
+  // District map) takes the focus — keeps only one open at a time so
+  // the user can hover freely between them. MUST be declared before
+  // the early returns below or React's hook-ordering rule fires.
+  useEffect(() => {
+    return onHeroPopoverChange((activeId) => {
+      if (!activeId || !openTip) return;
+      const myId = channelIdFor(openTip);
+      if (activeId !== myId) {
+        if (closeTimerRef.current) { clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
+        setOpenTip(null);
+      }
+    });
+  }, [openTip]);
+
   if (!mounted || !stats) return null;
   if (stats.thisMonthCount === 0 && stats.projected === 0) return null;
 
   function toggle(which: OpenTip) {
-    setOpenTip((cur) => (cur === which ? null : which));
+    setOpenTip((cur) => {
+      const next = cur === which ? null : which;
+      if (next && which) openHeroPopover(channelIdFor(which));
+      return next;
+    });
   }
   // Hover-open + hover-close-with-grace-period so the cursor can travel
   // from tile to tooltip without flicker.
   function openHover(which: OpenTip) {
     if (closeTimerRef.current) { clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
     setOpenTip(which);
+    if (which) openHeroPopover(channelIdFor(which));
   }
   function scheduleClose() {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);

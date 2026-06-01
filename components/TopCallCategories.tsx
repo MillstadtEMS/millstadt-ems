@@ -14,6 +14,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { onHeroPopoverChange, openHeroPopover } from "./heroPopoverChannel";
 
 interface Cat { name: string; count: number; pct: number }
 
@@ -59,11 +60,37 @@ export default function TopCallCategories() {
   function openHover() {
     if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
     setOpen(true);
+    openHeroPopover("top-categories");
   }
   function scheduleClose() {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     closeTimer.current = setTimeout(() => setOpen(false), 180);
   }
+
+  // Close immediately if a sibling hero popover (stat tooltip, district
+  // map) opens. Prevents stacking + the cursor getting trapped on this
+  // popover when the user wants to hover one of the others.
+  useEffect(() => {
+    return onHeroPopoverChange((activeId) => {
+      if (activeId && activeId !== "top-categories") {
+        if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
+        setOpen(false);
+      }
+    });
+  }, []);
+
+  // Click-anywhere-outside dismiss so a tapped-open popover doesn't
+  // linger after the user pokes a different tile.
+  useEffect(() => {
+    if (!open) return;
+    function onDown(e: PointerEvent) {
+      const target = e.target as Element | null;
+      if (target?.closest("[data-top-categories-root]") || target?.closest("[data-top-categories-popover]")) return;
+      setOpen(false);
+    }
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [open]);
 
   if (!mounted || !data || data.categories.length === 0) return null;
   const top5 = data.categories.slice(0, 5);
@@ -71,6 +98,7 @@ export default function TopCallCategories() {
   return (
     <div
       ref={wrapRef}
+      data-top-categories-root
       style={{
         width: "100%", maxWidth: 500,
         margin: "16px auto 0", padding: "0 16px",
@@ -80,7 +108,13 @@ export default function TopCallCategories() {
       <div
         role="button"
         tabIndex={0}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setOpen((v) => {
+            const next = !v;
+            if (next) openHeroPopover("top-categories");
+            return next;
+          });
+        }}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen((v) => !v); } }}
         onMouseEnter={openHover}
         onMouseLeave={scheduleClose}
@@ -135,6 +169,7 @@ export default function TopCallCategories() {
       {open && coords && createPortal(
         <div
           role="dialog"
+          data-top-categories-popover
           onMouseEnter={openHover}
           onMouseLeave={scheduleClose}
           style={{
