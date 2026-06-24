@@ -1,15 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 
 const DRIVE_MS = 12000;
 
+// Employee-facing areas that should never show the cartoon ambulance —
+// the lounge, admin tools, inventory, and truck-check. The drive-by stays
+// on the public marketing site only.
+const EMPLOYEE_PREFIXES = ["/lounge", "/admin", "/inventory", "/truckcheck"];
+
 export default function AmboScroll() {
+  const pathname = usePathname() || "";
+  const isEmployeeArea = EMPLOYEE_PREFIXES.some((p) => pathname.startsWith(p));
+
   const [active, setActive] = useState(false);
   const sentinelRef         = useRef<HTMLDivElement>(null);
   const firedRef            = useRef(false);
 
   useEffect(() => {
+    if (isEmployeeArea) return;
     const el = sentinelRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(
@@ -24,7 +34,10 @@ export default function AmboScroll() {
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+  }, [isEmployeeArea]);
+
+  // Public marketing site only — never render in the lounge/admin/etc.
+  if (isEmployeeArea) return null;
 
   return (
     <>
