@@ -29,26 +29,40 @@ export interface OrderGroup {
   rows: OrderLine[];
 }
 
-/** How many of an item to order: bring usable stock back up to par. */
+/**
+ * How many of an item to order: bring usable stock back up to par.
+ *
+ * If the stock was left blank (current_stock <= 0) the item was never
+ * counted, so we generate NO order for it — otherwise every uncounted item
+ * would default to ordering its full par. Only counted items (stock > 0)
+ * that fall below par produce an order quantity.
+ */
 export function orderNeed(item: Pick<InventoryItem, "par" | "currentStock" | "expiredQty" | "skipOrder">): number {
   if (item.skipOrder) return 0;
+  if (item.currentStock <= 0) return 0;
   const usable = Math.max(0, item.currentStock - item.expiredQty);
   return Math.max(0, item.par - usable);
 }
 
 /**
- * Collapse a flat, pre-sorted item list into category groups containing
- * only the lines that need ordering. Caller must pass items already
- * ordered by category sort_order, then item sort_order (getItems does this).
+ * Collapse a flat, pre-sorted item list into category groups. A line is
+ * included only if it has an order quantity OR an expired quantity — blank,
+ * fully-stocked items are left off the sheet entirely. Caller must pass
+ * items already ordered by category sort_order, then item sort_order.
  */
-export function buildOrderGroups(items: InventoryItem[]): { groups: OrderGroup[]; lineCount: number; totalUnits: number } {
+export type OrderMode = "order" | "expired";
+
+export function buildOrderGroups(items: InventoryItem[], mode: OrderMode = "order"): { groups: OrderGroup[]; lineCount: number; totalUnits: number } {
   const groups: OrderGroup[] = [];
   const idx = new Map<string, number>();
   let totalUnits = 0;
   for (const it of items) {
     const order = orderNeed(it);
-    if (order <= 0) continue;
-    totalUnits += order;
+    // expired mode: only items with an expired count.
+    // order mode:   items that need ordering OR carry an expired count.
+    const include = mode === "expired" ? it.expiredQty > 0 : order > 0 || it.expiredQty > 0;
+    if (!include) continue;
+    totalUnits += mode === "expired" ? it.expiredQty : order;
     const cat = it.categoryName ?? it.categorySlug ?? "Uncategorized";
     if (!idx.has(cat)) {
       idx.set(cat, groups.length);
@@ -70,11 +84,18 @@ export function buildOrderGroups(items: InventoryItem[]): { groups: OrderGroup[]
 export interface OrderPdfMeta {
   submittedDate?: Date;
   submittedBy?: string;
+  mode?: OrderMode;
 }
 
-/** Render the order to a PDF Buffer. Returns null if nothing needs ordering. */
+/**
+ * Render to a PDF Buffer. mode "order" = the back-stock order; mode
+ * "expired" = a plain expired-count sheet. Returns null if there are no
+ * rows to show for that mode.
+ */
 export function buildOrderPdf(items: InventoryItem[], meta: OrderPdfMeta = {}): { buffer: Buffer; lineCount: number; totalUnits: number; categories: string[] } | null {
-  const { groups, lineCount, totalUnits } = buildOrderGroups(items);
+  const mode: OrderMode = meta.mode ?? "order";
+  const expiredMode = mode === "expired";
+  const { groups, lineCount, totalUnits } = buildOrderGroups(items, mode);
   if (lineCount === 0) return null;
 
   const doc = new jsPDF({ unit: "pt", format: "letter" });
@@ -85,6 +106,11 @@ export function buildOrderPdf(items: InventoryItem[], meta: OrderPdfMeta = {}): 
   const dateStr = submitted.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/Chicago" });
   const genStr = new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" });
 
+  const title = expiredMode ? "Expired Count" : "Back-Stock Order";
+  const summary = expiredMode
+    ? `${lineCount} item(s) · ${totalUnits} expired unit(s)`
+    : `${lineCount} line item(s) · ${totalUnits} unit(s) to order`;
+
   // Header band
   doc.setFillColor(...NAVY);
   doc.rect(0, 0, PAGE_W, 86, "F");
@@ -94,42 +120,59 @@ export function buildOrderPdf(items: InventoryItem[], meta: OrderPdfMeta = {}): 
   doc.text("MILLSTADT EMS · INVENTORY", M, 30);
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
-  doc.text("Back-Stock Order", M, 54);
+  doc.text(title, M, 54);
   doc.setTextColor(180, 190, 205);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text(`Count submitted ${dateStr}${meta.submittedBy ? ` · ${meta.submittedBy}` : ""}`, M, 72);
+  doc.text(`${dateStr}${meta.submittedBy ? ` · ${meta.submittedBy}` : ""}`, M, 72);
   doc.setFontSize(9);
   doc.setTextColor(150, 160, 175);
-  doc.text(`${lineCount} line item(s) · ${totalUnits} unit(s) to order`, PAGE_W - M, 54, { align: "right" });
+  doc.text(summary, PAGE_W - M, 54, { align: "right" });
   doc.text(`Generated ${genStr}`, PAGE_W - M, 72, { align: "right" });
+
+  const headCols = expiredMode
+    ? ["#", "Item", "Location / Shelf", "Expired"]
+    : ["#", "Item", "Location / Shelf", "Par", "Hand", "Exp", "Order"];
+  const nCols = headCols.length;
 
   let cursorY = 104;
   for (const g of groups) {
-    const body = g.rows.map((r, i) => [
-      String(i + 1), r.name, r.location, String(r.par), String(r.hand), r.exp > 0 ? String(r.exp) : "", String(r.order),
-    ]);
-    const groupUnits = g.rows.reduce((n, r) => n + r.order, 0);
+    const body = g.rows.map((r, i) =>
+      expiredMode
+        ? [String(i + 1), r.name, r.location, String(r.exp)]
+        : [String(i + 1), r.name, r.location, String(r.par), String(r.hand), r.exp > 0 ? String(r.exp) : "", r.order > 0 ? String(r.order) : ""],
+    );
+    const groupUnits = g.rows.reduce((n, r) => n + (expiredMode ? r.exp : r.order), 0);
+    const groupLabel = expiredMode
+      ? `${g.name}  —  ${g.rows.length} item(s), ${groupUnits} expired`
+      : `${g.name}  —  ${g.rows.length} item(s), ${groupUnits} unit(s)`;
     autoTable(doc, {
       startY: cursorY,
       head: [
-        [{ content: `${g.name}  —  ${g.rows.length} item(s), ${groupUnits} unit(s)`, colSpan: 7, styles: { halign: "left" } }],
-        ["#", "Item", "Location / Shelf", "Par", "Hand", "Exp", "Order"],
+        [{ content: groupLabel, colSpan: nCols, styles: { halign: "left" } }],
+        headCols,
       ],
       body,
       theme: "grid",
       margin: { left: M, right: M },
       styles: { font: "helvetica", fontSize: 8, cellPadding: 4, overflow: "linebreak", lineColor: [226, 232, 240], textColor: [30, 41, 59], valign: "middle" },
       headStyles: { fillColor: NAVY, textColor: 255, fontStyle: "bold", fontSize: 8 },
-      columnStyles: {
-        0: { cellWidth: 20, halign: "center", textColor: SLATE },
-        1: { cellWidth: 212 },
-        2: { cellWidth: 140, textColor: SLATE, fontSize: 7 },
-        3: { cellWidth: 28, halign: "center" },
-        4: { cellWidth: 30, halign: "center" },
-        5: { cellWidth: 26, halign: "center", textColor: [220, 38, 38] },
-        6: { cellWidth: 36, halign: "center", fontStyle: "bold", fillColor: [254, 243, 199] },
-      },
+      columnStyles: expiredMode
+        ? {
+            0: { cellWidth: 22, halign: "center", textColor: SLATE },
+            1: { cellWidth: 330 },
+            2: { cellWidth: 130, textColor: SLATE, fontSize: 7 },
+            3: { cellWidth: 50, halign: "center", fontStyle: "bold", textColor: [220, 38, 38], fillColor: [254, 226, 226] },
+          }
+        : {
+            0: { cellWidth: 20, halign: "center", textColor: SLATE },
+            1: { cellWidth: 212 },
+            2: { cellWidth: 140, textColor: SLATE, fontSize: 7 },
+            3: { cellWidth: 28, halign: "center" },
+            4: { cellWidth: 30, halign: "center" },
+            5: { cellWidth: 26, halign: "center", textColor: [220, 38, 38] },
+            6: { cellWidth: 36, halign: "center", fontStyle: "bold", fillColor: [254, 243, 199] },
+          },
       didParseCell: (data) => {
         if (data.section === "head" && data.row.index === 0) {
           data.cell.styles.fillColor = GOLD;

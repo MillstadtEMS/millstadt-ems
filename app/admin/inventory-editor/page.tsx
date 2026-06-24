@@ -156,6 +156,23 @@ export default function InventoryEditorPage() {
     setItems((prev) => [...prev, d.item as Item]);
     flash("Item added");
   }
+  const [emailing, setEmailing] = useState<"order" | "expired" | null>(null);
+  async function emailPdf(mode: "order" | "expired") {
+    setEmailing(mode);
+    try {
+      const r = await fetch("/api/admin/inventory/email-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { flash("Email failed"); return; }
+      flash(d.ok ? (mode === "expired" ? "Expired count emailed" : "Order emailed") : (d.error || "Nothing to send"));
+    } finally {
+      setEmailing(null);
+    }
+  }
+
   function addArea() {
     const name = prompt("New area / shelf name:");
     if (!name || !name.trim()) return;
@@ -287,9 +304,17 @@ export default function InventoryEditorPage() {
         })}
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
         <button onClick={() => addItem(NO_AREA)} style={primaryBtn}>＋ Add item</button>
         <button onClick={addArea} style={ghostBtn}>＋ Add area</button>
+      </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        <button onClick={() => emailPdf("order")} disabled={emailing !== null} style={{ ...ghostBtn, opacity: emailing ? 0.6 : 1 }}>
+          {emailing === "order" ? "Emailing…" : "✉ Email order PDF"}
+        </button>
+        <button onClick={() => emailPdf("expired")} disabled={emailing !== null} style={{ ...ghostBtn, opacity: emailing ? 0.6 : 1 }}>
+          {emailing === "expired" ? "Emailing…" : "✉ Email expired count"}
+        </button>
       </div>
 
       {/* Areas */}

@@ -28,6 +28,9 @@ interface Item {
 
 function calcNeed(item: Item): number {
   if (item.skipOrder) return 0;
+  // Blank stock = not counted yet, so it generates no order. Only a counted
+  // item (stock > 0) that's below par needs ordering.
+  if (item.currentStock <= 0) return 0;
   const usable = Math.max(0, item.currentStock - item.expiredQty);
   return Math.max(0, item.par - usable);
 }

@@ -176,8 +176,9 @@ export async function sendInventoryEmail(data: InventoryEmailData) {
  */
 export async function sendInventoryOrderEmail(
   items: InventoryItem[],
-  meta: { submittedBy?: string; submittedDate?: Date } = {},
+  meta: { submittedBy?: string; submittedDate?: Date; mode?: "order" | "expired" } = {},
 ): Promise<boolean> {
+  const expiredMode = meta.mode === "expired";
   const built = buildOrderPdf(items, meta);
   if (!built) return false;
   const { buffer, lineCount, totalUnits, categories } = built;
@@ -190,25 +191,28 @@ export async function sendInventoryOrderEmail(
     year: "numeric",
   });
 
-  const subject = `Back-Stock Order — ${dateStr} (${lineCount} items, ${totalUnits} units)`;
+  const docName = expiredMode ? "Expired Count" : "Back-Stock Order";
+  const subject = expiredMode
+    ? `Expired Count — ${dateStr} (${lineCount} items, ${totalUnits} expired)`
+    : `Back-Stock Order — ${dateStr} (${lineCount} items, ${totalUnits} units)`;
   const body = `
     <p style="color:#cbd5e1;font-size:15px;line-height:1.6;margin:0 0 12px;">
-      ${meta.submittedBy ? `<strong style="color:#f0b429;">${meta.submittedBy}</strong> submitted a back-stock count.` : "A back-stock count was submitted."}
-      The full order is attached as a PDF.
+      ${meta.submittedBy ? `<strong style="color:#f0b429;">${meta.submittedBy}</strong> ` : ""}${expiredMode ? "Expired count is attached as a PDF." : "The full back-stock order is attached as a PDF."}
     </p>
     <table style="width:100%;border-collapse:collapse;margin:12px 0;">
-      <tr><td style="color:#64748b;padding:6px 0;font-size:13px;">Line Items</td><td style="color:#f1f5f9;padding:6px 0;font-size:13px;text-align:right;">${lineCount}</td></tr>
-      <tr><td style="color:#64748b;padding:6px 0;font-size:13px;">Units to Order</td><td style="color:#f1f5f9;padding:6px 0;font-size:13px;text-align:right;">${totalUnits}</td></tr>
+      <tr><td style="color:#64748b;padding:6px 0;font-size:13px;">Items</td><td style="color:#f1f5f9;padding:6px 0;font-size:13px;text-align:right;">${lineCount}</td></tr>
+      <tr><td style="color:#64748b;padding:6px 0;font-size:13px;">${expiredMode ? "Expired Units" : "Units to Order"}</td><td style="color:#f1f5f9;padding:6px 0;font-size:13px;text-align:right;">${totalUnits}</td></tr>
       <tr><td style="color:#64748b;padding:6px 0;font-size:13px;">Categories</td><td style="color:#f1f5f9;padding:6px 0;font-size:13px;text-align:right;">${categories.length}</td></tr>
     </table>
     <p style="color:#94a3b8;font-size:12px;margin:0;">${categories.join(" · ")}</p>
   `;
 
-  const filename = `Millstadt-EMS-Order-${submitted.toISOString().slice(0, 10)}.pdf`;
+  const filePrefix = expiredMode ? "Expired-Count" : "Order";
+  const filename = `Millstadt-EMS-${filePrefix}-${submitted.toISOString().slice(0, 10)}.pdf`;
   await sendEmail(
     RECIPIENTS,
     subject,
-    emailTemplate("Back-Stock Order", dateStr, body),
+    emailTemplate(docName, dateStr, body),
     [{ filename, mimeType: "application/pdf", content: buffer }],
   );
   return true;
