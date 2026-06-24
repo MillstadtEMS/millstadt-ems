@@ -217,7 +217,7 @@ export default function LoungeLogin() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Username"
+              placeholder="Username or email"
               autoFocus
               autoComplete="username"
               autoCapitalize="none"

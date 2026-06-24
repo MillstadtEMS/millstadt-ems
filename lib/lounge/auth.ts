@@ -105,11 +105,20 @@ export async function findEmployeeByUsername(
   username: string,
 ): Promise<LoungeEmployee | null> {
   const db = sql();
+  // Accept either the assigned username (e.g. "jgoetz") OR the employee's
+  // email — crew kept typing their email/full address at the login screen
+  // and getting locked out. Emails are unique per employee, so this stays
+  // unambiguous; a true username match is preferred when both could hit.
+  const needle = username.trim();
+  if (!needle) return null;
   const rows = (await db`
     SELECT id, username, first_name, last_name,
            is_admin, is_active, must_change_password, password_hash
     FROM lounge_employees
-    WHERE LOWER(username) = LOWER(${username})
+    WHERE LOWER(username) = LOWER(${needle})
+       OR (email IS NOT NULL AND email <> '' AND LOWER(email) = LOWER(${needle}))
+       OR (email_secondary IS NOT NULL AND email_secondary <> '' AND LOWER(email_secondary) = LOWER(${needle}))
+    ORDER BY (LOWER(username) = LOWER(${needle})) DESC
     LIMIT 1
   `) as unknown as EmployeeRow[];
   const row = rows[0];
