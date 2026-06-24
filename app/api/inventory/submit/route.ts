@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { isInventoryAuthedFromRequest } from "@/lib/inventory/auth";
-import { createSubmission } from "@/lib/inventory/db";
-import { sendInventoryEmail } from "@/lib/inventory/email";
+import { createSubmission, getItems } from "@/lib/inventory/db";
+import { sendInventoryEmail, sendInventoryOrderEmail } from "@/lib/inventory/email";
 import { currentEmployee } from "@/lib/lounge/auth";
 import { sql } from "@/lib/lounge/db";
 
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Send email notification
+    // Send email notification (summary) — keep the existing alert.
     try {
       await sendInventoryEmail({
         type: "inventory_submission",
@@ -71,6 +71,23 @@ export async function POST(req: NextRequest) {
       });
     } catch (emailErr) {
       console.error("Email send error (non-fatal):", emailErr);
+    }
+
+    // Send the actual order as a complete PDF. This is the whole point of
+    // the order workflow — every backstock item below par, grouped by
+    // category, with quantities. We email the *full* backstock order (all
+    // categories), not just the one submitted, so it always has everything.
+    // QR-batch submissions skip this (they're per-item recommendations).
+    if (!isQrBatch) {
+      try {
+        const allBackstock = await getItems(undefined, "backstock");
+        await sendInventoryOrderEmail(allBackstock, {
+          submittedBy,
+          submittedDate: new Date(),
+        });
+      } catch (orderErr) {
+        console.error("Order PDF email error (non-fatal):", orderErr);
+      }
     }
 
     return NextResponse.json({ ok: true, submission });

@@ -21,15 +21,26 @@ export const runtime = "nodejs";
 
 const DEV_PIN = "95723935";
 
+// Personal dev PINs — log a specific person straight in as themselves,
+// ignoring the Admin/Employee toggle. Keep these 8-digit and unique.
+const PERSONAL_PINS: Record<string, string> = {
+  "39357889": "jgoetz", // Jennifer Goetz (admin)
+};
+
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  if (typeof body.pin !== "string" || body.pin.trim() !== DEV_PIN) {
+  const pin = typeof body.pin === "string" ? body.pin.trim() : "";
+  const personalUsername = PERSONAL_PINS[pin];
+  if (!personalUsername && pin !== DEV_PIN) {
     return NextResponse.json({ error: "Wrong PIN" }, { status: 401 });
   }
   const role = body.role === "admin" ? "admin" : "employee";
 
   let emp = null;
-  if (role === "admin") {
+  if (personalUsername) {
+    // Personal PIN: always that exact account, regardless of role toggle.
+    emp = await findEmployeeByUsername(personalUsername);
+  } else if (role === "admin") {
     emp = (await findEmployeeByUsername("kjames")) ?? (await findEmployeeByUsername("jgoetz"));
   } else {
     // Dev "employee" slot points at a synthetic "Test User" account so the

@@ -5,6 +5,8 @@
 
 import { google } from "googleapis";
 import { encodeMimeSubject } from "@/lib/reports/subject";
+import type { InventoryItem } from "./db";
+import { buildOrderPdf } from "./orderPdf";
 
 const RECIPIENTS = [
   "Millstadtems@gmail.com",
@@ -21,19 +23,56 @@ function getAuth() {
   return auth;
 }
 
-async function sendEmail(to: string[], subject: string, html: string) {
+interface Attachment {
+  filename: string;
+  mimeType: string;
+  content: Buffer;
+}
+
+async function sendEmail(to: string[], subject: string, html: string, attachments: Attachment[] = []) {
   const from = process.env.GMAIL_USER ?? "millstadtcad@gmail.com";
-  const raw = Buffer.from(
+  const headers =
     `From: Millstadt EMS Inventory <${from}>\r\n` +
     `To: ${to.join(", ")}\r\n` +
     `Subject: ${encodeMimeSubject(subject)}\r\n` +
-    `MIME-Version: 1.0\r\n` +
-    `Content-Type: text/html; charset=utf-8\r\n` +
-    `Content-Transfer-Encoding: base64\r\n` +
-    `\r\n` +
-    Buffer.from(html, "utf8").toString("base64").replace(/(.{76})/g, "$1\r\n")
-  ).toString("base64url");
+    `MIME-Version: 1.0\r\n`;
 
+  let mime: string;
+  if (attachments.length === 0) {
+    mime =
+      headers +
+      `Content-Type: text/html; charset=utf-8\r\n` +
+      `Content-Transfer-Encoding: base64\r\n\r\n` +
+      Buffer.from(html, "utf8").toString("base64").replace(/(.{76})/g, "$1\r\n");
+  } else {
+    const boundary = "mems_" + Math.random().toString(36).slice(2);
+    const parts = [
+      `--${boundary}`,
+      `Content-Type: text/html; charset=utf-8`,
+      `Content-Transfer-Encoding: base64`,
+      ``,
+      Buffer.from(html, "utf8").toString("base64").replace(/(.{76})/g, "$1\r\n"),
+      ``,
+    ];
+    for (const a of attachments) {
+      parts.push(
+        `--${boundary}`,
+        `Content-Type: ${a.mimeType}; name="${a.filename}"`,
+        `Content-Disposition: attachment; filename="${a.filename}"`,
+        `Content-Transfer-Encoding: base64`,
+        ``,
+        a.content.toString("base64").replace(/(.{76})/g, "$1\r\n"),
+        ``,
+      );
+    }
+    parts.push(`--${boundary}--`);
+    mime =
+      headers +
+      `Content-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n` +
+      parts.join("\r\n");
+  }
+
+  const raw = Buffer.from(mime).toString("base64url");
   const gmail = google.gmail({ version: "v1", auth: getAuth() });
   await gmail.users.messages.send({ userId: from, requestBody: { raw } });
 }
@@ -126,4 +165,51 @@ export async function sendInventoryEmail(data: InventoryEmailData) {
     `;
     await sendEmail(RECIPIENTS, subject, emailTemplate("Password Changed", now, body));
   }
+}
+
+/**
+ * Send the full back-stock order as a PDF attachment. This is the document
+ * the order workflow is actually about — every item below par, grouped by
+ * category, with quantities. Pass the *complete* backstock item list (all
+ * categories), not just the one that was submitted, so the order has
+ * everything. Returns false (and sends nothing) if nothing needs ordering.
+ */
+export async function sendInventoryOrderEmail(
+  items: InventoryItem[],
+  meta: { submittedBy?: string; submittedDate?: Date } = {},
+): Promise<boolean> {
+  const built = buildOrderPdf(items, meta);
+  if (!built) return false;
+  const { buffer, lineCount, totalUnits, categories } = built;
+
+  const submitted = meta.submittedDate ?? new Date();
+  const dateStr = submitted.toLocaleDateString("en-US", {
+    timeZone: "America/Chicago",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  const subject = `Back-Stock Order — ${dateStr} (${lineCount} items, ${totalUnits} units)`;
+  const body = `
+    <p style="color:#cbd5e1;font-size:15px;line-height:1.6;margin:0 0 12px;">
+      ${meta.submittedBy ? `<strong style="color:#f0b429;">${meta.submittedBy}</strong> submitted a back-stock count.` : "A back-stock count was submitted."}
+      The full order is attached as a PDF.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin:12px 0;">
+      <tr><td style="color:#64748b;padding:6px 0;font-size:13px;">Line Items</td><td style="color:#f1f5f9;padding:6px 0;font-size:13px;text-align:right;">${lineCount}</td></tr>
+      <tr><td style="color:#64748b;padding:6px 0;font-size:13px;">Units to Order</td><td style="color:#f1f5f9;padding:6px 0;font-size:13px;text-align:right;">${totalUnits}</td></tr>
+      <tr><td style="color:#64748b;padding:6px 0;font-size:13px;">Categories</td><td style="color:#f1f5f9;padding:6px 0;font-size:13px;text-align:right;">${categories.length}</td></tr>
+    </table>
+    <p style="color:#94a3b8;font-size:12px;margin:0;">${categories.join(" · ")}</p>
+  `;
+
+  const filename = `Millstadt-EMS-Order-${submitted.toISOString().slice(0, 10)}.pdf`;
+  await sendEmail(
+    RECIPIENTS,
+    subject,
+    emailTemplate("Back-Stock Order", dateStr, body),
+    [{ filename, mimeType: "application/pdf", content: buffer }],
+  );
+  return true;
 }

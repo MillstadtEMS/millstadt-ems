@@ -459,6 +459,89 @@ export async function createItem(data: {
   return item!;
 }
 
+/**
+ * Full admin edit of an item's *definition* (not its live count). Lets an
+ * admin rename, relocate, retarget par, change vendor/skip, reorder, or move
+ * an item to a different category. Bumps version + updated_at so the live
+ * voice-ordering screen's poller picks the change up automatically.
+ *
+ * Distinct from updateItem() on purpose: that one is the optimistic,
+ * version-checked path the counting/voice flow uses. This one is the admin
+ * editor and is last-write-wins, since only KJ/Goetz touch it.
+ */
+export interface AdminItemFields {
+  name?: string;
+  location?: string | null;
+  par?: number;
+  vendorSource?: string | null;
+  skipOrder?: boolean;
+  sortOrder?: number;
+  categoryId?: string;
+}
+
+export async function adminUpdateItem(id: string, fields: AdminItemFields): Promise<InventoryItem | null> {
+  await ensureInventorySchema();
+  const db = sql();
+  const rows = await db`SELECT * FROM inventory_items WHERE id = ${id}`;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const old = (rows as any[])[0];
+  if (!old) return null;
+
+  const name = fields.name !== undefined ? fields.name : old.name;
+  const location = fields.location !== undefined ? fields.location : old.location;
+  const par = fields.par !== undefined ? fields.par : Number(old.par);
+  const vendor = fields.vendorSource !== undefined ? fields.vendorSource : old.vendor_source;
+  const skip = fields.skipOrder !== undefined ? fields.skipOrder : Boolean(old.skip_order);
+  const sortOrder = fields.sortOrder !== undefined ? fields.sortOrder : Number(old.sort_order);
+  const categoryId = fields.categoryId !== undefined ? fields.categoryId : old.category_id;
+
+  await db`
+    UPDATE inventory_items SET
+      name = ${name},
+      location = ${location},
+      par = ${par},
+      vendor_source = ${vendor},
+      skip_order = ${skip},
+      sort_order = ${sortOrder},
+      category_id = ${categoryId},
+      version = version + 1,
+      updated_at = NOW()
+    WHERE id = ${id}
+  `;
+  return getItem(id);
+}
+
+export async function deleteItem(id: string): Promise<void> {
+  await ensureInventorySchema();
+  const db = sql();
+  await db`DELETE FROM inventory_audit_log WHERE item_id = ${id}`;
+  await db`DELETE FROM inventory_qr_tokens WHERE item_id = ${id}`;
+  await db`DELETE FROM inventory_items WHERE id = ${id}`;
+}
+
+/**
+ * Bulk reorder / relocate after a drag-and-drop. Each entry sets the new
+ * sort_order, and optionally a new location (moved to a different "area")
+ * or category. One row per item; runs sequentially (lists are small).
+ */
+export async function reorderItems(
+  updates: { id: string; sortOrder: number; location?: string | null; categoryId?: string }[],
+): Promise<void> {
+  await ensureInventorySchema();
+  const db = sql();
+  for (const u of updates) {
+    if (u.location !== undefined && u.categoryId !== undefined) {
+      await db`UPDATE inventory_items SET sort_order = ${u.sortOrder}, location = ${u.location}, category_id = ${u.categoryId}, version = version + 1, updated_at = NOW() WHERE id = ${u.id}`;
+    } else if (u.location !== undefined) {
+      await db`UPDATE inventory_items SET sort_order = ${u.sortOrder}, location = ${u.location}, version = version + 1, updated_at = NOW() WHERE id = ${u.id}`;
+    } else if (u.categoryId !== undefined) {
+      await db`UPDATE inventory_items SET sort_order = ${u.sortOrder}, category_id = ${u.categoryId}, version = version + 1, updated_at = NOW() WHERE id = ${u.id}`;
+    } else {
+      await db`UPDATE inventory_items SET sort_order = ${u.sortOrder}, version = version + 1, updated_at = NOW() WHERE id = ${u.id}`;
+    }
+  }
+}
+
 // ── QR Tokens ──────────────────────────────────────────────────────────────
 
 export async function createQrToken(itemId: string, label?: string): Promise<{ id: string; token: string }> {

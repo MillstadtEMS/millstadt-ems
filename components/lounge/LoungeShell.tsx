@@ -73,6 +73,7 @@ const NAV: NavItem[] = [
   { href: "/admin/employees",             label: "Employee Records",      icon: "users", adminOnly: true },
   { href: "/admin/filing-cabinet",        label: "Filing Cabinet",        icon: "archive", adminOnly: true },
   { href: "/admin/website-config",        label: "Website Configuration", icon: "gear", adminOnly: true },
+  { href: "/admin/inventory-editor",       label: "Inventory Editor",      icon: "box", adminOnly: true },
   { href: "/admin/incidents",             label: "Incident Reports",      icon: "alert", adminOnly: true },
   { href: "/admin/truckwash",             label: "Truck Wash Log",        icon: "droplet", adminOnly: true },
   { href: "/admin/hospitals",             label: "Hospitals Directory",   icon: "hospital", adminOnly: true },
@@ -116,7 +117,7 @@ const ADMIN_NAV_SECTIONS = [
   },
   {
     title: "Control Room",
-    hrefs: ["/admin/filing-cabinet", "/admin/website-config", "/admin/login-analytics", "/admin/dev-tools"],
+    hrefs: ["/admin/filing-cabinet", "/admin/website-config", "/admin/inventory-editor", "/admin/login-analytics", "/admin/dev-tools"],
   },
 ];
 
