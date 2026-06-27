@@ -40,6 +40,18 @@ export type HemsOutcome = "handoff" | "disregarded";
  * as a consistent "Standby at <location>" line on the ticker. */
 export const STANDBY_CATEGORY = "Standby";
 
+/** Special category whose target is captured in `notes` and rendered as
+ * "Assist <target>" (e.g. "Assist Police Department"). */
+export const ASSIST_CATEGORY = "Assist";
+export const ASSIST_TARGETS = ["Police Department", "Fire Department", "Citizen Assist"] as const;
+
+/** Render the assist line from its target (stored in notes). */
+export function formatAssist(prefix: string, who: string): string {
+  const w = who.trim();
+  const label = !w ? "Assist" : (w.toLowerCase() === "citizen assist" ? "Citizen Assist" : `Assist ${w}`);
+  return `${prefix}${label}`.trim();
+}
+
 /** Legacy / shorthand category names that should resolve to a canonical
  * category going forward. Keys are lowercased + whitespace-collapsed. */
 export const CATEGORY_ALIASES: Record<string, string> = {
@@ -209,6 +221,11 @@ export function formatDispatchNature(input: CallStructured): string {
   // reads identically on the ticker.
   if (cat.toLowerCase() === STANDBY_CATEGORY.toLowerCase()) {
     return `${prefix}${notes ? `Standby at ${notes}` : "Standby"}`.trim();
+  }
+  // Assist is special: the notes field carries WHO was assisted, and the
+  // line renders as "Assist <target>" (or "Citizen Assist").
+  if (cat.toLowerCase() === ASSIST_CATEGORY.toLowerCase()) {
+    return formatAssist(prefix, notes);
   }
   // Parenthetical = free-text notes, plus an automatic "Mutual Aid Given"
   // tag when that flag is set. (Mutual aid RECEIVED is shown instead by

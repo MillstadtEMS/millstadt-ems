@@ -43,6 +43,15 @@ export type MutualAidAgency = (typeof MUTUAL_AID_AGENCIES)[number];
  * locally so this client component never imports the server-only module. */
 export const STANDBY_CATEGORY = "Standby";
 
+/** Kept in sync with ASSIST_CATEGORY / ASSIST_TARGETS in lib/cad/structured.ts. */
+export const ASSIST_CATEGORY = "Assist";
+const ASSIST_TARGETS = ["Police Department", "Fire Department", "Citizen Assist"] as const;
+function formatAssist(prefix: string, who: string): string {
+  const w = who.trim();
+  const label = !w ? "Assist" : (w.toLowerCase() === "citizen assist" ? "Citizen Assist" : `Assist ${w}`);
+  return `${prefix}${label}`.trim();
+}
+
 /** Kept in sync with CATEGORY_ALIASES in lib/cad/structured.ts. */
 const CATEGORY_ALIASES: Record<string, string> = {
   "psych eval": "Psychiatric Emergency",
@@ -119,6 +128,9 @@ export function previewDispatchNature(v: StructuredValue): string {
   // location lives in notes). Mirror of formatDispatchNature().
   if (cat.toLowerCase() === STANDBY_CATEGORY.toLowerCase()) {
     return `${prefix}${notes ? `Standby at ${notes}` : "Standby"}`.trim();
+  }
+  if (cat.toLowerCase() === ASSIST_CATEGORY.toLowerCase()) {
+    return formatAssist(prefix, notes);
   }
   // Mirror formatDispatchNature(): notes + an automatic "Mutual Aid Given"
   // tag. Received is shown via the agency bracket above, not here.
@@ -479,6 +491,26 @@ export default function StructuredCallForm({
             </div>
           )}
 
+          {value.category.toLowerCase() === ASSIST_CATEGORY.toLowerCase() && (
+            <div style={standbyBox}>
+              <label style={fieldLabel}>Who did you assist?</label>
+              <select
+                value={value.notes}
+                onChange={(e) => patch({ notes: e.target.value })}
+                style={fieldInput}
+              >
+                <option value="">Choose…</option>
+                {ASSIST_TARGETS.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <div style={{ color: "#94a3b8", fontSize: 11.5, marginTop: 6 }}>
+                Shows on the ticker as{" "}
+                <span style={{ color: "#f0b429", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace" }}>
+                  {formatAssist("", value.notes) || "Assist"}
+                </span>
+              </div>
+            </div>
+          )}
+
           {!showNewCat ? (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button type="button" onClick={() => setShowNewCat(true)} style={ghostBtn}>+ New category</button>
@@ -598,7 +630,8 @@ export default function StructuredCallForm({
       {/* ── Notes ─────────────────────────────────────────────────────────
           Hidden for Standby — that category repurposes `notes` as the
           standby location via the field under the category dropdown. */}
-      {value.category.toLowerCase() !== STANDBY_CATEGORY.toLowerCase() && (
+      {value.category.toLowerCase() !== STANDBY_CATEGORY.toLowerCase()
+        && value.category.toLowerCase() !== ASSIST_CATEGORY.toLowerCase() && (
         <Section title="Notes (optional)" hint="Anything in here surfaces in (parentheses) on the public ticker — not counted in stats.">
           <textarea
             rows={2}
