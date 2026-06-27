@@ -6,6 +6,7 @@ import CallVolumeCounter from "@/components/CallVolumeCounter";
 import CallStatsExtras from "@/components/CallStatsExtras";
 import TopCallCategories from "@/components/TopCallCategories";
 import DistrictMapStat from "@/components/DistrictMapStat";
+import PublicStatsSummary from "@/components/PublicStatsSummary";
 import SectionDivider from "@/components/SectionDivider";
 import { getContent } from "@/lib/db";
 
@@ -147,6 +148,8 @@ export default async function Home({
 
         </div>
       </section>
+
+      <PublicStatsSummary />
 
       <SectionDivider />
 
