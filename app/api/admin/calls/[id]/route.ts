@@ -26,6 +26,7 @@ interface Row {
   mutual_aid_received: boolean;
   mutual_aid_received_agency: string | null;
   mutual_aid_given: boolean;
+  mutual_aid_given_agency: string | null;
   hems_requested: boolean;
   hems_outcome: string | null;
 }
@@ -38,7 +39,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   const rows = (await db`
     SELECT id, dispatch_date, dispatch_time, dispatch_nature, event_number, completed_at,
            units, category, notes,
-           mutual_aid_received, mutual_aid_received_agency, mutual_aid_given,
+           mutual_aid_received, mutual_aid_received_agency, mutual_aid_given, mutual_aid_given_agency,
            hems_requested, hems_outcome
     FROM cad_calls
     WHERE id = ${id}
@@ -61,6 +62,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       mutualAidReceived: r.mutual_aid_received,
       mutualAidReceivedAgency: r.mutual_aid_received_agency ?? "",
       mutualAidGiven: r.mutual_aid_given,
+      mutualAidGivenAgency: r.mutual_aid_given_agency ?? "",
       hemsRequested: r.hems_requested,
       hemsOutcome: r.hems_outcome ?? "",
     },

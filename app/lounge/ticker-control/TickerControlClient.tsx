@@ -15,6 +15,7 @@ interface TickerStructured {
   mutualAidReceived: boolean;
   mutualAidReceivedAgency: string;
   mutualAidGiven: boolean;
+  mutualAidGivenAgency: string;
   hemsRequested: boolean;
   hemsOutcome: string;
 }
@@ -50,6 +51,7 @@ function toStructuredValue(s: TickerStructured | undefined): StructuredValue {
     mutualAidReceived: !!s.mutualAidReceived,
     mutualAidReceivedAgency: (s.mutualAidReceivedAgency ?? "") as StructuredValue["mutualAidReceivedAgency"],
     mutualAidGiven: !!s.mutualAidGiven,
+    mutualAidGivenAgency: (s.mutualAidGivenAgency ?? "") as StructuredValue["mutualAidGivenAgency"],
     hemsRequested: !!s.hemsRequested,
     hemsOutcome: outcome,
   };
@@ -69,6 +71,19 @@ function shortDate(value: string) {
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return value.slice(0, 5);
   return value;
 }
+
+/** Free-text filter across the fields a user would search by. */
+function matchesQuery(call: TickerCall, q: string): boolean {
+  if (!q) return true;
+  return (
+    call.dispatchNature.toLowerCase().includes(q) ||
+    (call.eventNumber ?? "").toLowerCase().includes(q) ||
+    call.dispatchDate.toLowerCase().includes(q) ||
+    call.dispatchTime.toLowerCase().includes(q)
+  );
+}
+
+const LOG_PAGE = 15;
 
 function timeAgo(input: string | null) {
   if (!input) return "Just now";
@@ -189,8 +204,15 @@ export default function TickerControlClient({ firstName }: { firstName: string }
   const [editEventNumber, setEditEventNumber] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
-  const active = useMemo(() => calls.filter((call) => !call.completedAt), [calls]);
-  const recent = useMemo(() => calls.filter((call) => call.completedAt).slice(0, 8), [calls]);
+  // Search + paged log so the whole year is reachable on mobile, not
+  // just the most recent handful.
+  const [query, setQuery] = useState("");
+  const [logLimit, setLogLimit] = useState(LOG_PAGE);
+
+  const q = query.trim().toLowerCase();
+  const active = useMemo(() => calls.filter((call) => !call.completedAt && matchesQuery(call, q)), [calls, q]);
+  const recentAll = useMemo(() => calls.filter((call) => call.completedAt && matchesQuery(call, q)), [calls, q]);
+  const recent = recentAll.slice(0, logLimit);
 
   async function load({ quiet = false } = {}) {
     if (!quiet) setLoading(true);
@@ -354,6 +376,17 @@ export default function TickerControlClient({ firstName }: { firstName: string }
 
         {status && <div className="ticker-status">{status}</div>}
 
+        <label className="ticker-meta-field ticker-search">
+          <span>Search calls</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setLogLimit(LOG_PAGE); }}
+            placeholder="Find by type, event #, or date…"
+            autoComplete="off"
+          />
+        </label>
+
         {showAdd && (
           <section className="ticker-panel">
             <span className="ticker-kicker">New ticker item</span>
@@ -414,25 +447,39 @@ export default function TickerControlClient({ firstName }: { firstName: string }
         <section className="ticker-section">
           <div className="ticker-section-head muted">
             <span aria-hidden />
-            <h2>Recent log</h2>
+            <h2>Recent log{recentAll.length > 0 && <span className="ticker-count"> · {recentAll.length}</span>}</h2>
           </div>
-          {recent.length === 0 ? (
-            <div className="ticker-empty">No completed items in the current-year log.</div>
-          ) : (
-            <div className="ticker-card-list">
-              {recent.map((call) => (
-                <TickerCard
-                  key={call.id}
-                  call={call}
-                  live={false}
-                  busy={busyId === call.id}
-                  onEdit={() => startEdit(call)}
-                  onHide={() => setActive(call, false)}
-                  onShow={() => setActive(call, true)}
-                  onDelete={() => removeCall(call.id)}
-                />
-              ))}
+          {recentAll.length === 0 ? (
+            <div className="ticker-empty">
+              {q ? "No calls match your search." : "No completed items in the current-year log."}
             </div>
+          ) : (
+            <>
+              <div className="ticker-card-list">
+                {recent.map((call) => (
+                  <TickerCard
+                    key={call.id}
+                    call={call}
+                    live={false}
+                    busy={busyId === call.id}
+                    onEdit={() => startEdit(call)}
+                    onHide={() => setActive(call, false)}
+                    onShow={() => setActive(call, true)}
+                    onDelete={() => removeCall(call.id)}
+                  />
+                ))}
+              </div>
+              {recentAll.length > recent.length && (
+                <div className="ticker-more-row">
+                  <button className="ticker-ghost-button" type="button" onClick={() => setLogLimit((n) => n + LOG_PAGE)}>
+                    Show more
+                  </button>
+                  <button className="ticker-ghost-button" type="button" onClick={() => setLogLimit(recentAll.length)}>
+                    Show all {recentAll.length}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </section>
 
@@ -979,6 +1026,23 @@ const TICKER_CONTROL_CSS = `
   padding: 18px;
   color: #94a3b8;
   text-align: center;
+}
+.ticker-search {
+  margin-bottom: 4px;
+}
+.ticker-search > input {
+  font-size: 16px; /* avoid iOS zoom-on-focus */
+}
+.ticker-count {
+  color: #94a3b8;
+  font-weight: 800;
+  font-size: 0.85em;
+}
+.ticker-more-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 /* ── Structured form wrapper ──────────────────────────────────────────

@@ -25,6 +25,7 @@ interface StructuredPayload {
   mutualAidReceived?: boolean;
   mutualAidReceivedAgency?: string | null;
   mutualAidGiven?: boolean;
+  mutualAidGivenAgency?: string | null;
   hemsRequested?: boolean;
   hemsOutcome?: string | null;
 }
@@ -41,6 +42,10 @@ function normalize(p: StructuredPayload | null | undefined): CallStructured {
   const agency = p?.mutualAidReceivedAgency && (MUTUAL_AID_AGENCIES as readonly string[]).includes(p.mutualAidReceivedAgency)
     ? (p.mutualAidReceivedAgency as MutualAidAgency)
     : null;
+  const givenAgency = p?.mutualAidGivenAgency && (MUTUAL_AID_AGENCIES as readonly string[]).includes(p.mutualAidGivenAgency)
+    ? (p.mutualAidGivenAgency as MutualAidAgency)
+    : null;
+  const mutualAidGiven = !!givenAgency || p?.mutualAidGiven === true;
   const outcome: HemsOutcome | null = p?.hemsOutcome === "handoff" || p?.hemsOutcome === "disregarded"
     ? p.hemsOutcome
     : null;
@@ -50,7 +55,8 @@ function normalize(p: StructuredPayload | null | undefined): CallStructured {
     notes: p?.notes ? String(p.notes).trim() || null : null,
     mutualAidReceived: !!agency || p?.mutualAidReceived === true,
     mutualAidReceivedAgency: agency,
-    mutualAidGiven: !!p?.mutualAidGiven,
+    mutualAidGiven,
+    mutualAidGivenAgency: mutualAidGiven ? givenAgency : null,
     hemsRequested: !!p?.hemsRequested,
     hemsOutcome: outcome,
   };
@@ -107,13 +113,13 @@ export async function POST(req: NextRequest) {
       (id, gmail_message_id, event_number, dispatch_datetime, dispatch_date, dispatch_time,
        dispatch_nature, source_year, parse_status, completed_at,
        units, category, notes,
-       mutual_aid_received, mutual_aid_received_agency, mutual_aid_given,
+       mutual_aid_received, mutual_aid_received_agency, mutual_aid_given, mutual_aid_given_agency,
        hems_requested, hems_outcome)
     VALUES
       (${id}, ${gmailMessageId}, ${eventNumber?.trim() || null}, ${dispatchDatetime},
        ${formattedDate}, ${dispatchTime}, ${dispatchNature}, ${sourceYear}, 'manual', ${completedAt},
        ${JSON.stringify(struct.units)}::jsonb, ${struct.category || null}, ${struct.notes},
-       ${struct.mutualAidReceived}, ${struct.mutualAidReceivedAgency}, ${struct.mutualAidGiven},
+       ${struct.mutualAidReceived}, ${struct.mutualAidReceivedAgency}, ${struct.mutualAidGiven}, ${struct.mutualAidGivenAgency},
        ${struct.hemsRequested}, ${struct.hemsOutcome})
   `;
   return NextResponse.json({ ok: true, id });
@@ -154,6 +160,7 @@ export async function PATCH(req: NextRequest) {
         mutual_aid_received         = ${struct.mutualAidReceived},
         mutual_aid_received_agency  = ${struct.mutualAidReceivedAgency},
         mutual_aid_given            = ${struct.mutualAidGiven},
+        mutual_aid_given_agency     = ${struct.mutualAidGivenAgency},
         hems_requested              = ${struct.hemsRequested},
         hems_outcome                = ${struct.hemsOutcome}
       WHERE id = ${id}

@@ -39,6 +39,10 @@ export const MUTUAL_AID_AGENCIES = [
 ] as const;
 export type MutualAidAgency = (typeof MUTUAL_AID_AGENCIES)[number];
 
+/** Kept in sync with STANDBY_CATEGORY in lib/cad/structured.ts. Declared
+ * locally so this client component never imports the server-only module. */
+export const STANDBY_CATEGORY = "Standby";
+
 const UNIT_TONES: Record<MillstadtUnit, { bg: string; fg: string; border: string }> = {
   M3925: { bg: "rgba(240,180,41,0.16)",  fg: "#f0b429", border: "rgba(240,180,41,0.40)" },
   M3926: { bg: "rgba(125,211,252,0.16)", fg: "#7dd3fc", border: "rgba(125,211,252,0.40)" },
@@ -63,6 +67,7 @@ export interface StructuredValue {
   mutualAidReceived: boolean;
   mutualAidReceivedAgency: MutualAidAgency | "";
   mutualAidGiven: boolean;
+  mutualAidGivenAgency: MutualAidAgency | "";
   hemsRequested: boolean;
   hemsOutcome: "handoff" | "disregarded" | "";
 }
@@ -74,6 +79,7 @@ export const EMPTY_STRUCTURED: StructuredValue = {
   mutualAidReceived: false,
   mutualAidReceivedAgency: "",
   mutualAidGiven: false,
+  mutualAidGivenAgency: "",
   hemsRequested: false,
   hemsOutcome: "",
 };
@@ -90,7 +96,55 @@ export function previewDispatchNature(v: StructuredValue): string {
   const prefix = brackets.length ? brackets.join(" ") + " " : "";
   const cat = v.category.trim();
   const notes = v.notes.trim();
-  return `${prefix}${notes ? `${cat} (${notes})` : cat}`.trim();
+  // Standby renders as a consistent "Standby at <location>" line (the
+  // location lives in notes). Mirror of formatDispatchNature().
+  if (cat.toLowerCase() === STANDBY_CATEGORY.toLowerCase()) {
+    return `${prefix}${notes ? `Standby at ${notes}` : "Standby"}`.trim();
+  }
+  // Mirror formatDispatchNature(): notes + an automatic "Mutual Aid Given"
+  // tag. Received is shown via the agency bracket above, not here.
+  const parenParts: string[] = [];
+  if (notes) parenParts.push(notes);
+  if (v.mutualAidGiven) {
+    parenParts.push(v.mutualAidGivenAgency ? `Mutual Aid Given to ${v.mutualAidGivenAgency}` : "Mutual Aid Given");
+  }
+  const body = parenParts.length ? `${cat} (${parenParts.join("; ")})` : cat;
+  return `${prefix}${body}`.trim();
+}
+
+// ── Fuzzy category matching (for "similar existing" suggestions) ──────
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const dp = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const tmp = dp[j];
+      dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = tmp;
+    }
+  }
+  return dp[n];
+}
+
+/** 0..1 similarity — combines edit distance, containment, and shared
+ * words so typos ("Sezure"), partials ("Chest"), and reorders all match. */
+export function catSimilarity(a: string, b: string): number {
+  const x = a.toLowerCase().replace(/\s+/g, " ").trim();
+  const y = b.toLowerCase().replace(/\s+/g, " ").trim();
+  if (!x || !y) return 0;
+  if (x === y) return 1;
+  if (x.includes(y) || y.includes(x)) return 0.92;
+  const ratio = 1 - levenshtein(x, y) / Math.max(x.length, y.length);
+  const tx = new Set(x.split(/[^a-z0-9]+/).filter(Boolean));
+  const ty = new Set(y.split(/[^a-z0-9]+/).filter(Boolean));
+  let shared = 0;
+  for (const t of tx) if (ty.has(t)) shared++;
+  const overlap = shared / Math.max(1, Math.min(tx.size, ty.size));
+  return Math.max(ratio, overlap >= 1 ? 0.85 : overlap * 0.8);
 }
 
 export default function StructuredCallForm({
@@ -105,6 +159,11 @@ export default function StructuredCallForm({
   const [showNewCat, setShowNewCat] = useState(false);
   const [newCat, setNewCat] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // Manage-categories panel state
+  const [managing, setManaging] = useState(false);
+  const [busyCat, setBusyCat] = useState<string | null>(null);
+  const [renameOf, setRenameOf] = useState<string | null>(null);
+  const [renameTo, setRenameTo] = useState("");
 
   useEffect(() => {
     fetch("/api/admin/calls/categories", { cache: "no-store" })
@@ -118,6 +177,34 @@ export default function StructuredCallForm({
     if (!q) return categories;
     return categories.filter((c) => c.toLowerCase().includes(q));
   }, [categories, catFilter]);
+
+  // Count case/whitespace-duplicate categories so we can nudge the user
+  // to clean them up (e.g. "Fire-1st" + "Fire-1st ").
+  const dupCount = useMemo(() => {
+    const seen = new Map<string, number>();
+    for (const c of categories) {
+      const key = c.replace(/\s+/g, " ").trim().toLowerCase();
+      seen.set(key, (seen.get(key) ?? 0) + 1);
+    }
+    let extra = 0;
+    for (const n of seen.values()) if (n > 1) extra += n - 1;
+    return extra;
+  }, [categories]);
+
+  // Existing categories that look similar to what's being typed as a new
+  // one — surfaced so the user reuses one instead of creating a near-dup.
+  const catSuggestions = useMemo(() => {
+    const q = newCat.trim();
+    if (q.length < 2) return [];
+    const ql = q.toLowerCase();
+    return categories
+      .filter((c) => c.toLowerCase() !== ql)
+      .map((c) => ({ c, score: catSimilarity(q, c) }))
+      .filter((x) => x.score >= 0.5)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+      .map((x) => x.c);
+  }, [newCat, categories]);
 
   const preview = previewDispatchNature(value);
 
@@ -159,6 +246,49 @@ export default function StructuredCallForm({
       setShowNewCat(false);
       setNewCat("");
     } finally { setAdding(false); }
+  }
+
+  // ── Manage categories (rename / remove / clean duplicates) ──────────
+  // These only edit the dropdown master list — they never change the
+  // text on any existing call, so the live ticker is unaffected.
+  async function catRequest(method: "POST" | "PATCH" | "DELETE", body: Record<string, unknown>) {
+    setError(null);
+    const r = await fetch("/api/admin/calls/categories", {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { setError(d?.error ?? "Could not update categories."); return null; }
+    if (Array.isArray(d.categories)) setCategories(d.categories);
+    return d;
+  }
+
+  async function removeCat(name: string) {
+    setBusyCat(name);
+    try { await catRequest("DELETE", { name }); }
+    finally { setBusyCat(null); }
+  }
+
+  async function saveRename(from: string) {
+    const to = renameTo.trim();
+    if (!to || to === from) { setRenameOf(null); return; }
+    setBusyCat(from);
+    try {
+      const d = await catRequest("PATCH", { from, to });
+      if (d) {
+        // If the renamed category was the one selected, keep selection in sync.
+        if (value.category === from) patch({ category: to });
+        setRenameOf(null);
+        setRenameTo("");
+      }
+    } finally { setBusyCat(null); }
+  }
+
+  async function dedupeCats() {
+    setBusyCat("__dedupe__");
+    try { await catRequest("POST", { action: "dedupe" }); }
+    finally { setBusyCat(null); }
   }
 
   return (
@@ -222,9 +352,30 @@ export default function StructuredCallForm({
           <CheckRow
             label="Mutual Aid Given"
             checked={value.mutualAidGiven}
-            onChange={(c) => patch({ mutualAidGiven: c })}
+            onChange={(c) => patch({
+              mutualAidGiven: c,
+              mutualAidGivenAgency: c ? value.mutualAidGivenAgency : "",
+            })}
             help="A Millstadt unit went out of our first-due to assist another agency."
           />
+          {value.mutualAidGiven && (
+            <div>
+              <label style={fieldLabel}>Agency assisted <span style={{ color: "#64748b", fontWeight: 600, letterSpacing: 0, textTransform: "none" }}>(optional)</span></label>
+              <select
+                value={value.mutualAidGivenAgency}
+                onChange={(e) => patch({ mutualAidGivenAgency: e.target.value as MutualAidAgency })}
+                style={fieldInput}
+              >
+                <option value="">Choose agency…</option>
+                {MUTUAL_AID_AGENCIES.map((a) => <option key={a} value={a}>{a}</option>)}
+              </select>
+              {value.mutualAidGivenAgency && (
+                <div style={{ marginTop: 6 }}>
+                  <AgencyChip agency={value.mutualAidGivenAgency as MutualAidAgency} />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </Section>
 
@@ -280,8 +431,33 @@ export default function StructuredCallForm({
             <option value="">Choose a category…</option>
             {filteredCats.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
+
+          {value.category.toLowerCase() === STANDBY_CATEGORY.toLowerCase() && (
+            <div style={standbyBox}>
+              <label style={fieldLabel}>Where are you standing by?</label>
+              <input
+                autoFocus
+                value={value.notes}
+                onChange={(e) => patch({ notes: e.target.value })}
+                placeholder="e.g. BET, parade route, fireworks display"
+                style={fieldInput}
+              />
+              <div style={{ color: "#94a3b8", fontSize: 11.5, marginTop: 6 }}>
+                Shows on the ticker as{" "}
+                <span style={{ color: "#f0b429", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace" }}>
+                  Standby at {value.notes.trim() || "…"}
+                </span>
+              </div>
+            </div>
+          )}
+
           {!showNewCat ? (
-            <button type="button" onClick={() => setShowNewCat(true)} style={ghostBtn}>+ New category</button>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button type="button" onClick={() => setShowNewCat(true)} style={ghostBtn}>+ New category</button>
+              <button type="button" onClick={() => setManaging((v) => !v)} style={ghostBtn}>
+                {managing ? "Done managing" : "Manage list"}
+              </button>
+            </div>
           ) : (
             <div style={{ display: "flex", gap: 8 }}>
               <input
@@ -298,20 +474,98 @@ export default function StructuredCallForm({
               <button type="button" onClick={() => { setShowNewCat(false); setNewCat(""); }} style={ghostBtn}>Cancel</button>
             </div>
           )}
+
+          {showNewCat && catSuggestions.length > 0 && (
+            <div style={suggestBox}>
+              <div style={{ color: "#fbbf24", fontSize: 11.5, marginBottom: 6 }}>
+                Similar categories already exist — tap one to use it instead of adding a duplicate:
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {catSuggestions.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => { patch({ category: c }); setShowNewCat(false); setNewCat(""); setError(null); }}
+                    style={suggestChip}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {managing && (
+            <div style={manageBox}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ color: "#94a3b8", fontSize: 11.5 }}>
+                  {categories.length} categor{categories.length === 1 ? "y" : "ies"}
+                  {dupCount > 0 && <span style={{ color: "#fbbf24" }}> · {dupCount} duplicate{dupCount === 1 ? "" : "s"} found</span>}
+                </span>
+                {dupCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={dedupeCats}
+                    disabled={busyCat === "__dedupe__"}
+                    style={{ ...primaryBtn, padding: "6px 12px" }}
+                  >
+                    {busyCat === "__dedupe__" ? "Cleaning…" : "Clean up duplicates"}
+                  </button>
+                )}
+              </div>
+              <div style={{ display: "grid", gap: 6, marginTop: 10, maxHeight: 260, overflowY: "auto" }}>
+                {categories.length === 0 && (
+                  <span style={{ color: "#475569", fontSize: 12.5 }}>No categories yet.</span>
+                )}
+                {categories.map((c) => (
+                  <div key={c} style={manageRow}>
+                    {renameOf === c ? (
+                      <>
+                        <input
+                          autoFocus
+                          value={renameTo}
+                          onChange={(e) => setRenameTo(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") saveRename(c); if (e.key === "Escape") { setRenameOf(null); setRenameTo(""); } }}
+                          style={{ ...fieldInput, flex: 1, padding: "6px 9px" }}
+                        />
+                        <button type="button" onClick={() => saveRename(c)} disabled={busyCat === c} style={{ ...primaryBtn, padding: "6px 12px" }}>Save</button>
+                        <button type="button" onClick={() => { setRenameOf(null); setRenameTo(""); }} style={{ ...ghostBtn, padding: "6px 10px" }}>Cancel</button>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ flex: 1, color: "white", fontSize: 13, wordBreak: "break-word" }}>{c}</span>
+                        <button type="button" onClick={() => { setRenameOf(c); setRenameTo(c.replace(/\s+/g, " ").trim()); }} style={{ ...ghostBtn, padding: "6px 10px" }}>Rename</button>
+                        <button type="button" onClick={() => removeCat(c)} disabled={busyCat === c} style={{ ...ghostBtn, padding: "6px 10px", color: "#fca5a5", borderColor: "rgba(248,113,113,0.30)" }}>
+                          {busyCat === c ? "…" : "Remove"}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p style={{ color: "#64748b", fontSize: 11, marginTop: 8 }}>
+                Editing this list only changes the dropdown choices. It never alters what any saved call already shows on the ticker.
+              </p>
+            </div>
+          )}
           {error && <div style={errorBox}>{error}</div>}
         </div>
       </Section>
 
-      {/* ── Notes ─────────────────────────────────────────────────────── */}
-      <Section title="Notes (optional)" hint="Anything in here surfaces in (parentheses) on the public ticker — not counted in stats.">
-        <textarea
-          rows={2}
-          value={value.notes}
-          onChange={(e) => patch({ notes: e.target.value })}
-          placeholder="e.g. Arch Requested, School Bus Involved, Coughing up blood"
-          style={{ ...fieldInput, resize: "vertical", fontFamily: "inherit" }}
-        />
-      </Section>
+      {/* ── Notes ─────────────────────────────────────────────────────────
+          Hidden for Standby — that category repurposes `notes` as the
+          standby location via the field under the category dropdown. */}
+      {value.category.toLowerCase() !== STANDBY_CATEGORY.toLowerCase() && (
+        <Section title="Notes (optional)" hint="Anything in here surfaces in (parentheses) on the public ticker — not counted in stats.">
+          <textarea
+            rows={2}
+            value={value.notes}
+            onChange={(e) => patch({ notes: e.target.value })}
+            placeholder="e.g. Arch Requested, School Bus Involved, Coughing up blood"
+            style={{ ...fieldInput, resize: "vertical", fontFamily: "inherit" }}
+          />
+        </Section>
+      )}
 
       {/* ── Live preview ──────────────────────────────────────────────── */}
       <Section title="Live preview" hint="This is exactly what will appear on the public ticker.">
@@ -455,6 +709,28 @@ const errorBox: React.CSSProperties = {
   padding: "8px 12px", borderRadius: 10,
   background: "rgba(239,68,68,0.10)", border: "1px solid rgba(239,68,68,0.30)",
   color: "#fecaca", fontSize: 12.5,
+};
+const manageBox: React.CSSProperties = {
+  background: "rgba(2,9,18,0.55)", border: "1px solid rgba(255,255,255,0.10)",
+  borderRadius: 12, padding: 12,
+};
+const manageRow: React.CSSProperties = {
+  display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap",
+  padding: "6px 8px", borderRadius: 9,
+  background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
+};
+const standbyBox: React.CSSProperties = {
+  background: "rgba(240,180,41,0.06)", border: "1px solid rgba(240,180,41,0.30)",
+  borderRadius: 12, padding: 12,
+};
+const suggestBox: React.CSSProperties = {
+  background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.28)",
+  borderRadius: 12, padding: 12,
+};
+const suggestChip: React.CSSProperties = {
+  background: "rgba(255,255,255,0.05)", color: "white",
+  border: "1px solid rgba(255,255,255,0.16)", borderRadius: 999,
+  padding: "6px 11px", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit",
 };
 const previewBox: React.CSSProperties = {
   fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace",

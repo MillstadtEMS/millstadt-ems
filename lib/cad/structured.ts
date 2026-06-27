@@ -36,6 +36,10 @@ export type MutualAidAgency = typeof MUTUAL_AID_AGENCIES[number];
 
 export type HemsOutcome = "handoff" | "disregarded";
 
+/** Special category whose location is captured in `notes` and rendered
+ * as a consistent "Standby at <location>" line on the ticker. */
+export const STANDBY_CATEGORY = "Standby";
+
 // ── Tone palette for unit + agency chips (used by editor + reports) ────
 // Tasteful, distinct, not garish. Keeps to the navy/gold palette family.
 
@@ -152,6 +156,7 @@ export interface CallStructured {
   mutualAidReceived: boolean;
   mutualAidReceivedAgency: MutualAidAgency | null;
   mutualAidGiven: boolean;
+  mutualAidGivenAgency: MutualAidAgency | null;
   hemsRequested: boolean;
   hemsOutcome: HemsOutcome | null;
 }
@@ -177,7 +182,21 @@ export function formatDispatchNature(input: CallStructured): string {
   if (prefix) prefix += " ";
   const cat = (input.category || "").trim();
   const notes = (input.notes || "").trim();
-  const body = notes ? `${cat} (${notes})` : cat;
+  // Standby is special: the notes field carries the location, and the
+  // line always renders as "Standby at <location>" so every standby
+  // reads identically on the ticker.
+  if (cat.toLowerCase() === STANDBY_CATEGORY.toLowerCase()) {
+    return `${prefix}${notes ? `Standby at ${notes}` : "Standby"}`.trim();
+  }
+  // Parenthetical = free-text notes, plus an automatic "Mutual Aid Given"
+  // tag when that flag is set. (Mutual aid RECEIVED is shown instead by
+  // the agency bracket above, so it is intentionally not added here.)
+  const parenParts: string[] = [];
+  if (notes) parenParts.push(notes);
+  if (input.mutualAidGiven) {
+    parenParts.push(input.mutualAidGivenAgency ? `Mutual Aid Given to ${input.mutualAidGivenAgency}` : "Mutual Aid Given");
+  }
+  const body = parenParts.length ? `${cat} (${parenParts.join("; ")})` : cat;
   return `${prefix}${body}`.trim();
 }
 
@@ -212,6 +231,7 @@ export function parseDispatchNature(text: string): CallStructured {
     mutualAidReceived: !!mutualAidReceivedAgency,
     mutualAidReceivedAgency,
     mutualAidGiven: false,           // can't reliably detect from text — admin tags in editor
+    mutualAidGivenAgency: null,
     hemsRequested: hems.requested,
     hemsOutcome: hems.outcome,
   };
@@ -231,6 +251,7 @@ export async function ensureCadStructuredSchema(): Promise<void> {
   await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS mutual_aid_received         BOOLEAN NOT NULL DEFAULT FALSE`;
   await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS mutual_aid_received_agency  TEXT`;
   await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS mutual_aid_given            BOOLEAN NOT NULL DEFAULT FALSE`;
+  await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS mutual_aid_given_agency     TEXT`;
   await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS hems_requested              BOOLEAN NOT NULL DEFAULT FALSE`;
   await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS hems_outcome                TEXT`;
 
@@ -259,11 +280,28 @@ export async function listCategories(includeInactive = false): Promise<string[]>
   return rows.map((r) => r.name);
 }
 
+/** Collapse internal runs of whitespace and trim. Two category names
+ * that differ only by spacing/case are treated as the same category —
+ * this is what stops "Fire-1st" and "Fire-1st " becoming two rows. */
+export function normalizeCategoryName(name: string): string {
+  return (name ?? "").replace(/\s+/g, " ").trim();
+}
+
 export async function addCategory(name: string): Promise<void> {
   await ensureCadStructuredSchema();
   const db = sql();
-  const trimmed = name.trim();
+  const trimmed = normalizeCategoryName(name);
   if (!trimmed) return;
+  // Reuse an existing case-/whitespace-insensitive match instead of
+  // inserting a near-duplicate row. Matching is done in JS over the
+  // small category list to avoid brittle regex-in-SQL escaping.
+  const key = trimmed.toLowerCase();
+  const rows = (await db`SELECT name, active FROM cad_categories`) as unknown as { name: string; active: boolean }[];
+  const match = rows.find((r) => normalizeCategoryName(r.name).toLowerCase() === key);
+  if (match) {
+    if (!match.active) await db`UPDATE cad_categories SET active = TRUE WHERE name = ${match.name}`;
+    return;
+  }
   await db`
     INSERT INTO cad_categories (name) VALUES (${trimmed})
     ON CONFLICT (name) DO UPDATE SET active = TRUE
@@ -274,6 +312,61 @@ export async function deactivateCategory(name: string): Promise<void> {
   await ensureCadStructuredSchema();
   const db = sql();
   await db`UPDATE cad_categories SET active = FALSE WHERE name = ${name}`;
+}
+
+/**
+ * Rename a category in the master dropdown list only. The old name is
+ * hidden and the new (normalized) name is ensured-active. This never
+ * rewrites any cad_calls.dispatch_nature text, so the live ticker and
+ * existing call records are untouched.
+ */
+export async function renameCategory(from: string, to: string): Promise<void> {
+  await ensureCadStructuredSchema();
+  const db = sql();
+  const target = normalizeCategoryName(to);
+  if (!from || !target) return;
+  if (normalizeCategoryName(from).toLowerCase() !== target.toLowerCase()) {
+    await db`UPDATE cad_categories SET active = FALSE WHERE name = ${from}`;
+  }
+  await addCategory(target);
+}
+
+/**
+ * Collapse case-/whitespace-duplicate categories down to one clean row
+ * each. For every group of variants that normalize to the same value we
+ * keep a single canonical (normalized) active row and deactivate the
+ * rest. Master-list only — existing call text is never changed.
+ */
+export async function mergeDuplicateCategories(): Promise<{ removed: number }> {
+  await ensureCadStructuredSchema();
+  const db = sql();
+  const rows = (await db`SELECT name FROM cad_categories WHERE active = TRUE`) as unknown as { name: string }[];
+  const groups = new Map<string, string[]>();
+  for (const r of rows) {
+    const key = normalizeCategoryName(r.name).toLowerCase();
+    if (!key) continue;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(r.name);
+  }
+  let removed = 0;
+  for (const variants of groups.values()) {
+    variants.sort();
+    const canonical = normalizeCategoryName(variants[0]);
+    const needsCleanRow = !variants.includes(canonical);
+    const hasRedundant = variants.some((v) => v !== canonical);
+    if (!needsCleanRow && !hasRedundant) continue; // already a single clean row
+    await db`
+      INSERT INTO cad_categories (name) VALUES (${canonical})
+      ON CONFLICT (name) DO UPDATE SET active = TRUE
+    `;
+    for (const v of variants) {
+      if (v !== canonical) {
+        await db`UPDATE cad_categories SET active = FALSE WHERE name = ${v}`;
+        removed++;
+      }
+    }
+  }
+  return { removed };
 }
 
 /**

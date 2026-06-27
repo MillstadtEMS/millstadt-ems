@@ -23,6 +23,7 @@ interface StructuredPayload {
   mutualAidReceived?: boolean;
   mutualAidReceivedAgency?: string | null;
   mutualAidGiven?: boolean;
+  mutualAidGivenAgency?: string | null;
   hemsRequested?: boolean;
   hemsOutcome?: string | null;
 }
@@ -39,6 +40,10 @@ function normalize(p: StructuredPayload | null | undefined): CallStructured {
   const agency = p?.mutualAidReceivedAgency && (MUTUAL_AID_AGENCIES as readonly string[]).includes(p.mutualAidReceivedAgency)
     ? (p.mutualAidReceivedAgency as MutualAidAgency)
     : null;
+  const givenAgency = p?.mutualAidGivenAgency && (MUTUAL_AID_AGENCIES as readonly string[]).includes(p.mutualAidGivenAgency)
+    ? (p.mutualAidGivenAgency as MutualAidAgency)
+    : null;
+  const mutualAidGiven = !!givenAgency || p?.mutualAidGiven === true;
   const outcome: HemsOutcome | null = p?.hemsOutcome === "handoff" || p?.hemsOutcome === "disregarded"
     ? p.hemsOutcome
     : null;
@@ -48,7 +53,8 @@ function normalize(p: StructuredPayload | null | undefined): CallStructured {
     notes: p?.notes ? String(p.notes).trim() || null : null,
     mutualAidReceived: !!agency || p?.mutualAidReceived === true,
     mutualAidReceivedAgency: agency,
-    mutualAidGiven: !!p?.mutualAidGiven,
+    mutualAidGiven,
+    mutualAidGivenAgency: mutualAidGiven ? givenAgency : null,
     hemsRequested: !!p?.hemsRequested,
     hemsOutcome: outcome,
   };
@@ -70,6 +76,7 @@ interface CadCallRow {
   mutual_aid_received?: boolean | null;
   mutual_aid_received_agency?: string | null;
   mutual_aid_given?: boolean | null;
+  mutual_aid_given_agency?: string | null;
   hems_requested?: boolean | null;
   hems_outcome?: string | null;
 }
@@ -105,6 +112,7 @@ function rowToCall(row: CadCallRow) {
       mutualAidReceived: !!row.mutual_aid_received,
       mutualAidReceivedAgency: row.mutual_aid_received_agency ?? "",
       mutualAidGiven: !!row.mutual_aid_given,
+      mutualAidGivenAgency: row.mutual_aid_given_agency ?? "",
       hemsRequested: !!row.hems_requested,
       hemsOutcome: row.hems_outcome ?? "",
     },
@@ -139,7 +147,7 @@ export async function GET() {
     SELECT id, event_number, dispatch_datetime, dispatch_date, dispatch_time,
            dispatch_nature, source_year, completed_at, created_at,
            units, category, notes,
-           mutual_aid_received, mutual_aid_received_agency, mutual_aid_given,
+           mutual_aid_received, mutual_aid_received_agency, mutual_aid_given, mutual_aid_given_agency,
            hems_requested, hems_outcome
     FROM cad_calls
     WHERE source_year = ${year}
@@ -198,13 +206,13 @@ export async function POST(req: NextRequest) {
         (id, gmail_message_id, event_number, dispatch_datetime, dispatch_date, dispatch_time,
          dispatch_nature, source_year, parse_status, completed_at,
          units, category, notes,
-         mutual_aid_received, mutual_aid_received_agency, mutual_aid_given,
+         mutual_aid_received, mutual_aid_received_agency, mutual_aid_given, mutual_aid_given_agency,
          hems_requested, hems_outcome)
       VALUES
         (${id}, ${`manual-ticker-${id}`}, ${eventNumber || null}, ${dispatchDatetime},
          ${formattedDate}, ${dispatchTime}, ${dispatchNature}, ${Number.parseInt(year, 10)}, 'manual', ${completedAt},
          ${JSON.stringify(struct.units)}::jsonb, ${struct.category || null}, ${struct.notes},
-         ${struct.mutualAidReceived}, ${struct.mutualAidReceivedAgency}, ${struct.mutualAidGiven},
+         ${struct.mutualAidReceived}, ${struct.mutualAidReceivedAgency}, ${struct.mutualAidGiven}, ${struct.mutualAidGivenAgency},
          ${struct.hemsRequested}, ${struct.hemsOutcome})
     `;
   } else {
@@ -260,6 +268,7 @@ export async function PATCH(req: NextRequest) {
         mutual_aid_received         = ${struct.mutualAidReceived},
         mutual_aid_received_agency  = ${struct.mutualAidReceivedAgency},
         mutual_aid_given            = ${struct.mutualAidGiven},
+        mutual_aid_given_agency     = ${struct.mutualAidGivenAgency},
         hems_requested              = ${struct.hemsRequested},
         hems_outcome                = ${struct.hemsOutcome}
       WHERE id = ${id}

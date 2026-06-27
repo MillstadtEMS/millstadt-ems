@@ -122,6 +122,7 @@ export default function CallsAdmin() {
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving]   = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   // Structured edit modal — replaces the legacy text-only inline edit
   // for the pencil button on each row.
@@ -272,8 +273,15 @@ export default function CallsAdmin() {
     await load();
   }
 
-  const active   = calls.filter(c => !c.completedAt);
-  const complete = calls.filter(c =>  c.completedAt);
+  const q = query.trim().toLowerCase();
+  const match = (c: Call) =>
+    !q ||
+    c.dispatchNature.toLowerCase().includes(q) ||
+    (c.eventNumber ?? "").toLowerCase().includes(q) ||
+    c.dispatchDate.toLowerCase().includes(q) ||
+    c.dispatchTime.toLowerCase().includes(q);
+  const active   = calls.filter(c => !c.completedAt && match(c));
+  const complete = calls.filter(c =>  c.completedAt && match(c));
 
   const rowProps = {
     editValue, saving,
@@ -335,6 +343,25 @@ export default function CallsAdmin() {
           <p className="text-slate-500 text-[10px] sm:text-xs mt-1 leading-tight hidden sm:block">Ticker refresh window after edits.</p>
         </div>
       </div>
+
+      {/* Search across the whole year's log */}
+      {!loading && calls.length > 0 && (
+        <div className="mb-6">
+          <input
+            type="search"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Search calls by type, event #, or date…"
+            className={inp}
+            autoComplete="off"
+          />
+          {q && (
+            <p className="text-slate-500 text-xs mt-1.5">
+              {active.length + complete.length} match{active.length + complete.length === 1 ? "" : "es"} of {calls.length}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Add call form */}
       {showAdd && (
