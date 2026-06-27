@@ -71,6 +71,8 @@ const CATEGORY_ALIASES: Record<string, string> = {
   "behavioral emergency": "Psychiatric Emergency",
   "pregnancy complications": "Obstetrical Emergency",
   "pregnancy complication": "Obstetrical Emergency",
+  "shortness of breath": "Difficulty Breathing",
+  "sob": "Difficulty Breathing",
 };
 function resolveCategoryAlias(name: string): string {
   const cleaned = name.replace(/\s+/g, " ").trim();

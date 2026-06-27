@@ -81,6 +81,8 @@ export const CATEGORY_ALIASES: Record<string, string> = {
   "behavioral emergency": "Psychiatric Emergency",
   "pregnancy complications": "Obstetrical Emergency",
   "pregnancy complication": "Obstetrical Emergency",
+  "shortness of breath": "Difficulty Breathing",
+  "sob": "Difficulty Breathing",
 };
 
 /** Resolve a category name through the alias map + whitespace cleanup. */
