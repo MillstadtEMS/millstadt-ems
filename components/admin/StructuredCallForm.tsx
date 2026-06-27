@@ -619,8 +619,8 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
   return (
     <section>
       <div style={{ marginBottom: 8 }}>
-        <div style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>{title}</div>
-        {hint && <div style={{ color: "#64748b", fontSize: 11.5, marginTop: 2 }}>{hint}</div>}
+        <div style={{ color: "#cbd5e1", fontSize: 12.5, fontWeight: 600, letterSpacing: "-0.005em" }}>{title}</div>
+        {hint && <div style={{ color: "#7c899e", fontSize: 11.5, marginTop: 2, lineHeight: 1.45 }}>{hint}</div>}
       </div>
       {children}
     </section>
@@ -634,7 +634,7 @@ function UnitChip({ unit }: { unit: MillstadtUnit }) {
       display: "inline-flex", alignItems: "center", gap: 4,
       padding: "5px 10px", borderRadius: 8,
       background: t.bg, color: t.fg, border: `1px solid ${t.border}`,
-      fontWeight: 900, fontSize: 12, letterSpacing: "0.08em",
+      fontWeight: 600, fontSize: 12, letterSpacing: "0.02em",
       fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace",
     }}>{unit}</span>
   );
@@ -647,7 +647,7 @@ function AgencyChip({ agency }: { agency: MutualAidAgency }) {
       display: "inline-flex", alignItems: "center", gap: 4,
       padding: "4px 9px", borderRadius: 8,
       background: t.bg, color: t.fg, border: `1px solid ${t.border}`,
-      fontWeight: 800, fontSize: 11.5, letterSpacing: "0.04em",
+      fontWeight: 600, fontSize: 11.5, letterSpacing: "0.01em",
     }}>{agency}</span>
   );
 }
@@ -681,8 +681,8 @@ function CheckRow({
     <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 12px", borderRadius: 10, background: checked ? "rgba(240,180,41,0.08)" : "rgba(255,255,255,0.03)", border: `1px solid ${checked ? "rgba(240,180,41,0.30)" : "rgba(255,255,255,0.07)"}`, cursor: "pointer" }}>
       <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} style={{ marginTop: 3, accentColor: "#f0b429" }} />
       <span>
-        <span style={{ display: "block", color: "white", fontSize: 13, fontWeight: 800 }}>{label}</span>
-        {help && <span style={{ display: "block", color: "#94a3b8", fontSize: 11.5, marginTop: 2 }}>{help}</span>}
+        <span style={{ display: "block", color: "white", fontSize: 13, fontWeight: 600 }}>{label}</span>
+        {help && <span style={{ display: "block", color: "#94a3b8", fontSize: 11.5, marginTop: 2, lineHeight: 1.45 }}>{help}</span>}
       </span>
     </label>
   );
@@ -700,7 +700,7 @@ function RadioCard({
       color: checked ? "white" : "#cbd5e1",
       cursor: "pointer", fontFamily: "inherit",
     }}>
-      <div style={{ fontWeight: 800, fontSize: 13, color: checked ? "#f0b429" : "white" }}>{label}</div>
+      <div style={{ fontWeight: 600, fontSize: 13, color: checked ? "#f0b429" : "white" }}>{label}</div>
       <div style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 2 }}>{desc}</div>
     </button>
   );
@@ -709,33 +709,33 @@ function RadioCard({
 // ── Styles ────────────────────────────────────────────────────────────
 
 const fieldLabel: React.CSSProperties = {
-  display: "block", color: "#94a3b8", fontSize: 10.5, fontWeight: 800,
-  letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 5,
+  display: "block", color: "#8b98ac", fontSize: 11, fontWeight: 600,
+  letterSpacing: "0.01em", marginBottom: 5,
 };
 const fieldInput: React.CSSProperties = {
   width: "100%",
-  background: "#040d1a", border: "1px solid rgba(255,255,255,0.10)",
-  borderRadius: 10, padding: "8px 11px", color: "white", fontSize: 13,
+  background: "#0a1422", border: "1px solid rgba(255,255,255,0.12)",
+  borderRadius: 10, padding: "9px 11px", color: "white", fontSize: 13,
   fontFamily: "inherit",
 };
 const primaryBtn: React.CSSProperties = {
-  background: "#f0b429", color: "#040d1a", border: 0,
-  padding: "8px 14px", borderRadius: 10, fontWeight: 900, fontSize: 12,
-  letterSpacing: "0.10em", textTransform: "uppercase", cursor: "pointer", fontFamily: "inherit",
+  background: "#f0b429", color: "#06101f", border: 0,
+  padding: "9px 14px", borderRadius: 10, fontWeight: 600, fontSize: 13,
+  letterSpacing: 0, cursor: "pointer", fontFamily: "inherit",
 };
 const ghostBtn: React.CSSProperties = {
-  background: "transparent", color: "#cbd5e1",
-  border: "1px solid rgba(255,255,255,0.12)",
-  padding: "8px 14px", borderRadius: 10, fontWeight: 800, fontSize: 12,
-  letterSpacing: "0.10em", textTransform: "uppercase", cursor: "pointer", fontFamily: "inherit",
+  background: "rgba(255,255,255,0.02)", color: "#cbd5e1",
+  border: "1px solid rgba(255,255,255,0.14)",
+  padding: "9px 14px", borderRadius: 10, fontWeight: 600, fontSize: 13,
+  letterSpacing: 0, cursor: "pointer", fontFamily: "inherit",
 };
 const addBtn: React.CSSProperties = {
   ...ghostBtn,
   borderStyle: "dashed",
-  borderColor: "rgba(240,180,41,0.40)",
+  borderColor: "rgba(240,180,41,0.35)",
   color: "#f0b429",
-  padding: "6px 10px",
-  fontSize: 11,
+  padding: "8px 12px",
+  fontSize: 12.5,
 };
 const removeBtn: React.CSSProperties = {
   background: "transparent", color: "#94a3b8", border: 0,

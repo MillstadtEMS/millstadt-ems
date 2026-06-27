@@ -54,7 +54,7 @@ function CallRow({
           />
           <div className="flex items-center gap-2">
             <button onClick={() => onSave(c.id)} disabled={saving}
-              className="flex-1 sm:flex-none bg-[#f0b429] hover:bg-[#f5c842] disabled:opacity-50 text-[#020810] font-black px-5 py-2.5 rounded-xl text-sm transition-colors">
+              className="flex-1 sm:flex-none bg-[#f0b429] hover:bg-[#f5c842] disabled:opacity-50 text-[#020810] font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
               {saving ? "Saving…" : "Save"}
             </button>
             <button onClick={onCancel}
@@ -93,7 +93,7 @@ function CallRow({
               onClick={() => onToggleActive(c)}
               disabled={toggling}
               title={highlight ? "Mark as completed (remove from ticker)" : "Mark as active (show on ticker)"}
-              className={`flex-1 sm:flex-none min-h-[36px] sm:min-w-[100px] text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded border transition-colors disabled:opacity-50 ${highlight ? "text-red-300 bg-red-400/10 border-red-400/25 hover:bg-red-400/20" : "text-slate-400 bg-white/3 border-white/8 hover:text-[#f0b429] hover:border-[#f0b429]/40"}`}
+              className={`flex-1 sm:flex-none min-h-[36px] sm:min-w-[100px] text-[10px] font-semibold uppercase tracking-widest px-3 py-1.5 rounded border transition-colors disabled:opacity-50 ${highlight ? "text-red-300 bg-red-400/10 border-red-400/25 hover:bg-red-400/20" : "text-slate-400 bg-white/3 border-white/8 hover:text-[#f0b429] hover:border-[#f0b429]/40"}`}
             >
               {toggling ? "…" : highlight ? "On ticker" : "Show ticker"}
             </button>
@@ -298,12 +298,12 @@ export default function CallsAdmin() {
     <div className="max-w-5xl">
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <span className="h-px w-8 bg-[#f0b429]" />
-          <span className="text-[#f0b429] text-xs font-black tracking-[0.25em] uppercase">Dispatch</span>
+          <span className="h-px w-8 bg-[#f0b429]/70" />
+          <span className="text-[#f0b429] text-[11px] font-semibold tracking-[0.12em] uppercase">Dispatch</span>
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white leading-tight">Live Call Ticker Editor</h1>
+            <h1 className="text-2xl sm:text-[1.7rem] font-semibold tracking-[-0.02em] text-white leading-tight">Live Call Ticker Editor</h1>
             <p className="text-slate-400 text-sm mt-1.5 leading-relaxed">
               {new Date().getFullYear()} — {calls.length} calls. Active calls show on the public top ticker; edits update within 30 seconds.
             </p>
@@ -311,13 +311,13 @@ export default function CallsAdmin() {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 sm:shrink-0">
             <ForcePollButton onAfter={() => load()} />
             <Link href="/admin/calls/reports"
-              className="flex items-center justify-center gap-2 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/25 text-sky-300 font-black text-sm px-4 py-3 sm:py-2.5 rounded-xl transition-colors">
+              className="flex items-center justify-center gap-2 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/25 text-sky-300 font-semibold text-sm px-4 py-3 sm:py-2.5 rounded-xl transition-colors">
               <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" aria-hidden><path d="M4 19V5h2v14H4zm4 0v-8h2v8H8zm4 0V9h2v10h-2zm4 0v-6h2v6h-2z"/></svg>
               Reports
             </Link>
             <button
               onClick={() => setShowAdd(v => !v)}
-              className="flex items-center justify-center gap-2 bg-[#f0b429]/10 hover:bg-[#f0b429]/20 border border-[#f0b429]/25 text-[#f0b429] font-black text-sm px-4 py-3 sm:py-2.5 rounded-xl transition-colors"
+              className="flex items-center justify-center gap-2 bg-[#f0b429]/10 hover:bg-[#f0b429]/20 border border-[#f0b429]/25 text-[#f0b429] font-semibold text-sm px-4 py-3 sm:py-2.5 rounded-xl transition-colors"
             >
               <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" aria-hidden><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
               Add ticker/log item
@@ -328,17 +328,17 @@ export default function CallsAdmin() {
 
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6 sm:mb-8">
         <div className="rounded-xl sm:rounded-2xl border border-red-400/20 bg-red-400/5 p-3 sm:p-4">
-          <span className="text-red-300 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.16em] sm:tracking-[0.2em] leading-tight block">Live ticker</span>
+          <span className="text-red-300 text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] sm:tracking-[0.2em] leading-tight block">Live ticker</span>
           <strong className="block text-white text-xl sm:text-2xl mt-1 tabular-nums">{active.length}</strong>
           <p className="text-slate-500 text-[10px] sm:text-xs mt-1 leading-tight hidden sm:block">Showing on the public top strip now.</p>
         </div>
         <div className="rounded-xl sm:rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-4">
-          <span className="text-slate-400 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.16em] sm:tracking-[0.2em] leading-tight block">Completed</span>
+          <span className="text-slate-400 text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] sm:tracking-[0.2em] leading-tight block">Completed</span>
           <strong className="block text-white text-xl sm:text-2xl mt-1 tabular-nums">{complete.length}</strong>
           <p className="text-slate-500 text-[10px] sm:text-xs mt-1 leading-tight hidden sm:block">Stored history, not on the ticker.</p>
         </div>
         <div className="rounded-xl sm:rounded-2xl border border-[#f0b429]/20 bg-[#f0b429]/5 p-3 sm:p-4">
-          <span className="text-[#f0b429] text-[9px] sm:text-[10px] font-black uppercase tracking-[0.16em] sm:tracking-[0.2em] leading-tight block">Refresh</span>
+          <span className="text-[#f0b429] text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] sm:tracking-[0.2em] leading-tight block">Refresh</span>
           <strong className="block text-white text-xl sm:text-2xl mt-1 tabular-nums">30s</strong>
           <p className="text-slate-500 text-[10px] sm:text-xs mt-1 leading-tight hidden sm:block">Ticker refresh window after edits.</p>
         </div>
@@ -366,7 +366,7 @@ export default function CallsAdmin() {
       {/* Add call form */}
       {showAdd && (
         <div className="bg-[#071428] border border-[#f0b429]/20 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8">
-          <h2 className="text-white font-black text-base mb-2">Add ticker / log item</h2>
+          <h2 className="text-white font-semibold text-base mb-2">Add ticker / log item</h2>
           <p className="text-slate-400 text-sm mb-5">
             Build the entry from the structured fields below — the public ticker line is generated automatically so the format stays consistent. Gmail polling and cron jobs are unchanged.
           </p>
@@ -393,7 +393,7 @@ export default function CallsAdmin() {
               className="mt-1 h-4 w-4 accent-[#f0b429]"
             />
             <span>
-              <span className="block text-white text-sm font-black">Show on live ticker immediately</span>
+              <span className="block text-white text-sm font-semibold">Show on live ticker immediately</span>
               <span className="block text-slate-500 text-xs mt-1">
                 Leave off to save it as completed log history only.
               </span>
@@ -410,7 +410,7 @@ export default function CallsAdmin() {
               Cancel
             </button>
             <button onClick={addCall} disabled={adding}
-              className="bg-[#f0b429] hover:bg-[#f5c842] disabled:opacity-40 text-[#020810] font-black px-6 py-3 sm:py-2.5 rounded-xl text-sm transition-colors">
+              className="bg-[#f0b429] hover:bg-[#f5c842] disabled:opacity-40 text-[#020810] font-semibold px-6 py-3 sm:py-2.5 rounded-xl text-sm transition-colors">
               {adding ? "Adding…" : addForm.active ? "Add to live ticker" : "Add to log"}
             </button>
           </div>
@@ -428,7 +428,7 @@ export default function CallsAdmin() {
                   <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping" />
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-400" />
                 </span>
-                <span className="text-red-400 text-sm font-black uppercase tracking-widest">{active.length} on live ticker</span>
+                <span className="text-red-300 text-[13px] font-semibold tracking-[0.06em] uppercase">{active.length} on live ticker</span>
               </div>
               <div className="space-y-2">
                 {active.map(c => <CallRow key={c.id} c={c} highlight={true} isEditing={editingId === c.id} toggling={togglingId === c.id} {...rowProps} />)}
@@ -546,7 +546,7 @@ function ForcePollButton({ onAfter }: { onAfter: () => void }) {
       <button
         onClick={go}
         disabled={busy}
-        className="flex items-center justify-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-black text-sm px-4 py-3 sm:py-2.5 rounded-xl transition-colors disabled:opacity-50"
+        className="flex items-center justify-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-semibold text-sm px-4 py-3 sm:py-2.5 rounded-xl transition-colors disabled:opacity-50"
       >
         <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" aria-hidden><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.74 9.99h-2.07A6 6 0 1 1 12 6a5.85 5.85 0 0 1 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
         {busy ? "Polling…" : "Poll Gmail now"}

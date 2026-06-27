@@ -653,18 +653,18 @@ const TICKER_CONTROL_CSS = `
   color: #f0b429;
   font-family: var(--mas-font-mono), ui-monospace, monospace;
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.19em;
+  font-weight: 600;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
 }
 .ticker-login-card h1,
 .ticker-hero h1 {
   margin: 0;
   color: white;
-  font-size: clamp(2.4rem, 13vw, 4.9rem);
-  line-height: 0.9;
-  letter-spacing: -0.055em;
-  font-weight: 950;
+  font-size: clamp(1.6rem, 7vw, 2.3rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 650;
 }
 .ticker-login-card p,
 .ticker-hero p {
@@ -684,14 +684,14 @@ const TICKER_CONTROL_CSS = `
   align-items: center;
   justify-content: center;
   gap: 9px;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid transparent;
   padding: 0 16px;
   font-family: inherit;
   font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
   text-decoration: none;
   cursor: pointer;
 }
@@ -844,7 +844,7 @@ const TICKER_CONTROL_CSS = `
   color: white;
   font-size: 1.28rem;
   line-height: 1;
-  font-weight: 950;
+  font-weight: 700;
 }
 .ticker-metric.tone-red strong { color: #fca5a5; }
 .ticker-metric.tone-gold strong { color: #f0b429; }
@@ -949,7 +949,7 @@ const TICKER_CONTROL_CSS = `
   margin: 0;
   color: white;
   font-size: 1rem;
-  font-weight: 950;
+  font-weight: 650;
   letter-spacing: -0.01em;
 }
 .ticker-section-head.muted h2 {
@@ -993,8 +993,8 @@ const TICKER_CONTROL_CSS = `
   color: #cbd5e1;
   font-family: var(--mas-font-mono), ui-monospace, monospace;
   font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .ticker-state.live {
@@ -1012,7 +1012,7 @@ const TICKER_CONTROL_CSS = `
   color: white;
   font-size: 1.05rem;
   line-height: 1.28;
-  font-weight: 900;
+  font-weight: 600;
 }
 .ticker-call-meta {
   justify-content: flex-start;
@@ -1132,7 +1132,7 @@ const TICKER_CONTROL_CSS = `
   margin: 4px 0 0;
   color: white;
   font-size: 1.05rem;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 .ticker-modal-body {
@@ -1154,7 +1154,7 @@ const TICKER_CONTROL_CSS = `
   .ticker-control-page { padding-left: 10px; padding-right: 10px; }
   .ticker-hero { padding: 19px; border-radius: 24px; }
   .ticker-login-card h1,
-  .ticker-hero h1 { font-size: clamp(2.25rem, 15vw, 4rem); }
+  .ticker-hero h1 { font-size: clamp(1.45rem, 8vw, 2rem); }
   .ticker-action-row { grid-template-columns: 1fr; }
   .ticker-card-actions { grid-template-columns: 1fr; }
 }
