@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useState } from "react";
+import CallBusyCharts from "@/components/CallBusyCharts";
 
 interface GroupCat { name: string; count: number; pct: number }
 interface ClassGroup { count: number; pct: number; categories: GroupCat[] }
@@ -20,6 +21,8 @@ interface Stats {
   groups: { trauma: ClassGroup; medical: ClassGroup; uncategorized: ClassGroup };
   fire: { count: number; pct: number; still: FireStat; first: FireStat; other: FireStat };
   cardiac: { count: number; pct: number; medical: number; trauma: number };
+  byHour: number[];
+  byDow: number[];
   calls: PubCall[];
 }
 
@@ -71,9 +74,9 @@ export default function StatisticsPage() {
           </div>
 
           <div style={grid}>
-            <GroupCard title="Trauma" group={data.groups.trauma} accent="#fca5a5" total={data.total} calls={calls} />
-            <GroupCard title="Medical" group={data.groups.medical} accent="#86efac" total={data.total} calls={calls} />
-            <GroupCard title="Uncategorized" group={data.groups.uncategorized} accent="#94a3b8" total={data.total} calls={calls} />
+            <GroupCard title="Trauma" group={data.groups.trauma} accent="#fca5a5" total={data.total} calls={calls} classification="trauma" />
+            <GroupCard title="Medical" group={data.groups.medical} accent="#86efac" total={data.total} calls={calls} classification="medical" />
+            <GroupCard title="Uncategorized" group={data.groups.uncategorized} accent="#94a3b8" total={data.total} calls={calls} classification="uncategorized" />
 
             <Card>
               <CardHead title="Fire Response" pct={data.fire.pct} accent="#fdba74" />
@@ -90,22 +93,30 @@ export default function StatisticsPage() {
             </Card>
           </div>
 
-          <p style={{ color: "#475569", fontSize: 11.5, lineHeight: 1.5, marginTop: 18 }}>
-            Percentages are each category&apos;s share of total calls. Dispatch data may contain occasional corrections.
-          </p>
+          <div style={{ marginTop: 22, marginBottom: 8 }}>
+            <h2 style={{ color: "white", fontSize: "clamp(1.1rem, 3vw, 1.35rem)", fontWeight: 700, letterSpacing: "-0.01em", margin: "0 0 10px" }}>When calls happen</h2>
+            <CallBusyCharts byHour={data.byHour} byDow={data.byDow} accent="#f0b429" />
+          </div>
+
+          <section style={{ marginTop: 20, background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "16px 18px" }}>
+            <div style={{ color: "#94a3b8", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 7 }}>Disclaimer</div>
+            <p style={{ color: "#94a3b8", fontSize: 12.5, lineHeight: 1.65, margin: 0 }}>
+              These statistics are compiled from computer-aided dispatch (CAD) records and are provided for general informational purposes only. They reflect dispatch information and may not correspond to final patient care reports, clinical impressions, or billing classifications. Figures are preliminary, are presented to the best of our ability, and may contain minor discrepancies or be revised as records are finalized. Millstadt EMS is committed to data integrity and continuously reviews, corrects, and updates these records to keep the information published here as accurate as possible.
+            </p>
+          </section>
         </>
       )}
     </main>
   );
 }
 
-function GroupCard({ title, group, accent, total, calls }: { title: string; group: ClassGroup; accent: string; total: number; calls: PubCall[] }) {
+function GroupCard({ title, group, accent, total, calls, classification }: { title: string; group: ClassGroup; accent: string; total: number; calls: PubCall[]; classification: string }) {
   return (
     <Card>
       <CardHead title={title} pct={group.pct} accent={accent} />
       <div style={{ color: "#64748b", fontSize: 11.5, margin: "-4px 0 8px" }}>{group.count} of {total} calls</div>
       {group.categories.length === 0 ? <span style={{ color: "#475569", fontSize: 12 }}>None.</span> :
-        group.categories.map((c) => <Row key={c.name} label={c.name} count={c.count} pct={c.pct} accent={accent} calls={calls.filter((x) => x.category === c.name)} />)}
+        group.categories.map((c) => <Row key={c.name} label={c.name} count={c.count} pct={c.pct} accent={accent} calls={calls.filter((x) => x.category === c.name && x.classification === classification)} />)}
     </Card>
   );
 }

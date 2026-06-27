@@ -61,6 +61,17 @@ export async function GET() {
   const fireCount = (t: string) => fireRows.filter((r) => fireType(r.category) === t).length;
   const caRows = rows.filter((r) => r.category === "Cardiac Arrest");
 
+  // Busiest hour-of-day (0-23) and day-of-week (0=Sun) from dispatch
+  // date/time strings (already local Chicago time).
+  const byHour = new Array(24).fill(0);
+  const byDow = new Array(7).fill(0);
+  for (const r of rows) {
+    const hm = String(r.dispatch_time || "").match(/^(\d{1,2}):(\d{2})/);
+    if (hm) { const h = parseInt(hm[1], 10); if (h >= 0 && h < 24) byHour[h]++; }
+    const dm = String(r.dispatch_date || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (dm) { const d = new Date(parseInt(dm[3], 10), parseInt(dm[1], 10) - 1, parseInt(dm[2], 10)); if (!Number.isNaN(d.getTime())) byDow[d.getDay()]++; }
+  }
+
   return NextResponse.json({
     year,
     total,
@@ -80,6 +91,8 @@ export async function GET() {
       medical: caRows.filter((r) => r.classification === "medical").length,
       trauma:  caRows.filter((r) => r.classification === "trauma").length,
     },
+    byHour,
+    byDow,
     // Individual calls (already public on the ticker) so the stats page
     // can list a category's calls on hover/tap.
     calls: rows.map((r) => ({

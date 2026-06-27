@@ -206,6 +206,16 @@ export async function GET(req: NextRequest) {
     other: { count: fireRows.filter((r) => fireType(r.category) === "other").length, pct: pctOf(fireRows.filter((r) => fireType(r.category) === "other").length) },
   };
 
+  // Busiest hour-of-day (0-23) + day-of-week (0=Sun) from dispatch strings.
+  const byHour = new Array(24).fill(0);
+  const byDow = new Array(7).fill(0);
+  for (const r of filtered) {
+    const hm = String(r.dispatch_time || "").match(/^(\d{1,2}):(\d{2})/);
+    if (hm) { const h = parseInt(hm[1], 10); if (h >= 0 && h < 24) byHour[h]++; }
+    const dm = String(r.dispatch_date || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (dm) { const d = new Date(parseInt(dm[3], 10), parseInt(dm[1], 10) - 1, parseInt(dm[2], 10)); if (!Number.isNaN(d.getTime())) byDow[d.getDay()]++; }
+  }
+
   const caRows = filtered.filter((r) => r.category === "Cardiac Arrest");
   const cardiac = {
     count: caRows.length, pct: pctOf(caRows.length),
@@ -255,6 +265,8 @@ export async function GET(req: NextRequest) {
     groups,
     fire,
     cardiac,
+    byHour,
+    byDow,
     calls: callList,
   });
 }

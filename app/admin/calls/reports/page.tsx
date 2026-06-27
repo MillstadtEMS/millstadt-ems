@@ -15,6 +15,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import CallBusyCharts from "@/components/CallBusyCharts";
 
 const MILLSTADT_UNITS = ["M3925", "M3926", "M3935"] as const;
 const MUTUAL_AID_AGENCIES = [
@@ -53,6 +54,8 @@ interface ReportData {
   groups: { trauma: ClassGroup; medical: ClassGroup; uncategorized: ClassGroup };
   fire: { count: number; pct: number; still: FireStat; first: FireStat; other: FireStat };
   cardiac: { count: number; pct: number; trauma: number; medical: number; adult: number; pediatric: number };
+  byHour: number[];
+  byDow: number[];
   calls: DrillCall[];
   categories?: string[];
 }
@@ -116,8 +119,8 @@ export default function CallReportsPage() {
     setDrill({ title, calls: data.calls.filter(pred) });
   }
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async ({ quiet = false } = {}) => {
+    if (!quiet) setLoading(true);
     const p = new URLSearchParams();
     if (mode === "year") p.set("year", String(year));
     else if (mode === "ym") { p.set("year", String(year)); p.set("month", String(month)); }
@@ -139,6 +142,12 @@ export default function CallReportsPage() {
   }, [mode, year, month, from, to, unit, agency, category, maStatus, hemsStatus]);
 
   useEffect(() => { if (me) load(); }, [me, load]);
+  // Keep the report live as calls are added/edited.
+  useEffect(() => {
+    if (!me) return;
+    const id = setInterval(() => load({ quiet: true }), 60_000);
+    return () => clearInterval(id);
+  }, [me, load]);
   useEffect(() => {
     fetch("/api/admin/calls/categories").then((r) => r.ok ? r.json() : { categories: [] }).then((d) => setCategories(d.categories ?? []));
   }, []);
@@ -272,13 +281,13 @@ export default function CallReportsPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14, marginBottom: 14 }}>
             <GroupCard title="Trauma" group={data.groups.trauma} accent="#fca5a5"
               onGroup={() => openDrill("Trauma calls", (c) => c.classification === "trauma")}
-              onCat={(name) => openDrill(name, (c) => c.category === name)} />
+              onCat={(name) => openDrill(name, (c) => c.category === name && c.classification === "trauma")} />
             <GroupCard title="Medical" group={data.groups.medical} accent="#34d399"
               onGroup={() => openDrill("Medical calls", (c) => c.classification === "medical")}
-              onCat={(name) => openDrill(name, (c) => c.category === name)} />
+              onCat={(name) => openDrill(name, (c) => c.category === name && c.classification === "medical")} />
             <GroupCard title="Uncategorized" group={data.groups.uncategorized} accent="#94a3b8"
               onGroup={() => openDrill("Uncategorized calls", (c) => c.classification === "uncategorized" && !c.isFire)}
-              onCat={(name) => openDrill(name, (c) => c.category === name)} />
+              onCat={(name) => openDrill(name, (c) => c.category === name && c.classification === "uncategorized")} />
           </div>
 
           {/* ── Fire Response + Cardiac Arrest ── */}
@@ -308,6 +317,11 @@ export default function CallReportsPage() {
               </div>
               <p style={{ color: "#64748b", fontSize: 11, marginTop: 8 }}>Adult {data.cardiac.adult} · Pediatric {data.cardiac.pediatric} (back-office only)</p>
             </Section>
+          </div>
+
+          {/* ── Busiest times ── */}
+          <div style={{ marginBottom: 14 }}>
+            <CallBusyCharts byHour={data.byHour} byDow={data.byDow} accent="#f0b429" />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
