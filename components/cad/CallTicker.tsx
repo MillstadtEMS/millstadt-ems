@@ -174,6 +174,7 @@ export default function CallTicker() {
 
   return (
     <div ref={wrapperRef} className="fixed top-0 left-0 right-0 z-[60]">
+      <style>{CALL_TICKER_CSS}</style>
 
       {/* ── Expanded call log panel ── */}
       {expanded && (
@@ -255,7 +256,7 @@ export default function CallTicker() {
 
           {/* ── Call status info — hidden when log is expanded ── */}
           {!expanded && (
-            <div className="flex-1 min-w-0 overflow-hidden">
+            <div className="flex-1 min-w-0 overflow-hidden ct-callinfo">
               {onARun && activeCall ? (
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="text-emerald-300 font-black text-[11px] tracking-widest uppercase whitespace-nowrap">Responding</span>
@@ -276,20 +277,20 @@ export default function CallTicker() {
           )}
           {expanded && <div className="flex-1" />}
 
-          {/* ── Date & Time — desktop only ── */}
-          <div className="shrink-0 items-center gap-1.5 hidden md:flex">
+          {/* ── Date & Time — landscape phones, tablets, desktop ── */}
+          <div className="shrink-0 items-center gap-1.5 ct-dt">
             <span className="text-white text-[11px] tabular-nums font-mono font-bold">{formatDate(now)}</span>
             <span className="text-white text-[11px] tabular-nums font-mono font-bold">{formatClock(now)}</span>
           </div>
 
-          <span className="h-3 w-px bg-white/15 shrink-0 hidden md:block" />
+          <span className="h-3 w-px bg-white/15 shrink-0 ct-dt-sep" />
 
-          {/* ── Moon phase — desktop only ── */}
-          <div className="shrink-0 items-center gap-1 hidden lg:flex" title={moon.name}>
+          {/* ── Moon phase — desktop ── */}
+          <div className="shrink-0 items-center gap-1 ct-moon" title={moon.name}>
             <span className="text-slate-500 text-[10px] font-bold tracking-wider uppercase">{moon.symbol} {moon.name}</span>
           </div>
 
-          <span className="h-3 w-px bg-white/15 shrink-0 hidden lg:block" />
+          <span className="h-3 w-px bg-white/15 shrink-0 ct-moon-sep" />
 
           {/* ── Expand toggle ── */}
           <button
@@ -321,3 +322,31 @@ export default function CallTicker() {
     </div>
   );
 }
+
+// ── Responsive rules (presentation only) ──────────────────────────────
+// The 46px strip height is intentionally fixed — the site nav docks at
+// `top-[46px]` directly beneath it — so we adapt the CONTENT to the
+// device/orientation rather than the bar height. Phone portrait stays
+// compact; landscape phones and tablets reveal the date/time; desktop
+// adds the moon phase and nudges the type up for readability.
+const CALL_TICKER_CSS = `
+.ct-dt, .ct-dt-sep, .ct-moon, .ct-moon-sep { display: none; }
+
+/* Phone held sideways — bring in the date + time. */
+@media (orientation: landscape) and (min-width: 560px) {
+  .ct-dt { display: flex; }
+  .ct-dt-sep { display: block; }
+}
+/* Tablets / iPads and up, either orientation. */
+@media (min-width: 768px) {
+  .ct-dt { display: flex; }
+  .ct-dt-sep { display: block; }
+  .ct-callinfo span { font-size: 12px; }
+}
+/* Desktop — add the moon phase and a touch more size. */
+@media (min-width: 1024px) {
+  .ct-moon { display: flex; }
+  .ct-moon-sep { display: block; }
+  .ct-callinfo span { font-size: 12.5px; }
+}
+`;
