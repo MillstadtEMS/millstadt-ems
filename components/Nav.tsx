@@ -12,6 +12,7 @@ const MENU_GROUPS = [
     color: "text-blue-400",
     links: [
       { href: "/about",               label: "Who We Are" },
+      { href: "/statistics",          label: "Call Statistics" },
       { href: "/leadership",          label: "Leadership" },
       { href: "/fleet",               label: "Our Fleet" },
       { href: "/medical-control",     label: "Medical Control" },
