@@ -4,15 +4,28 @@ import { sql } from "@/lib/neon";
 import {
   canonicalCategory,
   CallStructured,
+  CardiacAge,
+  Classification,
   ensureCadStructuredSchema,
   formatDispatchNature,
   HemsOutcome,
+  isClassification,
   MILLSTADT_UNITS,
   MillstadtUnit,
   MUTUAL_AID_AGENCIES,
   MutualAidAgency,
   parseDispatchNature,
 } from "@/lib/cad/structured";
+
+/** Mandatory-capture check for structured saves: unit (unless mutual aid
+ * received), a main complaint, and a classification. Returns an error
+ * string, or null when valid. */
+function mandatoryError(s: CallStructured): string | null {
+  if (!s.category) return "Pick a main complaint (category).";
+  if (!s.classification) return "Pick a classification: Medical, Trauma, Uncategorized, or Cancelled.";
+  if (s.units.length === 0 && !s.mutualAidReceived) return "Pick at least one responding unit (not required for mutual aid received).";
+  return null;
+}
 
 export const runtime = "nodejs";
 
@@ -30,6 +43,8 @@ interface StructuredPayload {
   mutualAidGivenAgency?: string | null;
   hemsRequested?: boolean;
   hemsOutcome?: string | null;
+  classification?: string | null;
+  cardiacAge?: string | null;
 }
 
 /**
@@ -51,6 +66,8 @@ function normalize(p: StructuredPayload | null | undefined): CallStructured {
   const outcome: HemsOutcome | null = p?.hemsOutcome === "handoff" || p?.hemsOutcome === "disregarded"
     ? p.hemsOutcome
     : null;
+  const classification: Classification | null = isClassification(p?.classification) ? p!.classification as Classification : null;
+  const cardiacAge: CardiacAge | null = p?.cardiacAge === "adult" || p?.cardiacAge === "pediatric" ? p.cardiacAge : null;
   return {
     units: Array.from(new Set(units)),
     category: canonicalCategory(p?.category ?? ""),
@@ -61,6 +78,8 @@ function normalize(p: StructuredPayload | null | undefined): CallStructured {
     mutualAidGivenAgency: mutualAidGiven ? givenAgency : null,
     hemsRequested: !!p?.hemsRequested,
     hemsOutcome: outcome,
+    classification,
+    cardiacAge,
   };
 }
 
@@ -101,6 +120,10 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
+  if (structured) {
+    const err = mandatoryError(struct);
+    if (err) return NextResponse.json({ error: err }, { status: 400 });
+  }
 
   const id = uid();
   const gmailMessageId = `manual-${id}`;
@@ -116,13 +139,13 @@ export async function POST(req: NextRequest) {
        dispatch_nature, source_year, parse_status, completed_at,
        units, category, notes,
        mutual_aid_received, mutual_aid_received_agency, mutual_aid_given, mutual_aid_given_agency,
-       hems_requested, hems_outcome)
+       hems_requested, hems_outcome, classification, cardiac_age)
     VALUES
       (${id}, ${gmailMessageId}, ${eventNumber?.trim() || null}, ${dispatchDatetime},
        ${formattedDate}, ${dispatchTime}, ${dispatchNature}, ${sourceYear}, 'manual', ${completedAt},
        ${JSON.stringify(struct.units)}::jsonb, ${struct.category || null}, ${struct.notes},
        ${struct.mutualAidReceived}, ${struct.mutualAidReceivedAgency}, ${struct.mutualAidGiven}, ${struct.mutualAidGivenAgency},
-       ${struct.hemsRequested}, ${struct.hemsOutcome})
+       ${struct.hemsRequested}, ${struct.hemsOutcome}, ${struct.classification}, ${struct.cardiacAge})
   `;
   return NextResponse.json({ ok: true, id });
 }
@@ -152,6 +175,8 @@ export async function PATCH(req: NextRequest) {
         { status: 400 },
       );
     }
+    const err = mandatoryError(struct);
+    if (err) return NextResponse.json({ error: err }, { status: 400 });
     const text = formatDispatchNature(struct);
     await db`
       UPDATE cad_calls SET
@@ -164,7 +189,9 @@ export async function PATCH(req: NextRequest) {
         mutual_aid_given            = ${struct.mutualAidGiven},
         mutual_aid_given_agency     = ${struct.mutualAidGivenAgency},
         hems_requested              = ${struct.hemsRequested},
-        hems_outcome                = ${struct.hemsOutcome}
+        hems_outcome                = ${struct.hemsOutcome},
+        classification              = ${struct.classification},
+        cardiac_age                 = ${struct.cardiacAge}
       WHERE id = ${id}
     `;
   } else if (typeof dispatchNature === "string") {

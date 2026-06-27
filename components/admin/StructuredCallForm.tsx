@@ -43,6 +43,16 @@ export type MutualAidAgency = (typeof MUTUAL_AID_AGENCIES)[number];
  * locally so this client component never imports the server-only module. */
 export const STANDBY_CATEGORY = "Standby";
 
+/** Kept in sync with lib/cad/structured.ts. */
+export type Classification = "medical" | "trauma" | "uncategorized" | "cancelled";
+const CLASSIFICATIONS: { value: Classification; label: string; tone: string }[] = [
+  { value: "medical",       label: "Medical",       tone: "#34d399" },
+  { value: "trauma",        label: "Trauma",        tone: "#fca5a5" },
+  { value: "uncategorized", label: "Uncategorized", tone: "#94a3b8" },
+  { value: "cancelled",     label: "Cancelled",     tone: "#fbbf24" },
+];
+const CARDIAC_CATEGORY = "Cardiac Arrest";
+
 /** Kept in sync with ASSIST_CATEGORY / ASSIST_TARGETS in lib/cad/structured.ts. */
 export const ASSIST_CATEGORY = "Assist";
 const ASSIST_TARGETS = ["Police Department", "Fire Department", "Citizen Assist"] as const;
@@ -94,6 +104,8 @@ export interface StructuredValue {
   mutualAidGivenAgency: MutualAidAgency | "";
   hemsRequested: boolean;
   hemsOutcome: "handoff" | "disregarded" | "";
+  classification: Classification | "";
+  cardiacAge: "adult" | "pediatric" | "";
 }
 
 export const EMPTY_STRUCTURED: StructuredValue = {
@@ -106,6 +118,8 @@ export const EMPTY_STRUCTURED: StructuredValue = {
   mutualAidGivenAgency: "",
   hemsRequested: false,
   hemsOutcome: "",
+  classification: "",
+  cardiacAge: "",
 };
 
 /** Pure preview formatter — must stay in sync with the server-side
@@ -333,6 +347,31 @@ export default function StructuredCallForm({
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
+      {/* ── Classification (required) ─────────────────────────────────── */}
+      <Section title="Classification — required" hint="Medical and Trauma drive the reports. Uncategorized (fire, standby, assist) and Cancelled group together.">
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {CLASSIFICATIONS.map((c) => {
+            const on = value.classification === c.value;
+            return (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => patch({ classification: c.value })}
+                style={{
+                  flex: "1 1 120px", minWidth: 110, padding: "10px 12px", borderRadius: 10,
+                  cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: on ? 700 : 600,
+                  color: on ? "#06101f" : c.tone,
+                  background: on ? c.tone : "rgba(255,255,255,0.03)",
+                  border: `1px solid ${on ? c.tone : "rgba(255,255,255,0.14)"}`,
+                }}
+              >
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
+      </Section>
+
       {/* ── Responding units ─────────────────────────────────────────── */}
       <Section title="Responding units" hint="Pick one Millstadt unit; tap + Add unit for multi-unit responses.">
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
@@ -507,6 +546,36 @@ export default function StructuredCallForm({
                 <span style={{ color: "#f0b429", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace" }}>
                   {formatAssist("", value.notes) || "Assist"}
                 </span>
+              </div>
+            </div>
+          )}
+
+          {value.category.toLowerCase() === CARDIAC_CATEGORY.toLowerCase() && (
+            <div style={standbyBox}>
+              <label style={fieldLabel}>
+                Patient age band{" "}
+                <span style={{ color: "#64748b", fontWeight: 600, letterSpacing: 0, textTransform: "none" }}>(reporting only — never shown on the ticker)</span>
+              </label>
+              <div style={{ display: "flex", gap: 8 }}>
+                {(["adult", "pediatric"] as const).map((a) => {
+                  const on = value.cardiacAge === a;
+                  return (
+                    <button
+                      key={a}
+                      type="button"
+                      onClick={() => patch({ cardiacAge: a })}
+                      style={{
+                        flex: 1, padding: "9px 12px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
+                        fontSize: 13, fontWeight: on ? 700 : 600,
+                        color: on ? "#06101f" : "#cbd5e1",
+                        background: on ? "#7dd3fc" : "rgba(255,255,255,0.03)",
+                        border: `1px solid ${on ? "#7dd3fc" : "rgba(255,255,255,0.14)"}`,
+                      }}
+                    >
+                      {a === "adult" ? "Adult" : "Pediatric"}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

@@ -36,6 +36,25 @@ export type MutualAidAgency = typeof MUTUAL_AID_AGENCIES[number];
 
 export type HemsOutcome = "handoff" | "disregarded";
 
+/** Mandatory per-call classification. "uncategorized" + "cancelled" both
+ * report under the Uncategorized section; we keep them distinct so the
+ * reason is preserved. */
+export type Classification = "medical" | "trauma" | "uncategorized" | "cancelled";
+export const CLASSIFICATIONS: { value: Classification; label: string }[] = [
+  { value: "medical",       label: "Medical" },
+  { value: "trauma",        label: "Trauma" },
+  { value: "uncategorized", label: "Uncategorized" },
+  { value: "cancelled",     label: "Cancelled" },
+];
+export function isClassification(v: unknown): v is Classification {
+  return v === "medical" || v === "trauma" || v === "uncategorized" || v === "cancelled";
+}
+
+/** Cardiac Arrest captures an age band for reporting only (never shown on
+ * the ticker). Medical-vs-traumatic comes from the global classification. */
+export const CARDIAC_CATEGORY = "Cardiac Arrest";
+export type CardiacAge = "adult" | "pediatric";
+
 /** Special category whose location is captured in `notes` and rendered
  * as a consistent "Standby at <location>" line on the ticker. */
 export const STANDBY_CATEGORY = "Standby";
@@ -189,6 +208,8 @@ export interface CallStructured {
   mutualAidGivenAgency: MutualAidAgency | null;
   hemsRequested: boolean;
   hemsOutcome: HemsOutcome | null;
+  classification: Classification | null;
+  cardiacAge: CardiacAge | null;
 }
 
 /**
@@ -273,6 +294,8 @@ export function parseDispatchNature(text: string): CallStructured {
     mutualAidGivenAgency: null,
     hemsRequested: hems.requested,
     hemsOutcome: hems.outcome,
+    classification: null,            // set explicitly via the editor, not parsed
+    cardiacAge: null,
   };
 }
 
@@ -293,6 +316,8 @@ export async function ensureCadStructuredSchema(): Promise<void> {
   await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS mutual_aid_given_agency     TEXT`;
   await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS hems_requested              BOOLEAN NOT NULL DEFAULT FALSE`;
   await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS hems_outcome                TEXT`;
+  await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS classification              TEXT`;
+  await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS cardiac_age                 TEXT`;
 
   await db`CREATE INDEX IF NOT EXISTS cad_calls_category_idx ON cad_calls (category)`;
   await db`CREATE INDEX IF NOT EXISTS cad_calls_year_month_idx ON cad_calls (source_year, dispatch_datetime)`;

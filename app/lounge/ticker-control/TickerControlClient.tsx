@@ -18,6 +18,8 @@ interface TickerStructured {
   mutualAidGivenAgency: string;
   hemsRequested: boolean;
   hemsOutcome: string;
+  classification: string;
+  cardiacAge: string;
 }
 
 interface TickerCall {
@@ -54,6 +56,8 @@ function toStructuredValue(s: TickerStructured | undefined): StructuredValue {
     mutualAidGivenAgency: (s.mutualAidGivenAgency ?? "") as StructuredValue["mutualAidGivenAgency"],
     hemsRequested: !!s.hemsRequested,
     hemsOutcome: outcome,
+    classification: (s.classification ?? "") as StructuredValue["classification"],
+    cardiacAge: (s.cardiacAge ?? "") as StructuredValue["cardiacAge"],
   };
 }
 

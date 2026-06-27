@@ -5,15 +5,26 @@ import { sql } from "@/lib/neon";
 import {
   canonicalCategory,
   CallStructured,
+  CardiacAge,
+  Classification,
   ensureCadStructuredSchema,
   formatDispatchNature,
   HemsOutcome,
+  isClassification,
   MILLSTADT_UNITS,
   MillstadtUnit,
   MUTUAL_AID_AGENCIES,
   MutualAidAgency,
   parseDispatchNature,
 } from "@/lib/cad/structured";
+
+/** Mirror of the admin route's mandatory-capture check. */
+function mandatoryError(s: CallStructured): string | null {
+  if (!s.category) return "Pick a main complaint (category).";
+  if (!s.classification) return "Pick a classification: Medical, Trauma, Uncategorized, or Cancelled.";
+  if (s.units.length === 0 && !s.mutualAidReceived) return "Pick at least one responding unit (not required for mutual aid received).";
+  return null;
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,6 +39,8 @@ interface StructuredPayload {
   mutualAidGivenAgency?: string | null;
   hemsRequested?: boolean;
   hemsOutcome?: string | null;
+  classification?: string | null;
+  cardiacAge?: string | null;
 }
 
 /**
@@ -49,6 +62,8 @@ function normalize(p: StructuredPayload | null | undefined): CallStructured {
   const outcome: HemsOutcome | null = p?.hemsOutcome === "handoff" || p?.hemsOutcome === "disregarded"
     ? p.hemsOutcome
     : null;
+  const classification: Classification | null = isClassification(p?.classification) ? p!.classification as Classification : null;
+  const cardiacAge: CardiacAge | null = p?.cardiacAge === "adult" || p?.cardiacAge === "pediatric" ? p.cardiacAge : null;
   return {
     units: Array.from(new Set(units)),
     category: canonicalCategory(p?.category ?? ""),
@@ -59,6 +74,8 @@ function normalize(p: StructuredPayload | null | undefined): CallStructured {
     mutualAidGivenAgency: mutualAidGiven ? givenAgency : null,
     hemsRequested: !!p?.hemsRequested,
     hemsOutcome: outcome,
+    classification,
+    cardiacAge,
   };
 }
 
@@ -81,6 +98,8 @@ interface CadCallRow {
   mutual_aid_given_agency?: string | null;
   hems_requested?: boolean | null;
   hems_outcome?: string | null;
+  classification?: string | null;
+  cardiac_age?: string | null;
 }
 
 function uid() {
@@ -117,6 +136,8 @@ function rowToCall(row: CadCallRow) {
       mutualAidGivenAgency: row.mutual_aid_given_agency ?? "",
       hemsRequested: !!row.hems_requested,
       hemsOutcome: row.hems_outcome ?? "",
+      classification: row.classification ?? "",
+      cardiacAge: row.cardiac_age ?? "",
     },
   };
 }
@@ -150,7 +171,7 @@ export async function GET() {
            dispatch_nature, source_year, completed_at, created_at,
            units, category, notes,
            mutual_aid_received, mutual_aid_received_agency, mutual_aid_given, mutual_aid_given_agency,
-           hems_requested, hems_outcome
+           hems_requested, hems_outcome, classification, cardiac_age
     FROM cad_calls
     WHERE source_year = ${year}
     ORDER BY dispatch_datetime DESC
@@ -194,6 +215,10 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
+  if (structuredIn) {
+    const err = mandatoryError(struct);
+    if (err) return NextResponse.json({ error: err }, { status: 400 });
+  }
 
   const id = uid();
   const [year, month, day] = dispatchDate.split("-");
@@ -209,13 +234,13 @@ export async function POST(req: NextRequest) {
          dispatch_nature, source_year, parse_status, completed_at,
          units, category, notes,
          mutual_aid_received, mutual_aid_received_agency, mutual_aid_given, mutual_aid_given_agency,
-         hems_requested, hems_outcome)
+         hems_requested, hems_outcome, classification, cardiac_age)
       VALUES
         (${id}, ${`manual-ticker-${id}`}, ${eventNumber || null}, ${dispatchDatetime},
          ${formattedDate}, ${dispatchTime}, ${dispatchNature}, ${Number.parseInt(year, 10)}, 'manual', ${completedAt},
          ${JSON.stringify(struct.units)}::jsonb, ${struct.category || null}, ${struct.notes},
          ${struct.mutualAidReceived}, ${struct.mutualAidReceivedAgency}, ${struct.mutualAidGiven}, ${struct.mutualAidGivenAgency},
-         ${struct.hemsRequested}, ${struct.hemsOutcome})
+         ${struct.hemsRequested}, ${struct.hemsOutcome}, ${struct.classification}, ${struct.cardiacAge})
     `;
   } else {
     await db`
@@ -257,6 +282,8 @@ export async function PATCH(req: NextRequest) {
         { status: 400 },
       );
     }
+    const err = mandatoryError(struct);
+    if (err) return NextResponse.json({ error: err }, { status: 400 });
     const text = formatDispatchNature(struct);
     if (!text) {
       return NextResponse.json({ error: "Pick at least a unit or a category." }, { status: 400 });
@@ -272,7 +299,9 @@ export async function PATCH(req: NextRequest) {
         mutual_aid_given            = ${struct.mutualAidGiven},
         mutual_aid_given_agency     = ${struct.mutualAidGivenAgency},
         hems_requested              = ${struct.hemsRequested},
-        hems_outcome                = ${struct.hemsOutcome}
+        hems_outcome                = ${struct.hemsOutcome},
+        classification              = ${struct.classification},
+        cardiac_age                 = ${struct.cardiacAge}
       WHERE id = ${id}
     `;
   } else if (dispatchNature !== undefined) {
