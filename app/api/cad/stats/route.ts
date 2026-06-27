@@ -26,6 +26,31 @@ function currentChicagoYear(): number {
   return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })).getFullYear();
 }
 
+const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+// Time windows: 0=0500–1300, 1=1301–2100, 2=2101–0459
+function blockOfHour(h: number): number {
+  return h >= 5 && h <= 12 ? 0 : h >= 13 && h <= 20 ? 1 : 2;
+}
+/** Per-month 7×3 grid (day-of-week × time-window) of call counts. */
+export function monthlyPeaks(rows: { dispatch_date: string; dispatch_time: string }[]) {
+  const map = new Map<string, { key: string; label: string; year: number; grid: number[][]; total: number }>();
+  for (const r of rows) {
+    const dm = String(r.dispatch_date || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (!dm) continue;
+    const mm = parseInt(dm[1], 10), dd = parseInt(dm[2], 10), yyyy = parseInt(dm[3], 10);
+    const dt = new Date(yyyy, mm - 1, dd);
+    if (Number.isNaN(dt.getTime())) continue;
+    const tm = String(r.dispatch_time || "").match(/^(\d{1,2}):/);
+    const h = tm ? parseInt(tm[1], 10) : -1;
+    const key = `${yyyy}-${String(mm).padStart(2, "0")}`;
+    if (!map.has(key)) map.set(key, { key, label: MONTH_LABELS[mm - 1], year: yyyy, grid: Array.from({ length: 7 }, () => [0, 0, 0]), total: 0 });
+    const m = map.get(key)!;
+    m.total++;
+    if (h >= 0 && h <= 23) m.grid[dt.getDay()][blockOfHour(h)]++;
+  }
+  return Array.from(map.values()).sort((a, b) => (a.key < b.key ? -1 : 1));
+}
+
 export async function GET() {
   await ensureCadStructuredSchema();
   const db = sql();
@@ -61,16 +86,7 @@ export async function GET() {
   const fireCount = (t: string) => fireRows.filter((r) => fireType(r.category) === t).length;
   const caRows = rows.filter((r) => r.category === "Cardiac Arrest");
 
-  // Busiest hour-of-day (0-23) and day-of-week (0=Sun) from dispatch
-  // date/time strings (already local Chicago time).
-  const byHour = new Array(24).fill(0);
-  const byDow = new Array(7).fill(0);
-  for (const r of rows) {
-    const hm = String(r.dispatch_time || "").match(/^(\d{1,2}):(\d{2})/);
-    if (hm) { const h = parseInt(hm[1], 10); if (h >= 0 && h < 24) byHour[h]++; }
-    const dm = String(r.dispatch_date || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-    if (dm) { const d = new Date(parseInt(dm[3], 10), parseInt(dm[1], 10) - 1, parseInt(dm[2], 10)); if (!Number.isNaN(d.getTime())) byDow[d.getDay()]++; }
-  }
+  const months = monthlyPeaks(rows);
 
   return NextResponse.json({
     year,
@@ -91,8 +107,7 @@ export async function GET() {
       medical: caRows.filter((r) => r.classification === "medical").length,
       trauma:  caRows.filter((r) => r.classification === "trauma").length,
     },
-    byHour,
-    byDow,
+    months,
     // Individual calls (already public on the ticker) so the stats page
     // can list a category's calls on hover/tap.
     calls: rows.map((r) => ({

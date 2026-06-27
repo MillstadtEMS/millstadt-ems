@@ -15,7 +15,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import CallBusyCharts from "@/components/CallBusyCharts";
+import PeakActivity, { type MonthPeak } from "@/components/PeakActivity";
 
 const MILLSTADT_UNITS = ["M3925", "M3926", "M3935"] as const;
 const MUTUAL_AID_AGENCIES = [
@@ -54,8 +54,7 @@ interface ReportData {
   groups: { trauma: ClassGroup; medical: ClassGroup; uncategorized: ClassGroup };
   fire: { count: number; pct: number; still: FireStat; first: FireStat; other: FireStat };
   cardiac: { count: number; pct: number; trauma: number; medical: number; adult: number; pediatric: number };
-  byHour: number[];
-  byDow: number[];
+  months: MonthPeak[];
   calls: DrillCall[];
   categories?: string[];
 }
@@ -319,9 +318,9 @@ export default function CallReportsPage() {
             </Section>
           </div>
 
-          {/* ── Busiest times ── */}
+          {/* ── Peak activity ── */}
           <div style={{ marginBottom: 14 }}>
-            <CallBusyCharts byHour={data.byHour} byDow={data.byDow} accent="#f0b429" />
+            <PeakActivity months={data.months} accent="#f0b429" />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>

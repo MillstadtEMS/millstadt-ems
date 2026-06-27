@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useState } from "react";
-import CallBusyCharts from "@/components/CallBusyCharts";
+import PeakActivity, { type MonthPeak } from "@/components/PeakActivity";
 
 interface GroupCat { name: string; count: number; pct: number }
 interface ClassGroup { count: number; pct: number; categories: GroupCat[] }
@@ -21,8 +21,7 @@ interface Stats {
   groups: { trauma: ClassGroup; medical: ClassGroup; uncategorized: ClassGroup };
   fire: { count: number; pct: number; still: FireStat; first: FireStat; other: FireStat };
   cardiac: { count: number; pct: number; medical: number; trauma: number };
-  byHour: number[];
-  byDow: number[];
+  months: MonthPeak[];
   calls: PubCall[];
 }
 
@@ -95,7 +94,7 @@ export default function StatisticsPage() {
 
           <div style={{ marginTop: 22, marginBottom: 8 }}>
             <h2 style={{ color: "white", fontSize: "clamp(1.1rem, 3vw, 1.35rem)", fontWeight: 700, letterSpacing: "-0.01em", margin: "0 0 10px" }}>When calls happen</h2>
-            <CallBusyCharts byHour={data.byHour} byDow={data.byDow} accent="#f0b429" />
+            <PeakActivity months={data.months} accent="#f0b429" />
           </div>
 
           <section style={{ marginTop: 20, background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "16px 18px" }}>
