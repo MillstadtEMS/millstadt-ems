@@ -41,6 +41,7 @@ interface ReportData {
   byUnit:     UnitRow[];
   byMAAgency: AgRow[];
   maGivenByUnit: UnitRow[];
+  maGivenByAgency: AgRow[];
   dailyCounts: DayRow[];
   categories?: string[];
 }
@@ -268,10 +269,17 @@ export default function CallReportsPage() {
               />
             </Section>
 
-            {/* MA received by agency */}
-            <Section title="Mutual aid received · by agency">
+            {/* MA received by agency — who runs aid for us */}
+            <Section title="Mutual aid received · who ran it for us" subtitle="by agency">
               {data.byMAAgency.length === 0 ? <Empty hint="No MA-received calls in this window." /> : (
                 <BarList rows={data.byMAAgency.map((r) => ({ label: r.agency, count: r.count, pct: r.pct }))} accent="#34d399" />
+              )}
+            </Section>
+
+            {/* MA given by agency — who we assisted */}
+            <Section title="Mutual aid given · who we assisted" subtitle="by agency">
+              {data.maGivenByAgency.length === 0 ? <Empty hint="No agency recorded on MA-given calls in this window." /> : (
+                <BarList rows={data.maGivenByAgency.map((r) => ({ label: r.agency, count: r.count, pct: r.pct }))} accent="#c4b5fd" />
               )}
             </Section>
 

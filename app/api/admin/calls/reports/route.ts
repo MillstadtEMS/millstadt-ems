@@ -31,6 +31,7 @@ interface Row {
   mutual_aid_received: boolean;
   mutual_aid_received_agency: string | null;
   mutual_aid_given: boolean;
+  mutual_aid_given_agency: string | null;
   hems_requested: boolean;
   hems_outcome: string | null;
 }
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest) {
     rows = (await db`
       SELECT id, dispatch_datetime, category, units,
              mutual_aid_received, mutual_aid_received_agency,
-             mutual_aid_given, hems_requested, hems_outcome
+             mutual_aid_given, mutual_aid_given_agency, hems_requested, hems_outcome
       FROM cad_calls
       WHERE dispatch_datetime >= ${from + "T00:00:00"}
         AND dispatch_datetime <  ${to   + "T23:59:59"}
@@ -78,7 +79,7 @@ export async function GET(req: NextRequest) {
     rows = (await db`
       SELECT id, dispatch_datetime, category, units,
              mutual_aid_received, mutual_aid_received_agency,
-             mutual_aid_given, hems_requested, hems_outcome
+             mutual_aid_given, mutual_aid_given_agency, hems_requested, hems_outcome
       FROM cad_calls
       WHERE dispatch_datetime >= ${start} AND dispatch_datetime < ${end}
     `) as unknown as Row[];
@@ -86,7 +87,7 @@ export async function GET(req: NextRequest) {
     rows = (await db`
       SELECT id, dispatch_datetime, category, units,
              mutual_aid_received, mutual_aid_received_agency,
-             mutual_aid_given, hems_requested, hems_outcome
+             mutual_aid_given, mutual_aid_given_agency, hems_requested, hems_outcome
       FROM cad_calls
       WHERE source_year = ${year}
     `) as unknown as Row[];
@@ -95,7 +96,7 @@ export async function GET(req: NextRequest) {
     rows = (await db`
       SELECT id, dispatch_datetime, category, units,
              mutual_aid_received, mutual_aid_received_agency,
-             mutual_aid_given, hems_requested, hems_outcome
+             mutual_aid_given, mutual_aid_given_agency, hems_requested, hems_outcome
       FROM cad_calls
       WHERE source_year = ${thisYear}
     `) as unknown as Row[];
@@ -107,7 +108,7 @@ export async function GET(req: NextRequest) {
       const us = asArray<string>(r.units);
       if (!us.includes(unit)) return false;
     }
-    if (agency && r.mutual_aid_received_agency !== agency) return false;
+    if (agency && r.mutual_aid_received_agency !== agency && r.mutual_aid_given_agency !== agency) return false;
     if (category && r.category !== category) return false;
     if (maStatus === "received" && !r.mutual_aid_received) return false;
     if (maStatus === "given" && !r.mutual_aid_given) return false;
@@ -124,6 +125,7 @@ export async function GET(req: NextRequest) {
   const unitCount = new Map<string, number>();
   const agencyCount = new Map<string, number>();
   const maGivenUnitCount = new Map<string, number>();
+  const maGivenAgencyCount = new Map<string, number>();
   const dayCount = new Map<string, number>();
   let mar = 0, mag = 0, hReq = 0, hHand = 0, hDis = 0, multiUnit = 0;
 
@@ -139,6 +141,7 @@ export async function GET(req: NextRequest) {
     if (r.mutual_aid_given) {
       mag++;
       for (const u of us) maGivenUnitCount.set(u, (maGivenUnitCount.get(u) ?? 0) + 1);
+      if (r.mutual_aid_given_agency) maGivenAgencyCount.set(r.mutual_aid_given_agency, (maGivenAgencyCount.get(r.mutual_aid_given_agency) ?? 0) + 1);
     }
     if (r.hems_requested) {
       hReq++;
@@ -174,6 +177,7 @@ export async function GET(req: NextRequest) {
     byUnit:     rank(unitCount, "unit"),
     byMAAgency: rank(agencyCount, "agency"),
     maGivenByUnit: rank(maGivenUnitCount, "unit"),
+    maGivenByAgency: rank(maGivenAgencyCount, "agency"),
     dailyCounts: Array.from(dayCount.entries()).map(([day, count]) => ({ day, count })).sort((a, b) => a.day.localeCompare(b.day)),
   });
 }

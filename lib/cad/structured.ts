@@ -40,6 +40,21 @@ export type HemsOutcome = "handoff" | "disregarded";
  * as a consistent "Standby at <location>" line on the ticker. */
 export const STANDBY_CATEGORY = "Standby";
 
+/** Legacy / shorthand category names that should resolve to a canonical
+ * category going forward. Keys are lowercased + whitespace-collapsed. */
+export const CATEGORY_ALIASES: Record<string, string> = {
+  "psych eval": "Psychiatric Emergency",
+  "psych evaluation": "Psychiatric Emergency",
+  "psychiatric eval": "Psychiatric Emergency",
+  "psychiatric evaluation": "Psychiatric Emergency",
+};
+
+/** Resolve a category name through the alias map + whitespace cleanup. */
+export function canonicalCategory(name: string): string {
+  const cleaned = (name ?? "").replace(/\s+/g, " ").trim();
+  return CATEGORY_ALIASES[cleaned.toLowerCase()] ?? cleaned;
+}
+
 // ── Tone palette for unit + agency chips (used by editor + reports) ────
 // Tasteful, distinct, not garish. Keeps to the navy/gold palette family.
 
@@ -290,7 +305,9 @@ export function normalizeCategoryName(name: string): string {
 export async function addCategory(name: string): Promise<void> {
   await ensureCadStructuredSchema();
   const db = sql();
-  const trimmed = normalizeCategoryName(name);
+  // Resolve aliases (e.g. "psych eval" → "Psychiatric Emergency") so an
+  // aliased name never gets re-created as its own row.
+  const trimmed = canonicalCategory(name);
   if (!trimmed) return;
   // Reuse an existing case-/whitespace-insensitive match instead of
   // inserting a near-duplicate row. Matching is done in JS over the

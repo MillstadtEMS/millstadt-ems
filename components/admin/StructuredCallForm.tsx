@@ -43,6 +43,18 @@ export type MutualAidAgency = (typeof MUTUAL_AID_AGENCIES)[number];
  * locally so this client component never imports the server-only module. */
 export const STANDBY_CATEGORY = "Standby";
 
+/** Kept in sync with CATEGORY_ALIASES in lib/cad/structured.ts. */
+const CATEGORY_ALIASES: Record<string, string> = {
+  "psych eval": "Psychiatric Emergency",
+  "psych evaluation": "Psychiatric Emergency",
+  "psychiatric eval": "Psychiatric Emergency",
+  "psychiatric evaluation": "Psychiatric Emergency",
+};
+function resolveCategoryAlias(name: string): string {
+  const cleaned = name.replace(/\s+/g, " ").trim();
+  return CATEGORY_ALIASES[cleaned.toLowerCase()] ?? cleaned;
+}
+
 const UNIT_TONES: Record<MillstadtUnit, { bg: string; fg: string; border: string }> = {
   M3925: { bg: "rgba(240,180,41,0.16)",  fg: "#f0b429", border: "rgba(240,180,41,0.40)" },
   M3926: { bg: "rgba(125,211,252,0.16)", fg: "#7dd3fc", border: "rgba(125,211,252,0.40)" },
@@ -191,6 +203,15 @@ export default function StructuredCallForm({
     return extra;
   }, [categories]);
 
+  // If what's typed is an aliased name (e.g. "psych eval"), the canonical
+  // category we steer the user to instead.
+  const aliasHint = useMemo(() => {
+    const raw = newCat.trim();
+    if (!raw) return null;
+    const canon = resolveCategoryAlias(raw);
+    return canon.toLowerCase() !== raw.toLowerCase() ? canon : null;
+  }, [newCat]);
+
   // Existing categories that look similar to what's being typed as a new
   // one — surfaced so the user reuses one instead of creating a near-dup.
   const catSuggestions = useMemo(() => {
@@ -230,7 +251,7 @@ export default function StructuredCallForm({
   }
 
   async function submitNewCat() {
-    const n = newCat.trim();
+    const n = resolveCategoryAlias(newCat);
     if (!n) return;
     setAdding(true); setError(null);
     try {
@@ -475,7 +496,22 @@ export default function StructuredCallForm({
             </div>
           )}
 
-          {showNewCat && catSuggestions.length > 0 && (
+          {showNewCat && aliasHint && (
+            <div style={aliasBox}>
+              <span style={{ color: "#fde68a", fontSize: 12.5 }}>
+                Heads up — use <strong style={{ color: "white" }}>{aliasHint}</strong> for this. You&apos;ve been told to use this category going forward.
+              </span>
+              <button
+                type="button"
+                onClick={() => { patch({ category: aliasHint }); setShowNewCat(false); setNewCat(""); setError(null); }}
+                style={{ ...primaryBtn, padding: "6px 12px", marginTop: 8 }}
+              >
+                Use {aliasHint}
+              </button>
+            </div>
+          )}
+
+          {showNewCat && !aliasHint && catSuggestions.length > 0 && (
             <div style={suggestBox}>
               <div style={{ color: "#fbbf24", fontSize: 11.5, marginBottom: 6 }}>
                 Similar categories already exist — tap one to use it instead of adding a duplicate:
@@ -725,6 +761,11 @@ const standbyBox: React.CSSProperties = {
 };
 const suggestBox: React.CSSProperties = {
   background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.28)",
+  borderRadius: 12, padding: 12,
+};
+const aliasBox: React.CSSProperties = {
+  display: "flex", flexDirection: "column", alignItems: "flex-start",
+  background: "rgba(240,180,41,0.10)", border: "1px solid rgba(240,180,41,0.40)",
   borderRadius: 12, padding: 12,
 };
 const suggestChip: React.CSSProperties = {

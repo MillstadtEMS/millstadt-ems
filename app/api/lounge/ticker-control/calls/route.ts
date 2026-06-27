@@ -3,6 +3,7 @@ import { currentEmployee } from "@/lib/lounge/auth";
 import { canEditTicker } from "@/lib/admin/auth";
 import { sql } from "@/lib/neon";
 import {
+  canonicalCategory,
   CallStructured,
   ensureCadStructuredSchema,
   formatDispatchNature,
@@ -49,7 +50,7 @@ function normalize(p: StructuredPayload | null | undefined): CallStructured {
     : null;
   return {
     units: Array.from(new Set(units)),
-    category: (p?.category ?? "").trim(),
+    category: canonicalCategory(p?.category ?? ""),
     notes: p?.notes ? String(p.notes).trim() || null : null,
     mutualAidReceived: !!agency || p?.mutualAidReceived === true,
     mutualAidReceivedAgency: agency,
