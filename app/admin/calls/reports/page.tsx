@@ -33,6 +33,13 @@ interface CatRow   { name:   string; count: number; pct: number }
 interface UnitRow  { unit:   string; count: number; pct: number }
 interface AgRow    { agency: string; count: number; pct: number }
 interface DayRow   { day:    string; count: number }
+interface GroupCat { name: string; count: number; pct: number }
+interface ClassGroup { count: number; pct: number; categories: GroupCat[] }
+interface FireStat { count: number; pct: number }
+interface DrillCall {
+  id: string; date: string; time: string; nature: string;
+  category: string; classification: string; isFire: boolean; fireType: string | null;
+}
 interface ReportData {
   range: { from: string | null; to: string | null; year: number | null; month: number | null };
   filters: Record<string, string | null>;
@@ -43,6 +50,10 @@ interface ReportData {
   maGivenByUnit: UnitRow[];
   maGivenByAgency: AgRow[];
   dailyCounts: DayRow[];
+  groups: { trauma: ClassGroup; medical: ClassGroup; uncategorized: ClassGroup };
+  fire: { count: number; pct: number; still: FireStat; first: FireStat; other: FireStat };
+  cardiac: { count: number; pct: number; trauma: number; medical: number; adult: number; pediatric: number };
+  calls: DrillCall[];
   categories?: string[];
 }
 
@@ -98,6 +109,12 @@ export default function CallReportsPage() {
   const [data, setData] = useState<ReportData | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  // Clickable drill-down: which calls to list in the modal.
+  const [drill, setDrill] = useState<{ title: string; calls: DrillCall[] } | null>(null);
+  function openDrill(title: string, pred: (c: DrillCall) => boolean) {
+    if (!data) return;
+    setDrill({ title, calls: data.calls.filter(pred) });
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -250,6 +267,49 @@ export default function CallReportsPage() {
             <Tile label="Multi-unit responses" value={data.totals.multiUnit.toString()} sub="2+ units on the call" tone="sky" />
           </div>
 
+          {/* ── Classification breakdown — Trauma / Medical / Uncategorized ── */}
+          <p style={{ color: "#64748b", fontSize: 11.5, margin: "0 0 8px" }}>Tap any row to list the matching calls.</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14, marginBottom: 14 }}>
+            <GroupCard title="Trauma" group={data.groups.trauma} accent="#fca5a5"
+              onGroup={() => openDrill("Trauma calls", (c) => c.classification === "trauma")}
+              onCat={(name) => openDrill(name, (c) => c.category === name)} />
+            <GroupCard title="Medical" group={data.groups.medical} accent="#34d399"
+              onGroup={() => openDrill("Medical calls", (c) => c.classification === "medical")}
+              onCat={(name) => openDrill(name, (c) => c.category === name)} />
+            <GroupCard title="Uncategorized" group={data.groups.uncategorized} accent="#94a3b8"
+              onGroup={() => openDrill("Uncategorized calls", (c) => c.classification === "uncategorized" && !c.isFire)}
+              onCat={(name) => openDrill(name, (c) => c.category === name)} />
+          </div>
+
+          {/* ── Fire Response + Cardiac Arrest ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14, marginBottom: 14 }}>
+            <Section title="Fire Response" subtitle={`${data.fire.count} · ${data.fire.pct.toFixed(1)}%`}>
+              <ClickRow label="Fire Response — total" count={data.fire.count} pct={data.fire.pct} bold accent="#fb923c"
+                onClick={() => openDrill("Fire Response calls", (c) => c.isFire)} />
+              <div style={{ paddingLeft: 10, display: "grid", gap: 5, marginTop: 5 }}>
+                <ClickRow label="• Still Alarm" count={data.fire.still.count} pct={data.fire.still.pct} accent="#fb923c"
+                  onClick={() => openDrill("Fire — Still Alarm", (c) => c.isFire && c.fireType === "still")} />
+                <ClickRow label="• 1st Alarm" count={data.fire.first.count} pct={data.fire.first.pct} accent="#fb923c"
+                  onClick={() => openDrill("Fire — 1st Alarm", (c) => c.isFire && c.fireType === "first")} />
+                {data.fire.other.count > 0 && (
+                  <ClickRow label="• Other" count={data.fire.other.count} pct={data.fire.other.pct} accent="#fb923c"
+                    onClick={() => openDrill("Fire — Other", (c) => c.isFire && c.fireType === "other")} />
+                )}
+              </div>
+            </Section>
+            <Section title="Cardiac Arrest" subtitle={`${data.cardiac.count} · ${data.cardiac.pct.toFixed(1)}%`}>
+              <ClickRow label="Cardiac Arrest — total" count={data.cardiac.count} pct={data.cardiac.pct} bold accent="#f0b429"
+                onClick={() => openDrill("Cardiac Arrest calls", (c) => c.category === "Cardiac Arrest")} />
+              <div style={{ paddingLeft: 10, display: "grid", gap: 5, marginTop: 5 }}>
+                <ClickRow label="• Medical" count={data.cardiac.medical} pct={data.cardiac.count ? (data.cardiac.medical / data.cardiac.count) * 100 : 0} accent="#34d399"
+                  onClick={() => openDrill("Cardiac Arrest — Medical", (c) => c.category === "Cardiac Arrest" && c.classification === "medical")} />
+                <ClickRow label="• Trauma" count={data.cardiac.trauma} pct={data.cardiac.count ? (data.cardiac.trauma / data.cardiac.count) * 100 : 0} accent="#fca5a5"
+                  onClick={() => openDrill("Cardiac Arrest — Trauma", (c) => c.category === "Cardiac Arrest" && c.classification === "trauma")} />
+              </div>
+              <p style={{ color: "#64748b", fontSize: 11, marginTop: 8 }}>Adult {data.cardiac.adult} · Pediatric {data.cardiac.pediatric} (back-office only)</p>
+            </Section>
+          </div>
+
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
             {/* Category leaderboard */}
             <Section title="Categories" subtitle={`${data.byCategory.length} distinct`}>
@@ -326,7 +386,69 @@ export default function CallReportsPage() {
           <div><span style={{ color: "#f0b429" }}>HEMS handoff rate</span> = patient handoffs ÷ total HEMS requests × 100</div>
         </div>
       </section>
+
+      {drill && (
+        <div onClick={() => setDrill(null)} role="dialog" aria-modal="true"
+          style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(2,9,18,0.78)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "32px 12px", overflowY: "auto" }}>
+          <div onClick={(e) => e.stopPropagation()}
+            style={{ width: "100%", maxWidth: 680, background: "#071428", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: 18, boxShadow: "0 30px 80px rgba(0,0,0,0.55)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 10 }}>
+              <h2 style={{ margin: 0, color: "white", fontSize: 15, fontWeight: 700 }}>
+                {drill.title} <span style={{ color: "#94a3b8", fontWeight: 600 }}>· {drill.calls.length}</span>
+              </h2>
+              <button type="button" onClick={() => setDrill(null)} style={{ ...ghostBtn, padding: "6px 12px" }}>Close</button>
+            </div>
+            <div style={{ display: "grid", gap: 6, maxHeight: "62vh", overflowY: "auto" }}>
+              {drill.calls.length === 0 ? <span style={{ color: "#475569", fontSize: 12.5 }}>No calls.</span> :
+                drill.calls.map((c) => (
+                  <div key={c.id} style={{ display: "flex", gap: 10, padding: "8px 10px", borderRadius: 9, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", alignItems: "baseline", flexWrap: "wrap" }}>
+                    <span style={{ color: "#94a3b8", fontSize: 11.5, fontVariantNumeric: "tabular-nums", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace", whiteSpace: "nowrap" }}>{c.date} {c.time}</span>
+                    <span style={{ color: "white", fontSize: 12.5, fontWeight: 600 }}>{c.nature}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function GroupCard({ title, group, accent, onGroup, onCat }: {
+  title: string; group: ClassGroup; accent: string; onGroup: () => void; onCat: (name: string) => void;
+}) {
+  return (
+    <section style={card}>
+      <button type="button" onClick={onGroup} style={{ all: "unset", cursor: "pointer", display: "block", width: "100%" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <h2 style={{ color: accent, fontSize: 13, fontWeight: 700, margin: 0, letterSpacing: "0.02em" }}>{title}</h2>
+          <span style={{ color: "white", fontSize: 19, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{group.pct.toFixed(1)}%</span>
+        </div>
+        <div style={{ color: "#94a3b8", fontSize: 11.5, margin: "2px 0 10px" }}>{group.count} call{group.count === 1 ? "" : "s"}</div>
+      </button>
+      <div style={{ display: "grid", gap: 6 }}>
+        {group.categories.length === 0 ? <span style={{ color: "#475569", fontSize: 12 }}>None.</span> :
+          group.categories.map((c) => (
+            <ClickRow key={c.name} label={c.name} count={c.count} pct={c.pct} accent={accent} onClick={() => onCat(c.name)} />
+          ))}
+      </div>
+    </section>
+  );
+}
+
+function ClickRow({ label, count, pct, accent, bold, onClick }: {
+  label: string; count: number; pct: number; accent: string; bold?: boolean; onClick: () => void;
+}) {
+  return (
+    <button type="button" onClick={onClick} style={{ all: "unset", cursor: "pointer", display: "block" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 3, gap: 8 }}>
+        <span style={{ color: bold ? "white" : "#cbd5e1", fontWeight: bold ? 700 : 600 }}>{label}</span>
+        <span style={{ color: "#94a3b8", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{count}<span style={{ color: "#475569" }}> · {pct.toFixed(1)}%</span></span>
+      </div>
+      <div style={{ height: 5, background: "rgba(255,255,255,0.05)", borderRadius: 4 }}>
+        <div style={{ height: "100%", width: `${Math.min(100, pct)}%`, background: accent, borderRadius: 4, opacity: 0.85 }} />
+      </div>
+    </button>
   );
 }
 

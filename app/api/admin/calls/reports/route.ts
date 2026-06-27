@@ -34,6 +34,11 @@ interface Row {
   mutual_aid_given_agency: string | null;
   hems_requested: boolean;
   hems_outcome: string | null;
+  classification: string | null;
+  cardiac_age: string | null;
+  dispatch_date: string;
+  dispatch_time: string;
+  dispatch_nature: string;
 }
 
 function asArray<T>(v: unknown): T[] {
@@ -64,9 +69,10 @@ export async function GET(req: NextRequest) {
 
   if (from && to) {
     rows = (await db`
-      SELECT id, dispatch_datetime, category, units,
+      SELECT id, dispatch_datetime, dispatch_date, dispatch_time, dispatch_nature, category, units,
              mutual_aid_received, mutual_aid_received_agency,
-             mutual_aid_given, mutual_aid_given_agency, hems_requested, hems_outcome
+             mutual_aid_given, mutual_aid_given_agency, hems_requested, hems_outcome,
+             classification, cardiac_age
       FROM cad_calls
       WHERE dispatch_datetime >= ${from + "T00:00:00"}
         AND dispatch_datetime <  ${to   + "T23:59:59"}
@@ -77,26 +83,29 @@ export async function GET(req: NextRequest) {
     const endYear  = month === 12 ? year + 1 : year;
     const end = `${endYear}-${String(endMonth).padStart(2, "0")}-01T00:00:00`;
     rows = (await db`
-      SELECT id, dispatch_datetime, category, units,
+      SELECT id, dispatch_datetime, dispatch_date, dispatch_time, dispatch_nature, category, units,
              mutual_aid_received, mutual_aid_received_agency,
-             mutual_aid_given, mutual_aid_given_agency, hems_requested, hems_outcome
+             mutual_aid_given, mutual_aid_given_agency, hems_requested, hems_outcome,
+             classification, cardiac_age
       FROM cad_calls
       WHERE dispatch_datetime >= ${start} AND dispatch_datetime < ${end}
     `) as unknown as Row[];
   } else if (year) {
     rows = (await db`
-      SELECT id, dispatch_datetime, category, units,
+      SELECT id, dispatch_datetime, dispatch_date, dispatch_time, dispatch_nature, category, units,
              mutual_aid_received, mutual_aid_received_agency,
-             mutual_aid_given, mutual_aid_given_agency, hems_requested, hems_outcome
+             mutual_aid_given, mutual_aid_given_agency, hems_requested, hems_outcome,
+             classification, cardiac_age
       FROM cad_calls
       WHERE source_year = ${year}
     `) as unknown as Row[];
   } else {
     const thisYear = new Date().getFullYear();
     rows = (await db`
-      SELECT id, dispatch_datetime, category, units,
+      SELECT id, dispatch_datetime, dispatch_date, dispatch_time, dispatch_nature, category, units,
              mutual_aid_received, mutual_aid_received_agency,
-             mutual_aid_given, mutual_aid_given_agency, hems_requested, hems_outcome
+             mutual_aid_given, mutual_aid_given_agency, hems_requested, hems_outcome,
+             classification, cardiac_age
       FROM cad_calls
       WHERE source_year = ${thisYear}
     `) as unknown as Row[];
@@ -161,6 +170,70 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => (b.count as number) - (a.count as number));
   }
 
+  // ── Classification groups + Fire + Cardiac (hierarchical) ────────────
+  const pctOf = (n: number) => (total > 0 ? (n / total) * 100 : 0);
+  const classOf = (r: Row): "trauma" | "medical" | "uncategorized" =>
+    r.classification === "trauma" ? "trauma" : r.classification === "medical" ? "medical" : "uncategorized";
+  const isFire = (cat: string | null) => !!cat && /^fire/i.test(cat);
+  const fireType = (cat: string | null): "still" | "first" | "other" =>
+    /still/i.test(cat ?? "") ? "still" : /1st/i.test(cat ?? "") ? "first" : "other";
+
+  function buildGroup(pred: (r: Row) => boolean) {
+    const rs = filtered.filter(pred);
+    const m = new Map<string, number>();
+    for (const r of rs) if (r.category) m.set(r.category, (m.get(r.category) ?? 0) + 1);
+    return {
+      count: rs.length,
+      pct: pctOf(rs.length),
+      categories: Array.from(m.entries())
+        .map(([name, count]) => ({ name, count, pct: pctOf(count) }))
+        .sort((a, b) => b.count - a.count),
+    };
+  }
+
+  const groups = {
+    trauma:        buildGroup((r) => classOf(r) === "trauma"),
+    medical:       buildGroup((r) => classOf(r) === "medical"),
+    // Uncategorized EXCLUDES fire — fire is surfaced as its own group.
+    uncategorized: buildGroup((r) => classOf(r) === "uncategorized" && !isFire(r.category)),
+  };
+
+  const fireRows = filtered.filter((r) => isFire(r.category));
+  const fire = {
+    count: fireRows.length, pct: pctOf(fireRows.length),
+    still: { count: fireRows.filter((r) => fireType(r.category) === "still").length, pct: pctOf(fireRows.filter((r) => fireType(r.category) === "still").length) },
+    first: { count: fireRows.filter((r) => fireType(r.category) === "first").length, pct: pctOf(fireRows.filter((r) => fireType(r.category) === "first").length) },
+    other: { count: fireRows.filter((r) => fireType(r.category) === "other").length, pct: pctOf(fireRows.filter((r) => fireType(r.category) === "other").length) },
+  };
+
+  const caRows = filtered.filter((r) => r.category === "Cardiac Arrest");
+  const cardiac = {
+    count: caRows.length, pct: pctOf(caRows.length),
+    trauma:  caRows.filter((r) => r.classification === "trauma").length,
+    medical: caRows.filter((r) => r.classification === "medical").length,
+    adult:     caRows.filter((r) => r.cardiac_age === "adult").length,
+    pediatric: caRows.filter((r) => r.cardiac_age === "pediatric").length,
+  };
+
+  // Lightweight call list for the clickable drill-down (admin only).
+  const callList = filtered
+    .slice()
+    .sort((a, b) => {
+      const ta = a.dispatch_datetime instanceof Date ? a.dispatch_datetime.getTime() : new Date(a.dispatch_datetime).getTime();
+      const tb = b.dispatch_datetime instanceof Date ? b.dispatch_datetime.getTime() : new Date(b.dispatch_datetime).getTime();
+      return tb - ta;
+    })
+    .map((r) => ({
+      id: r.id,
+      date: r.dispatch_date,
+      time: r.dispatch_time,
+      nature: r.dispatch_nature,
+      category: r.category ?? "",
+      classification: classOf(r),
+      isFire: isFire(r.category),
+      fireType: isFire(r.category) ? fireType(r.category) : null,
+    }));
+
   return NextResponse.json({
     range: { from, to, year, month },
     filters: { unit, agency, category, maStatus, hemsStatus },
@@ -179,5 +252,9 @@ export async function GET(req: NextRequest) {
     maGivenByUnit: rank(maGivenUnitCount, "unit"),
     maGivenByAgency: rank(maGivenAgencyCount, "agency"),
     dailyCounts: Array.from(dayCount.entries()).map(([day, count]) => ({ day, count })).sort((a, b) => a.day.localeCompare(b.day)),
+    groups,
+    fire,
+    cardiac,
+    calls: callList,
   });
 }
