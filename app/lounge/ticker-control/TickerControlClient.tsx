@@ -83,8 +83,6 @@ function matchesQuery(call: TickerCall, q: string): boolean {
   );
 }
 
-const LOG_PAGE = 15;
-
 function timeAgo(input: string | null) {
   if (!input) return "Just now";
   const diff = Math.max(0, Date.now() - new Date(input).getTime());
@@ -204,15 +202,14 @@ export default function TickerControlClient({ firstName }: { firstName: string }
   const [editEventNumber, setEditEventNumber] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
-  // Search + paged log so the whole year is reachable on mobile, not
-  // just the most recent handful.
+  // Full-year log with a search box — every completed call is reachable
+  // on mobile, no cap. (Newest first; the API already returns the whole
+  // current year ordered by dispatch time.)
   const [query, setQuery] = useState("");
-  const [logLimit, setLogLimit] = useState(LOG_PAGE);
 
   const q = query.trim().toLowerCase();
   const active = useMemo(() => calls.filter((call) => !call.completedAt && matchesQuery(call, q)), [calls, q]);
-  const recentAll = useMemo(() => calls.filter((call) => call.completedAt && matchesQuery(call, q)), [calls, q]);
-  const recent = recentAll.slice(0, logLimit);
+  const recent = useMemo(() => calls.filter((call) => call.completedAt && matchesQuery(call, q)), [calls, q]);
 
   async function load({ quiet = false } = {}) {
     if (!quiet) setLoading(true);
@@ -381,7 +378,7 @@ export default function TickerControlClient({ firstName }: { firstName: string }
           <input
             type="search"
             value={query}
-            onChange={(e) => { setQuery(e.target.value); setLogLimit(LOG_PAGE); }}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder="Find by type, event #, or date…"
             autoComplete="off"
           />
@@ -447,39 +444,27 @@ export default function TickerControlClient({ firstName }: { firstName: string }
         <section className="ticker-section">
           <div className="ticker-section-head muted">
             <span aria-hidden />
-            <h2>Recent log{recentAll.length > 0 && <span className="ticker-count"> · {recentAll.length}</span>}</h2>
+            <h2>Recent log{recent.length > 0 && <span className="ticker-count"> · {recent.length}</span>}</h2>
           </div>
-          {recentAll.length === 0 ? (
+          {recent.length === 0 ? (
             <div className="ticker-empty">
               {q ? "No calls match your search." : "No completed items in the current-year log."}
             </div>
           ) : (
-            <>
-              <div className="ticker-card-list">
-                {recent.map((call) => (
-                  <TickerCard
-                    key={call.id}
-                    call={call}
-                    live={false}
-                    busy={busyId === call.id}
-                    onEdit={() => startEdit(call)}
-                    onHide={() => setActive(call, false)}
-                    onShow={() => setActive(call, true)}
-                    onDelete={() => removeCall(call.id)}
-                  />
-                ))}
-              </div>
-              {recentAll.length > recent.length && (
-                <div className="ticker-more-row">
-                  <button className="ticker-ghost-button" type="button" onClick={() => setLogLimit((n) => n + LOG_PAGE)}>
-                    Show more
-                  </button>
-                  <button className="ticker-ghost-button" type="button" onClick={() => setLogLimit(recentAll.length)}>
-                    Show all {recentAll.length}
-                  </button>
-                </div>
-              )}
-            </>
+            <div className="ticker-card-list">
+              {recent.map((call) => (
+                <TickerCard
+                  key={call.id}
+                  call={call}
+                  live={false}
+                  busy={busyId === call.id}
+                  onEdit={() => startEdit(call)}
+                  onHide={() => setActive(call, false)}
+                  onShow={() => setActive(call, true)}
+                  onDelete={() => removeCall(call.id)}
+                />
+              ))}
+            </div>
           )}
         </section>
 
@@ -1037,12 +1022,6 @@ const TICKER_CONTROL_CSS = `
   color: #94a3b8;
   font-weight: 800;
   font-size: 0.85em;
-}
-.ticker-more-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 4px;
 }
 
 /* ── Structured form wrapper ──────────────────────────────────────────
