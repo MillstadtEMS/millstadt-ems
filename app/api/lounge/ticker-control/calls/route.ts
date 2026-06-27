@@ -12,6 +12,7 @@ import {
   MillstadtUnit,
   MUTUAL_AID_AGENCIES,
   MutualAidAgency,
+  parseDispatchNature,
 } from "@/lib/cad/structured";
 
 export const runtime = "nodejs";
@@ -278,7 +279,16 @@ export async function PATCH(req: NextRequest) {
     if (!dispatchNature) {
       return NextResponse.json({ error: "Ticker text cannot be blank." }, { status: 400 });
     }
-    await db`UPDATE cad_calls SET dispatch_nature = ${dispatchNature} WHERE id = ${id}`;
+    // Manual text rename → re-derive the report category + units from the
+    // new text so a hand-edit counts toward the right reports column.
+    const parsed = parseDispatchNature(dispatchNature);
+    const category = canonicalCategory(parsed.category);
+    await db`
+      UPDATE cad_calls SET
+        dispatch_nature = ${dispatchNature},
+        category = ${category || null},
+        units = ${JSON.stringify(parsed.units)}::jsonb
+      WHERE id = ${id}`;
   }
 
   if (eventNumber !== undefined) {

@@ -47,6 +47,9 @@ export const CATEGORY_ALIASES: Record<string, string> = {
   "psych evaluation": "Psychiatric Emergency",
   "psychiatric eval": "Psychiatric Emergency",
   "psychiatric evaluation": "Psychiatric Emergency",
+  "behavioral emergency": "Psychiatric Emergency",
+  "pregnancy complications": "Obstetrical Emergency",
+  "pregnancy complication": "Obstetrical Emergency",
 };
 
 /** Resolve a category name through the alias map + whitespace cleanup. */
@@ -181,22 +184,26 @@ export interface CallStructured {
  *
  *   [M3935] Fall
  *   [M3926] [M3935] Accident w/ Injuries (Arch Requested)
- *   [Columbia EMS] Mutual Aid Received
+ *   [Mutual Aid] Columbia EMS: Sick Case
  */
 export function formatDispatchNature(input: CallStructured): string {
+  const cat = (input.category || "").trim();
+  const notes = (input.notes || "").trim();
+
+  // Mutual aid RECEIVED → "[Mutual Aid] <Agency>: <Category>". The
+  // assisting agency ran the call in our area; no Millstadt unit is shown.
+  if (input.mutualAidReceived && input.mutualAidReceivedAgency) {
+    const base = `[Mutual Aid] ${input.mutualAidReceivedAgency}: ${cat}`.trim();
+    return notes ? `${base} (${notes})` : base;
+  }
+
   const brackets: string[] = [];
   // Millstadt units first, deduped, in M-number order.
   const units = Array.from(new Set(input.units));
   units.sort();
   for (const u of units) brackets.push(`[${u}]`);
-  // If outside agency came IN to help us, surface the agency tag too.
-  if (input.mutualAidReceived && input.mutualAidReceivedAgency) {
-    brackets.push(`[${input.mutualAidReceivedAgency}]`);
-  }
   let prefix = brackets.join(" ");
   if (prefix) prefix += " ";
-  const cat = (input.category || "").trim();
-  const notes = (input.notes || "").trim();
   // Standby is special: the notes field carries the location, and the
   // line always renders as "Standby at <location>" so every standby
   // reads identically on the ticker.

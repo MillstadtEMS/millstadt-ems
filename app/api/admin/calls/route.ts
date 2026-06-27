@@ -11,6 +11,7 @@ import {
   MillstadtUnit,
   MUTUAL_AID_AGENCIES,
   MutualAidAgency,
+  parseDispatchNature,
 } from "@/lib/cad/structured";
 
 export const runtime = "nodejs";
@@ -167,10 +168,19 @@ export async function PATCH(req: NextRequest) {
       WHERE id = ${id}
     `;
   } else if (typeof dispatchNature === "string") {
-    // Legacy: caller only sent the raw text. Keep the row text in sync
-    // but leave the structured columns alone — the backfill parser may
-    // have populated them already.
-    await db`UPDATE cad_calls SET dispatch_nature = ${dispatchNature.trim()} WHERE id = ${id}`;
+    // Manual text rename: re-derive the report category + units from the
+    // new text so a hand-edit connects to the correct reports column
+    // (e.g. renaming "Choking / Seizure" to "Seizure" now counts as
+    // Seizure). Mutual-aid / HEMS columns are left as-is.
+    const text = dispatchNature.trim();
+    const parsed = parseDispatchNature(text);
+    const category = canonicalCategory(parsed.category);
+    await db`
+      UPDATE cad_calls SET
+        dispatch_nature = ${text},
+        category = ${category || null},
+        units = ${JSON.stringify(parsed.units)}::jsonb
+      WHERE id = ${id}`;
   }
 
   if (typeof active === "boolean") {

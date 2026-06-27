@@ -49,6 +49,9 @@ const CATEGORY_ALIASES: Record<string, string> = {
   "psych evaluation": "Psychiatric Emergency",
   "psychiatric eval": "Psychiatric Emergency",
   "psychiatric evaluation": "Psychiatric Emergency",
+  "behavioral emergency": "Psychiatric Emergency",
+  "pregnancy complications": "Obstetrical Emergency",
+  "pregnancy complication": "Obstetrical Emergency",
 };
 function resolveCategoryAlias(name: string): string {
   const cleaned = name.replace(/\s+/g, " ").trim();
@@ -99,15 +102,19 @@ export const EMPTY_STRUCTURED: StructuredValue = {
 /** Pure preview formatter — must stay in sync with the server-side
  * formatDispatchNature() in lib/cad/structured.ts. */
 export function previewDispatchNature(v: StructuredValue): string {
+  const cat = v.category.trim();
+  const notes = v.notes.trim();
+
+  // Mutual aid RECEIVED → "[Mutual Aid] <Agency>: <Category>" (no unit).
+  if (v.mutualAidReceived && v.mutualAidReceivedAgency) {
+    const base = `[Mutual Aid] ${v.mutualAidReceivedAgency}: ${cat}`.trim();
+    return notes ? `${base} (${notes})` : base;
+  }
+
   const units = Array.from(new Set(v.units));
   units.sort();
   const brackets: string[] = units.map((u) => `[${u}]`);
-  if (v.mutualAidReceived && v.mutualAidReceivedAgency) {
-    brackets.push(`[${v.mutualAidReceivedAgency}]`);
-  }
   const prefix = brackets.length ? brackets.join(" ") + " " : "";
-  const cat = v.category.trim();
-  const notes = v.notes.trim();
   // Standby renders as a consistent "Standby at <location>" line (the
   // location lives in notes). Mirror of formatDispatchNature().
   if (cat.toLowerCase() === STANDBY_CATEGORY.toLowerCase()) {
