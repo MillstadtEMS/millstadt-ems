@@ -16,6 +16,10 @@ export const revalidate = 0;
 interface Row {
   category: string | null;
   classification: string | null;
+  dispatch_date: string;
+  dispatch_time: string;
+  dispatch_nature: string;
+  dispatch_datetime: Date | string;
 }
 
 function currentChicagoYear(): number {
@@ -27,7 +31,9 @@ export async function GET() {
   const db = sql();
   const year = currentChicagoYear();
   const rows = (await db`
-    SELECT category, classification FROM cad_calls WHERE source_year = ${year}
+    SELECT category, classification, dispatch_date, dispatch_time, dispatch_nature, dispatch_datetime
+    FROM cad_calls WHERE source_year = ${year}
+    ORDER BY dispatch_datetime DESC
   `) as unknown as Row[];
 
   const total = rows.length;
@@ -74,5 +80,15 @@ export async function GET() {
       medical: caRows.filter((r) => r.classification === "medical").length,
       trauma:  caRows.filter((r) => r.classification === "trauma").length,
     },
+    // Individual calls (already public on the ticker) so the stats page
+    // can list a category's calls on hover/tap.
+    calls: rows.map((r) => ({
+      date: r.dispatch_date,
+      time: r.dispatch_time,
+      nature: r.dispatch_nature,
+      category: r.category ?? "",
+      classification: classOf(r),
+      fireType: isFire(r.category) ? fireType(r.category) : null,
+    })),
   });
 }
