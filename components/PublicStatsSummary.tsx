@@ -25,7 +25,9 @@ interface DropRow { key: string; label: string; count: number; pct: number; acce
 
 export default function PublicStatsSummary() {
   const [data, setData] = useState<Stats | null>(null);
-  const [open, setOpen] = useState<Record<string, boolean>>({});
+  // Open on hover (desktop) via hoverKey; tap pins it open (touch) via pinned.
+  const [hoverKey, setHoverKey] = useState<string | null>(null);
+  const [pinned, setPinned] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let alive = true;
@@ -73,12 +75,17 @@ export default function PublicStatsSummary() {
 
         <div style={{ display: "grid", gap: 8 }}>
           {rows.map((r) => {
-            const isOpen = !!open[r.key];
+            const isOpen = hoverKey === r.key || !!pinned[r.key];
             return (
-              <div key={r.key} style={{ background: "#071428", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, overflow: "hidden" }}>
+              <div
+                key={r.key}
+                onMouseEnter={() => setHoverKey(r.key)}
+                onMouseLeave={() => setHoverKey((k) => (k === r.key ? null : k))}
+                style={{ background: "#071428", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, overflow: "hidden" }}
+              >
                 <button
                   type="button"
-                  onClick={() => setOpen((o) => ({ ...o, [r.key]: !o[r.key] }))}
+                  onClick={() => setPinned((p) => ({ ...p, [r.key]: !p[r.key] }))}
                   aria-expanded={isOpen}
                   style={{ all: "unset", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "13px 15px", width: "100%", boxSizing: "border-box" }}
                 >
