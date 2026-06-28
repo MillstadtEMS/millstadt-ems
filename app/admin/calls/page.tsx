@@ -22,6 +22,14 @@ function nowTimeLocal() {
   const d = new Date();
   return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }); // HH:MM
 }
+/** ISO timestamp → value for <input type="datetime-local"> in local time. */
+function isoToLocalInput(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
 
 // Defined OUTSIDE parent so React never remounts it on parent re-render
 function CallRow({
@@ -131,6 +139,7 @@ export default function CallsAdmin() {
   const [structEditLoading, setStructEditLoading] = useState(false);
   const [structEditSaving, setStructEditSaving] = useState(false);
   const [structEditError, setStructEditError] = useState<string | null>(null);
+  const [closedAtInput, setClosedAtInput] = useState("");
 
   // Add call form
   const [showAdd, setShowAdd] = useState(false);
@@ -168,7 +177,8 @@ export default function CallsAdmin() {
           hemsOutcome: d.structured.hemsOutcome ?? "",
         });
       }
-    } catch { /* keep defaults */ }
+      setClosedAtInput(isoToLocalInput(d?.completedAt ?? c.completedAt ?? null));
+    } catch { setClosedAtInput(isoToLocalInput(c.completedAt)); }
     finally { setStructEditLoading(false); }
   }
   async function saveStructuredEdit() {
@@ -187,7 +197,11 @@ export default function CallsAdmin() {
     const r = await fetch("/api/admin/calls", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: structEditCall.id, structured: structEditValue }),
+      body: JSON.stringify({
+        id: structEditCall.id,
+        structured: structEditValue,
+        completedAt: closedAtInput ? new Date(closedAtInput).toISOString() : null,
+      }),
     });
     setStructEditSaving(false);
     if (!r.ok) {
@@ -202,6 +216,7 @@ export default function CallsAdmin() {
     setStructEditCall(null);
     setStructEditValue(EMPTY_STRUCTURED);
     setStructEditError(null);
+    setClosedAtInput("");
   }
 
   async function saveEdit(id: string) {
@@ -489,7 +504,33 @@ export default function CallsAdmin() {
             {structEditLoading ? (
               <p style={{ color: "#94a3b8", padding: 16 }}>Loading structured fields…</p>
             ) : (
-              <StructuredCallForm value={structEditValue} onChange={setStructEditValue} />
+              <>
+                <StructuredCallForm value={structEditValue} onChange={setStructEditValue} />
+
+                {/* Call closed time — admin override for wrong/auto close times */}
+                <div style={{ marginTop: 16, padding: 12, borderRadius: 12, background: "rgba(2,9,18,0.55)", border: "1px solid rgba(255,255,255,0.10)" }}>
+                  <label style={{ display: "block", color: "#8b98ac", fontSize: 11, fontWeight: 600, letterSpacing: "0.01em", marginBottom: 5 }}>
+                    Call closed at <span style={{ color: "#64748b", fontWeight: 600, textTransform: "none", letterSpacing: 0 }}>(leave blank if not closed / unknown)</span>
+                  </label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                    <input
+                      type="datetime-local"
+                      value={closedAtInput}
+                      onChange={(e) => setClosedAtInput(e.target.value)}
+                      style={{ flex: "1 1 220px", minWidth: 200, background: "#0a1422", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "9px 11px", color: "white", fontSize: 13, fontFamily: "inherit" }}
+                    />
+                    {closedAtInput && (
+                      <button type="button" onClick={() => setClosedAtInput("")}
+                        style={{ background: "rgba(255,255,255,0.02)", color: "#fca5a5", border: "1px solid rgba(248,113,113,0.30)", padding: "9px 14px", borderRadius: 10, fontWeight: 600, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ color: "#64748b", fontSize: 11, marginTop: 6, lineHeight: 1.45 }}>
+                    Sets the public &ldquo;call closed&rdquo; time + total call time. Clearing it re-opens the call.
+                  </div>
+                </div>
+              </>
             )}
 
             {structEditError && (

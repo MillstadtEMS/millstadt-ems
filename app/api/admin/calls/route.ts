@@ -186,6 +186,7 @@ export async function PATCH(req: NextRequest) {
   } = body as {
     id?: string; dispatchNature?: string; active?: boolean;
     structured?: StructuredPayload;
+    completedAt?: string | null;
   };
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
@@ -248,6 +249,20 @@ export async function PATCH(req: NextRequest) {
       await db`UPDATE cad_calls SET completed_at = NULL WHERE id = ${id}`;
     } else {
       await db`UPDATE cad_calls SET completed_at = NOW() WHERE id = ${id} AND completed_at IS NULL`;
+    }
+  }
+
+  // Explicit close-time override (admin correcting a wrong/auto close time).
+  // Empty string / null clears it (re-opens the call); a valid datetime sets it.
+  if ("completedAt" in body) {
+    const cv = (body as { completedAt?: string | null }).completedAt;
+    if (cv === null || cv === "") {
+      await db`UPDATE cad_calls SET completed_at = NULL WHERE id = ${id}`;
+    } else {
+      const d = new Date(cv);
+      if (!Number.isNaN(d.getTime())) {
+        await db`UPDATE cad_calls SET completed_at = ${d.toISOString()} WHERE id = ${id}`;
+      }
     }
   }
   return NextResponse.json({ ok: true });
