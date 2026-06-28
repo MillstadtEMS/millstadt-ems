@@ -14,6 +14,7 @@
 // ── Fire districts (multi-select) ──────────────────────────────────────
 export const FIRE_DISTRICTS = [
   "Millstadt Fire District",
+  "Smithton Fire District",
   "Columbia Fire District",
   "Waterloo Fire District",
   "Dupo Fire District",
@@ -74,14 +75,30 @@ export function clampUnitDispositions(input: unknown, allowedUnits: readonly str
 }
 
 // ── Clamping helpers (used by the write APIs) ──────────────────────────
-export function clampFireAgencies(input: unknown): string[] {
+// The canonical lists above are the quick-pick chips, but the editor lets
+// staff add custom departments, so we accept any sanitized string rather
+// than restricting to the list. (These are display-only on the hover box.)
+function sanitizeAgencies(input: unknown): string[] {
   if (!Array.isArray(input)) return [];
-  const allowed = new Set<string>(FIRE_DISTRICTS as readonly string[]);
-  return Array.from(new Set(input.filter((a): a is string => typeof a === "string" && allowed.has(a))));
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const a of input) {
+    if (typeof a !== "string") continue;
+    const v = a.replace(/\s+/g, " ").trim().slice(0, 60);
+    if (!v) continue;
+    const key = v.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(v);
+    if (out.length >= 25) break;
+  }
+  return out;
+}
+
+export function clampFireAgencies(input: unknown): string[] {
+  return sanitizeAgencies(input);
 }
 
 export function clampPoliceAgencies(input: unknown): string[] {
-  if (!Array.isArray(input)) return [];
-  const allowed = new Set<string>(POLICE_AGENCIES as readonly string[]);
-  return Array.from(new Set(input.filter((a): a is string => typeof a === "string" && allowed.has(a))));
+  return sanitizeAgencies(input);
 }

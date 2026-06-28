@@ -572,6 +572,7 @@ export default function StructuredCallForm({
               options={FIRE_DISTRICTS as readonly string[]}
               selected={value.fireAgencies}
               onToggle={(name) => patch({ fireAgencies: toggleInList(value.fireAgencies, name) })}
+              addLabel="Add fire dept…"
             />
           )}
 
@@ -590,6 +591,7 @@ export default function StructuredCallForm({
               options={POLICE_AGENCIES as readonly string[]}
               selected={value.policeAgencies}
               onToggle={(name) => patch({ policeAgencies: toggleInList(value.policeAgencies, name) })}
+              addLabel="Add agency…"
             />
           )}
 
@@ -905,15 +907,30 @@ function UnitPicker({
 }
 
 function MultiAgencyPicker({
-  options, selected, onToggle,
+  options, selected, onToggle, addLabel,
 }: {
   options: readonly string[];
   selected: string[];
   onToggle: (name: string) => void;
+  /** When provided, shows an "+ Add" affordance for custom departments. */
+  addLabel?: string;
 }) {
+  const [adding, setAdding] = useState(false);
+  const [text, setText] = useState("");
+  // Render canonical chips first, then any custom (off-list) selections.
+  const extras = selected.filter((s) => !options.includes(s));
+  const chips = [...options, ...extras];
+
+  function submitAdd() {
+    const n = text.replace(/\s+/g, " ").trim();
+    if (n && !selected.some((s) => s.toLowerCase() === n.toLowerCase())) onToggle(n);
+    setText("");
+    setAdding(false);
+  }
+
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingLeft: 4 }}>
-      {options.map((name) => {
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingLeft: 4, alignItems: "center" }}>
+      {chips.map((name) => {
         const on = selected.includes(name);
         return (
           <button
@@ -932,6 +949,23 @@ function MultiAgencyPicker({
           </button>
         );
       })}
+
+      {addLabel && (adding ? (
+        <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+          <input
+            autoFocus
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submitAdd(); } if (e.key === "Escape") { setText(""); setAdding(false); } }}
+            placeholder={addLabel}
+            style={{ ...fieldInput, width: 190, padding: "6px 10px", fontSize: 12 }}
+          />
+          <button type="button" onClick={submitAdd} style={{ ...primaryBtn, padding: "6px 11px" }}>Add</button>
+          <button type="button" onClick={() => { setText(""); setAdding(false); }} style={{ ...ghostBtn, padding: "6px 10px" }}>Cancel</button>
+        </span>
+      ) : (
+        <button type="button" onClick={() => setAdding(true)} style={addBtn}>+ Add dept</button>
+      ))}
     </div>
   );
 }
