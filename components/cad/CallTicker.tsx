@@ -219,6 +219,10 @@ function CallInfoBox({ call, accent }: { call: Call; accent: string }) {
   const cls = classificationLabel(call.classification);
   const completed = call.completedAt;
   const totalMs = completed ? new Date(completed).getTime() - new Date(call.dispatchDatetime).getTime() : 0;
+  // A close time is only trustworthy if it's meaningfully AFTER dispatch.
+  // Many legacy rows have completed_at == dispatch time (or earlier), which
+  // would show a bogus "closed @" and a ~0 total — hide those entirely.
+  const closedOk = !!completed && totalMs >= 120_000; // ≥ 2 min after dispatch
 
   return (
     <div
@@ -258,8 +262,8 @@ function CallInfoBox({ call, accent }: { call: Call; accent: string }) {
       </div>
 
       <div style={{ display: "grid", gap: 8, padding: "12px 16px 0" }}>
-        {completed && <InfoRow label="Call closed @">{fmtClosed(completed)}</InfoRow>}
-        {completed && totalMs > 0 && <InfoRow label="Total time">{fmtDuration(totalMs)}</InfoRow>}
+        {closedOk && <InfoRow label="Call closed @">{fmtClosed(completed!)}</InfoRow>}
+        {closedOk && <InfoRow label="Total time">{fmtDuration(totalMs)}</InfoRow>}
 
         {pending ? (
           <div style={{ color: "#94a3b8", fontSize: 12.5, fontStyle: "italic", padding: "4px 0" }}>
@@ -293,7 +297,7 @@ function CallInfoBox({ call, accent }: { call: Call; accent: string }) {
       </div>
 
       {/* Total-time qualifier */}
-      {completed && totalMs > 0 && (
+      {closedOk && (
         <div style={{ color: "#64748b", fontSize: 10, lineHeight: 1.45, margin: "10px 16px 0", paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
           Total time spans the first unit dispatched to the incident being cleared in CAD. It reflects all responding agencies
           (Fire, PD, EMS) — not EMS patient-care time.
