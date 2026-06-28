@@ -46,7 +46,7 @@ export default function StatisticsPage() {
   const calls = data?.calls ?? [];
 
   return (
-    <main style={{ maxWidth: 1040, margin: "0 auto", padding: "8px 18px 64px" }}>
+    <main style={{ maxWidth: 1040, margin: "0 auto", padding: "32px 18px 64px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
         <span style={{ height: 1, width: 34, background: "rgba(240,180,41,0.7)" }} />
         <span style={{ color: "#f0b429", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" }}>

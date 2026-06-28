@@ -95,8 +95,9 @@ export default function Nav() {
             />
           </Link>
 
-          {/* Weather ticker */}
-          <div className="flex-1 flex items-center justify-center min-w-0 overflow-hidden">
+          {/* Weather ticker — wrapper must NOT clip; the hover popup drops
+              below the bar. Text truncation is handled inside WeatherTicker. */}
+          <div className="flex-1 flex items-center justify-center min-w-0">
             <WeatherTicker />
           </div>
 
