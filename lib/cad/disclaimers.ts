@@ -14,10 +14,8 @@
  * Worded to be accurate, concise, and limit liability.
  */
 export const PLATFORM_ORIGIN_DISCLAIMER =
-  "This dispatch ticker and its statistics were developed in-house and placed into service in the spring of 2026. " +
-  "Incidents predating the system are reconstructed from existing dispatch records and may not reflect every responding " +
-  "unit or detail; completeness and accuracy improve for all incidents logged going forward. All figures are unofficial, " +
-  "provided for informational purposes only, and subject to revision.";
+  "This ticker was built in-house in spring 2026. Older calls are rebuilt from past dispatch records and may be missing " +
+  "details like which units responded; newer calls are logged in full. All figures are unofficial and may change.";
 
 /**
  * Short per-call notice for the hover info box.
