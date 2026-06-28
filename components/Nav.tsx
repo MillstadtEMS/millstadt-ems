@@ -61,6 +61,7 @@ export default function Nav() {
   const pathname = usePathname();
   const [open, setOpen]               = useState(false);
   const [dispatchFlash, setDispatchFlash] = useState(false);
+  const [menuHover, setMenuHover]     = useState(false);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -121,6 +122,8 @@ export default function Nav() {
           <div className="flex shrink-0 flex-col items-center">
             <button
               onClick={() => setOpen(v => !v)}
+              onMouseEnter={() => setMenuHover(true)}
+              onMouseLeave={() => setMenuHover(false)}
               className="relative flex flex-col items-center outline-none"
               aria-label="Toggle menu"
             >
@@ -128,7 +131,7 @@ export default function Nav() {
               <img
                 src="/images/millstadt-ems/cartoon-ambo.png"
                 alt=""
-                className={open || dispatchFlash ? "ambo-img-active" : ""}
+                className={open || dispatchFlash || menuHover ? "ambo-img-active" : ""}
                 style={{ height: "clamp(30px, 4vw, 44px)", width: "auto", display: "block" }}
               />
               <div className="text-[9px] text-slate-300 uppercase tracking-widest font-black mt-0.5">menu</div>
@@ -258,7 +261,24 @@ function MobileBottomNav({
 interface NWSAlert {
   properties: { event: string; headline: string; description: string; severity: string };
 }
-interface ProcessedAlert { text: string; level: "red" | "yellow" | "green"; full: string; rank: number }
+interface ProcessedAlert { text: string; level: "red" | "yellow" | "green"; rank: number; headline: string; description: string }
+
+/** Split an NWS alert description into its "* WHAT... * WHERE..." sections
+ * so the hover popup can render them as neat labeled blocks. Returns [] when
+ * the text isn't in that bulleted format (caller falls back to raw text). */
+function parseAlertSections(description: string): { label: string; text: string }[] {
+  if (!description) return [];
+  const re = /\*\s*([A-Z][A-Z0-9 /&-]*?)\.\.\.\s*([\s\S]*?)(?=\*\s*[A-Z][A-Z0-9 /&-]*?\.\.\.|$)/g;
+  const out: { label: string; text: string }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(description)) !== null) {
+    const raw = m[1].trim();
+    const label = raw.charAt(0) + raw.slice(1).toLowerCase(); // WHAT → What
+    const text = m[2].replace(/\s+/g, " ").trim();
+    if (text) out.push({ label, text });
+  }
+  return out;
+}
 
 function getAlertLevel(event: string, severity: string, headline = "", description = ""): "red" | "yellow" | "green" {
   const e = event.toLowerCase();
@@ -304,7 +324,7 @@ function WeatherTicker() {
 
   useEffect(() => {
     function processAlerts(raw: NWSAlert[]): ProcessedAlert[] {
-      if (raw.length === 0) return [{ text: "NO ACTIVE WEATHER ALERTS — MILLSTADT, ILLINOIS", level: "green", full: "No active weather alerts for Millstadt, Illinois.", rank: 0 }];
+      if (raw.length === 0) return [{ text: "NO ACTIVE WEATHER ALERTS — MILLSTADT, ILLINOIS", level: "green", rank: 0, headline: "No active weather alerts for Millstadt, Illinois.", description: "" }];
       return raw.map(a => {
         const desc = (a.properties.description ?? "").trim();
         const h = (a.properties.headline + " " + desc).toLowerCase();
@@ -314,9 +334,7 @@ function WeatherTicker() {
         let label = a.properties.event.toUpperCase();
         if (e.includes("warning") && h.includes("tornado emergency")) label = "⚠ TORNADO EMERGENCY";
         else if (e.includes("watch") && (h.includes("particularly dangerous situation") || h.includes("pds"))) label = "⚠ PDS TORNADO WATCH";
-        // Full, untruncated text for the hover popup (original case for readability).
-        const full = desc ? `${a.properties.headline} — ${desc}` : a.properties.headline;
-        return { text: `${label} — ${a.properties.headline.toUpperCase()}`, level, full, rank };
+        return { text: `${label} — ${a.properties.headline.toUpperCase()}`, level, rank, headline: a.properties.headline, description: desc };
       })
       // Most life-threatening first → leads the rotation and tops the list.
       .sort((x, y) => y.rank - x.rank);
@@ -328,7 +346,7 @@ function WeatherTicker() {
         setAlerts(processAlerts(data.features ?? []));
         setIdx(0);
       } catch {
-        setAlerts([{ text: "NO ACTIVE WEATHER ALERTS — MILLSTADT, ILLINOIS", level: "green", full: "No active weather alerts for Millstadt, Illinois.", rank: 0 }]);
+        setAlerts([{ text: "NO ACTIVE WEATHER ALERTS — MILLSTADT, ILLINOIS", level: "green", rank: 0, headline: "No active weather alerts for Millstadt, Illinois.", description: "" }]);
       }
     }
     fetchAlerts();
@@ -366,8 +384,9 @@ function WeatherTicker() {
       onMouseLeave={() => setHover(false)}
       onClick={() => canExpand && setHover(v => !v)}
     >
-      {/* ── Rotating ticker line — unchanged (still clips with ellipsis) ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "0 1rem", minWidth: 0, cursor: canExpand ? "pointer" : "default" }}>
+      {/* ── Rotating ticker line — must stay constrained so the long text
+          truncates with an ellipsis and never spills over the nav buttons. ── */}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "0 1rem", minWidth: 0, cursor: canExpand ? "pointer" : "default" }}>
         <span key={current.level} className="text-[10px] sm:text-[14px]" style={{ color, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: "100%", animation: `weather-pulse-${current.level} 2.5s ease-in-out infinite` }}>
           {current.text}
         </span>
@@ -404,21 +423,41 @@ function WeatherTicker() {
           }}>
             <span style={{ fontSize: 13 }}>⚠</span>
             <span style={{ color: "#cbd5e1", fontSize: 10.5, fontWeight: 900, letterSpacing: "0.14em", textTransform: "uppercase" }}>
-              {realAlerts.length} Active Alert{realAlerts.length === 1 ? "" : "s"} · Most Severe First
+              {realAlerts.length} Active Alert{realAlerts.length === 1 ? "" : "s"}
             </span>
           </div>
-          <div style={{ display: "grid", gap: 11, padding: "12px 16px 0" }}>
-            {realAlerts.map((a, i) => (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "10px 1fr", gap: 10, alignItems: "start" }}>
-                <span style={{ width: 8, height: 8, borderRadius: 999, background: levelColor(a.level), marginTop: 6, boxShadow: `0 0 8px ${levelColor(a.level)}` }} />
-                <span style={{ lineHeight: 1.5 }}>
-                  <span style={{ display: "block", color: levelColor(a.level), fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 2 }}>
-                    {a.text.split(" — ")[0]}
-                  </span>
-                  <span style={{ color: "#cbd5e1", fontSize: 12.5 }}>{a.full}</span>
-                </span>
-              </div>
-            ))}
+          <div style={{ display: "grid", gap: 16, padding: "13px 16px 0" }}>
+            {realAlerts.map((a, i) => {
+              const sections = parseAlertSections(a.description);
+              return (
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "10px 1fr", gap: 10, alignItems: "start", paddingBottom: i < realAlerts.length - 1 ? 14 : 0, borderBottom: i < realAlerts.length - 1 ? "1px solid rgba(255,255,255,0.07)" : "none" }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 999, background: levelColor(a.level), marginTop: 6, boxShadow: `0 0 8px ${levelColor(a.level)}` }} />
+                  <div style={{ minWidth: 0 }}>
+                    {/* Event label */}
+                    <div style={{ color: levelColor(a.level), fontSize: 11.5, fontWeight: 900, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
+                      {a.text.split(" — ")[0]}
+                    </div>
+                    {/* Issued / headline line */}
+                    {a.headline && (
+                      <div style={{ color: "#94a3b8", fontSize: 11.5, lineHeight: 1.5, marginBottom: sections.length ? 8 : 0 }}>{a.headline}</div>
+                    )}
+                    {/* Neat WHAT / WHERE / WHEN / IMPACTS sections */}
+                    {sections.length > 0 ? (
+                      <div style={{ display: "grid", gap: 7 }}>
+                        {sections.map((s, j) => (
+                          <div key={j} style={{ lineHeight: 1.5 }}>
+                            <span style={{ color: "#e2e8f0", fontSize: 10.5, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase" }}>{s.label}</span>
+                            <span style={{ color: "#cbd5e1", fontSize: 12.5 }}> — {s.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : a.description ? (
+                      <div style={{ color: "#cbd5e1", fontSize: 12.5, lineHeight: 1.5 }}>{a.description}</div>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
           </div>
           <div style={{ color: "#5b6675", fontSize: 9.5, lineHeight: 1.5, margin: "11px 16px 0", paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
             Source: National Weather Service (api.weather.gov), zone ILC163. Always follow official guidance and local emergency instructions.

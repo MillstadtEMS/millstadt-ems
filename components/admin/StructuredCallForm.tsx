@@ -26,8 +26,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   FIRE_DISTRICTS,
   POLICE_AGENCIES,
-  DEFAULT_FIRE_DISTRICT,
-  DEFAULT_POLICE_AGENCY,
   UNIT_DISPOSITIONS,
 } from "@/lib/cad/agencies";
 import { DISPOSITION_DISCLAIMER } from "@/lib/cad/disclaimers";
@@ -563,9 +561,9 @@ export default function StructuredCallForm({
             checked={value.fireResponded}
             onChange={(c) => patch({
               fireResponded: c,
-              fireAgencies: c ? (value.fireAgencies.length ? value.fireAgencies : [DEFAULT_FIRE_DISTRICT]) : [],
+              fireAgencies: c ? value.fireAgencies : [],
             })}
-            help="Lists in the info box after EMS and PD. Millstadt Fire is included by default."
+            help="Lists in the info box after EMS and PD. Pick the department(s) below."
           />
           {value.fireResponded && (
             <MultiAgencyPicker
@@ -582,9 +580,9 @@ export default function StructuredCallForm({
             checked={value.policeResponded}
             onChange={(c) => patch({
               policeResponded: c,
-              policeAgencies: c ? (value.policeAgencies.length ? value.policeAgencies : [DEFAULT_POLICE_AGENCY]) : [],
+              policeAgencies: c ? value.policeAgencies : [],
             })}
-            help="Lists in the info box after EMS, before Fire. Millstadt Police is included by default."
+            help="Lists in the info box after EMS, before Fire. Pick the agency(ies) below."
           />
           {value.policeResponded && (
             <MultiAgencyPicker

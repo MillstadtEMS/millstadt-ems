@@ -113,9 +113,6 @@ function timeAgo(d: Date): string {
 
 // ── Hover info box helpers ──────────────────────────────────────────────────
 
-const DEFAULT_FIRE = "Millstadt Fire District";
-const DEFAULT_POLICE = "Millstadt Police";
-
 /** Outline color for the info box, keyed to the responding unit and
  * matching the ticker's per-unit colors. 3935 green, 3925 orange,
  * 3926 blue; mutual-aid amber; otherwise neutral. */
@@ -141,9 +138,9 @@ function unitEntries(call: Call): { label: string; color: string }[] {
   if (call.mutualAidReceived && call.mutualAidReceivedAgency) {
     out.push({ label: call.mutualAidReceivedAgency, color: "#86efac" });
   }
-  const pd = call.policeResponded ? (call.policeAgencies?.length ? call.policeAgencies : [DEFAULT_POLICE]) : [];
+  const pd = call.policeResponded ? (call.policeAgencies?.length ? call.policeAgencies : ["Police"]) : [];
   for (const a of pd) out.push({ label: a, color: "#93c5fd" });
-  const fire = call.fireResponded ? (call.fireAgencies?.length ? call.fireAgencies : [DEFAULT_FIRE]) : [];
+  const fire = call.fireResponded ? (call.fireAgencies?.length ? call.fireAgencies : ["Fire Dept"]) : [];
   for (const a of fire) out.push({ label: a, color: "#fca5a5" });
   return out;
 }
