@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import PeakActivity, { type MonthPeak } from "@/components/PeakActivity";
+import { PLATFORM_ORIGIN_DISCLAIMER } from "@/lib/cad/disclaimers";
 
 const MILLSTADT_UNITS = ["M3925", "M3926", "M3935"] as const;
 const MUTUAL_AID_AGENCIES = [
@@ -390,6 +391,9 @@ export default function CallReportsPage() {
       <section style={{ ...card, marginTop: 14 }}>
         <div style={{ color: "#94a3b8", fontSize: 12, lineHeight: 1.55 }}>
           <strong style={{ color: "white" }}>Disclaimer.</strong> Call category statistics are based on dispatch / ticker information only and may not reflect the final patient care report impression, diagnosis, or billing classification. Categories, formulas, and projections are subject to change as ticker entries are edited or updated.
+        </div>
+        <div style={{ color: "#7c899e", fontSize: 11, lineHeight: 1.55, marginTop: 10 }}>
+          {PLATFORM_ORIGIN_DISCLAIMER}
         </div>
         <div style={{ marginTop: 10, fontFamily: "var(--font-mas-mono), ui-monospace, monospace", fontSize: 11, color: "#94a3b8", display: "grid", gap: 3 }}>
           <div><span style={{ color: "#f0b429" }}>Category %</span>        = category count ÷ total calls (selected period) × 100</div>

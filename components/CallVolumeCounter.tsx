@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { PLATFORM_ORIGIN_DISCLAIMER } from "@/lib/cad/disclaimers";
 
 function ScoreboardDigit({ digit }: { digit: string }) {
   const [current, setCurrent] = useState(digit);
@@ -105,6 +106,12 @@ export default function CallVolumeCounter() {
         style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
       >
         CENCOM 911 dispatch data may contain occasional errors. Actual call volume can vary but by minimal difference. Millstadt EMS makes every effort to monitor and correct the log to reflect accurate information.
+      </p>
+      <p
+        className="text-white/25 text-[8px] mt-1 max-w-xs text-center leading-relaxed"
+        style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
+      >
+        {PLATFORM_ORIGIN_DISCLAIMER}
       </p>
     </div>
   );

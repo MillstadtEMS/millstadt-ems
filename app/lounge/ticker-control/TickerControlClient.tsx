@@ -20,6 +20,13 @@ interface TickerStructured {
   hemsOutcome: string;
   classification: string;
   cardiacAge: string;
+  fireResponded?: boolean;
+  fireAgencies?: string[];
+  policeResponded?: boolean;
+  policeAgencies?: string[];
+  emsMutualAid?: boolean;
+  emsMutualAidAgencies?: string[];
+  unitDispositions?: Record<string, string>;
 }
 
 interface TickerCall {
@@ -58,6 +65,13 @@ function toStructuredValue(s: TickerStructured | undefined): StructuredValue {
     hemsOutcome: outcome,
     classification: (s.classification ?? "") as StructuredValue["classification"],
     cardiacAge: (s.cardiacAge ?? "") as StructuredValue["cardiacAge"],
+    fireResponded: !!s.fireResponded,
+    fireAgencies: Array.isArray(s.fireAgencies) ? s.fireAgencies : [],
+    policeResponded: !!s.policeResponded,
+    policeAgencies: Array.isArray(s.policeAgencies) ? s.policeAgencies : [],
+    emsMutualAid: !!s.emsMutualAid,
+    emsMutualAidAgencies: Array.isArray(s.emsMutualAidAgencies) ? s.emsMutualAidAgencies : [],
+    unitDispositions: (s.unitDispositions && typeof s.unitDispositions === "object" && !Array.isArray(s.unitDispositions)) ? s.unitDispositions : {},
   };
 }
 

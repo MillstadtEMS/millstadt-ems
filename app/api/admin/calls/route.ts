@@ -16,6 +16,7 @@ import {
   MutualAidAgency,
   parseDispatchNature,
 } from "@/lib/cad/structured";
+import { clampFireAgencies, clampPoliceAgencies, clampUnitDispositions } from "@/lib/cad/agencies";
 
 /** Mandatory-capture check for structured saves: unit (unless mutual aid
  * received), a main complaint, and a classification. Returns an error
@@ -45,6 +46,13 @@ interface StructuredPayload {
   hemsOutcome?: string | null;
   classification?: string | null;
   cardiacAge?: string | null;
+  fireResponded?: boolean;
+  fireAgencies?: string[];
+  policeResponded?: boolean;
+  policeAgencies?: string[];
+  emsMutualAid?: boolean;
+  emsMutualAidAgencies?: string[];
+  unitDispositions?: Record<string, string>;
 }
 
 /**
@@ -68,6 +76,11 @@ function normalize(p: StructuredPayload | null | undefined): CallStructured {
     : null;
   const classification: Classification | null = isClassification(p?.classification) ? p!.classification as Classification : null;
   const cardiacAge: CardiacAge | null = p?.cardiacAge === "adult" || p?.cardiacAge === "pediatric" ? p.cardiacAge : null;
+  const fireAgencies = clampFireAgencies(p?.fireAgencies);
+  const policeAgencies = clampPoliceAgencies(p?.policeAgencies);
+  const emsMutualAidAgencies = Array.isArray(p?.emsMutualAidAgencies)
+    ? Array.from(new Set((p!.emsMutualAidAgencies as string[]).filter((a): a is MutualAidAgency => (MUTUAL_AID_AGENCIES as readonly string[]).includes(a))))
+    : [];
   return {
     units: Array.from(new Set(units)),
     category: canonicalCategory(p?.category ?? ""),
@@ -80,6 +93,13 @@ function normalize(p: StructuredPayload | null | undefined): CallStructured {
     hemsOutcome: outcome,
     classification,
     cardiacAge,
+    fireResponded: fireAgencies.length > 0 || p?.fireResponded === true,
+    fireAgencies,
+    policeResponded: policeAgencies.length > 0 || p?.policeResponded === true,
+    policeAgencies,
+    emsMutualAid: emsMutualAidAgencies.length > 0 || p?.emsMutualAid === true,
+    emsMutualAidAgencies,
+    unitDispositions: clampUnitDispositions(p?.unitDispositions, Array.from(new Set(units))),
   };
 }
 
@@ -139,13 +159,19 @@ export async function POST(req: NextRequest) {
        dispatch_nature, source_year, parse_status, completed_at,
        units, category, notes,
        mutual_aid_received, mutual_aid_received_agency, mutual_aid_given, mutual_aid_given_agency,
-       hems_requested, hems_outcome, classification, cardiac_age)
+       hems_requested, hems_outcome, classification, cardiac_age,
+       fire_responded, fire_agencies, police_responded, police_agencies, ems_mutual_aid, ems_mutual_aid_agencies,
+       unit_dispositions)
     VALUES
       (${id}, ${gmailMessageId}, ${eventNumber?.trim() || null}, ${dispatchDatetime},
        ${formattedDate}, ${dispatchTime}, ${dispatchNature}, ${sourceYear}, 'manual', ${completedAt},
        ${JSON.stringify(struct.units)}::jsonb, ${struct.category || null}, ${struct.notes},
        ${struct.mutualAidReceived}, ${struct.mutualAidReceivedAgency}, ${struct.mutualAidGiven}, ${struct.mutualAidGivenAgency},
-       ${struct.hemsRequested}, ${struct.hemsOutcome}, ${struct.classification}, ${struct.cardiacAge})
+       ${struct.hemsRequested}, ${struct.hemsOutcome}, ${struct.classification}, ${struct.cardiacAge},
+       ${struct.fireResponded ?? false}, ${JSON.stringify(struct.fireAgencies ?? [])}::jsonb,
+       ${struct.policeResponded ?? false}, ${JSON.stringify(struct.policeAgencies ?? [])}::jsonb,
+       ${struct.emsMutualAid ?? false}, ${JSON.stringify(struct.emsMutualAidAgencies ?? [])}::jsonb,
+       ${JSON.stringify(struct.unitDispositions ?? {})}::jsonb)
   `;
   return NextResponse.json({ ok: true, id });
 }
@@ -191,7 +217,14 @@ export async function PATCH(req: NextRequest) {
         hems_requested              = ${struct.hemsRequested},
         hems_outcome                = ${struct.hemsOutcome},
         classification              = ${struct.classification},
-        cardiac_age                 = ${struct.cardiacAge}
+        cardiac_age                 = ${struct.cardiacAge},
+        fire_responded              = ${struct.fireResponded ?? false},
+        fire_agencies               = ${JSON.stringify(struct.fireAgencies ?? [])}::jsonb,
+        police_responded            = ${struct.policeResponded ?? false},
+        police_agencies             = ${JSON.stringify(struct.policeAgencies ?? [])}::jsonb,
+        ems_mutual_aid              = ${struct.emsMutualAid ?? false},
+        ems_mutual_aid_agencies     = ${JSON.stringify(struct.emsMutualAidAgencies ?? [])}::jsonb,
+        unit_dispositions           = ${JSON.stringify(struct.unitDispositions ?? {})}::jsonb
       WHERE id = ${id}
     `;
   } else if (typeof dispatchNature === "string") {

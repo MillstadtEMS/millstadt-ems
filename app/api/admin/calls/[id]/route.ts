@@ -31,6 +31,13 @@ interface Row {
   hems_outcome: string | null;
   classification: string | null;
   cardiac_age: string | null;
+  fire_responded: boolean | null;
+  fire_agencies: string[] | null;
+  police_responded: boolean | null;
+  police_agencies: string[] | null;
+  ems_mutual_aid: boolean | null;
+  ems_mutual_aid_agencies: string[] | null;
+  unit_dispositions: Record<string, string> | null;
 }
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -42,7 +49,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     SELECT id, dispatch_date, dispatch_time, dispatch_nature, event_number, completed_at,
            units, category, notes,
            mutual_aid_received, mutual_aid_received_agency, mutual_aid_given, mutual_aid_given_agency,
-           hems_requested, hems_outcome, classification, cardiac_age
+           hems_requested, hems_outcome, classification, cardiac_age,
+           fire_responded, fire_agencies, police_responded, police_agencies,
+           ems_mutual_aid, ems_mutual_aid_agencies, unit_dispositions
     FROM cad_calls
     WHERE id = ${id}
     LIMIT 1
@@ -69,6 +78,13 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       hemsOutcome: r.hems_outcome ?? "",
       classification: r.classification ?? "",
       cardiacAge: r.cardiac_age ?? "",
+      fireResponded: !!r.fire_responded,
+      fireAgencies: Array.isArray(r.fire_agencies) ? r.fire_agencies : [],
+      policeResponded: !!r.police_responded,
+      policeAgencies: Array.isArray(r.police_agencies) ? r.police_agencies : [],
+      emsMutualAid: !!r.ems_mutual_aid,
+      emsMutualAidAgencies: Array.isArray(r.ems_mutual_aid_agencies) ? r.ems_mutual_aid_agencies : [],
+      unitDispositions: (r.unit_dispositions && typeof r.unit_dispositions === "object" && !Array.isArray(r.unit_dispositions)) ? r.unit_dispositions : {},
     },
   });
 }

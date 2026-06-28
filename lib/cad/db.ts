@@ -19,6 +19,22 @@ export interface Call {
   parseStatus: "ok" | "partial";
   completedAt: string | null;
   createdAt: string;
+  // ── Structured fields (surfaced to the public ticker's hover info box).
+  // All optional + safe-defaulted because legacy rows may predate the
+  // structured columns. None of these change the scrolling ticker text. ──
+  units?: string[];
+  category?: string | null;
+  notes?: string | null;
+  classification?: string | null;
+  mutualAidReceived?: boolean;
+  mutualAidReceivedAgency?: string | null;
+  fireResponded?: boolean;
+  fireAgencies?: string[];
+  policeResponded?: boolean;
+  policeAgencies?: string[];
+  emsMutualAid?: boolean;
+  emsMutualAidAgencies?: string[];
+  unitDispositions?: Record<string, string>;
 }
 
 export interface FailedParse {
@@ -97,7 +113,46 @@ function rowToCall(row: Record<string, unknown>): Call {
     createdAt:        row.created_at instanceof Date
       ? row.created_at.toISOString()
       : String(row.created_at),
+    units:                   asStringArray(row.units),
+    category:                row.category != null ? String(row.category) : null,
+    notes:                   row.notes != null ? String(row.notes) : null,
+    classification:          row.classification != null ? String(row.classification) : null,
+    mutualAidReceived:       row.mutual_aid_received === true,
+    mutualAidReceivedAgency: row.mutual_aid_received_agency != null ? String(row.mutual_aid_received_agency) : null,
+    fireResponded:           row.fire_responded === true,
+    fireAgencies:            asStringArray(row.fire_agencies),
+    policeResponded:         row.police_responded === true,
+    policeAgencies:          asStringArray(row.police_agencies),
+    emsMutualAid:            row.ems_mutual_aid === true,
+    emsMutualAidAgencies:    asStringArray(row.ems_mutual_aid_agencies),
+    unitDispositions:        asStringMap(row.unit_dispositions),
   };
+}
+
+/** JSONB {unit: disposition} map; tolerate string/null/junk. */
+function asStringMap(value: unknown): Record<string, string> {
+  let v = value;
+  if (typeof v === "string" && v.trim().startsWith("{")) {
+    try { v = JSON.parse(v); } catch { return {}; }
+  }
+  if (!v || typeof v !== "object" || Array.isArray(v)) return {};
+  const out: Record<string, string> = {};
+  for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+    if (typeof val === "string") out[k] = val;
+  }
+  return out;
+}
+
+/** JSONB columns arrive already-parsed from Neon; tolerate string/null/junk. */
+function asStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string");
+  if (typeof value === "string" && value.trim().startsWith("[")) {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === "string") : [];
+    } catch { return []; }
+  }
+  return [];
 }
 
 /**

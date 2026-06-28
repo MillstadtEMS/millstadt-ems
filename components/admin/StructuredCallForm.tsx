@@ -23,6 +23,14 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  FIRE_DISTRICTS,
+  POLICE_AGENCIES,
+  DEFAULT_FIRE_DISTRICT,
+  DEFAULT_POLICE_AGENCY,
+  UNIT_DISPOSITIONS,
+} from "@/lib/cad/agencies";
+import { DISPOSITION_DISCLAIMER } from "@/lib/cad/disclaimers";
 
 export const MILLSTADT_UNITS = ["M3925", "M3926", "M3935"] as const;
 export type MillstadtUnit = (typeof MILLSTADT_UNITS)[number];
@@ -108,6 +116,16 @@ export interface StructuredValue {
   hemsOutcome: "handoff" | "disregarded" | "";
   classification: Classification | "";
   cardiacAge: "adult" | "pediatric" | "";
+  // Responding-agency capture — shows ONLY in the public hover info box,
+  // never in the scrolling ticker text.
+  fireResponded: boolean;
+  fireAgencies: string[];
+  policeResponded: boolean;
+  policeAgencies: string[];
+  emsMutualAid: boolean;
+  emsMutualAidAgencies: string[];
+  /** One disposition per responding Millstadt unit. */
+  unitDispositions: Record<string, string>;
 }
 
 export const EMPTY_STRUCTURED: StructuredValue = {
@@ -122,6 +140,13 @@ export const EMPTY_STRUCTURED: StructuredValue = {
   hemsOutcome: "",
   classification: "",
   cardiacAge: "",
+  fireResponded: false,
+  fireAgencies: [],
+  policeResponded: false,
+  policeAgencies: [],
+  emsMutualAid: false,
+  emsMutualAidAgencies: [],
+  unitDispositions: {},
 };
 
 /** Pure preview formatter — must stay in sync with the server-side
@@ -268,6 +293,17 @@ export default function StructuredCallForm({
     onChange({ ...value, ...next });
   }
 
+  function toggleInList(list: string[], name: string): string[] {
+    return list.includes(name) ? list.filter((x) => x !== name) : [...list, name];
+  }
+
+  function setDisposition(unit: string, dispo: string) {
+    const next = { ...value.unitDispositions };
+    if (!dispo) delete next[unit];
+    else next[unit] = dispo;
+    patch({ unitDispositions: next });
+  }
+
   function addUnitSlot() {
     const remaining = (MILLSTADT_UNITS as readonly MillstadtUnit[]).find((u) => !value.units.includes(u));
     if (!remaining) return;
@@ -398,6 +434,29 @@ export default function StructuredCallForm({
             <button type="button" onClick={addUnitSlot} style={addBtn}>+ Add unit</button>
           )}
         </div>
+
+        {/* ── Per-unit disposition ─────────────────────────────────────── */}
+        {value.units.length > 0 && (
+          <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+            <label style={fieldLabel}>Unit disposition</label>
+            {value.units.map((u) => (
+              <div key={`dispo-${u}`} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ minWidth: 76 }}><UnitChip unit={u} /></span>
+                <select
+                  value={value.unitDispositions[u] ?? ""}
+                  onChange={(e) => setDisposition(u, e.target.value)}
+                  style={{ ...fieldInput, flex: 1, minHeight: 36 }}
+                >
+                  <option value="">Disposition…</option>
+                  {UNIT_DISPOSITIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+            ))}
+            <div style={{ color: "#64748b", fontSize: 11, lineHeight: 1.45 }}>
+              Use <strong style={{ color: "#94a3b8" }}>Support Only</strong> for a unit that just assisted. {DISPOSITION_DISCLAIMER}
+            </div>
+          </div>
+        )}
       </Section>
 
       {/* ── Mutual aid ────────────────────────────────────────────────── */}
@@ -490,6 +549,68 @@ export default function StructuredCallForm({
             </div>
           </div>
         )}
+      </Section>
+
+      {/* ── Other responding agencies (hover box only) ────────────────── */}
+      <Section
+        title="Other responding agencies"
+        hint="Logged for the public hover info box only — these never appear in the scrolling ticker line."
+      >
+        <div style={{ display: "grid", gap: 10 }}>
+          {/* Fire */}
+          <CheckRow
+            label="Fire Department responded"
+            checked={value.fireResponded}
+            onChange={(c) => patch({
+              fireResponded: c,
+              fireAgencies: c ? (value.fireAgencies.length ? value.fireAgencies : [DEFAULT_FIRE_DISTRICT]) : [],
+            })}
+            help="Lists in the info box after EMS and PD. Millstadt Fire is included by default."
+          />
+          {value.fireResponded && (
+            <MultiAgencyPicker
+              options={FIRE_DISTRICTS as readonly string[]}
+              selected={value.fireAgencies}
+              onToggle={(name) => patch({ fireAgencies: toggleInList(value.fireAgencies, name) })}
+            />
+          )}
+
+          {/* Police */}
+          <CheckRow
+            label="Police / law enforcement responded"
+            checked={value.policeResponded}
+            onChange={(c) => patch({
+              policeResponded: c,
+              policeAgencies: c ? (value.policeAgencies.length ? value.policeAgencies : [DEFAULT_POLICE_AGENCY]) : [],
+            })}
+            help="Lists in the info box after EMS, before Fire. Millstadt Police is included by default."
+          />
+          {value.policeResponded && (
+            <MultiAgencyPicker
+              options={POLICE_AGENCIES as readonly string[]}
+              selected={value.policeAgencies}
+              onToggle={(name) => patch({ policeAgencies: toggleInList(value.policeAgencies, name) })}
+            />
+          )}
+
+          {/* EMS mutual aid TO our scene */}
+          <CheckRow
+            label="EMS mutual aid to our scene"
+            checked={value.emsMutualAid}
+            onChange={(c) => patch({
+              emsMutualAid: c,
+              emsMutualAidAgencies: c ? value.emsMutualAidAgencies : [],
+            })}
+            help="Outside EMS we requested to assist us on this call. Shows in the info box only when present."
+          />
+          {value.emsMutualAid && (
+            <MultiAgencyPicker
+              options={MUTUAL_AID_AGENCIES as readonly string[]}
+              selected={value.emsMutualAidAgencies}
+              onToggle={(name) => patch({ emsMutualAidAgencies: toggleInList(value.emsMutualAidAgencies, name) })}
+            />
+          )}
+        </div>
       </Section>
 
       {/* ── Category ──────────────────────────────────────────────────── */}
@@ -780,6 +901,38 @@ function UnitPicker({
       <option value="">{selected ? "Change…" : "Pick unit…"}</option>
       {options.map((u) => <option key={u} value={u}>{u}</option>)}
     </select>
+  );
+}
+
+function MultiAgencyPicker({
+  options, selected, onToggle,
+}: {
+  options: readonly string[];
+  selected: string[];
+  onToggle: (name: string) => void;
+}) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingLeft: 4 }}>
+      {options.map((name) => {
+        const on = selected.includes(name);
+        return (
+          <button
+            key={name}
+            type="button"
+            onClick={() => onToggle(name)}
+            style={{
+              padding: "6px 11px", borderRadius: 999, cursor: "pointer", fontFamily: "inherit",
+              fontSize: 12, fontWeight: on ? 700 : 600,
+              color: on ? "#06101f" : "#cbd5e1",
+              background: on ? "#f0b429" : "rgba(255,255,255,0.03)",
+              border: `1px solid ${on ? "#f0b429" : "rgba(255,255,255,0.14)"}`,
+            }}
+          >
+            {name}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

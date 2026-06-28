@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { CALL_INFO_DISCLAIMER, PLATFORM_ORIGIN_DISCLAIMER, DISPOSITION_DISCLAIMER } from "@/lib/cad/disclaimers";
 
 interface Call {
   id: string;
@@ -10,6 +11,21 @@ interface Call {
   dispatchDatetime: string;
   sourceYear: number;
   completedAt: string | null;
+  // ── Structured fields for the hover info box (all optional). These do
+  // NOT influence the scrolling ticker text, only the popup. ──
+  units?: string[];
+  category?: string | null;
+  classification?: string | null;
+  notes?: string | null;
+  mutualAidReceived?: boolean;
+  mutualAidReceivedAgency?: string | null;
+  fireResponded?: boolean;
+  fireAgencies?: string[];
+  policeResponded?: boolean;
+  policeAgencies?: string[];
+  emsMutualAid?: boolean;
+  emsMutualAidAgencies?: string[];
+  unitDispositions?: Record<string, string>;
 }
 
 const ACTIVE_MINUTES = 120;
@@ -95,6 +111,204 @@ function timeAgo(d: Date): string {
   return `${days}d ago`;
 }
 
+// ── Hover info box helpers ──────────────────────────────────────────────────
+
+const DEFAULT_FIRE = "Millstadt Fire District";
+const DEFAULT_POLICE = "Millstadt Police";
+
+/** Outline color for the info box, keyed to the responding unit and
+ * matching the ticker's per-unit colors. 3935 green, 3925 orange,
+ * 3926 blue; mutual-aid amber; otherwise neutral. */
+function boxAccent(call: Call): string {
+  const u = call.units ?? [];
+  if (u.some((x) => x.includes("3935"))) return "#34d399";
+  if (u.some((x) => x.includes("3925"))) return "#fb923c";
+  if (u.some((x) => x.includes("3926"))) return "#60a5fa";
+  if (call.mutualAidReceived) return "#f0b429";
+  return "#64748b";
+}
+
+/** EMS / PD / Fire entries for the Units row, in that order, each with a
+ * display color. */
+function unitEntries(call: Call): { label: string; color: string }[] {
+  const out: { label: string; color: string }[] = [];
+  const dispos = call.unitDispositions ?? {};
+  for (const u of call.units ?? []) {
+    const color = u.includes("3935") ? "#34d399" : u.includes("3925") ? "#fb923c" : u.includes("3926") ? "#60a5fa" : "#e2e8f0";
+    const d = dispos[u];
+    out.push({ label: d ? `${u} · ${d}` : u, color });
+  }
+  if (call.mutualAidReceived && call.mutualAidReceivedAgency) {
+    out.push({ label: call.mutualAidReceivedAgency, color: "#86efac" });
+  }
+  const pd = call.policeResponded ? (call.policeAgencies?.length ? call.policeAgencies : [DEFAULT_POLICE]) : [];
+  for (const a of pd) out.push({ label: a, color: "#93c5fd" });
+  const fire = call.fireResponded ? (call.fireAgencies?.length ? call.fireAgencies : [DEFAULT_FIRE]) : [];
+  for (const a of fire) out.push({ label: a, color: "#fca5a5" });
+  return out;
+}
+
+function classificationLabel(c: string | null | undefined): string | null {
+  if (!c) return null;
+  return c.charAt(0).toUpperCase() + c.slice(1);
+}
+
+function isToday(call: Call): boolean {
+  const d = new Date(call.dispatchDatetime);
+  const n = new Date();
+  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+}
+
+/** Does the call carry any structured detail worth showing? */
+function hasInfo(call: Call): boolean {
+  return !!(
+    (call.units && call.units.length) ||
+    call.category ||
+    call.classification ||
+    call.notes ||
+    call.fireResponded ||
+    call.policeResponded ||
+    call.emsMutualAid ||
+    call.mutualAidReceived
+  );
+}
+
+function fmtDuration(ms: number): string {
+  if (ms <= 0) return "—";
+  const min = Math.round(ms / 60000);
+  if (min < 1) return "<1 min";
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
+
+function fmtClosed(iso: string): string {
+  const d = new Date(iso);
+  const t = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const day = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return `${day} · ${t}`;
+}
+
+function StarOfLife({ size = 18 }: { size?: number }) {
+  // Simplified Star of Life — six-spoke EMS emblem.
+  return (
+    <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true">
+      <g fill="#38bdf8">
+        {[0, 60, 120, 180, 240, 300].map((deg) => (
+          <rect key={deg} x="44" y="8" width="12" height="84" rx="6" transform={`rotate(${deg} 50 50)`} />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "92px 1fr", gap: 8, alignItems: "baseline" }}>
+      <span style={{ color: "#7c899e", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{label}</span>
+      <span style={{ color: "#e2e8f0", fontSize: 12.5, fontWeight: 600, lineHeight: 1.4 }}>{children}</span>
+    </div>
+  );
+}
+
+function CallInfoBox({ call, accent }: { call: Call; accent: string }) {
+  const active = isActive(call);
+  const pending = isToday(call) && !hasInfo(call);
+  const entries = unitEntries(call);
+  const cls = classificationLabel(call.classification);
+  const completed = call.completedAt;
+  const totalMs = completed ? new Date(completed).getTime() - new Date(call.dispatchDatetime).getTime() : 0;
+
+  return (
+    <div
+      style={{
+        width: 348, maxWidth: "calc(100vw - 16px)", maxHeight: "70vh", overflowY: "auto",
+        background: "linear-gradient(165deg, rgba(10,22,40,0.985) 0%, rgba(2,9,18,0.985) 60%)",
+        backdropFilter: "blur(10px)",
+        border: "1px solid rgba(255,255,255,0.10)", borderTop: `3px solid ${accent}`,
+        borderRadius: 14, padding: "0 0 13px",
+        boxShadow: `0 20px 55px rgba(0,0,0,0.65), 0 0 0 1px ${accent}22`,
+        fontFamily: "inherit",
+      }}
+    >
+      {/* Header band */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+        padding: "11px 16px 10px",
+        background: `linear-gradient(90deg, ${accent}24 0%, transparent 78%)`,
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
+      }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {active ? (
+            <>
+              <span className="ct-sol-pulse" style={{ display: "inline-flex" }}><StarOfLife size={20} /></span>
+              <span style={{ color: "#38bdf8", fontSize: 11, fontWeight: 900, letterSpacing: "0.14em", textTransform: "uppercase" }}>On A Run</span>
+            </>
+          ) : (
+            <>
+              <span style={{ width: 8, height: 8, borderRadius: 999, background: accent, boxShadow: `0 0 8px ${accent}` }} />
+              <span style={{ color: accent, fontSize: 11, fontWeight: 900, letterSpacing: "0.14em", textTransform: "uppercase" }}>Call Detail</span>
+            </>
+          )}
+        </span>
+        <span style={{ color: "#8b98ac", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.03em", whiteSpace: "nowrap", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace" }}>
+          {call.dispatchDate} · {call.dispatchTime}
+        </span>
+      </div>
+
+      <div style={{ display: "grid", gap: 8, padding: "12px 16px 0" }}>
+        {completed && <InfoRow label="Call closed @">{fmtClosed(completed)}</InfoRow>}
+        {completed && totalMs > 0 && <InfoRow label="Total time">{fmtDuration(totalMs)}</InfoRow>}
+
+        {pending ? (
+          <div style={{ color: "#94a3b8", fontSize: 12.5, fontStyle: "italic", padding: "4px 0" }}>
+            Call information pending.
+          </div>
+        ) : (
+          <>
+            {entries.length > 0 && (
+              <InfoRow label="Units">
+                <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 5 }}>
+                  {entries.map((e, i) => (
+                    <span key={`${e.label}-${i}`} style={{
+                      display: "inline-flex", padding: "2px 7px", borderRadius: 6,
+                      background: "rgba(255,255,255,0.05)", border: `1px solid ${e.color}55`,
+                      color: e.color, fontSize: 11, fontWeight: 700,
+                    }}>{e.label}</span>
+                  ))}
+                </span>
+              </InfoRow>
+            )}
+
+            {call.emsMutualAid && (call.emsMutualAidAgencies?.length ?? 0) > 0 && (
+              <InfoRow label="EMS Mutual Aid">{call.emsMutualAidAgencies!.join(", ")}</InfoRow>
+            )}
+
+            {call.category && <InfoRow label="Complaint">{call.category}</InfoRow>}
+            {cls && <InfoRow label="Category">{cls}</InfoRow>}
+            {call.notes && <InfoRow label="Notes">{call.notes}</InfoRow>}
+          </>
+        )}
+      </div>
+
+      {/* Total-time qualifier */}
+      {completed && totalMs > 0 && (
+        <div style={{ color: "#64748b", fontSize: 10, lineHeight: 1.45, margin: "10px 16px 0", paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+          Total time spans the first unit dispatched to the incident being cleared in CAD. It reflects all responding agencies
+          (Fire, PD, EMS) — not EMS patient-care time.
+        </div>
+      )}
+
+      {/* Disclaimers */}
+      <div style={{ color: "#5b6675", fontSize: 9.5, lineHeight: 1.5, margin: "10px 16px 0", paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+        {CALL_INFO_DISCLAIMER} {PLATFORM_ORIGIN_DISCLAIMER}
+        {Object.keys(call.unitDispositions ?? {}).length > 0 && <> {DISPOSITION_DISCLAIMER}</>}
+      </div>
+    </div>
+  );
+}
+
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function CallTicker() {
@@ -104,9 +318,35 @@ export default function CallTicker() {
   const [expanded, setExpanded]   = useState(false);
   const [loading, setLoading]     = useState(true);
   const [now, setNow]           = useState<Date>(new Date());
+  const [popup, setPopup]       = useState<{ call: Call; rect: DOMRect } | null>(null);
+  const [pinned, setPinned]     = useState(false);
   const wrapperRef              = useRef<HTMLDivElement>(null);
   const scrollRef               = useRef<HTMLDivElement>(null);
+  const popupRef                = useRef<HTMLDivElement>(null);
   const prevIdsRef              = useRef<Set<string>>(new Set());
+
+  // Open/close helpers for the hover info box.
+  const hoverIn = useCallback((call: Call, el: HTMLElement) => {
+    if (!pinned) setPopup({ call, rect: el.getBoundingClientRect() });
+  }, [pinned]);
+  const hoverOut = useCallback(() => { if (!pinned) setPopup(null); }, [pinned]);
+  const pinInfo = useCallback((call: Call, el: HTMLElement) => {
+    setPopup({ call, rect: el.getBoundingClientRect() });
+    setPinned(true);
+  }, []);
+  const closeInfo = useCallback(() => { setPopup(null); setPinned(false); }, []);
+
+  // Dismiss the pinned popup on outside click / Escape.
+  useEffect(() => {
+    if (!popup) return;
+    const onDown = (e: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(e.target as Node)) closeInfo();
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeInfo(); };
+    if (pinned) document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [popup, pinned, closeInfo]);
 
   const fetchLatest = useCallback(async () => {
     try {
@@ -203,7 +443,7 @@ export default function CallTicker() {
             </div>
 
             {/* Scrollable call list with ambulance scrollbar */}
-            <div ref={scrollRef} className="ticker-log-scroll flex-1 overflow-y-auto min-h-0">
+            <div ref={scrollRef} className="ticker-log-scroll flex-1 overflow-y-auto min-h-0" onScroll={closeInfo}>
               <div className="divide-y divide-white/5">
                 {/* Live API calls */}
                 {allCalls.map((call) => {
@@ -212,7 +452,13 @@ export default function CallTicker() {
                   const unitMatch = call.dispatchNature.match(/^\[([^\]]+)\]/);
                   const unitNum = unitMatch ? unitMatch[1] : "";
                   return (
-                    <div key={call.id} className="flex items-center gap-3 py-2.5 px-1">
+                    <div
+                      key={call.id}
+                      className="flex items-center gap-3 py-2.5 px-1 cursor-pointer hover:bg-white/[0.03] rounded"
+                      onMouseEnter={(e) => hoverIn(call, e.currentTarget)}
+                      onMouseLeave={hoverOut}
+                      onClick={(e) => { e.stopPropagation(); pinInfo(call, e.currentTarget); }}
+                    >
                       {active && <span className="w-2 h-2 rounded-full shrink-0 bg-emerald-400 animate-pulse" />}
                       <span className="text-white/70 text-sm tabular-nums w-24 shrink-0">{call.dispatchDate}</span>
                       <span className="text-white/70 text-sm tabular-nums w-14 shrink-0 font-mono">{call.dispatchTime}</span>
@@ -258,13 +504,23 @@ export default function CallTicker() {
           {!expanded && (
             <div className="flex-1 min-w-0 overflow-hidden ct-callinfo">
               {onARun && activeCall ? (
-                <div className="flex items-center gap-1.5 min-w-0">
+                <div
+                  className="flex items-center gap-1.5 min-w-0 cursor-pointer"
+                  onMouseEnter={(e) => hoverIn(activeCall, e.currentTarget)}
+                  onMouseLeave={hoverOut}
+                  onClick={(e) => { e.stopPropagation(); pinInfo(activeCall, e.currentTarget); }}
+                >
                   <span className="text-emerald-300 font-black text-[11px] tracking-widest uppercase whitespace-nowrap">Responding</span>
                   <span className="text-white/20 shrink-0">&middot;</span>
                   <span className="text-white font-bold text-[11px] truncate">{activeCall.dispatchNature}</span>
                 </div>
               ) : lastRun ? (
-                <div className="flex items-center gap-1.5 min-w-0">
+                <div
+                  className="flex items-center gap-1.5 min-w-0 cursor-pointer"
+                  onMouseEnter={(e) => hoverIn(lastRun, e.currentTarget)}
+                  onMouseLeave={hoverOut}
+                  onClick={(e) => { e.stopPropagation(); pinInfo(lastRun, e.currentTarget); }}
+                >
                   <span className="text-slate-500 text-[10px] whitespace-nowrap shrink-0">Last</span>
                   <span className="text-white font-bold tabular-nums font-mono text-[10px] whitespace-nowrap shrink-0">{shortDate(lastRun.dispatchDate)} {lastRun.dispatchTime}</span>
                   <span className="text-white/20 shrink-0">&middot;</span>
@@ -307,6 +563,25 @@ export default function CallTicker() {
         </div>
       </div>
 
+      {/* ── Hover / tap info box ── */}
+      {popup && (() => {
+        const boxW = 340;
+        const margin = 8;
+        const r = popup.rect;
+        let left = Math.min(r.left, (typeof window !== "undefined" ? window.innerWidth : 1200) - boxW - margin);
+        left = Math.max(margin, left);
+        const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+        const placeAbove = r.bottom > vh * 0.55;
+        const pos: React.CSSProperties = placeAbove
+          ? { position: "fixed", left, bottom: Math.max(margin, vh - r.top + 6), zIndex: 80 }
+          : { position: "fixed", left, top: r.bottom + 6, zIndex: 80 };
+        return (
+          <div ref={popupRef} style={pos} onMouseEnter={() => { if (!pinned) setPopup(popup); }}>
+            <CallInfoBox call={popup.call} accent={boxAccent(popup.call)} />
+          </div>
+        );
+      })()}
+
       {/* ── Disclaimer bar — only visible when log is expanded ── */}
       {expanded && (
         <div className="bg-[#010710] border-b border-white/5 py-2 text-center select-none">
@@ -315,6 +590,9 @@ export default function CallTicker() {
           </span>
           <span className="text-red-500/70 text-[10px] tracking-wide block mt-1">
             CENCOM 911 dispatch data may contain occasional errors. Actual call volume can vary but by minimal difference. Millstadt EMS makes every effort to monitor and correct the log to reflect accurate information.
+          </span>
+          <span className="text-slate-500 text-[9.5px] leading-snug block mt-1 max-w-3xl mx-auto px-3">
+            {PLATFORM_ORIGIN_DISCLAIMER}
           </span>
         </div>
       )}
@@ -331,6 +609,13 @@ export default function CallTicker() {
 // adds the moon phase and nudges the type up for readability.
 const CALL_TICKER_CSS = `
 .ct-dt, .ct-dt-sep, .ct-moon, .ct-moon-sep { display: none; }
+
+/* Pulsing Star of Life for an active ("On A Run") call in the info box. */
+.ct-sol-pulse { animation: ct-sol-pulse 1.6s ease-in-out infinite; transform-origin: center; }
+@keyframes ct-sol-pulse {
+  0%, 100% { transform: scale(1);    opacity: 1;   filter: drop-shadow(0 0 0 rgba(56,189,248,0)); }
+  50%      { transform: scale(1.15); opacity: 0.85; filter: drop-shadow(0 0 6px rgba(56,189,248,0.7)); }
+}
 
 /* Phone held sideways — bring in the date + time. */
 @media (orientation: landscape) and (min-width: 560px) {

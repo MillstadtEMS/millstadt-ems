@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { onHeroPopoverChange, openHeroPopover } from "./heroPopoverChannel";
+import { PLATFORM_ORIGIN_DISCLAIMER } from "@/lib/cad/disclaimers";
 
 interface Cat { name: string; count: number; pct: number }
 
@@ -220,6 +221,7 @@ export default function TopCallCategories() {
             <p style={{ margin: "0 0 6px" }}>
               <strong style={{ color: "#94a3b8" }}>Disclaimer.</strong> Call category statistics are based on dispatch / ticker information only and may not reflect the final patient care report impression, diagnosis, or billing classification. Categories are subject to change as ticker entries are edited or updated.
             </p>
+            <p style={{ margin: "0 0 6px" }}>{PLATFORM_ORIGIN_DISCLAIMER}</p>
             <div style={{
               fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
               fontSize: 10, color: "#475569",

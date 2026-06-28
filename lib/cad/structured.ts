@@ -212,6 +212,19 @@ export interface CallStructured {
   hemsOutcome: HemsOutcome | null;
   classification: Classification | null;
   cardiacAge: CardiacAge | null;
+  // ── Responding-agency capture (hover info box only — never affects the
+  // scrolling dispatch_nature text). Optional so existing callers and the
+  // text parser don't need to supply them. ──
+  fireResponded?: boolean;
+  fireAgencies?: string[];
+  policeResponded?: boolean;
+  policeAgencies?: string[];
+  emsMutualAid?: boolean;            // EMS help we requested to OUR scene
+  emsMutualAidAgencies?: string[];
+  /** One disposition per responding Millstadt unit, e.g.
+   * { "M3935": "Transport", "M3925": "Support Only" }. Tracked from
+   * 2026-06-28 forward. */
+  unitDispositions?: Record<string, string>;
 }
 
 /**
@@ -320,6 +333,16 @@ export async function ensureCadStructuredSchema(): Promise<void> {
   await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS hems_outcome                TEXT`;
   await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS classification              TEXT`;
   await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS cardiac_age                 TEXT`;
+  // Responding-agency capture for the hover info box (never shown in the
+  // scrolling ticker text). All nullable / defaulted — additive only.
+  await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS fire_responded              BOOLEAN NOT NULL DEFAULT FALSE`;
+  await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS fire_agencies               JSONB`;
+  await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS police_responded            BOOLEAN NOT NULL DEFAULT FALSE`;
+  await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS police_agencies             JSONB`;
+  await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS ems_mutual_aid              BOOLEAN NOT NULL DEFAULT FALSE`;
+  await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS ems_mutual_aid_agencies     JSONB`;
+  // Per-unit disposition map (tracked from 2026-06-28 forward).
+  await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS unit_dispositions           JSONB`;
 
   await db`CREATE INDEX IF NOT EXISTS cad_calls_category_idx ON cad_calls (category)`;
   await db`CREATE INDEX IF NOT EXISTS cad_calls_year_month_idx ON cad_calls (source_year, dispatch_datetime)`;
