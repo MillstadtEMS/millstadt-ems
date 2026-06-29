@@ -82,8 +82,11 @@ export default function Nav() {
 
       {/* ── Nav bar ── */}
       <div className="mems-nav-bar bg-[#020912] border-b border-white/8" style={{ overflow: "visible" }}>
-        <div className="wrap flex items-center justify-between gap-4 py-3" style={{ overflow: "visible" }}>
+        <div className="wrap flex items-center gap-4 py-3" style={{ overflow: "visible" }}>
 
+          {/* Left group (flex-1) — balances the right group so the weather
+              ticker in the middle sits at the TRUE center of the bar. */}
+          <div className="flex-1 flex items-center justify-start min-w-0">
           {/* Logo */}
           <Link href="/" className="shrink-0 group">
             <img
@@ -94,13 +97,16 @@ export default function Nav() {
               className="h-14 w-auto object-contain group-hover:opacity-80 transition-opacity"
             />
           </Link>
+          </div>
 
-          {/* Weather ticker — wrapper must NOT clip; the hover popup drops
-              below the bar. Text truncation is handled inside WeatherTicker. */}
+          {/* Center group (flex-1) — weather ticker. Wrapper must NOT clip;
+              the hover popup drops below the bar. Truncation handled inside. */}
           <div className="flex-1 flex items-center justify-center min-w-0">
             <WeatherTicker />
           </div>
 
+          {/* Right group (flex-1) — mirrors the left group's width. */}
+          <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
           {/* Employee Lounge button (left of menu) */}
           <Link
             href="/lounge"
@@ -137,6 +143,7 @@ export default function Nav() {
               />
               <div className="text-[9px] text-slate-300 uppercase tracking-widest font-black mt-0.5">menu</div>
             </button>
+          </div>
           </div>
 
         </div>
