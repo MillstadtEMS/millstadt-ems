@@ -114,7 +114,9 @@ export default function StatisticsPage() {
 function CollapsibleCard({ title, pct, accent, sub, children }: { title: string; pct: number; accent: string; sub?: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <Card>
+    // Collapsed cards keep their place in the 3-column grid; an OPEN card spans
+    // the full grid width so its call list is wide and uniform for long calls.
+    <section style={{ ...card, gridColumn: open ? "1 / -1" : undefined }}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -131,7 +133,7 @@ function CollapsibleCard({ title, pct, accent, sub, children }: { title: string;
         </div>
       </button>
       {open && <div style={{ marginTop: 10 }}>{children}</div>}
-    </Card>
+    </section>
   );
 }
 
@@ -145,9 +147,6 @@ function GroupCard({ title, group, accent, total, calls, classification }: { tit
   );
 }
 
-function Card({ children }: { children: React.ReactNode }) {
-  return <section style={card}>{children}</section>;
-}
 function Row({ label, count, pct, accent, calls }: { label: string; count: number; pct: number; accent: string; calls: PubCall[] }) {
   const [show, setShow] = useState(false);
   const hasCalls = calls.length > 0;
@@ -196,5 +195,5 @@ const tileRow: React.CSSProperties = {
   display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 16,
 };
 const grid: React.CSSProperties = {
-  display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))", gap: 14, alignItems: "start",
+  display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))", gap: 14, alignItems: "start",
 };
