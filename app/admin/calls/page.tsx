@@ -7,6 +7,7 @@ import StructuredCallForm, {
   previewDispatchNature,
   type StructuredValue,
 } from "@/components/admin/StructuredCallForm";
+import { DEFAULT_HOVER_SETTINGS, HOVER_FIELDS, type HoverFieldSettings } from "@/lib/cad/hoverSettings";
 
 interface Call {
   id: string; dispatchDate: string; dispatchTime: string;
@@ -359,6 +360,9 @@ export default function CallsAdmin() {
         </div>
       </div>
 
+      {/* Public hover-box field visibility */}
+      <HoverFieldsPanel />
+
       {/* Search across the whole year's log */}
       {!loading && calls.length > 0 && (
         <div className="mb-6">
@@ -593,6 +597,73 @@ function ForcePollButton({ onAfter }: { onAfter: () => void }) {
         {busy ? "Polling…" : "Poll Gmail now"}
       </button>
       {msg && <span className="text-slate-300 text-xs leading-relaxed">{msg}</span>}
+    </div>
+  );
+}
+
+// ── Public hover-box field visibility ────────────────────────────────────
+function HoverFieldsPanel() {
+  const [cfg, setCfg] = useState<HoverFieldSettings | null>(null);
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/calls/hover-settings", { cache: "no-store" })
+      .then(r => r.ok ? r.json() : null)
+      .then(s => setCfg(s ? { ...DEFAULT_HOVER_SETTINGS, ...s } : { ...DEFAULT_HOVER_SETTINGS }))
+      .catch(() => setCfg({ ...DEFAULT_HOVER_SETTINGS }));
+  }, []);
+
+  function toggle(k: keyof HoverFieldSettings) {
+    setCfg(c => (c ? { ...c, [k]: !c[k] } : c));
+    setSaved(false);
+  }
+  async function save() {
+    if (!cfg) return;
+    setSaving(true);
+    try {
+      await fetch("/api/admin/calls/hover-settings", {
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cfg),
+      });
+      setSaved(true);
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <div className="bg-white/[0.03] border border-white/10 rounded-2xl mb-6 sm:mb-8 overflow-hidden">
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left">
+        <span>
+          <span className="block text-white font-semibold text-sm">Public hover box — visible fields</span>
+          <span className="block text-slate-400 text-xs mt-0.5">Choose what shows when someone taps a call. Date &amp; disclaimers always show.</span>
+        </span>
+        <svg viewBox="0 0 24 24" className={`w-4 h-4 fill-current text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden><path d="M7 10l5 5 5-5H7z" /></svg>
+      </button>
+      {open && cfg && (
+        <div className="px-4 pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {HOVER_FIELDS.map(f => {
+              const on = cfg[f.key];
+              return (
+                <button key={f.key} type="button" onClick={() => toggle(f.key)}
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left text-sm transition-colors ${on ? "bg-[#f0b429]/10 border-[#f0b429]/35 text-white" : "bg-white/[0.02] border-white/10 text-slate-400"}`}>
+                  <span className={`w-4 h-4 rounded shrink-0 flex items-center justify-center border ${on ? "bg-[#f0b429] border-[#f0b429]" : "border-white/25"}`}>
+                    {on && <svg viewBox="0 0 24 24" className="w-3 h-3 fill-[#06101f]"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>}
+                  </span>
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-3 mt-3">
+            <button onClick={save} disabled={saving}
+              className="bg-[#f0b429] text-[#06101f] font-semibold text-sm px-5 py-2.5 rounded-xl disabled:opacity-60">
+              {saving ? "Saving…" : "Save visibility"}
+            </button>
+            {saved && <span className="text-emerald-400 text-xs font-semibold">Saved — live within 30s ✓</span>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

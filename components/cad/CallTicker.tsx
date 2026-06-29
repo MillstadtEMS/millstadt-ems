@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { CALL_INFO_DISCLAIMER, PLATFORM_ORIGIN_DISCLAIMER, DISPOSITION_DISCLAIMER } from "@/lib/cad/disclaimers";
+import { DEFAULT_HOVER_SETTINGS, type HoverFieldSettings } from "@/lib/cad/hoverSettings";
 
 interface Call {
   id: string;
@@ -127,12 +128,12 @@ function boxAccent(call: Call): string {
 
 /** EMS / PD / Fire entries for the Units row, in that order, each with a
  * display color. */
-function unitEntries(call: Call): { label: string; color: string }[] {
+function unitEntries(call: Call, showDisposition = true): { label: string; color: string }[] {
   const out: { label: string; color: string }[] = [];
   const dispos = call.unitDispositions ?? {};
   for (const u of call.units ?? []) {
     const color = u.includes("3935") ? "#34d399" : u.includes("3925") ? "#fb923c" : u.includes("3926") ? "#60a5fa" : "#e2e8f0";
-    const d = dispos[u];
+    const d = showDisposition ? dispos[u] : undefined;
     out.push({ label: d ? `${u} · ${d}` : u, color });
   }
   if (call.mutualAidReceived && call.mutualAidReceivedAgency) {
@@ -209,10 +210,10 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-function CallInfoBox({ call, accent }: { call: Call; accent: string }) {
+function CallInfoBox({ call, accent, cfg }: { call: Call; accent: string; cfg: HoverFieldSettings }) {
   const active = isActive(call);
   const pending = isToday(call) && !hasInfo(call);
-  const entries = unitEntries(call);
+  const entries = unitEntries(call, cfg.disposition);
   const cls = classificationLabel(call.classification);
   const completed = call.completedAt;
   const totalMs = completed ? new Date(completed).getTime() - new Date(call.dispatchDatetime).getTime() : 0;
@@ -259,8 +260,8 @@ function CallInfoBox({ call, accent }: { call: Call; accent: string }) {
       </div>
 
       <div style={{ display: "grid", gap: 8, padding: "12px 16px 0" }}>
-        {closedOk && <InfoRow label="Closed">{fmtClosed(completed!)}</InfoRow>}
-        {closedOk && <InfoRow label="Total time">{fmtDuration(totalMs)}</InfoRow>}
+        {cfg.closed && closedOk && <InfoRow label="Closed">{fmtClosed(completed!)}</InfoRow>}
+        {cfg.totalTime && closedOk && <InfoRow label="Total time">{fmtDuration(totalMs)}</InfoRow>}
 
         {pending ? (
           <div style={{ color: "#94a3b8", fontSize: 12.5, fontStyle: "italic", padding: "4px 0" }}>
@@ -268,7 +269,7 @@ function CallInfoBox({ call, accent }: { call: Call; accent: string }) {
           </div>
         ) : (
           <>
-            {entries.length > 0 && (
+            {cfg.units && entries.length > 0 && (
               <InfoRow label="Units">
                 <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 5 }}>
                   {entries.map((e, i) => (
@@ -282,19 +283,19 @@ function CallInfoBox({ call, accent }: { call: Call; accent: string }) {
               </InfoRow>
             )}
 
-            {call.emsMutualAid && (call.emsMutualAidAgencies?.length ?? 0) > 0 && (
+            {cfg.emsMutualAid && call.emsMutualAid && (call.emsMutualAidAgencies?.length ?? 0) > 0 && (
               <InfoRow label="EMS Mutual Aid">{call.emsMutualAidAgencies!.join(", ")}</InfoRow>
             )}
 
-            {call.category && <InfoRow label="Complaint">{call.category}</InfoRow>}
-            {cls && <InfoRow label="Category">{cls}</InfoRow>}
-            {call.notes && <InfoRow label="Notes">{call.notes}</InfoRow>}
+            {cfg.complaint && call.category && <InfoRow label="Complaint">{call.category}</InfoRow>}
+            {cfg.category && cls && <InfoRow label="Category">{cls}</InfoRow>}
+            {cfg.notes && call.notes && <InfoRow label="Notes">{call.notes}</InfoRow>}
           </>
         )}
       </div>
 
       {/* Total-time qualifier */}
-      {closedOk && (
+      {cfg.totalTime && closedOk && (
         <div style={{ color: "#64748b", fontSize: 10, lineHeight: 1.45, margin: "10px 16px 0", paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
           Total time spans the first unit dispatched to the incident being cleared in CAD. It reflects all responding agencies
           (Fire, PD, EMS) — not EMS patient-care time.
@@ -304,7 +305,7 @@ function CallInfoBox({ call, accent }: { call: Call; accent: string }) {
       {/* Disclaimers */}
       <div style={{ color: "#5b6675", fontSize: 9.5, lineHeight: 1.5, margin: "10px 16px 0", paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
         {CALL_INFO_DISCLAIMER} {PLATFORM_ORIGIN_DISCLAIMER}
-        {Object.keys(call.unitDispositions ?? {}).length > 0 && <> {DISPOSITION_DISCLAIMER}</>}
+        {cfg.disposition && Object.keys(call.unitDispositions ?? {}).length > 0 && <> {DISPOSITION_DISCLAIMER}</>}
       </div>
     </div>
   );
@@ -321,6 +322,7 @@ export default function CallTicker() {
   const [now, setNow]           = useState<Date>(new Date());
   const [popup, setPopup]       = useState<{ call: Call; rect: DOMRect } | null>(null);
   const [pinned, setPinned]     = useState(false);
+  const [hoverCfg, setHoverCfg] = useState<HoverFieldSettings>(DEFAULT_HOVER_SETTINGS);
   const wrapperRef              = useRef<HTMLDivElement>(null);
   const scrollRef               = useRef<HTMLDivElement>(null);
   const popupRef                = useRef<HTMLDivElement>(null);
@@ -381,6 +383,10 @@ export default function CallTicker() {
   useEffect(() => {
     fetchLatest();
     fetchAll();
+    fetch("/api/cad/hover-settings", { cache: "no-store" })
+      .then(r => r.ok ? r.json() : null)
+      .then(s => { if (s) setHoverCfg({ ...DEFAULT_HOVER_SETTINGS, ...s }); })
+      .catch(() => { /* keep defaults */ });
     const pollId = setInterval(fetchLatest, POLL_INTERVAL);
     return () => clearInterval(pollId);
   }, [fetchLatest, fetchAll]);
@@ -578,7 +584,7 @@ export default function CallTicker() {
           : { position: "fixed", left, top: r.bottom + 6, zIndex: 80 };
         return (
           <div ref={popupRef} style={pos} onMouseEnter={() => { if (!pinned) setPopup(popup); }}>
-            <CallInfoBox call={popup.call} accent={boxAccent(popup.call)} />
+            <CallInfoBox call={popup.call} accent={boxAccent(popup.call)} cfg={hoverCfg} />
           </div>
         );
       })()}
