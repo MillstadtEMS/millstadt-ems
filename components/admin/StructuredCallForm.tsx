@@ -382,7 +382,15 @@ export default function StructuredCallForm({
   }
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
+    <div style={{ display: "grid", gap: 13 }}>
+      {/* ── Reassurance banner ─────────────────────────────────────────── */}
+      <div style={{ background: "linear-gradient(90deg, rgba(45,212,191,0.12), transparent 80%)", border: "1px solid rgba(45,212,191,0.30)", borderRadius: 12, padding: "11px 14px" }}>
+        <div style={{ color: "#5eead4", fontSize: 12.5, fontWeight: 800, letterSpacing: "0.01em" }}>✓ Safe to edit — nothing goes public until you press Save</div>
+        <div style={{ color: "#94a3b8", fontSize: 11.5, marginTop: 3, lineHeight: 1.5 }}>
+          Only the one-line <strong style={{ color: "#cbd5e1" }}>Live preview</strong> at the bottom shows on the scrolling ticker. Everything else fills the tap-to-view detail box — so add as much as you like.
+        </div>
+      </div>
+
       {/* ── Classification (required) ─────────────────────────────────── */}
       <Section title="Classification — required" hint="Medical and Trauma drive the reports. Uncategorized (fire, standby, assist) and Cancelled group together.">
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -847,12 +855,19 @@ export default function StructuredCallForm({
 
 // ── Sub-components ────────────────────────────────────────────────────
 
-function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+function Section({ title, hint, children, accent }: { title: string; hint?: string; children: React.ReactNode; accent?: string }) {
+  const a = accent ?? "#f0b429";
   return (
-    <section>
-      <div style={{ marginBottom: 8 }}>
-        <div style={{ color: "#cbd5e1", fontSize: 12.5, fontWeight: 600, letterSpacing: "-0.005em" }}>{title}</div>
-        {hint && <div style={{ color: "#7c899e", fontSize: 11.5, marginTop: 2, lineHeight: 1.45 }}>{hint}</div>}
+    <section style={{
+      background: "rgba(255,255,255,0.025)",
+      border: "1px solid rgba(255,255,255,0.09)",
+      borderLeft: `3px solid ${a}`,
+      borderRadius: 12,
+      padding: "13px 15px",
+    }}>
+      <div style={{ marginBottom: 11 }}>
+        <div style={{ color: a, fontSize: 12, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase" }}>{title}</div>
+        {hint && <div style={{ color: "#8b98ac", fontSize: 11.5, marginTop: 3, lineHeight: 1.5 }}>{hint}</div>}
       </div>
       {children}
     </section>
@@ -1011,7 +1026,8 @@ const fieldLabel: React.CSSProperties = {
 const fieldInput: React.CSSProperties = {
   width: "100%",
   background: "#0a1422", border: "1px solid rgba(255,255,255,0.12)",
-  borderRadius: 10, padding: "9px 11px", color: "white", fontSize: 13,
+  // 16px keeps iOS from auto-zooming when a field is focused on mobile.
+  borderRadius: 10, padding: "11px 12px", color: "white", fontSize: 16,
   fontFamily: "inherit",
 };
 const primaryBtn: React.CSSProperties = {
@@ -1071,8 +1087,8 @@ const suggestChip: React.CSSProperties = {
 };
 const previewBox: React.CSSProperties = {
   fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace",
-  background: "#040d1a", border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 10, padding: "12px 14px",
-  color: "white", fontSize: 13.5, fontWeight: 700,
-  whiteSpace: "pre-wrap", minHeight: 42,
+  background: "#020912", border: "1px solid rgba(240,180,41,0.35)",
+  borderRadius: 10, padding: "13px 15px",
+  color: "#f0b429", fontSize: 14, fontWeight: 700,
+  whiteSpace: "pre-wrap", minHeight: 44,
 };
