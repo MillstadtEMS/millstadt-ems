@@ -258,7 +258,7 @@ export async function PATCH(req: NextRequest) {
     const cv = (body as { completedAt?: string | null }).completedAt;
     if (cv === null || cv === "") {
       await db`UPDATE cad_calls SET completed_at = NULL WHERE id = ${id}`;
-    } else {
+    } else if (typeof cv === "string") {
       const d = new Date(cv);
       if (!Number.isNaN(d.getTime())) {
         await db`UPDATE cad_calls SET completed_at = ${d.toISOString()} WHERE id = ${id}`;
