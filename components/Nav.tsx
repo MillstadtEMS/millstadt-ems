@@ -315,6 +315,16 @@ function WeatherTicker() {
   const [alerts, setAlerts] = useState<ProcessedAlert[]>([]);
   const [idx, setIdx]       = useState(0);
   const [hover, setHover]   = useState(false);
+  const [compact, setCompact] = useState(false);
+
+  // On phones/tablets the full alert headline is too wide and spills over the
+  // logos — collapse it to a short "tap for details" chip instead.
+  useEffect(() => {
+    const check = () => setCompact(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     if (alerts.length <= 1) return;
@@ -369,13 +379,19 @@ function WeatherTicker() {
     return () => { clearInterval(id); window.removeEventListener("weather-test-scenario", handleTest); };
   }, []);
 
-  const current = alerts[idx] ?? { text: "NO ACTIVE WEATHER ALERTS — MILLSTADT, ILLINOIS", level: "green" as const, full: "No active weather alerts for Millstadt, Illinois.", rank: 0 };
+  const current = alerts[idx] ?? { text: "NO ACTIVE WEATHER ALERTS — MILLSTADT, ILLINOIS", level: "green" as const, rank: 0, headline: "No active weather alerts for Millstadt, Illinois.", description: "" };
   const color   = current.level === "red" ? "#f87171" : current.level === "yellow" ? "#facc15" : "#34d399";
   const levelColor = (lvl: "red" | "yellow" | "green") => lvl === "red" ? "#f87171" : lvl === "yellow" ? "#facc15" : "#34d399";
 
   const realAlerts = alerts.filter(a => a.rank > 0);
   const extra = Math.max(0, realAlerts.length - 1);
   const canExpand = realAlerts.length >= 1;
+
+  // Phone/tablet: collapse the long headline to a short tappable chip so it
+  // never spills over the logos. Desktop keeps the full rotating headline.
+  const displayText = compact
+    ? (canExpand ? `⚠ ${realAlerts.length} Alert${realAlerts.length > 1 ? "s" : ""} · Tap for more` : "No Weather Alerts")
+    : current.text;
 
   return (
     <div
@@ -388,12 +404,13 @@ function WeatherTicker() {
           truncates with an ellipsis and never spills over the nav buttons. ── */}
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "0 1rem", minWidth: 0, cursor: canExpand ? "pointer" : "default" }}>
         <span key={current.level} className="text-[10px] sm:text-[14px]" style={{ color, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: "100%", animation: `weather-pulse-${current.level} 2.5s ease-in-out infinite` }}>
-          {current.text}
+          {displayText}
         </span>
       </div>
 
-      {/* ── "+N more" badge when multiple alerts are active ── */}
-      {extra > 0 && (
+      {/* ── "+N more" badge when multiple alerts are active (desktop only;
+          compact mode already says "N Alerts · Tap for more") ── */}
+      {extra > 0 && !compact && (
         <span
           className="text-[8px] sm:text-[9px]"
           style={{ flexShrink: 0, fontWeight: 800, color: "#cbd5e1", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.22)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: "0.05em" }}
