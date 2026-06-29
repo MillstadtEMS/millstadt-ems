@@ -54,6 +54,8 @@ export default function CommercialClubPage() {
         </div>
       </section>
 
+      <SectionDivider />
+
       <section className="py-14 bg-[#040d1a]">
         <div className="wrap max-w-3xl">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-10">

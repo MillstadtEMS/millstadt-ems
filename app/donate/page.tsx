@@ -52,7 +52,6 @@ export default async function DonatePage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
       <SectionDivider />
 
       {/* Venmo Donation */}
@@ -111,8 +110,7 @@ export default async function DonatePage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <SectionDivider />
+      <SectionDivider variant="fadeDown" />
 
       {/* What Donations Fund */}
       <section className="bg-[#071428]" style={{ paddingTop: 24, paddingBottom: 24 }}>
@@ -171,8 +169,7 @@ export default async function DonatePage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <SectionDivider />
+      <SectionDivider variant="fadeUp" />
 
       {/* CTA */}
       <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import SectionDivider from "@/components/SectionDivider";
 
 export const metadata: Metadata = {
   title: "Traffic",
@@ -58,8 +59,7 @@ export default function TrafficPage() {
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-16 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* Maps grid */}
       <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>

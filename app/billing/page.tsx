@@ -32,7 +32,6 @@ export default async function BillingPage({
         description="Pay your bill securely online, request a run number, or contact us with questions about your account."
       />
 
-      {/* ── VOID ── */}
       <SectionDivider />
 
       {/* Main Pay CTA */}

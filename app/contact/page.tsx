@@ -68,7 +68,6 @@ export default async function ContactPage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
       <SectionDivider />
 
       {/* Main Contact Info */}
@@ -159,8 +158,7 @@ export default async function ContactPage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-16 bg-gradient-to-b from-[#040d1a] to-[#071428]" />
+      <SectionDivider variant="fadeDown" />
 
       {/* Local Emergency Contacts */}
       <section className="bg-[#071428]" style={{ paddingBottom: 24 }}>
@@ -190,8 +188,7 @@ export default async function ContactPage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-20 bg-gradient-to-b from-[#071428] to-[#040d1a]" />
+      <SectionDivider variant="fadeUp" />
 
       {/* Embed */}
       <EmbedSection />

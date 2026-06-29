@@ -261,7 +261,6 @@ export default async function CommunityEducationPage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
       <SectionDivider />
 
       {/* Outreach Section */}
@@ -302,7 +301,6 @@ export default async function CommunityEducationPage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
       <SectionDivider variant="fadeDown" />
 
       {/* Interactive Tools */}
@@ -350,8 +348,7 @@ export default async function CommunityEducationPage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-16 bg-[#071428]" />
+      <SectionDivider />
 
       {/* Safety Topics */}
       <section className="bg-[#071428]" style={{ paddingTop: 24, paddingBottom: 24 }}>
@@ -403,7 +400,6 @@ export default async function CommunityEducationPage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
       <SectionDivider variant="fadeUp" />
 
       {/* Photo Strip */}
@@ -422,7 +418,6 @@ export default async function CommunityEducationPage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
       <SectionDivider variant="fadeDown" />
 
       {/* CTA */}

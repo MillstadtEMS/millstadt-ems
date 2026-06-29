@@ -90,6 +90,8 @@ export default function SeniorCenterPage() {
         </div>
       </section>
 
+      <SectionDivider />
+
       {/* ── Documents ── */}
       <section className="py-16 bg-[#040d1a]">
         <div className="wrap">

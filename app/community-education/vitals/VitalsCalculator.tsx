@@ -435,6 +435,8 @@ export default function VitalsCalculator() {
         </div>
       </section>
 
+      <SectionDivider />
+
       {/* BP Reference Table */}
       <section className="py-20 bg-[#040d1a]">
         <div className="wrap">
@@ -488,6 +490,8 @@ export default function VitalsCalculator() {
           </div>
         </div>
       </section>
+
+      <SectionDivider />
 
       {/* Disclaimer footer */}
       <section className="bg-[#040d1a]" style={{ paddingTop: 24, paddingBottom: 24 }}>

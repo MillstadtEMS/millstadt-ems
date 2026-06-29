@@ -40,7 +40,6 @@ export default function EventsPage() {
         </div>
       </section>
 
-      {/* ── VOID ── */}
       <SectionDivider />
 
       {/* Calendar */}

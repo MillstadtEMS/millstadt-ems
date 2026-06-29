@@ -103,8 +103,7 @@ export default async function MedicalControlPage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-20 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* Education — full width */}
       <section className="pb-20 bg-[#040d1a]">
@@ -133,8 +132,7 @@ export default async function MedicalControlPage({
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-20 bg-[#040d1a]" />
+      <SectionDivider />
 
       {/* Current Roles — full width */}
       <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>

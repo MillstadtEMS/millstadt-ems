@@ -326,7 +326,6 @@ export default function StrokeToolPage() {
         </div>
       </section>
 
-      {/* ── VOID ── */}
       <SectionDivider />
 
       {/* Quick Reference Bar */}
@@ -347,7 +346,6 @@ export default function StrokeToolPage() {
         </div>
       </section>
 
-      {/* ── VOID ── */}
       <SectionDivider />
 
       {/* Step-by-step assessments */}
@@ -400,7 +398,6 @@ export default function StrokeToolPage() {
         </div>
       </section>
 
-      {/* ── VOID ── */}
       <SectionDivider variant="fadeDown" />
 
       {/* Key Facts */}

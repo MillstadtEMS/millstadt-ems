@@ -30,7 +30,6 @@ export default function MoviesPage() {
         </div>
       </section>
 
-      {/* ── VOID ── */}
       <SectionDivider />
 
       {/* Video Embed */}
@@ -48,7 +47,6 @@ export default function MoviesPage() {
         </div>
       </section>
 
-      {/* ── VOID ── */}
       <SectionDivider />
 
       {/* Watch on Tubi */}
@@ -69,8 +67,7 @@ export default function MoviesPage() {
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-16 bg-[#040d1a]" />
+      <SectionDivider variant="fadeDown" />
 
       {/* Synopsis */}
       <section className="bg-[#071428]" style={{ paddingTop: 24, paddingBottom: 24 }}>
@@ -119,8 +116,7 @@ export default function MoviesPage() {
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <SectionDivider />
+      <SectionDivider variant="fadeUp" />
 
       {/* Why It Matters */}
       <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>

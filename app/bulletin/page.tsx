@@ -32,6 +32,8 @@ export default function BulletinPage() {
         </div>
       </section>
 
+      <SectionDivider />
+
       {/* Posts */}
       <section className="py-12 bg-[#040d1a]">
         <div className="wrap max-w-3xl">

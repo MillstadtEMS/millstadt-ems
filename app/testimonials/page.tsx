@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getApproved } from "@/lib/testimonials";
 import SubmitForm from "./SubmitForm";
 import EmptyState from "./EmptyState";
+import SectionDivider from "@/components/SectionDivider";
 
 export const metadata: Metadata = {
   title: "Testimonials",
@@ -38,6 +39,8 @@ export default async function TestimonialsPage() {
           <p className="text-slate-400 text-xl">Real stories from the people we serve in Millstadt.</p>
         </div>
       </section>
+
+      <SectionDivider />
 
       {/* Testimonials area */}
       <section className="bg-[#040d1a]" style={{ paddingTop: 24, paddingBottom: 24 }}>
@@ -87,6 +90,8 @@ export default async function TestimonialsPage() {
           </div>
         </div>
       </section>
+
+      <SectionDivider variant="fadeDown" />
 
       {/* Submit form */}
       <section className="bg-[#071428] border-t border-white/5" style={{ paddingTop: 24, paddingBottom: 24 }}>

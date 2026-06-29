@@ -64,7 +64,6 @@ export default function RunNumberPage() {
         </div>
       </section>
 
-      {/* ── VOID ── */}
       <SectionDivider />
 
       {/* Form */}

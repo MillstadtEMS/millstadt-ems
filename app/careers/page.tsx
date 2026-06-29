@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getContent } from "@/lib/db";
+import SectionDivider from "@/components/SectionDivider";
 import { PublicMetric, PublicPageHero } from "@/components/site/PublicChrome";
 
 export const dynamic = "force-dynamic";
@@ -234,6 +235,8 @@ export default async function CareersPage({
           </div>
         </div>
       </section>
+
+      <SectionDivider variant="fadeDown" />
 
       {/* Bottom CTA */}
       <section className="bg-[#071428] border-t border-white/5" style={{ paddingTop: 24, paddingBottom: 24 }}>

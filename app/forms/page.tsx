@@ -103,8 +103,7 @@ export default function FormsPage() {
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <SectionDivider />
+      <SectionDivider variant="fadeDown" />
 
       <section className="py-16 bg-[#071428] border-t border-white/5">
         <div className="wrap">

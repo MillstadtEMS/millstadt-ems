@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import WeatherClient from "./WeatherClient";
+import SectionDivider from "@/components/SectionDivider";
 
 export const metadata: Metadata = {
   title: "Weather",
@@ -28,8 +29,7 @@ export default function WeatherPage() {
         </div>
       </section>
 
-      {/* ── VOID ── */}
-      <div className="h-16 bg-[#040d1a]" />
+      <SectionDivider />
 
       <WeatherClient />
 

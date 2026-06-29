@@ -96,7 +96,7 @@ export default async function LeadershipPage({
       {resolvedLeaders.map((leader, index) => (
         <div key={leader.name}>
           {index > 0 && (
-            <SectionDivider variant="fadeDown" />
+            <SectionDivider variant={index % 2 === 1 ? "fadeDown" : "fadeUp"} />
           )}
 
           <section className={`${index % 2 === 0 ? "bg-[#040d1a]" : "bg-[#071428]"}`} style={{ paddingTop: 24, paddingBottom: 24 }}>
