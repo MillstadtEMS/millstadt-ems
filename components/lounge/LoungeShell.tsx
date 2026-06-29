@@ -590,6 +590,12 @@ function SidebarBody({
 }) {
   const crewItems = items.filter((n) => !n.adminOnly);
   const adminItems = items.filter((n) => n.adminOnly);
+  // Admin work now lives in its OWN area: on any /admin route the sidebar
+  // shows ONLY the admin sections (+ a "Back to Lounge" button); on the
+  // lounge it shows ONLY crew sections (+ an "Admin Console" button for
+  // admins). This keeps the two contexts from piling up into one long,
+  // confusing list.
+  const adminMode = me.isAdmin && pathname.startsWith("/admin");
 
   return (
     <>
@@ -609,9 +615,9 @@ function SidebarBody({
         </div>
         <div style={{ lineHeight: 1.1, textAlign: "center" }}>
           <div className="mas-mono" style={{ color: "#f0b429", fontSize: 10, fontWeight: 600, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-            Employee Lounge
+            {adminMode ? "Admin Console" : "Employee Lounge"}
           </div>
-          <div className="mas-display" style={{ color: "white", fontWeight: 700, fontSize: 17, marginTop: 5, letterSpacing: "-0.015em" }}>Virtual Breakroom</div>
+          <div className="mas-display" style={{ color: "white", fontWeight: 700, fontSize: 17, marginTop: 5, letterSpacing: "-0.015em" }}>{adminMode ? "Command Center" : "Virtual Breakroom"}</div>
         </div>
       </div>
 
@@ -622,15 +628,16 @@ function SidebarBody({
 
       {mobile && <ViewModeToggle />}
 
-      {/* Admins see the Ops Inbox on the wall's right rail now (see
-          components/lounge/OpsInboxCard.tsx) — leaving SidebarPulse
-          here for non-admins so the crew "alerts" mini-card still
-          works in the sidebar. */}
+      {/* Switch between the lounge and the dedicated admin console (admins
+          only) — the one button that crosses between the two areas. */}
+      {me.isAdmin && <ModeSwitchButton adminMode={adminMode} onNavigate={onNavigate} />}
+
+      {/* Crew "alerts" mini-card for non-admins; admins use the wall Ops Inbox. */}
       {!me.isAdmin && <SidebarPulse isAdmin={me.isAdmin} badges={badges ?? EMPTY_BADGES} onNavigate={onNavigate} />}
 
       <nav style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 9 }}>
-        {CREW_NAV_SECTIONS.map((section) => {
-          const sectionItems = pickNavItems(crewItems, section.hrefs);
+        {(adminMode ? ADMIN_NAV_SECTIONS : CREW_NAV_SECTIONS).map((section) => {
+          const sectionItems = pickNavItems(adminMode ? adminItems : crewItems, section.hrefs);
           if (sectionItems.length === 0) return null;
           return (
             <NavSection
@@ -643,19 +650,36 @@ function SidebarBody({
             />
           );
         })}
-
-        {/* Collapsible Admin Tools group */}
-        {adminItems.length > 0 && (
-          <AdminToolsGroup
-            items={adminItems}
-            pathname={pathname}
-            onNavigate={onNavigate}
-            badges={badges}
-          />
-        )}
       </nav>
 
     </>
+  );
+}
+
+/** The single button that crosses between the lounge and the admin console.
+ * In the lounge it opens the admin area; in the admin area it returns. */
+function ModeSwitchButton({ adminMode, onNavigate }: { adminMode: boolean; onNavigate?: () => void }) {
+  const href = adminMode ? "/lounge" : "/admin";
+  const label = adminMode ? "Back to Lounge" : "Admin Console";
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      style={{
+        display: "flex", alignItems: "center", gap: 8, marginTop: 12,
+        padding: "10px 12px", borderRadius: 10,
+        background: adminMode ? "rgba(148,163,184,0.10)" : "rgba(240,180,41,0.12)",
+        border: `1px solid ${adminMode ? "rgba(148,163,184,0.28)" : "rgba(240,180,41,0.34)"}`,
+        color: adminMode ? "#cbd5e1" : "#f0b429",
+        fontWeight: 700, fontSize: 12.5, letterSpacing: "0.04em",
+        textDecoration: "none", textTransform: "uppercase",
+        fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
+      }}
+    >
+      <span style={{ fontSize: 14, lineHeight: 1 }}>{adminMode ? "←" : "⚙"}</span>
+      <span style={{ flex: 1 }}>{label}</span>
+      {!adminMode && <span style={{ fontSize: 14, lineHeight: 1 }}>→</span>}
+    </Link>
   );
 }
 
@@ -1341,89 +1365,6 @@ function UnreadDot({ corner, count }: { corner?: boolean; count?: number }) {
     );
   }
   return <UnreadPill count={count ?? 1} />;
-}
-
-function AdminToolsGroup({
-  items, pathname, onNavigate, badges,
-}: {
-  items: NavItem[];
-  pathname: string;
-  onNavigate?: () => void;
-  badges?: ShellBadges;
-}) {
-  const anyActive = items.some((n) => isActive(pathname, n));
-  const adminBadge = (badges?.submissions ?? 0)
-    + (badges?.formRequests ?? 0)
-    + (badges?.profileRequests ?? 0);
-  // Expand the Admin Tools group whenever the user is actually on
-  // an admin route, and collapse it the moment they navigate out.
-  const [open, setOpen] = useState<boolean>(anyActive);
-  useEffect(() => {
-    setOpen(anyActive);
-  }, [anyActive]);
-
-  return (
-    <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 2 }}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          padding: "10px 12px",
-          borderRadius: 12,
-          background: "transparent",
-          border: "1px solid rgba(255,255,255,0.06)",
-          color: anyActive ? "#c4b5fd" : "#a78bfa",
-          fontWeight: 800,
-          fontSize: 13,
-          letterSpacing: "0.16em",
-          textTransform: "uppercase",
-          cursor: "pointer",
-          fontFamily: "inherit",
-          width: "100%",
-          justifyContent: "space-between",
-        }}
-      >
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-          <span aria-hidden style={{
-            width: 30, height: 30, borderRadius: 8,
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
-            background: "rgba(167,139,250,0.10)",
-            border: "1px solid rgba(167,139,250,0.25)",
-            fontSize: 16,
-          }}>
-            <LoungeIcon name="toolbox" size={17} />
-          </span>
-          Admin Tools
-        </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-          {!open && adminBadge > 0 && <UnreadPill count={adminBadge} />}
-          <span aria-hidden style={{ fontSize: 11, color: "#94a3b8" }}>{open ? "▾" : "▸"}</span>
-        </span>
-      </button>
-      {open && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8, paddingLeft: 10, borderLeft: "1px solid rgba(167,139,250,0.20)" }}>
-          {ADMIN_NAV_SECTIONS.map((section) => {
-            const sectionItems = pickNavItems(items, section.hrefs);
-            if (sectionItems.length === 0) return null;
-            return (
-              <NavSection
-                key={section.title}
-                title={section.title}
-                items={sectionItems}
-                pathname={pathname}
-                onNavigate={onNavigate}
-                badges={badges}
-              />
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
 }
 
 function SignOutButton({ compact }: { compact?: boolean } = {}) {
