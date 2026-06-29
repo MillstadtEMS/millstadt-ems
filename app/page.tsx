@@ -241,12 +241,15 @@ export default async function Home({
             style={{ padding: 18, gap: 20 }}
             className="group grid rounded-2xl border border-white/8 bg-[#071428] shadow-xl shadow-black/20 transition hover:-translate-y-0.5 hover:border-[#f0b429]/50 hover:bg-[#0c1e3d] focus:outline-none focus:ring-2 focus:ring-[#f0b429] focus:ring-offset-2 focus:ring-offset-[#040d1a] md:grid-cols-[auto_1fr_auto] md:items-center"
           >
-            {/* Clean icon tile in the same blue/yellow language as the action
-                cards above (replaces the old pixelated logo thumbnail). */}
-            <div className="mx-auto flex h-20 w-20 min-w-[5rem] shrink-0 items-center justify-center self-center rounded-2xl border border-[#2563eb]/25 bg-[#1a3a6e]/70 text-[#f0b429] transition-all duration-200 group-hover:border-[#2563eb]/60 group-hover:bg-[#1a3a6e] md:mx-0">
-              <svg viewBox="0 0 24 24" className="h-9 w-9 fill-current">
-                <path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10c1.38 0 2.5-1.12 2.5-2.5 0-.61-.23-1.2-.64-1.67-.08-.1-.13-.21-.13-.33 0-.28.22-.5.5-.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 8 6.5 8 8 8.67 8 9.5 7.33 11 6.5 11zm3-4C8.67 7 8 6.33 8 5.5S8.67 4 9.5 4s1.5.67 1.5 1.5S10.33 7 9.5 7zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 4 14.5 4s1.5.67 1.5 1.5S15.33 7 14.5 7zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 8 17.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
-              </svg>
+            {/* Millstadt EMS Kids Club logo — the service's own artwork. */}
+            <div className="relative mx-auto h-24 w-24 min-w-[6rem] shrink-0 self-center overflow-hidden rounded-2xl border border-[#f0b429]/40 bg-white transition-all duration-200 group-hover:border-[#f0b429]/70 md:mx-0 md:h-28 md:w-28 md:min-w-[7rem]">
+              <Image
+                src="/kids-club/coloring/kids-club-logo.png"
+                alt="Millstadt EMS Kids Club"
+                fill
+                sizes="112px"
+                className="object-contain p-1.5"
+              />
             </div>
             <div className="text-center md:text-left">
               <div className="text-xs font-black uppercase tracking-[0.22em] text-[#f0b429]">

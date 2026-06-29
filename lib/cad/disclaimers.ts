@@ -20,16 +20,6 @@ export const PLATFORM_ORIGIN_DISCLAIMER =
   "makes no warranty and disclaims liability for reliance on this information. In an emergency, call 911.";
 
 /**
- * Short per-call notice for the hover info box. Attorney-style and
- * comprehensive despite its length: the entry is unofficial, may be edited
- * or incomplete, and may not be relied upon for any consequential purpose.
- */
-export const CALL_INFO_DISCLAIMER =
-  "This entry is unofficial and provided for general information only. It is derived from dispatch data, may be edited or " +
-  "summarized, and may be incomplete, delayed, or inaccurate as to any detail. It is not an official record and may not be " +
-  "relied upon for any legal, medical, insurance, or emergency purpose. Subject to change or correction without notice.";
-
-/**
  * Per-unit disposition tracking start date. Statistics derived from
  * dispositions only count incidents from this date forward.
  */

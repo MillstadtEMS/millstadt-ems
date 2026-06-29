@@ -101,44 +101,43 @@ export default function Nav() {
             <WeatherTicker />
           </div>
 
-          {/* Employee Lounge button (left of menu) — matched pair with the
-              menu button: same container, height, label + hover treatment. */}
+          {/* Employee Lounge button (left of menu) */}
           <Link
             href="/lounge"
             aria-label="Employee Lounge"
-            className="group shrink-0 flex flex-col items-center justify-center rounded-xl border border-white/8 bg-white/[0.03] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#f0b429]/40 hover:bg-white/[0.06]"
-            style={{ padding: "4px 12px 5px", marginRight: 8 }}
+            className="lounge-hover-expand shrink-0 flex flex-col items-center group relative"
+            style={{ marginRight: 6 }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/lounge/lounge-button.png"
               alt=""
-              className="transition-transform duration-200 group-hover:scale-105"
-              style={{ height: "clamp(34px, 4.4vw, 46px)", width: "auto", display: "block" }}
+              className="lounge-hover-expand-img"
+              style={{ height: "clamp(36px, 4.6vw, 52px)", width: "auto", display: "block", transition: "transform 0.22s cubic-bezier(0.22,1.2,0.36,1), filter 0.22s" }}
             />
-            <div className="text-[9px] text-slate-300 group-hover:text-[#f0b429] uppercase tracking-widest font-black mt-1 transition-colors">Lounge</div>
+            <div className="text-[9px] text-[#f0b429] uppercase tracking-widest font-black mt-0.5">Lounge</div>
           </Link>
 
-          {/* Ambulance menu button — matched container/height/label with the
-              Lounge button so the two read as a deliberate premium pair. */}
-          <button
-            onClick={() => setOpen(v => !v)}
-            className="ambo-menu-btn group shrink-0 flex flex-col items-center justify-center rounded-xl border border-white/8 bg-white/[0.03] outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-[#f0b429]/40 hover:bg-white/[0.06]"
-            style={{ padding: "4px 12px 5px" }}
-            aria-label="Toggle menu"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {/* Lights animate while the menu is open or a dispatch flashes.
-                The desktop hover glow is CSS-only (.ambo-menu-btn:hover under
-                @media hover:hover) so it can't get stuck on after a touch. */}
-            <img
-              src="/images/millstadt-ems/cartoon-ambo.png"
-              alt=""
-              className={`ambo-menu-img ${open || dispatchFlash ? "ambo-img-active" : ""}`}
-              style={{ height: "clamp(34px, 4.4vw, 46px)", width: "auto", display: "block" }}
-            />
-            <div className="text-[9px] text-slate-300 group-hover:text-[#f0b429] uppercase tracking-widest font-black mt-1 transition-colors">Menu</div>
-          </button>
+          {/* Ambulance menu button */}
+          <div className="flex shrink-0 flex-col items-center">
+            <button
+              onClick={() => setOpen(v => !v)}
+              className="ambo-menu-btn relative flex flex-col items-center outline-none"
+              aria-label="Toggle menu"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {/* Lights animate while the menu is open or a dispatch flashes.
+                  Desktop hover glow is CSS-only (.ambo-menu-btn:hover under
+                  @media hover:hover) so they can't stick on after a touch. */}
+              <img
+                src="/images/millstadt-ems/cartoon-ambo.png"
+                alt=""
+                className={`ambo-menu-img ${open || dispatchFlash ? "ambo-img-active" : ""}`}
+                style={{ height: "clamp(30px, 4vw, 44px)", width: "auto", display: "block" }}
+              />
+              <div className="text-[9px] text-slate-300 uppercase tracking-widest font-black mt-0.5">menu</div>
+            </button>
+          </div>
 
         </div>
       </div>

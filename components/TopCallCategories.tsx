@@ -219,9 +219,8 @@ export default function TopCallCategories() {
             color: "#64748b", fontSize: 10.5, lineHeight: 1.5,
           }}>
             <p style={{ margin: "0 0 6px" }}>
-              <strong style={{ color: "#94a3b8" }}>Disclaimer.</strong> Call category statistics are based on dispatch / ticker information only and may not reflect the final patient care report impression, diagnosis, or billing classification. Categories are subject to change as ticker entries are edited or updated.
+              <strong style={{ color: "#94a3b8" }}>Disclaimer.</strong> {PLATFORM_ORIGIN_DISCLAIMER}
             </p>
-            <p style={{ margin: "0 0 6px" }}>{PLATFORM_ORIGIN_DISCLAIMER}</p>
             <div style={{
               fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
               fontSize: 10, color: "#475569",

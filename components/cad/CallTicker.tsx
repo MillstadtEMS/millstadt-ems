@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { CALL_INFO_DISCLAIMER, PLATFORM_ORIGIN_DISCLAIMER, DISPOSITION_DISCLAIMER } from "@/lib/cad/disclaimers";
+import { PLATFORM_ORIGIN_DISCLAIMER, DISPOSITION_DISCLAIMER } from "@/lib/cad/disclaimers";
 import { DEFAULT_HOVER_SETTINGS, type HoverFieldSettings } from "@/lib/cad/hoverSettings";
 
 interface Call {
@@ -306,7 +306,7 @@ function CallInfoBox({ call, accent, cfg }: { call: Call; accent: string; cfg: H
 
       {/* Disclaimers */}
       <div style={{ color: "#5b6675", fontSize: 9.5, lineHeight: 1.5, margin: "10px 16px 0", paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-        {CALL_INFO_DISCLAIMER} {PLATFORM_ORIGIN_DISCLAIMER}
+        {PLATFORM_ORIGIN_DISCLAIMER}
         {cfg.disposition && Object.keys(call.unitDispositions ?? {}).length > 0 && <> {DISPOSITION_DISCLAIMER}</>}
       </div>
     </div>

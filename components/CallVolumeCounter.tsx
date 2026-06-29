@@ -120,7 +120,7 @@ export default function CallVolumeCounter() {
           className="text-white/45 text-[10px] mt-2 max-w-md text-center leading-relaxed"
           style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
         >
-          CENCOM 911 dispatch data may contain occasional errors; actual call volume can vary by a minimal amount. {PLATFORM_ORIGIN_DISCLAIMER}
+          {PLATFORM_ORIGIN_DISCLAIMER}
         </p>
       )}
     </div>
