@@ -216,9 +216,9 @@ function StarOfLife({ size = 18 }: { size?: number }) {
 
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "minmax(96px, max-content) 1fr", gap: 10, alignItems: "baseline" }}>
-      <span style={{ color: "#7c899e", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{label}</span>
-      <span style={{ color: "#e2e8f0", fontSize: 12.5, fontWeight: 600, lineHeight: 1.4 }}>{children}</span>
+    <div style={{ display: "grid", gridTemplateColumns: "minmax(120px, max-content) 1fr", gap: 16, alignItems: "baseline" }}>
+      <span style={{ color: "#7c899e", fontSize: 13, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{label}</span>
+      <span style={{ color: "#e2e8f0", fontSize: 16, fontWeight: 600, lineHeight: 1.45 }}>{children}</span>
     </div>
   );
 }
@@ -238,7 +238,7 @@ function CallInfoBox({ call, accent, cfg }: { call: Call; accent: string; cfg: H
   return (
     <div
       style={{
-        width: 348, maxWidth: "calc(100vw - 16px)", maxHeight: "70vh", overflowY: "auto",
+        width: "100%", maxWidth: "100%", maxHeight: "70vh", overflowY: "auto",
         background: "linear-gradient(165deg, rgba(10,22,40,0.985) 0%, rgba(2,9,18,0.985) 60%)",
         backdropFilter: "blur(10px)",
         border: "1px solid rgba(255,255,255,0.10)", borderTop: `3px solid ${accent}`,
@@ -250,7 +250,7 @@ function CallInfoBox({ call, accent, cfg }: { call: Call; accent: string; cfg: H
       {/* Header band */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
-        padding: "11px 16px 10px",
+        padding: "14px 20px 12px",
         background: `linear-gradient(90deg, ${accent}24 0%, transparent 78%)`,
         borderBottom: "1px solid rgba(255,255,255,0.08)",
       }}>
@@ -258,21 +258,21 @@ function CallInfoBox({ call, accent, cfg }: { call: Call; accent: string; cfg: H
           {active ? (
             <>
               <span className="ct-sol-pulse" style={{ display: "inline-flex" }}><StarOfLife size={20} /></span>
-              <span style={{ color: "#38bdf8", fontSize: 11, fontWeight: 900, letterSpacing: "0.14em", textTransform: "uppercase" }}>On A Run</span>
+              <span style={{ color: "#38bdf8", fontSize: 13.5, fontWeight: 900, letterSpacing: "0.14em", textTransform: "uppercase" }}>On A Run</span>
             </>
           ) : (
             <>
               <span style={{ width: 8, height: 8, borderRadius: 999, background: accent, boxShadow: `0 0 8px ${accent}` }} />
-              <span style={{ color: accent, fontSize: 11, fontWeight: 900, letterSpacing: "0.14em", textTransform: "uppercase" }}>Call Detail</span>
+              <span style={{ color: accent, fontSize: 13.5, fontWeight: 900, letterSpacing: "0.14em", textTransform: "uppercase" }}>Call Detail</span>
             </>
           )}
         </span>
-        <span style={{ color: "#8b98ac", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.03em", whiteSpace: "nowrap", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace" }}>
+        <span style={{ color: "#8b98ac", fontSize: 13, fontWeight: 700, letterSpacing: "0.03em", whiteSpace: "nowrap", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace" }}>
           {call.dispatchDate} · {call.dispatchTime}
         </span>
       </div>
 
-      <div style={{ display: "grid", gap: 8, padding: "12px 16px 0" }}>
+      <div style={{ display: "grid", gap: 11, padding: "15px 20px 0" }}>
         {cfg.closed && closedOk && <InfoRow label="Closed">{fmtClosed(completed!)}</InfoRow>}
         {cfg.totalTime && closedOk && <InfoRow label="Total time">{fmtDuration(totalMs)}</InfoRow>}
 
@@ -291,17 +291,27 @@ function CallInfoBox({ call, accent, cfg }: { call: Call; accent: string; cfg: H
                 <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 5 }}>
                   {entries.map((e, i) => (
                     <span key={`${e.label}-${i}`} style={{
-                      display: "inline-flex", padding: "2px 7px", borderRadius: 6,
+                      display: "inline-flex", padding: "3px 10px", borderRadius: 7,
                       background: "rgba(255,255,255,0.05)", border: `1px solid ${e.color}55`,
-                      color: e.color, fontSize: 11, fontWeight: 700,
+                      color: e.color, fontSize: 13.5, fontWeight: 700,
                     }}>{e.label}</span>
                   ))}
                 </span>
               </InfoRow>
             )}
 
+            {/* When another agency requests Millstadt EMS for help (we give
+                mutual aid), show a pill: Millstadt EMS <our units> →
+                <requesting agency>. */}
             {cfg.emsMutualAid && call.mutualAidGiven && (
-              <InfoRow label="Mutual Aid Given">{call.mutualAidGivenAgency || "Yes"}</InfoRow>
+              <InfoRow label="Mutual Aid">
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 9, flexWrap: "wrap", padding: "5px 13px", borderRadius: 999, background: "rgba(240,180,41,0.12)", border: "1px solid rgba(240,180,41,0.42)", fontSize: 14, fontWeight: 700, lineHeight: 1.25 }}>
+                  <span style={{ color: "#e2e8f0" }}>Millstadt EMS</span>
+                  {(call.units?.length ?? 0) > 0 && <span style={{ color: "#f0b429", fontWeight: 800 }}>{call.units!.join(", ")}</span>}
+                  <span aria-hidden style={{ color: "#94a3b8", fontWeight: 900, fontSize: 16 }}>→</span>
+                  <span style={{ color: "#f0b429" }}>{call.mutualAidGivenAgency || "Requesting agency"}</span>
+                </span>
+              </InfoRow>
             )}
 
             {cfg.emsMutualAid && call.emsMutualAid && (call.emsMutualAidAgencies?.length ?? 0) > 0 && (
@@ -315,14 +325,14 @@ function CallInfoBox({ call, accent, cfg }: { call: Call; accent: string; cfg: H
 
       {/* Total-time qualifier */}
       {cfg.totalTime && closedOk && (
-        <div style={{ color: "#64748b", fontSize: 10, lineHeight: 1.45, margin: "10px 16px 0", paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+        <div style={{ color: "#64748b", fontSize: 12, lineHeight: 1.5, margin: "12px 20px 0", paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
           Total time spans the first unit dispatched to the incident being cleared in CAD. It reflects all responding agencies
           (Fire, PD, EMS) — not EMS patient-care time.
         </div>
       )}
 
       {/* Disclaimers */}
-      <div style={{ color: "#5b6675", fontSize: 9.5, lineHeight: 1.5, margin: "10px 16px 0", paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+      <div style={{ color: "#5b6675", fontSize: 11, lineHeight: 1.5, margin: "12px 20px 0", paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
         {PLATFORM_ORIGIN_DISCLAIMER}
         {cfg.disposition && Object.keys(call.unitDispositions ?? {}).length > 0 && <> {DISPOSITION_DISCLAIMER}</>}
       </div>
@@ -596,16 +606,18 @@ export default function CallTicker() {
 
       {/* ── Hover / tap info box ── */}
       {popup && (() => {
-        const boxW = 340;
-        const margin = 8;
+        const margin = 12;
         const r = popup.rect;
-        let left = Math.min(r.left, (typeof window !== "undefined" ? window.innerWidth : 1200) - boxW - margin);
-        left = Math.max(margin, left);
+        const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
         const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+        // As wide as the ticker bar itself (the 1200px content wrap), centered
+        // on screen — so it reads big and easy, not a cramped little card.
+        const boxW = Math.min(1200, vw - margin * 2);
+        const left = Math.round((vw - boxW) / 2);
         const placeAbove = r.bottom > vh * 0.55;
         const pos: React.CSSProperties = placeAbove
-          ? { position: "fixed", left, bottom: Math.max(margin, vh - r.top + 6), zIndex: 80 }
-          : { position: "fixed", left, top: r.bottom + 6, zIndex: 80 };
+          ? { position: "fixed", left, width: boxW, bottom: Math.max(margin, vh - r.top + 6), zIndex: 80 }
+          : { position: "fixed", left, width: boxW, top: r.bottom + 6, zIndex: 80 };
         return (
           <div ref={popupRef} style={pos} onMouseEnter={() => { if (!pinned) setPopup(popup); }}>
             <CallInfoBox call={popup.call} accent={boxAccent(popup.call)} cfg={hoverCfg} />
