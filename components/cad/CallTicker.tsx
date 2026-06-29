@@ -20,6 +20,8 @@ interface Call {
   notes?: string | null;
   mutualAidReceived?: boolean;
   mutualAidReceivedAgency?: string | null;
+  mutualAidGiven?: boolean;
+  mutualAidGivenAgency?: string | null;
   fireResponded?: boolean;
   fireAgencies?: string[];
   policeResponded?: boolean;
@@ -149,6 +151,17 @@ function unitEntries(call: Call, showDisposition = true): { label: string; color
 function classificationLabel(c: string | null | undefined): string | null {
   if (!c) return null;
   return c.charAt(0).toUpperCase() + c.slice(1);
+}
+
+/** The formatter appends "Mutual Aid Given to X" into the dispatch-nature
+ * parenthetical, where it gets truncated off the end of long lines. We show
+ * it instead as a dedicated badge, so strip the phrase from the inline text
+ * to avoid showing it twice. Display-only — the stored nature is untouched. */
+function stripMAGiven(nature: string): string {
+  let s = nature;
+  s = s.replace(/\s*;\s*Mutual Aid Given(?: to [^;)]+)?/gi, "");      // "; Mutual Aid Given to X" after other parts
+  s = s.replace(/\s*\(\s*Mutual Aid Given(?: to [^)]+)?\s*\)/gi, ""); // "(Mutual Aid Given to X)" as the only part
+  return s.trim();
 }
 
 function isToday(call: Call): boolean {
@@ -285,6 +298,10 @@ function CallInfoBox({ call, accent, cfg }: { call: Call; accent: string; cfg: H
                   ))}
                 </span>
               </InfoRow>
+            )}
+
+            {cfg.emsMutualAid && call.mutualAidGiven && (
+              <InfoRow label="Mutual Aid Given">{call.mutualAidGivenAgency || "Yes"}</InfoRow>
             )}
 
             {cfg.emsMutualAid && call.emsMutualAid && (call.emsMutualAidAgencies?.length ?? 0) > 0 && (
@@ -476,11 +493,16 @@ export default function CallTicker() {
                       {active && <span className="w-2 h-2 rounded-full shrink-0 bg-emerald-400 animate-pulse" />}
                       <span className="text-white/70 text-sm tabular-nums w-24 shrink-0">{call.dispatchDate}</span>
                       <span className="text-white/70 text-sm tabular-nums w-14 shrink-0 font-mono">{call.dispatchTime}</span>
-                      <span className={`text-sm font-bold uppercase tracking-wide truncate ${active ? "text-emerald-300" : "text-white"}`}>
+                      <span className={`text-sm font-bold uppercase tracking-wide truncate min-w-0 flex-1 ${active ? "text-emerald-300" : "text-white"}`}>
                         {unitNum ? (
-                          <><span className={unitColor(unitNum)}>[{unitNum}]</span> {call.dispatchNature.replace(/^\[[^\]]+\]\s*/, "")}</>
-                        ) : call.dispatchNature}
+                          <><span className={unitColor(unitNum)}>[{unitNum}]</span> {stripMAGiven(call.dispatchNature).replace(/^\[[^\]]+\]\s*/, "")}</>
+                        ) : stripMAGiven(call.dispatchNature)}
                       </span>
+                      {call.mutualAidGiven && (
+                        <span className="shrink-0 whitespace-nowrap text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-400/15 text-emerald-300 border border-emerald-400/30">
+                          ⇄ MA: {call.mutualAidGivenAgency || "Given"}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
@@ -526,7 +548,10 @@ export default function CallTicker() {
                 >
                   <span className="text-emerald-300 font-black text-[11px] tracking-widest uppercase whitespace-nowrap">Responding</span>
                   <span className="text-white/20 shrink-0">&middot;</span>
-                  <span className="text-white font-bold text-[11px] truncate">{activeCall.dispatchNature}</span>
+                  <span className="text-white font-bold text-[11px] truncate min-w-0 flex-1">{stripMAGiven(activeCall.dispatchNature)}</span>
+                  {activeCall.mutualAidGiven && (
+                    <span className="shrink-0 whitespace-nowrap text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-400/15 text-emerald-300 border border-emerald-400/30">⇄ MA: {activeCall.mutualAidGivenAgency || "Given"}</span>
+                  )}
                 </div>
               ) : lastRun ? (
                 <div
@@ -538,7 +563,10 @@ export default function CallTicker() {
                   <span className="text-slate-500 text-[10px] whitespace-nowrap shrink-0">Last</span>
                   <span className="text-white font-bold tabular-nums font-mono text-[10px] whitespace-nowrap shrink-0">{shortDate(lastRun.dispatchDate)} {lastRun.dispatchTime}</span>
                   <span className="text-white/20 shrink-0">&middot;</span>
-                  <span className="text-[#f0b429] font-bold text-[11px] truncate">{lastRun.dispatchNature}</span>
+                  <span className="text-[#f0b429] font-bold text-[11px] truncate min-w-0 flex-1">{stripMAGiven(lastRun.dispatchNature)}</span>
+                  {lastRun.mutualAidGiven && (
+                    <span className="shrink-0 whitespace-nowrap text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-400/15 text-emerald-300 border border-emerald-400/30">⇄ MA: {lastRun.mutualAidGivenAgency || "Given"}</span>
+                  )}
                 </div>
               ) : (
                 <span className="text-slate-600 text-[10px]">No active incidents.</span>

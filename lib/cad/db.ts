@@ -28,6 +28,8 @@ export interface Call {
   classification?: string | null;
   mutualAidReceived?: boolean;
   mutualAidReceivedAgency?: string | null;
+  mutualAidGiven?: boolean;
+  mutualAidGivenAgency?: string | null;
   fireResponded?: boolean;
   fireAgencies?: string[];
   policeResponded?: boolean;
@@ -121,6 +123,8 @@ function rowToCall(row: Record<string, unknown>): Call {
     classification:          row.classification != null ? String(row.classification) : null,
     mutualAidReceived:       row.mutual_aid_received === true,
     mutualAidReceivedAgency: row.mutual_aid_received_agency != null ? String(row.mutual_aid_received_agency) : null,
+    mutualAidGiven:          row.mutual_aid_given === true,
+    mutualAidGivenAgency:    row.mutual_aid_given_agency != null ? String(row.mutual_aid_given_agency) : null,
     fireResponded:           row.fire_responded === true,
     fireAgencies:            asStringArray(row.fire_agencies),
     policeResponded:         row.police_responded === true,
