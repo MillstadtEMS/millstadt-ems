@@ -12,10 +12,15 @@ export default function SiteShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname() || "";
+  // Routes that render their own full chrome (their own header/sidebar) and
+  // must NOT also get the public site header. /admin uses the same LoungeShell
+  // as /lounge, so it belongs here too — otherwise the global CAD ticker +
+  // weather nav stacks on top of the lounge sidebar and overlaps page content.
   const standalone =
     pathname.startsWith("/truckcheck") ||
     pathname.startsWith("/inventory") ||
-    pathname.startsWith("/lounge");
+    pathname.startsWith("/lounge") ||
+    pathname.startsWith("/admin");
 
   if (standalone) {
     return (
