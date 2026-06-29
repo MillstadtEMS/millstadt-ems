@@ -14,14 +14,26 @@
  * Worded to be accurate, concise, and limit liability.
  */
 export const PLATFORM_ORIGIN_DISCLAIMER =
-  "This ticker was built in-house in spring 2026. Older calls are rebuilt from past dispatch records and may be missing " +
-  "details like which units responded; newer calls are logged in full. All figures are unofficial and may change.";
+  "This dispatch ticker and the statistics derived from it were developed in-house and are provided strictly for general " +
+  "informational purposes. They do not constitute an official record of any incident, dispatch, response, patient encounter, " +
+  "or outcome, and may not be relied upon for any legal, medical, insurance, billing, investigative, or emergency purpose. " +
+  "All entries originate from computer-aided dispatch data and may be edited, summarized, delayed, incomplete, or inaccurate " +
+  "as to any detail — including, without limitation, the responding unit(s), nature or complaint, category, location, times, " +
+  "and disposition — regardless of the date of the incident; entries predating the platform's spring 2026 launch are " +
+  "reconstructed from prior records and may be further limited. All information is unofficial and is subject to correction, " +
+  "revision, or removal at any time without notice. Millstadt EMS makes no representation or warranty, express or implied, as " +
+  "to the accuracy, completeness, timeliness, or reliability of any information shown, and, to the fullest extent permitted by " +
+  "law, disclaims all liability for any loss or damage arising from its use or from reliance upon it. In an emergency, call 911.";
 
 /**
- * Short per-call notice for the hover info box.
+ * Short per-call notice for the hover info box. Attorney-style and
+ * comprehensive despite its length: the entry is unofficial, may be edited
+ * or incomplete, and may not be relied upon for any consequential purpose.
  */
 export const CALL_INFO_DISCLAIMER =
-  "Details are kept as accurate as possible. Some calls may not reflect complete information due to limited dispatch data available at the time.";
+  "This entry is unofficial and provided for general information only. It is derived from dispatch data, may be edited or " +
+  "summarized, and may be incomplete, delayed, or inaccurate as to any detail. It is not an official record and may not be " +
+  "relied upon for any legal, medical, insurance, or emergency purpose. Subject to change or correction without notice.";
 
 /**
  * Per-unit disposition tracking start date. Statistics derived from

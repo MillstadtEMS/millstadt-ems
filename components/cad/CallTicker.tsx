@@ -269,6 +269,10 @@ function CallInfoBox({ call, accent, cfg }: { call: Call; accent: string; cfg: H
           </div>
         ) : (
           <>
+            {/* Complaint (the call's nature) leads the box, before Units. */}
+            {cfg.complaint && call.category && <InfoRow label="Complaint">{call.category}</InfoRow>}
+            {cfg.category && cls && <InfoRow label="Category">{cls}</InfoRow>}
+
             {cfg.units && entries.length > 0 && (
               <InfoRow label="Units">
                 <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 5 }}>
@@ -287,8 +291,6 @@ function CallInfoBox({ call, accent, cfg }: { call: Call; accent: string; cfg: H
               <InfoRow label="EMS Mutual Aid">{call.emsMutualAidAgencies!.join(", ")}</InfoRow>
             )}
 
-            {cfg.complaint && call.category && <InfoRow label="Complaint">{call.category}</InfoRow>}
-            {cfg.category && cls && <InfoRow label="Category">{cls}</InfoRow>}
             {cfg.notes && call.notes && <InfoRow label="Notes">{call.notes}</InfoRow>}
           </>
         )}

@@ -37,6 +37,7 @@ export function Input(props: InputProps) {
         border: `1px solid ${BORDER}`,
         borderRadius: 12,
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 1px 0 rgba(0,0,0,0.22)",
+        fontSize: 16, // ≥16px stops iOS Safari auto-zooming on focus
       }}
       onFocus={(e) => {
         e.currentTarget.style.borderColor = "rgba(240,180,41,0.68)";
@@ -68,6 +69,7 @@ export function Textarea({
         border: `1px solid ${BORDER}`,
         borderRadius: 12,
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 1px 0 rgba(0,0,0,0.22)",
+        fontSize: 16, // ≥16px stops iOS Safari auto-zooming on focus
       }}
       onFocus={(e) => {
         e.currentTarget.style.borderColor = "rgba(240,180,41,0.68)";
