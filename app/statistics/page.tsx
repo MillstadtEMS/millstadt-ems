@@ -115,8 +115,9 @@ function CollapsibleCard({ title, pct, accent, sub, children }: { title: string;
   const [open, setOpen] = useState(false);
   return (
     // Collapsed cards keep their place in the 3-column grid; an OPEN card spans
-    // the full grid width so its call list is wide and uniform for long calls.
-    <section style={{ ...card, gridColumn: open ? "1 / -1" : undefined }}>
+    // the full grid width AND orders to the top of the grid (order:-1) so the
+    // one you expanded isn't stuck below the collapsed cards above it.
+    <section style={{ ...card, gridColumn: open ? "1 / -1" : undefined, order: open ? -1 : 0 }}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
