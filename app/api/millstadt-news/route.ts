@@ -27,8 +27,15 @@ function extractImage(html: string): string | null {
 
 export async function GET() {
   try {
+    // millstadtnews.com blocks bot-style User-Agents with a 403, so present a
+    // normal browser UA + Accept headers. (This is what broke the feed — the
+    // site added bot protection; the old "MillstadtEMS/1.0" UA is now denied.)
     const res = await fetch("https://www.millstadtnews.com/feed/", {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; MillstadtEMS/1.0)" },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "application/rss+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.7",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
       next: { revalidate: 1800 },
     });
 
