@@ -383,13 +383,18 @@ export default function CallTicker() {
   }, []);
 
   useEffect(() => {
+    // Re-read the admin hover-box visibility config on every poll so toggling
+    // a field off in /admin (e.g. disposition) goes live within POLL_INTERVAL
+    // — not only after a full page reload.
+    const loadHoverCfg = () =>
+      fetch("/api/cad/hover-settings", { cache: "no-store" })
+        .then(r => (r.ok ? r.json() : null))
+        .then(s => { if (s) setHoverCfg({ ...DEFAULT_HOVER_SETTINGS, ...s }); })
+        .catch(() => { /* keep defaults */ });
     fetchLatest();
     fetchAll();
-    fetch("/api/cad/hover-settings", { cache: "no-store" })
-      .then(r => r.ok ? r.json() : null)
-      .then(s => { if (s) setHoverCfg({ ...DEFAULT_HOVER_SETTINGS, ...s }); })
-      .catch(() => { /* keep defaults */ });
-    const pollId = setInterval(fetchLatest, POLL_INTERVAL);
+    loadHoverCfg();
+    const pollId = setInterval(() => { fetchLatest(); loadHoverCfg(); }, POLL_INTERVAL);
     return () => clearInterval(pollId);
   }, [fetchLatest, fetchAll]);
 

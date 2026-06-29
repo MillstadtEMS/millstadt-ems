@@ -677,6 +677,7 @@ function HoverFieldsPanel() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/calls/hover-settings", { cache: "no-store" })
@@ -688,15 +689,24 @@ function HoverFieldsPanel() {
   function toggle(k: keyof HoverFieldSettings) {
     setCfg(c => (c ? { ...c, [k]: !c[k] } : c));
     setSaved(false);
+    setErr(null);
   }
   async function save() {
     if (!cfg) return;
     setSaving(true);
+    setErr(null);
     try {
-      await fetch("/api/admin/calls/hover-settings", {
+      const res = await fetch("/api/admin/calls/hover-settings", {
         method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cfg),
       });
+      if (!res.ok) { setErr(`Save failed (${res.status}) — not saved. Try again.`); return; }
+      // Confirm what the server actually stored so the UI can't claim success
+      // on a no-op.
+      const data = await res.json().catch(() => null);
+      if (data?.settings) setCfg({ ...DEFAULT_HOVER_SETTINGS, ...data.settings });
       setSaved(true);
+    } catch {
+      setErr("Save failed — network error. Not saved.");
     } finally { setSaving(false); }
   }
 
@@ -730,7 +740,8 @@ function HoverFieldsPanel() {
               className="bg-[#f0b429] text-[#06101f] font-semibold text-sm px-5 py-2.5 rounded-xl disabled:opacity-60">
               {saving ? "Saving…" : "Save visibility"}
             </button>
-            {saved && <span className="text-emerald-400 text-xs font-semibold">Saved — live within 30s ✓</span>}
+            {saved && !err && <span className="text-emerald-400 text-xs font-semibold">Saved — live on the ticker within 30s ✓</span>}
+            {err && <span className="text-red-400 text-xs font-semibold">{err}</span>}
           </div>
         </div>
       )}
