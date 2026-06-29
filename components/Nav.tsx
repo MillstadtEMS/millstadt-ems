@@ -384,14 +384,16 @@ function WeatherTicker() {
   const levelColor = (lvl: "red" | "yellow" | "green") => lvl === "red" ? "#f87171" : lvl === "yellow" ? "#facc15" : "#34d399";
 
   const realAlerts = alerts.filter(a => a.rank > 0);
-  const extra = Math.max(0, realAlerts.length - 1);
   const canExpand = realAlerts.length >= 1;
 
   // Phone/tablet: collapse the long headline to a short tappable chip so it
-  // never spills over the logos. Desktop keeps the full rotating headline.
+  // never spills over the logos. Desktop shows just the event name as a clean
+  // pill (e.g. "EXTREME HEAT WARNING") — full details live in the hover popup,
+  // so the bar never carries the long redundant headline string.
+  const eventLabel = current.text.split(" — ")[0];
   const displayText = compact
     ? (canExpand ? `⚠ ${realAlerts.length} Alert${realAlerts.length > 1 ? "s" : ""} · Tap for more` : "No Weather Alerts")
-    : current.text;
+    : eventLabel;
 
   return (
     <div
@@ -402,23 +404,33 @@ function WeatherTicker() {
     >
       {/* ── Rotating ticker line — must stay constrained so the long text
           truncates with an ellipsis and never spills over the nav buttons. ── */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "0 1rem", minWidth: 0, cursor: canExpand ? "pointer" : "default" }}>
-        <span key={current.level} className="text-[10px] sm:text-[14px]" style={{ color, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: "100%", animation: `weather-pulse-${current.level} 2.5s ease-in-out infinite` }}>
-          {displayText}
-        </span>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, overflow: "hidden", padding: "0 28px", minWidth: 0, cursor: canExpand ? "pointer" : "default" }}>
+        {compact ? (
+          // Mobile/tablet: single compact chip (unchanged).
+          <span key={current.level} className="text-[10px]" style={{ color, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: "100%", animation: `weather-pulse-${current.level} 2.5s ease-in-out infinite` }}>
+            {displayText}
+          </span>
+        ) : canExpand ? (
+          // Desktop: one pill per active alert, side by side. The 28px wrapper
+          // padding keeps them clear of the logo / menu buttons either side.
+          realAlerts.map((a, i) => {
+            const c = levelColor(a.level);
+            return (
+              <span key={i} className="text-[13px]" style={{ display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0, color: c, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", padding: "3px 12px", border: `1px solid ${c}59`, borderRadius: 999, background: `${c}14`, boxShadow: `0 0 0 1px ${c}1a`, animation: `weather-pulse-${a.level} 2.5s ease-in-out infinite` }}>
+                <span style={{ fontSize: "0.95em", flexShrink: 0, lineHeight: 1 }}>⚠</span>
+                {a.text.split(" — ")[0]}
+              </span>
+            );
+          })
+        ) : (
+          // Desktop, all-clear: subtle green "no alerts" pill.
+          <span key="clear" className="text-[13px]" style={{ display: "inline-flex", alignItems: "center", gap: 6, color, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", maxWidth: "100%", animation: `weather-pulse-${current.level} 2.5s ease-in-out infinite` }}>
+            <span style={{ fontSize: "0.95em", flexShrink: 0, lineHeight: 1 }}>✓</span>
+            {eventLabel}
+          </span>
+        )}
       </div>
 
-      {/* ── "+N more" badge when multiple alerts are active (desktop only;
-          compact mode already says "N Alerts · Tap for more") ── */}
-      {extra > 0 && !compact && (
-        <span
-          className="text-[8px] sm:text-[9px]"
-          style={{ flexShrink: 0, fontWeight: 800, color: "#cbd5e1", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.22)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: "0.05em" }}
-          title="Hover to view all alerts"
-        >
-          +{extra} more
-        </span>
-      )}
 
       {/* ── Hover / tap popup: full text of every active alert ── */}
       {hover && canExpand && (
