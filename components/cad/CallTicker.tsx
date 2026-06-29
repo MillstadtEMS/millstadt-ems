@@ -216,7 +216,7 @@ function StarOfLife({ size = 18 }: { size?: number }) {
 
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "96px 1fr", gap: 8, alignItems: "baseline" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "minmax(96px, max-content) 1fr", gap: 10, alignItems: "baseline" }}>
       <span style={{ color: "#7c899e", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{label}</span>
       <span style={{ color: "#e2e8f0", fontSize: 12.5, fontWeight: 600, lineHeight: 1.4 }}>{children}</span>
     </div>
@@ -498,11 +498,6 @@ export default function CallTicker() {
                           <><span className={unitColor(unitNum)}>[{unitNum}]</span> {stripMAGiven(call.dispatchNature).replace(/^\[[^\]]+\]\s*/, "")}</>
                         ) : stripMAGiven(call.dispatchNature)}
                       </span>
-                      {call.mutualAidGiven && (
-                        <span className="shrink-0 whitespace-nowrap text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-400/15 text-emerald-300 border border-emerald-400/30">
-                          ⇄ MA: {call.mutualAidGivenAgency || "Given"}
-                        </span>
-                      )}
                     </div>
                   );
                 })}
@@ -549,9 +544,6 @@ export default function CallTicker() {
                   <span className="text-emerald-300 font-black text-[11px] tracking-widest uppercase whitespace-nowrap">Responding</span>
                   <span className="text-white/20 shrink-0">&middot;</span>
                   <span className="text-white font-bold text-[11px] truncate min-w-0 flex-1">{stripMAGiven(activeCall.dispatchNature)}</span>
-                  {activeCall.mutualAidGiven && (
-                    <span className="shrink-0 whitespace-nowrap text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-400/15 text-emerald-300 border border-emerald-400/30">⇄ MA: {activeCall.mutualAidGivenAgency || "Given"}</span>
-                  )}
                 </div>
               ) : lastRun ? (
                 <div
@@ -564,9 +556,6 @@ export default function CallTicker() {
                   <span className="text-white font-bold tabular-nums font-mono text-[10px] whitespace-nowrap shrink-0">{shortDate(lastRun.dispatchDate)} {lastRun.dispatchTime}</span>
                   <span className="text-white/20 shrink-0">&middot;</span>
                   <span className="text-[#f0b429] font-bold text-[11px] truncate min-w-0 flex-1">{stripMAGiven(lastRun.dispatchNature)}</span>
-                  {lastRun.mutualAidGiven && (
-                    <span className="shrink-0 whitespace-nowrap text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-400/15 text-emerald-300 border border-emerald-400/30">⇄ MA: {lastRun.mutualAidGivenAgency || "Given"}</span>
-                  )}
                 </div>
               ) : (
                 <span className="text-slate-600 text-[10px]">No active incidents.</span>
