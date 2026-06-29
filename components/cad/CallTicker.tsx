@@ -202,8 +202,8 @@ function StarOfLife({ size = 18 }: { size?: number }) {
 
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "92px 1fr", gap: 8, alignItems: "baseline" }}>
-      <span style={{ color: "#7c899e", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>{label}</span>
+    <div style={{ display: "grid", gridTemplateColumns: "96px 1fr", gap: 8, alignItems: "baseline" }}>
+      <span style={{ color: "#7c899e", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{label}</span>
       <span style={{ color: "#e2e8f0", fontSize: 12.5, fontWeight: 600, lineHeight: 1.4 }}>{children}</span>
     </div>
   );
@@ -259,7 +259,7 @@ function CallInfoBox({ call, accent }: { call: Call; accent: string }) {
       </div>
 
       <div style={{ display: "grid", gap: 8, padding: "12px 16px 0" }}>
-        {closedOk && <InfoRow label="Call closed @">{fmtClosed(completed!)}</InfoRow>}
+        {closedOk && <InfoRow label="Closed">{fmtClosed(completed!)}</InfoRow>}
         {closedOk && <InfoRow label="Total time">{fmtDuration(totalMs)}</InfoRow>}
 
         {pending ? (
