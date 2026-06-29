@@ -78,19 +78,17 @@ export default function StatisticsPage() {
             <GroupCard title="Medical" group={data.groups.medical} accent="#86efac" total={data.total} calls={calls} classification="medical" />
             <GroupCard title="Uncategorized" group={data.groups.uncategorized} accent="#94a3b8" total={data.total} calls={calls} classification="uncategorized" />
 
-            <Card>
-              <CardHead title="Fire Response" pct={data.fire.pct} accent="#fdba74" />
+            <CollapsibleCard title="Fire Response" pct={data.fire.pct} accent="#fdba74" sub={`${data.fire.count} of ${data.total}`}>
               <Row label="Still Alarm" count={data.fire.still.count} pct={data.fire.still.pct} accent="#fdba74" calls={calls.filter((c) => c.fireType === "still")} />
               <Row label="1st Alarm" count={data.fire.first.count} pct={data.fire.first.pct} accent="#fdba74" calls={calls.filter((c) => c.fireType === "first")} />
               {data.fire.other.count > 0 && <Row label="Other" count={data.fire.other.count} pct={data.fire.other.pct} accent="#fdba74" calls={calls.filter((c) => c.fireType === "other")} />}
-            </Card>
+            </CollapsibleCard>
 
-            <Card>
-              <CardHead title="Cardiac Arrest" pct={data.cardiac.pct} accent="#f0b429" />
+            <CollapsibleCard title="Cardiac Arrest" pct={data.cardiac.pct} accent="#f0b429" sub={`${data.cardiac.count} total`}>
               <Row label="Medical" count={data.cardiac.medical} pct={data.cardiac.count ? (data.cardiac.medical / data.cardiac.count) * 100 : 0} accent="#86efac" calls={calls.filter((c) => c.category === "Cardiac Arrest" && c.classification === "medical")} />
               <Row label="Traumatic" count={data.cardiac.trauma} pct={data.cardiac.count ? (data.cardiac.trauma / data.cardiac.count) * 100 : 0} accent="#fca5a5" calls={calls.filter((c) => c.category === "Cardiac Arrest" && c.classification === "trauma")} />
               <p style={{ color: "#64748b", fontSize: 11.5, margin: "8px 0 0" }}>{data.cardiac.count} total cardiac arrests this year.</p>
-            </Card>
+            </CollapsibleCard>
           </div>
 
           <div style={{ marginTop: 22, marginBottom: 8 }}>
@@ -110,27 +108,45 @@ export default function StatisticsPage() {
   );
 }
 
-function GroupCard({ title, group, accent, total, calls, classification }: { title: string; group: ClassGroup; accent: string; total: number; calls: PubCall[]; classification: string }) {
+/** A stat card whose body collapses behind its header, so the page stays
+ * compact. Tap the header to expand; children (category rows) then show, and
+ * each row still reveals its individual calls on hover/tap. */
+function CollapsibleCard({ title, pct, accent, sub, children }: { title: string; pct: number; accent: string; sub?: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
   return (
     <Card>
-      <CardHead title={title} pct={group.pct} accent={accent} />
-      <div style={{ color: "#64748b", fontSize: 11.5, margin: "-4px 0 8px" }}>{group.count} of {total} calls</div>
-      {group.categories.length === 0 ? <span style={{ color: "#475569", fontSize: 12 }}>None.</span> :
-        group.categories.map((c) => <Row key={c.name} label={c.name} count={c.count} pct={c.pct} accent={accent} calls={calls.filter((x) => x.category === c.name && x.classification === classification)} />)}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        style={{ all: "unset", cursor: "pointer", display: "block", width: "100%", boxSizing: "border-box" }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+          <span style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
+            <span aria-hidden style={{ color: "#64748b", fontSize: 11, transform: open ? "rotate(90deg)" : "none", transition: "transform 0.15s", display: "inline-block" }}>▶</span>
+            <span style={{ color: accent, fontSize: 14, fontWeight: 700, letterSpacing: "0.01em" }}>{title}</span>
+            {sub && <span style={{ color: "#64748b", fontSize: 11.5, whiteSpace: "nowrap" }}>{sub}</span>}
+          </span>
+          <span style={{ color: "white", fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{pct.toFixed(1)}%</span>
+        </div>
+      </button>
+      {open && <div style={{ marginTop: 10 }}>{children}</div>}
     </Card>
+  );
+}
+
+function GroupCard({ title, group, accent, total, calls, classification }: { title: string; group: ClassGroup; accent: string; total: number; calls: PubCall[]; classification: string }) {
+  return (
+    <CollapsibleCard title={title} pct={group.pct} accent={accent} sub={`${group.count} of ${total}`}>
+      {group.categories.length === 0
+        ? <span style={{ color: "#475569", fontSize: 12 }}>None.</span>
+        : group.categories.map((c) => <Row key={c.name} label={c.name} count={c.count} pct={c.pct} accent={accent} calls={calls.filter((x) => x.category === c.name && x.classification === classification)} />)}
+    </CollapsibleCard>
   );
 }
 
 function Card({ children }: { children: React.ReactNode }) {
   return <section style={card}>{children}</section>;
-}
-function CardHead({ title, pct, accent }: { title: string; pct: number; accent: string }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
-      <h2 style={{ color: accent, fontSize: 14, fontWeight: 700, margin: 0, letterSpacing: "0.01em" }}>{title}</h2>
-      <span style={{ color: "white", fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{pct.toFixed(1)}%</span>
-    </div>
-  );
 }
 function Row({ label, count, pct, accent, calls }: { label: string; count: number; pct: number; accent: string; calls: PubCall[] }) {
   const [show, setShow] = useState(false);
@@ -153,9 +169,9 @@ function Row({ label, count, pct, accent, calls }: { label: string; count: numbe
       {show && hasCalls && (
         <div style={{ marginTop: 6, display: "grid", gap: 4, padding: "8px 10px", background: "rgba(2,9,18,0.55)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 9, maxHeight: 230, overflowY: "auto" }}>
           {calls.map((c, i) => (
-            <div key={i} style={{ display: "flex", gap: 8, fontSize: 11.5, alignItems: "baseline", flexWrap: "wrap" }}>
-              <span style={{ color: "#94a3b8", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{c.date} {c.time}</span>
-              <span style={{ color: "#e2e8f0" }}>{c.nature}</span>
+            <div key={i} style={{ display: "flex", gap: 10, fontSize: 11.5, alignItems: "baseline" }}>
+              <span style={{ color: "#94a3b8", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{c.date} {c.time}</span>
+              <span style={{ color: "#e2e8f0", flex: 1, minWidth: 0, lineHeight: 1.45, overflowWrap: "anywhere" }}>{c.nature}</span>
             </div>
           ))}
         </div>
@@ -180,5 +196,5 @@ const tileRow: React.CSSProperties = {
   display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 16,
 };
 const grid: React.CSSProperties = {
-  display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))", gap: 14, alignItems: "start",
+  display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))", gap: 14, alignItems: "start",
 };
