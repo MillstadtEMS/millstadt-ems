@@ -14,16 +14,10 @@
  * Worded to be accurate, concise, and limit liability.
  */
 export const PLATFORM_ORIGIN_DISCLAIMER =
-  "This dispatch ticker and the statistics derived from it were developed in-house and are provided strictly for general " +
-  "informational purposes. They do not constitute an official record of any incident, dispatch, response, patient encounter, " +
-  "or outcome, and may not be relied upon for any legal, medical, insurance, billing, investigative, or emergency purpose. " +
-  "All entries originate from computer-aided dispatch data and may be edited, summarized, delayed, incomplete, or inaccurate " +
-  "as to any detail — including, without limitation, the responding unit(s), nature or complaint, category, location, times, " +
-  "and disposition — regardless of the date of the incident; entries predating the platform's spring 2026 launch are " +
-  "reconstructed from prior records and may be further limited. All information is unofficial and is subject to correction, " +
-  "revision, or removal at any time without notice. Millstadt EMS makes no representation or warranty, express or implied, as " +
-  "to the accuracy, completeness, timeliness, or reliability of any information shown, and, to the fullest extent permitted by " +
-  "law, disclaims all liability for any loss or damage arising from its use or from reliance upon it. In an emergency, call 911.";
+  "Unofficial CAD-derived informational summary only. Not an official record and not for legal, medical, insurance, billing, " +
+  "investigative, emergency, or other official use. Entries and statistics may be edited, delayed, incomplete, inaccurate, " +
+  "corrected, revised, or removed without notice. Pre–spring 2026 entries were reconstructed from prior records. Millstadt EMS " +
+  "makes no warranty and disclaims liability for reliance on this information. In an emergency, call 911.";
 
 /**
  * Short per-call notice for the hover info box. Attorney-style and

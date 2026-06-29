@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
-const DRIVE_MS = 12000;
+const DRIVE_MS = 9000;
 
 // Employee-facing areas that should never show the cartoon ambulance —
 // the lounge, admin tools, inventory, and truck-check. The drive-by stays
@@ -51,7 +51,10 @@ export default function AmboScroll() {
             bottom:        0,
             left:          0,
             right:         0,
-            height:        "175px",
+            // Slim band hugging the very bottom edge so the drive-by rides
+            // along the floor of the viewport instead of painting over the
+            // buttons (e.g. Contact Us) higher up the section.
+            height:        "104px",
             pointerEvents: "none",
             zIndex:        999,
             overflow:      "hidden",
@@ -62,11 +65,11 @@ export default function AmboScroll() {
             alt=""
             style={{
               position:  "absolute",
-              bottom:    "4px",
-              height:    "165px",
+              bottom:    "2px",
+              height:    "96px",
               width:     "auto",
               display:   "block",
-              animation: `ambo-drive ${DRIVE_MS}ms linear forwards, ambo-lights 0.4s step-start infinite`,
+              animation: `ambo-drive ${DRIVE_MS}ms cubic-bezier(0.4, 0, 0.2, 1) forwards, ambo-lights 0.4s step-start infinite`,
             }}
           />
         </div>
@@ -78,8 +81,8 @@ export default function AmboScroll() {
           to   { transform: translateX(-300px); }
         }
         @keyframes ambo-lights {
-          0%,  49% { filter: drop-shadow(0 0 18px #ff2020) drop-shadow(0 0 40px #ff0000); }
-          50%, 100% { filter: drop-shadow(0 0 18px #2060ff) drop-shadow(0 0 40px #0040ff); }
+          0%,  49% { filter: drop-shadow(0 0 10px #ff2020) drop-shadow(0 0 22px #ff0000); }
+          50%, 100% { filter: drop-shadow(0 0 10px #2060ff) drop-shadow(0 0 22px #0040ff); }
         }
       `}</style>
     </>

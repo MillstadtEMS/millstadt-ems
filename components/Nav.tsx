@@ -61,7 +61,6 @@ export default function Nav() {
   const pathname = usePathname();
   const [open, setOpen]               = useState(false);
   const [dispatchFlash, setDispatchFlash] = useState(false);
-  const [menuHover, setMenuHover]     = useState(false);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -122,16 +121,17 @@ export default function Nav() {
           <div className="flex shrink-0 flex-col items-center">
             <button
               onClick={() => setOpen(v => !v)}
-              onMouseEnter={() => setMenuHover(true)}
-              onMouseLeave={() => setMenuHover(false)}
-              className="relative flex flex-col items-center outline-none"
+              className="ambo-menu-btn relative flex flex-col items-center outline-none"
               aria-label="Toggle menu"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
+              {/* Lights animate while the menu is open or a dispatch flashes.
+                  The desktop hover glow is CSS-only (.ambo-menu-btn:hover under
+                  @media hover:hover) so it can't get stuck on after a touch. */}
               <img
                 src="/images/millstadt-ems/cartoon-ambo.png"
                 alt=""
-                className={open || dispatchFlash || menuHover ? "ambo-img-active" : ""}
+                className={`ambo-menu-img ${open || dispatchFlash ? "ambo-img-active" : ""}`}
                 style={{ height: "clamp(30px, 4vw, 44px)", width: "auto", display: "block" }}
               />
               <div className="text-[9px] text-slate-300 uppercase tracking-widest font-black mt-0.5">menu</div>

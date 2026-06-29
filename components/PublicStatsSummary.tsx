@@ -25,8 +25,9 @@ interface DropRow { key: string; label: string; count: number; pct: number; acce
 
 export default function PublicStatsSummary() {
   const [data, setData] = useState<Stats | null>(null);
-  // Open on hover (desktop) via hoverKey; tap pins it open (touch) via pinned.
-  const [hoverKey, setHoverKey] = useState<string | null>(null);
+  // Click to toggle each row open/closed. A pure click accordion behaves the
+  // same on desktop and touch and is always closeable (an earlier hover-to-open
+  // variant could never be closed while the pointer stayed over the row).
   const [pinned, setPinned] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -75,12 +76,10 @@ export default function PublicStatsSummary() {
 
         <div style={{ display: "grid", gap: 8 }}>
           {rows.map((r) => {
-            const isOpen = hoverKey === r.key || !!pinned[r.key];
+            const isOpen = !!pinned[r.key];
             return (
               <div
                 key={r.key}
-                onMouseEnter={() => setHoverKey(r.key)}
-                onMouseLeave={() => setHoverKey((k) => (k === r.key ? null : k))}
                 style={{ background: "#071428", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, overflow: "hidden" }}
               >
                 <button

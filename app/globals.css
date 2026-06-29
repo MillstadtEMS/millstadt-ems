@@ -202,6 +202,15 @@ body {
   animation: ambo-bounce 0.5s ease-in-out infinite, ambo-img-lights 0.55s linear infinite;
   transform-origin: center bottom;
 }
+/* Desktop hover glow for the menu ambulance. Hover-only (not touch) so the
+   lights can't get stuck on after a tap — touch keeps the menu lights tied
+   purely to the open state. */
+@media (hover: hover) and (pointer: fine) {
+  .ambo-menu-btn:hover .ambo-menu-img {
+    animation: ambo-bounce 0.5s ease-in-out infinite, ambo-img-lights 0.55s linear infinite;
+    transform-origin: center bottom;
+  }
+}
 
 /* ── Radar scrubber thumb ── */
 input[type="range"]::-webkit-slider-thumb {

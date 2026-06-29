@@ -66,6 +66,7 @@ function ScoreboardDigit({ digit }: { digit: string }) {
 export default function CallVolumeCounter() {
   const [apiCount, setApiCount] = useState<number>(0);
   const [loaded, setLoaded] = useState(false);
+  const [showDisc, setShowDisc] = useState(false);
 
   useEffect(() => {
     async function fetchCount() {
@@ -101,18 +102,27 @@ export default function CallVolumeCounter() {
       >
         Calls &middot; {year}
       </div>
-      <p
-        className="text-white/30 text-[8px] mt-2 max-w-xs text-center leading-relaxed"
-        style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
+      {/* Disclaimer collapsed behind a small toggle so it no longer dumps a
+          wall of legal text over the section background. */}
+      <button
+        type="button"
+        onClick={() => setShowDisc((v) => !v)}
+        aria-expanded={showDisc}
+        className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40 transition hover:text-white/70"
+        style={{ background: "none", border: "none", cursor: "pointer", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
       >
-        CENCOM 911 dispatch data may contain occasional errors. Actual call volume can vary but by minimal difference. Millstadt EMS makes every effort to monitor and correct the log to reflect accurate information.
-      </p>
-      <p
-        className="text-white/25 text-[8px] mt-1 max-w-xs text-center leading-relaxed"
-        style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
-      >
-        {PLATFORM_ORIGIN_DISCLAIMER}
-      </p>
+        <span aria-hidden style={{ fontSize: 11 }}>ⓘ</span>
+        Disclaimer
+        <span aria-hidden style={{ fontSize: 9, transform: showDisc ? "rotate(180deg)" : "none", transition: "transform 0.15s", display: "inline-block" }}>▾</span>
+      </button>
+      {showDisc && (
+        <p
+          className="text-white/45 text-[10px] mt-2 max-w-md text-center leading-relaxed"
+          style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
+        >
+          CENCOM 911 dispatch data may contain occasional errors; actual call volume can vary by a minimal amount. {PLATFORM_ORIGIN_DISCLAIMER}
+        </p>
+      )}
     </div>
   );
 }
