@@ -55,7 +55,7 @@ const NAV: NavItem[] = [
   { href: "/lounge/notifications", label: "Notifications",  icon: "bell" },
   { href: "/lounge/messages",     label: "Messages",        icon: "message" },
   { href: "/lounge/acks",         label: "Acknowledgments", icon: "checkCircle" },
-  { href: "/lounge/forms",        label: "Forms & Paperwork", icon: "inbox" },
+  { href: "/lounge/forms",        label: "Forms", icon: "inbox" },
   { href: "/lounge/my-file",      label: "My File",         icon: "folder" },
   { href: "/lounge/certs",        label: "Certifications",  icon: "certificate" },
   { href: "/lounge/about-me",     label: "Profile & Photo", icon: "badge" },
@@ -97,7 +97,7 @@ const CREW_NAV_SECTIONS = [
     hrefs: ["/lounge/acks", "/lounge/my-file", "/lounge/certs", "/lounge/about-me", "/lounge/security"],
   },
   {
-    title: "Forms & Reports",
+    title: "Forms & Paperwork",
     hrefs: ["/lounge/forms", "/lounge/incidents", "/lounge/maintenance", "/lounge/truckwash"],
   },
   {
@@ -960,9 +960,12 @@ function NavSection({
               <FormsSubList pathname={pathname} onNavigate={onNavigate} />
             </SubNavDisclosure>
           )}
-          {item.href === "/lounge/forms" && (
+          {/* "Request forms" only appears once you've clicked into Forms
+              (i.e. you're on the /lounge/forms page) — it doesn't sit in the
+              section list until then. */}
+          {item.href === "/lounge/forms" && pathname.startsWith("/lounge/forms") && (
             <SubNavDisclosure
-              title="Request forms"
+              title="Request a form"
               active={pathname.startsWith("/lounge/forms")}
               storageKey="lounge-sidebar:crew-forms"
             >
