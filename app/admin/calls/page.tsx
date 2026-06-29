@@ -13,6 +13,15 @@ interface Call {
   id: string; dispatchDate: string; dispatchTime: string;
   dispatchNature: string; completedAt: string | null;
   eventNumber: string | null; createdAt: string;
+  editedBy?: string | null; editedAt?: string | null;
+}
+
+/** "Jun 28 · 18:42" from an ISO timestamp, local time. */
+function fmtEdited(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 function todayLocal() {
@@ -92,6 +101,12 @@ function CallRow({
                     <span className="text-slate-600">{c.eventNumber}</span>
                   </>
                 )}
+                {c.editedBy && (
+                  <>
+                    <span className="text-slate-700">·</span>
+                    <span className="text-sky-400/80">✎ {c.editedBy}{c.editedAt ? ` · ${fmtEdited(c.editedAt)}` : ""}</span>
+                  </>
+                )}
               </span>
             </div>
           </div>
@@ -155,7 +170,8 @@ export default function CallsAdmin() {
   const [addError, setAddError] = useState<string | null>(null);
 
   async function load() {
-    const r = await fetch("/api/cad/log");
+    // Admin endpoint includes edited_by/edited_at (public /api/cad/log strips them).
+    const r = await fetch("/api/admin/calls", { cache: "no-store" });
     setCalls(await r.json()); setLoading(false);
   }
   useEffect(() => { load(); }, []);
@@ -325,6 +341,7 @@ export default function CallsAdmin() {
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 sm:shrink-0">
+            <PhoneEditorButton />
             <ForcePollButton onAfter={() => load()} />
             <Link href="/admin/calls/reports"
               className="flex items-center justify-center gap-2 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/25 text-sky-300 font-semibold text-sm px-4 py-3 sm:py-2.5 rounded-xl transition-colors">
@@ -598,6 +615,59 @@ function ForcePollButton({ onAfter }: { onAfter: () => void }) {
       </button>
       {msg && <span className="text-slate-300 text-xs leading-relaxed">{msg}</span>}
     </div>
+  );
+}
+
+// ── "Add ticker editor to your phone" (QR to the installable PWA) ────────
+function PhoneEditorButton() {
+  const [open, setOpen] = useState(false);
+  const [qr, setQr] = useState("");
+  const [url, setUrl] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    const u = `${window.location.origin}/lounge/ticker-control`;
+    setUrl(u);
+    import("qrcode")
+      .then(QR => QR.toDataURL(u, { width: 260, margin: 1, color: { dark: "#020912", light: "#ffffff" } }))
+      .then(setQr)
+      .catch(() => setQr(""));
+  }, [open]);
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="flex items-center justify-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 text-emerald-300 font-semibold text-sm px-4 py-3 sm:py-2.5 rounded-xl transition-colors"
+      >
+        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" aria-hidden><path d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 3v12h10V5H7zm5 14.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>
+        Add editor to phone
+      </button>
+
+      {open && (
+        <div role="dialog" aria-modal="true" onClick={() => setOpen(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(2,9,18,0.78)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ width: "100%", maxWidth: 360, background: "#071428", border: "1px solid rgba(45,212,191,0.30)", borderRadius: 18, padding: 22, textAlign: "center", boxShadow: "0 30px 80px rgba(0,0,0,0.55)" }}>
+            <div style={{ color: "#5eead4", fontSize: 11, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 4 }}>Mobile Ticker Editor</div>
+            <h2 style={{ color: "white", fontSize: 18, fontWeight: 800, margin: "0 0 12px" }}>Add it to your phone</h2>
+            {qr
+              ? <img src={qr} alt="QR code" width={220} height={220} style={{ width: 220, height: 220, borderRadius: 12, margin: "0 auto", display: "block" }} />
+              : <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", fontSize: 13 }}>Generating QR…</div>}
+            <ol style={{ textAlign: "left", color: "#cbd5e1", fontSize: 13, lineHeight: 1.6, margin: "14px 0 0", paddingLeft: 20 }}>
+              <li>Scan this QR with your phone&apos;s camera.</li>
+              <li>It opens the editor — sign in with your lounge login.</li>
+              <li>Tap <strong>Share → Add to Home Screen</strong>.</li>
+            </ol>
+            <div style={{ marginTop: 12, padding: "8px 10px", background: "rgba(255,255,255,0.04)", borderRadius: 10, color: "#7dd3fc", fontSize: 11.5, fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace", wordBreak: "break-all" }}>{url}</div>
+            <button onClick={() => setOpen(false)}
+              style={{ marginTop: 16, background: "#f0b429", color: "#06101f", border: 0, padding: "10px 18px", borderRadius: 10, fontWeight: 800, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

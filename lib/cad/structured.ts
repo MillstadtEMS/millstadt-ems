@@ -343,6 +343,9 @@ export async function ensureCadStructuredSchema(): Promise<void> {
   await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS ems_mutual_aid_agencies     JSONB`;
   // Per-unit disposition map (tracked from 2026-06-28 forward).
   await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS unit_dispositions           JSONB`;
+  // Audit: who last edited this entry, and when.
+  await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS edited_by                   TEXT`;
+  await db`ALTER TABLE cad_calls ADD COLUMN IF NOT EXISTS edited_at                   TIMESTAMPTZ`;
 
   await db`CREATE INDEX IF NOT EXISTS cad_calls_category_idx ON cad_calls (category)`;
   await db`CREATE INDEX IF NOT EXISTS cad_calls_year_month_idx ON cad_calls (source_year, dispatch_datetime)`;

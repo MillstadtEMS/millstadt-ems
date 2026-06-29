@@ -94,3 +94,13 @@ export async function requireTickerEditor(): Promise<NextResponse | null> {
   if (await canEditTicker()) return null;
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }
+
+/** Best-effort display name of whoever is making a ticker edit, for the
+ * audit trail: a named lounge employee if one is logged in, otherwise the
+ * shared admin session. */
+export async function tickerEditorName(): Promise<string> {
+  const emp = await currentEmployee();
+  if (emp) return emp.firstName || emp.username || "Staff";
+  if (await isAdminAuthed()) return "Admin";
+  return "Unknown";
+}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireTickerEditor } from "@/lib/admin/auth";
+import { requireTickerEditor, tickerEditorName } from "@/lib/admin/auth";
 import { sql } from "@/lib/neon";
+import { getCallsForCurrentYear } from "@/lib/cad/db";
 import {
   canonicalCategory,
   CallStructured,
@@ -103,6 +104,15 @@ function normalize(p: StructuredPayload | null | undefined): CallStructured {
   };
 }
 
+/** Admin list — includes the edited_by/edited_at audit fields that the
+ * public /api/cad/log intentionally strips. */
+export async function GET() {
+  const denied = await requireTickerEditor(); if (denied) return denied;
+  await ensureCadStructuredSchema();
+  const calls = await getCallsForCurrentYear();
+  return NextResponse.json(calls);
+}
+
 export async function POST(req: NextRequest) {
   const denied = await requireTickerEditor(); if (denied) return denied;
   await ensureCadStructuredSchema();
@@ -173,6 +183,7 @@ export async function POST(req: NextRequest) {
        ${struct.emsMutualAid ?? false}, ${JSON.stringify(struct.emsMutualAidAgencies ?? [])}::jsonb,
        ${JSON.stringify(struct.unitDispositions ?? {})}::jsonb)
   `;
+  await db`UPDATE cad_calls SET edited_by = ${await tickerEditorName()}, edited_at = NOW() WHERE id = ${id}`;
   return NextResponse.json({ ok: true, id });
 }
 
@@ -265,6 +276,8 @@ export async function PATCH(req: NextRequest) {
       }
     }
   }
+
+  await db`UPDATE cad_calls SET edited_by = ${await tickerEditorName()}, edited_at = NOW() WHERE id = ${id}`;
   return NextResponse.json({ ok: true });
 }
 

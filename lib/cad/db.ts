@@ -35,6 +35,8 @@ export interface Call {
   emsMutualAid?: boolean;
   emsMutualAidAgencies?: string[];
   unitDispositions?: Record<string, string>;
+  editedBy?: string | null;
+  editedAt?: string | null;
 }
 
 export interface FailedParse {
@@ -126,6 +128,10 @@ function rowToCall(row: Record<string, unknown>): Call {
     emsMutualAid:            row.ems_mutual_aid === true,
     emsMutualAidAgencies:    asStringArray(row.ems_mutual_aid_agencies),
     unitDispositions:        asStringMap(row.unit_dispositions),
+    editedBy:                row.edited_by != null ? String(row.edited_by) : null,
+    editedAt:                row.edited_at
+      ? (row.edited_at instanceof Date ? row.edited_at.toISOString() : String(row.edited_at))
+      : null,
   };
 }
 

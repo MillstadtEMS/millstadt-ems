@@ -295,6 +295,7 @@ export async function POST(req: NextRequest) {
     `;
   }
 
+  await db`UPDATE cad_calls SET edited_by = ${g.me.firstName || g.me.username || "Staff"}, edited_at = NOW() WHERE id = ${id}`;
   return NextResponse.json({ ok: true, id });
 }
 
@@ -380,6 +381,7 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
+  await db`UPDATE cad_calls SET edited_by = ${g.me.firstName || g.me.username || "Staff"}, edited_at = NOW() WHERE id = ${id}`;
   return NextResponse.json({ ok: true });
 }
 

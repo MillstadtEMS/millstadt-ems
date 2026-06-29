@@ -11,5 +11,6 @@ export const revalidate = 0;
 
 export async function GET() {
   const calls = await getCallsForCurrentYear();
-  return NextResponse.json(calls);
+  // Strip the internal audit fields (who/when edited) from the public feed.
+  return NextResponse.json(calls.map(({ editedBy: _e, editedAt: _a, ...c }) => c));
 }
