@@ -36,9 +36,19 @@ interface Row {
   hems_outcome: string | null;
   classification: string | null;
   cardiac_age: string | null;
+  unit_dispositions: Record<string, string> | string | null;
   dispatch_date: string;
   dispatch_time: string;
   dispatch_nature: string;
+}
+
+/** Per-unit disposition map → list of disposition values, tolerating a
+ * JSON string or a parsed object. */
+function dispoValues(v: unknown): string[] {
+  let o = v;
+  if (typeof o === "string") { try { o = JSON.parse(o); } catch { return []; } }
+  if (o && typeof o === "object") return Object.values(o as Record<string, unknown>).map((x) => String(x).trim()).filter(Boolean);
+  return [];
 }
 
 function asArray<T>(v: unknown): T[] {
@@ -72,7 +82,7 @@ export async function GET(req: NextRequest) {
       SELECT id, dispatch_datetime, dispatch_date, dispatch_time, dispatch_nature, category, units,
              mutual_aid_received, mutual_aid_received_agency,
              mutual_aid_given, mutual_aid_given_agency, hems_requested, hems_outcome,
-             classification, cardiac_age
+             classification, cardiac_age, unit_dispositions
       FROM cad_calls
       WHERE dispatch_datetime >= ${from + "T00:00:00"}
         AND dispatch_datetime <  ${to   + "T23:59:59"}
@@ -86,7 +96,7 @@ export async function GET(req: NextRequest) {
       SELECT id, dispatch_datetime, dispatch_date, dispatch_time, dispatch_nature, category, units,
              mutual_aid_received, mutual_aid_received_agency,
              mutual_aid_given, mutual_aid_given_agency, hems_requested, hems_outcome,
-             classification, cardiac_age
+             classification, cardiac_age, unit_dispositions
       FROM cad_calls
       WHERE dispatch_datetime >= ${start} AND dispatch_datetime < ${end}
     `) as unknown as Row[];
@@ -95,7 +105,7 @@ export async function GET(req: NextRequest) {
       SELECT id, dispatch_datetime, dispatch_date, dispatch_time, dispatch_nature, category, units,
              mutual_aid_received, mutual_aid_received_agency,
              mutual_aid_given, mutual_aid_given_agency, hems_requested, hems_outcome,
-             classification, cardiac_age
+             classification, cardiac_age, unit_dispositions
       FROM cad_calls
       WHERE source_year = ${year}
     `) as unknown as Row[];
@@ -105,7 +115,7 @@ export async function GET(req: NextRequest) {
       SELECT id, dispatch_datetime, dispatch_date, dispatch_time, dispatch_nature, category, units,
              mutual_aid_received, mutual_aid_received_agency,
              mutual_aid_given, mutual_aid_given_agency, hems_requested, hems_outcome,
-             classification, cardiac_age
+             classification, cardiac_age, unit_dispositions
       FROM cad_calls
       WHERE source_year = ${thisYear}
     `) as unknown as Row[];
@@ -136,6 +146,8 @@ export async function GET(req: NextRequest) {
   const maGivenUnitCount = new Map<string, number>();
   const maGivenAgencyCount = new Map<string, number>();
   const dayCount = new Map<string, number>();
+  const dispoCount = new Map<string, number>();
+  let callsWithDispo = 0;
   let mar = 0, mag = 0, hReq = 0, hHand = 0, hDis = 0, multiUnit = 0;
 
   for (const r of filtered) {
@@ -157,6 +169,9 @@ export async function GET(req: NextRequest) {
       if (r.hems_outcome === "handoff") hHand++;
       if (r.hems_outcome === "disregarded") hDis++;
     }
+    const dispos = dispoValues(r.unit_dispositions);
+    if (dispos.length > 0) callsWithDispo++;
+    for (const d of dispos) dispoCount.set(d, (dispoCount.get(d) ?? 0) + 1);
     const dt = r.dispatch_datetime instanceof Date ? r.dispatch_datetime : new Date(r.dispatch_datetime);
     if (!Number.isNaN(dt.getTime())) {
       const day = dt.toISOString().slice(0, 10);
@@ -254,9 +269,17 @@ export async function GET(req: NextRequest) {
       fireType: isFire(r.category) ? fireType(r.category) : null,
     }));
 
+  // Disposition breakdown (refusal vs transport, etc.). Percentages are of
+  // all recorded dispositions in range, so refusal + transport + … = 100%.
+  const dispoTotal = Array.from(dispoCount.values()).reduce((a, b) => a + b, 0);
+  const byDisposition = Array.from(dispoCount.entries())
+    .map(([name, count]) => ({ name, count, pct: dispoTotal > 0 ? (count / dispoTotal) * 100 : 0 }))
+    .sort((a, b) => b.count - a.count);
+
   return NextResponse.json({
     range: { from, to, year, month },
     filters: { unit, agency, category, maStatus, hemsStatus },
+    dispositions: { total: dispoTotal, callsWithDisposition: callsWithDispo, byDisposition },
     totals: {
       calls: total,
       mutualAidReceived: mar,

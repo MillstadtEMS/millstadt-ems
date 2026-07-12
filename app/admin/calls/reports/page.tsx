@@ -25,6 +25,14 @@ const MUTUAL_AID_AGENCIES = [
 ] as const;
 
 const UNIT_TONE: Record<string, string> = { M3925: "#f0b429", M3926: "#7dd3fc", M3935: "#c4b5fd" };
+// Color per disposition so refusal vs transport reads at a glance.
+const DISPO_TONE: Record<string, string> = {
+  "Transport": "#34d399",
+  "Refusal": "#fb923c",
+  "Disregarded on scene": "#94a3b8",
+  "Disregarded prior to arrival": "#64748b",
+  "Support Only": "#7dd3fc",
+};
 
 interface ReportTotals {
   calls: number; mutualAidReceived: number; mutualAidGiven: number;
@@ -42,10 +50,12 @@ interface DrillCall {
   id: string; date: string; time: string; nature: string;
   category: string; classification: string; isFire: boolean; fireType: string | null;
 }
+interface DispoRow { name: string; count: number; pct: number }
 interface ReportData {
   range: { from: string | null; to: string | null; year: number | null; month: number | null };
   filters: Record<string, string | null>;
   totals: ReportTotals;
+  dispositions: { total: number; callsWithDisposition: number; byDisposition: DispoRow[] };
   byCategory: CatRow[];
   byUnit:     UnitRow[];
   byMAAgency: AgRow[];
@@ -325,6 +335,24 @@ export default function CallReportsPage() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
+            {/* Dispositions — refusal vs transport, etc. (of all recorded
+                dispositions in range, so they add up to 100%). */}
+            <Section
+              title="Dispositions"
+              subtitle={data.dispositions.total > 0
+                ? `${data.dispositions.total} across ${data.dispositions.callsWithDisposition} call${data.dispositions.callsWithDisposition === 1 ? "" : "s"}`
+                : "none recorded"}
+            >
+              {data.dispositions.byDisposition.length === 0
+                ? <Empty hint="No unit dispositions recorded in this window. (Per-unit disposition tracking began June 28, 2026.)" />
+                : (
+                  <BarList
+                    rows={data.dispositions.byDisposition.map((r) => ({ label: r.name, count: r.count, pct: r.pct, accent: DISPO_TONE[r.name] ?? "#94a3b8" }))}
+                    accent="#34d399"
+                  />
+                )}
+            </Section>
+
             {/* Category leaderboard */}
             <Section title="Categories" subtitle={`${data.byCategory.length} distinct`}>
               {data.byCategory.length === 0 ? <Empty /> : (
