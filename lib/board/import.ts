@@ -32,7 +32,11 @@ const EXEC_MAP: [string, string, string, boolean, string, number][] = [
   ["billing_scenario", "Billing Collection", "H14", true, "levy", 140],
 ];
 
-export interface ImportResult { finance: number; budgetLines: number; cashMonths: number }
+function titleCase(s: string): string {
+  return s.toLowerCase().replace(/\b\w/g, (m) => m.toUpperCase()).replace(/\bEmts\b/i, "EMTs").replace(/-Time/i, "-Time");
+}
+
+export interface ImportResult { finance: number; budgetLines: number; cashMonths: number; personnelGroups: number }
 
 export async function importWorkbook(buffer: Buffer | ArrayBuffer): Promise<ImportResult> {
   await ensureBoardSchema();
@@ -106,5 +110,33 @@ export async function importWorkbook(buffer: Buffer | ArrayBuffer): Promise<Impo
     }
   }
 
-  return { finance, budgetLines, cashMonths };
+  // ── board_personnel (5 groups) + board_personnel_costs (employer detail) ──
+  await db`CREATE TABLE IF NOT EXISTS board_personnel (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, count DOUBLE PRECISION, rate DOUBLE PRECISION, gross DOUBLE PRECISION, taxes DOUBLE PRECISION, benefits DOUBLE PRECISION, uniform DOUBLE PRECISION, training DOUBLE PRECISION, total DOUBLE PRECISION, per_employee DOUBLE PRECISION, sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  await db`CREATE TABLE IF NOT EXISTS board_personnel_costs (id BIGSERIAL PRIMARY KEY, label TEXT NOT NULL, amount DOUBLE PRECISION, sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  let personnelGroups = 0;
+  const ps = wb.Sheets["Personnel"] as Sheet | undefined;
+  if (ps) {
+    await db`DELETE FROM board_personnel`;
+    const headers = [31, 43, 55, 67, 79];
+    for (let g = 0; g < headers.length; g++) {
+      const h = headers[g];
+      const nameRaw = val(ps, `A${h}`);
+      if (typeof nameRaw !== "string") continue;
+      const name = titleCase(nameRaw.replace(/^GROUP\s*\d+\s*[—-]\s*/i, "").trim());
+      const d = (off: number) => numOrNull(val(ps, `D${h + off}`));
+      await db`INSERT INTO board_personnel (name, count, rate, gross, taxes, benefits, uniform, training, total, per_employee, sort)
+               VALUES (${name}, ${d(2)}, ${d(3)}, ${d(4)}, ${d(5)}, ${d(6)}, ${d(7)}, ${d(8)}, ${d(9)}, ${d(10)}, ${g * 10})`;
+      personnelGroups++;
+    }
+    await db`DELETE FROM board_personnel_costs`;
+    let s = 0;
+    for (let r = 17; r <= 27; r++) {
+      const label = val(ps, `A${r}`), amt = numOrNull(val(ps, `D${r}`));
+      if (typeof label !== "string" || amt == null) continue;
+      s += 10;
+      await db`INSERT INTO board_personnel_costs (label, amount, sort) VALUES (${label.trim()}, ${amt}, ${s})`;
+    }
+  }
+
+  return { finance, budgetLines, cashMonths, personnelGroups };
 }
