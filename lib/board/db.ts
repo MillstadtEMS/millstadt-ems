@@ -32,6 +32,7 @@ export interface BoardUser {
   phone: string | null;
   role: BoardRole;
   officerTitle: string | null;   // President / Vice President / Treasurer / Secretary / Member
+  photoUrl: string | null;       // profile picture; also shown in the welcome popup
   isActive: boolean;
   mustChangePassword: boolean;
   simpleViewDefault: boolean;
@@ -60,6 +61,7 @@ export async function ensureBoardSchema(): Promise<void> {
       created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
+  await db`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS photo_url TEXT`;
   // Cached financial figures keyed by a stable slug, sourced from the workbook.
   await db`
     CREATE TABLE IF NOT EXISTS board_finance (
@@ -116,6 +118,7 @@ function rowToUser(r: Record<string, unknown>): BoardUser {
     phone: r.phone != null ? String(r.phone) : null,
     role: String(r.role) as BoardRole,
     officerTitle: r.officer_title != null ? String(r.officer_title) : null,
+    photoUrl: r.photo_url != null ? String(r.photo_url) : null,
     isActive: r.is_active === true,
     mustChangePassword: r.must_change_password === true,
     simpleViewDefault: r.simple_view_default === true,

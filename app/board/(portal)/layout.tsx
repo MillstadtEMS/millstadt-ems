@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { currentBoardUser } from "@/lib/board/auth";
 import LogoutButton from "@/components/board/LogoutButton";
+import WelcomeOverlay from "@/components/board/WelcomeOverlay";
+import BoardPhoto from "@/components/board/BoardPhoto";
 
 export const dynamic = "force-dynamic";
 
@@ -33,13 +35,16 @@ export default async function PortalLayout({ children }: { children: React.React
           <span className="spacer" />
 
           <span className="board-id">
-            <span className="av" aria-hidden="true">{initials}</span>
+            <span className="av" aria-hidden="true">
+              {user.photoUrl ? <BoardPhoto src={user.photoUrl} /> : initials}
+            </span>
             <span>{user.firstName} {user.lastName}</span>
           </span>
           <LogoutButton />
         </div>
       </header>
       <main className="board-wrap board-page">{children}</main>
+      <WelcomeOverlay firstName={user.firstName} lastName={user.lastName} photoUrl={user.photoUrl} />
     </>
   );
 }
