@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import BoardLogo from "@/components/board/BoardLogo";
 
 export default function BoardLogin() {
   const router = useRouter();
@@ -30,19 +31,14 @@ export default function BoardLogin() {
   return (
     <div className="board-login">
       <div className="aside">
-        <div className="mk" aria-hidden="true">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 2.2 3.4 6v6.2c0 5 3.7 8.2 8.6 9.6 4.9-1.4 8.6-4.6 8.6-9.6V6L12 2.2Z"/><path d="M12 8.4v7M8.5 11.9h7"/></svg>
-        </div>
-        <div>
-          <h2>Board of Directors Portal</h2>
-          <p>A private, secured space for Millstadt EMS leadership and the Board — financials, proposals, votes, and meeting records. Access and actions are logged for security and board-record purposes.</p>
-        </div>
+        <BoardLogo className="asidelogo" />
         <div className="foot">MILLSTADT EMS · FY 2026–27</div>
       </div>
 
       <div className="panel">
         <form className="form" onSubmit={submit}>
-          <p className="board-eyebrow eyebrow">Secure sign-in</p>
+          <BoardLogo className="brandmobile" />
+          <p className="board-eyebrow eyebrow">Board portal</p>
           <h1>Welcome back</h1>
           <p className="lede">Sign in with your board credentials.</p>
 

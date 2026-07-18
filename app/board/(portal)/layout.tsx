@@ -5,6 +5,7 @@ import LogoutButton from "@/components/board/LogoutButton";
 import WelcomeOverlay from "@/components/board/WelcomeOverlay";
 import BoardPhoto from "@/components/board/BoardPhoto";
 import BoardNav from "@/components/board/BoardNav";
+import BoardLogo from "@/components/board/BoardLogo";
 
 export const dynamic = "force-dynamic";
 
@@ -20,12 +21,12 @@ export default async function PortalLayout({ children }: { children: React.React
       <header className="board-top">
         <div className="board-wrap board-top-in">
           <Link href="/board" className="board-brand">
-            <span className="mk" aria-hidden="true">
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M12 2.2 3.4 6v6.2c0 5 3.7 8.2 8.6 9.6 4.9-1.4 8.6-4.6 8.6-9.6V6L12 2.2Z"/><path d="M12 8.4v7M8.5 11.9h7"/></svg>
+            <span className="mk" aria-hidden="true" style={{ overflow: "hidden", padding: 0 }}>
+              <BoardLogo style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
             </span>
             <span className="tt">
               <span className="t1">Millstadt EMS</span>
-              <span className="t2">Board Portal</span>
+              <span className="t2">Board of Directors</span>
             </span>
           </Link>
 
