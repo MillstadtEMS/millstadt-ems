@@ -37,13 +37,16 @@ export default async function PortalLayout({ children }: { children: React.React
             <span className="av" aria-hidden="true">
               {user.photoUrl ? <BoardPhoto src={user.photoUrl} /> : initials}
             </span>
-            <span>{user.firstName} {user.lastName}</span>
+            <span className="who">
+              <span className="nm">{user.firstName} {user.lastName}</span>
+              {user.officerTitle && <span className="ti">{user.officerTitle}</span>}
+            </span>
           </span>
           <LogoutButton />
         </div>
       </header>
       <main className="board-wrap board-page">{children}</main>
-      <WelcomeOverlay firstName={user.firstName} lastName={user.lastName} photoUrl={user.photoUrl} />
+      <WelcomeOverlay firstName={user.firstName} lastName={user.lastName} title={user.officerTitle} photoUrl={user.photoUrl} />
     </>
   );
 }

@@ -115,6 +115,41 @@ if (bs) {
   console.log(`board_budget_lines: ${inserted} line items from Budget Summary`);
 }
 
+// ---- Monthly Cash Flow → board_cashflow ----
+await sql`
+  CREATE TABLE IF NOT EXISTS board_cashflow (
+    month_idx INTEGER PRIMARY KEY, month TEXT NOT NULL,
+    beginning DOUBLE PRECISION, net DOUBLE PRECISION, ending DOUBLE PRECISION,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+const cf = wb.Sheets["Monthly Cash Flow"];
+if (cf) {
+  const gc = (r, c) => { const cell = cf[`${c}${r}`]; return cell ? cell.v : null; };
+  const cols = ["B","C","D","E","F","G","H","I","J","K","L","M"]; // May..Apr
+  await sql`DELETE FROM board_cashflow`;
+  let cfn = 0;
+  for (let i = 0; i < cols.length; i++) {
+    const c = cols[i];
+    const month = gc(4, c);
+    const beginning = gc(5, c), net = gc(16, c), ending = gc(17, c);
+    await sql`INSERT INTO board_cashflow (month_idx, month, beginning, net, ending)
+              VALUES (${i}, ${month != null ? String(month) : String(i)},
+                      ${typeof beginning === "number" ? beginning : null},
+                      ${typeof net === "number" ? net : null},
+                      ${typeof ending === "number" ? ending : null})`;
+    cfn++;
+  }
+  // Lowest month-end (B19) into board_finance.
+  const low = gc(19, "B");
+  if (typeof low === "number") {
+    await sql`
+      INSERT INTO board_finance (key,label,value,unit,grouping,sort,source_cell,updated_at)
+      VALUES ('cash_low','Lowest month-end cash balance',${low},'currency','cash',45,'Monthly Cash Flow!B19',NOW())
+      ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, updated_at=NOW()`;
+  }
+  console.log(`board_cashflow: ${cfn} months imported (low ${low})`);
+}
+
 // ---- ensure users table + seed admin ----
 await sql`
   CREATE TABLE IF NOT EXISTS board_users (

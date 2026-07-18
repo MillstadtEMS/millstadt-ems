@@ -9,8 +9,8 @@ import BoardPhoto from "./BoardPhoto";
  * greeting (or their initials until a photo is added). Dismisses on click or
  * after a few seconds; respects reduced-motion.
  */
-export default function WelcomeOverlay({ firstName, lastName, photoUrl }: {
-  firstName: string; lastName: string; photoUrl: string | null;
+export default function WelcomeOverlay({ firstName, lastName, title, photoUrl }: {
+  firstName: string; lastName: string; title: string | null; photoUrl: string | null;
 }) {
   const [show, setShow] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -39,6 +39,7 @@ export default function WelcomeOverlay({ firstName, lastName, photoUrl }: {
       <div className="board-welcome-card">
         <div className="hi">Welcome,</div>
         <div className="nm">{firstName} {lastName}</div>
+        {title && <div className="ti">{title}</div>}
         <div className="pic">
           {photoUrl ? <BoardPhoto src={photoUrl} /> : <span className="ini" aria-hidden="true">{initials}</span>}
         </div>

@@ -57,6 +57,10 @@
 .board-nav a:hover{color:#fff;background:rgba(255,255,255,.07)}
 .board-nav a.on{color:#fff;background:rgba(192,121,59,.22);box-shadow:inset 0 0 0 1px rgba(192,121,59,.4)}
 .board-id{display:flex;align-items:center;gap:9px;color:rgba(243,241,236,.85);font-size:12.5px}
+.board-id .who{display:flex;flex-direction:column;line-height:1.2}
+.board-id .who .nm{font-weight:600;color:#F3F1EC}
+.board-id .who .ti{font-family:var(--b-mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--b-accent-2)}
+@media(max-width:640px){.board-id .who{display:none}}
 .board-id .av{width:30px;height:30px;border-radius:50%;background:var(--b-accent);color:#1a120a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
 .board-btn-ghost{font-size:12px;color:rgba(243,241,236,.7);border:1px solid rgba(255,255,255,.14);background:transparent;padding:6px 11px;border-radius:8px;cursor:pointer}
 .board-btn-ghost:hover{color:#fff;border-color:rgba(255,255,255,.3)}
@@ -147,7 +151,8 @@
 .board-welcome.leaving{animation:bw-out .35s ease forwards}
 .board-welcome-card{text-align:center;color:#F3F1EC;transform:translateY(0);animation:bw-rise .55s cubic-bezier(.2,.9,.3,1) both}
 .board-welcome-card .hi{font-family:var(--b-mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:rgba(243,241,236,.62)}
-.board-welcome-card .nm{font-family:var(--b-serif);font-size:clamp(28px,5vw,44px);font-weight:600;letter-spacing:-.01em;margin:8px 0 22px;text-wrap:balance}
+.board-welcome-card .nm{font-family:var(--b-serif);font-size:clamp(28px,5vw,44px);font-weight:600;letter-spacing:-.01em;margin:8px 0 4px;text-wrap:balance}
+.board-welcome-card .ti{font-family:var(--b-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--b-accent-2);margin:0 0 22px}
 .board-welcome-card .pic{width:118px;height:118px;margin:0 auto;border-radius:50%;border:2px solid rgba(205,144,89,.55);
   background:linear-gradient(160deg,#16243c,#0c1524);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.5)}
 .board-welcome-card .pic img{width:100%;height:100%;object-fit:cover}
