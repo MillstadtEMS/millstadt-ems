@@ -19,7 +19,7 @@ export default function WorkbookUpload() {
       const res = await fetch("/api/board/admin/import", { method: "POST", body: fd });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setMsg({ ok: false, text: data.error || "Update failed." }); return; }
-      setMsg({ ok: true, text: `Updated: ${data.finance} figures, ${data.budgetLines} budget lines, ${data.cashMonths} months of cash flow. The site now shows the new numbers.` });
+      setMsg({ ok: true, text: `Updated: ${data.finance} figures, ${data.budgetLines} budget lines, ${data.cashMonths} months of cash flow, ${data.personnelGroups ?? 0} personnel groups, ${data.truckUnits ?? 0} fleet units, ${data.debts ?? 0} debts, ${data.forecastRows ?? 0} forecast rows. The site now shows the new numbers.` });
       setFile(null); if (inputRef.current) inputRef.current.value = "";
       router.refresh();
     } catch { setMsg({ ok: false, text: "Network error. Please try again." }); }
