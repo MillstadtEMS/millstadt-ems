@@ -3,21 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const ITEMS = [
-  { href: "/board", label: "Financials", exact: true },
-  { href: "/board/meetings", label: "Meetings" },
-  { href: "/board/budget", label: "Budget" },
-  { href: "/board/cashflow", label: "Cash Flow" },
-  { href: "/board/personnel", label: "Personnel" },
-  { href: "/board/trucks", label: "Fleet" },
-  { href: "/board/debt", label: "Debt" },
-  { href: "/board/forecast", label: "Forecast" },
-  { href: "/board/levy", label: "Levy" },
-];
-
-export default function BoardNav({ isAdmin = false }: { isAdmin?: boolean }) {
+export default function BoardNav({ isAdmin = false, showMeetings = true }: { isAdmin?: boolean; showMeetings?: boolean }) {
   const path = usePathname() || "";
-  const items = isAdmin ? [...ITEMS, { href: "/board/admin", label: "Admin" }] : ITEMS;
+  const items = [
+    { href: "/board", label: "Home", exact: true },
+    ...(showMeetings ? [{ href: "/board/meetings", label: "Meetings" }] : []),
+    { href: "/board/referendum", label: "Referendum" },
+    ...(isAdmin ? [{ href: "/board/admin", label: "Admin" }] : []),
+  ];
   return (
     <nav className="board-nav" aria-label="Primary">
       {items.map((it) => {

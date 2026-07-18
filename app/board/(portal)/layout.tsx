@@ -6,6 +6,7 @@ import WelcomeOverlay from "@/components/board/WelcomeOverlay";
 import BoardPhoto from "@/components/board/BoardPhoto";
 import BoardNav from "@/components/board/BoardNav";
 import BoardLogo from "@/components/board/BoardLogo";
+import { userBoards } from "@/lib/board/governance";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,7 @@ export default async function PortalLayout({ children }: { children: React.React
             </span>
           </Link>
 
-          <BoardNav isAdmin={user.role === "admin"} />
+          <BoardNav isAdmin={user.role === "admin"} showMeetings={userBoards(user).length > 0} />
 
           <span className="spacer" />
 

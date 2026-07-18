@@ -1,9 +1,15 @@
+import { redirect } from "next/navigation";
 import { getCashflow } from "@/lib/board/cashflow";
 import { money } from "@/lib/board/finance";
 
 export const dynamic = "force-dynamic";
 
+// Monthly cash flow needs verified Sage actuals, which don't exist yet. The
+// code is preserved and reactivates when ENABLE_ACTUAL_CASH_FLOW=true and the
+// figures come from real accounting data — never from dividing annual totals.
 export default async function CashFlowPage() {
+  if (process.env.ENABLE_ACTUAL_CASH_FLOW !== "true") redirect("/board/referendum");
+
   const months = await getCashflow();
   const loaded = months.length > 0;
   const endings = months.map((m) => m.ending ?? 0);

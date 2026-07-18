@@ -141,11 +141,15 @@ export async function ensureGovernanceSchema(): Promise<void> {
 
 // ── Role / eligibility helpers ──────────────────────────────────────────────
 const EMS_ROLES = new Set(["ems_board", "ems_president"]);
-/** Which board a user belongs to for "my meetings" (leadership sees both). */
+/**
+ * Which board's meetings a user participates in. Meetings, attendance, and
+ * quorum belong to the EMS Board only — the Fire Protection District Board are
+ * view-only GUESTS of the referendum model, not a board managed in this portal.
+ * Fire members therefore have no meetings ([]).
+ */
 export function userBoards(u: BoardUser): Board[] {
-  if (u.role === "fire_board") return ["fire"];
-  if (EMS_ROLES.has(u.role)) return ["ems"];
-  return ["ems", "fire"]; // admin / submitter / audit_reviewer
+  if (u.role === "fire_board") return [];
+  return ["ems"]; // EMS members + admin / submitter / audit_reviewer
 }
 /** Is this user a voting/eligible member counted toward the board's quorum? */
 export function isEligibleMember(u: { role: string }, board: Board): boolean {
@@ -196,7 +200,7 @@ function rowToMeeting(r: Record<string, unknown>): Meeting {
 }
 
 // ── Recurring generation ────────────────────────────────────────────────────
-/** Ensure a recurring meeting exists for each board for the next `monthsAhead` months. Idempotent. */
+/** Ensure the recurring EMS Board meeting exists for the next `monthsAhead` months. Idempotent. */
 export async function generateRecurring(monthsAhead = 6, now = new Date()): Promise<number> {
   await ensureGovernanceSchema();
   const db = sql();
@@ -204,7 +208,7 @@ export async function generateRecurring(monthsAhead = 6, now = new Date()): Prom
   for (let i = 0; i <= monthsAhead; i++) {
     const y = now.getUTCFullYear();
     const m = now.getUTCMonth() + i;
-    for (const board of ["ems", "fire"] as Board[]) {
+    for (const board of ["ems"] as Board[]) { // EMS Board only — Fire Board are guests, not managed here
       const d = recurringDate(board, y + Math.floor(m / 12), ((m % 12) + 12) % 12);
       if (d < new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))) continue;
       const def = DEFAULTS[board];

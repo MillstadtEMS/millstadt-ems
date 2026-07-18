@@ -3,9 +3,10 @@
  *
  *   node scripts/board-meetings-seed.mjs [monthsAhead]
  *
- * Creates the governance tables and generates the recurring board meetings:
+ * Creates the governance tables and generates the recurring EMS Board meeting:
  *   EMS  = 2nd Wednesday of each month
- *   Fire = last Thursday of each month
+ * The Fire Protection District Board are view-only guests of the referendum
+ * model — they are not managed here, so no Fire meetings are generated.
  * Idempotent — safe to re-run; existing meetings are left untouched. Reads
  * DATABASE_URL from .env.local. Contains no financial or personal data.
  */
@@ -53,7 +54,7 @@ for (let i = 0; i <= monthsAhead; i++) {
   const m = now.getUTCMonth() + i;
   const y = now.getUTCFullYear() + Math.floor(m / 12);
   const m0 = ((m % 12) + 12) % 12;
-  for (const board of ["ems", "fire"]) {
+  for (const board of ["ems"]) { // EMS Board only — Fire Board are guests
     const d = recurring(board, y, m0);
     if (d < todayFloor) continue;
     const def = DEFAULTS[board];
