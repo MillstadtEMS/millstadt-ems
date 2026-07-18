@@ -36,12 +36,21 @@ function titleCase(s: string): string {
   return s.toLowerCase().replace(/\b\w/g, (m) => m.toUpperCase()).replace(/\bEmts\b/i, "EMTs").replace(/-Time/i, "-Time");
 }
 
-export interface ImportResult { finance: number; budgetLines: number; cashMonths: number; personnelGroups: number }
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+/** Excel payoff cell → "May 2033". Handles JS Date (cellDates), Excel serial, or raw string. */
+function fmtPayoff(v: unknown): string | null {
+  if (v == null) return null;
+  if (v instanceof Date) return `${MONTHS[v.getUTCMonth()]} ${v.getUTCFullYear()}`;
+  if (typeof v === "number") { const d = new Date(Date.UTC(1899, 11, 30) as number); d.setUTCDate(d.getUTCDate() + v); return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`; }
+  return String(v).replace(/\s*00:00:00.*$/, "").trim();
+}
+
+export interface ImportResult { finance: number; budgetLines: number; cashMonths: number; personnelGroups: number; truckUnits: number; debts: number; forecastRows: number }
 
 export async function importWorkbook(buffer: Buffer | ArrayBuffer): Promise<ImportResult> {
   await ensureBoardSchema();
   const db = sql();
-  const wb = XLSX.read(buffer, { type: "buffer" });
+  const wb = XLSX.read(buffer, { type: "buffer", cellDates: true });
   const exec = wb.Sheets["Executive Dashboard"] as Sheet | undefined;
   if (!exec) throw new Error("Workbook is missing the 'Executive Dashboard' sheet — is this the right file?");
 
@@ -138,5 +147,69 @@ export async function importWorkbook(buffer: Buffer | ArrayBuffer): Promise<Impo
     }
   }
 
-  return { finance, budgetLines, cashMonths, personnelGroups };
+  // ── board_truck (itemized fleet-maintenance actuals) ──
+  await db`CREATE TABLE IF NOT EXISTS board_truck (id BIGSERIAL PRIMARY KEY, unit TEXT NOT NULL, fy_total DOUBLE PRECISION, months JSONB, sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  let truckUnits = 0;
+  const tm = wb.Sheets["Truck Maintenance"] as Sheet | undefined;
+  if (tm) {
+    await db`DELETE FROM board_truck`;
+    const mcols = ["B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"];
+    for (let r = 5; r <= 7; r++) {
+      const nameRaw = val(tm, `A${r}`);
+      if (typeof nameRaw !== "string" || !nameRaw.trim()) continue;
+      const unit = nameRaw.replace(/^Truck Repairs\s*/i, "Unit ").trim();
+      const months = mcols.map((c) => ({ label: String(val(tm, `${c}4`) ?? c), amount: numOrNull(val(tm, `${c}${r}`)) ?? 0 }));
+      await db`INSERT INTO board_truck (unit, fy_total, months, sort) VALUES (${unit}, ${numOrNull(val(tm, `N${r}`))}, ${JSON.stringify(months)}::jsonb, ${(r - 5) * 10})`;
+      truckUnits++;
+    }
+  }
+
+  // ── board_debt (every obligation itemized) ──
+  await db`CREATE TABLE IF NOT EXISTS board_debt (id BIGSERIAL PRIMARY KEY, creditor TEXT NOT NULL, purpose TEXT, balance DOUBLE PRECISION, rate DOUBLE PRECISION, rate_note TEXT, monthly DOUBLE PRECISION, annual DOUBLE PRECISION, remaining DOUBLE PRECISION, payoff TEXT, notes TEXT, kind TEXT NOT NULL DEFAULT 'amortizing', sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  let debts = 0;
+  const ds = wb.Sheets["Debt Schedule"] as Sheet | undefined;
+  if (ds) {
+    await db`DELETE FROM board_debt`;
+    const rows: [number, string][] = [[5, "amortizing"], [6, "amortizing"], [7, "amortizing"], [8, "amortizing"], [9, "amortizing"], [10, "amortizing"], [12, "payable"], [13, "payable"]];
+    let sort = 0;
+    for (const [r, kind] of rows) {
+      const creditor = val(ds, `A${r}`);
+      if (typeof creditor !== "string" || !creditor.trim()) continue;
+      const rateRaw = val(ds, `E${r}`);
+      const rate = numOrNull(rateRaw);
+      const rateNote = rate == null && typeof rateRaw === "string" ? rateRaw : null;
+      const str = (a: string) => { const v = val(ds, a); return v != null ? String(v) : null; };
+      sort += 10;
+      await db`INSERT INTO board_debt (creditor, purpose, balance, rate, rate_note, monthly, annual, remaining, payoff, notes, kind, sort)
+               VALUES (${creditor.trim()}, ${str(`B${r}`)}, ${numOrNull(val(ds, `D${r}`))}, ${rate}, ${rateNote},
+                       ${numOrNull(val(ds, `F${r}`))}, ${numOrNull(val(ds, `G${r}`))}, ${numOrNull(val(ds, `H${r}`))},
+                       ${fmtPayoff(val(ds, `I${r}`))}, ${str(`J${r}`)}, ${kind}, ${sort})`;
+      debts++;
+    }
+  }
+
+  // ── board_forecast (Low / Expected / High growth scenarios) ──
+  await db`CREATE TABLE IF NOT EXISTS board_forecast (id BIGSERIAL PRIMARY KEY, scenario TEXT NOT NULL, category TEXT NOT NULL, y1 DOUBLE PRECISION, y2 DOUBLE PRECISION, y3 DOUBLE PRECISION, y4 DOUBLE PRECISION, y5 DOUBLE PRECISION, is_total BOOLEAN NOT NULL DEFAULT FALSE, sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  let forecastRows = 0;
+  const fc = wb.Sheets["Five-Year Forecast"] as Sheet | undefined;
+  if (fc) {
+    await db`DELETE FROM board_forecast`;
+    const blocks: [string, number][] = [["Low", 6], ["Expected", 16], ["High", 26]];
+    const ycols = ["B", "C", "D", "E", "F"];
+    let sort = 0;
+    for (const [scenario, start] of blocks) {
+      for (let r = start; r <= start + 6; r++) {
+        const cat = val(fc, `A${r}`);
+        if (typeof cat !== "string" || !cat.trim()) continue;
+        const isTotal = /total expenses|surplus|deficit/i.test(cat);
+        const y = ycols.map((c) => numOrNull(val(fc, `${c}${r}`)));
+        sort += 10;
+        await db`INSERT INTO board_forecast (scenario, category, y1, y2, y3, y4, y5, is_total, sort)
+                 VALUES (${scenario}, ${cat.trim()}, ${y[0]}, ${y[1]}, ${y[2]}, ${y[3]}, ${y[4]}, ${isTotal}, ${sort})`;
+        forecastRows++;
+      }
+    }
+  }
+
+  return { finance, budgetLines, cashMonths, personnelGroups, truckUnits, debts, forecastRows };
 }

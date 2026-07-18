@@ -8,6 +8,9 @@ const ITEMS = [
   { href: "/board/budget", label: "Budget" },
   { href: "/board/cashflow", label: "Cash Flow" },
   { href: "/board/personnel", label: "Personnel" },
+  { href: "/board/trucks", label: "Fleet" },
+  { href: "/board/debt", label: "Debt" },
+  { href: "/board/forecast", label: "Forecast" },
   { href: "/board/levy", label: "Levy" },
 ];
 
