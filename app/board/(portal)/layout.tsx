@@ -29,7 +29,7 @@ export default async function PortalLayout({ children }: { children: React.React
             </span>
           </Link>
 
-          <BoardNav />
+          <BoardNav isAdmin={user.role === "admin"} />
 
           <span className="spacer" />
 
