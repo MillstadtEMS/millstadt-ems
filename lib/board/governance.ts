@@ -320,6 +320,18 @@ export async function setAttendance(meetingId: number, userId: string, response:
     ON CONFLICT (meeting_id, user_id) DO UPDATE SET response = EXCLUDED.response, note = EXCLUDED.note, responded_at = NOW()`;
 }
 
+/** Secretary confirms the OFFICIAL attendance record (distinct from planned RSVP). */
+export async function confirmAttendance(meetingId: number, userId: string, status: string, by: string, arrival: string | null, departure: string | null): Promise<void> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  await db`
+    INSERT INTO board_attendance (meeting_id, user_id, response, confirmed_status, arrival_time, departure_time, confirmed_by, confirmed_at)
+    VALUES (${meetingId}, ${userId}, 'No Response', ${status}, ${arrival}, ${departure}, ${by}, NOW())
+    ON CONFLICT (meeting_id, user_id) DO UPDATE SET confirmed_status = EXCLUDED.confirmed_status,
+      arrival_time = EXCLUDED.arrival_time, departure_time = EXCLUDED.departure_time,
+      confirmed_by = EXCLUDED.confirmed_by, confirmed_at = NOW()`;
+}
+
 /** 48-hour briefing deadline (spec §13): questions after it are still saved but flagged. */
 export function isAfterDeadline(meetingDate: string, now = new Date()): boolean {
   const meet = new Date(`${meetingDate}T00:00:00Z`).getTime();

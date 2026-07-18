@@ -2,10 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { currentBoardUser } from "@/lib/board/auth";
 import AttendanceControl from "@/components/board/AttendanceControl";
+import ConfirmAttendance from "@/components/board/ConfirmAttendance";
 import QuestionForm from "@/components/board/QuestionForm";
 import {
   getMeeting, getAttendance, getQuorumRequired, computeQuorum, getQuestions,
-  isEligibleMember, canSeeQuestion, isLeadership, BOARD_LABEL, VISIBILITY_LABEL, type Board,
+  isEligibleMember, canSeeQuestion, isLeadership, isSecretary, BOARD_LABEL, VISIBILITY_LABEL, type Board,
 } from "@/lib/board/governance";
 
 export const dynamic = "force-dynamic";
@@ -94,6 +95,12 @@ export default async function MeetingDetail({ params }: { params: Promise<{ id: 
         </table>
       </div>
       <p className="board-updated" style={{ marginTop: 10 }}>Planned attendance only. The secretary confirms the official record during or after the meeting; only confirmed attendance counts toward statistics.</p>
+
+      {isSecretary(user) && (
+        <div style={{ marginTop: 18 }}>
+          <ConfirmAttendance meetingId={meeting.id} members={att} />
+        </div>
+      )}
 
       {/* Questions */}
       <h2 className="board-h2">Questions before the meeting</h2>

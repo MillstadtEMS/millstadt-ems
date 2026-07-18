@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { currentBoardUser } from "@/lib/board/auth";
 import { getFinance, money, pct } from "@/lib/board/finance";
+import NextMeetingCard from "@/components/board/NextMeetingCard";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,8 @@ export default async function BoardDashboard() {
           <Link href="/board/budget">Detailed</Link>
         </div>
       </div>
+
+      {user && <NextMeetingCard user={user} />}
 
       {!loaded && (
         <div className="board-card" style={{ marginTop: 22 }}>
