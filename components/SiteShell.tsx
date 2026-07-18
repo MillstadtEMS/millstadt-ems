@@ -20,7 +20,8 @@ export default function SiteShell({
     pathname.startsWith("/truckcheck") ||
     pathname.startsWith("/inventory") ||
     pathname.startsWith("/lounge") ||
-    pathname.startsWith("/admin");
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/board");
 
   if (standalone) {
     return (

@@ -1,0 +1,96 @@
+/**
+ * Board Portal auth — username/password with forced first-login change.
+ *
+ * Mirrors the Employee Lounge model (scrypt password hashes + an HMAC-signed
+ * session cookie bound to the current password hash, so a password change
+ * invalidates outstanding sessions). Separate cookie + user table from the
+ * lounge — board members are not employees.
+ */
+import { scryptSync, randomBytes, createHmac, timingSafeEqual } from "crypto";
+import { cookies } from "next/headers";
+import { getUserById, getUserByUsername, type BoardUser } from "./db";
+
+const COOKIE = "mas_board";
+const MAX_AGE = 60 * 30; // 30 minutes inactivity (brief §15)
+
+export const BOARD_COOKIE_NAME = COOKIE;
+
+function sessionKey(): string {
+  return `board_session_${process.env.LOUNGE_ENCRYPTION_KEY ?? process.env.DATABASE_URL ?? "dev"}`;
+}
+
+// ── Password hashing (scrypt) ───────────────────────────────────────────────
+export function hashPassword(password: string): string {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(password, salt, 64).toString("hex");
+  return `${salt}:${hash}`;
+}
+export function verifyPassword(password: string, stored: string): boolean {
+  const [salt, hash] = stored.split(":");
+  if (!salt || !hash) return false;
+  const test = scryptSync(password, salt, 64).toString("hex");
+  try { return timingSafeEqual(Buffer.from(test, "hex"), Buffer.from(hash, "hex")); }
+  catch { return false; }
+}
+
+// ── Session token: userId.issuedAt.hmac(userId.issuedAt.pwFingerprint) ──────
+function pwFingerprint(passwordHash: string): string {
+  return createHmac("sha256", sessionKey()).update(passwordHash).digest("hex").slice(0, 16);
+}
+function signSession(userId: string, passwordHash: string): string {
+  const ts = Date.now().toString();
+  const body = `${userId}.${ts}`;
+  const sig = createHmac("sha256", sessionKey()).update(`${body}.${pwFingerprint(passwordHash)}`).digest("hex");
+  return `${body}.${sig}`;
+}
+
+export function sessionCookieOptions(userId: string, passwordHash: string) {
+  return {
+    name: COOKIE,
+    value: signSession(userId, passwordHash),
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    maxAge: MAX_AGE,
+    path: "/",
+  };
+}
+
+export async function setSession(userId: string, passwordHash: string): Promise<void> {
+  const c = await cookies();
+  c.set(sessionCookieOptions(userId, passwordHash));
+}
+export async function clearSession(): Promise<void> {
+  const c = await cookies();
+  c.set({ name: COOKIE, value: "", httpOnly: true, path: "/", maxAge: 0 });
+}
+
+/** Resolve the signed-in board user from the cookie, or null. */
+export async function currentBoardUser(): Promise<BoardUser | null> {
+  const c = await cookies();
+  const token = c.get(COOKIE)?.value;
+  if (!token) return null;
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  const [userId, ts, sig] = parts;
+  if (Date.now() - Number(ts) > MAX_AGE * 1000) return null;
+  const user = await getUserById(userId);
+  if (!user || !user.isActive) return null;
+  const expected = createHmac("sha256", sessionKey())
+    .update(`${userId}.${ts}.${pwFingerprint(user.passwordHash)}`).digest("hex");
+  try {
+    if (!timingSafeEqual(Buffer.from(sig, "hex"), Buffer.from(expected, "hex"))) return null;
+  } catch { return null; }
+  // Strip the hash before returning.
+  const { passwordHash: _omit, ...safe } = user;
+  void _omit;
+  return safe;
+}
+
+export { getUserByUsername };
+
+/** Roles allowed to see the detailed (non-simple) financial view by default. */
+export function canUseDetailedView(role: BoardUser["role"]): boolean {
+  return role === "admin" || role === "submitter" || role === "ems_board" || role === "ems_president";
+}
+export function isAdmin(u: BoardUser | null): boolean { return u?.role === "admin"; }
