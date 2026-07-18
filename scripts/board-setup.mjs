@@ -72,7 +72,48 @@ for (const [key, label, addr, isText, grouping, sort] of MAP) {
       grouping=EXCLUDED.grouping, sort=EXCLUDED.sort, source_cell=EXCLUDED.source_cell, updated_at=NOW()`;
   n++;
 }
+// District EAV (Assumptions!B66) — needed by the levy calculator.
+const asm = wb.Sheets["Assumptions"];
+const eav = asm && asm["B66"] ? asm["B66"].v : null;
+if (typeof eav === "number") {
+  await sql`
+    INSERT INTO board_finance (key,label,value,unit,grouping,sort,source_cell,needs_review,updated_at)
+    VALUES ('district_eav','District Equalized Assessed Value',${eav},'currency','levy',5,'Assumptions!B66',TRUE,NOW())
+    ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, source_cell=EXCLUDED.source_cell, updated_at=NOW()`;
+  n++;
+}
 console.log(`board_finance: upserted ${n} figures from ${WB.split("/").pop()}`);
+
+// ---- Budget Summary → itemized lines (Detailed View) ----
+await sql`
+  CREATE TABLE IF NOT EXISTS board_budget_lines (
+    id BIGSERIAL PRIMARY KEY, section TEXT NOT NULL, category TEXT NOT NULL,
+    amount DOUBLE PRECISION, status TEXT, sort INTEGER NOT NULL DEFAULT 0,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+const bs = wb.Sheets["Budget Summary"];
+if (bs) {
+  await sql`DELETE FROM board_budget_lines`;
+  const g = (r, c) => { const cell = bs[`${c}${r}`]; return cell ? cell.v : null; };
+  let section = "General"; let sort = 0; let inserted = 0;
+  for (let r = 5; r <= 71; r++) {
+    const a = g(r, "A"); const b = g(r, "B"); const st = g(r, "G");
+    if (typeof a !== "string" || !a.trim()) continue;
+    const label = a.trim();
+    const isHeader = typeof b !== "number";
+    const isTotal = /^(total|subtotal)/i.test(label);
+    if (isHeader && !isTotal) {                 // section title row
+      section = label.replace(/^SECTION\s*\d+\s*[—-]\s*/i, "").replace(/\s*[—-].*$/, "").trim();
+      continue;
+    }
+    if (isTotal || typeof b !== "number") continue;
+    sort += 10;
+    await sql`INSERT INTO board_budget_lines (section, category, amount, status, sort)
+              VALUES (${section}, ${label}, ${b}, ${st != null ? String(st) : null}, ${sort})`;
+    inserted++;
+  }
+  console.log(`board_budget_lines: ${inserted} line items from Budget Summary`);
+}
 
 // ---- ensure users table + seed admin ----
 await sql`

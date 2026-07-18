@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { currentBoardUser } from "@/lib/board/auth";
 import { getFinance, money, pct } from "@/lib/board/finance";
 
@@ -54,7 +55,7 @@ export default async function BoardDashboard() {
         </div>
         <div className="board-viewtoggle" role="group" aria-label="View">
           <a className="on">Simple</a>
-          <a title="Line-by-line view — arriving with the full financials phase">Detailed</a>
+          <Link href="/board/budget">Detailed</Link>
         </div>
       </div>
 

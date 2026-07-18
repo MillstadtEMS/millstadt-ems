@@ -4,6 +4,7 @@ import { currentBoardUser } from "@/lib/board/auth";
 import LogoutButton from "@/components/board/LogoutButton";
 import WelcomeOverlay from "@/components/board/WelcomeOverlay";
 import BoardPhoto from "@/components/board/BoardPhoto";
+import BoardNav from "@/components/board/BoardNav";
 
 export const dynamic = "force-dynamic";
 
@@ -28,9 +29,7 @@ export default async function PortalLayout({ children }: { children: React.React
             </span>
           </Link>
 
-          <nav className="board-nav" aria-label="Primary">
-            <Link href="/board" className="on">Financials</Link>
-          </nav>
+          <BoardNav />
 
           <span className="spacer" />
 
