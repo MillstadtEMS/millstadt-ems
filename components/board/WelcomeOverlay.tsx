@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import BoardEmojiAvatar from "./BoardEmojiAvatar";
 
 /**
- * A brief welcome splash shown whenever the board portal shell mounts.
+ * A brief welcome splash shown only after a successful login handoff.
  */
 export default function WelcomeOverlay({ firstName, title, photoUrl, role, emoji }: {
   firstName: string;
@@ -17,6 +17,8 @@ export default function WelcomeOverlay({ firstName, title, photoUrl, role, emoji
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
+    if (window.sessionStorage.getItem("board:welcome") !== "1") return;
+    window.sessionStorage.removeItem("board:welcome");
     const raf = requestAnimationFrame(() => setShow(true));
     const t1 = setTimeout(() => setLeaving(true), 2800);
     const t2 = setTimeout(() => setShow(false), 3300);

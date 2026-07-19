@@ -24,6 +24,7 @@ export default function BoardLogin() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setErr(data.error || "Sign-in failed. Check your username and password."); return; }
+      window.sessionStorage.setItem("board:welcome", "1");
       router.push(data.mustChange ? "/board/change-password" : "/board");
       router.refresh();
     } catch {
