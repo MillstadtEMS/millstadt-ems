@@ -31,13 +31,15 @@ export default function BoardLogin() {
   return (
     <div className="board-login">
       <div className="aside">
-        <BoardLogo className="asidelogo" variant="dark" />
+        <BoardLogo className="asidelogo" />
         <div className="foot">MILLSTADT EMS · BOARD PORTAL</div>
       </div>
 
       <div className="panel">
         <form className="form" onSubmit={submit}>
-          <BoardLogo className="brandmobile" variant="light" />
+          <BoardLogo className="brandmobile" />
+          <p className="eyebrow">Millstadt EMS</p>
+          <h1>Board Portal Sign In</h1>
 
           {err && <div className="board-err" role="alert">{err}</div>}
 

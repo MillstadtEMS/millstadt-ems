@@ -25,7 +25,7 @@ export default async function PortalLayout({ children }: { children: React.React
     <div className="board-shell">
       <aside className="board-side">
         <Link href="/board" className="board-side-brand">
-          <BoardLogo variant="dark" />
+          <BoardLogo className="board-seal-logo" />
         </Link>
         <BoardNav isAdmin={isBoardAdmin} showMeetings={showMeetings} showReferendum={showReferendum} showRequests={showRequests} />
         <p className="board-log-notice">Portal activity is logged for governance and security.</p>
@@ -39,8 +39,8 @@ export default async function PortalLayout({ children }: { children: React.React
               <BoardNav isAdmin={isBoardAdmin} showMeetings={showMeetings} showReferendum={showReferendum} showRequests={showRequests} />
             </details>
             <Link href="/board" className="board-mobile-brand">
-              <span>MILLSTADT EMS</span>
-              <strong>BOARD PORTAL</strong>
+              <BoardLogo className="board-mobile-logo" />
+              <span className="sr-only">Millstadt EMS Board Portal</span>
             </Link>
 
             <span className="spacer" />

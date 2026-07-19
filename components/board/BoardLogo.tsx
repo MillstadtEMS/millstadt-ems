@@ -2,6 +2,7 @@
 import type { CSSProperties } from "react";
 
 const SRC = {
+  seal: "/board/mems-bod-logo.png",
   dark: "/board/branding/millstadt-ems-board-portal-dark.png",
   light: "/board/branding/millstadt-ems-board-portal-light.png",
   print: "/board/branding/millstadt-ems-board-portal-white-background.png",
@@ -11,7 +12,7 @@ export default function BoardLogo({
   style,
   className,
   alt = "Millstadt EMS Board of Directors Portal",
-  variant = "light",
+  variant = "seal",
 }: {
   style?: CSSProperties;
   className?: string;
