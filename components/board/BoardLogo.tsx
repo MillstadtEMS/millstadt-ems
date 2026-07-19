@@ -2,12 +2,12 @@
 import type { CSSProperties } from "react";
 
 const SRC = {
-  auto: "/board/branding/millstadt-ems-board-portal-dark.png",
+  auto: "/board/mems-bod-logo.png",
   mark: "/images/millstadt-ems/logo.png",
   seal: "/images/millstadt-ems/logo.png",
-  dark: "/board/branding/millstadt-ems-board-portal-dark.png",
-  light: "/board/branding/millstadt-ems-board-portal-light.png",
-  print: "/board/branding/millstadt-ems-board-portal-white-background.png",
+  dark: "/board/mems-bod-logo.png",
+  light: "/board/mems-bod-logo.png",
+  print: "/board/mems-bod-logo.png",
 };
 
 export default function BoardLogo({

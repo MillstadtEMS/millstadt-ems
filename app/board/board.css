@@ -84,10 +84,10 @@
 .board-root :focus-visible{outline:2px solid var(--b-accent-2);outline-offset:3px;border-radius:6px}
 .board-root ::selection{background:color-mix(in srgb,var(--b-accent) 42%,transparent)}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.board-auto-logo{content:url("/board/branding/millstadt-ems-board-portal-dark.png")}
-@media (prefers-color-scheme:light){.board-auto-logo{content:url("/board/branding/millstadt-ems-board-portal-light.png")}}
-.board-root[data-b-theme="dark"] .board-auto-logo{content:url("/board/branding/millstadt-ems-board-portal-dark.png")}
-.board-root[data-b-theme="light"] .board-auto-logo{content:url("/board/branding/millstadt-ems-board-portal-light.png")}
+.board-auto-logo{content:url("/board/mems-bod-logo.png")}
+@media (prefers-color-scheme:light){.board-auto-logo{content:url("/board/mems-bod-logo.png")}}
+.board-root[data-b-theme="dark"] .board-auto-logo{content:url("/board/mems-bod-logo.png")}
+.board-root[data-b-theme="light"] .board-auto-logo{content:url("/board/mems-bod-logo.png")}
 
 /* Shell */
 .board-shell{min-height:100vh;background:transparent}
@@ -143,11 +143,22 @@
 .av img{width:100%;height:100%;object-fit:cover;display:block}
 .board-emoji-avatar{position:relative;width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;overflow:visible;background:var(--b-accent-soft);border:1px solid color-mix(in srgb,var(--b-accent) 38%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--b-surface) 68%,transparent);font-size:17px}
 .board-emoji-avatar.lg{width:58px;height:58px;font-size:28px}
+.board-emoji-avatar.xl{width:112px;height:112px;font-size:48px}
 .board-emoji-face{line-height:1;filter:saturate(.9)}
 .board-emoji-photo{display:block;width:100%;height:100%;border-radius:50%;overflow:hidden}
 .board-emoji-photo img{width:100%;height:100%;object-fit:cover;display:block}
 .board-emoji-corner{position:absolute;right:-5px;bottom:-5px;width:18px;height:18px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:var(--b-surface);border:1px solid var(--b-hair);box-shadow:0 2px 8px rgba(0,0,0,.24);font-size:11px;line-height:1}
 .board-emoji-avatar.lg .board-emoji-corner{right:-6px;bottom:-6px;width:24px;height:24px;font-size:14px}
+.board-emoji-avatar.xl .board-emoji-corner{right:-4px;bottom:-4px;width:34px;height:34px;font-size:18px}
+.board-agency-mark{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#f8fafc}
+.board-agency-star{padding:14%}
+.board-agency-star img{display:block;width:100%;height:100%;object-fit:contain}
+.board-agency-fire{position:relative;background:#111820;border:1px solid rgba(255,255,255,.12)}
+.board-agency-fire .fire-face{position:absolute;left:50%;top:50%;width:54%;height:54%;transform-origin:50% 100%;clip-path:polygon(50% 0,100% 100%,0 100%);border:1px solid rgba(255,255,255,.22)}
+.board-agency-fire .fire-heat{background:#ef4444;transform:translate(-50%,-70%) rotate(0deg)}
+.board-agency-fire .fire-fuel{background:#f59e0b;transform:translate(-74%,-34%) rotate(120deg)}
+.board-agency-fire .fire-oxygen{background:#38bdf8;transform:translate(-26%,-34%) rotate(240deg)}
+.board-agency-fire .fire-chain{width:28%;height:28%;background:#f8fafc;transform:translate(-50%,-18%) rotate(180deg)}
 .board-personal-chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--b-hair);background:var(--b-surface);border-radius:999px;padding:6px 10px;color:var(--b-ink-2)}
 .board-personal-chip>span{font-size:18px;line-height:1}
 .board-personal-chip small{font-size:12px;font-weight:760;white-space:nowrap}
@@ -155,6 +166,11 @@
 .board-welcome-identity{display:flex;align-items:center;gap:14px;min-width:min(360px,100%);border:1px solid var(--b-hair);border-radius:8px;background:var(--b-surface);padding:10px 12px;box-shadow:var(--b-shadow)}
 .board-welcome-identity strong{display:block;font-size:16px;font-weight:780;color:var(--b-ink);line-height:1.15}
 .board-welcome-identity small{display:block;margin-top:4px;color:var(--b-accent-2);font-size:12.5px;font-weight:720}
+.board-welcome{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(3,7,14,.58);backdrop-filter:blur(10px) saturate(130%);padding:24px;animation:board-welcome-in .22s ease-out both}
+.board-welcome.leaving{animation:board-welcome-out .3s ease-in both}
+.board-welcome-card{width:min(430px,calc(100vw - 36px));display:grid;justify-items:center;gap:16px;padding:28px 24px 24px;border:1px solid var(--b-hair);border-radius:8px;background:var(--b-surface);box-shadow:0 24px 80px rgba(0,0,0,.34);text-align:center}
+.board-welcome-card h1{margin:0;color:var(--b-ink);font-size:clamp(25px,4vw,34px);line-height:1.1;font-weight:850;letter-spacing:0}
+.board-welcome-card p{margin:0;color:var(--b-accent-2);font-size:14px;font-weight:760;line-height:1.3}
 
 .board-account{position:relative}
 .board-account summary{gap:10px;list-style:none;height:46px;padding:5px 10px}
@@ -375,6 +391,8 @@
 @media(max-width:880px){.board-editor-grid{grid-template-columns:1fr}}
 
 @keyframes board-drawer-in{from{transform:translateX(-18px);opacity:.65}to{transform:none;opacity:1}}
+@keyframes board-welcome-in{from{opacity:0}to{opacity:1}}
+@keyframes board-welcome-out{from{opacity:1}to{opacity:0}}
 @media(prefers-reduced-motion:reduce){
   .board-root *{transition:none!important;animation:none!important;scroll-behavior:auto!important}
 }

@@ -23,7 +23,7 @@ export default async function SettingsPage() {
       </BoardCard>
       <BoardCard style={{ marginTop: 14 }}>
         <div className="board-account-personal">
-          <BoardEmojiAvatar emoji={personalEmoji} photoUrl={user.photoUrl} size="lg" />
+          <BoardEmojiAvatar emoji={personalEmoji} photoUrl={user.photoUrl} role={user.role} size="lg" />
           <div>
             <h2 className="board-h2">Account</h2>
             <p className="board-sub">{user.firstName} {user.lastName}{user.officerTitle ? ` · ${user.officerTitle}` : ""}</p>

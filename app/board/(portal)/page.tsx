@@ -56,7 +56,7 @@ export default async function BoardHome() {
         title={`Welcome, ${user.firstName}`}
         actions={(
           <div className="board-welcome-identity">
-            <BoardEmojiAvatar emoji={personalEmoji} photoUrl={user.photoUrl} size="lg" />
+            <BoardEmojiAvatar emoji={personalEmoji} photoUrl={user.photoUrl} role={user.role} size="lg" />
             <div>
               <strong>Welcome, {user.firstName}</strong>
               {personalTitle && <small>{personalTitle}</small>}

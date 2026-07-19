@@ -23,6 +23,7 @@ import LogoutButton from "./LogoutButton";
 import BoardAppearanceControl from "./BoardAppearanceControl";
 import BoardSearchPalette, { type BoardCommandItem } from "./BoardSearchPalette";
 import BoardEmojiAvatar from "./BoardEmojiAvatar";
+import WelcomeOverlay from "./WelcomeOverlay";
 import { boardUserEmoji } from "@/lib/board/personalization";
 
 interface ShellUser {
@@ -326,7 +327,7 @@ export default function BoardAppShell({
 
         <div className="board-side-footer">
           <Link href="/board/settings" className="board-profile-shortcut">
-            <BoardEmojiAvatar emoji={personalEmoji} photoUrl={user.photoUrl} />
+            <BoardEmojiAvatar emoji={personalEmoji} photoUrl={user.photoUrl} role={user.role} />
             <span>
               <strong>{user.firstName} {user.lastName}</strong>
               <small>{role}</small>
@@ -361,7 +362,7 @@ export default function BoardAppShell({
 
             <details className="board-account">
               <summary>
-                <BoardEmojiAvatar emoji={personalEmoji} photoUrl={user.photoUrl} />
+                <BoardEmojiAvatar emoji={personalEmoji} photoUrl={user.photoUrl} role={user.role} />
                 <span className="who">
                   <span className="nm">{user.firstName} {user.lastName}</span>
                   <span className="ti">{user.officerTitle ?? role}</span>
@@ -401,6 +402,14 @@ export default function BoardAppShell({
         {showDocuments && <Link className={path.startsWith("/board/documents") ? "on" : ""} href="/board/documents"><FileText size={18} aria-hidden="true" /><span>Docs</span></Link>}
         <button type="button" onClick={() => setDrawerOpen(true)}><Menu size={18} aria-hidden="true" /><span>More</span></button>
       </nav>
+
+      <WelcomeOverlay
+        firstName={user.firstName}
+        title={user.officerTitle}
+        photoUrl={user.photoUrl}
+        role={user.role}
+        emoji={personalEmoji}
+      />
     </div>
   );
 }
