@@ -22,7 +22,7 @@ export default async function BoardAdmin() {
       <BoardCard style={{ marginTop: 18 }}>
         <BoardSectionHeader title="Admin tools" />
         <div className="board-action-queue">
-          <BoardActionLink href="/board/admin/model-review" label="Model review" meta="Workbook and sync status" />
+          <BoardActionLink href="/board/admin/model-review" label="Budget workbook" meta="OneDrive connection and editable fields" />
           <BoardActionLink href="/board/admin/appearance" label="Appearance and dashboard layout" meta="Presentation controls" />
         </div>
       </BoardCard>

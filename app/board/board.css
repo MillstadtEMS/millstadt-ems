@@ -415,6 +415,26 @@
 .board-bar{height:7px;border-radius:999px;background:var(--b-hair-2);overflow:hidden}
 .board-bar>i{display:block;height:100%;background:var(--b-accent);border-radius:inherit}
 
+/* Workbook administration */
+.board-workbook-status{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,.62fr);gap:18px;margin-top:24px;align-items:stretch}
+.board-workbook-primary{display:grid;align-content:start;gap:12px;border-left:3px solid var(--b-accent)}
+.board-status-title{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.board-status-title span{display:block;color:var(--b-muted);font-size:12px;font-weight:760}
+.board-status-title h2{margin:3px 0 0;color:var(--b-ink);font-size:clamp(24px,2.4vw,34px);line-height:1.08;font-weight:820;letter-spacing:0}
+.board-workbook-primary p{margin:0;max-width:62ch;color:var(--b-ink-2);font-size:14.5px;line-height:1.5}
+.board-workbook-details{display:grid;gap:10px;align-content:start}
+.board-detail-row{display:grid;grid-template-columns:128px minmax(0,1fr);gap:12px;align-items:start;padding-bottom:9px;border-bottom:1px solid var(--b-hair-2)}
+.board-detail-row:last-child{border-bottom:0;padding-bottom:0}
+.board-detail-row span{color:var(--b-muted);font-size:12px;font-weight:720}
+.board-detail-row strong{min-width:0;color:var(--b-ink);font-size:13.5px;font-weight:760;overflow-wrap:anywhere}
+.board-compact-status{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.board-compact-status>span{color:var(--b-ink);font-weight:780}
+.board-workbook-table table{min-width:860px}
+.board-workbook-table td strong{font-weight:760}
+.board-workbook-table td small{display:block;margin-top:3px;color:var(--b-muted);font-size:12px;font-weight:700}
+.board-workbook-table .board-chip{width:max-content}
+@media(max-width:920px){.board-workbook-status{grid-template-columns:1fr}.board-detail-row{grid-template-columns:112px minmax(0,1fr)}}
+
 /* Existing referendum helpers */
 .board-subnav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px;padding-bottom:14px;border-bottom:1px solid var(--b-hair)}
 .board-subnav a{font-size:13px;font-weight:700;color:var(--b-muted);padding:7px 11px;border-radius:8px}

@@ -62,7 +62,7 @@ const PATH_LABEL: Record<string, string> = {
   detailed: "Detail",
   forecast: "Forecast",
   levy: "Levy",
-  "model-review": "Model review",
+  "model-review": "Workbook",
 };
 
 function isActive(path: string, item: NavItem) {
@@ -290,7 +290,7 @@ export default function BoardAppShell({
       },
       { href: "/board/documents", label: "Documents", section: "Primary", icon: FileText, hidden: !showDocuments },
       { href: "/board/requests", label: "Fire requests", section: "Primary", icon: ShieldCheck, hidden: !showRequests },
-      { href: "/board/admin/model-review", label: "Model review", section: "Administration", icon: Database, hidden: !isAdmin },
+      { href: "/board/admin/model-review", label: "Workbook", section: "Administration", icon: Database, hidden: !isAdmin },
       { href: "/board/admin/appearance", label: "Appearance", section: "Administration", icon: LayoutDashboard, hidden: !isAdmin },
       { href: "/board/admin", label: "Administration", section: "Administration", icon: Settings, hidden: !isAdmin },
     ];
