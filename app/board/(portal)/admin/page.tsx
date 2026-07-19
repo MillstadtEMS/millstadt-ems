@@ -15,7 +15,7 @@ export default async function BoardAdmin() {
     <>
       <p className="board-eyebrow">Administrator</p>
       <h1 className="board-h1">Administration</h1>
-      <p className="board-sub">Workbook import, model review, and portal settings.</p>
+      <p className="board-sub">Workbook import, model status, and portal settings.</p>
 
       <div style={{ marginTop: 24 }}>
         <WorkbookUpload />
@@ -24,7 +24,7 @@ export default async function BoardAdmin() {
       <div className="board-grid k2" style={{ marginTop: 18 }}>
         <Link href="/board/admin/model-review" className="board-card board-link-card">
           <div className="board-stat">
-            <div className="lbl">Model Review</div>
+            <div className="lbl">Model Status</div>
             <div className="val">Open</div>
           </div>
         </Link>

@@ -61,6 +61,7 @@ export default function Nav() {
   const pathname = usePathname();
   const [open, setOpen]               = useState(false);
   const [dispatchFlash, setDispatchFlash] = useState(false);
+  const [showBoardMinutes, setShowBoardMinutes] = useState(false);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -75,7 +76,19 @@ export default function Nav() {
   }, []);
 
   // Close on route change
-  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setOpen(false));
+    return () => window.cancelAnimationFrame(frame);
+  }, [pathname]);
+
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/public/board-minutes/has-published", { cache: "no-store" })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => { if (alive) setShowBoardMinutes(data?.hasMinutes === true); })
+      .catch(() => { if (alive) setShowBoardMinutes(false); });
+    return () => { alive = false; };
+  }, []);
 
   return (
     <header className="mems-site-nav fixed top-[46px] left-0 right-0 z-50">
@@ -176,7 +189,11 @@ export default function Nav() {
 
             {/* Group grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-              {MENU_GROUPS.map(group => (
+              {MENU_GROUPS.map(group => {
+                const links = group.heading === "What's Happening" && showBoardMinutes
+                  ? [...group.links, { href: "/board-minutes", label: "Board Minutes" }]
+                  : group.links;
+                return (
                 <div key={group.heading}>
                   {/* Section heading */}
                   <div className={`text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${group.color}`}>
@@ -184,7 +201,7 @@ export default function Nav() {
                   </div>
 
                   <div className="space-y-0.5">
-                    {group.links.map(l => (
+                    {links.map(l => (
                       <Link
                         key={l.href}
                         href={l.href}
@@ -200,7 +217,7 @@ export default function Nav() {
                     ))}
                   </div>
                 </div>
-              ))}
+              );})}
             </div>
 
           </div>

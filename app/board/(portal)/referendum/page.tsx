@@ -77,7 +77,7 @@ export default async function ReferendumOverview() {
             </div>
           </div>
           {payables != null && payables > 0 && (
-            <p className="board-updated" style={{ marginTop: 12 }}>Includes annual payable catch-up of {money(payables)} from the Debt &amp; Liabilities worksheet.</p>
+            <p className="board-updated" style={{ marginTop: 12 }}>Includes annual payable catch-up of {money(payables)}.</p>
           )}
 
           <h2 className="board-h2">Projected Annual Costs</h2>
@@ -102,7 +102,7 @@ export default async function ReferendumOverview() {
             </table>
           </div>
 
-          <p className="board-updated" style={{ marginTop: 18 }}>Source: Referendum workbook, FY 2026–27 · last synchronized {fmtSynced(updatedAt)}</p>
+          <p className="board-updated" style={{ marginTop: 18 }}>Last synchronized {fmtSynced(updatedAt)}</p>
         </>
       )}
     </>

@@ -7,7 +7,8 @@ import {
   getNextMeeting,
   getQuestions,
   getQuorumRequired,
-  isEligibleMember,
+  canRecordAttendance,
+  canViewFinancialModel,
   userBoards,
 } from "@/lib/board/governance";
 
@@ -50,9 +51,10 @@ export default async function BoardHome() {
   const questions = meeting ? await getQuestions(meeting.id) : [];
   const visibleQuestions = questions.filter((question) => canSeeQuestion(user, question));
   const mine = meeting
-    ? attendance.find((row) => row.userId === user.id)?.response ?? (isEligibleMember(user, meeting.board) ? "No Response" : "Not Eligible")
+    ? attendance.find((row) => row.userId === user.id)?.response ?? (canRecordAttendance(user, meeting.board) ? "No Response" : "Not Eligible")
     : "No Meeting";
   const boards = userBoards(user);
+  const showReferendum = canViewFinancialModel(user);
 
   return (
     <>
@@ -71,12 +73,22 @@ export default async function BoardHome() {
         <Metric label="Open Tasks" value="Future Feature" />
         <Metric label="Recent Documents" value="Future Feature" />
         <Metric label="Notifications" value="Future Feature" />
-        <Link href="/board/referendum" className="board-card board-referendum-card">
-          <div>
-            <div className="lbl">Proposed EMS District Financial Model</div>
-            <div className="val">Open Referendum Model</div>
-          </div>
-        </Link>
+        {user.role === "fire_board" && (
+          <Link href="/board/requests" className="board-card board-referendum-card">
+            <div>
+              <div className="lbl">Fire Board Requests</div>
+              <div className="val">Request EMS Board Attendance</div>
+            </div>
+          </Link>
+        )}
+        {showReferendum && (
+          <Link href="/board/referendum" className="board-card board-referendum-card">
+            <div>
+              <div className="lbl">Proposed EMS District Financial Model</div>
+              <div className="val">Open Referendum Model</div>
+            </div>
+          </Link>
+        )}
       </div>
     </>
   );

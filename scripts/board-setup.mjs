@@ -254,8 +254,10 @@ await sql`
     first_name TEXT NOT NULL, last_name TEXT NOT NULL, email TEXT, phone TEXT,
     role TEXT NOT NULL DEFAULT 'ems_board', officer_title TEXT, password_hash TEXT NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE, must_change_password BOOLEAN NOT NULL DEFAULT TRUE,
-    simple_view_default BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    simple_view_default BOOLEAN NOT NULL DEFAULT FALSE, is_dev_login BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
+await sql`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS is_dev_login BOOLEAN NOT NULL DEFAULT FALSE`;
 await sql`
   CREATE TABLE IF NOT EXISTS board_audit (
     id BIGSERIAL PRIMARY KEY, at TIMESTAMPTZ NOT NULL DEFAULT NOW(), user_id UUID,

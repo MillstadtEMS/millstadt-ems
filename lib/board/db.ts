@@ -36,6 +36,7 @@ export interface BoardUser {
   isActive: boolean;
   mustChangePassword: boolean;
   simpleViewDefault: boolean;
+  isDevLogin: boolean;
   createdAt: string;
 }
 
@@ -58,10 +59,12 @@ export async function ensureBoardSchema(): Promise<void> {
       is_active           BOOLEAN NOT NULL DEFAULT TRUE,
       must_change_password BOOLEAN NOT NULL DEFAULT TRUE,
       simple_view_default BOOLEAN NOT NULL DEFAULT FALSE,
+      is_dev_login       BOOLEAN NOT NULL DEFAULT FALSE,
       created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
   await db`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS photo_url TEXT`;
+  await db`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS is_dev_login BOOLEAN NOT NULL DEFAULT FALSE`;
   // Cached financial figures keyed by a stable slug, sourced from the workbook.
   await db`
     CREATE TABLE IF NOT EXISTS board_finance (
@@ -122,6 +125,7 @@ function rowToUser(r: Record<string, unknown>): BoardUser {
     isActive: r.is_active === true,
     mustChangePassword: r.must_change_password === true,
     simpleViewDefault: r.simple_view_default === true,
+    isDevLogin: r.is_dev_login === true,
     createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at),
   };
 }

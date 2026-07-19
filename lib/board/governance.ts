@@ -1,13 +1,15 @@
 /**
- * Board Portal — governance layer: meetings, attendance, quorum, and
- * pre-meeting questions.
+ * Board Portal — governance layer: EMS meetings, attendance, public minutes,
+ * shared calendar items, fire-board attendance requests, and pre-meeting
+ * questions.
  *
  * Design notes / honesty rules (from the master prompt):
  *  - Planned attendance (a member's RSVP) is NOT the official record. The
  *    secretary confirms actual attendance separately; only confirmed attendance
  *    counts toward statistics.
- *  - Quorum numbers live in board_quorum_rules. The approved EMS Board value is
- *    seeded there as 3 and can be changed by an authorized administrator.
+ *  - Quorum numbers are an EMS Board portal function. Fire Board users can
+ *    submit attendance requests, but the portal does not expose a Fire Board
+ *    quorum calendar.
  *  - Confidential submissions never appear in the general board view.
  *  - Nothing here invents a legal/policy rule; anything uncertain is surfaced,
  *    not decided.
@@ -87,6 +89,10 @@ export async function ensureGovernanceSchema(): Promise<void> {
     location TEXT,
     virtual_link TEXT,
     description TEXT,
+    minutes_text TEXT,
+    minutes_public BOOLEAN NOT NULL DEFAULT FALSE,
+    minutes_updated_by TEXT,
+    minutes_updated_at TIMESTAMPTZ,
     quorum_override INTEGER,
     details_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
     is_recurring BOOLEAN NOT NULL DEFAULT TRUE,
@@ -95,6 +101,10 @@ export async function ensureGovernanceSchema(): Promise<void> {
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
+  await db`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_text TEXT`;
+  await db`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_public BOOLEAN NOT NULL DEFAULT FALSE`;
+  await db`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_updated_by TEXT`;
+  await db`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_updated_at TIMESTAMPTZ`;
   await db`CREATE UNIQUE INDEX IF NOT EXISTS board_meetings_series ON board_meetings (board, meeting_date) WHERE is_recurring`;
   await db`CREATE TABLE IF NOT EXISTS board_attendance (
     id BIGSERIAL PRIMARY KEY,
@@ -140,24 +150,56 @@ export async function ensureGovernanceSchema(): Promise<void> {
     after_deadline BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
+  await db`CREATE TABLE IF NOT EXISTS board_calendar_items (
+    id BIGSERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    item_type TEXT NOT NULL DEFAULT 'Event',
+    item_date DATE NOT NULL,
+    start_time TEXT,
+    end_time TEXT,
+    description TEXT,
+    created_by UUID,
+    created_by_name TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await db`CREATE TABLE IF NOT EXISTS board_fire_meeting_requests (
+    id BIGSERIAL PRIMARY KEY,
+    requester_user_id UUID,
+    requester_name TEXT NOT NULL,
+    meeting_title TEXT NOT NULL,
+    meeting_date DATE,
+    start_time TEXT,
+    location TEXT,
+    requested_scope TEXT NOT NULL DEFAULT 'specific',
+    requested_user_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+    reason TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'Requested',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
   govReady = true;
 }
 
 // ── Role / eligibility helpers ──────────────────────────────────────────────
 const EMS_ROLES = new Set(["ems_board", "ems_president"]);
 /**
- * Which board's meetings a user participates in. Fire Board members have their
- * own meeting calendar and attendance/quorum functions; EMS financial access
- * remains separately permissioned.
+ * Which board's meetings a user participates in. The portal is EMS-board-first:
+ * Fire Board users submit attendance requests instead of getting a Fire Board
+ * quorum calendar.
  */
 export function userBoards(u: BoardUser): Board[] {
-  if (u.role === "admin" || u.role === "audit_reviewer" || u.role === "ems_president") return ["ems", "fire"];
-  if (u.role === "fire_board") return ["fire"];
+  if (u.role === "fire_board") return [];
   return ["ems"];
 }
 /** Is this user a voting/eligible member counted toward the board's quorum? */
 export function isEligibleMember(u: { role: string }, board: Board): boolean {
   return board === "ems" ? EMS_ROLES.has(u.role) : u.role === "fire_board";
+}
+export function canRecordAttendance(u: BoardUser, board: Board): boolean {
+  return !u.isDevLogin && isEligibleMember(u, board);
+}
+export function canManageCalendar(u: BoardUser): boolean {
+  return u.role === "admin" || u.role === "submitter" || u.role === "ems_board" || u.role === "ems_president";
 }
 export function isLeadership(u: BoardUser): boolean {
   if (u.role === "admin" || u.role === "submitter" || u.role === "ems_president") return true;
@@ -165,6 +207,18 @@ export function isLeadership(u: BoardUser): boolean {
 }
 export function isSecretary(u: BoardUser): boolean {
   return u.role === "admin" || u.officerTitle === "Secretary";
+}
+export function canEditMinutes(u: BoardUser): boolean {
+  return u.role === "admin" || u.role === "ems_president" || u.officerTitle === "Secretary";
+}
+export function canSubmitFireMeetingRequest(u: BoardUser): boolean {
+  return u.role === "fire_board";
+}
+export function canReviewFireMeetingRequests(u: BoardUser): boolean {
+  return u.role === "admin" || u.role === "ems_president" || u.officerTitle === "President";
+}
+export function canViewFinancialModel(u: BoardUser): boolean {
+  return u.role === "admin" || u.role === "submitter" || u.role === "ems_board" || u.role === "ems_president" || u.role === "audit_reviewer";
 }
 export function canSeeConfidential(u: BoardUser): boolean {
   return u.role === "admin" || u.role === "ems_president" || u.officerTitle === "President";
@@ -182,6 +236,7 @@ export interface Meeting {
   id: number; board: Board; type: string; status: string; title: string | null;
   date: string; startTime: string | null; endTime: string | null; location: string | null;
   virtualLink: string | null; description: string | null; quorumOverride: number | null;
+  minutesText: string | null; minutesPublic: boolean; minutesUpdatedBy: string | null; minutesUpdatedAt: string | null;
   detailsConfirmed: boolean; isRecurring: boolean;
 }
 export interface Quorum {
@@ -198,13 +253,17 @@ function rowToMeeting(r: Record<string, unknown>): Meeting {
     startTime: r.start_time ? String(r.start_time) : null, endTime: r.end_time ? String(r.end_time) : null,
     location: r.location ? String(r.location) : null, virtualLink: r.virtual_link ? String(r.virtual_link) : null,
     description: r.description ? String(r.description) : null,
+    minutesText: r.minutes_text ? String(r.minutes_text) : null,
+    minutesPublic: r.minutes_public === true,
+    minutesUpdatedBy: r.minutes_updated_by ? String(r.minutes_updated_by) : null,
+    minutesUpdatedAt: r.minutes_updated_at instanceof Date ? r.minutes_updated_at.toISOString() : (r.minutes_updated_at ? String(r.minutes_updated_at) : null),
     quorumOverride: r.quorum_override != null ? Number(r.quorum_override) : null,
     detailsConfirmed: r.details_confirmed === true, isRecurring: r.is_recurring === true,
   };
 }
 
 // ── Recurring generation ────────────────────────────────────────────────────
-/** Ensure recurring EMS and Fire Board meetings exist for the next `monthsAhead` months. Idempotent. */
+/** Ensure recurring EMS Board meetings exist for the next `monthsAhead` months. Idempotent. */
 export async function generateRecurring(monthsAhead = 6, now = new Date()): Promise<number> {
   await ensureGovernanceSchema();
   const db = sql();
@@ -212,7 +271,7 @@ export async function generateRecurring(monthsAhead = 6, now = new Date()): Prom
   for (let i = 0; i <= monthsAhead; i++) {
     const y = now.getUTCFullYear();
     const m = now.getUTCMonth() + i;
-    for (const board of ["ems", "fire"] as Board[]) {
+    for (const board of ["ems"] as Board[]) {
       const d = recurringDate(board, y + Math.floor(m / 12), ((m % 12) + 12) % 12);
       if (d < new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))) continue;
       const def = DEFAULTS[board];
@@ -268,7 +327,7 @@ export async function getAttendance(meetingId: number, board: Board): Promise<At
            a.response, a.note, a.confirmed_status
     FROM board_users u
     LEFT JOIN board_attendance a ON a.user_id = u.id AND a.meeting_id = ${meetingId}
-    WHERE u.is_active = TRUE
+    WHERE u.is_active = TRUE AND COALESCE(u.is_dev_login, FALSE) = FALSE
     ORDER BY u.officer_title NULLS LAST, u.last_name ASC`) as Record<string, unknown>[];
   return rows
     .filter((r) => isEligibleMember({ role: String(r.role) }, board))
@@ -324,6 +383,161 @@ export async function getQuestions(meetingId: number): Promise<QuestionRow[]> {
   }));
 }
 
+export interface EmsBoardRecipient {
+  id: string; name: string; username: string; officerTitle: string | null; role: string;
+}
+export async function getActiveEmsBoardRecipients(): Promise<EmsBoardRecipient[]> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  const rows = (await db`
+    SELECT id, username, first_name, last_name, officer_title, role
+    FROM board_users
+    WHERE is_active = TRUE
+      AND COALESCE(is_dev_login, FALSE) = FALSE
+      AND role IN ('ems_board', 'ems_president')
+    ORDER BY
+      CASE WHEN role = 'ems_president' OR officer_title = 'President' THEN 0 ELSE 1 END,
+      officer_title NULLS LAST,
+      last_name ASC,
+      first_name ASC`) as Record<string, unknown>[];
+  return rows.map((r) => ({
+    id: String(r.id),
+    username: String(r.username),
+    name: `${r.first_name} ${r.last_name}`,
+    officerTitle: r.officer_title ? String(r.officer_title) : null,
+    role: String(r.role),
+  }));
+}
+
+export interface CalendarItem {
+  id: number; title: string; itemType: string; date: string; startTime: string | null;
+  endTime: string | null; description: string | null; createdByName: string | null;
+}
+export async function getCalendarItems(limit = 80): Promise<CalendarItem[]> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  const rows = (await db`
+    SELECT * FROM board_calendar_items
+    WHERE item_date >= CURRENT_DATE - INTERVAL '30 days'
+    ORDER BY item_date ASC, start_time ASC NULLS LAST, id ASC
+    LIMIT ${limit}`) as Record<string, unknown>[];
+  return rows.map((r) => ({
+    id: Number(r.id),
+    title: String(r.title),
+    itemType: String(r.item_type),
+    date: r.item_date instanceof Date ? ymd(r.item_date) : String(r.item_date),
+    startTime: r.start_time ? String(r.start_time) : null,
+    endTime: r.end_time ? String(r.end_time) : null,
+    description: r.description ? String(r.description) : null,
+    createdByName: r.created_by_name ? String(r.created_by_name) : null,
+  }));
+}
+
+export async function createCalendarItem(input: {
+  title: string; itemType: string; date: string; startTime: string | null; endTime: string | null;
+  description: string | null; createdBy: BoardUser;
+}): Promise<number> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  const rows = (await db`
+    INSERT INTO board_calendar_items (title, item_type, item_date, start_time, end_time, description, created_by, created_by_name)
+    VALUES (${input.title}, ${input.itemType}, ${input.date}, ${input.startTime}, ${input.endTime}, ${input.description},
+            ${input.createdBy.id}, ${`${input.createdBy.firstName} ${input.createdBy.lastName}`})
+    RETURNING id`) as Record<string, unknown>[];
+  return Number(rows[0].id);
+}
+
+export interface FireMeetingRequest {
+  id: number; requesterName: string; meetingTitle: string; date: string | null; startTime: string | null;
+  location: string | null; requestedScope: string; requestedUserIds: string[]; reason: string;
+  status: string; createdAt: string;
+}
+function parseRequestedUserIds(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String);
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch { return []; }
+  }
+  return [];
+}
+function rowToFireMeetingRequest(r: Record<string, unknown>): FireMeetingRequest {
+  return {
+    id: Number(r.id),
+    requesterName: String(r.requester_name),
+    meetingTitle: String(r.meeting_title),
+    date: r.meeting_date instanceof Date ? ymd(r.meeting_date) : (r.meeting_date ? String(r.meeting_date) : null),
+    startTime: r.start_time ? String(r.start_time) : null,
+    location: r.location ? String(r.location) : null,
+    requestedScope: String(r.requested_scope),
+    requestedUserIds: parseRequestedUserIds(r.requested_user_ids),
+    reason: String(r.reason),
+    status: String(r.status),
+    createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at),
+  };
+}
+export async function getFireMeetingRequests(u: BoardUser): Promise<FireMeetingRequest[]> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  const rows = canReviewFireMeetingRequests(u)
+    ? await db`SELECT * FROM board_fire_meeting_requests ORDER BY created_at DESC LIMIT 80`
+    : await db`SELECT * FROM board_fire_meeting_requests WHERE requester_user_id = ${u.id} ORDER BY created_at DESC LIMIT 40`;
+  return (rows as Record<string, unknown>[]).map(rowToFireMeetingRequest);
+}
+export async function createFireMeetingRequest(input: {
+  requester: BoardUser; meetingTitle: string; date: string | null; startTime: string | null;
+  location: string | null; requestedScope: string; requestedUserIds: string[]; reason: string;
+}): Promise<number> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  const rows = (await db`
+    INSERT INTO board_fire_meeting_requests (
+      requester_user_id, requester_name, meeting_title, meeting_date, start_time, location,
+      requested_scope, requested_user_ids, reason
+    )
+    VALUES (
+      ${input.requester.id}, ${`${input.requester.firstName} ${input.requester.lastName}`},
+      ${input.meetingTitle}, ${input.date}, ${input.startTime}, ${input.location},
+      ${input.requestedScope}, ${JSON.stringify(input.requestedUserIds)}::jsonb, ${input.reason}
+    )
+    RETURNING id`) as Record<string, unknown>[];
+  return Number(rows[0].id);
+}
+
+export interface PublicMinutes {
+  id: number; title: string | null; date: string; startTime: string | null; minutesText: string;
+}
+export async function getPublicMinutes(): Promise<PublicMinutes[]> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  const rows = (await db`
+    SELECT id, title, meeting_date, start_time, minutes_text
+    FROM board_meetings
+    WHERE board = 'ems'
+      AND minutes_public = TRUE
+      AND COALESCE(NULLIF(TRIM(minutes_text), ''), NULL) IS NOT NULL
+    ORDER BY meeting_date DESC, id DESC`) as Record<string, unknown>[];
+  return rows.map((r) => ({
+    id: Number(r.id),
+    title: r.title ? String(r.title) : null,
+    date: r.meeting_date instanceof Date ? ymd(r.meeting_date) : String(r.meeting_date),
+    startTime: r.start_time ? String(r.start_time) : null,
+    minutesText: String(r.minutes_text),
+  }));
+}
+export async function hasPublicMinutes(): Promise<boolean> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  const rows = (await db`
+    SELECT 1 FROM board_meetings
+    WHERE board = 'ems'
+      AND minutes_public = TRUE
+      AND COALESCE(NULLIF(TRIM(minutes_text), ''), NULL) IS NOT NULL
+    LIMIT 1`) as Record<string, unknown>[];
+  return rows.length > 0;
+}
+
 // ── Writes ──────────────────────────────────────────────────────────────────
 export async function setAttendance(meetingId: number, userId: string, response: Response, note: string | null): Promise<void> {
   await ensureGovernanceSchema();
@@ -332,6 +546,18 @@ export async function setAttendance(meetingId: number, userId: string, response:
     INSERT INTO board_attendance (meeting_id, user_id, response, note, responded_at)
     VALUES (${meetingId}, ${userId}, ${response}, ${note}, NOW())
     ON CONFLICT (meeting_id, user_id) DO UPDATE SET response = EXCLUDED.response, note = EXCLUDED.note, responded_at = NOW()`;
+}
+
+export async function updateMeetingMinutes(input: {
+  meetingId: number; minutesText: string | null; minutesPublic: boolean; updatedBy: string;
+}): Promise<void> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  await db`
+    UPDATE board_meetings
+    SET minutes_text = ${input.minutesText}, minutes_public = ${input.minutesPublic},
+        minutes_updated_by = ${input.updatedBy}, minutes_updated_at = NOW(), updated_at = NOW()
+    WHERE id = ${input.meetingId}`;
 }
 
 /** Secretary confirms the OFFICIAL attendance record (distinct from planned RSVP). */

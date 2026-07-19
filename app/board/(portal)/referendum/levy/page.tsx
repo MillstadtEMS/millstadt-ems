@@ -7,7 +7,6 @@ export const dynamic = "force-dynamic";
 export default async function LevyPage() {
   const [user, { byKey }] = await Promise.all([currentBoardUser(), getFinance()]);
   const eav = byKey["district_eav"]?.value ?? null;
-  const eavCell = byKey["district_eav"]?.sourceCell ?? null;
   const currentScenario = byKey["levy_scenario"]?.textValue ?? null;
   const currentLevyRevenue = byKey["current_ambulance_revenue"]?.value ?? byKey["rev_total"]?.value ?? 0;
   const totalProjectedAnnualNeed = byKey["exp_total"]?.value ?? 0;
@@ -24,7 +23,6 @@ export default async function LevyPage() {
       ) : (
         <LevyCalculator
           eav={eav}
-          eavCell={eavCell}
           currentScenario={currentScenario}
           currentLevyRevenue={currentLevyRevenue}
           totalProjectedAnnualNeed={totalProjectedAnnualNeed}

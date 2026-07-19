@@ -29,6 +29,7 @@ const sql = neon(url);
 const hash = (pw) => { const s = randomBytes(16).toString("hex"); return `${s}:${scryptSync(pw, s, 64).toString("hex")}`; };
 
 await sql`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS photo_url TEXT`;
+await sql`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS is_dev_login BOOLEAN NOT NULL DEFAULT FALSE`;
 
 // username, first, last, role, mustChange, password
 const PEOPLE = [

@@ -69,7 +69,7 @@ export default async function ForecastPage() {
             );
           })}
 
-          <p className="board-updated" style={{ marginTop: 20 }}>Source: Five-Year Forecast worksheet.</p>
+          <p className="board-updated" style={{ marginTop: 20 }}>Five-year projection.</p>
         </>
       )}
     </>

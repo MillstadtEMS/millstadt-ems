@@ -67,7 +67,7 @@ export default async function CashFlowPage() {
               </tbody>
             </table>
           </div>
-          <p className="board-updated" style={{ marginTop: 14 }}>Source: verified actual-financial connection. Red = balance below zero.</p>
+          <p className="board-updated" style={{ marginTop: 14 }}>Red = balance below zero.</p>
         </>
       )}
     </>

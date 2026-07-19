@@ -3,12 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function BoardNav({ isAdmin = false, showMeetings = true }: { isAdmin?: boolean; showMeetings?: boolean }) {
+export default function BoardNav({
+  isAdmin = false,
+  showMeetings = true,
+  showReferendum = true,
+  showRequests = false,
+}: { isAdmin?: boolean; showMeetings?: boolean; showReferendum?: boolean; showRequests?: boolean }) {
   const path = usePathname() || "";
   const items = [
     { href: "/board", label: "Home", exact: true },
     ...(showMeetings ? [{ href: "/board/meetings", label: "Meetings" }] : []),
-    { href: "/board/referendum", label: "Referendum" },
+    ...(showRequests ? [{ href: "/board/requests", label: "Requests" }] : []),
+    ...(showReferendum ? [{ href: "/board/referendum", label: "Referendum" }] : []),
     ...(isAdmin ? [{ href: "/board/admin", label: "Admin" }] : []),
   ];
   return (

@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { currentBoardUser } from "@/lib/board/auth";
 import AttendanceControl from "@/components/board/AttendanceControl";
 import ConfirmAttendance from "@/components/board/ConfirmAttendance";
+import MeetingMinutesEditor from "@/components/board/MeetingMinutesEditor";
 import QuestionForm from "@/components/board/QuestionForm";
 import {
   getMeeting, getAttendance, getQuorumRequired, computeQuorum, getQuestions,
-  isEligibleMember, canSeeQuestion, isLeadership, isSecretary, BOARD_LABEL, VISIBILITY_LABEL, type Board,
+  canEditMinutes, canRecordAttendance, canSeeQuestion, isLeadership, isSecretary, userBoards, BOARD_LABEL, VISIBILITY_LABEL, type Board,
 } from "@/lib/board/governance";
 
 export const dynamic = "force-dynamic";
@@ -30,13 +31,15 @@ export default async function MeetingDetail({ params }: { params: Promise<{ id: 
   if (!user) return null;
   const meeting = await getMeeting(meetingId);
   if (!meeting) notFound();
+  if (!userBoards(user).includes(meeting.board)) redirect("/board");
 
   const [att, questions] = await Promise.all([getAttendance(meetingId, meeting.board), getQuestions(meetingId)]);
   const { required, isDefault } = await getQuorumRequired(meeting.board, att.length);
   const q = computeQuorum(att, required, isDefault);
-  const canRespond = isEligibleMember(user, meeting.board);
+  const canRespond = canRecordAttendance(user, meeting.board);
   const mine = att.find((a) => a.userId === user.id);
   const visibleQuestions = questions.filter((question) => canSeeQuestion(user, question));
+  const canEditMeetingMinutes = meeting.board === "ems" && canEditMinutes(user);
   const b = BADGE[meeting.board];
   const qColor = q.status === "Quorum Confirmed" ? "var(--b-good)" : q.status === "Quorum Not Expected" ? "var(--b-crit)" : "var(--b-warn)";
 
@@ -57,7 +60,7 @@ export default async function MeetingDetail({ params }: { params: Promise<{ id: 
       {/* Attendance */}
       <h2 className="board-h2">Will you attend?</h2>
       <div className="board-card" style={{ maxWidth: 680 }}>
-        <AttendanceControl meetingId={meeting.id} current={mine?.response ?? "No Response"} currentNote={mine?.note ?? null} canRespond={canRespond} />
+        <AttendanceControl meetingId={meeting.id} current={mine?.response ?? "No Response"} canRespond={canRespond} />
       </div>
 
       {/* Quorum */}
@@ -81,13 +84,12 @@ export default async function MeetingDetail({ params }: { params: Promise<{ id: 
       <h2 className="board-h2">Who has responded</h2>
       <div className="board-tw" style={{ maxWidth: 680 }}>
         <table>
-          <thead><tr><th>Member</th><th>Planned</th><th>Note</th></tr></thead>
+          <thead><tr><th>Member</th><th>Planned</th></tr></thead>
           <tbody>
             {att.map((a) => (
               <tr key={a.userId}>
                 <td style={{ fontWeight: 600 }}>{a.name}{a.officerTitle ? <span style={{ color: "var(--b-muted)", fontWeight: 400 }}> · {a.officerTitle}</span> : ""}</td>
                 <td style={{ color: RSVP_COLOR[a.response], fontWeight: 600 }}>{a.response}</td>
-                <td style={{ color: "var(--b-muted)", fontSize: 13 }}>{a.note ?? ""}</td>
               </tr>
             ))}
           </tbody>
@@ -99,6 +101,19 @@ export default async function MeetingDetail({ params }: { params: Promise<{ id: 
         <div style={{ marginTop: 18 }}>
           <ConfirmAttendance meetingId={meeting.id} members={att} />
         </div>
+      )}
+
+      {(canEditMeetingMinutes || meeting.minutesText) && (
+        <>
+          <h2 className="board-h2">Meeting minutes</h2>
+          {canEditMeetingMinutes ? (
+            <MeetingMinutesEditor meetingId={meeting.id} initialMinutes={meeting.minutesText} initialPublic={meeting.minutesPublic} />
+          ) : (
+            <div className="board-card" style={{ maxWidth: 780 }}>
+              <p style={{ margin: 0, whiteSpace: "pre-wrap", color: "var(--b-ink-2)", lineHeight: 1.5 }}>{meeting.minutesText}</p>
+            </div>
+          )}
+        </>
       )}
 
       {/* Questions */}

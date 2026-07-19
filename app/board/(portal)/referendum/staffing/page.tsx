@@ -61,7 +61,7 @@ export default async function PersonnelPage() {
               </div>
             </>
           )}
-          <p className="board-updated" style={{ marginTop: 16 }}>Source: Personnel worksheet.</p>
+          <p className="board-updated" style={{ marginTop: 16 }}>Projected staffing model.</p>
         </>
       )}
     </>

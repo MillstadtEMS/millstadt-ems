@@ -20,8 +20,8 @@ export default async function ModelReviewPage() {
   return (
     <>
       <p className="board-eyebrow">Administrator</p>
-      <h1 className="board-h1">Model Review</h1>
-      <p className="board-sub">Internal financial-model review and synchronization status.</p>
+      <h1 className="board-h1">Model Status</h1>
+      <p className="board-sub">Internal financial-model synchronization status.</p>
 
       <div className="board-grid k3" style={{ marginTop: 24 }}>
         <div className="board-card board-stat">
@@ -32,8 +32,8 @@ export default async function ModelReviewPage() {
             {workbook.missingConfiguration.length > 0 ? ` · missing ${workbook.missingConfiguration.join(", ")}` : ""}
           </div>
         </div>
-        <div className="board-card board-stat"><div className="lbl">Actual Financials</div><div className="val">{actuals.status}</div><div className="sub">{actuals.source}</div></div>
-        <div className="board-card board-stat"><div className="lbl">Sage</div><div className="val">{sage.status}</div><div className="sub">{sage.source}</div></div>
+        <div className="board-card board-stat"><div className="lbl">Actual Financials</div><div className="val">{actuals.status}</div></div>
+        <div className="board-card board-stat"><div className="lbl">Sage</div><div className="val">{sage.status}</div></div>
       </div>
 
       <h2 className="board-h2">Editable Workbook Field Map</h2>
@@ -55,19 +55,18 @@ export default async function ModelReviewPage() {
         </table>
       </div>
 
-      <h2 className="board-h2">Review Items</h2>
+      <h2 className="board-h2">Status Items</h2>
       <div className="board-tw">
         <table>
-          <thead><tr><th>Key</th><th>Label</th><th className="num">Value</th><th>Source</th><th>Status</th></tr></thead>
+          <thead><tr><th>Key</th><th>Label</th><th className="num">Value</th><th>Status</th></tr></thead>
           <tbody>
-            {reviewRows.length === 0 && <tr><td colSpan={5}>No model review items.</td></tr>}
+            {reviewRows.length === 0 && <tr><td colSpan={4}>No model status items.</td></tr>}
             {reviewRows.map((row) => (
               <tr key={row.key}>
                 <td>{row.key}</td>
                 <td>{row.label}</td>
                 <td className="num">{row.unit === "currency" ? money(row.value) : row.value ?? row.textValue ?? "-"}</td>
-                <td>{row.sourceCell ?? "-"}</td>
-                <td>{row.textValue ?? (row.needsReview ? "Needs Review by Kenneth James" : "-")}</td>
+                <td>{row.textValue ?? (row.needsReview ? "Pending Kenneth James" : "-")}</td>
               </tr>
             ))}
           </tbody>

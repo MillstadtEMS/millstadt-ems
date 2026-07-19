@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import { PublicActionCard, PublicMetric, PublicPageHero } from "@/components/site/PublicChrome";
 import type { SiteIconName } from "@/components/site/SiteIcon";
+import { hasPublicMinutes } from "@/lib/board/governance";
 
 export const metadata: Metadata = {
   title: "What's Happening in Millstadt",
   description: "Your one-stop hub for everything going on in Millstadt — events, senior center, Commercial Club news, and community updates.",
 };
+
+export const dynamic = "force-dynamic";
 
 const cards = [
   {
@@ -65,7 +68,22 @@ const cards = [
   label: string;
 }[];
 
-export default function WhatsHappeningPage() {
+export default async function WhatsHappeningPage() {
+  const showBoardMinutes = await hasPublicMinutes();
+  const visibleCards = showBoardMinutes
+    ? [
+        ...cards,
+        {
+          href: "/board-minutes",
+          icon: "newspaper" as SiteIconName,
+          title: "EMS Board Minutes",
+          desc: "Meeting minutes shared by the Millstadt EMS Board.",
+          tone: "blue" as const,
+          label: "Read Minutes",
+        },
+      ]
+    : cards;
+
   return (
     <>
       <PublicPageHero
@@ -74,14 +92,14 @@ export default function WhatsHappeningPage() {
         accent="in Millstadt"
         description="A cleaner starting point for local events, Kids Club, senior resources, community posts, and Millstadt news."
       >
-        <PublicMetric label="Community areas" value={cards.length} tone="gold" />
+        <PublicMetric label="Community areas" value={visibleCards.length} tone="gold" />
         <PublicMetric label="Updated paths" value="Live" tone="cyan" />
       </PublicPageHero>
 
       <section className="py-16 bg-[#040d1a]">
         <div className="wrap">
           <div className="mems-action-grid">
-            {cards.map(card => (
+            {visibleCards.map(card => (
               <PublicActionCard
                 key={card.href}
                 href={card.href}

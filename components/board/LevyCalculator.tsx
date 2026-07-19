@@ -33,7 +33,6 @@ function initialRate(currentScenario: string | null): string {
 
 export default function LevyCalculator({
   eav,
-  eavCell,
   currentScenario,
   currentLevyRevenue,
   totalProjectedAnnualNeed,
@@ -42,7 +41,6 @@ export default function LevyCalculator({
   canSaveModelValue,
 }: {
   eav: number;
-  eavCell: string | null;
   currentScenario: string | null;
   currentLevyRevenue: number;
   totalProjectedAnnualNeed: number;
@@ -201,7 +199,7 @@ export default function LevyCalculator({
             <button className="board-btn-secondary" type="button" onClick={reset}>Reset</button>
           </div>
           <p className="board-updated" style={{ marginTop: 12 }}>
-            Workbook value: {money0(savedEav)}{eavCell ? ` (${eavCell})` : ""}{unsaved ? " · Unsaved scenario" : ""}
+            Model value: {money0(savedEav)}{unsaved ? " · Unsaved scenario" : ""}
           </p>
         </div>
 

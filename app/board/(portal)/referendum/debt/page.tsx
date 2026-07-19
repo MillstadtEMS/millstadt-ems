@@ -40,7 +40,7 @@ export default async function DebtPage() {
                     <td style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{r.creditor}</td>
                     <td style={{ color: "var(--b-muted)" }}>{r.purpose ?? "—"}</td>
                     <td className="num" style={{ fontWeight: 600 }}>{money(r.balance)}</td>
-                    <td className="num">{r.rate != null ? pct(r.rate) : <span className="board-chip review">Needs review</span>}</td>
+                    <td className="num">{r.rate != null ? pct(r.rate) : <span className="board-chip review">Pending</span>}</td>
                     <td className="num">{r.monthly != null ? money(r.monthly) : "—"}</td>
                     <td className="num">{money(r.annual)}</td>
                     <td style={{ whiteSpace: "nowrap" }}>{r.payoff ?? "—"}</td>
@@ -72,7 +72,7 @@ export default async function DebtPage() {
             </>
           )}
 
-          <p className="board-updated" style={{ marginTop: 16 }}>Source: Debt Schedule worksheet.</p>
+          <p className="board-updated" style={{ marginTop: 16 }}>Projected obligations and annual payments.</p>
         </>
       )}
     </>

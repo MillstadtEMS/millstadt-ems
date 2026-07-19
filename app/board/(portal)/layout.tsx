@@ -6,7 +6,7 @@ import WelcomeOverlay from "@/components/board/WelcomeOverlay";
 import BoardPhoto from "@/components/board/BoardPhoto";
 import BoardNav from "@/components/board/BoardNav";
 import BoardLogo from "@/components/board/BoardLogo";
-import { userBoards } from "@/lib/board/governance";
+import { canReviewFireMeetingRequests, canSubmitFireMeetingRequest, canViewFinancialModel, userBoards } from "@/lib/board/governance";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +18,8 @@ export default async function PortalLayout({ children }: { children: React.React
   const initials = `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase();
   const isBoardAdmin = user.role === "admin";
   const showMeetings = userBoards(user).length > 0;
+  const showReferendum = canViewFinancialModel(user);
+  const showRequests = canSubmitFireMeetingRequest(user) || canReviewFireMeetingRequests(user);
 
   return (
     <div className="board-shell">
@@ -25,7 +27,7 @@ export default async function PortalLayout({ children }: { children: React.React
         <Link href="/board" className="board-side-brand">
           <BoardLogo variant="dark" />
         </Link>
-        <BoardNav isAdmin={isBoardAdmin} showMeetings={showMeetings} />
+        <BoardNav isAdmin={isBoardAdmin} showMeetings={showMeetings} showReferendum={showReferendum} showRequests={showRequests} />
         <p className="board-log-notice">Portal activity is logged for governance and security.</p>
       </aside>
 
@@ -34,7 +36,7 @@ export default async function PortalLayout({ children }: { children: React.React
           <div className="board-top-in">
             <details className="board-mobile-nav">
               <summary>Menu</summary>
-              <BoardNav isAdmin={isBoardAdmin} showMeetings={showMeetings} />
+              <BoardNav isAdmin={isBoardAdmin} showMeetings={showMeetings} showReferendum={showReferendum} showRequests={showRequests} />
             </details>
             <Link href="/board" className="board-mobile-brand">
               <span>MILLSTADT EMS</span>

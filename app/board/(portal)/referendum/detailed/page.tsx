@@ -53,7 +53,7 @@ export default async function DetailedModelPage() {
             </section>
           ))}
 
-          <p className="board-updated" style={{ marginTop: 18 }}>Source: Referendum workbook, FY 2026–27 · financial projection for referendum planning.</p>
+          <p className="board-updated" style={{ marginTop: 18 }}>Financial projection for referendum planning.</p>
         </>
       )}
     </>

@@ -3,9 +3,8 @@
  *
  *   node scripts/board-meetings-seed.mjs [monthsAhead]
  *
- * Creates the governance tables and generates recurring board meetings:
- *   EMS  = 2nd Wednesday of each month
- *   Fire = last Thursday of each month
+ * Creates the governance tables and generates recurring EMS Board meetings:
+ *   EMS = 2nd Wednesday of each month
  * Idempotent — safe to re-run; existing meetings are left untouched. Reads
  * DATABASE_URL from .env.local. Contains no financial or personal data.
  */
@@ -24,26 +23,25 @@ function nthWeekday(y, m0, weekday, nth) {
   const shift = (weekday - first.getUTCDay() + 7) % 7;
   return new Date(Date.UTC(y, m0, 1 + shift + (nth - 1) * 7));
 }
-function lastWeekday(y, m0, weekday) {
-  const last = new Date(Date.UTC(y, m0 + 1, 0));
-  const shift = (last.getUTCDay() - weekday + 7) % 7;
-  return new Date(Date.UTC(y, m0 + 1, 0 - shift));
-}
-const recurring = (board, y, m0) => (board === "ems" ? nthWeekday(y, m0, 3, 2) : lastWeekday(y, m0, 4));
+const recurring = (_board, y, m0) => nthWeekday(y, m0, 3, 2);
 const ymd = (d) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 const DEFAULTS = {
   ems: { time: "7:00 PM", end: "8:30 PM", location: "100 East Laurel Street, Millstadt, Illinois" },
-  fire: { time: "7:00 PM", end: "8:30 PM", location: "100 East Laurel Street, Millstadt, Illinois" },
 };
 
 await sql`CREATE TABLE IF NOT EXISTS board_meetings (
   id BIGSERIAL PRIMARY KEY, board TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'Regular',
   status TEXT NOT NULL DEFAULT 'Scheduled', title TEXT, meeting_date DATE NOT NULL,
   start_time TEXT, end_time TEXT, location TEXT, virtual_link TEXT, description TEXT,
+  minutes_text TEXT, minutes_public BOOLEAN NOT NULL DEFAULT FALSE, minutes_updated_by TEXT, minutes_updated_at TIMESTAMPTZ,
   quorum_override INTEGER, details_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
   is_recurring BOOLEAN NOT NULL DEFAULT TRUE, series_key TEXT, created_by TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 )`;
+await sql`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_text TEXT`;
+await sql`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_public BOOLEAN NOT NULL DEFAULT FALSE`;
+await sql`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_updated_by TEXT`;
+await sql`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_updated_at TIMESTAMPTZ`;
 await sql`CREATE UNIQUE INDEX IF NOT EXISTS board_meetings_series ON board_meetings (board, meeting_date) WHERE is_recurring`;
 await sql`CREATE TABLE IF NOT EXISTS board_quorum_rules (
   board TEXT PRIMARY KEY,
@@ -64,7 +62,7 @@ for (let i = 0; i <= monthsAhead; i++) {
   const m = now.getUTCMonth() + i;
   const y = now.getUTCFullYear() + Math.floor(m / 12);
   const m0 = ((m % 12) + 12) % 12;
-  for (const board of ["ems", "fire"]) {
+  for (const board of ["ems"]) {
     const d = recurring(board, y, m0);
     if (d < todayFloor) continue;
     const def = DEFAULTS[board];

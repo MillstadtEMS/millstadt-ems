@@ -6,11 +6,10 @@ import { useRouter } from "next/navigation";
 const OPTIONS = ["Attending", "Attending Remotely", "Tentative", "Not Attending", "Excused Absence Requested", "No Response"] as const;
 
 export default function AttendanceControl({
-  meetingId, current, currentNote, canRespond,
-}: { meetingId: number; current: string; currentNote: string | null; canRespond: boolean }) {
+  meetingId, current, canRespond,
+}: { meetingId: number; current: string; canRespond: boolean }) {
   const router = useRouter();
   const [sel, setSel] = useState(current);
-  const [note, setNote] = useState(currentNote ?? "");
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -23,7 +22,7 @@ export default function AttendanceControl({
     try {
       const res = await fetch("/api/board/meetings/attendance", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ meetingId, response, note: note.trim() || null }),
+        body: JSON.stringify({ meetingId, response, note: null }),
       });
       if (res.ok) { setSel(response); setSaved(true); router.refresh(); }
     } finally { setBusy(false); }
@@ -48,11 +47,6 @@ export default function AttendanceControl({
           );
         })}
       </div>
-      <textarea value={note} onChange={(e) => setNote(e.target.value)}
-        placeholder="Optional note"
-        className="board-input" rows={2}
-        style={{ marginTop: 12, resize: "vertical", fontFamily: "inherit" }}
-        onBlur={() => sel && send(sel)} />
       {saved && <p style={{ margin: "8px 0 0", color: "var(--b-good)", fontSize: 13 }}>Saved. This is your planned attendance — the secretary confirms the official record at the meeting.</p>}
     </div>
   );

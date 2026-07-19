@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { currentBoardUser } from "@/lib/board/auth";
+import CalendarItemForm from "@/components/board/CalendarItemForm";
 import {
-  getUpcomingMeetings, generateRecurring, userBoards, getAttendance,
-  getQuorumRequired, computeQuorum, isEligibleMember, BOARD_LABEL, type Board,
+  canManageCalendar, canRecordAttendance, getCalendarItems, getUpcomingMeetings, generateRecurring, userBoards, getAttendance,
+  getQuorumRequired, computeQuorum, BOARD_LABEL, type Board,
 } from "@/lib/board/governance";
 
 export const dynamic = "force-dynamic";
@@ -22,15 +24,21 @@ const BADGE: Record<Board, { bg: string; fg: string; label: string }> = {
 export default async function MeetingsPage() {
   const user = await currentBoardUser();
   if (!user) return null;
+  const boards = userBoards(user);
+  if (boards.length === 0) redirect("/board/requests");
   await generateRecurring(6); // keep the next ~6 months seeded
-  const meetings = await getUpcomingMeetings(userBoards(user), 30);
+  const [meetings, calendarItems] = await Promise.all([
+    getUpcomingMeetings(boards, 30),
+    getCalendarItems(),
+  ]);
+  const canAddCalendarItems = canManageCalendar(user);
 
   // Quorum snapshot per meeting (cheap — small boards).
   const withQuorum = await Promise.all(meetings.map(async (m) => {
     const att = await getAttendance(m.id, m.board);
     const { required, isDefault } = await getQuorumRequired(m.board, att.length);
     const q = computeQuorum(att, required, isDefault);
-    const mine = att.find((a) => a.userId === user.id)?.response ?? (isEligibleMember(user, m.board) ? "No Response" : null);
+    const mine = att.find((a) => a.userId === user.id)?.response ?? (canRecordAttendance(user, m.board) ? "No Response" : null);
     return { m, q, mine };
   }));
 
@@ -38,7 +46,7 @@ export default async function MeetingsPage() {
     <>
       <p className="board-eyebrow">Governance</p>
       <h1 className="board-h1">Meetings</h1>
-      <p className="board-sub">EMS Board: second Wednesday. Fire Board: last Thursday. 7:00 PM at 100 East Laurel Street, Millstadt, Illinois.</p>
+      <p className="board-sub">EMS Board meetings and shared board calendar items.</p>
 
       <div style={{ display: "grid", gap: 14, marginTop: 24 }}>
         {withQuorum.length === 0 && <div className="board-card"><p style={{ margin: 0 }}>No upcoming meetings scheduled.</p></div>}
@@ -68,6 +76,27 @@ export default async function MeetingsPage() {
                 </div>
               </div>
             </Link>
+          );
+        })}
+      </div>
+
+      <h2 className="board-h2">Events and reminders</h2>
+      {canAddCalendarItems && <CalendarItemForm />}
+      <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
+        {calendarItems.length === 0 && <div className="board-card"><p style={{ margin: 0 }}>No shared events or reminders yet.</p></div>}
+        {calendarItems.map((item) => {
+          const d = fmtDate(item.date);
+          return (
+            <div key={item.id} className="board-card">
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5, flexWrap: "wrap" }}>
+                <span className="board-chip">{item.itemType}</span>
+                <span style={{ fontFamily: "var(--b-mono)", fontSize: 10.5, color: "var(--b-muted)", textTransform: "uppercase" }}>
+                  {d.dow}, {d.rest}{item.startTime ? ` · ${item.startTime}` : ""}{item.endTime ? `-${item.endTime}` : ""}
+                </span>
+              </div>
+              <p style={{ margin: 0, fontWeight: 700, color: "var(--b-ink)" }}>{item.title}</p>
+              {item.description && <p style={{ margin: "6px 0 0", color: "var(--b-muted)", fontSize: 13.5 }}>{item.description}</p>}
+            </div>
           );
         })}
       </div>

@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentBoardUser } from "@/lib/board/auth";
 import { audit } from "@/lib/board/db";
-import { getMeeting, setAttendance, isEligibleMember, RESPONSES, type Response } from "@/lib/board/governance";
+import { canRecordAttendance, getMeeting, setAttendance, RESPONSES, type Response } from "@/lib/board/governance";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,14 +18,14 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const meetingId = Number(body.meetingId);
   const response = String(body.response ?? "") as Response;
-  const note = body.note ? String(body.note).slice(0, 500) : null;
+  const note = null;
 
   if (!meetingId || !RESPONSES.includes(response)) {
     return NextResponse.json({ error: "Pick a valid response." }, { status: 400 });
   }
   const meeting = await getMeeting(meetingId);
   if (!meeting) return NextResponse.json({ error: "Meeting not found." }, { status: 404 });
-  if (!isEligibleMember(user, meeting.board)) {
+  if (!canRecordAttendance(user, meeting.board)) {
     return NextResponse.json({ error: "You are not on this board." }, { status: 403 });
   }
 

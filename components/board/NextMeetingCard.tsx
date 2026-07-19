@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { BoardUser } from "@/lib/board/db";
 import {
   getNextMeeting, getAttendance, getQuorumRequired, computeQuorum, getQuestions,
-  isEligibleMember, canSeeQuestion, BOARD_LABEL, type Board,
+  canRecordAttendance, canSeeQuestion, BOARD_LABEL, type Board,
 } from "@/lib/board/governance";
 
 function fmtDate(iso: string): string {
@@ -23,7 +23,7 @@ export default async function NextMeetingCard({ user }: { user: BoardUser }) {
   const questions = await getQuestions(m.id);
   const myQuestions = questions.filter((question) => question.userId === user.id).length;
   const openForMe = questions.filter((question) => canSeeQuestion(user, question) && !question.responseBody).length;
-  const mine = att.find((a) => a.userId === user.id)?.response ?? (isEligibleMember(user, m.board) ? "No Response" : null);
+  const mine = att.find((a) => a.userId === user.id)?.response ?? (canRecordAttendance(user, m.board) ? "No Response" : null);
   const b = BADGE[m.board];
   const qColor = q.status === "Quorum Confirmed" ? "var(--b-good)" : q.status === "Quorum Not Expected" ? "var(--b-crit)" : "var(--b-warn)";
 

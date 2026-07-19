@@ -27,7 +27,7 @@ export default async function TrucksPage() {
           <div className="board-grid k3" style={{ marginTop: 22 }}>
             <div className="board-card board-stat"><div className="lbl">Total Fleet Cost</div><div className="val">{money(total)}</div><div className="sub">All line items</div></div>
             <div className="board-card board-stat"><div className="lbl">Largest Line Item</div><div className="val">{top ? top.unit : "—"}</div><div className="sub">{top ? `${money(top.amt)}` : ""}</div></div>
-            <div className="board-card board-stat"><div className="lbl">Items tracked</div><div className="val">{units.length}</div><div className="sub">Operating Needs worksheet</div></div>
+            <div className="board-card board-stat"><div className="lbl">Items tracked</div><div className="val">{units.length}</div><div className="sub">Annual fleet line items</div></div>
           </div>
 
           <h2 className="board-h2">Fleet line items</h2>
@@ -72,7 +72,7 @@ export default async function TrucksPage() {
             </table>
           </div>
 
-          <p className="board-updated" style={{ marginTop: 16 }}>Source: Operating Needs worksheet.</p>
+          <p className="board-updated" style={{ marginTop: 16 }}>Projected annual fleet costs.</p>
         </>
       )}
     </>
