@@ -11,7 +11,7 @@ export interface WorkbookFieldMap {
 }
 
 export const REFERENDUM_WORKBOOK_IDENTITY = {
-  fileName: "Millstadt_EMS_Referendum_Financial_Model (1).xlsx",
+  fileName: "Millstadt_EMS_Referendum_Financial_Model_website.xlsx",
   owner: "Kenneth.james@millstadtems.org",
   status: "Configuration Required",
 } as const;
