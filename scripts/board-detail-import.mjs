@@ -83,7 +83,7 @@ if (hasNewReferendumModel) {
                       ${basis?.toLowerCase().includes("month") ? scheduled : null}, ${annual ?? scheduled}, NULL, NULL, ${strOrNull(val(dl, `G${r}`))}, 'amortizing', ${(n + 1) * 10})`;
     n++;
   }
-  for (let r = 17; r <= 18; r++) {
+  for (let r = 17; r <= 19; r++) {
     const creditor = strOrNull(val(dl, `A${r}`));
     if (!creditor) continue;
     await sql`INSERT INTO board_debt (creditor, purpose, balance, rate, rate_note, monthly, annual, remaining, payoff, notes, kind, sort)

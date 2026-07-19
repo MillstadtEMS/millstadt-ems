@@ -118,7 +118,7 @@ export async function ensureGovernanceSchema(): Promise<void> {
   )`;
   await db`
     INSERT INTO board_quorum_rules (board, required, updated_by)
-    VALUES ('ems', 3, 'codex-approved-default')
+    VALUES ('ems', 3, 'board-approved-default')
     ON CONFLICT (board) DO NOTHING
   `;
   await db`CREATE TABLE IF NOT EXISTS board_questions (

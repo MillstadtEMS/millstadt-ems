@@ -53,7 +53,7 @@ await sql`CREATE TABLE IF NOT EXISTS board_quorum_rules (
 )`;
 await sql`
   INSERT INTO board_quorum_rules (board, required, updated_by)
-  VALUES ('ems', 3, 'codex-approved-default')
+  VALUES ('ems', 3, 'board-approved-default')
   ON CONFLICT (board) DO NOTHING
 `;
 

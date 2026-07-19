@@ -24,10 +24,6 @@ const readEnv = (name) => env.match(new RegExp(`^${name}=(.*)$`, "m"))?.[1]?.tri
 const url = readEnv("DATABASE_URL");
 if (!url) { console.error("DATABASE_URL not found in .env.local"); process.exit(1); }
 const initialTemporaryPassword = readEnv("BOARD_INITIAL_TEMP_PASSWORD");
-if (!initialTemporaryPassword) {
-  console.error("BOARD_INITIAL_TEMP_PASSWORD missing; set it in .env.local before seeding the board admin account.");
-  process.exit(1);
-}
 const sql = neon(url);
 
 function hashPassword(pw) {
@@ -67,6 +63,9 @@ const newTransportRate = num(sheetCell("Model Inputs", "B10"));
 const newNetCollection = num(sheetCell("Model Inputs", "B11"));
 const newBilling = firstNumber(num(sheetCell("Levy Calculator", "E8")), num(sheetCell("Model Inputs", "B12")));
 const newOther = firstNumber(num(sheetCell("Levy Calculator", "E9")), num(sheetCell("Model Inputs", "B17")));
+const newCollectionFactor = num(sheetCell("Levy Calculator", "B7"));
+const newPropertyMarketValue = num(sheetCell("Levy Calculator", "B8"));
+const newBreakEvenRate = firstNumber(num(sheetCell("Levy Calculator", "E13")), num(sheetCell("Referendum Overview", "F13")));
 const newOperating = firstNumber(num(sheetCell("Operating Needs", "G13")), num(sheetCell("Referendum Overview", "F6")));
 const newFleet = operatingCategoryTotal("Fleet");
 
@@ -88,6 +87,9 @@ const MAP = hasNewReferendumModel ? [
   ["exp_payables", "Annual Payable Catch-Up", "Referendum Overview!F8", num(sheetCell("Referendum Overview", "F8")), null, "currency", "mix", 125, false],
   ["levy_scenario", "Selected Levy Rate", "Levy Calculator!B6", num(sheetCell("Levy Calculator", "B6")), rateText(num(sheetCell("Levy Calculator", "B6"))), "percent", "levy", 130, false],
   ["billing_scenario", "EMS Billing Scenario", "Model Inputs!B9:B12", newBilling, `${newCallVolume ?? "Call volume"} calls x ${newTransportRate != null ? (newTransportRate * 100).toFixed(0) + "%" : "transport rate"} x ${newNetCollection != null ? "$" + newNetCollection.toFixed(0) : "net collection"}`, "currency", "levy", 140, false],
+  ["levy_collection_factor", "Collection Factor", "Levy Calculator!B7", newCollectionFactor, null, "number", "levy", 150, false],
+  ["property_market_value", "Scenario Property Market Value", "Levy Calculator!B8", newPropertyMarketValue, null, "currency", "levy", 160, false],
+  ["levy_break_even_rate", "Break-Even Levy Rate", "Levy Calculator!E13", newBreakEvenRate, null, "percent", "levy", 170, false],
 ] : [
   ["rev_total",        "Total Revenue",            "B5",  false, "top", 10],
   ["exp_total",        "Total Expenses",           "B6",  false, "top", 20],
@@ -180,7 +182,7 @@ if (hasNewReferendumModel) {
   for (let r = 5; r <= 10; r++) {
     await insertLine("Debt & Liabilities", sheetCell("Debt & Liabilities", `A${r}`), sheetCell("Debt & Liabilities", `E${r}`), sheetCell("Debt & Liabilities", `G${r}`));
   }
-  for (let r = 17; r <= 18; r++) {
+  for (let r = 17; r <= 19; r++) {
     await insertLine("Debt & Liabilities", sheetCell("Debt & Liabilities", `A${r}`), sheetCell("Debt & Liabilities", `D${r}`), sheetCell("Debt & Liabilities", `G${r}`));
   }
   console.log(`board_budget_lines: ${inserted} line items from referendum model workbook`);
@@ -264,6 +266,10 @@ const existing = await sql`SELECT username FROM board_users WHERE username = 'kj
 if (existing.length) {
   console.log("admin 'kjames' already exists — left unchanged.");
 } else {
+  if (!initialTemporaryPassword) {
+    console.error("BOARD_INITIAL_TEMP_PASSWORD missing; set it in .env.local before seeding the board admin account.");
+    process.exit(1);
+  }
   await sql`
     INSERT INTO board_users (username, first_name, last_name, email, role, officer_title, password_hash, must_change_password)
     VALUES ('kjames','Kenneth','James','millstadtems@gmail.com','admin','Administrator', ${hashPassword(initialTemporaryPassword)}, TRUE)`;

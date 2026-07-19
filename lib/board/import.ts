@@ -239,7 +239,7 @@ async function importReferendumModelWorkbook(db: Db, wb: XLSX.WorkBook): Promise
   for (let r = 5; r <= 10; r++) {
     await insertBudgetLine("Debt & Liabilities", strOrNull(val(debt, `A${r}`)), numOrNull(val(debt, `E${r}`)), strOrNull(val(debt, `G${r}`)));
   }
-  for (let r = 17; r <= 18; r++) {
+  for (let r = 17; r <= 19; r++) {
     await insertBudgetLine("Debt & Liabilities", strOrNull(val(debt, `A${r}`)), numOrNull(val(debt, `D${r}`)), strOrNull(val(debt, `G${r}`)));
   }
 
@@ -287,7 +287,7 @@ async function importReferendumModelWorkbook(db: Db, wb: XLSX.WorkBook): Promise
                      ${basis?.toLowerCase().includes("month") ? scheduled : null}, ${annual ?? scheduled}, NULL, NULL, ${strOrNull(val(debt, `G${r}`))}, 'amortizing', ${(debts + 1) * 10})`;
     debts++;
   }
-  for (let r = 17; r <= 18; r++) {
+  for (let r = 17; r <= 19; r++) {
     const creditor = strOrNull(val(debt, `A${r}`));
     if (!creditor) continue;
     await db`INSERT INTO board_debt (creditor, purpose, balance, rate, rate_note, monthly, annual, remaining, payoff, notes, kind, sort)
