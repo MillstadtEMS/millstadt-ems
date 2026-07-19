@@ -1,8 +1,39 @@
 /** Board Portal — detailed projected line items from the imported workbook. */
 import { ensureBoardSchema, sql } from "./db";
+import { isSalaryRoleLabel, SALARY_ROLLUP_LABEL } from "./salaryRollup";
 
 export interface BudgetLine { section: string; category: string; amount: number | null; status: string | null; sort: number }
 export interface BudgetSection { name: string; total: number; lines: BudgetLine[] }
+
+function rollupSalaryLines(section: BudgetSection): BudgetSection {
+  if (section.name !== "Personnel") return section;
+
+  let salaryAmount = 0;
+  let salarySort = Number.MAX_SAFE_INTEGER;
+  let insertAt: number | null = null;
+  const lines: BudgetLine[] = [];
+
+  for (const line of section.lines) {
+    if (isSalaryRoleLabel(line.category)) {
+      salaryAmount += line.amount ?? 0;
+      salarySort = Math.min(salarySort, line.sort);
+      if (insertAt == null) insertAt = lines.length;
+      continue;
+    }
+    lines.push(line);
+  }
+
+  if (insertAt == null) return section;
+  lines.splice(insertAt, 0, {
+    section: section.name,
+    category: SALARY_ROLLUP_LABEL,
+    amount: salaryAmount,
+    status: null,
+    sort: salarySort,
+  });
+
+  return { ...section, lines };
+}
 
 export async function getBudgetSections(): Promise<BudgetSection[]> {
   await ensureBoardSchema();
@@ -26,5 +57,5 @@ export async function getBudgetSections(): Promise<BudgetSection[]> {
     s.lines.push(line);
     s.total += line.amount ?? 0;
   }
-  return Array.from(map.values());
+  return Array.from(map.values()).map(rollupSalaryLines);
 }
