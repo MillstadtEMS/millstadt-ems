@@ -14,6 +14,11 @@ import { put } from "@vercel/blob";
 const env = readFileSync(new URL("../.env.local", import.meta.url), "utf8");
 const pick = (k) => env.match(new RegExp(`^${k}=(.*)$`, "m"))?.[1]?.trim().replace(/^["']|["']$/g, "");
 const DB = pick("DATABASE_URL");
+const initialTemporaryPassword = pick("BOARD_INITIAL_TEMP_PASSWORD");
+if (!DB) throw new Error("DATABASE_URL is required in .env.local");
+if (!initialTemporaryPassword) {
+  throw new Error("BOARD_INITIAL_TEMP_PASSWORD is required in .env.local for first-run Board user seeding.");
+}
 process.env.BLOB_READ_WRITE_TOKEN = pick("BLOB_READ_WRITE_TOKEN");
 const sql = neon(DB);
 const hash = (pw) => { const s = randomBytes(16).toString("hex"); return `${s}:${scryptSync(pw, s, 64).toString("hex")}`; };
@@ -31,8 +36,8 @@ for (const [u, first, last] of FIRE) {
   const exists = await sql`SELECT 1 FROM board_users WHERE username=${u} LIMIT 1`;
   if (exists.length) { console.log(`  · ${u} exists`); continue; }
   await sql`INSERT INTO board_users (username, first_name, last_name, role, officer_title, password_hash, must_change_password, simple_view_default)
-            VALUES (${u}, ${first}, ${last}, 'fire_board', 'District Trustee', ${hash(u + "39")}, TRUE, TRUE)`;
-  console.log(`  + ${u} (${first} ${last}, District Trustee)  temp pw ${u}39`);
+            VALUES (${u}, ${first}, ${last}, 'fire_board', 'District Trustee', ${hash(initialTemporaryPassword)}, TRUE, TRUE)`;
+  console.log(`  + ${u} (${first} ${last}, District Trustee)  temporary password assigned; change required at first sign-in`);
 }
 
 // ---- Photos: "<First Last>.png" on the Desktop -> username ----

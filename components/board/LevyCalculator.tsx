@@ -1,73 +1,248 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  MODELED_LEVY_RATES,
+  buildLevyScenario,
+  calculateReferendum,
+} from "@/lib/board/financialData/referendum/levyCalculations";
 
-const money0 = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-const money2 = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money0 = (n: number | null | undefined) => n == null || Number.isNaN(n)
+  ? "-"
+  : n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const money2 = (n: number | null | undefined) => n == null || Number.isNaN(n)
+  ? "-"
+  : n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const number0 = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 0 });
 
-const COMPARE = [0.20, 0.25, 0.30, 0.35, 0.40];       // planning rates (%), do not remove
-const HOMES = [100000, 150000, 200000, 250000, 300000]; // market values for impact estimate
+function parseCurrencyInput(value: string): number {
+  const parsed = Number(value.replace(/[^0-9.]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
-export default function LevyCalculator({ eav, eavCell, currentScenario }: {
-  eav: number; eavCell: string | null; currentScenario: string | null;
+function parseRate(value: string): number {
+  const parsed = Number(value.replace(/[^0-9.]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function initialRate(currentScenario: string | null): string {
+  const match = currentScenario?.match(/([\d.]+)\s*%/);
+  return match?.[1] ?? "0.30";
+}
+
+export default function LevyCalculator({
+  eav,
+  eavCell,
+  currentScenario,
+  currentLevyRevenue,
+  totalProjectedAnnualNeed,
+  requiredRevenue,
+  initialPropertyMarketValue,
+  canSaveModelValue,
+}: {
+  eav: number;
+  eavCell: string | null;
+  currentScenario: string | null;
+  currentLevyRevenue: number;
+  totalProjectedAnnualNeed: number;
+  requiredRevenue: number;
+  initialPropertyMarketValue: number;
+  canSaveModelValue: boolean;
 }) {
-  const [rateStr, setRateStr] = useState("0.30");
-  const [collStr, setCollStr] = useState("100");
+  const router = useRouter();
+  const [savedEav, setSavedEav] = useState(eav);
+  const [draftEav, setDraftEav] = useState(number0(eav));
+  const [draftRate, setDraftRate] = useState(initialRate(currentScenario));
+  const [draftPropertyValue, setDraftPropertyValue] = useState(number0(initialPropertyMarketValue));
+  const [model, setModel] = useState({
+    eav,
+    selectedLevyRatePercent: parseRate(initialRate(currentScenario)),
+    propertyMarketValue: initialPropertyMarketValue,
+  });
+  const [unsaved, setUnsaved] = useState(false);
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const rate = Math.max(0, parseFloat(rateStr) || 0);       // percent, e.g. 0.30
-  const coll = Math.min(100, Math.max(0, parseFloat(collStr) || 0)) / 100;
+  const result = useMemo(() => calculateReferendum({
+    eav: model.eav,
+    selectedLevyRatePercent: model.selectedLevyRatePercent,
+    propertyMarketValue: model.propertyMarketValue,
+    totalProjectedAnnualNeed,
+    currentLevyRevenue,
+    requiredRevenue,
+  }), [currentLevyRevenue, model, requiredRevenue, totalProjectedAnnualNeed]);
 
-  const revenue = useMemo(() => eav * (rate / 100) * coll, [eav, rate, coll]);
-  const current = useMemo(() => eav * (0.30 / 100) * coll, [eav, coll]); // scenario B = 0.30%
-  const diff = revenue - current;
+  const scenarios = useMemo(
+    () => MODELED_LEVY_RATES.map((rate) => buildLevyScenario(model.eav, rate, requiredRevenue, totalProjectedAnnualNeed)),
+    [model.eav, requiredRevenue, totalProjectedAnnualNeed],
+  );
+
+  function calculate() {
+    const nextEav = parseCurrencyInput(draftEav);
+    const nextRate = parseRate(draftRate);
+    const nextPropertyValue = parseCurrencyInput(draftPropertyValue);
+    setMessage(null);
+    if (nextEav <= 0) {
+      setMessage({ ok: false, text: "Enter a positive EAV." });
+      return;
+    }
+    if (nextRate <= 0) {
+      setMessage({ ok: false, text: "Enter a positive levy rate." });
+      return;
+    }
+    if (nextPropertyValue <= 0) {
+      setMessage({ ok: false, text: "Enter a positive property market value." });
+      return;
+    }
+    setModel({
+      eav: nextEav,
+      selectedLevyRatePercent: nextRate,
+      propertyMarketValue: nextPropertyValue,
+    });
+    setUnsaved(nextEav !== savedEav);
+  }
+
+  function reset() {
+    setDraftEav(number0(savedEav));
+    setDraftRate(initialRate(currentScenario));
+    setDraftPropertyValue(number0(initialPropertyMarketValue));
+    setModel({
+      eav: savedEav,
+      selectedLevyRatePercent: parseRate(initialRate(currentScenario)),
+      propertyMarketValue: initialPropertyMarketValue,
+    });
+    setUnsaved(false);
+    setReason("");
+    setMessage(null);
+  }
+
+  async function saveModelValue() {
+    const nextEav = model.eav;
+    setMessage(null);
+    if (!canSaveModelValue) {
+      setMessage({ ok: false, text: "Financial-model permission required." });
+      return;
+    }
+    if (nextEav <= 0) {
+      setMessage({ ok: false, text: "Enter a positive EAV." });
+      return;
+    }
+    if (!reason.trim()) {
+      setMessage({ ok: false, text: "A reason is required." });
+      return;
+    }
+    if (!window.confirm("Save this EAV as the model value?")) return;
+    setSaving(true);
+    try {
+      const response = await fetch("/api/board/referendum/eav", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eav: nextEav, reason: reason.trim() }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage({ ok: false, text: data.error || "EAV was not saved." });
+        return;
+      }
+      setSavedEav(nextEav);
+      setDraftEav(number0(nextEav));
+      setUnsaved(false);
+      setReason("");
+      setMessage({ ok: true, text: "Saved as model value. Workbook synchronization requires Microsoft Graph configuration." });
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const marginLabel = result.fundingMarginOrGap >= 0 ? "Projected Funding Margin" : "Projected Funding Gap";
 
   return (
     <>
       <div className="board-grid k2" style={{ marginTop: 22 }}>
-        {/* inputs */}
         <div className="board-card">
-          <div className="board-eyebrow" style={{ marginBottom: 14 }}>Your rate</div>
           <div className="board-field">
-            <label htmlFor="rate">Proposed levy rate (%)</label>
-            <input id="rate" className="board-input" inputMode="decimal" value={rateStr}
-              onChange={(e) => setRateStr(e.target.value.replace(/[^0-9.]/g, ""))} />
+            <label htmlFor="eav">Equalized Assessed Value (EAV)</label>
+            <input
+              id="eav"
+              className="board-input"
+              inputMode="decimal"
+              value={draftEav}
+              onChange={(event) => {
+                setDraftEav(event.target.value.replace(/[^0-9.,]/g, ""));
+                setUnsaved(true);
+              }}
+            />
           </div>
-          <div className="board-field" style={{ marginBottom: 0 }}>
-            <label htmlFor="coll">Collection rate (%) <span style={{ color: "var(--b-faint)", fontWeight: 400 }}>— set ~98% to be conservative</span></label>
-            <input id="coll" className="board-input" inputMode="decimal" value={collStr}
-              onChange={(e) => setCollStr(e.target.value.replace(/[^0-9.]/g, ""))} />
+          <div className="board-field">
+            <label htmlFor="rate">Selected Levy Rate</label>
+            <input
+              id="rate"
+              className="board-input"
+              inputMode="decimal"
+              value={draftRate}
+              onChange={(event) => setDraftRate(event.target.value.replace(/[^0-9.]/g, ""))}
+            />
           </div>
+          <div className="board-field">
+            <label htmlFor="property-value">Property Market Value</label>
+            <input
+              id="property-value"
+              className="board-input"
+              inputMode="decimal"
+              value={draftPropertyValue}
+              onChange={(event) => setDraftPropertyValue(event.target.value.replace(/[^0-9.,]/g, ""))}
+            />
+          </div>
+          <div className="board-actions">
+            <button className="board-submit" type="button" onClick={calculate}>Calculate</button>
+            <button className="board-btn-secondary" type="button" onClick={reset}>Reset</button>
+          </div>
+          <p className="board-updated" style={{ marginTop: 12 }}>
+            Workbook value: {money0(savedEav)}{eavCell ? ` (${eavCell})` : ""}{unsaved ? " · Unsaved scenario" : ""}
+          </p>
         </div>
 
-        {/* result */}
-        <div className="board-card board-stat" style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
-          <div className="lbl">Estimated annual levy revenue</div>
-          <div className="val" style={{ fontSize: "clamp(28px,4.4vw,40px)" }}>{money0(revenue)}</div>
-          <div className="sub" style={{ marginTop: 8 }}>
-            {money2(revenue / 12)} per month ·{" "}
-            <span style={{ color: diff >= 0 ? "var(--b-good)" : "var(--b-crit)", fontWeight: 600 }}>
-              {diff >= 0 ? "+" : "−"}{money0(Math.abs(diff))}
-            </span>{" "}vs. the current 0.30% plan{currentScenario ? "" : ""}
+        <div className="board-card">
+          <div className="board-grid k2">
+            <div className="board-stat"><div className="lbl">Projected Levy Revenue</div><div className="val">{money0(result.projectedLevyRevenue)}</div></div>
+            <div className="board-stat"><div className="lbl">Current Ambulance-Fund Revenue</div><div className="val">{money0(result.currentLevyRevenue)}</div></div>
+            <div className="board-stat"><div className="lbl">Revenue Increase</div><div className={`val ${result.revenueIncrease >= 0 ? "pos" : "neg"}`}>{money0(Math.abs(result.revenueIncrease))}</div></div>
+            <div className="board-stat"><div className="lbl">Total Projected Annual Need</div><div className="val">{money0(result.totalProjectedAnnualNeed)}</div></div>
+            <div className="board-stat"><div className="lbl">{marginLabel}</div><div className={`val ${result.fundingMarginOrGap >= 0 ? "pos" : "neg"}`}>{money0(Math.abs(result.fundingMarginOrGap))}</div></div>
+            <div className="board-stat"><div className="lbl">Required Levy Rate</div><div className="val">{result.requiredLevyRatePercent.toFixed(3)}%</div></div>
+            <div className="board-stat"><div className="lbl">Required Revenue</div><div className="val">{money0(result.requiredRevenue)}</div></div>
+            <div className="board-stat"><div className="lbl">Estimated Annual Tax Impact</div><div className="val">{money2(result.estimatedAnnualTaxImpact)}</div></div>
           </div>
         </div>
       </div>
 
-      {/* comparison */}
-      <h2 className="board-h2">Rate comparison</h2>
+      <h2 className="board-h2">Levy Scenarios</h2>
       <div className="board-tw">
         <table>
-          <thead><tr><th>Levy rate</th><th className="num">Annual revenue</th><th className="num">Per month</th><th className="num">vs. 0.30%</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Levy Rate</th>
+              <th className="num">Projected Levy Revenue</th>
+              <th className="num">Projected Annual Need</th>
+              <th className="num">Funding Margin or Gap</th>
+              <th>Result</th>
+            </tr>
+          </thead>
           <tbody>
-            {COMPARE.map((r) => {
-              const rev = eav * (r / 100) * coll;
-              const d = rev - current;
-              const isCur = Math.abs(r - rate) < 0.0001;
+            {scenarios.map((scenario) => {
+              const gap = scenario.fundingMarginOrGap;
               return (
-                <tr key={r} style={isCur ? { background: "var(--b-accent-soft)" } : undefined}>
-                  <td style={{ fontWeight: isCur ? 700 : 500 }}>{r.toFixed(2)}%{isCur ? " · your rate" : ""}</td>
-                  <td className="num">{money0(rev)}</td>
-                  <td className="num">{money0(rev / 12)}</td>
-                  <td className="num" style={{ color: d > 0 ? "var(--b-good)" : d < 0 ? "var(--b-crit)" : "var(--b-muted)" }}>{d === 0 ? "—" : (d > 0 ? "+" : "−") + money0(Math.abs(d))}</td>
+                <tr key={scenario.ratePercent}>
+                  <td style={{ fontWeight: 650 }}>{scenario.ratePercent.toFixed(2)}%</td>
+                  <td className="num">{money0(scenario.projectedLevyRevenue)}</td>
+                  <td className="num">{money0(scenario.totalProjectedAnnualNeed)}</td>
+                  <td className="num" style={{ color: gap >= 0 ? "var(--b-good)" : "var(--b-crit)", fontWeight: 650 }}>
+                    {gap >= 0 ? money0(gap) : `(${money0(Math.abs(gap))})`}
+                  </td>
+                  <td>{scenario.result}</td>
                 </tr>
               );
             })}
@@ -75,32 +250,28 @@ export default function LevyCalculator({ eav, eavCell, currentScenario }: {
         </table>
       </div>
 
-      {/* homeowner impact */}
-      <h2 className="board-h2">What it costs a homeowner</h2>
-      <p className="board-sub" style={{ marginBottom: 12 }}>Estimated yearly ambulance tax at <strong>{rate.toFixed(2)}%</strong>, by home value. Illinois taxes about one-third of a home&rsquo;s market value, so these are estimates <em>before</em> any exemptions.</p>
-      <div className="board-tw">
-        <table>
-          <thead><tr><th>Home market value</th><th className="num">Taxable value (≈⅓)</th><th className="num">Yearly ambulance tax</th><th className="num">Per month</th></tr></thead>
-          <tbody>
-            {HOMES.map((m) => {
-              const taxable = m / 3;
-              const tax = taxable * (rate / 100);
-              return (
-                <tr key={m}>
-                  <td>{money0(m)}</td>
-                  <td className="num">{money0(taxable)}</td>
-                  <td className="num">{money2(tax)}</td>
-                  <td className="num">{money2(tax / 12)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {canSaveModelValue && (
+        <div className="board-card board-model-save">
+          <div className="board-field">
+            <label htmlFor="save-reason">Reason</label>
+            <input
+              id="save-reason"
+              className="board-input"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+            />
+          </div>
+          <button className="board-submit" type="button" disabled={saving} onClick={saveModelValue}>
+            {saving ? "Saving..." : "Save as Model Value"}
+          </button>
+        </div>
+      )}
 
-      <p className="board-updated" style={{ marginTop: 16 }}>
-        Based on District EAV {money0(eav)} {eavCell ? `(${eavCell})` : ""} · <span className="board-chip review" style={{ marginLeft: 4 }}>EAV needs verification</span>
-      </p>
+      {message && (
+        <div className={message.ok ? "board-note" : "board-err"} style={{ marginTop: 14 }} role="status">
+          {message.text}
+        </div>
+      )}
     </>
   );
 }

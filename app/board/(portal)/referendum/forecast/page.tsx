@@ -3,10 +3,10 @@ import { money } from "@/lib/board/finance";
 
 export const dynamic = "force-dynamic";
 
-const SCENARIOS: { key: string; label: string; note: string }[] = [
-  { key: "Expected", label: "Expected Growth", note: "Our planning baseline." },
-  { key: "Low", label: "Low Growth", note: "Conservative — revenue lags, costs still climb." },
-  { key: "High", label: "High Growth", note: "Optimistic — stronger revenue growth." },
+const SCENARIOS: { key: string; label: string }[] = [
+  { key: "Expected", label: "Expected Growth" },
+  { key: "Low", label: "Low Growth" },
+  { key: "High", label: "High Growth" },
 ];
 
 function firstPositiveYear(surplus: (number | null)[]): number | null {
@@ -25,7 +25,7 @@ export default async function ForecastPage() {
     <>
       <p className="board-eyebrow">Looking ahead</p>
       <h1 className="board-h1">Five-Year Forecast</h1>
-      <p className="board-sub">Three growth scenarios projected over five years. Year&nbsp;1 is the FY&nbsp;2026&ndash;27 budget; later years apply scenario growth rates, with debt service following the actual amortization schedule.</p>
+      <p className="board-sub">Five-year projection from the workbook.</p>
 
       {!loaded && <div className="board-card" style={{ marginTop: 22 }}><p style={{ margin: 0 }}>Forecast detail has not been imported yet — upload the workbook on the Admin page to load it.</p></div>}
 
@@ -33,18 +33,16 @@ export default async function ForecastPage() {
         <>
           {turnsPositive && (
             <div className="board-verdict ok" style={{ marginTop: 22 }}>
-              <div className="big">Balances by Year {turnsPositive}</div>
-              <p style={{ margin: "6px 0 0", color: "var(--b-muted)" }}>Under the Expected scenario, the budget returns to a surplus in Year {turnsPositive} and stays positive after that. The first-year deficit is a bridge, not a trend.</p>
+              <div className="big">Expected Scenario: Positive Surplus in Year {turnsPositive}</div>
             </div>
           )}
 
-          {SCENARIOS.map(({ key, label, note }) => {
+          {SCENARIOS.map(({ key, label }) => {
             const rows = byScenario[key];
             if (!rows || rows.length === 0) return null;
             return (
               <section key={key} style={{ marginTop: 30 }}>
                 <h2 className="board-h2" style={{ marginBottom: 4 }}>{label}</h2>
-                <p className="board-sub" style={{ marginBottom: 12 }}>{note}</p>
                 <div className="board-tw">
                   <table>
                     <thead>
@@ -71,7 +69,7 @@ export default async function ForecastPage() {
             );
           })}
 
-          <p className="board-updated" style={{ marginTop: 20 }}>Source: Five-Year Forecast worksheet. Growth rates live on the Assumptions tab; medical-supply lines are trended higher than general inflation.</p>
+          <p className="board-updated" style={{ marginTop: 20 }}>Source: Five-Year Forecast worksheet.</p>
         </>
       )}
     </>

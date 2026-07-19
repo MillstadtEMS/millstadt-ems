@@ -13,7 +13,7 @@ export default async function PersonnelPage() {
     <>
       <p className="board-eyebrow">Proposed staffing</p>
       <h1 className="board-h1">Proposed Full-Time Staffing Model</h1>
-      <p className="board-sub">Projected cost of the proposed full-time staff — wages plus the employer&rsquo;s share of taxes, benefits, and processing — by group, with total cost per employee.</p>
+      <p className="board-sub">Proposed Future Staffing</p>
       <div className="board-chip review" style={{ display: "inline-flex", marginTop: 12 }}>Proposed future staffing — not current staffing</div>
 
       {!loaded && <div className="board-card" style={{ marginTop: 22 }}><p style={{ margin: 0 }}>Personnel detail has not been imported yet — upload the workbook on the Admin page to load it.</p></div>}
@@ -21,15 +21,15 @@ export default async function PersonnelPage() {
       {loaded && (
         <>
           <div className="board-grid k3" style={{ marginTop: 22 }}>
-            <div className="board-card board-stat"><div className="lbl">Total personnel cost</div><div className="val">{money(total)}</div><div className="sub">Wages + benefits + employer taxes</div></div>
-            <div className="board-card board-stat"><div className="lbl">People</div><div className="val">{staff}</div><div className="sub">Full-time + part-time (roster)</div></div>
+            <div className="board-card board-stat"><div className="lbl">Projected Personnel Cost</div><div className="val">{money(total)}</div><div className="sub">Payroll, benefits, employer taxes</div></div>
+            <div className="board-card board-stat"><div className="lbl">Employees</div><div className="val">{staff}</div><div className="sub">Proposed staffing model</div></div>
             <div className="board-card board-stat"><div className="lbl">Groups</div><div className="val">{groups.length}</div><div className="sub">Chiefs · FT &amp; PT medics/EMTs</div></div>
           </div>
 
-          <h2 className="board-h2">Cost per employee, by group</h2>
+          <h2 className="board-h2">Personnel Costs</h2>
           <div className="board-tw">
             <table>
-              <thead><tr><th>Group</th><th className="num"># </th><th className="num">Rate</th><th className="num">Gross pay</th><th className="num">Employer taxes</th><th className="num">Benefits</th><th className="num">Total cost</th><th className="num">Per employee</th></tr></thead>
+              <thead><tr><th>Group</th><th className="num">Employees</th><th className="num">Salary or Wage</th><th className="num">Gross Payroll</th><th className="num">Employer Taxes</th><th className="num">Benefits</th><th className="num">Total Annual Employer Cost</th><th className="num">Total Cost Per Employee</th></tr></thead>
               <tbody>
                 {groups.map((g) => (
                   <tr key={g.name}>
@@ -50,8 +50,7 @@ export default async function PersonnelPage() {
 
           {costs.length > 0 && (
             <>
-              <h2 className="board-h2">Where the employer money goes</h2>
-              <p className="board-sub" style={{ marginBottom: 12 }}>Beyond wages, these are the employer taxes, benefits, and processing costs.</p>
+              <h2 className="board-h2">Employer Cost Detail</h2>
               <div className="board-tw" style={{ maxWidth: 560 }}>
                 <table>
                   <thead><tr><th>Cost</th><th className="num">Annual amount</th></tr></thead>
@@ -62,7 +61,7 @@ export default async function PersonnelPage() {
               </div>
             </>
           )}
-          <p className="board-updated" style={{ marginTop: 16 }}>Source: Personnel worksheet. PTO is covered by part-time staff (kept separate from full-time).</p>
+          <p className="board-updated" style={{ marginTop: 16 }}>Source: Personnel worksheet.</p>
         </>
       )}
     </>

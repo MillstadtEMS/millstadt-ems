@@ -6,9 +6,8 @@
  *  - Planned attendance (a member's RSVP) is NOT the official record. The
  *    secretary confirms actual attendance separately; only confirmed attendance
  *    counts toward statistics.
- *  - Quorum numbers are NOT hard-coded. A default (simple majority of eligible
- *    members) is used until an authorized admin sets the real bylaw figure in
- *    board_quorum_rules — and until then the portal labels it "Needs Review".
+ *  - Quorum numbers live in board_quorum_rules. The approved EMS Board value is
+ *    seeded there as 3 and can be changed by an authorized administrator.
  *  - Confidential submissions never appear in the general board view.
  *  - Nothing here invents a legal/policy rule; anything uncertain is surfaced,
  *    not decided.
@@ -19,7 +18,7 @@ import { ensureBoardSchema, sql, type BoardUser } from "./db";
 export type Board = "ems" | "fire";
 export const BOARD_LABEL: Record<Board, string> = {
   ems: "Millstadt EMS Board",
-  fire: "Fire Protection District Board",
+  fire: "Millstadt Fire Protection District Board",
 };
 
 export const MEETING_TYPES = ["Regular", "Special", "Emergency", "Committee", "Joint Board", "Public Hearing", "Executive Session", "Other"] as const;
@@ -28,16 +27,16 @@ export const MEETING_STATUSES = ["Scheduled", "Attendance Requested", "Agenda Op
 export const RESPONSES = ["Attending", "Attending Remotely", "Tentative", "Not Attending", "Excused Absence Requested", "No Response"] as const;
 export type Response = (typeof RESPONSES)[number];
 
-export const CONFIRMED_STATUSES = ["Present", "Present Remotely", "Absent", "Excused Absence", "Unexcused Absence", "Late Arrival", "Left Early", "Recused for Part of Meeting", "Not Eligible for This Meeting"] as const;
+export const CONFIRMED_STATUSES = ["Present", "Present Remotely", "Absent", "Excused", "Unexcused", "Late Arrival", "Left Early", "Recused", "Not Eligible"] as const;
 
-export const QUESTION_CATEGORIES = ["Financial Question", "Budget Question", "Levy Question", "Proposal Question", "Contract Question", "Invoice Question", "Operations Question", "Personnel Question", "Policy Question", "Legal Concern", "Meeting-Minutes Question", "Requested Agenda Item", "Unfinished Business", "General Comment", "Other"] as const;
+export const QUESTION_CATEGORIES = ["Question", "Concern", "Comment", "Requested Agenda Item", "Financial Question", "Levy Question", "Proposal Question", "Contract Question", "Invoice Question", "Operations Question", "Personnel Question", "Policy Question", "Legal Concern", "Meeting-Minutes Question", "Unfinished Business", "Other"] as const;
 
 export const VISIBILITIES = ["board", "leadership", "confidential"] as const;
 export type Visibility = (typeof VISIBILITIES)[number];
 export const VISIBILITY_LABEL: Record<Visibility, string> = {
-  board: "Whole board",
-  leadership: "Leadership only",
-  confidential: "Confidential review",
+  board: "Board",
+  leadership: "Leadership",
+  confidential: "Confidential Review",
 };
 
 export const QUESTION_STATUSES = ["New", "Assigned", "Under Review", "Answered", "Partially Answered", "Waiting for Information", "Needs Discussion at Meeting", "Added to Agenda", "Confidential Review", "Closed"] as const;
@@ -66,8 +65,8 @@ function ymd(d: Date): string {
 // Generated defaults are placeholders until an admin confirms them (spec: times
 // and locations "must remain editable because those details may change").
 const DEFAULTS: Record<Board, { time: string; end: string; location: string }> = {
-  ems: { time: "7:00 PM", end: "8:30 PM", location: "Millstadt EMS Station" },
-  fire: { time: "7:00 PM", end: "8:30 PM", location: "Millstadt Fire Protection District" },
+  ems: { time: "7:00 PM", end: "8:30 PM", location: "100 East Laurel Street, Millstadt, Illinois" },
+  fire: { time: "7:00 PM", end: "8:30 PM", location: "100 East Laurel Street, Millstadt, Illinois" },
 };
 
 // ── Schema ──────────────────────────────────────────────────────────────────
@@ -117,6 +116,11 @@ export async function ensureGovernanceSchema(): Promise<void> {
     updated_by TEXT,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
+  await db`
+    INSERT INTO board_quorum_rules (board, required, updated_by)
+    VALUES ('ems', 3, 'codex-approved-default')
+    ON CONFLICT (board) DO NOTHING
+  `;
   await db`CREATE TABLE IF NOT EXISTS board_questions (
     id BIGSERIAL PRIMARY KEY,
     meeting_id BIGINT NOT NULL REFERENCES board_meetings(id) ON DELETE CASCADE,
@@ -142,14 +146,14 @@ export async function ensureGovernanceSchema(): Promise<void> {
 // ── Role / eligibility helpers ──────────────────────────────────────────────
 const EMS_ROLES = new Set(["ems_board", "ems_president"]);
 /**
- * Which board's meetings a user participates in. Meetings, attendance, and
- * quorum belong to the EMS Board only — the Fire Protection District Board are
- * view-only GUESTS of the referendum model, not a board managed in this portal.
- * Fire members therefore have no meetings ([]).
+ * Which board's meetings a user participates in. Fire Board members have their
+ * own meeting calendar and attendance/quorum functions; EMS financial access
+ * remains separately permissioned.
  */
 export function userBoards(u: BoardUser): Board[] {
-  if (u.role === "fire_board") return [];
-  return ["ems"]; // EMS members + admin / submitter / audit_reviewer
+  if (u.role === "admin" || u.role === "audit_reviewer" || u.role === "ems_president") return ["ems", "fire"];
+  if (u.role === "fire_board") return ["fire"];
+  return ["ems"];
 }
 /** Is this user a voting/eligible member counted toward the board's quorum? */
 export function isEligibleMember(u: { role: string }, board: Board): boolean {
@@ -183,7 +187,7 @@ export interface Meeting {
 export interface Quorum {
   eligible: number; required: number; requiredIsDefault: boolean;
   attending: number; remote: number; tentative: number; notAttending: number; noResponse: number;
-  status: "Quorum Confirmed" | "Quorum Expected" | "Quorum At Risk" | "Quorum Not Expected" | "Quorum Not Yet Known";
+  status: "Quorum Confirmed" | "Quorum Expected" | "Quorum at Risk" | "Quorum Not Expected" | "Quorum Not Yet Known";
 }
 
 function rowToMeeting(r: Record<string, unknown>): Meeting {
@@ -200,7 +204,7 @@ function rowToMeeting(r: Record<string, unknown>): Meeting {
 }
 
 // ── Recurring generation ────────────────────────────────────────────────────
-/** Ensure the recurring EMS Board meeting exists for the next `monthsAhead` months. Idempotent. */
+/** Ensure recurring EMS and Fire Board meetings exist for the next `monthsAhead` months. Idempotent. */
 export async function generateRecurring(monthsAhead = 6, now = new Date()): Promise<number> {
   await ensureGovernanceSchema();
   const db = sql();
@@ -208,14 +212,19 @@ export async function generateRecurring(monthsAhead = 6, now = new Date()): Prom
   for (let i = 0; i <= monthsAhead; i++) {
     const y = now.getUTCFullYear();
     const m = now.getUTCMonth() + i;
-    for (const board of ["ems"] as Board[]) { // EMS Board only — Fire Board are guests, not managed here
+    for (const board of ["ems", "fire"] as Board[]) {
       const d = recurringDate(board, y + Math.floor(m / 12), ((m % 12) + 12) % 12);
       if (d < new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))) continue;
       const def = DEFAULTS[board];
       const res = await db`
-        INSERT INTO board_meetings (board, type, status, meeting_date, start_time, end_time, location, is_recurring, series_key, created_by)
-        VALUES (${board}, 'Regular', 'Scheduled', ${ymd(d)}, ${def.time}, ${def.end}, ${def.location}, TRUE, ${board + "-monthly"}, 'system')
-        ON CONFLICT (board, meeting_date) WHERE is_recurring DO NOTHING
+        INSERT INTO board_meetings (board, type, status, meeting_date, start_time, end_time, location, details_confirmed, is_recurring, series_key, created_by)
+        VALUES (${board}, 'Regular', 'Scheduled', ${ymd(d)}, ${def.time}, ${def.end}, ${def.location}, TRUE, TRUE, ${board + "-monthly"}, 'system')
+        ON CONFLICT (board, meeting_date) WHERE is_recurring DO UPDATE SET
+          start_time = CASE WHEN board_meetings.details_confirmed THEN board_meetings.start_time ELSE EXCLUDED.start_time END,
+          end_time = CASE WHEN board_meetings.details_confirmed THEN board_meetings.end_time ELSE EXCLUDED.end_time END,
+          location = CASE WHEN board_meetings.details_confirmed THEN board_meetings.location ELSE EXCLUDED.location END,
+          details_confirmed = TRUE,
+          updated_at = NOW()
         RETURNING id`;
       if ((res as unknown[]).length) created++;
     }
@@ -276,6 +285,7 @@ export async function getQuorumRequired(board: Board, eligible: number): Promise
   const db = sql();
   const rows = (await db`SELECT required FROM board_quorum_rules WHERE board = ${board} LIMIT 1`) as Record<string, unknown>[];
   if (rows.length) return { required: Number(rows[0].required), isDefault: false };
+  if (board === "ems") return { required: 3, isDefault: true };
   return { required: Math.floor(eligible / 2) + 1, isDefault: true }; // simple-majority default until bylaws confirmed
 }
 
@@ -290,7 +300,7 @@ export function computeQuorum(att: AttendanceRow[], required: number, requiredIs
   if (noResponse === att.length) status = "Quorum Not Yet Known";
   else if (firm >= required) status = "Quorum Confirmed";
   else if (firm + tentative >= required) status = "Quorum Expected";
-  else if (att.length - notAttending >= required) status = "Quorum At Risk";
+  else if (att.length - notAttending >= required) status = "Quorum at Risk";
   else status = "Quorum Not Expected";
   return { eligible: att.length, required, requiredIsDefault, attending, remote, tentative, notAttending, noResponse, status };
 }

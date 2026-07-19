@@ -16,39 +16,48 @@ export default async function PortalLayout({ children }: { children: React.React
   if (user.mustChangePassword) redirect("/board/change-password");
 
   const initials = `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase();
+  const isBoardAdmin = user.role === "admin";
+  const showMeetings = userBoards(user).length > 0;
 
   return (
-    <>
-      <header className="board-top">
-        <div className="board-wrap board-top-in">
-          <Link href="/board" className="board-brand">
-            <span className="mk" aria-hidden="true" style={{ overflow: "hidden", padding: 0 }}>
-              <BoardLogo style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
-            </span>
-            <span className="tt">
-              <span className="t1">Millstadt EMS</span>
-              <span className="t2">Board of Directors</span>
-            </span>
-          </Link>
+    <div className="board-shell">
+      <aside className="board-side">
+        <Link href="/board" className="board-side-brand">
+          <BoardLogo variant="dark" />
+        </Link>
+        <BoardNav isAdmin={isBoardAdmin} showMeetings={showMeetings} />
+        <p className="board-log-notice">Portal activity is logged for governance and security.</p>
+      </aside>
 
-          <BoardNav isAdmin={user.role === "admin"} showMeetings={userBoards(user).length > 0} />
+      <div className="board-main-shell">
+        <header className="board-top">
+          <div className="board-top-in">
+            <details className="board-mobile-nav">
+              <summary>Menu</summary>
+              <BoardNav isAdmin={isBoardAdmin} showMeetings={showMeetings} />
+            </details>
+            <Link href="/board" className="board-mobile-brand">
+              <span>MILLSTADT EMS</span>
+              <strong>BOARD PORTAL</strong>
+            </Link>
 
-          <span className="spacer" />
+            <span className="spacer" />
 
-          <span className="board-id">
-            <span className="av" aria-hidden="true">
-              {user.photoUrl ? <BoardPhoto src={user.photoUrl} /> : initials}
+            <span className="board-id">
+              <span className="av" aria-hidden="true">
+                {user.photoUrl ? <BoardPhoto src={user.photoUrl} /> : initials}
+              </span>
+              <span className="who">
+                <span className="nm">{user.firstName} {user.lastName}</span>
+                {user.officerTitle && <span className="ti">{user.officerTitle}</span>}
+              </span>
             </span>
-            <span className="who">
-              <span className="nm">{user.firstName} {user.lastName}</span>
-              {user.officerTitle && <span className="ti">{user.officerTitle}</span>}
-            </span>
-          </span>
-          <LogoutButton />
-        </div>
-      </header>
-      <main className="board-wrap board-page">{children}</main>
+            <LogoutButton />
+          </div>
+        </header>
+        <main className="board-page">{children}</main>
+      </div>
       <WelcomeOverlay firstName={user.firstName} lastName={user.lastName} title={user.officerTitle} photoUrl={user.photoUrl} />
-    </>
+    </div>
   );
 }

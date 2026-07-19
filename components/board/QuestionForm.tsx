@@ -3,18 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const CATEGORIES = ["Financial Question", "Budget Question", "Levy Question", "Proposal Question", "Contract Question", "Invoice Question", "Operations Question", "Personnel Question", "Policy Question", "Legal Concern", "Meeting-Minutes Question", "Requested Agenda Item", "Unfinished Business", "General Comment", "Other"];
+const CATEGORIES = ["Question", "Concern", "Comment", "Requested Agenda Item", "Financial Question", "Levy Question", "Proposal Question", "Contract Question", "Invoice Question", "Operations Question", "Personnel Question", "Policy Question", "Legal Concern", "Meeting-Minutes Question", "Unfinished Business", "Other"];
 
 const VIS = [
-  { v: "board", label: "Whole board", hint: "Visible to all members of this board." },
-  { v: "leadership", label: "Leadership only", hint: "President, secretary, and Kenneth/Jennifer only." },
-  { v: "confidential", label: "Confidential review", hint: "Restricted — possible legal, personnel, or executive-session matter." },
+  { v: "board", label: "Board", hint: "Visible to permitted board members." },
+  { v: "leadership", label: "Leadership", hint: "Visible to authorized leadership reviewers." },
+  { v: "confidential", label: "Confidential Review", hint: "Possible Confidential or Executive-Session Matter — Requires Review" },
 ];
 
 export default function QuestionForm({ meetingId }: { meetingId: number }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [category, setCategory] = useState("General Comment");
+  const [category, setCategory] = useState("Question");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [visibility, setVisibility] = useState("board");
@@ -33,7 +33,7 @@ export default function QuestionForm({ meetingId }: { meetingId: number }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setMsg({ ok: false, text: data.error || "Could not submit." }); return; }
-      setMsg({ ok: true, text: data.afterDeadline ? "Saved — but this is after the 48-hour deadline, so it is flagged for the president or secretary to add manually." : "Submitted. It will appear in the Board Briefing." });
+      setMsg({ ok: true, text: data.afterDeadline ? "Submitted After Briefing Deadline" : "Submitted." });
       setSubject(""); setBody(""); setRelatedRef(""); setUrgent(false); setUrgentReason("");
       router.refresh();
     } catch { setMsg({ ok: false, text: "Network error. Please try again." }); }
@@ -44,13 +44,13 @@ export default function QuestionForm({ meetingId }: { meetingId: number }) {
     return <button className="board-submit" style={{ width: "auto", padding: "10px 20px" }} onClick={() => setOpen(true)}>Submit a question or concern</button>;
   }
 
-  const labelStyle = { display: "block", fontFamily: "var(--b-mono)", fontSize: 10.5, letterSpacing: ".08em", textTransform: "uppercase" as const, color: "var(--b-muted)", margin: "0 0 6px" };
+  const labelStyle = { display: "block", fontFamily: "var(--b-mono)", fontSize: 10.5, letterSpacing: 0, textTransform: "uppercase" as const, color: "var(--b-muted)", margin: "0 0 6px" };
 
   return (
     <div className="board-card" style={{ maxWidth: 640 }}>
-      <p style={{ margin: "0 0 4px", fontWeight: 650, fontSize: 15 }}>Questions before the meeting</p>
+      <p style={{ margin: "0 0 4px", fontWeight: 650, fontSize: 15 }}>Questions Before the Meeting</p>
       <p style={{ margin: "0 0 16px", color: "var(--b-muted)", fontSize: 13 }}>
-        Not anonymous — your name is attached. <strong>Do not</strong> put patient information, private employee details, passwords, or bank/SSN data in a whole-board question. Use <em>Confidential review</em> for sensitive matters.
+        Not anonymous. Do not include patient information, private employee details, passwords, bank information, or Social Security numbers.
       </p>
 
       <div style={{ display: "grid", gap: 14 }}>

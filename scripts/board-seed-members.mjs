@@ -1,10 +1,11 @@
 /**
- * Board Portal — seed the board roster + a dev quick-login.
+ * Board Portal — seed the board roster.
  *   node scripts/board-seed-members.mjs
  *
- * Idempotent: existing usernames are left untouched. Temporary password for
- * each real member is <username>39 (forced change at first login). The dev
- * account logs in fast with password 957223 and never forces a change.
+ * Idempotent: existing usernames are left untouched. Temporary passwords come
+ * from BOARD_INITIAL_TEMP_PASSWORD and force a change at first login.
+ * Development credentials are handled separately and must not be used for
+ * production.
  *
  * Roles/officer titles are intentionally minimal — everyone starts as a
  * standard EMS Board member (Jennifer = submitter). Kenneth sets exact
@@ -14,9 +15,16 @@ import { readFileSync } from "node:fs";
 import { scryptSync, randomBytes } from "node:crypto";
 import { neon } from "@neondatabase/serverless";
 
-const url = readFileSync(new URL("../.env.local", import.meta.url), "utf8")
-  .match(/^DATABASE_URL=(.*)$/m)?.[1]?.trim().replace(/^["']|["']$/g, "");
+const env = readFileSync(new URL("../.env.local", import.meta.url), "utf8");
+const readEnv = (name) => env.match(new RegExp(`^${name}=(.*)$`, "m"))?.[1]?.trim().replace(/^["']|["']$/g, "");
+const url = readEnv("DATABASE_URL");
 if (!url) { console.error("DATABASE_URL missing"); process.exit(1); }
+const initialTemporaryPassword = readEnv("BOARD_INITIAL_TEMP_PASSWORD");
+if (!initialTemporaryPassword) {
+  console.error("BOARD_INITIAL_TEMP_PASSWORD missing; set it in .env.local before seeding board members.");
+  process.exit(1);
+}
+const developmentPassword = readEnv("BOARD_DEV_PASSWORD");
 const sql = neon(url);
 const hash = (pw) => { const s = randomBytes(16).toString("hex"); return `${s}:${scryptSync(pw, s, 64).toString("hex")}`; };
 
@@ -39,21 +47,25 @@ for (const [username, first, last, role, mustChange] of PEOPLE) {
   if (exists.length) { skipped++; console.log(`  · ${username} already exists — left as-is`); continue; }
   await sql`
     INSERT INTO board_users (username, first_name, last_name, role, password_hash, must_change_password, simple_view_default)
-    VALUES (${username}, ${first}, ${last}, ${role}, ${hash(username + "39")}, ${mustChange}, ${role === "fire_board"})`;
+    VALUES (${username}, ${first}, ${last}, ${role}, ${hash(initialTemporaryPassword)}, ${mustChange}, ${role === "fire_board"})`;
   created++;
-  console.log(`  + ${username}  (${first} ${last}, ${role})  temp pw: ${username}39`);
+  console.log(`  + ${username}  (${first} ${last}, ${role})  temporary password assigned`);
 }
 
-// dev quick-login
-const devExists = await sql`SELECT 1 FROM board_users WHERE username = 'dev' LIMIT 1`;
-if (devExists.length) {
-  await sql`UPDATE board_users SET password_hash = ${hash("957223")}, must_change_password = FALSE, role = 'admin', is_active = TRUE WHERE username = 'dev'`;
-  console.log("  · dev updated (pw 957223)");
+// Optional local-only development login. Never create it without explicit config.
+if (developmentPassword) {
+  const devExists = await sql`SELECT 1 FROM board_users WHERE username = 'dev' LIMIT 1`;
+  if (devExists.length) {
+    await sql`UPDATE board_users SET password_hash = ${hash(developmentPassword)}, must_change_password = TRUE, role = 'admin', is_active = TRUE WHERE username = 'dev'`;
+    console.log("  · dev updated from BOARD_DEV_PASSWORD; password change required");
+  } else {
+    await sql`
+      INSERT INTO board_users (username, first_name, last_name, role, password_hash, must_change_password)
+      VALUES ('dev','Dev','Login','admin', ${hash(developmentPassword)}, TRUE)`;
+    console.log("  + dev created from BOARD_DEV_PASSWORD; password change required");
+  }
 } else {
-  await sql`
-    INSERT INTO board_users (username, first_name, last_name, role, password_hash, must_change_password)
-    VALUES ('dev','Dev','Login','admin', ${hash("957223")}, FALSE)`;
-  console.log("  + dev  (quick login, pw 957223)");
+  console.log("  · dev login skipped; BOARD_DEV_PASSWORD is not configured");
 }
 
 console.log(`\nDone. ${created} created, ${skipped} skipped.`);

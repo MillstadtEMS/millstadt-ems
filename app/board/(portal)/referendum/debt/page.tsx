@@ -16,7 +16,7 @@ export default async function DebtPage() {
     <>
       <p className="board-eyebrow">Obligations</p>
       <h1 className="board-h1">Debt Schedule</h1>
-      <p className="board-sub">Every obligation itemized — the amortizing loans we pay down each month, plus the two non-interest payables being cleared through the operating budget. Balances are from the district&rsquo;s expense records.</p>
+      <p className="board-sub">Projected annual debt payments and obligations from the workbook.</p>
 
       {!loaded && <div className="board-card" style={{ marginTop: 22 }}><p style={{ margin: 0 }}>Debt detail has not been imported yet — upload the workbook on the Admin page to load it.</p></div>}
 
@@ -54,7 +54,6 @@ export default async function DebtPage() {
           {payables.length > 0 && (
             <>
               <h2 className="board-h2">Non-interest payables</h2>
-              <p className="board-sub" style={{ marginBottom: 12 }}>One-time balances with no interest, being cleared through an accounts-payable catch-up provision in Operations.</p>
               <div className="board-tw">
                 <table>
                   <thead><tr><th>Creditor</th><th>Purpose</th><th className="num">Balance</th></tr></thead>
@@ -73,7 +72,7 @@ export default async function DebtPage() {
             </>
           )}
 
-          <p className="board-updated" style={{ marginTop: 16 }}>Source: Debt Schedule worksheet. Payoff dates computed from 7/1/2026. Rates marked &ldquo;Needs review&rdquo; are vendor-embedded and awaiting written confirmation.</p>
+          <p className="board-updated" style={{ marginTop: 16 }}>Source: Debt Schedule worksheet.</p>
         </>
       )}
     </>

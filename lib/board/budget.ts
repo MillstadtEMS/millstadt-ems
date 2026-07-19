@@ -1,4 +1,4 @@
-/** Board Portal — detailed budget line items (from Budget Summary). */
+/** Board Portal — detailed projected line items from the imported workbook. */
 import { ensureBoardSchema, sql } from "./db";
 
 export interface BudgetLine { section: string; category: string; amount: number | null; status: string | null; sort: number }

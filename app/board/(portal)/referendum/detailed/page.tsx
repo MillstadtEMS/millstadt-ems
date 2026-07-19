@@ -53,7 +53,7 @@ export default async function DetailedModelPage() {
             </section>
           ))}
 
-          <p className="board-updated" style={{ marginTop: 18 }}>Source: Millstadt EMS District Budget FY2026-27 · financial projection for referendum planning.</p>
+          <p className="board-updated" style={{ marginTop: 18 }}>Source: Referendum workbook, FY 2026–27 · financial projection for referendum planning.</p>
         </>
       )}
     </>

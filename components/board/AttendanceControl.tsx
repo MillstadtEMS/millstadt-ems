@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const OPTIONS = ["Attending", "Attending Remotely", "Tentative", "Not Attending", "Excused Absence Requested"] as const;
+const OPTIONS = ["Attending", "Attending Remotely", "Tentative", "Not Attending", "Excused Absence Requested", "No Response"] as const;
 
 export default function AttendanceControl({
   meetingId, current, currentNote, canRespond,
 }: { meetingId: number; current: string; currentNote: string | null; canRespond: boolean }) {
   const router = useRouter();
-  const [sel, setSel] = useState(current === "No Response" ? "" : current);
+  const [sel, setSel] = useState(current);
   const [note, setNote] = useState(currentNote ?? "");
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -43,13 +43,13 @@ export default function AttendanceControl({
                 background: on ? "var(--b-accent-soft)" : "var(--b-surface)",
                 color: on ? "var(--b-ink)" : "var(--b-ink-2)",
               }}>
-              {o === "Excused Absence Requested" ? "Excused Absence" : o}
+              {o === "Excused Absence Requested" ? "Excused Absence Requested" : o}
             </button>
           );
         })}
       </div>
       <textarea value={note} onChange={(e) => setNote(e.target.value)}
-        placeholder="Optional note (e.g. &ldquo;may arrive 15 minutes late&rdquo; or &ldquo;must leave by 8:00&rdquo;)"
+        placeholder="Optional note"
         className="board-input" rows={2}
         style={{ marginTop: 12, resize: "vertical", fontFamily: "inherit" }}
         onBlur={() => sel && send(sel)} />

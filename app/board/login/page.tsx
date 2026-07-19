@@ -31,23 +31,20 @@ export default function BoardLogin() {
   return (
     <div className="board-login">
       <div className="aside">
-        <BoardLogo className="asidelogo" />
-        <div className="foot">MILLSTADT EMS · FY 2026–27</div>
+        <BoardLogo className="asidelogo" variant="dark" />
+        <div className="foot">MILLSTADT EMS · BOARD PORTAL</div>
       </div>
 
       <div className="panel">
         <form className="form" onSubmit={submit}>
-          <BoardLogo className="brandmobile" />
-          <p className="board-eyebrow eyebrow">Board portal</p>
-          <h1>Welcome back</h1>
-          <p className="lede">Sign in with your board credentials.</p>
+          <BoardLogo className="brandmobile" variant="light" />
 
           {err && <div className="board-err" role="alert">{err}</div>}
 
           <div className="board-field">
             <label htmlFor="u">Username</label>
             <input id="u" className="board-input" autoComplete="username" autoCapitalize="none"
-              value={username} onChange={(e) => setUsername(e.target.value)} placeholder="e.g. kjames" required />
+              value={username} onChange={(e) => setUsername(e.target.value)} required />
           </div>
           <div className="board-field">
             <label htmlFor="p">Password</label>
@@ -56,12 +53,8 @@ export default function BoardLogin() {
           </div>
 
           <button className="board-submit" type="submit" disabled={busy}>
-            {busy ? "Signing in…" : "Sign in"}
+            {busy ? "Signing in..." : "Sign In"}
           </button>
-
-          <p className="board-note">
-            First time in? Use the temporary password you were given (your username + <strong>39</strong>). You will be asked to set a new one immediately.
-          </p>
         </form>
       </div>
     </div>

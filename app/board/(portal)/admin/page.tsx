@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { currentBoardUser, isAdmin } from "@/lib/board/auth";
 import { getFinance } from "@/lib/board/finance";
 import WorkbookUpload from "@/components/board/WorkbookUpload";
@@ -14,10 +15,19 @@ export default async function BoardAdmin() {
     <>
       <p className="board-eyebrow">Administrator</p>
       <h1 className="board-h1">Administration</h1>
-      <p className="board-sub">Manage the workbook connection and portal settings. Live two-way OneDrive sync (Microsoft Graph) is next now that the Azure account exists; until then, this upload is how workbook changes reach the site.</p>
+      <p className="board-sub">Workbook import, model review, and portal settings.</p>
 
       <div style={{ marginTop: 24 }}>
         <WorkbookUpload />
+      </div>
+
+      <div className="board-grid k2" style={{ marginTop: 18 }}>
+        <Link href="/board/admin/model-review" className="board-card board-link-card">
+          <div className="board-stat">
+            <div className="lbl">Model Review</div>
+            <div className="val">Open</div>
+          </div>
+        </Link>
       </div>
 
       <p className="board-updated" style={{ marginTop: 18 }}>

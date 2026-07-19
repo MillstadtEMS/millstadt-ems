@@ -1,19 +1,22 @@
 /**
  * Board Portal — workbook importer.
  *
- * Parses the FY budget workbook (a buffer) and refreshes the portal's cached
- * financial tables (board_finance, board_budget_lines, board_cashflow). Used
- * by the admin "Update financials from workbook" upload and by the CLI setup
- * script. This is the only path that changes displayed financials until the
- * live Graph/OneDrive sync is wired up — so replacing the workbook here IS how
- * an overhaul reaches the website.
+ * Parses either the current referendum financial model workbook or the earlier
+ * FY budget workbook and refreshes the portal's cached financial tables. Admin
+ * uploads and OneDrive/Graph pulls both use this path, so the workbook is the
+ * source of truth for displayed referendum model data.
  */
 import * as XLSX from "xlsx";
 import { ensureBoardSchema, sql } from "./db";
 
 type Sheet = Record<string, { v?: unknown }>;
+type Db = ReturnType<typeof sql>;
+
 const val = (s: Sheet | undefined, a: string) => (s && s[a] ? s[a].v : null);
-const numOrNull = (x: unknown) => (typeof x === "number" ? x : null);
+const numOrNull = (x: unknown) => (typeof x === "number" && Number.isFinite(x) ? x : null);
+const strOrNull = (x: unknown) => (x == null ? null : String(x).trim() || null);
+const source = (sheet: string, addr: string) => `${sheet}!${addr}`;
+const firstNumber = (...xs: (number | null)[]) => xs.find((x) => x != null) ?? null;
 
 const EXEC_MAP: [string, string, string, boolean, string, number][] = [
   ["rev_total", "Total Revenue", "B5", false, "top", 10],
@@ -32,53 +35,302 @@ const EXEC_MAP: [string, string, string, boolean, string, number][] = [
   ["billing_scenario", "Billing Collection", "H14", true, "levy", 140],
 ];
 
-function titleCase(s: string): string {
-  return s.toLowerCase().replace(/\b\w/g, (m) => m.toUpperCase()).replace(/\bEmts\b/i, "EMTs").replace(/-Time/i, "-Time");
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+export interface ImportResult {
+  finance: number;
+  budgetLines: number;
+  cashMonths: number;
+  personnelGroups: number;
+  truckUnits: number;
+  debts: number;
+  forecastRows: number;
 }
 
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+function titleCase(s: string): string {
+  return s.toLowerCase()
+    .replace(/\b\w/g, (m) => m.toUpperCase())
+    .replace(/\bEmts\b/i, "EMTs")
+    .replace(/-Time/i, "-Time");
+}
+
 /** Excel payoff cell → "May 2033". Handles JS Date (cellDates), Excel serial, or raw string. */
 function fmtPayoff(v: unknown): string | null {
   if (v == null) return null;
   if (v instanceof Date) return `${MONTHS[v.getUTCMonth()]} ${v.getUTCFullYear()}`;
-  if (typeof v === "number") { const d = new Date(Date.UTC(1899, 11, 30) as number); d.setUTCDate(d.getUTCDate() + v); return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`; }
+  if (typeof v === "number") {
+    const d = new Date(Date.UTC(1899, 11, 30) as number);
+    d.setUTCDate(d.getUTCDate() + v);
+    return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  }
   return String(v).replace(/\s*00:00:00.*$/, "").trim();
 }
 
-export interface ImportResult { finance: number; budgetLines: number; cashMonths: number; personnelGroups: number; truckUnits: number; debts: number; forecastRows: number }
+function rateText(rateDecimal: number | null): string | null {
+  return rateDecimal == null ? null : `${(rateDecimal * 100).toFixed(2)}% Levy`;
+}
+
+function workbookLooksLikeReferendumModel(wb: XLSX.WorkBook): boolean {
+  return Boolean(wb.Sheets["Model Inputs"] && wb.Sheets["Levy Calculator"] && wb.Sheets["Referendum Overview"]);
+}
+
+async function ensureFinancialDetailTables(db: Db): Promise<void> {
+  await db`CREATE TABLE IF NOT EXISTS board_budget_lines (id BIGSERIAL PRIMARY KEY, section TEXT NOT NULL, category TEXT NOT NULL, amount DOUBLE PRECISION, status TEXT, sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  await db`CREATE TABLE IF NOT EXISTS board_cashflow (month_idx INTEGER PRIMARY KEY, month TEXT NOT NULL, beginning DOUBLE PRECISION, net DOUBLE PRECISION, ending DOUBLE PRECISION, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  await db`CREATE TABLE IF NOT EXISTS board_personnel (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, count DOUBLE PRECISION, rate DOUBLE PRECISION, gross DOUBLE PRECISION, taxes DOUBLE PRECISION, benefits DOUBLE PRECISION, uniform DOUBLE PRECISION, training DOUBLE PRECISION, total DOUBLE PRECISION, per_employee DOUBLE PRECISION, sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  await db`CREATE TABLE IF NOT EXISTS board_personnel_costs (id BIGSERIAL PRIMARY KEY, label TEXT NOT NULL, amount DOUBLE PRECISION, sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  await db`CREATE TABLE IF NOT EXISTS board_truck (id BIGSERIAL PRIMARY KEY, unit TEXT NOT NULL, fy_total DOUBLE PRECISION, months JSONB, sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  await db`CREATE TABLE IF NOT EXISTS board_debt (id BIGSERIAL PRIMARY KEY, creditor TEXT NOT NULL, purpose TEXT, balance DOUBLE PRECISION, rate DOUBLE PRECISION, rate_note TEXT, monthly DOUBLE PRECISION, annual DOUBLE PRECISION, remaining DOUBLE PRECISION, payoff TEXT, notes TEXT, kind TEXT NOT NULL DEFAULT 'amortizing', sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  await db`CREATE TABLE IF NOT EXISTS board_forecast (id BIGSERIAL PRIMARY KEY, scenario TEXT NOT NULL, category TEXT NOT NULL, y1 DOUBLE PRECISION, y2 DOUBLE PRECISION, y3 DOUBLE PRECISION, y4 DOUBLE PRECISION, y5 DOUBLE PRECISION, is_total BOOLEAN NOT NULL DEFAULT FALSE, sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+}
+
+async function clearDetailTables(db: Db): Promise<void> {
+  await db`DELETE FROM board_budget_lines`;
+  await db`DELETE FROM board_cashflow`;
+  await db`DELETE FROM board_personnel`;
+  await db`DELETE FROM board_personnel_costs`;
+  await db`DELETE FROM board_truck`;
+  await db`DELETE FROM board_debt`;
+  await db`DELETE FROM board_forecast`;
+}
+
+async function upsertFinance(db: Db, row: {
+  key: string;
+  label: string;
+  value?: number | null;
+  text?: string | null;
+  unit: string;
+  grouping: string;
+  sort: number;
+  sourceCell: string | null;
+  needsReview?: boolean;
+}): Promise<void> {
+  await db`
+    INSERT INTO board_finance (key,label,value,text_value,unit,grouping,sort,source_cell,needs_review,updated_at)
+    VALUES (${row.key},${row.label},${row.value ?? null},${row.text ?? null},${row.unit},${row.grouping},${row.sort},${row.sourceCell},${row.needsReview ?? false},NOW())
+    ON CONFLICT (key) DO UPDATE SET
+      label=EXCLUDED.label,
+      value=EXCLUDED.value,
+      text_value=EXCLUDED.text_value,
+      unit=EXCLUDED.unit,
+      grouping=EXCLUDED.grouping,
+      sort=EXCLUDED.sort,
+      source_cell=EXCLUDED.source_cell,
+      needs_review=EXCLUDED.needs_review,
+      updated_at=NOW()
+  `;
+}
+
+function operatingCategoryTotal(sheet: Sheet | undefined, category: string): number {
+  let total = 0;
+  for (let r = 5; r <= 80; r++) {
+    const cat = strOrNull(val(sheet, `A${r}`));
+    const amount = numOrNull(val(sheet, `C${r}`));
+    if (cat?.toLowerCase() === category.toLowerCase() && amount != null) total += amount;
+  }
+  return total;
+}
 
 export async function importWorkbook(buffer: Buffer | ArrayBuffer): Promise<ImportResult> {
   await ensureBoardSchema();
   const db = sql();
-  const wb = XLSX.read(buffer, { type: "buffer", cellDates: true });
-  const exec = wb.Sheets["Executive Dashboard"] as Sheet | undefined;
-  if (!exec) throw new Error("Workbook is missing the 'Executive Dashboard' sheet — is this the right file?");
+  await ensureFinancialDetailTables(db);
 
-  // ── board_finance ──
+  const wb = XLSX.read(buffer, { type: "buffer", cellDates: true });
+  if (workbookLooksLikeReferendumModel(wb)) return importReferendumModelWorkbook(db, wb);
+
+  const exec = wb.Sheets["Executive Dashboard"] as Sheet | undefined;
+  if (!exec) {
+    throw new Error("Workbook is missing the referendum model sheets ('Levy Calculator' and 'Referendum Overview') or the legacy 'Executive Dashboard' sheet.");
+  }
+  return importLegacyWorkbook(db, wb, exec);
+}
+
+async function importReferendumModelWorkbook(db: Db, wb: XLSX.WorkBook): Promise<ImportResult> {
+  await clearDetailTables(db);
+  await db`DELETE FROM board_finance WHERE key IN ('ending_cash', 'cash_low')`;
+
+  const model = wb.Sheets["Model Inputs"] as Sheet | undefined;
+  const staffing = wb.Sheets["Proposed Staffing"] as Sheet | undefined;
+  const operating = wb.Sheets["Operating Needs"] as Sheet | undefined;
+  const debt = wb.Sheets["Debt & Liabilities"] as Sheet | undefined;
+  const capital = wb.Sheets["Capital Reserves"] as Sheet | undefined;
+  const levy = wb.Sheets["Levy Calculator"] as Sheet | undefined;
+  const overview = wb.Sheets["Referendum Overview"] as Sheet | undefined;
+
+  const eav = numOrNull(val(levy, "B5"));
+  const selectedRate = numOrNull(val(levy, "B6"));
+  const collectionFactor = numOrNull(val(levy, "B7"));
+  const propertyMarketValue = numOrNull(val(levy, "B8"));
+  const currentAmbulanceRevenue = firstNumber(numOrNull(val(levy, "E6")), numOrNull(val(model, "B8")));
+  const callVolume = numOrNull(val(model, "B9"));
+  const transportRate = numOrNull(val(model, "B10"));
+  const netCollectionPerTransport = numOrNull(val(model, "B11"));
+  const billingRevenue = firstNumber(numOrNull(val(levy, "E8")), numOrNull(val(model, "B12")));
+  const otherRevenue = firstNumber(numOrNull(val(levy, "E9")), numOrNull(val(model, "B17")));
+  const totalRevenue = firstNumber(numOrNull(val(levy, "E10")), numOrNull(val(overview, "B10")));
+  const totalNeed = firstNumber(numOrNull(val(levy, "E11")), numOrNull(val(overview, "F10")));
+  const margin = firstNumber(numOrNull(val(levy, "E12")), numOrNull(val(overview, "A13")));
+  const breakEvenRate = firstNumber(numOrNull(val(levy, "E13")), numOrNull(val(overview, "F13")));
+  const requiredLevyRevenue = totalNeed != null
+    ? totalNeed - (billingRevenue ?? 0) - (otherRevenue ?? 0)
+    : breakEvenRate != null && eav != null && collectionFactor != null
+      ? breakEvenRate * eav * collectionFactor
+      : null;
+
+  const personnelTotal = firstNumber(numOrNull(val(staffing, "D31")), numOrNull(val(overview, "F5")));
+  const operatingTotal = firstNumber(numOrNull(val(operating, "G13")), numOrNull(val(overview, "F6")));
+  const fleetTotal = operatingCategoryTotal(operating, "Fleet");
+  const debtAnnual = firstNumber(numOrNull(val(debt, "E12")), numOrNull(val(overview, "F7")));
+  const payableCatchUp = firstNumber(numOrNull(val(debt, "D20")), numOrNull(val(overview, "F8")));
+  const capitalReserve = firstNumber(numOrNull(val(capital, "F17")), numOrNull(val(overview, "F9")));
+  const debtOutstanding = numOrNull(val(debt, "D23"));
+
+  const financeRows: Parameters<typeof upsertFinance>[1][] = [
+    { key: "district_eav", label: "Equalized Assessed Value (EAV)", value: eav, unit: "currency", grouping: "levy", sort: 5, sourceCell: source("Levy Calculator", "B5"), needsReview: true },
+    { key: "current_ambulance_revenue", label: "Current Ambulance-Fund Revenue", value: currentAmbulanceRevenue, unit: "currency", grouping: "levy", sort: 6, sourceCell: source("Levy Calculator", "E6") },
+    { key: "rev_total", label: "Total Projected Revenue", value: totalRevenue, unit: "currency", grouping: "top", sort: 10, sourceCell: source("Levy Calculator", "E10") },
+    { key: "exp_total", label: "Total Projected Annual Need", value: totalNeed, unit: "currency", grouping: "top", sort: 20, sourceCell: source("Levy Calculator", "E11") },
+    { key: "surplus", label: "Projected Funding Margin/(Gap)", value: margin, unit: "currency", grouping: "top", sort: 30, sourceCell: source("Levy Calculator", "E12") },
+    { key: "debt_outstanding", label: "Total Obligations", value: debtOutstanding, unit: "currency", grouping: "debt", sort: 50, sourceCell: source("Debt & Liabilities", "D23") },
+    { key: "debt_annual", label: "Annual Debt Service", value: debtAnnual, unit: "currency", grouping: "debt", sort: 60, sourceCell: source("Debt & Liabilities", "E12") },
+    { key: "levy_required", label: "Property-Tax Revenue Required to Fully Fund Model", value: requiredLevyRevenue, unit: "currency", grouping: "levy", sort: 70, sourceCell: source("Levy Calculator", "E13") },
+    { key: "exp_personnel", label: "Projected Personnel Cost", value: personnelTotal, unit: "currency", grouping: "mix", sort: 80, sourceCell: source("Proposed Staffing", "D31") },
+    { key: "exp_operations", label: "Operations Excluding Fleet", value: operatingTotal != null ? operatingTotal - fleetTotal : null, unit: "currency", grouping: "mix", sort: 90, sourceCell: "Operating Needs!G13 less Fleet lines" },
+    { key: "exp_fleet", label: "Fleet", value: fleetTotal || null, unit: "currency", grouping: "mix", sort: 100, sourceCell: "Operating Needs!A:C category Fleet" },
+    { key: "exp_capital", label: "Capital Replacement Reserves", value: capitalReserve, unit: "currency", grouping: "mix", sort: 110, sourceCell: source("Capital Reserves", "F17") },
+    { key: "exp_debt", label: "Annual Debt Service", value: debtAnnual, unit: "currency", grouping: "mix", sort: 120, sourceCell: source("Referendum Overview", "F7") },
+    { key: "exp_payables", label: "Annual Payable Catch-Up", value: payableCatchUp, unit: "currency", grouping: "mix", sort: 125, sourceCell: source("Referendum Overview", "F8") },
+    { key: "levy_scenario", label: "Selected Levy Rate", value: selectedRate, text: rateText(selectedRate), unit: "percent", grouping: "levy", sort: 130, sourceCell: source("Levy Calculator", "B6") },
+    { key: "billing_scenario", label: "EMS Billing Scenario", value: billingRevenue, text: `${callVolume ?? "Call volume"} calls x ${transportRate != null ? (transportRate * 100).toFixed(0) + "%" : "transport rate"} x ${netCollectionPerTransport != null ? "$" + netCollectionPerTransport.toFixed(0) : "net collection"}`, unit: "currency", grouping: "levy", sort: 140, sourceCell: source("Model Inputs", "B9:B12") },
+    { key: "levy_collection_factor", label: "Collection Factor", value: collectionFactor, unit: "number", grouping: "levy", sort: 150, sourceCell: source("Levy Calculator", "B7") },
+    { key: "property_market_value", label: "Scenario Property Market Value", value: propertyMarketValue, unit: "currency", grouping: "levy", sort: 160, sourceCell: source("Levy Calculator", "B8") },
+    { key: "levy_break_even_rate", label: "Break-Even Levy Rate", value: breakEvenRate, unit: "percent", grouping: "levy", sort: 170, sourceCell: source("Levy Calculator", "E13") },
+  ];
+
+  let finance = 0;
+  for (const row of financeRows) {
+    await upsertFinance(db, row);
+    finance++;
+  }
+
+  let budgetLines = 0;
+  let budgetSort = 0;
+  const insertBudgetLine = async (section: string, category: string | null, amount: number | null, status: string | null) => {
+    if (!category || amount == null) return;
+    budgetSort += 10;
+    await db`INSERT INTO board_budget_lines (section, category, amount, status, sort) VALUES (${section}, ${category}, ${amount}, ${status}, ${budgetSort})`;
+    budgetLines++;
+  };
+
+  for (let r = 5; r <= 14; r++) {
+    await insertBudgetLine("Personnel", strOrNull(val(staffing, `A${r}`)), numOrNull(val(staffing, `D${r}`)), strOrNull(val(staffing, `E${r}`)));
+  }
+  for (let r = 19; r <= 30; r++) {
+    await insertBudgetLine("Personnel", strOrNull(val(staffing, `A${r}`)), numOrNull(val(staffing, `D${r}`)), strOrNull(val(staffing, `E${r}`)));
+  }
+  for (let r = 5; r <= 80; r++) {
+    const section = strOrNull(val(operating, `A${r}`));
+    await insertBudgetLine(section ?? "Operating Needs", strOrNull(val(operating, `B${r}`)), numOrNull(val(operating, `C${r}`)), strOrNull(val(operating, `D${r}`)));
+  }
+  for (let r = 5; r <= 15; r++) {
+    await insertBudgetLine("Capital Reserves", strOrNull(val(capital, `A${r}`)), numOrNull(val(capital, `F${r}`)), strOrNull(val(capital, `G${r}`)));
+  }
+  for (let r = 5; r <= 10; r++) {
+    await insertBudgetLine("Debt & Liabilities", strOrNull(val(debt, `A${r}`)), numOrNull(val(debt, `E${r}`)), strOrNull(val(debt, `G${r}`)));
+  }
+  for (let r = 17; r <= 18; r++) {
+    await insertBudgetLine("Debt & Liabilities", strOrNull(val(debt, `A${r}`)), numOrNull(val(debt, `D${r}`)), strOrNull(val(debt, `G${r}`)));
+  }
+
+  let personnelGroups = 0;
+  for (let r = 5; r <= 14; r++) {
+    const name = strOrNull(val(staffing, `A${r}`));
+    const gross = numOrNull(val(staffing, `D${r}`));
+    if (!name || gross == null) continue;
+    const count = numOrNull(val(staffing, `C${r}`));
+    await db`INSERT INTO board_personnel (name, count, rate, gross, taxes, benefits, uniform, training, total, per_employee, sort)
+             VALUES (${name}, ${count}, ${numOrNull(val(staffing, `B${r}`))}, ${gross}, NULL, NULL, NULL, NULL, ${gross}, ${count ? gross / count : null}, ${(r - 5) * 10})`;
+    personnelGroups++;
+  }
+
+  let costSort = 0;
+  for (let r = 19; r <= 30; r++) {
+    const label = strOrNull(val(staffing, `A${r}`));
+    const amount = numOrNull(val(staffing, `D${r}`));
+    if (!label || amount == null) continue;
+    costSort += 10;
+    await db`INSERT INTO board_personnel_costs (label, amount, sort) VALUES (${label}, ${amount}, ${costSort})`;
+  }
+
+  let truckUnits = 0;
+  for (let r = 5; r <= 80; r++) {
+    const category = strOrNull(val(operating, `A${r}`));
+    const line = strOrNull(val(operating, `B${r}`));
+    const amount = numOrNull(val(operating, `C${r}`));
+    if (category !== "Fleet" || !line || amount == null) continue;
+    await db`INSERT INTO board_truck (unit, fy_total, months, sort)
+             VALUES (${line}, ${amount}, ${JSON.stringify([{ label: "Annual", amount }])}::jsonb, ${(truckUnits + 1) * 10})`;
+    truckUnits++;
+  }
+
+  let debts = 0;
+  for (let r = 5; r <= 10; r++) {
+    const creditor = strOrNull(val(debt, `A${r}`));
+    if (!creditor) continue;
+    const basis = strOrNull(val(debt, `C${r}`));
+    const scheduled = numOrNull(val(debt, `D${r}`));
+    const annual = numOrNull(val(debt, `E${r}`));
+    const rate = numOrNull(val(debt, `F${r}`));
+    await db`INSERT INTO board_debt (creditor, purpose, balance, rate, rate_note, monthly, annual, remaining, payoff, notes, kind, sort)
+             VALUES (${creditor}, ${basis}, ${numOrNull(val(debt, `B${r}`))}, ${rate}, ${rate == null ? strOrNull(val(debt, `F${r}`)) : null},
+                     ${basis?.toLowerCase().includes("month") ? scheduled : null}, ${annual ?? scheduled}, NULL, NULL, ${strOrNull(val(debt, `G${r}`))}, 'amortizing', ${(debts + 1) * 10})`;
+    debts++;
+  }
+  for (let r = 17; r <= 18; r++) {
+    const creditor = strOrNull(val(debt, `A${r}`));
+    if (!creditor) continue;
+    await db`INSERT INTO board_debt (creditor, purpose, balance, rate, rate_note, monthly, annual, remaining, payoff, notes, kind, sort)
+             VALUES (${creditor}, ${strOrNull(val(debt, `C${r}`))}, ${numOrNull(val(debt, `B${r}`))}, NULL, NULL, NULL, ${numOrNull(val(debt, `D${r}`))}, NULL, NULL, ${strOrNull(val(debt, `G${r}`))}, 'payable', ${(debts + 1) * 10})`;
+    debts++;
+  }
+
+  return { finance, budgetLines, cashMonths: 0, personnelGroups, truckUnits, debts, forecastRows: 0 };
+}
+
+async function importLegacyWorkbook(db: Db, wb: XLSX.WorkBook, exec: Sheet): Promise<ImportResult> {
   let finance = 0;
   for (const [key, label, addr, isText, grouping, sort] of EXEC_MAP) {
     const raw = val(exec, addr);
-    const value = isText ? null : numOrNull(raw);
-    const text = isText ? (raw != null ? String(raw) : null) : null;
-    await db`
-      INSERT INTO board_finance (key,label,value,text_value,unit,grouping,sort,source_cell,updated_at)
-      VALUES (${key},${label},${value},${text},${isText ? "text" : "currency"},${grouping},${sort},${"Executive Dashboard!" + addr},NOW())
-      ON CONFLICT (key) DO UPDATE SET label=EXCLUDED.label, value=EXCLUDED.value, text_value=EXCLUDED.text_value,
-        grouping=EXCLUDED.grouping, sort=EXCLUDED.sort, source_cell=EXCLUDED.source_cell, updated_at=NOW()`;
-    finance++;
-  }
-  const asm = wb.Sheets["Assumptions"] as Sheet | undefined;
-  const eav = numOrNull(val(asm, "B66"));
-  if (eav != null) {
-    await db`
-      INSERT INTO board_finance (key,label,value,unit,grouping,sort,source_cell,needs_review,updated_at)
-      VALUES ('district_eav','District Equalized Assessed Value',${eav},'currency','levy',5,'Assumptions!B66',TRUE,NOW())
-      ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, updated_at=NOW()`;
+    await upsertFinance(db, {
+      key,
+      label,
+      value: isText ? null : numOrNull(raw),
+      text: isText ? strOrNull(raw) : null,
+      unit: isText ? "text" : "currency",
+      grouping,
+      sort,
+      sourceCell: source("Executive Dashboard", addr),
+    });
     finance++;
   }
 
-  // ── board_budget_lines ──
-  await db`CREATE TABLE IF NOT EXISTS board_budget_lines (id BIGSERIAL PRIMARY KEY, section TEXT NOT NULL, category TEXT NOT NULL, amount DOUBLE PRECISION, status TEXT, sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
+  const asm = wb.Sheets["Assumptions"] as Sheet | undefined;
+  const eav = numOrNull(val(asm, "B66"));
+  if (eav != null) {
+    await upsertFinance(db, {
+      key: "district_eav",
+      label: "District Equalized Assessed Value",
+      value: eav,
+      unit: "currency",
+      grouping: "levy",
+      sort: 5,
+      sourceCell: source("Assumptions", "B66"),
+      needsReview: true,
+    });
+    finance++;
+  }
+
   let budgetLines = 0;
   const bs = wb.Sheets["Budget Summary"] as Sheet | undefined;
   if (bs) {
@@ -89,7 +341,10 @@ export async function importWorkbook(buffer: Buffer | ArrayBuffer): Promise<Impo
       if (typeof a !== "string" || !a.trim()) continue;
       const label = a.trim();
       const isTotal = /^(total|subtotal)/i.test(label);
-      if (typeof b !== "number" && !isTotal) { section = label.replace(/^SECTION\s*\d+\s*[—-]\s*/i, "").replace(/\s*[—-].*$/, "").trim(); continue; }
+      if (typeof b !== "number" && !isTotal) {
+        section = label.replace(/^SECTION\s*\d+\s*[—-]\s*/i, "").replace(/\s*[—-].*$/, "").trim();
+        continue;
+      }
       if (isTotal || typeof b !== "number") continue;
       sort += 10;
       await db`INSERT INTO board_budget_lines (section, category, amount, status, sort) VALUES (${section},${label},${b},${st != null ? String(st) : null},${sort})`;
@@ -97,8 +352,6 @@ export async function importWorkbook(buffer: Buffer | ArrayBuffer): Promise<Impo
     }
   }
 
-  // ── board_cashflow ──
-  await db`CREATE TABLE IF NOT EXISTS board_cashflow (month_idx INTEGER PRIMARY KEY, month TEXT NOT NULL, beginning DOUBLE PRECISION, net DOUBLE PRECISION, ending DOUBLE PRECISION, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
   let cashMonths = 0;
   const cf = wb.Sheets["Monthly Cash Flow"] as Sheet | undefined;
   if (cf) {
@@ -113,15 +366,18 @@ export async function importWorkbook(buffer: Buffer | ArrayBuffer): Promise<Impo
     }
     const low = numOrNull(val(cf, "B19"));
     if (low != null) {
-      await db`INSERT INTO board_finance (key,label,value,unit,grouping,sort,source_cell,updated_at)
-               VALUES ('cash_low','Lowest month-end cash balance',${low},'currency','cash',45,'Monthly Cash Flow!B19',NOW())
-               ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, updated_at=NOW()`;
+      await upsertFinance(db, {
+        key: "cash_low",
+        label: "Lowest month-end cash balance",
+        value: low,
+        unit: "currency",
+        grouping: "cash",
+        sort: 45,
+        sourceCell: source("Monthly Cash Flow", "B19"),
+      });
     }
   }
 
-  // ── board_personnel (5 groups) + board_personnel_costs (employer detail) ──
-  await db`CREATE TABLE IF NOT EXISTS board_personnel (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, count DOUBLE PRECISION, rate DOUBLE PRECISION, gross DOUBLE PRECISION, taxes DOUBLE PRECISION, benefits DOUBLE PRECISION, uniform DOUBLE PRECISION, training DOUBLE PRECISION, total DOUBLE PRECISION, per_employee DOUBLE PRECISION, sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
-  await db`CREATE TABLE IF NOT EXISTS board_personnel_costs (id BIGSERIAL PRIMARY KEY, label TEXT NOT NULL, amount DOUBLE PRECISION, sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
   let personnelGroups = 0;
   const ps = wb.Sheets["Personnel"] as Sheet | undefined;
   if (ps) {
@@ -147,8 +403,6 @@ export async function importWorkbook(buffer: Buffer | ArrayBuffer): Promise<Impo
     }
   }
 
-  // ── board_truck (itemized fleet-maintenance actuals) ──
-  await db`CREATE TABLE IF NOT EXISTS board_truck (id BIGSERIAL PRIMARY KEY, unit TEXT NOT NULL, fy_total DOUBLE PRECISION, months JSONB, sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
   let truckUnits = 0;
   const tm = wb.Sheets["Truck Maintenance"] as Sheet | undefined;
   if (tm) {
@@ -164,8 +418,6 @@ export async function importWorkbook(buffer: Buffer | ArrayBuffer): Promise<Impo
     }
   }
 
-  // ── board_debt (every obligation itemized) ──
-  await db`CREATE TABLE IF NOT EXISTS board_debt (id BIGSERIAL PRIMARY KEY, creditor TEXT NOT NULL, purpose TEXT, balance DOUBLE PRECISION, rate DOUBLE PRECISION, rate_note TEXT, monthly DOUBLE PRECISION, annual DOUBLE PRECISION, remaining DOUBLE PRECISION, payoff TEXT, notes TEXT, kind TEXT NOT NULL DEFAULT 'amortizing', sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
   let debts = 0;
   const ds = wb.Sheets["Debt Schedule"] as Sheet | undefined;
   if (ds) {
@@ -177,19 +429,15 @@ export async function importWorkbook(buffer: Buffer | ArrayBuffer): Promise<Impo
       if (typeof creditor !== "string" || !creditor.trim()) continue;
       const rateRaw = val(ds, `E${r}`);
       const rate = numOrNull(rateRaw);
-      const rateNote = rate == null && typeof rateRaw === "string" ? rateRaw : null;
-      const str = (a: string) => { const v = val(ds, a); return v != null ? String(v) : null; };
       sort += 10;
       await db`INSERT INTO board_debt (creditor, purpose, balance, rate, rate_note, monthly, annual, remaining, payoff, notes, kind, sort)
-               VALUES (${creditor.trim()}, ${str(`B${r}`)}, ${numOrNull(val(ds, `D${r}`))}, ${rate}, ${rateNote},
+               VALUES (${creditor.trim()}, ${strOrNull(val(ds, `B${r}`))}, ${numOrNull(val(ds, `D${r}`))}, ${rate}, ${rate == null ? strOrNull(rateRaw) : null},
                        ${numOrNull(val(ds, `F${r}`))}, ${numOrNull(val(ds, `G${r}`))}, ${numOrNull(val(ds, `H${r}`))},
-                       ${fmtPayoff(val(ds, `I${r}`))}, ${str(`J${r}`)}, ${kind}, ${sort})`;
+                       ${fmtPayoff(val(ds, `I${r}`))}, ${strOrNull(val(ds, `J${r}`))}, ${kind}, ${sort})`;
       debts++;
     }
   }
 
-  // ── board_forecast (Low / Expected / High growth scenarios) ──
-  await db`CREATE TABLE IF NOT EXISTS board_forecast (id BIGSERIAL PRIMARY KEY, scenario TEXT NOT NULL, category TEXT NOT NULL, y1 DOUBLE PRECISION, y2 DOUBLE PRECISION, y3 DOUBLE PRECISION, y4 DOUBLE PRECISION, y5 DOUBLE PRECISION, is_total BOOLEAN NOT NULL DEFAULT FALSE, sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
   let forecastRows = 0;
   const fc = wb.Sheets["Five-Year Forecast"] as Sheet | undefined;
   if (fc) {

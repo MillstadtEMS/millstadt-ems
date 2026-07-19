@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCashflow } from "@/lib/board/cashflow";
+import { actualCashFlowEnabled } from "@/lib/board/financialData/featureFlags";
 import { money } from "@/lib/board/finance";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 // code is preserved and reactivates when ENABLE_ACTUAL_CASH_FLOW=true and the
 // figures come from real accounting data — never from dividing annual totals.
 export default async function CashFlowPage() {
-  if (process.env.ENABLE_ACTUAL_CASH_FLOW !== "true") redirect("/board/referendum");
+  if (!actualCashFlowEnabled()) redirect("/board/referendum");
 
   const months = await getCashflow();
   const loaded = months.length > 0;
@@ -21,8 +22,8 @@ export default async function CashFlowPage() {
   return (
     <>
       <p className="board-eyebrow">Month-by-month</p>
-      <h1 className="board-h1">Cash flow</h1>
-      <p className="board-sub">How much cash is on hand each month. Property taxes arrive in a few big waves, but bills are paid every month — so the balance dips early in the year before it recovers.</p>
+      <h1 className="board-h1">Actual Cash Flow</h1>
+      <p className="board-sub">Verified monthly actuals from an approved accounting source.</p>
 
       {!loaded && <div className="board-card" style={{ marginTop: 22 }}><p style={{ margin: 0 }}>Cash-flow figures have not been imported yet.</p></div>}
 
@@ -35,7 +36,7 @@ export default async function CashFlowPage() {
             </div>
             <div style={{ color: "var(--b-ink-2)", fontSize: 14, maxWidth: "56ch" }}>
               {low < 0
-                ? <>Cash goes below zero in {negativeMonths} month{negativeMonths === 1 ? "" : "s"}. To avoid a shortfall, the district needs about <strong>{money(Math.abs(low))}</strong> of working cash on hand (or a line of credit) until tax money arrives.</>
+                ? <>Negative ending cash appears in {negativeMonths} month{negativeMonths === 1 ? "" : "s"}.</>
                 : <>The balance stays positive all year.</>}
             </div>
           </div>
@@ -66,7 +67,7 @@ export default async function CashFlowPage() {
               </tbody>
             </table>
           </div>
-          <p className="board-updated" style={{ marginTop: 14 }}>Source: Monthly Cash Flow (workbook). Red = balance below zero.</p>
+          <p className="board-updated" style={{ marginTop: 14 }}>Source: verified actual-financial connection. Red = balance below zero.</p>
         </>
       )}
     </>

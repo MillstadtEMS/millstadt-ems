@@ -3,7 +3,8 @@
  *
  *   node scripts/board-detail-import.mjs ["/path/to/workbook.xlsx"]
  *
- * Populates board_truck, board_debt, and board_forecast from the FY workbook.
+ * Populates board_truck, board_debt, and board_forecast from the referendum
+ * model workbook or the earlier FY workbook.
  * Mirrors the parsing in lib/board/import.ts (which the admin upload uses) so
  * the CLI can seed Neon directly. Reads DATABASE_URL from .env.local; contains
  * no financial data itself.
@@ -12,7 +13,7 @@ import { readFileSync } from "node:fs";
 import * as XLSX from "xlsx";
 import { neon } from "@neondatabase/serverless";
 
-const WB = process.argv[2] || `${process.env.HOME}/Desktop/Millstadt EMS District Budget FY2026-27 final1.xlsx`;
+const WB = process.argv[2] || `${process.env.HOME}/Desktop/Millstadt_EMS_Referendum_Financial_Model (1).xlsx`;
 const env = readFileSync(new URL("../.env.local", import.meta.url), "utf8");
 const url = env.match(/^DATABASE_URL=(.*)$/m)?.[1]?.trim().replace(/^["']|["']$/g, "");
 if (!url) { console.error("DATABASE_URL not found in .env.local"); process.exit(1); }
@@ -20,7 +21,9 @@ const sql = neon(url);
 
 const wb = XLSX.read(readFileSync(WB), { type: "buffer", cellDates: true });
 const val = (s, a) => (s && s[a] ? s[a].v : null);
-const numOrNull = (x) => (typeof x === "number" ? x : null);
+const numOrNull = (x) => (typeof x === "number" && Number.isFinite(x) ? x : null);
+const strOrNull = (x) => (x == null ? null : String(x).trim() || null);
+const hasNewReferendumModel = Boolean(wb.Sheets["Levy Calculator"] && wb.Sheets["Referendum Overview"]);
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 function fmtPayoff(v) {
   if (v == null) return null;
@@ -32,7 +35,21 @@ function fmtPayoff(v) {
 // ── board_truck ──
 await sql`CREATE TABLE IF NOT EXISTS board_truck (id BIGSERIAL PRIMARY KEY, unit TEXT NOT NULL, fy_total DOUBLE PRECISION, months JSONB, sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
 const tm = wb.Sheets["Truck Maintenance"];
-if (tm) {
+const op = wb.Sheets["Operating Needs"];
+if (hasNewReferendumModel) {
+  await sql`DELETE FROM board_truck`;
+  let n = 0;
+  for (let r = 5; r <= 80; r++) {
+    const category = strOrNull(val(op, `A${r}`));
+    const line = strOrNull(val(op, `B${r}`));
+    const amount = numOrNull(val(op, `C${r}`));
+    if (category !== "Fleet" || !line || amount == null) continue;
+    await sql`INSERT INTO board_truck (unit, fy_total, months, sort)
+              VALUES (${line}, ${amount}, ${JSON.stringify([{ label: "Annual", amount }])}::jsonb, ${(n + 1) * 10})`;
+    n++;
+  }
+  console.log(`board_truck: ${n} fleet line items from Operating Needs`);
+} else if (tm) {
   await sql`DELETE FROM board_truck`;
   const mcols = ["B","C","D","E","F","G","H","I","J","K","L","M"];
   let n = 0;
@@ -50,7 +67,31 @@ if (tm) {
 // ── board_debt ──
 await sql`CREATE TABLE IF NOT EXISTS board_debt (id BIGSERIAL PRIMARY KEY, creditor TEXT NOT NULL, purpose TEXT, balance DOUBLE PRECISION, rate DOUBLE PRECISION, rate_note TEXT, monthly DOUBLE PRECISION, annual DOUBLE PRECISION, remaining DOUBLE PRECISION, payoff TEXT, notes TEXT, kind TEXT NOT NULL DEFAULT 'amortizing', sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
 const ds = wb.Sheets["Debt Schedule"];
-if (ds) {
+const dl = wb.Sheets["Debt & Liabilities"];
+if (hasNewReferendumModel) {
+  await sql`DELETE FROM board_debt`;
+  let n = 0;
+  for (let r = 5; r <= 10; r++) {
+    const creditor = strOrNull(val(dl, `A${r}`));
+    if (!creditor) continue;
+    const basis = strOrNull(val(dl, `C${r}`));
+    const scheduled = numOrNull(val(dl, `D${r}`));
+    const annual = numOrNull(val(dl, `E${r}`));
+    const rate = numOrNull(val(dl, `F${r}`));
+    await sql`INSERT INTO board_debt (creditor, purpose, balance, rate, rate_note, monthly, annual, remaining, payoff, notes, kind, sort)
+              VALUES (${creditor}, ${basis}, ${numOrNull(val(dl, `B${r}`))}, ${rate}, ${rate == null ? strOrNull(val(dl, `F${r}`)) : null},
+                      ${basis?.toLowerCase().includes("month") ? scheduled : null}, ${annual ?? scheduled}, NULL, NULL, ${strOrNull(val(dl, `G${r}`))}, 'amortizing', ${(n + 1) * 10})`;
+    n++;
+  }
+  for (let r = 17; r <= 18; r++) {
+    const creditor = strOrNull(val(dl, `A${r}`));
+    if (!creditor) continue;
+    await sql`INSERT INTO board_debt (creditor, purpose, balance, rate, rate_note, monthly, annual, remaining, payoff, notes, kind, sort)
+              VALUES (${creditor}, ${strOrNull(val(dl, `C${r}`))}, ${numOrNull(val(dl, `B${r}`))}, NULL, NULL, NULL, ${numOrNull(val(dl, `D${r}`))}, NULL, NULL, ${strOrNull(val(dl, `G${r}`))}, 'payable', ${(n + 1) * 10})`;
+    n++;
+  }
+  console.log(`board_debt: ${n} obligations from Debt & Liabilities`);
+} else if (ds) {
   await sql`DELETE FROM board_debt`;
   const rows = [[5,"amortizing"],[6,"amortizing"],[7,"amortizing"],[8,"amortizing"],[9,"amortizing"],[10,"amortizing"],[12,"payable"],[13,"payable"]];
   let sort = 0, n = 0;
@@ -74,7 +115,10 @@ if (ds) {
 // ── board_forecast ──
 await sql`CREATE TABLE IF NOT EXISTS board_forecast (id BIGSERIAL PRIMARY KEY, scenario TEXT NOT NULL, category TEXT NOT NULL, y1 DOUBLE PRECISION, y2 DOUBLE PRECISION, y3 DOUBLE PRECISION, y4 DOUBLE PRECISION, y5 DOUBLE PRECISION, is_total BOOLEAN NOT NULL DEFAULT FALSE, sort INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`;
 const fc = wb.Sheets["Five-Year Forecast"];
-if (fc) {
+if (hasNewReferendumModel) {
+  await sql`DELETE FROM board_forecast`;
+  console.log("board_forecast: cleared; the referendum model workbook does not include a Five-Year Forecast sheet");
+} else if (fc) {
   await sql`DELETE FROM board_forecast`;
   const blocks = [["Low", 6], ["Expected", 16], ["High", 26]];
   const ycols = ["B","C","D","E","F"];
