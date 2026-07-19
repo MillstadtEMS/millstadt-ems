@@ -372,6 +372,10 @@
 .board-field{margin:0 0 15px}
 .board-field label{display:block;font-size:13px;font-weight:730;color:var(--b-ink-2);margin:0 0 7px}
 .board-input,.board-field input,.board-field textarea,.board-field select{width:100%;min-height:42px;border:1px solid var(--b-hair);border-radius:8px;background:var(--b-surface);color:var(--b-ink);padding:10px 12px;outline:0;transition:border-color .16s,box-shadow .16s,background .16s}
+.board-password-control{position:relative}
+.board-password-control .board-input{padding-right:50px}
+.board-password-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;border:0;border-radius:7px;background:transparent;color:var(--b-muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.board-password-toggle:hover{background:var(--b-hover);color:var(--b-ink)}
 .board-field textarea{min-height:120px;resize:vertical}
 .board-input:focus,.board-field input:focus,.board-field textarea:focus,.board-field select:focus{border-color:var(--b-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--b-accent) 20%,transparent)}
 .board-err{background:var(--b-crit-bg);color:var(--b-crit);border:1px solid color-mix(in srgb,var(--b-crit) 35%,transparent);border-radius:8px;padding:10px 12px;font-size:13px;margin:0 0 15px}

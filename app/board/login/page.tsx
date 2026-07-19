@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import BoardLogo from "@/components/board/BoardLogo";
 import BoardAppearanceControl from "@/components/board/BoardAppearanceControl";
 
@@ -9,6 +10,7 @@ export default function BoardLogin() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -54,8 +56,26 @@ export default function BoardLogin() {
           </div>
           <div className="board-field">
             <label htmlFor="p">Password</label>
-            <input id="p" className="board-input" type="password" autoComplete="current-password"
-              value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <div className="board-password-control">
+              <input
+                id="p"
+                className="board-input"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="board-password-toggle"
+                onClick={() => setShowPassword((current) => !current)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+              </button>
+            </div>
           </div>
 
           <button className="board-submit" type="submit" disabled={busy}>
