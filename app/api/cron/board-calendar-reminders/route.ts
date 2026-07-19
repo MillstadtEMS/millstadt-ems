@@ -1,8 +1,8 @@
 /**
  * GET /api/cron/board-calendar-reminders
  * Sends board calendar email reminders that are due based on each item's
- * reminder settings. Intended for Vercel Cron; safe to run hourly because each
- * item records send counts and the last sent day.
+ * reminder settings. Intended for Vercel Cron; safe to run multiple daily
+ * passes because each item records send counts and the last sent day.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
