@@ -217,7 +217,7 @@ export default function LevyCalculator({
         </div>
       </div>
 
-      <h2 className="board-h2">Levy Scenarios</h2>
+      <h2 className="board-h2">Planning Scenarios</h2>
       <div className="board-tw">
         <table>
           <thead>

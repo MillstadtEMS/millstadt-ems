@@ -3,8 +3,12 @@
 import { useEffect, useState } from "react";
 import BoardPhoto from "./BoardPhoto";
 
+function welcomeSeenKey(firstName: string, lastName: string) {
+  return `board:welcome-seen:${firstName.trim().toLowerCase()}:${lastName.trim().toLowerCase()}`;
+}
+
 /**
- * A brief "Welcome, <name>" splash shown once per browser session right after
+ * A brief "Welcome, <name>" splash shown once per browser after
  * a board member reaches the portal. Shows their profile photo below the
  * greeting (or their initials until a photo is added). Dismisses on click or
  * after a few seconds; respects reduced-motion.
@@ -17,14 +21,17 @@ export default function WelcomeOverlay({ firstName, lastName, title, photoUrl }:
 
   useEffect(() => {
     try {
+      const key = welcomeSeenKey(firstName, lastName);
+      if (localStorage.getItem(key) === "1") return;
       if (sessionStorage.getItem("board_welcomed") === "1") return;
+      localStorage.setItem(key, "1");
       sessionStorage.setItem("board_welcomed", "1");
     } catch { /* private mode — just show it */ }
     const raf = requestAnimationFrame(() => setShow(true));
     const t1 = setTimeout(() => setLeaving(true), 3200);
     const t2 = setTimeout(() => setShow(false), 3700);
     return () => { cancelAnimationFrame(raf); clearTimeout(t1); clearTimeout(t2); };
-  }, []);
+  }, [firstName, lastName]);
 
   if (!show) return null;
   const initials = `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase();

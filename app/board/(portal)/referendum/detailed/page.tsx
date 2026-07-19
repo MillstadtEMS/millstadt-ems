@@ -14,13 +14,13 @@ export default async function DetailedModelPage() {
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
         <div>
-          <p className="board-eyebrow">Detailed model</p>
-          <h1 className="board-h1">Detailed Projected Model</h1>
+          <p className="board-eyebrow">Detail</p>
+          <h1 className="board-h1">Budget Detail</h1>
           <p className="board-sub">Every projected line item for the proposed EMS District, straight from the workbook.</p>
         </div>
         <div className="board-viewtoggle" role="group" aria-label="View">
           <Link href="/board/referendum">Simple</Link>
-          <a className="on">Detailed</a>
+          <a className="on">Detail</a>
         </div>
       </div>
 
@@ -53,7 +53,7 @@ export default async function DetailedModelPage() {
             </section>
           ))}
 
-          <p className="board-updated" style={{ marginTop: 18 }}>Financial projection for referendum planning.</p>
+          <p className="board-updated" style={{ marginTop: 18 }}>Financial projection for budget planning.</p>
         </>
       )}
     </>

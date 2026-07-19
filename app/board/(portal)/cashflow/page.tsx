@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 // code is preserved and reactivates when ENABLE_ACTUAL_CASH_FLOW=true and the
 // figures come from real accounting data — never from dividing annual totals.
 export default async function CashFlowPage() {
-  if (!actualCashFlowEnabled()) redirect("/board/referendum");
+  if (!actualCashFlowEnabled()) redirect("/board");
 
   const months = await getCashflow();
   const loaded = months.length > 0;

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { currentBoardUser } from "@/lib/board/auth";
+import BoardEmojiAvatar from "@/components/board/BoardEmojiAvatar";
 import NextMeetingCard from "@/components/board/NextMeetingCard";
 import { BoardActionLink, BoardCard, BoardEmptyState, BoardPageHeader, BoardSectionHeader, BoardStatusChip } from "@/components/board/BoardPrimitives";
 import {
@@ -14,6 +15,7 @@ import {
   getQuestions,
   userBoards,
 } from "@/lib/board/governance";
+import { boardUserEmoji } from "@/lib/board/personalization";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +28,8 @@ export default async function BoardHome() {
   const showRequests = canSubmitFireMeetingRequest(user) || canReviewFireMeetingRequests(user);
   const showReferendum = canViewFinancialModel(user);
   const showAdmin = user.role === "admin";
+  const personalEmoji = boardUserEmoji(user);
+  const personalTitle = user.officerTitle?.trim() || null;
   const nextMeeting = showMeetings ? await getNextMeeting(user) : null;
 
   let attendanceNeeded = 0;
@@ -47,7 +51,19 @@ export default async function BoardHome() {
 
   return (
     <div className="board-dashboard">
-      <BoardPageHeader eyebrow="Governance" title={`Welcome, ${user.firstName}`} />
+      <BoardPageHeader
+        eyebrow="Governance"
+        title={`Welcome, ${user.firstName}`}
+        actions={(
+          <div className="board-welcome-identity">
+            <BoardEmojiAvatar emoji={personalEmoji} photoUrl={user.photoUrl} size="lg" />
+            <div>
+              <strong>Welcome, {user.firstName}</strong>
+              {personalTitle && <small>{personalTitle}</small>}
+            </div>
+          </div>
+        )}
+      />
 
       {showMeetings ? (
         <div className="board-command-center">
@@ -84,46 +100,48 @@ export default async function BoardHome() {
             )}
           </BoardCard>
         </div>
-      ) : (
+      ) : showRequests ? (
         <Link href="/board/requests" className="board-card board-link-card board-referendum-panel">
           <BoardStatusChip tone="accent">Fire Board</BoardStatusChip>
           <h2 className="board-h2">Request EMS Board attendance</h2>
           <p className="board-sub">Submit a meeting request with the date, attendees, and reason.</p>
         </Link>
-      )}
+      ) : null}
 
       <div className="board-dashboard-row">
         {showReferendum && (
           <BoardCard className="board-referendum-panel">
-            <BoardStatusChip tone="accent">Referendum</BoardStatusChip>
-            <h2 className="board-h2">Proposed EMS District Financial Model</h2>
-            <p className="board-sub">Financial model and levy scenarios.</p>
-            <Link href="/board/referendum" className="board-btn-primary">Open referendum model</Link>
+            <BoardStatusChip tone="accent">Budget</BoardStatusChip>
+            <h2 className="board-h2">EMS Budget Model</h2>
+            <p className="board-sub">Projected budget, staffing, fleet, debt, and levy planning.</p>
+            <Link href="/board/referendum" className="board-btn-primary">Open budget</Link>
           </BoardCard>
         )}
 
-        <BoardCard>
-          <BoardSectionHeader title="Recent activity" />
-          <div className="board-action-queue">
-            {nextMeeting && (
-              <BoardActionLink
-                href={`/board/meetings/${nextMeeting.id}`}
-                label="Next meeting packet workspace"
-                meta="Attendance, quorum, minutes, and questions"
-              />
-            )}
-            {showRequests && (
-              <BoardActionLink
-                href="/board/requests"
-                label={user.role === "fire_board" ? "Submit Fire Board request" : "Review Fire Board requests"}
-                meta={user.role === "fire_board" ? "Request EMS Board attendance" : "Pending and historical requests"}
-              />
-            )}
-            {showAdmin && (
-              <BoardActionLink href="/board/admin/appearance" label="Appearance and dashboard layout" meta="Presentation controls" />
-            )}
-          </div>
-        </BoardCard>
+        {(nextMeeting || showRequests || showAdmin) && (
+          <BoardCard>
+            <BoardSectionHeader title="Recent activity" />
+            <div className="board-action-queue">
+              {nextMeeting && (
+                <BoardActionLink
+                  href={`/board/meetings/${nextMeeting.id}`}
+                  label="Next meeting workspace"
+                  meta="Attendance, quorum, minutes, and questions"
+                />
+              )}
+              {showRequests && (
+                <BoardActionLink
+                  href="/board/requests"
+                  label={user.role === "fire_board" ? "Submit Fire Board request" : "Review Fire Board requests"}
+                  meta={user.role === "fire_board" ? "Request EMS Board attendance" : "Pending and historical requests"}
+                />
+              )}
+              {showAdmin && (
+                <BoardActionLink href="/board/admin/appearance" label="Appearance and dashboard layout" meta="Presentation controls" />
+              )}
+            </div>
+          </BoardCard>
+        )}
       </div>
     </div>
   );

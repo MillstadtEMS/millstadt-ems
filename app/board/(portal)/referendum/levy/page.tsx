@@ -16,7 +16,7 @@ export default async function LevyPage() {
   return (
     <>
       <p className="board-eyebrow">Property tax planning</p>
-      <h1 className="board-h1">Levy Calculator</h1>
+      <h1 className="board-h1">Levy</h1>
       <p className="board-sub">Projected EMS District revenue based on EAV and levy rate.</p>
       {eav == null ? (
         <div className="board-card" style={{ marginTop: 22 }}><p style={{ margin: 0 }}>Equalized Assessed Value (EAV) has not been loaded from the workbook.</p></div>

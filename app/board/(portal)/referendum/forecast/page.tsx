@@ -24,7 +24,7 @@ export default async function ForecastPage() {
   return (
     <>
       <p className="board-eyebrow">Looking ahead</p>
-      <h1 className="board-h1">Five-Year Forecast</h1>
+      <h1 className="board-h1">Forecast</h1>
       <p className="board-sub">Five-year projection from the workbook.</p>
 
       {!loaded && <div className="board-card" style={{ marginTop: 22 }}><p style={{ margin: 0 }}>Forecast detail has not been imported yet — upload the workbook on the Admin page to load it.</p></div>}

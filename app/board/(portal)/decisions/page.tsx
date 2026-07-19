@@ -1,7 +1,7 @@
-import BoardPlaceholderPage from "@/components/board/BoardPlaceholderPage";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default function DecisionsPage() {
-  return <BoardPlaceholderPage title="Decisions" emptyTitle="No recent decisions recorded." />;
+  redirect("/board");
 }

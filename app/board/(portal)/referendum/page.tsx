@@ -39,8 +39,8 @@ export default async function ReferendumOverview() {
 
   return (
     <>
-      <p className="board-eyebrow">Referendum planning</p>
-      <h1 className="board-h1">Proposed EMS District Financial Model</h1>
+      <p className="board-eyebrow">Budget planning</p>
+      <h1 className="board-h1">EMS Budget Model</h1>
 
       {!loaded && <div className="board-card" style={{ marginTop: 22 }}><p style={{ margin: 0 }}>The financial figures have not been loaded from the workbook yet.</p></div>}
 

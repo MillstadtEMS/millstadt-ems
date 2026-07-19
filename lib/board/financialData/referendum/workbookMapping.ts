@@ -1,3 +1,9 @@
+import {
+  DEFAULT_REFERENDUM_WORKBOOK_EXPECTED_ACCOUNT,
+  DEFAULT_REFERENDUM_WORKBOOK_EXPECTED_FILENAME,
+  DEFAULT_REFERENDUM_WORKBOOK_EXPECTED_FOLDER,
+} from "./workbookIdentity";
+
 export type WorkbookFieldAccess = "read-only" | "editable";
 
 export interface WorkbookFieldMap {
@@ -11,8 +17,10 @@ export interface WorkbookFieldMap {
 }
 
 export const REFERENDUM_WORKBOOK_IDENTITY = {
-  fileName: "Millstadt_EMS_Referendum_Financial_Model_website.xlsx",
-  owner: "Kenneth.james@millstadtems.org",
+  fileName: DEFAULT_REFERENDUM_WORKBOOK_EXPECTED_FILENAME,
+  owner: DEFAULT_REFERENDUM_WORKBOOK_EXPECTED_ACCOUNT,
+  folder: DEFAULT_REFERENDUM_WORKBOOK_EXPECTED_FOLDER,
+  path: `/${DEFAULT_REFERENDUM_WORKBOOK_EXPECTED_FOLDER}/${DEFAULT_REFERENDUM_WORKBOOK_EXPECTED_FILENAME}`,
   status: "Configuration Required",
 } as const;
 
@@ -33,7 +41,7 @@ export const REFERENDUM_WORKBOOK_FIELD_MAP: WorkbookFieldMap[] = [
     dataType: "percent",
     access: "editable",
     rolesAllowedToEdit: ["admin"],
-    validation: "Decimal workbook rate such as 0.004 for 0.40%.",
+    validation: "Decimal workbook rate such as 0.0025 for 0.25% or 0.003 for 0.30%.",
   },
   {
     portalField: "Collection Factor",

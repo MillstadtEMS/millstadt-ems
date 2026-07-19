@@ -21,7 +21,11 @@ const CREST_SRC = "/images/millstadt-ems/crest.png";
  * sessionStorage flag is cleared so refreshes don't replay it.
  */
 const TOTAL_MS = 5500;
-export default function WelcomeOverlay({ name, customImage }: { name: string; customImage?: string | null }) {
+function welcomeSeenKey(username: string | undefined, name: string) {
+  return `lounge:welcome-seen:${(username || name).trim().toLowerCase()}`;
+}
+
+export default function WelcomeOverlay({ name, username, customImage }: { name: string; username?: string; customImage?: string | null }) {
   // Initialize phase synchronously from sessionStorage so the very first
   // render paints the black curtain — otherwise React would briefly
   // paint the dashboard underneath before the effect could swap phase
@@ -33,6 +37,9 @@ export default function WelcomeOverlay({ name, customImage }: { name: string; cu
     try {
       if (sessionStorage.getItem("lounge:welcome") === "1") {
         sessionStorage.removeItem("lounge:welcome");
+        const key = welcomeSeenKey(username, name);
+        if (localStorage.getItem(key) === "1") return "done";
+        localStorage.setItem(key, "1");
         return "playing";
       }
     } catch { /* ignore */ }

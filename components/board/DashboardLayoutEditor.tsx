@@ -26,9 +26,8 @@ const ROLES: Array<{ id: Role; label: string }> = [
 const DEFAULT_WIDGETS: WidgetConfig[] = [
   { id: "next-meeting", label: "Next meeting", visible: true, roles: ["ems_board", "ems_president", "admin", "submitter"] },
   { id: "action-queue", label: "Action queue", visible: true, roles: ["ems_board", "ems_president", "admin", "submitter", "fire_board"] },
-  { id: "referendum", label: "Referendum model", visible: true, roles: ["ems_board", "ems_president", "admin", "submitter"] },
+  { id: "referendum", label: "Budget model", visible: true, roles: ["ems_board", "ems_president", "admin", "submitter"] },
   { id: "recent-activity", label: "Recent activity", visible: true, roles: ["ems_board", "ems_president", "admin", "submitter", "fire_board"] },
-  { id: "deadlines", label: "Deadlines", visible: true, roles: ["ems_board", "ems_president", "admin", "submitter"] },
 ];
 
 const DRAFT_KEY = "board_dashboard_layout_admin_draft";
@@ -42,15 +41,18 @@ export default function DashboardLayoutEditor() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(DRAFT_KEY);
-    if (!saved) return;
-    try {
-      const parsed = JSON.parse(saved) as { widgets?: WidgetConfig[]; density?: Density };
-      if (Array.isArray(parsed.widgets)) setWidgets(parsed.widgets);
-      if (parsed.density === "compact" || parsed.density === "comfortable") setDensity(parsed.density);
-    } catch {
-      setWidgets(DEFAULT_WIDGETS);
-    }
+    const id = window.setTimeout(() => {
+      const saved = window.localStorage.getItem(DRAFT_KEY);
+      if (!saved) return;
+      try {
+        const parsed = JSON.parse(saved) as { widgets?: WidgetConfig[]; density?: Density };
+        if (Array.isArray(parsed.widgets)) setWidgets(parsed.widgets);
+        if (parsed.density === "compact" || parsed.density === "comfortable") setDensity(parsed.density);
+      } catch {
+        setWidgets(DEFAULT_WIDGETS);
+      }
+    }, 0);
+    return () => window.clearTimeout(id);
   }, []);
 
   const visibleWidgets = useMemo(() => widgets.filter((widget) => widget.visible), [widgets]);

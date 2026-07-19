@@ -13,7 +13,7 @@ export default async function ReferendumLayout({ children }: { children: React.R
     <>
       <ReferendumNav />
       <div className="board-notice" role="note">
-        Projected financial model for the proposed EMS District. These figures do not represent current staffing or current Sage accounting results.
+        Projected financial model for the proposed EMS District. These figures do not represent current staffing or current accounting results.
       </div>
       {children}
     </>

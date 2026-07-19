@@ -4,6 +4,7 @@ import { getFinance, money } from "@/lib/board/finance";
 import { getReferendumWorkbookConnectionStatus } from "@/lib/board/financialData/referendum/excelAdapter";
 import { getActualFinancialConnectionStatus } from "@/lib/board/financialData/actuals/actualsAdapter";
 import { getSageConnectionStatus } from "@/lib/board/financialData/actuals/sageAdapter";
+import { actualFinancialsEnabled } from "@/lib/board/financialData/featureFlags";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +14,9 @@ export default async function ModelReviewPage() {
 
   const [{ rows, updatedAt }] = await Promise.all([getFinance()]);
   const workbook = getReferendumWorkbookConnectionStatus();
-  const actuals = getActualFinancialConnectionStatus();
-  const sage = getSageConnectionStatus();
+  const showActuals = actualFinancialsEnabled();
+  const actuals = showActuals ? getActualFinancialConnectionStatus() : null;
+  const sage = showActuals ? getSageConnectionStatus() : null;
   const reviewRows = rows.filter((row) => row.needsReview || row.textValue === "Synchronization Pending");
 
   return (
@@ -25,15 +27,16 @@ export default async function ModelReviewPage() {
 
       <div className="board-grid k3" style={{ marginTop: 24 }}>
         <div className="board-card board-stat">
-          <div className="lbl">Referendum Workbook</div>
+          <div className="lbl">Budget Workbook</div>
           <div className="val">{workbook.status}</div>
           <div className="sub">
-            {workbook.workbook.fileName}
+            {workbook.expectedWorkbook.path}
             {workbook.missingConfiguration.length > 0 ? ` · missing ${workbook.missingConfiguration.join(", ")}` : ""}
+            {workbook.configurationIssues.length > 0 ? ` · ${workbook.configurationIssues.join(" ")}` : ""}
           </div>
         </div>
-        <div className="board-card board-stat"><div className="lbl">Actual Financials</div><div className="val">{actuals.status}</div></div>
-        <div className="board-card board-stat"><div className="lbl">Sage</div><div className="val">{sage.status}</div></div>
+        {actuals && <div className="board-card board-stat"><div className="lbl">Actual Financials</div><div className="val">{actuals.status}</div></div>}
+        {sage && <div className="board-card board-stat"><div className="lbl">Sage</div><div className="val">{sage.status}</div></div>}
       </div>
 
       <h2 className="board-h2">Editable Workbook Field Map</h2>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { currentBoardUser } from "@/lib/board/auth";
 import { getNextMeeting, userBoards } from "@/lib/board/governance";
 import { BoardActionLink, BoardCard, BoardEmptyState, BoardPageHeader, BoardSectionHeader, BoardStatusChip } from "@/components/board/BoardPrimitives";
@@ -8,7 +9,9 @@ export const dynamic = "force-dynamic";
 export default async function BriefingsPage() {
   const user = await currentBoardUser();
   if (!user) return null;
-  const meeting = userBoards(user).length > 0 ? await getNextMeeting(user) : null;
+  const boards = userBoards(user);
+  if (boards.length === 0) redirect("/board");
+  const meeting = await getNextMeeting(user);
 
   return (
     <>

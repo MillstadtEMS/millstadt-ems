@@ -8,6 +8,15 @@ export default async function PersonnelPage() {
   const total = byKey["exp_personnel"]?.value ?? null;
   const loaded = groups.length > 0;
   const staff = groups.reduce((a, g) => a + (g.count ?? 0), 0);
+  const showEmployerTaxes = groups.some((g) => (g.taxes ?? 0) !== 0);
+  const showBenefits = groups.some((g) => (g.benefits ?? 0) !== 0);
+  const costSummary = showEmployerTaxes && showBenefits
+    ? "Payroll, benefits, employer taxes"
+    : showBenefits
+      ? "Payroll and benefits"
+      : showEmployerTaxes
+        ? "Payroll and employer taxes"
+        : "Payroll and staffing costs";
 
   return (
     <>
@@ -21,7 +30,7 @@ export default async function PersonnelPage() {
       {loaded && (
         <>
           <div className="board-grid k3" style={{ marginTop: 22 }}>
-            <div className="board-card board-stat"><div className="lbl">Projected Personnel Cost</div><div className="val">{money(total)}</div><div className="sub">Payroll, benefits, employer taxes</div></div>
+            <div className="board-card board-stat"><div className="lbl">Projected Personnel Cost</div><div className="val">{money(total)}</div><div className="sub">{costSummary}</div></div>
             <div className="board-card board-stat"><div className="lbl">Employees</div><div className="val">{staff}</div><div className="sub">Proposed staffing model</div></div>
             <div className="board-card board-stat"><div className="lbl">Groups</div><div className="val">{groups.length}</div><div className="sub">Chiefs · FT &amp; PT medics/EMTs</div></div>
           </div>
@@ -29,7 +38,7 @@ export default async function PersonnelPage() {
           <h2 className="board-h2">Personnel Costs</h2>
           <div className="board-tw">
             <table>
-              <thead><tr><th>Group</th><th className="num">Employees</th><th className="num">Salary or Wage</th><th className="num">Gross Payroll</th><th className="num">Employer Taxes</th><th className="num">Benefits</th><th className="num">Total Annual Employer Cost</th><th className="num">Total Cost Per Employee</th></tr></thead>
+              <thead><tr><th>Group</th><th className="num">Employees</th><th className="num">Salary or Wage</th><th className="num">Gross Payroll</th>{showEmployerTaxes && <th className="num">Employer Taxes</th>}{showBenefits && <th className="num">Benefits</th>}<th className="num">Total Annual Cost</th><th className="num">Total Cost Per Employee</th></tr></thead>
               <tbody>
                 {groups.map((g) => (
                   <tr key={g.name}>
@@ -37,13 +46,13 @@ export default async function PersonnelPage() {
                     <td className="num">{g.count ?? "—"}</td>
                     <td className="num">{g.rate != null ? (g.rate > 1000 ? money(g.rate) : `$${g.rate}/hr`) : "—"}</td>
                     <td className="num">{money(g.gross)}</td>
-                    <td className="num">{money(g.taxes)}</td>
-                    <td className="num">{money(g.benefits)}</td>
+                    {showEmployerTaxes && <td className="num">{money(g.taxes)}</td>}
+                    {showBenefits && <td className="num">{money(g.benefits)}</td>}
                     <td className="num" style={{ fontWeight: 600 }}>{money(g.total)}</td>
                     <td className="num" style={{ color: "var(--b-accent)", fontWeight: 700 }}>{money(g.perEmployee)}</td>
                   </tr>
                 ))}
-                <tr className="total"><td>All personnel</td><td className="num">{staff}</td><td></td><td></td><td></td><td></td><td className="num">{money(total)}</td><td></td></tr>
+                <tr className="total"><td>All personnel</td><td className="num">{staff}</td><td></td><td></td>{showEmployerTaxes && <td></td>}{showBenefits && <td></td>}<td className="num">{money(total)}</td><td></td></tr>
               </tbody>
             </table>
           </div>

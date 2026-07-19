@@ -57,11 +57,14 @@ export default async function MeetingDetail({ params }: { params: Promise<{ id: 
       {meeting.virtualLink && <p style={{ marginTop: 4 }}><a href={meeting.virtualLink} style={{ color: "var(--b-accent)" }}>Join virtually →</a></p>}
       {meeting.description && <p style={{ marginTop: 14, color: "var(--b-ink-2)", maxWidth: 680 }}>{meeting.description}</p>}
 
-      {/* Attendance */}
-      <h2 id="attendance" className="board-h2">Will you attend?</h2>
-      <div className="board-card" style={{ maxWidth: 680 }}>
-        <AttendanceControl meetingId={meeting.id} current={mine?.response ?? "No Response"} canRespond={canRespond} />
-      </div>
+      {canRespond && (
+        <>
+          <h2 id="attendance" className="board-h2">Will you attend?</h2>
+          <div className="board-card" style={{ maxWidth: 680 }}>
+            <AttendanceControl meetingId={meeting.id} current={mine?.response ?? "No Response"} canRespond={canRespond} />
+          </div>
+        </>
+      )}
 
       {/* Quorum */}
       <h2 className="board-h2">Expected quorum</h2>

@@ -29,6 +29,7 @@ const LOCATIONS = [
 export default function InventoryMenuClient() {
   const router = useRouter();
   const [authed, setAuthed] = useState<boolean | null>(null);
+  const readyLocations = LOCATIONS.filter((location) => location.ready);
 
   useEffect(() => {
     fetch("/api/inventory/items").then(r => {
@@ -72,30 +73,22 @@ export default function InventoryMenuClient() {
           <p className="text-slate-500 text-sm text-center mb-8">Select a location to begin counting</p>
 
           <div className="space-y-3">
-            {LOCATIONS.map(loc => (
+            {readyLocations.map(loc => (
               <button
                 key={loc.id}
-                onClick={() => loc.ready ? router.push(loc.href) : null}
-                disabled={!loc.ready}
-                className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl border text-left transition ${
-                  loc.ready
-                    ? "bg-slate-900 border-slate-700 hover:bg-slate-800 active:bg-slate-800 hover:border-yellow-500/30 cursor-pointer"
-                    : "bg-slate-900/50 border-slate-800 cursor-not-allowed opacity-60"
-                }`}
+                onClick={() => router.push(loc.href)}
+                className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border text-left transition bg-slate-900 border-slate-700 hover:bg-slate-800 active:bg-slate-800 hover:border-yellow-500/30 cursor-pointer"
               >
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${loc.ready ? "bg-yellow-500/15 text-yellow-400" : "bg-slate-800 text-slate-600"}`}>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-yellow-500/15 text-yellow-400">
                   {loc.icon}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className={`text-base font-black ${loc.ready ? "text-white" : "text-slate-500"}`}>{loc.name}</span>
-                    {!loc.ready && <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-700 text-slate-400 px-2 py-0.5 rounded-full">Coming Soon</span>}
+                    <span className="text-base font-black text-white">{loc.name}</span>
                   </div>
                   <div className="text-slate-400 text-sm mt-0.5">{loc.desc}</div>
                 </div>
-                {loc.ready && (
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-slate-600 shrink-0"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
-                )}
+                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-slate-600 shrink-0"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
               </button>
             ))}
           </div>

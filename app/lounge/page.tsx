@@ -97,8 +97,8 @@ export default async function LoungeHome() {
       </div>
 
       {PRANK_USERNAMES.has(session.username)
-        ? <CoffeePrankOverlay name={session.firstName} />
-        : <WelcomeOverlay name={session.firstName} customImage={welcomeOverrideFor(session.username)} />}
+        ? <CoffeePrankOverlay name={session.firstName} username={session.username} />
+        : <WelcomeOverlay name={session.firstName} username={session.username} customImage={welcomeOverrideFor(session.username)} />}
     </LoungeShell>
   );
 }

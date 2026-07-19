@@ -29,7 +29,7 @@ export const MEETING_STATUSES = ["Scheduled", "Attendance Requested", "Agenda Op
 export const RESPONSES = ["Attending", "Attending Remotely", "Tentative", "Not Attending", "Excused Absence Requested", "No Response"] as const;
 export type Response = (typeof RESPONSES)[number];
 
-export const CONFIRMED_STATUSES = ["Present", "Present Remotely", "Absent", "Excused", "Unexcused", "Late Arrival", "Left Early", "Recused", "Not Eligible"] as const;
+export const CONFIRMED_STATUSES = ["Present", "Present Remotely", "Absent", "Excused", "Unexcused", "Late Arrival", "Left Early", "Recused"] as const;
 
 export const QUESTION_CATEGORIES = ["Question", "Concern", "Comment", "Requested Agenda Item", "Financial Question", "Levy Question", "Proposal Question", "Contract Question", "Invoice Question", "Operations Question", "Personnel Question", "Policy Question", "Legal Concern", "Meeting-Minutes Question", "Unfinished Business", "Other"] as const;
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const STATUSES = ["Present", "Present Remotely", "Absent", "Excused", "Unexcused", "Late Arrival", "Left Early", "Recused", "Not Eligible"];
+const STATUSES = ["Present", "Present Remotely", "Absent", "Excused", "Unexcused", "Late Arrival", "Left Early", "Recused"];
 
 interface Member { userId: string; name: string; officerTitle: string | null; response: string; confirmedStatus: string | null }
 

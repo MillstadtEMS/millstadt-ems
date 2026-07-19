@@ -14,7 +14,7 @@ export default function BoardNav({
     { href: "/board", label: "Home", exact: true },
     ...(showMeetings ? [{ href: "/board/meetings", label: "Meetings" }] : []),
     ...(showRequests ? [{ href: "/board/requests", label: "Requests" }] : []),
-    ...(showReferendum ? [{ href: "/board/referendum", label: "Referendum" }] : []),
+    ...(showReferendum ? [{ href: "/board/referendum", label: "Budget" }] : []),
     ...(isAdmin ? [{ href: "/board/admin", label: "Admin" }] : []),
   ];
   return (

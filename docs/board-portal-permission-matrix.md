@@ -21,7 +21,7 @@ Date: July 18, 2026
 | Must change seeded password | Yes | Yes | Yes | Yes | Yes | Yes |
 | EMS meetings | Yes | Yes | Yes | Yes | No | Yes |
 | Fire Board meetings | Yes | Yes | No | No | Yes | Yes |
-| Planned attendance | If eligible | If eligible | EMS only | No | Fire only | No |
+| Planned attendance | Hidden unless assigned to that board | Hidden unless assigned to that board | EMS Board meetings | Hidden | Hidden | Hidden |
 | Confirm official attendance | Yes | Secretary title only | Secretary title only | Secretary title only | No unless policy changes | No |
 | View Board-wide questions | Yes | Yes | Yes | Yes | Within visible meeting scope | Yes |
 | View leadership questions | Yes | Yes | No unless officer title grants leadership | Yes | No unless policy changes | Yes if leadership policy grants |
@@ -32,8 +32,6 @@ Date: July 18, 2026
 | Save EAV as model value | Yes | No | No | No | No | No |
 | Upload workbook | Yes | No | No | No | No | No |
 | Model review admin page | Yes | No | No | No | No | No |
-| Actual cash flow | Future Feature | Future Feature | Future Feature | Future Feature | Future Feature | Future Feature |
-| Audit dashboard | Future Feature | Future Feature | Future Feature | Future Feature | Future Feature | Future Feature |
 
 ## Policy Items Needing Kenneth Review
 

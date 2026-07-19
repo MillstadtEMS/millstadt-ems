@@ -1,6 +1,6 @@
 import type { LevyScenario, ReferendumCalculationResult, ReferendumModelInput } from "./modelTypes";
 
-export const MODELED_LEVY_RATES = [0.20, 0.25, 0.30, 0.35, 0.40] as const;
+export const MODELED_LEVY_RATES = [0.25, 0.30] as const;
 
 export function projectedLevyRevenue(eav: number, ratePercent: number): number {
   return eav * (ratePercent / 100);

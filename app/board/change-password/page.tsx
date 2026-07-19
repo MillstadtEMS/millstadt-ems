@@ -36,12 +36,12 @@ export default function ChangePassword() {
   return (
     <div className="board-login">
       <div className="aside">
-        <BoardLogo className="asidelogo" variant="dark" />
-        <div className="foot">MILLSTADT EMS · BOARD PORTAL</div>
+        <BoardLogo className="asidelogo" variant="auto" />
+        <div className="foot">Millstadt EMS Board of Directors Portal</div>
       </div>
       <div className="panel">
         <form className="form" onSubmit={submit}>
-          <BoardLogo className="brandmobile" variant="light" />
+          <BoardLogo className="brandmobile" variant="auto" />
           <p className="board-eyebrow eyebrow">First sign-in</p>
           <h1>Create a new password</h1>
           <p className="lede">At least 10 characters.</p>

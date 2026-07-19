@@ -45,6 +45,7 @@ export default async function NextMeetingCard({ user }: { user: BoardUser }) {
   const mine = att.find((a) => a.userId === user.id)?.response ?? (canRecordAttendance(user, m.board) ? "No Response" : null);
   const b = BADGE[m.board];
   const needsAttendance = mine === "No Response";
+  const canRespond = mine !== null;
   const briefingStatus = m.status === "Briefing Distributed" ? "Distributed" : m.status === "Briefing Being Prepared" ? "Being prepared" : "Not distributed";
 
   return (
@@ -62,10 +63,12 @@ export default async function NextMeetingCard({ user }: { user: BoardUser }) {
       </div>
 
       <div className="board-meeting-status-grid">
-        <div className="board-mini-status">
-          <span>Attendance response</span>
-          <strong>{mine ?? "Not applicable"}</strong>
-        </div>
+        {canRespond && (
+          <div className="board-mini-status">
+            <span>Attendance response</span>
+            <strong>{mine}</strong>
+          </div>
+        )}
         <div className="board-mini-status">
           <span>Expected quorum</span>
           <strong><BoardStatusChip tone={quorumTone(q.status)}>{q.status}</BoardStatusChip></strong>
@@ -74,18 +77,15 @@ export default async function NextMeetingCard({ user }: { user: BoardUser }) {
           <span>Briefing status</span>
           <strong>{briefingStatus}</strong>
         </div>
-        <div className="board-mini-status">
-          <span>Meeting packet</span>
-          <strong>No packet posted</strong>
-        </div>
       </div>
 
       <div className="board-hero-actions">
-        <Link href={`/board/meetings/${m.id}#attendance`} className={needsAttendance ? "board-btn-primary" : "board-btn-secondary"}>
-          {needsAttendance ? "Respond to attendance" : "Update attendance"}
-        </Link>
+        {canRespond && (
+          <Link href={`/board/meetings/${m.id}#attendance`} className={needsAttendance ? "board-btn-primary" : "board-btn-secondary"}>
+            {needsAttendance ? "Respond to attendance" : "Update attendance"}
+          </Link>
+        )}
         <Link href={`/board/meetings/${m.id}#briefing`} className="board-btn-secondary">Open briefing</Link>
-        <button type="button" className="board-btn-secondary" disabled>Open meeting packet</button>
       </div>
 
       <div className="board-actions" style={{ marginTop: 16 }}>

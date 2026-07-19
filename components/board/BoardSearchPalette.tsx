@@ -3,16 +3,12 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Archive,
-  Bell,
   CalendarDays,
   Database,
   FileCheck2,
   FileText,
-  Gavel,
   LayoutDashboard,
   Search,
-  ShieldCheck,
   Users,
   X,
 } from "lucide-react";
@@ -30,12 +26,8 @@ const ICONS: Record<string, typeof Search> = {
   Home: LayoutDashboard,
   Meetings: CalendarDays,
   Briefings: FileCheck2,
-  Proposals: Gavel,
-  Decisions: ShieldCheck,
-  Referendum: Database,
+  Budget: Database,
   Documents: FileText,
-  Archive,
-  Notifications: Bell,
   Administration: Users,
 };
 
@@ -104,7 +96,7 @@ export default function BoardSearchPalette({
                 ref={inputRef}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search meetings, minutes, documents, proposals..."
+                placeholder="Search meetings, minutes, and documents..."
               />
               <button type="button" onClick={() => setOpen(false)} aria-label="Close search">
                 <X size={18} aria-hidden="true" />
@@ -115,8 +107,8 @@ export default function BoardSearchPalette({
               <span>Visible records only</span>
               <span>Meetings</span>
               <span>Minutes</span>
-              <span>Documents</span>
-              <span>Briefings</span>
+              {items.some((item) => item.label === "Documents") && <span>Documents</span>}
+              {items.some((item) => item.label === "Board briefings") && <span>Briefings</span>}
             </div>
 
             <div className="board-command-results">

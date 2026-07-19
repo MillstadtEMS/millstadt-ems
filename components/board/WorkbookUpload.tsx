@@ -19,7 +19,7 @@ export default function WorkbookUpload() {
       const res = await fetch("/api/board/admin/import", { method: "POST", body: fd });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setMsg({ ok: false, text: data.error || "Update failed." }); return; }
-      setMsg({ ok: true, text: `Updated referendum model cache: ${data.finance} figures, ${data.budgetLines} budget lines, ${data.personnelGroups ?? 0} personnel groups, ${data.truckUnits ?? 0} fleet units, ${data.debts ?? 0} debts, ${data.forecastRows ?? 0} forecast rows.` });
+      setMsg({ ok: true, text: `Updated budget model cache: ${data.finance} figures, ${data.budgetLines} budget lines, ${data.personnelGroups ?? 0} personnel groups, ${data.truckUnits ?? 0} fleet units, ${data.debts ?? 0} debts, ${data.forecastRows ?? 0} forecast rows.` });
       setFile(null); if (inputRef.current) inputRef.current.value = "";
       router.refresh();
     } catch { setMsg({ ok: false, text: "Network error. Please try again." }); }
@@ -30,7 +30,7 @@ export default function WorkbookUpload() {
     <div className="board-card" style={{ maxWidth: 560 }}>
       <div className="board-eyebrow" style={{ marginBottom: 6 }}>Update from workbook</div>
       <p style={{ margin: "0 0 14px", color: "var(--b-ink-2)", fontSize: 14 }}>
-        Upload the approved referendum workbook (.xlsx). The portal refreshes the projected model cache. Formulas in the workbook are not modified by this upload.
+        Upload the approved budget workbook (.xlsx). The portal refreshes the projected model cache. Formulas in the workbook are not modified by this upload.
       </p>
       <input ref={inputRef} type="file" accept=".xlsx" className="board-input" style={{ padding: 9 }}
         onChange={(e) => { setFile(e.target.files?.[0] ?? null); setMsg(null); }} />

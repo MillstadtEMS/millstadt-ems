@@ -24,9 +24,6 @@ export default async function BoardAdmin() {
         <div className="board-action-queue">
           <BoardActionLink href="/board/admin/model-review" label="Model review" meta="Workbook and sync status" />
           <BoardActionLink href="/board/admin/appearance" label="Appearance and dashboard layout" meta="Presentation controls" />
-          <BoardActionLink href="/board/admin/users" label="Users" meta="Board portal accounts" />
-          <BoardActionLink href="/board/admin/visibility" label="Visibility" meta="Public and restricted views" />
-          <BoardActionLink href="/board/admin/audit" label="Audit" meta="Governance activity review" />
         </div>
       </BoardCard>
 

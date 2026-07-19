@@ -62,7 +62,7 @@ export function useNotifications() {
   }, []);
 
   useEffect(() => {
-    load();
+    const firstLoad = window.setTimeout(load, 0);
     const id = setInterval(load, 30_000);
     const onVisible = () => { if (document.visibilityState === "visible") load(); };
     document.addEventListener("visibilitychange", onVisible);
@@ -74,6 +74,7 @@ export function useNotifications() {
     };
     window.addEventListener("storage", onStorage);
     return () => {
+      window.clearTimeout(firstLoad);
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("storage", onStorage);
@@ -83,26 +84,34 @@ export function useNotifications() {
   // Detect a brand-new notification since the last seen one for the toast.
   const newest = items[0] ?? null;
   const isNewSinceLast = Boolean(newest && !newest.readAt && newest.id !== lastSeenId);
+
   const markToastSeen = useCallback(() => {
     if (!newest) return;
     writeSeenId(newest.id);
     setLastSeenId(newest.id);
+    if (!newest.readAt) {
+      const readAt = new Date().toISOString();
+      setItems((s) => s.map((n) => n.id === newest.id ? { ...n, readAt: n.readAt ?? readAt } : n));
+      setUnread((c) => Math.max(0, c - 1));
+      void fetch(`/api/lounge/notifications/${newest.id}/read`, { method: "POST" }).catch(() => {});
+    }
   }, [newest]);
 
-  async function markAllRead() {
+  const markAllRead = useCallback(async () => {
     await fetch("/api/lounge/notifications/read-all", { method: "POST" });
     setUnread(0);
     setItems((s) => s.map((n) => ({ ...n, readAt: n.readAt ?? new Date().toISOString() })));
     // Marking everything read should also dismiss any pending toast.
     if (newest) { writeSeenId(newest.id); setLastSeenId(newest.id); }
-  }
+  }, [newest]);
 
-  async function markOne(id: string) {
+  const markOne = useCallback(async (id: string) => {
+    const wasUnread = items.some((n) => n.id === id && !n.readAt);
     await fetch(`/api/lounge/notifications/${id}/read`, { method: "POST" });
     setItems((s) => s.map((n) => n.id === id ? { ...n, readAt: n.readAt ?? new Date().toISOString() } : n));
-    setUnread((c) => Math.max(0, c - 1));
+    if (wasUnread) setUnread((c) => Math.max(0, c - 1));
     if (newest && id === newest.id) { writeSeenId(id); setLastSeenId(id); }
-  }
+  }, [items, newest]);
 
   return { items, unread, newest, isNewSinceLast, markToastSeen, markAllRead, markOne, reload: load };
 }
@@ -178,6 +187,14 @@ export function NotificationsToast() {
 
 export function NotificationsList() {
   const { items, unread, markAllRead, markOne } = useNotifications();
+  const markedOnView = useRef(false);
+
+  useEffect(() => {
+    if (markedOnView.current || unread === 0) return;
+    markedOnView.current = true;
+    void markAllRead();
+  }, [markAllRead, unread]);
+
   return (
     <div>
       <header style={{ marginBottom: 18 }}>

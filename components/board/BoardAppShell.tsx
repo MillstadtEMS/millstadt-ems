@@ -4,39 +4,38 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Archive,
-  Bell,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  ClipboardCheck,
   Database,
   FileCheck2,
   FileText,
-  Gavel,
   Home,
   LayoutDashboard,
   Menu,
-  Search,
   Settings,
   ShieldCheck,
   UserRound,
-  Users,
   X,
 } from "lucide-react";
 import BoardLogo from "./BoardLogo";
-import BoardPhoto from "./BoardPhoto";
 import LogoutButton from "./LogoutButton";
 import BoardAppearanceControl from "./BoardAppearanceControl";
 import BoardSearchPalette, { type BoardCommandItem } from "./BoardSearchPalette";
+import BoardEmojiAvatar from "./BoardEmojiAvatar";
+import { boardUserEmoji } from "@/lib/board/personalization";
 
 interface ShellUser {
+  id: string;
+  username: string;
   firstName: string;
   lastName: string;
   officerTitle: string | null;
   role: string;
   photoUrl: string | null;
 }
+
+type BoardDeviceMode = "phone" | "tablet" | "desktop";
 
 interface NavItem {
   href: string;
@@ -56,17 +55,28 @@ const ROLE_LABEL: Record<string, string> = {
   audit_reviewer: "Audit reviewer",
 };
 
+const PATH_LABEL: Record<string, string> = {
+  board: "Home",
+  referendum: "Budget",
+  detailed: "Detail",
+  forecast: "Forecast",
+  levy: "Levy",
+  "model-review": "Model review",
+};
+
 function isActive(path: string, item: NavItem) {
   if (item.href === "/board") return path === "/board";
   return path === item.href || path.startsWith(`${item.href}/`);
 }
 
+function labelForPathPart(part: string): string {
+  return PATH_LABEL[part] ?? part.replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+}
+
 function titleFor(path: string): string {
   const parts = path.split("/").filter(Boolean);
   const last = parts[parts.length - 1] ?? "board";
-  if (last === "board") return "Home";
-  if (last === "model-review") return "Model review";
-  return last.replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+  return labelForPathPart(last);
 }
 
 function breadcrumbs(path: string) {
@@ -76,9 +86,113 @@ function breadcrumbs(path: string) {
   let current = "";
   for (const part of parts.slice(1)) {
     current += `/${part}`;
-    crumbs.push({ label: part.replace(/-/g, " "), href: `/board${current}` });
+    crumbs.push({ label: labelForPathPart(part), href: `/board${current}` });
   }
   return crumbs;
+}
+
+function detectBoardDeviceMode(): BoardDeviceMode {
+  const width = window.innerWidth;
+  const userAgent = window.navigator.userAgent;
+  const platform = window.navigator.platform;
+  const touchPoints = window.navigator.maxTouchPoints ?? 0;
+  const isIPad = /iPad/i.test(userAgent) || (platform === "MacIntel" && touchPoints > 1);
+  const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+
+  if (width < 700) return "phone";
+  if (width < 980 || isIPad || coarsePointer) return "tablet";
+  return "desktop";
+}
+
+function BoardNavList({
+  mobile = false,
+  visiblePrimary,
+  visibleAdmin,
+  path,
+  collapsed,
+}: {
+  mobile?: boolean;
+  visiblePrimary: NavItem[];
+  visibleAdmin: NavItem[];
+  path: string;
+  collapsed: boolean;
+}) {
+  return (
+    <nav className="board-nav" aria-label={mobile ? "Mobile board navigation" : "Board navigation"}>
+      <div className="board-nav-section">
+        <span className="board-nav-heading">Board</span>
+        {visiblePrimary.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(path, item);
+          return (
+            <div key={item.href} className="board-nav-group">
+              <Link href={item.href} className={active ? "on" : ""} aria-current={active ? "page" : undefined}>
+                <Icon size={18} aria-hidden="true" />
+                <span>{item.label}</span>
+              </Link>
+              {item.children && active && !collapsed && (
+                <div className="board-subnav-shell">
+                  {item.children.map((child) => (
+                    <Link key={child.href} href={child.href} className={path === child.href ? "on" : ""}>
+                      {child.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {visibleAdmin.length > 0 && (
+        <div className="board-nav-section">
+          <span className="board-nav-heading">Admin</span>
+          {visibleAdmin.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(path, item);
+            return (
+              <Link key={item.href} href={item.href} className={active ? "on" : ""} aria-current={active ? "page" : undefined}>
+                <Icon size={18} aria-hidden="true" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </nav>
+  );
+}
+
+function BoardTabletNav({
+  visiblePrimary,
+  visibleAdmin,
+  path,
+  openMenu,
+}: {
+  visiblePrimary: NavItem[];
+  visibleAdmin: NavItem[];
+  path: string;
+  openMenu: () => void;
+}) {
+  const tabletItems = [...visiblePrimary, ...visibleAdmin];
+  return (
+    <nav className="board-tablet-nav" aria-label="Tablet board navigation">
+      {tabletItems.map((item) => {
+        const Icon = item.icon;
+        const active = isActive(path, item);
+        return (
+          <Link key={item.href} href={item.href} className={active ? "on" : ""} aria-current={active ? "page" : undefined}>
+            <Icon size={17} aria-hidden="true" />
+            <span>{item.label}</span>
+          </Link>
+        );
+      })}
+      <button type="button" onClick={openMenu}>
+        <Menu size={17} aria-hidden="true" />
+        <span>More</span>
+      </button>
+    </nav>
+  );
 }
 
 export default function BoardAppShell({
@@ -99,9 +213,15 @@ export default function BoardAppShell({
   const path = usePathname() || "/board";
   const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [deviceMode, setDeviceMode] = useState<BoardDeviceMode>("desktop");
+  const showDocuments = showReferendum;
+  const personalEmoji = boardUserEmoji(user);
 
   useEffect(() => {
-    setCollapsed(window.localStorage.getItem("board_sidebar_collapsed") === "1");
+    const id = window.setTimeout(() => {
+      setCollapsed(window.localStorage.getItem("board_sidebar_collapsed") === "1");
+    }, 0);
+    return () => window.clearTimeout(id);
   }, []);
 
   function toggleCollapsed() {
@@ -113,45 +233,68 @@ export default function BoardAppShell({
   }
 
   useEffect(() => {
-    setDrawerOpen(false);
+    const id = window.setTimeout(() => setDrawerOpen(false), 0);
+    return () => window.clearTimeout(id);
   }, [path]);
+
+  useEffect(() => {
+    let disposed = false;
+    const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
+    const updateDeviceMode = () => {
+      if (!disposed) setDeviceMode(detectBoardDeviceMode());
+    };
+
+    const id = window.setTimeout(updateDeviceMode, 0);
+    window.addEventListener("resize", updateDeviceMode);
+    window.addEventListener("orientationchange", updateDeviceMode);
+    if (typeof coarsePointerQuery.addEventListener === "function") {
+      coarsePointerQuery.addEventListener("change", updateDeviceMode);
+    } else {
+      coarsePointerQuery.addListener(updateDeviceMode);
+    }
+
+    return () => {
+      disposed = true;
+      window.clearTimeout(id);
+      window.removeEventListener("resize", updateDeviceMode);
+      window.removeEventListener("orientationchange", updateDeviceMode);
+      if (typeof coarsePointerQuery.removeEventListener === "function") {
+        coarsePointerQuery.removeEventListener("change", updateDeviceMode);
+      } else {
+        coarsePointerQuery.removeListener(updateDeviceMode);
+      }
+    };
+  }, []);
 
   const nav = useMemo<NavItem[]>(() => {
     const items: NavItem[] = [
       { href: "/board", label: "Home", section: "Primary", icon: Home },
       { href: "/board/meetings", label: "Meetings", section: "Primary", icon: CalendarDays, hidden: !showMeetings },
       { href: "/board/briefings", label: "Board briefings", section: "Primary", icon: FileCheck2, hidden: !showMeetings },
-      { href: "/board/proposals", label: "Proposals", section: "Primary", icon: Gavel, hidden: !showMeetings },
-      { href: "/board/decisions", label: "Decisions", section: "Primary", icon: ClipboardCheck, hidden: !showMeetings },
       {
         href: "/board/referendum",
-        label: "Referendum",
+        label: "Budget",
         section: "Primary",
         icon: Database,
         hidden: !showReferendum,
         children: [
-          { href: "/board/referendum", label: "Overview" },
-          { href: "/board/referendum/detailed", label: "Detailed model" },
-          { href: "/board/referendum/levy", label: "Levy calculator" },
+          { href: "/board/referendum", label: "Budget" },
+          { href: "/board/referendum/detailed", label: "Detail" },
+          { href: "/board/referendum/levy", label: "Levy" },
           { href: "/board/referendum/forecast", label: "Forecast" },
           { href: "/board/referendum/debt", label: "Debt" },
           { href: "/board/referendum/fleet", label: "Fleet" },
           { href: "/board/referendum/staffing", label: "Staffing" },
         ],
       },
-      { href: "/board/documents", label: "Documents", section: "Primary", icon: FileText, hidden: !showMeetings && !showReferendum },
-      { href: "/board/archive", label: "Archive", section: "Primary", icon: Archive, hidden: !showMeetings },
-      { href: "/board/notifications", label: "Notifications", section: "Primary", icon: Bell },
+      { href: "/board/documents", label: "Documents", section: "Primary", icon: FileText, hidden: !showDocuments },
       { href: "/board/requests", label: "Fire requests", section: "Primary", icon: ShieldCheck, hidden: !showRequests },
-      { href: "/board/admin/audit", label: "Audit", section: "Administration", icon: Search, hidden: !isAdmin },
-      { href: "/board/admin/users", label: "Users", section: "Administration", icon: Users, hidden: !isAdmin },
-      { href: "/board/admin/visibility", label: "Visibility", section: "Administration", icon: ShieldCheck, hidden: !isAdmin },
       { href: "/board/admin/model-review", label: "Model review", section: "Administration", icon: Database, hidden: !isAdmin },
       { href: "/board/admin/appearance", label: "Appearance", section: "Administration", icon: LayoutDashboard, hidden: !isAdmin },
       { href: "/board/admin", label: "Administration", section: "Administration", icon: Settings, hidden: !isAdmin },
     ];
     return items.filter((item) => !item.hidden);
-  }, [isAdmin, showMeetings, showReferendum, showRequests]);
+  }, [isAdmin, showDocuments, showMeetings, showReferendum, showRequests]);
 
   const commandItems = useMemo<BoardCommandItem[]>(() => nav.map((item) => ({
     label: item.label,
@@ -164,70 +307,26 @@ export default function BoardAppShell({
   const visiblePrimary = nav.filter((item) => item.section === "Primary");
   const visibleAdmin = nav.filter((item) => item.section === "Administration");
   const crumbs = breadcrumbs(path);
-  const initials = `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase();
   const role = ROLE_LABEL[user.role] ?? user.role.replace(/_/g, " ");
-
-  function NavList({ mobile = false }: { mobile?: boolean }) {
-    return (
-      <nav className="board-nav" aria-label={mobile ? "Mobile board navigation" : "Board navigation"}>
-        <div className="board-nav-section">
-          <span className="board-nav-heading">Board</span>
-          {visiblePrimary.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(path, item);
-            return (
-              <div key={item.href} className="board-nav-group">
-                <Link href={item.href} className={active ? "on" : ""} aria-current={active ? "page" : undefined}>
-                  <Icon size={18} aria-hidden="true" />
-                  <span>{item.label}</span>
-                </Link>
-                {item.children && active && !collapsed && (
-                  <div className="board-subnav-shell">
-                    {item.children.map((child) => (
-                      <Link key={child.href} href={child.href} className={path === child.href ? "on" : ""}>
-                        {child.label}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {visibleAdmin.length > 0 && (
-          <div className="board-nav-section">
-            <span className="board-nav-heading">Admin</span>
-            {visibleAdmin.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(path, item);
-              return (
-                <Link key={item.href} href={item.href} className={active ? "on" : ""} aria-current={active ? "page" : undefined}>
-                  <Icon size={18} aria-hidden="true" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </nav>
-    );
-  }
+  const desktopCollapsed = deviceMode === "desktop" && collapsed;
+  const shellClassName = [
+    "board-shell",
+    `board-device-${deviceMode}`,
+    desktopCollapsed ? "is-collapsed" : "",
+  ].filter(Boolean).join(" ");
 
   return (
-    <div className={collapsed ? "board-shell is-collapsed" : "board-shell"}>
+    <div className={shellClassName} data-device-mode={deviceMode}>
       <aside className="board-side" aria-label="Board portal sidebar">
         <Link href="/board" className="board-side-brand" aria-label="Millstadt EMS Board Portal home">
           <BoardLogo />
         </Link>
 
-        <NavList />
+        <BoardNavList visiblePrimary={visiblePrimary} visibleAdmin={visibleAdmin} path={path} collapsed={desktopCollapsed} />
 
         <div className="board-side-footer">
           <Link href="/board/settings" className="board-profile-shortcut">
-            <span className="av" aria-hidden="true">
-              {user.photoUrl ? <BoardPhoto src={user.photoUrl} /> : initials}
-            </span>
+            <BoardEmojiAvatar emoji={personalEmoji} photoUrl={user.photoUrl} />
             <span>
               <strong>{user.firstName} {user.lastName}</strong>
               <small>{role}</small>
@@ -258,17 +357,11 @@ export default function BoardAppShell({
 
             <BoardSearchPalette items={commandItems} isAdmin={isAdmin} />
 
-            <Link href="/board/notifications" className="board-icon-button" aria-label="Open notifications">
-              <Bell size={18} aria-hidden="true" />
-              <span className="board-dot" aria-hidden="true" />
-            </Link>
             <BoardAppearanceControl compact />
 
             <details className="board-account">
               <summary>
-                <span className="av" aria-hidden="true">
-                  {user.photoUrl ? <BoardPhoto src={user.photoUrl} /> : initials}
-                </span>
+                <BoardEmojiAvatar emoji={personalEmoji} photoUrl={user.photoUrl} />
                 <span className="who">
                   <span className="nm">{user.firstName} {user.lastName}</span>
                   <span className="ti">{user.officerTitle ?? role}</span>
@@ -282,6 +375,8 @@ export default function BoardAppShell({
           </div>
         </header>
 
+        <BoardTabletNav visiblePrimary={visiblePrimary} visibleAdmin={visibleAdmin} path={path} openMenu={() => setDrawerOpen(true)} />
+
         <main className="board-page">{children}</main>
       </div>
 
@@ -294,7 +389,7 @@ export default function BoardAppShell({
                 <X size={19} aria-hidden="true" />
               </button>
             </div>
-            <NavList mobile />
+            <BoardNavList mobile visiblePrimary={visiblePrimary} visibleAdmin={visibleAdmin} path={path} collapsed={false} />
           </aside>
         </div>
       )}
@@ -303,7 +398,7 @@ export default function BoardAppShell({
         <Link className={path === "/board" ? "on" : ""} href="/board"><Home size={18} aria-hidden="true" /><span>Home</span></Link>
         {showMeetings && <Link className={path.startsWith("/board/meetings") ? "on" : ""} href="/board/meetings"><CalendarDays size={18} aria-hidden="true" /><span>Meetings</span></Link>}
         {showRequests && <Link className={path.startsWith("/board/requests") ? "on" : ""} href="/board/requests"><ShieldCheck size={18} aria-hidden="true" /><span>Actions</span></Link>}
-        <Link className={path.startsWith("/board/documents") ? "on" : ""} href="/board/documents"><FileText size={18} aria-hidden="true" /><span>Docs</span></Link>
+        {showDocuments && <Link className={path.startsWith("/board/documents") ? "on" : ""} href="/board/documents"><FileText size={18} aria-hidden="true" /><span>Docs</span></Link>}
         <button type="button" onClick={() => setDrawerOpen(true)}><Menu size={18} aria-hidden="true" /><span>More</span></button>
       </nav>
     </div>

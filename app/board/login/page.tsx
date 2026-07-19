@@ -35,14 +35,14 @@ export default function BoardLogin() {
         <BoardAppearanceControl compact />
       </div>
       <div className="aside">
-        <BoardLogo className="asidelogo" />
-        <div className="foot">Millstadt EMS Board Portal</div>
+        <BoardLogo className="asidelogo" variant="auto" />
+        <div className="foot">Millstadt EMS Board of Directors Portal</div>
       </div>
 
       <div className="panel">
         <form className="form" onSubmit={submit}>
-          <BoardLogo className="brandmobile" />
-          <p className="eyebrow">Millstadt EMS</p>
+          <BoardLogo className="brandmobile" variant="auto" />
+          <p className="eyebrow">Board of Directors</p>
           <h1>Board portal sign in</h1>
 
           {err && <div className="board-err" role="alert">{err}</div>}

@@ -28,7 +28,11 @@ const FADE_MS = 600;
 
 const TOTAL_MS = FRAMES.length * FRAME_MS * LOOPS + HOLD_MS + FADE_MS;
 
-export default function CoffeePrankOverlay({ name }: { name: string }) {
+function welcomeSeenKey(username: string | undefined, name: string) {
+  return `lounge:welcome-seen:${(username || name).trim().toLowerCase()}`;
+}
+
+export default function CoffeePrankOverlay({ name, username }: { name: string; username?: string }) {
   const [phase, setPhase] = useState<"idle" | "playing" | "fading" | "done">("idle");
   const [frameIdx, setFrameIdx] = useState(0);
 
@@ -45,7 +49,11 @@ export default function CoffeePrankOverlay({ name }: { name: string }) {
     try {
       if (sessionStorage.getItem("lounge:welcome") === "1") {
         sessionStorage.removeItem("lounge:welcome");
-        active = true;
+        const key = welcomeSeenKey(username, name);
+        if (localStorage.getItem(key) !== "1") {
+          localStorage.setItem(key, "1");
+          active = true;
+        }
       }
     } catch {
       // sessionStorage unavailable — never animate
@@ -78,7 +86,7 @@ export default function CoffeePrankOverlay({ name }: { name: string }) {
       clearTimeout(tFade);
       clearTimeout(tDone);
     };
-  }, []);
+  }, [name, username]);
 
   if (phase === "idle" || phase === "done") return null;
 

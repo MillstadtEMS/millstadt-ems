@@ -14,7 +14,7 @@ export default function AttendanceControl({
   const [saved, setSaved] = useState(false);
 
   if (!canRespond) {
-    return <p style={{ margin: 0, color: "var(--b-muted)", fontSize: 14 }}>You are viewing this board&rsquo;s meeting. Attendance responses are recorded for that board&rsquo;s members.</p>;
+    return null;
   }
 
   async function send(response: string) {
