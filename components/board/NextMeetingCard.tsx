@@ -38,7 +38,7 @@ export default async function NextMeetingCard({ user }: { user: BoardUser }) {
           <div style={{ fontFamily: "var(--b-sans)", fontSize: 21, fontWeight: 700, color: "var(--b-ink)" }}>{fmtDate(m.date)}</div>
           <div style={{ fontSize: 13.5, color: "var(--b-muted)", marginTop: 3 }}>{m.startTime}{m.location ? ` · ${m.location}` : ""} · {BOARD_LABEL[m.board]}</div>
           <div style={{ display: "flex", gap: 16, marginTop: 12, flexWrap: "wrap", fontSize: 13 }}>
-            {mine && <span style={{ color: mine === "No Response" ? "var(--b-warn)" : "var(--b-accent)", fontWeight: 600 }}>{mine === "No Response" ? "⚠ Respond to attendance" : `You: ${mine}`}</span>}
+            {mine && <span style={{ color: mine === "No Response" ? "var(--b-warn)" : "var(--b-accent)", fontWeight: 600 }}>{mine === "No Response" ? "Attendance response needed" : `You: ${mine}`}</span>}
             <span style={{ color: "var(--b-muted)" }}>{myQuestions} question{myQuestions === 1 ? "" : "s"} submitted</span>
             {openForMe > 0 && <span style={{ color: "var(--b-muted)" }}>{openForMe} awaiting response</span>}
           </div>

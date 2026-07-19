@@ -1,37 +1,22 @@
 import Link from "next/link";
 import { currentBoardUser } from "@/lib/board/auth";
+import NextMeetingCard from "@/components/board/NextMeetingCard";
 import {
-  canSeeQuestion,
-  computeQuorum,
-  getAttendance,
-  getNextMeeting,
-  getQuestions,
-  getQuorumRequired,
-  canRecordAttendance,
+  canReviewFireMeetingRequests,
+  canSubmitFireMeetingRequest,
   canViewFinancialModel,
   userBoards,
 } from "@/lib/board/governance";
 
 export const dynamic = "force-dynamic";
 
-function fmtDate(iso: string): string {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
-
-function Metric({ label, value, href }: { label: string; value: string; href?: string }) {
+function ActionCard({ label, value, href }: { label: string; value: string; href: string }) {
   const content = (
     <>
       <div className="lbl">{label}</div>
       <div className="val">{value}</div>
     </>
   );
-  if (!href) return <div className="board-card board-stat">{content}</div>;
   return (
     <Link href={href} className="board-card board-stat board-link-card">
       {content}
@@ -43,52 +28,34 @@ export default async function BoardHome() {
   const user = await currentBoardUser();
   if (!user) return null;
 
-  const meeting = await getNextMeeting(user);
-  const meetingHref = meeting ? `/board/meetings/${meeting.id}` : "/board/meetings";
-  const attendance = meeting ? await getAttendance(meeting.id, meeting.board) : [];
-  const { required, isDefault } = meeting ? await getQuorumRequired(meeting.board, attendance.length) : { required: 0, isDefault: false };
-  const quorum = meeting ? computeQuorum(attendance, required, isDefault) : null;
-  const questions = meeting ? await getQuestions(meeting.id) : [];
-  const visibleQuestions = questions.filter((question) => canSeeQuestion(user, question));
-  const mine = meeting
-    ? attendance.find((row) => row.userId === user.id)?.response ?? (canRecordAttendance(user, meeting.board) ? "No Response" : "Not Eligible")
-    : "No Meeting";
   const boards = userBoards(user);
+  const showMeetings = boards.length > 0;
+  const showRequests = canSubmitFireMeetingRequest(user) || canReviewFireMeetingRequests(user);
   const showReferendum = canViewFinancialModel(user);
+  const showAdmin = user.role === "admin";
 
   return (
     <>
       <p className="board-eyebrow">Governance</p>
       <h1 className="board-h1">Welcome, {user.firstName}</h1>
+      <p className="board-sub">Millstadt EMS Board workspace.</p>
 
-      <div className="board-grid k3 board-dashboard-grid" style={{ marginTop: 24 }}>
-        <Metric label="Next Meeting" value={meeting ? `${fmtDate(meeting.date)} · ${meeting.startTime ?? "7:00 PM"}` : "Not Scheduled"} href={boards.length ? meetingHref : undefined} />
-        <Metric label="Attendance Response" value={mine} href={meeting ? meetingHref : undefined} />
-        <Metric label="Expected Quorum" value={quorum?.status ?? "Not Scheduled"} href={meeting ? meetingHref : undefined} />
-        <Metric label="Board Briefing" value="Future Feature" />
-        <Metric label="Questions Before the Meeting" value={String(visibleQuestions.length)} href={meeting ? meetingHref : undefined} />
-        <Metric label="Items Requiring a Vote" value="Future Feature" />
-        <Metric label="Proposals Requiring Review" value="Future Feature" />
-        <Metric label="Minutes Requiring Approval" value="Future Feature" />
-        <Metric label="Open Tasks" value="Future Feature" />
-        <Metric label="Recent Documents" value="Future Feature" />
-        <Metric label="Notifications" value="Future Feature" />
-        {user.role === "fire_board" && (
-          <Link href="/board/requests" className="board-card board-referendum-card">
-            <div>
-              <div className="lbl">Fire Board Requests</div>
-              <div className="val">Request EMS Board Attendance</div>
-            </div>
-          </Link>
-        )}
-        {showReferendum && (
-          <Link href="/board/referendum" className="board-card board-referendum-card">
-            <div>
-              <div className="lbl">Proposed EMS District Financial Model</div>
-              <div className="val">Open Referendum Model</div>
-            </div>
-          </Link>
-        )}
+      {showMeetings ? (
+        <NextMeetingCard user={user} />
+      ) : (
+        <Link href="/board/requests" className="board-card board-link-card" style={{ display: "block", marginTop: 22, borderLeft: "3px solid var(--b-accent)" }}>
+          <div className="board-eyebrow" style={{ margin: 0 }}>Fire Board Requests</div>
+          <div style={{ fontFamily: "var(--b-sans)", fontSize: 21, fontWeight: 700, color: "var(--b-ink)", marginTop: 8 }}>Request EMS Board attendance</div>
+          <p style={{ margin: "6px 0 0", color: "var(--b-muted)", fontSize: 13.5 }}>Send a meeting request with the date, requested EMS attendees, and reason.</p>
+        </Link>
+      )}
+
+      <h2 className="board-h2">Quick Access</h2>
+      <div className="board-grid k3 board-dashboard-grid">
+        {showMeetings && <ActionCard label="Meetings" value="Schedule, attendance, minutes" href="/board/meetings" />}
+        {showRequests && <ActionCard label="Requests" value={user.role === "fire_board" ? "Request EMS Board attendance" : "Review Fire Board requests"} href="/board/requests" />}
+        {showReferendum && <ActionCard label="Referendum Model" value="Open financial model" href="/board/referendum" />}
+        {showAdmin && <ActionCard label="Administration" value="Users, imports, model status" href="/board/admin" />}
       </div>
     </>
   );
