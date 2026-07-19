@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { BoardUser } from "@/lib/board/db";
+import { BoardStatusChip } from "./BoardPrimitives";
 import {
   getNextMeeting, getAttendance, getQuorumRequired, computeQuorum, getQuestions,
   canRecordAttendance, canSeeQuestion, BOARD_LABEL, type Board,
@@ -13,6 +14,24 @@ const BADGE: Record<Board, { bg: string; fg: string; label: string }> = {
   fire: { bg: "var(--b-crit-bg)", fg: "var(--b-crit)", label: "FIRE BOARD" },
 };
 
+function countdownLabel(iso: string): string {
+  const today = new Date();
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const meeting = new Date(`${iso}T00:00:00`).getTime();
+  const days = Math.round((meeting - start) / 86400000);
+  if (days < 0) return "Past due";
+  if (days === 0) return "Tonight";
+  if (days === 1) return "Tomorrow";
+  return `${days} days`;
+}
+
+function quorumTone(status: string): "good" | "warn" | "crit" | "info" {
+  if (status === "Quorum Confirmed") return "good";
+  if (status === "Quorum Not Expected") return "crit";
+  if (status === "Quorum Not Yet Known") return "info";
+  return "warn";
+}
+
 /** Home-dashboard "Next meeting" section (spec §27). */
 export default async function NextMeetingCard({ user }: { user: BoardUser }) {
   const m = await getNextMeeting(user);
@@ -25,30 +44,55 @@ export default async function NextMeetingCard({ user }: { user: BoardUser }) {
   const openForMe = questions.filter((question) => canSeeQuestion(user, question) && !question.responseBody).length;
   const mine = att.find((a) => a.userId === user.id)?.response ?? (canRecordAttendance(user, m.board) ? "No Response" : null);
   const b = BADGE[m.board];
-  const qColor = q.status === "Quorum Confirmed" ? "var(--b-good)" : q.status === "Quorum Not Expected" ? "var(--b-crit)" : "var(--b-warn)";
+  const needsAttendance = mine === "No Response";
+  const briefingStatus = m.status === "Briefing Distributed" ? "Distributed" : m.status === "Briefing Being Prepared" ? "Being prepared" : "Not distributed";
 
   return (
-    <Link href={`/board/meetings/${m.id}`} className="board-card" style={{ display: "block", textDecoration: "none", color: "inherit", marginTop: 22, borderLeft: "3px solid var(--b-accent)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
-        <span style={{ fontFamily: "var(--b-mono)", fontSize: 10, fontWeight: 700, letterSpacing: 0, padding: "3px 8px", borderRadius: 6, background: b.bg, color: b.fg }}>{b.label}</span>
-        <span className="board-eyebrow" style={{ margin: 0 }}>Next meeting</span>
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
-        <div>
-          <div style={{ fontFamily: "var(--b-sans)", fontSize: 21, fontWeight: 700, color: "var(--b-ink)" }}>{fmtDate(m.date)}</div>
-          <div style={{ fontSize: 13.5, color: "var(--b-muted)", marginTop: 3 }}>{m.startTime}{m.location ? ` · ${m.location}` : ""} · {BOARD_LABEL[m.board]}</div>
-          <div style={{ display: "flex", gap: 16, marginTop: 12, flexWrap: "wrap", fontSize: 13 }}>
-            {mine && <span style={{ color: mine === "No Response" ? "var(--b-warn)" : "var(--b-accent)", fontWeight: 600 }}>{mine === "No Response" ? "Attendance response needed" : `You: ${mine}`}</span>}
-            <span style={{ color: "var(--b-muted)" }}>{myQuestions} question{myQuestions === 1 ? "" : "s"} submitted</span>
-            {openForMe > 0 && <span style={{ color: "var(--b-muted)" }}>{openForMe} awaiting response</span>}
-          </div>
+    <section className="board-card board-meeting-hero">
+      <div className="board-meeting-head">
+        <div className="board-meeting-title">
+          <BoardStatusChip tone="accent">{b.label}</BoardStatusChip>
+          <h2>{fmtDate(m.date)}</h2>
+          <p>{m.startTime}{m.location ? ` · ${m.location}` : ""} · {BOARD_LABEL[m.board]}</p>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontFamily: "var(--b-mono)", fontSize: 10, letterSpacing: 0, textTransform: "uppercase", color: "var(--b-muted)" }}>Expected quorum</div>
-          <div style={{ fontWeight: 700, color: qColor, marginTop: 3 }}>{q.status}</div>
-          <div style={{ fontSize: 12.5, color: "var(--b-muted)", marginTop: 2 }}>{q.attending + q.remote} of {q.eligible} · need {q.required}</div>
+        <div className="board-countdown" aria-label={`Meeting countdown: ${countdownLabel(m.date)}`}>
+          <strong>{countdownLabel(m.date)}</strong>
+          <span>Next meeting</span>
         </div>
       </div>
-    </Link>
+
+      <div className="board-meeting-status-grid">
+        <div className="board-mini-status">
+          <span>Attendance response</span>
+          <strong>{mine ?? "Not applicable"}</strong>
+        </div>
+        <div className="board-mini-status">
+          <span>Expected quorum</span>
+          <strong><BoardStatusChip tone={quorumTone(q.status)}>{q.status}</BoardStatusChip></strong>
+        </div>
+        <div className="board-mini-status">
+          <span>Briefing status</span>
+          <strong>{briefingStatus}</strong>
+        </div>
+        <div className="board-mini-status">
+          <span>Meeting packet</span>
+          <strong>No packet posted</strong>
+        </div>
+      </div>
+
+      <div className="board-hero-actions">
+        <Link href={`/board/meetings/${m.id}#attendance`} className={needsAttendance ? "board-btn-primary" : "board-btn-secondary"}>
+          {needsAttendance ? "Respond to attendance" : "Update attendance"}
+        </Link>
+        <Link href={`/board/meetings/${m.id}#briefing`} className="board-btn-secondary">Open briefing</Link>
+        <button type="button" className="board-btn-secondary" disabled>Open meeting packet</button>
+      </div>
+
+      <div className="board-actions" style={{ marginTop: 16 }}>
+        <BoardStatusChip tone="info">{myQuestions} submitted question{myQuestions === 1 ? "" : "s"}</BoardStatusChip>
+        {openForMe > 0 && <BoardStatusChip tone="warn">{openForMe} awaiting response</BoardStatusChip>}
+        <BoardStatusChip tone={quorumTone(q.status)}>{q.attending + q.remote} of {q.eligible} attending · need {q.required}</BoardStatusChip>
+      </div>
+    </section>
   );
 }

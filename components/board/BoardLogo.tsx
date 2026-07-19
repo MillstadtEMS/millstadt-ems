@@ -2,7 +2,9 @@
 import type { CSSProperties } from "react";
 
 const SRC = {
-  seal: "/board/mems-bod-logo.png",
+  auto: "/board/branding/millstadt-ems-board-portal-dark.png",
+  mark: "/images/millstadt-ems/logo.png",
+  seal: "/images/millstadt-ems/logo.png",
   dark: "/board/branding/millstadt-ems-board-portal-dark.png",
   light: "/board/branding/millstadt-ems-board-portal-light.png",
   print: "/board/branding/millstadt-ems-board-portal-white-background.png",
@@ -12,7 +14,7 @@ export default function BoardLogo({
   style,
   className,
   alt = "Millstadt EMS Board of Directors Portal",
-  variant = "seal",
+  variant = "auto",
 }: {
   style?: CSSProperties;
   className?: string;
@@ -21,6 +23,6 @@ export default function BoardLogo({
 }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={SRC[variant]} alt={alt} className={className} style={style} />
+    <img src={SRC[variant]} alt={alt} className={`${variant === "auto" ? "board-auto-logo " : ""}${className ?? ""}`.trim()} style={style} />
   );
 }

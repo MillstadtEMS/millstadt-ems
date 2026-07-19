@@ -14,7 +14,7 @@ export default function LogoutButton() {
   }
   return (
     <button className="board-btn-ghost" onClick={out} disabled={busy} aria-label="Sign out">
-      {busy ? "…" : "Sign out"}
+      {busy ? "Signing out" : "Sign out"}
     </button>
   );
 }

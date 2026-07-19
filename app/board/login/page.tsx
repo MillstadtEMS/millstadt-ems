@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import BoardLogo from "@/components/board/BoardLogo";
+import BoardAppearanceControl from "@/components/board/BoardAppearanceControl";
 
 export default function BoardLogin() {
   const router = useRouter();
@@ -30,16 +31,19 @@ export default function BoardLogin() {
 
   return (
     <div className="board-login">
+      <div className="board-login-tools">
+        <BoardAppearanceControl compact />
+      </div>
       <div className="aside">
         <BoardLogo className="asidelogo" />
-        <div className="foot">MILLSTADT EMS · BOARD PORTAL</div>
+        <div className="foot">Millstadt EMS Board Portal</div>
       </div>
 
       <div className="panel">
         <form className="form" onSubmit={submit}>
           <BoardLogo className="brandmobile" />
           <p className="eyebrow">Millstadt EMS</p>
-          <h1>Board Portal Sign In</h1>
+          <h1>Board portal sign in</h1>
 
           {err && <div className="board-err" role="alert">{err}</div>}
 
@@ -55,7 +59,7 @@ export default function BoardLogin() {
           </div>
 
           <button className="board-submit" type="submit" disabled={busy}>
-            {busy ? "Signing in..." : "Sign In"}
+            {busy ? "Signing in..." : "Sign in"}
           </button>
         </form>
       </div>

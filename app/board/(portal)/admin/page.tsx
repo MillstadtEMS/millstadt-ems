@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { currentBoardUser, isAdmin } from "@/lib/board/auth";
 import { getFinance } from "@/lib/board/finance";
 import WorkbookUpload from "@/components/board/WorkbookUpload";
+import { BoardActionLink, BoardCard, BoardPageHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 export const dynamic = "force-dynamic";
 
@@ -13,22 +13,22 @@ export default async function BoardAdmin() {
 
   return (
     <>
-      <p className="board-eyebrow">Administrator</p>
-      <h1 className="board-h1">Administration</h1>
-      <p className="board-sub">Workbook import, model status, and portal settings.</p>
+      <BoardPageHeader eyebrow="Administrator" title="Administration" />
 
       <div style={{ marginTop: 24 }}>
         <WorkbookUpload />
       </div>
 
-      <div className="board-grid k2" style={{ marginTop: 18 }}>
-        <Link href="/board/admin/model-review" className="board-card board-link-card">
-          <div className="board-stat">
-            <div className="lbl">Model Status</div>
-            <div className="val">Open</div>
-          </div>
-        </Link>
-      </div>
+      <BoardCard style={{ marginTop: 18 }}>
+        <BoardSectionHeader title="Admin tools" />
+        <div className="board-action-queue">
+          <BoardActionLink href="/board/admin/model-review" label="Model review" meta="Workbook and sync status" />
+          <BoardActionLink href="/board/admin/appearance" label="Appearance and dashboard layout" meta="Presentation controls" />
+          <BoardActionLink href="/board/admin/users" label="Users" meta="Board portal accounts" />
+          <BoardActionLink href="/board/admin/visibility" label="Visibility" meta="Public and restricted views" />
+          <BoardActionLink href="/board/admin/audit" label="Audit" meta="Governance activity review" />
+        </div>
+      </BoardCard>
 
       <p className="board-updated" style={{ marginTop: 18 }}>
         Financials last refreshed: {updatedAt ? new Date(updatedAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "not loaded"}

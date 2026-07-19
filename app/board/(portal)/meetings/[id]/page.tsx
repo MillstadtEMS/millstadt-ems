@@ -45,7 +45,7 @@ export default async function MeetingDetail({ params }: { params: Promise<{ id: 
 
   return (
     <>
-      <Link href="/board/meetings" style={{ fontSize: 13, color: "var(--b-muted)", textDecoration: "none" }}>← All meetings</Link>
+      <Link href="/board/meetings" className="board-btn-secondary">All meetings</Link>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 0 6px", flexWrap: "wrap" }}>
         <span style={{ fontFamily: "var(--b-mono)", fontSize: 10, fontWeight: 700, letterSpacing: 0, padding: "3px 8px", borderRadius: 6, background: b.bg, color: b.fg }}>{b.label}</span>
@@ -58,7 +58,7 @@ export default async function MeetingDetail({ params }: { params: Promise<{ id: 
       {meeting.description && <p style={{ marginTop: 14, color: "var(--b-ink-2)", maxWidth: 680 }}>{meeting.description}</p>}
 
       {/* Attendance */}
-      <h2 className="board-h2">Will you attend?</h2>
+      <h2 id="attendance" className="board-h2">Will you attend?</h2>
       <div className="board-card" style={{ maxWidth: 680 }}>
         <AttendanceControl meetingId={meeting.id} current={mine?.response ?? "No Response"} canRespond={canRespond} />
       </div>
@@ -117,7 +117,7 @@ export default async function MeetingDetail({ params }: { params: Promise<{ id: 
       )}
 
       {/* Questions */}
-      <h2 className="board-h2">Questions before the meeting</h2>
+      <h2 id="briefing" className="board-h2">Questions before the meeting</h2>
       {visibleQuestions.length === 0 && <p style={{ color: "var(--b-muted)", marginTop: -6 }}>No questions submitted yet.</p>}
       <div style={{ display: "grid", gap: 12, margin: "6px 0 18px" }}>
         {visibleQuestions.map((question) => (
