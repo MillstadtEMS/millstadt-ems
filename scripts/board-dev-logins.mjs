@@ -5,7 +5,8 @@
  *   node scripts/board-dev-logins.mjs list
  *   node scripts/board-dev-logins.mjs delete
  *
- * Creates dev1/dev1, dev2/dev2, etc. for active board portal personas.
+ * Creates dev1, dev2, etc. for active board portal personas with generated
+ * passwords. Do not use username-matching passwords on a public deployment.
  * Dev logins are flagged with board_users.is_dev_login so they can be removed
  * cleanly and excluded from real attendance/quorum counts.
  */
@@ -27,6 +28,8 @@ const hash = (password) => {
   const salt = randomBytes(16).toString("hex");
   return `${salt}:${scryptSync(password, salt, 64).toString("hex")}`;
 };
+const sharedDevPassword = process.env.BOARD_DEV_SHARED_PASSWORD;
+const passwordFor = (index) => sharedDevPassword || `MemsBoard!Dev${index}-2026`;
 
 await sql`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS photo_url TEXT`;
 await sql`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS is_dev_login BOOLEAN NOT NULL DEFAULT FALSE`;
@@ -44,7 +47,9 @@ if (command === "list") {
     WHERE is_dev_login = TRUE OR username ~ '^dev[0-9]+$'
     ORDER BY username`;
   for (const row of rows) {
-    console.log(`${row.username} / ${row.username} — ${row.first_name} ${row.last_name} (${row.role}${row.officer_title ? `, ${row.officer_title}` : ""})`);
+    const n = Number(String(row.username).replace(/^dev/, ""));
+    const password = Number.isFinite(n) ? passwordFor(n) : "(generated)";
+    console.log(`${row.username} / ${password} — ${row.first_name} ${row.last_name} (${row.role}${row.officer_title ? `, ${row.officer_title}` : ""})`);
   }
   console.log(`${rows.length} dev login(s).`);
   process.exit(0);
@@ -79,6 +84,7 @@ let index = 0;
 for (const person of realUsers) {
   index += 1;
   const username = `dev${index}`;
+  const password = passwordFor(index);
   await sql`
     INSERT INTO board_users (
       username, first_name, last_name, role, officer_title, photo_url,
@@ -87,7 +93,7 @@ for (const person of realUsers) {
     VALUES (
       ${username}, ${person.first_name}, ${person.last_name}, ${person.role},
       ${person.officer_title ?? null}, ${person.photo_url ?? null},
-      ${hash(username)}, TRUE, FALSE, ${person.simple_view_default === true}, TRUE
+      ${hash(password)}, TRUE, FALSE, ${person.simple_view_default === true}, TRUE
     )
     ON CONFLICT (username) DO UPDATE SET
       first_name = EXCLUDED.first_name,
@@ -100,7 +106,7 @@ for (const person of realUsers) {
       must_change_password = FALSE,
       simple_view_default = EXCLUDED.simple_view_default,
       is_dev_login = TRUE`;
-  console.log(`${username} / ${username} — ${person.first_name} ${person.last_name} (${person.role}${person.officer_title ? `, ${person.officer_title}` : ""})`);
+  console.log(`${username} / ${password} — ${person.first_name} ${person.last_name} (${person.role}${person.officer_title ? `, ${person.officer_title}` : ""})`);
 }
 
 console.log(`Created/updated ${index} dev login(s).`);

@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentBoardUser } from "@/lib/board/auth";
 import { audit } from "@/lib/board/db";
-import { canManageCalendar, createCalendarItem } from "@/lib/board/governance";
+import {
+  CALENDAR_REMINDER_AUDIENCES,
+  CALENDAR_REMINDER_REPEATS,
+  canManageCalendar,
+  createCalendarItem,
+  type CalendarReminderAudience,
+  type CalendarReminderRepeat,
+} from "@/lib/board/governance";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,12 +26,45 @@ export async function POST(req: NextRequest) {
   const startTime = body.startTime == null ? null : String(body.startTime).trim() || null;
   const endTime = body.endTime == null ? null : String(body.endTime).trim() || null;
   const description = body.description == null ? null : String(body.description).trim() || null;
+  const emailRemindersEnabled = body.emailRemindersEnabled === true;
+  const reminderAudienceRaw = String(body.reminderAudience ?? "ems_board").trim();
+  const reminderRepeatRaw = String(body.reminderRepeat ?? "none").trim();
+  const reminderAudience = CALENDAR_REMINDER_AUDIENCES.includes(reminderAudienceRaw as CalendarReminderAudience)
+    ? reminderAudienceRaw as CalendarReminderAudience : "ems_board";
+  const reminderRepeat = CALENDAR_REMINDER_REPEATS.includes(reminderRepeatRaw as CalendarReminderRepeat)
+    ? reminderRepeatRaw as CalendarReminderRepeat : "none";
+  const reminderFirstOffsetDays = Number(body.reminderFirstOffsetDays ?? 7);
+  const reminderMaxSends = Number(body.reminderMaxSends ?? 1);
+  const reminderPreferredTime = String(body.reminderPreferredTime ?? "08:00").trim();
 
   if (!title) return NextResponse.json({ error: "Title is required." }, { status: 400 });
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return NextResponse.json({ error: "Date is required." }, { status: 400 });
   if (itemType !== "Event" && itemType !== "Reminder") return NextResponse.json({ error: "Type must be Event or Reminder." }, { status: 400 });
+  if (!Number.isInteger(reminderFirstOffsetDays) || reminderFirstOffsetDays < 0 || reminderFirstOffsetDays > 365) {
+    return NextResponse.json({ error: "Reminder lead time must be 0-365 days." }, { status: 400 });
+  }
+  if (!Number.isInteger(reminderMaxSends) || reminderMaxSends < 1 || reminderMaxSends > 24) {
+    return NextResponse.json({ error: "Reminder count must be 1-24." }, { status: 400 });
+  }
+  if (!/^\d{2}:\d{2}$/.test(reminderPreferredTime)) {
+    return NextResponse.json({ error: "Reminder time is required." }, { status: 400 });
+  }
 
-  const id = await createCalendarItem({ title, itemType, date, startTime, endTime, description, createdBy: user });
+  const id = await createCalendarItem({
+    title,
+    itemType,
+    date,
+    startTime,
+    endTime,
+    description,
+    createdBy: user,
+    emailRemindersEnabled,
+    reminderAudience,
+    reminderFirstOffsetDays,
+    reminderRepeat,
+    reminderMaxSends,
+    reminderPreferredTime,
+  });
   await audit({
     userId: user.id,
     username: user.username,

@@ -14,7 +14,7 @@ export default function ChangePassword() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
-    if (p1.length < 10) { setErr("Use at least 10 characters."); return; }
+    if (p1.length < 12) { setErr("Use at least 12 characters."); return; }
     if (p1 !== p2) { setErr("The two passwords don't match."); return; }
     setBusy(true);
     try {
@@ -44,7 +44,7 @@ export default function ChangePassword() {
           <BoardLogo className="brandmobile" variant="auto" />
           <p className="board-eyebrow eyebrow">First sign-in</p>
           <h1>Create a new password</h1>
-          <p className="lede">At least 10 characters.</p>
+          <p className="lede">At least 12 characters. Avoid names, usernames, and common temporary passwords.</p>
           {err && <div className="board-err" role="alert">{err}</div>}
           <div className="board-field">
             <label htmlFor="p1">New password</label>

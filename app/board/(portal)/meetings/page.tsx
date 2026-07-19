@@ -16,6 +16,23 @@ function fmtDate(iso: string): { dow: string; rest: string } {
     rest: d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }),
   };
 }
+function reminderAudienceLabel(value: string): string {
+  if (value === "ems_and_admins") return "EMS board, Kenneth, and Jen";
+  if (value === "creator") return "Creator only";
+  return "EMS board members";
+}
+function reminderRepeatLabel(value: string): string {
+  if (value === "daily") return "daily";
+  if (value === "weekly") return "weekly";
+  return "once";
+}
+function reminderLeadLabel(days: number): string {
+  if (days === 0) return "day of";
+  if (days === 1) return "1 day before";
+  if (days === 7) return "1 week before";
+  if (days === 14) return "2 weeks before";
+  return `${days} days before`;
+}
 const BADGE: Record<Board, { bg: string; fg: string; label: string }> = {
   ems: { bg: "var(--b-accent-soft)", fg: "var(--b-accent)", label: "EMS" },
   fire: { bg: "var(--b-crit-bg)", fg: "var(--b-crit)", label: "FIRE" },
@@ -48,7 +65,7 @@ export default async function MeetingsPage() {
       <h1 className="board-h1">Meetings</h1>
       <p className="board-sub">EMS Board meetings and shared board calendar items.</p>
 
-      <div style={{ display: "grid", gap: 14, marginTop: 24 }}>
+      <div className="board-meetings-list">
         {withQuorum.length === 0 && <div className="board-card"><p style={{ margin: 0 }}>No upcoming meetings scheduled.</p></div>}
         {withQuorum.map(({ m, q, mine }) => {
           const d = fmtDate(m.date);
@@ -80,26 +97,53 @@ export default async function MeetingsPage() {
         })}
       </div>
 
-      <h2 className="board-h2">Events and reminders</h2>
-      {canAddCalendarItems && <CalendarItemForm />}
-      <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
-        {calendarItems.length === 0 && <div className="board-card"><p style={{ margin: 0 }}>No shared events or reminders yet.</p></div>}
-        {calendarItems.map((item) => {
-          const d = fmtDate(item.date);
-          return (
-            <div key={item.id} className="board-card">
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5, flexWrap: "wrap" }}>
-                <span className="board-chip">{item.itemType}</span>
-                <span style={{ fontFamily: "var(--b-mono)", fontSize: 10.5, color: "var(--b-muted)", textTransform: "uppercase" }}>
-                  {d.dow}, {d.rest}{item.startTime ? ` · ${item.startTime}` : ""}{item.endTime ? `-${item.endTime}` : ""}
-                </span>
-              </div>
-              <p style={{ margin: 0, fontWeight: 700, color: "var(--b-ink)" }}>{item.title}</p>
-              {item.description && <p style={{ margin: "6px 0 0", color: "var(--b-muted)", fontSize: 13.5 }}>{item.description}</p>}
+      <section className="board-calendar-panel" aria-labelledby="events-reminders-title">
+        <div className="board-calendar-panel-head">
+          <div>
+            <p className="board-eyebrow">Shared calendar</p>
+            <h2 id="events-reminders-title" className="board-h2">Events and reminders</h2>
+            <p className="board-sub">Board-visible dates, reminders, and optional email reminder schedules.</p>
+          </div>
+          {canAddCalendarItems && <CalendarItemForm />}
+        </div>
+
+        <div className="board-calendar-list">
+          {calendarItems.length === 0 && (
+            <div className="board-empty">
+              <h2>No shared events or reminders yet.</h2>
+              <p>Items added here will show below the meeting calendar.</p>
             </div>
-          );
-        })}
-      </div>
+          )}
+          {calendarItems.map((item) => {
+            const d = fmtDate(item.date);
+            return (
+              <div key={item.id} className="board-calendar-item">
+                <div className="board-calendar-date">
+                  <strong>{d.dow.slice(0, 3)}</strong>
+                  <span>{d.rest.replace(",", "")}</span>
+                </div>
+                <div className="board-calendar-content">
+                  <div className="board-calendar-meta">
+                    <span className="board-chip accent">{item.itemType}</span>
+                    <span>{item.startTime ?? "Time not set"}{item.endTime ? `-${item.endTime}` : ""}</span>
+                    {item.createdByName && <span>Created by {item.createdByName}</span>}
+                  </div>
+                  <h3>{item.title}</h3>
+                  {item.description && <p>{item.description}</p>}
+                  {item.emailRemindersEnabled && (
+                    <div className="board-reminder-summary">
+                      <span>Email reminders on</span>
+                      <span>{reminderAudienceLabel(item.reminderAudience)}</span>
+                      <span>{reminderLeadLabel(item.reminderFirstOffsetDays)}, {reminderRepeatLabel(item.reminderRepeat)}, after {item.reminderPreferredTime}</span>
+                      <span>{item.reminderSendCount} of {item.reminderMaxSends} sent</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
     </>
   );
 }

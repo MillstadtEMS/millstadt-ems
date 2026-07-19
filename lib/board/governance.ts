@@ -43,6 +43,11 @@ export const VISIBILITY_LABEL: Record<Visibility, string> = {
 
 export const QUESTION_STATUSES = ["New", "Assigned", "Under Review", "Answered", "Partially Answered", "Waiting for Information", "Needs Discussion at Meeting", "Added to Agenda", "Confidential Review", "Closed"] as const;
 
+export const CALENDAR_REMINDER_AUDIENCES = ["ems_board", "ems_and_admins", "creator"] as const;
+export type CalendarReminderAudience = (typeof CALENDAR_REMINDER_AUDIENCES)[number];
+export const CALENDAR_REMINDER_REPEATS = ["none", "daily", "weekly"] as const;
+export type CalendarReminderRepeat = (typeof CALENDAR_REMINDER_REPEATS)[number];
+
 // ── Recurring date math (UTC to avoid timezone drift) ───────────────────────
 /** nth (1-based) weekday of a month. weekday: 0=Sun..6=Sat. */
 export function nthWeekdayOfMonth(year: number, month0: number, weekday: number, nth: number): Date {
@@ -62,6 +67,29 @@ export function recurringDate(board: Board, year: number, month0: number): Date 
 }
 function ymd(d: Date): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+function addDays(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return ymd(d);
+}
+function daysBetween(startIso: string, endIso: string): number {
+  const start = new Date(`${startIso}T00:00:00Z`).getTime();
+  const end = new Date(`${endIso}T00:00:00Z`).getTime();
+  return Math.round((end - start) / 86_400_000);
+}
+function chicagoNowParts(now = new Date()): { date: string; time: string } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return { date: `${get("year")}-${get("month")}-${get("day")}`, time: `${get("hour")}:${get("minute")}` };
 }
 
 // Generated defaults are placeholders until an admin confirms them (spec: times
@@ -160,9 +188,27 @@ export async function ensureGovernanceSchema(): Promise<void> {
     description TEXT,
     created_by UUID,
     created_by_name TEXT,
+    email_reminders_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    reminder_audience TEXT NOT NULL DEFAULT 'ems_board',
+    reminder_first_offset_days INTEGER NOT NULL DEFAULT 7,
+    reminder_repeat TEXT NOT NULL DEFAULT 'none',
+    reminder_max_sends INTEGER NOT NULL DEFAULT 1,
+    reminder_preferred_time TEXT NOT NULL DEFAULT '08:00',
+    reminder_send_count INTEGER NOT NULL DEFAULT 0,
+    reminder_last_sent_at TIMESTAMPTZ,
+    reminder_last_error TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
+  await db`ALTER TABLE board_calendar_items ADD COLUMN IF NOT EXISTS email_reminders_enabled BOOLEAN NOT NULL DEFAULT FALSE`;
+  await db`ALTER TABLE board_calendar_items ADD COLUMN IF NOT EXISTS reminder_audience TEXT NOT NULL DEFAULT 'ems_board'`;
+  await db`ALTER TABLE board_calendar_items ADD COLUMN IF NOT EXISTS reminder_first_offset_days INTEGER NOT NULL DEFAULT 7`;
+  await db`ALTER TABLE board_calendar_items ADD COLUMN IF NOT EXISTS reminder_repeat TEXT NOT NULL DEFAULT 'none'`;
+  await db`ALTER TABLE board_calendar_items ADD COLUMN IF NOT EXISTS reminder_max_sends INTEGER NOT NULL DEFAULT 1`;
+  await db`ALTER TABLE board_calendar_items ADD COLUMN IF NOT EXISTS reminder_preferred_time TEXT NOT NULL DEFAULT '08:00'`;
+  await db`ALTER TABLE board_calendar_items ADD COLUMN IF NOT EXISTS reminder_send_count INTEGER NOT NULL DEFAULT 0`;
+  await db`ALTER TABLE board_calendar_items ADD COLUMN IF NOT EXISTS reminder_last_sent_at TIMESTAMPTZ`;
+  await db`ALTER TABLE board_calendar_items ADD COLUMN IF NOT EXISTS reminder_last_error TEXT`;
   await db`CREATE TABLE IF NOT EXISTS board_fire_meeting_requests (
     id BIGSERIAL PRIMARY KEY,
     requester_user_id UUID,
@@ -412,6 +458,10 @@ export async function getActiveEmsBoardRecipients(): Promise<EmsBoardRecipient[]
 export interface CalendarItem {
   id: number; title: string; itemType: string; date: string; startTime: string | null;
   endTime: string | null; description: string | null; createdByName: string | null;
+  emailRemindersEnabled: boolean; reminderAudience: CalendarReminderAudience;
+  reminderFirstOffsetDays: number; reminderRepeat: CalendarReminderRepeat;
+  reminderMaxSends: number; reminderPreferredTime: string;
+  reminderSendCount: number; reminderLastSentAt: string | null;
 }
 export async function getCalendarItems(limit = 80): Promise<CalendarItem[]> {
   await ensureGovernanceSchema();
@@ -430,21 +480,156 @@ export async function getCalendarItems(limit = 80): Promise<CalendarItem[]> {
     endTime: r.end_time ? String(r.end_time) : null,
     description: r.description ? String(r.description) : null,
     createdByName: r.created_by_name ? String(r.created_by_name) : null,
+    emailRemindersEnabled: r.email_reminders_enabled === true,
+    reminderAudience: CALENDAR_REMINDER_AUDIENCES.includes(String(r.reminder_audience) as CalendarReminderAudience)
+      ? String(r.reminder_audience) as CalendarReminderAudience : "ems_board",
+    reminderFirstOffsetDays: Number(r.reminder_first_offset_days ?? 7),
+    reminderRepeat: CALENDAR_REMINDER_REPEATS.includes(String(r.reminder_repeat) as CalendarReminderRepeat)
+      ? String(r.reminder_repeat) as CalendarReminderRepeat : "none",
+    reminderMaxSends: Number(r.reminder_max_sends ?? 1),
+    reminderPreferredTime: String(r.reminder_preferred_time ?? "08:00"),
+    reminderSendCount: Number(r.reminder_send_count ?? 0),
+    reminderLastSentAt: r.reminder_last_sent_at
+      ? (r.reminder_last_sent_at instanceof Date ? r.reminder_last_sent_at.toISOString() : String(r.reminder_last_sent_at))
+      : null,
   }));
 }
 
 export async function createCalendarItem(input: {
   title: string; itemType: string; date: string; startTime: string | null; endTime: string | null;
-  description: string | null; createdBy: BoardUser;
+  description: string | null; createdBy: BoardUser; emailRemindersEnabled: boolean;
+  reminderAudience: CalendarReminderAudience; reminderFirstOffsetDays: number;
+  reminderRepeat: CalendarReminderRepeat; reminderMaxSends: number; reminderPreferredTime: string;
 }): Promise<number> {
   await ensureGovernanceSchema();
   const db = sql();
   const rows = (await db`
-    INSERT INTO board_calendar_items (title, item_type, item_date, start_time, end_time, description, created_by, created_by_name)
-    VALUES (${input.title}, ${input.itemType}, ${input.date}, ${input.startTime}, ${input.endTime}, ${input.description},
-            ${input.createdBy.id}, ${`${input.createdBy.firstName} ${input.createdBy.lastName}`})
+    INSERT INTO board_calendar_items (
+      title, item_type, item_date, start_time, end_time, description, created_by, created_by_name,
+      email_reminders_enabled, reminder_audience, reminder_first_offset_days, reminder_repeat,
+      reminder_max_sends, reminder_preferred_time
+    )
+    VALUES (
+      ${input.title}, ${input.itemType}, ${input.date}, ${input.startTime}, ${input.endTime}, ${input.description},
+      ${input.createdBy.id}, ${`${input.createdBy.firstName} ${input.createdBy.lastName}`},
+      ${input.emailRemindersEnabled}, ${input.reminderAudience}, ${input.reminderFirstOffsetDays}, ${input.reminderRepeat},
+      ${input.reminderMaxSends}, ${input.reminderPreferredTime}
+    )
     RETURNING id`) as Record<string, unknown>[];
   return Number(rows[0].id);
+}
+
+export interface DueCalendarReminder extends CalendarItem {
+  recipientEmails: string[];
+}
+
+async function getCalendarReminderRecipients(audience: CalendarReminderAudience, createdBy: string | null): Promise<string[]> {
+  const db = sql();
+  const rows = audience === "creator"
+    ? (await db`
+      SELECT email FROM board_users
+      WHERE id = ${createdBy}
+        AND is_active = TRUE
+        AND email IS NOT NULL
+        AND COALESCE(is_dev_login, FALSE) = FALSE`) as Record<string, unknown>[]
+    : audience === "ems_and_admins"
+      ? (await db`
+        SELECT email FROM board_users
+        WHERE is_active = TRUE
+          AND email IS NOT NULL
+          AND COALESCE(is_dev_login, FALSE) = FALSE
+          AND role IN ('admin', 'submitter', 'ems_president', 'ems_board')
+        ORDER BY role, last_name, first_name`) as Record<string, unknown>[]
+      : (await db`
+        SELECT email FROM board_users
+        WHERE is_active = TRUE
+          AND email IS NOT NULL
+          AND COALESCE(is_dev_login, FALSE) = FALSE
+          AND role IN ('ems_president', 'ems_board')
+        ORDER BY role, last_name, first_name`) as Record<string, unknown>[];
+  return Array.from(new Set(rows.map((r) => String(r.email).trim()).filter(Boolean)));
+}
+
+function rowToCalendarItem(r: Record<string, unknown>): CalendarItem {
+  return {
+    id: Number(r.id),
+    title: String(r.title),
+    itemType: String(r.item_type),
+    date: r.item_date instanceof Date ? ymd(r.item_date) : String(r.item_date),
+    startTime: r.start_time ? String(r.start_time) : null,
+    endTime: r.end_time ? String(r.end_time) : null,
+    description: r.description ? String(r.description) : null,
+    createdByName: r.created_by_name ? String(r.created_by_name) : null,
+    emailRemindersEnabled: r.email_reminders_enabled === true,
+    reminderAudience: CALENDAR_REMINDER_AUDIENCES.includes(String(r.reminder_audience) as CalendarReminderAudience)
+      ? String(r.reminder_audience) as CalendarReminderAudience : "ems_board",
+    reminderFirstOffsetDays: Number(r.reminder_first_offset_days ?? 7),
+    reminderRepeat: CALENDAR_REMINDER_REPEATS.includes(String(r.reminder_repeat) as CalendarReminderRepeat)
+      ? String(r.reminder_repeat) as CalendarReminderRepeat : "none",
+    reminderMaxSends: Number(r.reminder_max_sends ?? 1),
+    reminderPreferredTime: String(r.reminder_preferred_time ?? "08:00"),
+    reminderSendCount: Number(r.reminder_send_count ?? 0),
+    reminderLastSentAt: r.reminder_last_sent_at
+      ? (r.reminder_last_sent_at instanceof Date ? r.reminder_last_sent_at.toISOString() : String(r.reminder_last_sent_at))
+      : null,
+  };
+}
+
+function isCalendarReminderDue(item: CalendarItem, now = new Date()): boolean {
+  if (!item.emailRemindersEnabled) return false;
+  if (item.reminderSendCount >= item.reminderMaxSends) return false;
+  const current = chicagoNowParts(now);
+  if (current.time < item.reminderPreferredTime) return false;
+  if (item.reminderLastSentAt && chicagoNowParts(new Date(item.reminderLastSentAt)).date === current.date) return false;
+
+  const firstDueDate = addDays(item.date, -item.reminderFirstOffsetDays);
+  if (current.date < firstDueDate || current.date > item.date) return false;
+  if (item.reminderRepeat === "daily") return true;
+  if (item.reminderRepeat === "weekly") return daysBetween(firstDueDate, current.date) % 7 === 0 || current.date === item.date;
+  return item.reminderSendCount === 0;
+}
+
+export async function getDueCalendarEmailReminders(now = new Date()): Promise<DueCalendarReminder[]> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  const rows = (await db`
+    SELECT * FROM board_calendar_items
+    WHERE email_reminders_enabled = TRUE
+      AND item_date >= CURRENT_DATE - INTERVAL '1 day'
+      AND reminder_send_count < reminder_max_sends
+    ORDER BY item_date ASC, id ASC
+    LIMIT 100`) as Record<string, unknown>[];
+  const due: DueCalendarReminder[] = [];
+  for (const row of rows) {
+    const item = rowToCalendarItem(row);
+    if (!isCalendarReminderDue(item, now)) continue;
+    const recipients = await getCalendarReminderRecipients(item.reminderAudience, row.created_by ? String(row.created_by) : null);
+    if (recipients.length === 0) continue;
+    due.push({ ...item, recipientEmails: recipients });
+  }
+  return due;
+}
+
+export async function markCalendarReminderSent(id: number): Promise<void> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  await db`
+    UPDATE board_calendar_items
+    SET reminder_send_count = reminder_send_count + 1,
+        reminder_last_sent_at = NOW(),
+        reminder_last_error = NULL,
+        updated_at = NOW()
+    WHERE id = ${id}`;
+}
+
+export async function markCalendarReminderError(id: number, error: string): Promise<void> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  await db`
+    UPDATE board_calendar_items
+    SET reminder_last_error = ${error.slice(0, 500)},
+        updated_at = NOW()
+    WHERE id = ${id}`;
 }
 
 export interface FireMeetingRequest {

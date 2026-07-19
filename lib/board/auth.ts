@@ -33,6 +33,36 @@ export function verifyPassword(password: string, stored: string): boolean {
   catch { return false; }
 }
 
+const COMMON_WEAK_PASSWORDS = new Set([
+  "password",
+  "password1",
+  "password123",
+  "admin",
+  "admin123",
+  "millstadtems",
+  "millstadt",
+  "ems",
+  "dev",
+  "dev1",
+  "welcome",
+  "welcome1",
+  "letmein",
+  "changeme",
+]);
+
+export function validateBoardPassword(password: string, identityValues: string[] = []): string | null {
+  const normalized = password.trim().toLowerCase();
+  if (password.length < 12) return "Use at least 12 characters.";
+  if (COMMON_WEAK_PASSWORDS.has(normalized)) return "Use a stronger password.";
+  if (/^(.)\1+$/.test(password)) return "Use a stronger password.";
+  if (/^(?:1234567890|0987654321|qwerty|asdfgh|dev\d+)$/i.test(password)) return "Use a stronger password.";
+  for (const value of identityValues) {
+    const part = value.trim().toLowerCase();
+    if (part.length >= 3 && normalized.includes(part)) return "Do not include your name or username in the password.";
+  }
+  return null;
+}
+
 // ── Session token: userId.issuedAt.hmac(userId.issuedAt.pwFingerprint) ──────
 function pwFingerprint(passwordHash: string): string {
   return createHmac("sha256", sessionKey()).update(passwordHash).digest("hex").slice(0, 16);

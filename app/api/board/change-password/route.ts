@@ -5,7 +5,7 @@
  * matches. Logged.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { currentBoardUser, hashPassword, setSession } from "@/lib/board/auth";
+import { currentBoardUser, hashPassword, setSession, validateBoardPassword } from "@/lib/board/auth";
 import { sql, audit } from "@/lib/board/db";
 
 export const runtime = "nodejs";
@@ -17,8 +17,9 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const newPassword = String(body.newPassword ?? "");
-  if (newPassword.length < 10) {
-    return NextResponse.json({ error: "Use at least 10 characters." }, { status: 400 });
+  const passwordError = validateBoardPassword(newPassword, [user.username, user.firstName, user.lastName]);
+  if (passwordError) {
+    return NextResponse.json({ error: passwordError }, { status: 400 });
   }
 
   const hash = hashPassword(newPassword);
