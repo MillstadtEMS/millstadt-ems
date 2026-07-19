@@ -110,9 +110,22 @@ export default async function MeetingDetail({ params }: { params: Promise<{ id: 
         <>
           <h2 className="board-h2">Meeting minutes</h2>
           {canEditMeetingMinutes ? (
-            <MeetingMinutesEditor meetingId={meeting.id} initialMinutes={meeting.minutesText} initialPublic={meeting.minutesPublic} />
+            <MeetingMinutesEditor
+              meetingId={meeting.id}
+              initialMinutes={meeting.minutesText}
+              initialPublic={meeting.minutesPublic}
+              initialRawTranscript={meeting.minutesRawTranscript}
+              finalizedBy={meeting.minutesSignedBy}
+              finalizedAt={meeting.minutesSignedAt}
+              canFinalize={isSecretary(user)}
+            />
           ) : (
             <div className="board-card" style={{ maxWidth: 780 }}>
+              {meeting.minutesSignedAt && (
+                <p style={{ margin: "0 0 12px" }}>
+                  <a className="board-btn-secondary" href={`/api/board/meetings/minutes/pdf?meetingId=${meeting.id}`} target="_blank" rel="noreferrer">Official PDF</a>
+                </p>
+              )}
               <p style={{ margin: 0, whiteSpace: "pre-wrap", color: "var(--b-ink-2)", lineHeight: 1.5 }}>{meeting.minutesText}</p>
             </div>
           )}

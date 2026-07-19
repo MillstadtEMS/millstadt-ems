@@ -119,8 +119,16 @@ export async function ensureGovernanceSchema(): Promise<void> {
     description TEXT,
     minutes_text TEXT,
     minutes_public BOOLEAN NOT NULL DEFAULT FALSE,
+    minutes_raw_transcript TEXT,
+    minutes_draft_text TEXT,
     minutes_updated_by TEXT,
     minutes_updated_at TIMESTAMPTZ,
+    minutes_signed_by TEXT,
+    minutes_signed_title TEXT,
+    minutes_signed_at TIMESTAMPTZ,
+    minutes_signature_data_url TEXT,
+    minutes_signature_ip TEXT,
+    minutes_signature_user_agent TEXT,
     quorum_override INTEGER,
     details_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
     is_recurring BOOLEAN NOT NULL DEFAULT TRUE,
@@ -131,8 +139,16 @@ export async function ensureGovernanceSchema(): Promise<void> {
   )`;
   await db`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_text TEXT`;
   await db`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_public BOOLEAN NOT NULL DEFAULT FALSE`;
+  await db`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_raw_transcript TEXT`;
+  await db`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_draft_text TEXT`;
   await db`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_updated_by TEXT`;
   await db`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_updated_at TIMESTAMPTZ`;
+  await db`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_signed_by TEXT`;
+  await db`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_signed_title TEXT`;
+  await db`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_signed_at TIMESTAMPTZ`;
+  await db`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_signature_data_url TEXT`;
+  await db`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_signature_ip TEXT`;
+  await db`ALTER TABLE board_meetings ADD COLUMN IF NOT EXISTS minutes_signature_user_agent TEXT`;
   await db`CREATE UNIQUE INDEX IF NOT EXISTS board_meetings_series ON board_meetings (board, meeting_date) WHERE is_recurring`;
   await db`CREATE TABLE IF NOT EXISTS board_attendance (
     id BIGSERIAL PRIMARY KEY,
@@ -283,6 +299,9 @@ export interface Meeting {
   date: string; startTime: string | null; endTime: string | null; location: string | null;
   virtualLink: string | null; description: string | null; quorumOverride: number | null;
   minutesText: string | null; minutesPublic: boolean; minutesUpdatedBy: string | null; minutesUpdatedAt: string | null;
+  minutesRawTranscript: string | null; minutesDraftText: string | null;
+  minutesSignedBy: string | null; minutesSignedTitle: string | null; minutesSignedAt: string | null;
+  minutesSignatureDataUrl: string | null;
   detailsConfirmed: boolean; isRecurring: boolean;
 }
 export interface Quorum {
@@ -301,8 +320,14 @@ function rowToMeeting(r: Record<string, unknown>): Meeting {
     description: r.description ? String(r.description) : null,
     minutesText: r.minutes_text ? String(r.minutes_text) : null,
     minutesPublic: r.minutes_public === true,
+    minutesRawTranscript: r.minutes_raw_transcript ? String(r.minutes_raw_transcript) : null,
+    minutesDraftText: r.minutes_draft_text ? String(r.minutes_draft_text) : null,
     minutesUpdatedBy: r.minutes_updated_by ? String(r.minutes_updated_by) : null,
     minutesUpdatedAt: r.minutes_updated_at instanceof Date ? r.minutes_updated_at.toISOString() : (r.minutes_updated_at ? String(r.minutes_updated_at) : null),
+    minutesSignedBy: r.minutes_signed_by ? String(r.minutes_signed_by) : null,
+    minutesSignedTitle: r.minutes_signed_title ? String(r.minutes_signed_title) : null,
+    minutesSignedAt: r.minutes_signed_at instanceof Date ? r.minutes_signed_at.toISOString() : (r.minutes_signed_at ? String(r.minutes_signed_at) : null),
+    minutesSignatureDataUrl: r.minutes_signature_data_url ? String(r.minutes_signature_data_url) : null,
     quorumOverride: r.quorum_override != null ? Number(r.quorum_override) : null,
     detailsConfirmed: r.details_confirmed === true, isRecurring: r.is_recurring === true,
   };
@@ -701,6 +726,7 @@ export async function getPublicMinutes(): Promise<PublicMinutes[]> {
     FROM board_meetings
     WHERE board = 'ems'
       AND minutes_public = TRUE
+      AND minutes_signed_at IS NOT NULL
       AND COALESCE(NULLIF(TRIM(minutes_text), ''), NULL) IS NOT NULL
     ORDER BY meeting_date DESC, id DESC`) as Record<string, unknown>[];
   return rows.map((r) => ({
@@ -718,6 +744,7 @@ export async function hasPublicMinutes(): Promise<boolean> {
     SELECT 1 FROM board_meetings
     WHERE board = 'ems'
       AND minutes_public = TRUE
+      AND minutes_signed_at IS NOT NULL
       AND COALESCE(NULLIF(TRIM(minutes_text), ''), NULL) IS NOT NULL
     LIMIT 1`) as Record<string, unknown>[];
   return rows.length > 0;
@@ -741,7 +768,51 @@ export async function updateMeetingMinutes(input: {
   await db`
     UPDATE board_meetings
     SET minutes_text = ${input.minutesText}, minutes_public = ${input.minutesPublic},
-        minutes_updated_by = ${input.updatedBy}, minutes_updated_at = NOW(), updated_at = NOW()
+        minutes_updated_by = ${input.updatedBy}, minutes_updated_at = NOW(),
+        minutes_signed_by = NULL, minutes_signed_title = NULL, minutes_signed_at = NULL,
+        minutes_signature_data_url = NULL, minutes_signature_ip = NULL, minutes_signature_user_agent = NULL,
+        updated_at = NOW()
+    WHERE id = ${input.meetingId}`;
+}
+
+export async function updateMeetingMinutesDraft(input: {
+  meetingId: number; rawTranscript: string; draftText: string; updatedBy: string;
+}): Promise<void> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  await db`
+    UPDATE board_meetings
+    SET minutes_raw_transcript = ${input.rawTranscript},
+        minutes_draft_text = ${input.draftText},
+        minutes_text = ${input.draftText},
+        minutes_updated_by = ${input.updatedBy},
+        minutes_updated_at = NOW(),
+        minutes_signed_by = NULL, minutes_signed_title = NULL, minutes_signed_at = NULL,
+        minutes_signature_data_url = NULL, minutes_signature_ip = NULL, minutes_signature_user_agent = NULL,
+        updated_at = NOW()
+    WHERE id = ${input.meetingId}`;
+}
+
+export async function finalizeMeetingMinutes(input: {
+  meetingId: number; minutesText: string; minutesPublic: boolean; signedBy: string; signedTitle: string;
+  signatureDataUrl: string; signatureIp: string | null; signatureUserAgent: string | null;
+}): Promise<void> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  await db`
+    UPDATE board_meetings
+    SET minutes_text = ${input.minutesText},
+        minutes_draft_text = ${input.minutesText},
+        minutes_public = ${input.minutesPublic},
+        minutes_updated_by = ${input.signedBy},
+        minutes_updated_at = NOW(),
+        minutes_signed_by = ${input.signedBy},
+        minutes_signed_title = ${input.signedTitle},
+        minutes_signed_at = NOW(),
+        minutes_signature_data_url = ${input.signatureDataUrl},
+        minutes_signature_ip = ${input.signatureIp},
+        minutes_signature_user_agent = ${input.signatureUserAgent},
+        updated_at = NOW()
     WHERE id = ${input.meetingId}`;
 }
 
