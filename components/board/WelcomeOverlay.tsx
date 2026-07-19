@@ -20,8 +20,8 @@ export default function WelcomeOverlay({ firstName, title, photoUrl, role, emoji
     if (window.sessionStorage.getItem("board:welcome") !== "1") return;
     window.sessionStorage.removeItem("board:welcome");
     const raf = requestAnimationFrame(() => setShow(true));
-    const t1 = setTimeout(() => setLeaving(true), 2800);
-    const t2 = setTimeout(() => setShow(false), 3300);
+    const t1 = setTimeout(() => setLeaving(true), 3000);
+    const t2 = setTimeout(() => setShow(false), 3800);
     return () => { cancelAnimationFrame(raf); clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
@@ -32,7 +32,7 @@ export default function WelcomeOverlay({ firstName, title, photoUrl, role, emoji
       className={`board-welcome ${leaving ? "leaving" : ""}`}
       role="dialog"
       aria-label={`Welcome, ${firstName}`}
-      onClick={() => { setLeaving(true); setTimeout(() => setShow(false), 300); }}
+      onClick={() => { setLeaving(true); setTimeout(() => setShow(false), 650); }}
     >
       <div className="board-welcome-card">
         <h1>Welcome, {firstName}</h1>

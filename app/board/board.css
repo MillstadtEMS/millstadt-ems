@@ -167,9 +167,10 @@
 .board-welcome-identity{display:flex;align-items:center;gap:14px;min-width:min(360px,100%);border:1px solid var(--b-hair);border-radius:8px;background:var(--b-surface);padding:10px 12px;box-shadow:var(--b-shadow)}
 .board-welcome-identity strong{display:block;font-size:16px;font-weight:780;color:var(--b-ink);line-height:1.15}
 .board-welcome-identity small{display:block;margin-top:4px;color:var(--b-accent-2);font-size:12.5px;font-weight:720}
-.board-welcome{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(3,7,14,.58);backdrop-filter:blur(10px) saturate(130%);padding:24px;animation:board-welcome-in .22s ease-out both}
-.board-welcome.leaving{animation:board-welcome-out .3s ease-in both}
-.board-welcome-card{width:min(430px,calc(100vw - 36px));display:grid;justify-items:center;gap:16px;padding:28px 24px 24px;border:1px solid var(--b-hair);border-radius:8px;background:var(--b-surface);box-shadow:0 24px 80px rgba(0,0,0,.34);text-align:center}
+.board-welcome{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(3,7,14,.58);backdrop-filter:blur(10px) saturate(130%);padding:24px;animation:board-welcome-in .48s cubic-bezier(.16,1,.3,1) both}
+.board-welcome.leaving{animation:board-welcome-out .72s ease both}
+.board-welcome-card{width:min(430px,calc(100vw - 36px));display:grid;justify-items:center;gap:16px;padding:28px 24px 24px;border:1px solid var(--b-hair);border-radius:8px;background:var(--b-surface);box-shadow:0 24px 80px rgba(0,0,0,.34);text-align:center;animation:board-welcome-card-in .58s cubic-bezier(.16,1,.3,1) both}
+.board-welcome.leaving .board-welcome-card{animation:board-welcome-card-out .62s ease both}
 .board-welcome-card h1{margin:0;color:var(--b-ink);font-size:clamp(25px,4vw,34px);line-height:1.1;font-weight:850;letter-spacing:0}
 .board-welcome-card p{margin:0;color:var(--b-accent-2);font-size:14px;font-weight:760;line-height:1.3}
 
@@ -442,8 +443,10 @@
 @media(max-width:880px){.board-editor-grid{grid-template-columns:1fr}}
 
 @keyframes board-drawer-in{from{transform:translateX(-18px);opacity:.65}to{transform:none;opacity:1}}
-@keyframes board-welcome-in{from{opacity:0}to{opacity:1}}
-@keyframes board-welcome-out{from{opacity:1}to{opacity:0}}
+@keyframes board-welcome-in{from{opacity:0;backdrop-filter:blur(0) saturate(100%)}to{opacity:1;backdrop-filter:blur(10px) saturate(130%)}}
+@keyframes board-welcome-out{from{opacity:1;backdrop-filter:blur(10px) saturate(130%)}to{opacity:0;backdrop-filter:blur(2px) saturate(100%)}}
+@keyframes board-welcome-card-in{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes board-welcome-card-out{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-6px) scale(.985)}}
 @media(prefers-reduced-motion:reduce){
   .board-root *{transition:none!important;animation:none!important;scroll-behavior:auto!important}
 }
