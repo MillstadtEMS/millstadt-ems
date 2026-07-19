@@ -1,13 +1,15 @@
 import { redirect } from "next/navigation";
 import ReferendumNav from "@/components/board/ReferendumNav";
 import { currentBoardUser } from "@/lib/board/auth";
-import { canViewFinancialModel } from "@/lib/board/governance";
+import { canViewFinancialModel, getFireBoardAccessLevel } from "@/lib/board/governance";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReferendumLayout({ children }: { children: React.ReactNode }) {
   const user = await currentBoardUser();
-  if (!user || !canViewFinancialModel(user)) redirect("/board");
+  if (!user) redirect("/board");
+  const fireAccessLevel = await getFireBoardAccessLevel();
+  if (!canViewFinancialModel(user, fireAccessLevel)) redirect("/board");
 
   return (
     <>

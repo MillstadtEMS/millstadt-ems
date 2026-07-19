@@ -3,7 +3,7 @@ import type { BoardUser } from "@/lib/board/db";
 import { BoardStatusChip } from "./BoardPrimitives";
 import {
   getNextMeeting, getAttendance, getQuorumRequired, computeQuorum, getQuestions,
-  canRecordAttendance, canSeeQuestion, BOARD_LABEL, type Board,
+  canRecordAttendance, canSeeQuestion, BOARD_LABEL, type Board, type FireBoardAccessLevel,
 } from "@/lib/board/governance";
 
 function fmtDate(iso: string): string {
@@ -33,15 +33,16 @@ function quorumTone(status: string): "good" | "warn" | "crit" | "info" {
 }
 
 /** Home-dashboard "Next meeting" section (spec §27). */
-export default async function NextMeetingCard({ user }: { user: BoardUser }) {
-  const m = await getNextMeeting(user);
+export default async function NextMeetingCard({ user, fireAccessLevel = "requests" }: { user: BoardUser; fireAccessLevel?: FireBoardAccessLevel }) {
+  const m = await getNextMeeting(user, fireAccessLevel);
   if (!m) return null;
+  const fireViewer = user.role === "fire_board";
   const att = await getAttendance(m.id, m.board);
   const { required, isDefault } = await getQuorumRequired(m.board, att.length);
   const q = computeQuorum(att, required, isDefault);
   const questions = await getQuestions(m.id);
-  const myQuestions = questions.filter((question) => question.userId === user.id).length;
-  const openForMe = questions.filter((question) => canSeeQuestion(user, question) && !question.responseBody).length;
+  const myQuestions = fireViewer ? 0 : questions.filter((question) => question.userId === user.id).length;
+  const openForMe = fireViewer ? 0 : questions.filter((question) => canSeeQuestion(user, question) && !question.responseBody).length;
   const mine = att.find((a) => a.userId === user.id)?.response ?? (canRecordAttendance(user, m.board) ? "No Response" : null);
   const b = BADGE[m.board];
   const needsAttendance = mine === "No Response";
@@ -69,14 +70,24 @@ export default async function NextMeetingCard({ user }: { user: BoardUser }) {
             <strong>{mine}</strong>
           </div>
         )}
-        <div className="board-mini-status">
-          <span>Expected quorum</span>
-          <strong><BoardStatusChip tone={quorumTone(q.status)}>{q.status}</BoardStatusChip></strong>
-        </div>
-        <div className="board-mini-status">
-          <span>Briefing status</span>
-          <strong>{briefingStatus}</strong>
-        </div>
+        {!fireViewer && (
+          <div className="board-mini-status">
+            <span>Expected quorum</span>
+            <strong><BoardStatusChip tone={quorumTone(q.status)}>{q.status}</BoardStatusChip></strong>
+          </div>
+        )}
+        {!fireViewer && (
+          <div className="board-mini-status">
+            <span>Briefing status</span>
+            <strong>{briefingStatus}</strong>
+          </div>
+        )}
+        {fireViewer && (
+          <div className="board-mini-status">
+            <span>Access</span>
+            <strong>Meeting details</strong>
+          </div>
+        )}
       </div>
 
       <div className="board-hero-actions">
@@ -85,14 +96,18 @@ export default async function NextMeetingCard({ user }: { user: BoardUser }) {
             {needsAttendance ? "Respond to attendance" : "Update attendance"}
           </Link>
         )}
-        <Link href={`/board/meetings/${m.id}#briefing`} className="board-btn-secondary">Open briefing</Link>
+        <Link href={`/board/meetings/${m.id}${fireViewer ? "" : "#briefing"}`} className="board-btn-secondary">
+          {fireViewer ? "Open meeting" : "Open briefing"}
+        </Link>
       </div>
 
-      <div className="board-actions" style={{ marginTop: 16 }}>
-        <BoardStatusChip tone="info">{myQuestions} submitted question{myQuestions === 1 ? "" : "s"}</BoardStatusChip>
-        {openForMe > 0 && <BoardStatusChip tone="warn">{openForMe} awaiting response</BoardStatusChip>}
-        <BoardStatusChip tone={quorumTone(q.status)}>{q.attending + q.remote} of {q.eligible} attending · need {q.required}</BoardStatusChip>
-      </div>
+      {!fireViewer && (
+        <div className="board-actions" style={{ marginTop: 16 }}>
+          <BoardStatusChip tone="info">{myQuestions} submitted question{myQuestions === 1 ? "" : "s"}</BoardStatusChip>
+          {openForMe > 0 && <BoardStatusChip tone="warn">{openForMe} awaiting response</BoardStatusChip>}
+          <BoardStatusChip tone={quorumTone(q.status)}>{q.attending + q.remote} of {q.eligible} attending · need {q.required}</BoardStatusChip>
+        </div>
+      )}
     </section>
   );
 }

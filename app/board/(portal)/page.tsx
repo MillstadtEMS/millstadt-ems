@@ -4,12 +4,14 @@ import BoardEmojiAvatar from "@/components/board/BoardEmojiAvatar";
 import NextMeetingCard from "@/components/board/NextMeetingCard";
 import { BoardActionLink, BoardCard, BoardEmptyState, BoardPageHeader, BoardSectionHeader, BoardStatusChip } from "@/components/board/BoardPrimitives";
 import {
+  canManageFireBoardAccess,
   canReviewFireMeetingRequests,
   canSubmitFireMeetingRequest,
   canViewFinancialModel,
   canRecordAttendance,
   canSeeQuestion,
   getAttendance,
+  getFireBoardAccessLevel,
   getFireMeetingRequests,
   getNextMeeting,
   getQuestions,
@@ -23,14 +25,16 @@ export default async function BoardHome() {
   const user = await currentBoardUser();
   if (!user) return null;
 
-  const boards = userBoards(user);
+  const fireAccessLevel = await getFireBoardAccessLevel();
+  const boards = userBoards(user, fireAccessLevel);
   const showMeetings = boards.length > 0;
   const showRequests = canSubmitFireMeetingRequest(user) || canReviewFireMeetingRequests(user);
-  const showReferendum = canViewFinancialModel(user);
+  const showReferendum = canViewFinancialModel(user, fireAccessLevel);
   const showAdmin = user.role === "admin";
+  const showFireAccess = canManageFireBoardAccess(user);
   const personalEmoji = boardUserEmoji(user);
   const personalTitle = user.officerTitle?.trim() || null;
-  const nextMeeting = showMeetings ? await getNextMeeting(user) : null;
+  const nextMeeting = showMeetings ? await getNextMeeting(user, fireAccessLevel) : null;
 
   let attendanceNeeded = 0;
   let questionsAwaiting = 0;
@@ -67,7 +71,7 @@ export default async function BoardHome() {
 
       {showMeetings ? (
         <div className="board-command-center">
-          <NextMeetingCard user={user} />
+          <NextMeetingCard user={user} fireAccessLevel={fireAccessLevel} />
           <BoardCard className="board-action-queue">
             <BoardSectionHeader title="Action queue" />
             {actionCount === 0 && <BoardEmptyState title="No pending actions." />}
@@ -118,7 +122,7 @@ export default async function BoardHome() {
           </BoardCard>
         )}
 
-        {(nextMeeting || showRequests || showAdmin) && (
+        {(nextMeeting || showRequests || showAdmin || showFireAccess) && (
           <BoardCard>
             <BoardSectionHeader title="Recent activity" />
             <div className="board-action-queue">
@@ -126,7 +130,7 @@ export default async function BoardHome() {
                 <BoardActionLink
                   href={`/board/meetings/${nextMeeting.id}`}
                   label="Next meeting workspace"
-                  meta="Attendance, quorum, minutes, and questions"
+                  meta={user.role === "fire_board" ? "Meeting details and permitted records" : "Attendance, quorum, minutes, and questions"}
                 />
               )}
               {showRequests && (
@@ -138,6 +142,9 @@ export default async function BoardHome() {
               )}
               {showAdmin && (
                 <BoardActionLink href="/board/admin/appearance" label="Appearance and dashboard layout" meta="Presentation controls" />
+              )}
+              {showFireAccess && (
+                <BoardActionLink href="/board/admin/visibility" label="Fire Board access" meta="Control what Fire Board users can see" />
               )}
             </div>
           </BoardCard>

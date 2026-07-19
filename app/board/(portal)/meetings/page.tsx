@@ -5,6 +5,7 @@ import CalendarItemForm from "@/components/board/CalendarItemForm";
 import {
   canManageCalendar, canRecordAttendance, getCalendarItems, getUpcomingMeetings, generateRecurring, userBoards, getAttendance,
   getQuorumRequired, computeQuorum, BOARD_LABEL, type Board,
+  getFireBoardAccessLevel,
 } from "@/lib/board/governance";
 
 export const dynamic = "force-dynamic";
@@ -41,8 +42,10 @@ const BADGE: Record<Board, { bg: string; fg: string; label: string }> = {
 export default async function MeetingsPage() {
   const user = await currentBoardUser();
   if (!user) return null;
-  const boards = userBoards(user);
+  const fireAccessLevel = await getFireBoardAccessLevel();
+  const boards = userBoards(user, fireAccessLevel);
   if (boards.length === 0) redirect("/board/requests");
+  const fireViewer = user.role === "fire_board";
   await generateRecurring(6); // keep the next ~6 months seeded
   const [meetings, calendarItems] = await Promise.all([
     getUpcomingMeetings(boards, 30),
@@ -63,7 +66,7 @@ export default async function MeetingsPage() {
     <>
       <p className="board-eyebrow">Governance</p>
       <h1 className="board-h1">Meetings</h1>
-      <p className="board-sub">EMS Board meetings and shared board calendar items.</p>
+      <p className="board-sub">{fireViewer ? "EMS Board meeting dates and permitted records." : "EMS Board meetings and shared board calendar items."}</p>
 
       <div className="board-meetings-list">
         {withQuorum.length === 0 && <div className="board-card"><p style={{ margin: 0 }}>No upcoming meetings scheduled.</p></div>}
@@ -85,19 +88,26 @@ export default async function MeetingsPage() {
                     {m.startTime}{m.location ? ` · ${m.location}` : ""} · {BOARD_LABEL[m.board]}
                   </div>
                 </div>
-                <div style={{ textAlign: "right", minWidth: 150 }}>
-                  <div style={{ fontFamily: "var(--b-mono)", fontSize: 10, letterSpacing: 0, textTransform: "uppercase", color: "var(--b-muted)" }}>Expected quorum</div>
-                  <div style={{ fontWeight: 700, color: qColor, marginTop: 3 }}>{q.status}</div>
-                  <div style={{ fontSize: 12.5, color: "var(--b-muted)", marginTop: 2 }}>{q.attending + q.remote} of {q.eligible} · need {q.required}</div>
-                  {mine && <div style={{ marginTop: 8, fontSize: 12.5, color: mine === "No Response" ? "var(--b-warn)" : "var(--b-accent)", fontWeight: 600 }}>{mine === "No Response" ? "You haven't responded" : `You: ${mine}`}</div>}
-                </div>
+                {!fireViewer ? (
+                  <div style={{ textAlign: "right", minWidth: 150 }}>
+                    <div style={{ fontFamily: "var(--b-mono)", fontSize: 10, letterSpacing: 0, textTransform: "uppercase", color: "var(--b-muted)" }}>Expected quorum</div>
+                    <div style={{ fontWeight: 700, color: qColor, marginTop: 3 }}>{q.status}</div>
+                    <div style={{ fontSize: 12.5, color: "var(--b-muted)", marginTop: 2 }}>{q.attending + q.remote} of {q.eligible} · need {q.required}</div>
+                    {mine && <div style={{ marginTop: 8, fontSize: 12.5, color: mine === "No Response" ? "var(--b-warn)" : "var(--b-accent)", fontWeight: 600 }}>{mine === "No Response" ? "You haven't responded" : `You: ${mine}`}</div>}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: "right", minWidth: 150 }}>
+                    <div style={{ fontFamily: "var(--b-mono)", fontSize: 10, letterSpacing: 0, textTransform: "uppercase", color: "var(--b-muted)" }}>Access</div>
+                    <div style={{ fontWeight: 700, color: "var(--b-accent)", marginTop: 3 }}>Meeting details</div>
+                  </div>
+                )}
               </div>
             </Link>
           );
         })}
       </div>
 
-      <section className="board-calendar-panel" aria-labelledby="events-reminders-title">
+      {!fireViewer && <section className="board-calendar-panel" aria-labelledby="events-reminders-title">
         <div className="board-calendar-panel-head">
           <div>
             <p className="board-eyebrow">Shared calendar</p>
@@ -143,7 +153,7 @@ export default async function MeetingsPage() {
             );
           })}
         </div>
-      </section>
+      </section>}
     </>
   );
 }

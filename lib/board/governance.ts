@@ -48,6 +48,46 @@ export type CalendarReminderAudience = (typeof CALENDAR_REMINDER_AUDIENCES)[numb
 export const CALENDAR_REMINDER_REPEATS = ["none", "daily", "weekly"] as const;
 export type CalendarReminderRepeat = (typeof CALENDAR_REMINDER_REPEATS)[number];
 
+export const FIRE_BOARD_ACCESS_LEVELS = ["requests", "meetings", "budget", "meetings_budget"] as const;
+export type FireBoardAccessLevel = (typeof FIRE_BOARD_ACCESS_LEVELS)[number];
+export type FireBoardAccessArea = "meetings" | "budget";
+export const FIRE_BOARD_ACCESS_OPTIONS: Array<{
+  value: FireBoardAccessLevel;
+  label: string;
+  summary: string;
+  allowed: string[];
+  blocked: string[];
+}> = [
+  {
+    value: "requests",
+    label: "Requests only",
+    summary: "Fire Board members can ask for EMS Board attendance. EMS records stay hidden.",
+    allowed: ["Submit Fire Board meeting requests"],
+    blocked: ["EMS meetings", "Budget", "Documents"],
+  },
+  {
+    value: "meetings",
+    label: "Requests + EMS meetings",
+    summary: "Fire Board members can see EMS meeting dates and permitted meeting records.",
+    allowed: ["Submit Fire Board meeting requests", "View EMS meeting list", "Open permitted EMS meeting records"],
+    blocked: ["Budget", "Documents", "EMS quorum and attendance controls"],
+  },
+  {
+    value: "budget",
+    label: "Requests + Budget",
+    summary: "Fire Board members can see the budget model and documents, without EMS meeting access.",
+    allowed: ["Submit Fire Board meeting requests", "View Budget", "View Documents"],
+    blocked: ["EMS meetings", "EMS quorum and attendance controls"],
+  },
+  {
+    value: "meetings_budget",
+    label: "Requests + Meetings + Budget",
+    summary: "Fire Board members can see the permitted EMS meeting view plus the budget model.",
+    allowed: ["Submit Fire Board meeting requests", "View EMS meeting list", "Open permitted EMS meeting records", "View Budget", "View Documents"],
+    blocked: ["EMS quorum and attendance controls"],
+  },
+];
+
 // ── Recurring date math (UTC to avoid timezone drift) ───────────────────────
 /** nth (1-based) weekday of a month. weekday: 0=Sun..6=Sat. */
 export function nthWeekdayOfMonth(year: number, month0: number, weekday: number, nth: number): Date {
@@ -239,18 +279,109 @@ export async function ensureGovernanceSchema(): Promise<void> {
     status TEXT NOT NULL DEFAULT 'Requested',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
+  await db`CREATE TABLE IF NOT EXISTS board_fire_access_settings (
+    setting_key TEXT PRIMARY KEY,
+    access_level TEXT NOT NULL DEFAULT 'requests',
+    updated_by UUID,
+    updated_by_name TEXT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`;
+  await db`
+    INSERT INTO board_fire_access_settings (setting_key, access_level, updated_by_name)
+    VALUES ('fire_board', 'requests', 'system-default')
+    ON CONFLICT (setting_key) DO NOTHING
+  `;
   govReady = true;
 }
 
 // ── Role / eligibility helpers ──────────────────────────────────────────────
 const EMS_ROLES = new Set(["ems_board", "ems_president"]);
+function normalizeFireBoardAccessLevel(value: unknown): FireBoardAccessLevel {
+  return FIRE_BOARD_ACCESS_LEVELS.includes(value as FireBoardAccessLevel) ? value as FireBoardAccessLevel : "requests";
+}
+export function fireBoardAccessAllows(level: FireBoardAccessLevel, area: FireBoardAccessArea): boolean {
+  if (area === "meetings") return level === "meetings" || level === "meetings_budget";
+  return level === "budget" || level === "meetings_budget";
+}
+export async function getFireBoardAccessLevel(): Promise<FireBoardAccessLevel> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  const rows = (await db`
+    SELECT access_level FROM board_fire_access_settings
+    WHERE setting_key = 'fire_board'
+    LIMIT 1`) as Record<string, unknown>[];
+  return normalizeFireBoardAccessLevel(rows[0]?.access_level);
+}
+export async function setFireBoardAccessLevel(level: FireBoardAccessLevel, updatedBy: BoardUser): Promise<void> {
+  await ensureGovernanceSchema();
+  const normalized = normalizeFireBoardAccessLevel(level);
+  const db = sql();
+  await db`
+    INSERT INTO board_fire_access_settings (setting_key, access_level, updated_by, updated_by_name, updated_at)
+    VALUES ('fire_board', ${normalized}, ${updatedBy.id}, ${`${updatedBy.firstName} ${updatedBy.lastName}`}, NOW())
+    ON CONFLICT (setting_key) DO UPDATE SET
+      access_level = EXCLUDED.access_level,
+      updated_by = EXCLUDED.updated_by,
+      updated_by_name = EXCLUDED.updated_by_name,
+      updated_at = NOW()
+  `;
+}
+export interface FireBoardAccessStatus {
+  level: FireBoardAccessLevel;
+  label: string;
+  summary: string;
+  updatedByName: string | null;
+  updatedAt: string | null;
+}
+export async function getFireBoardAccessStatus(): Promise<FireBoardAccessStatus> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  const rows = (await db`
+    SELECT access_level, updated_by_name, updated_at
+    FROM board_fire_access_settings
+    WHERE setting_key = 'fire_board'
+    LIMIT 1`) as Record<string, unknown>[];
+  const level = normalizeFireBoardAccessLevel(rows[0]?.access_level);
+  const option = FIRE_BOARD_ACCESS_OPTIONS.find((item) => item.value === level) ?? FIRE_BOARD_ACCESS_OPTIONS[0];
+  const updatedAt = rows[0]?.updated_at instanceof Date ? rows[0].updated_at.toISOString() : (rows[0]?.updated_at ? String(rows[0].updated_at) : null);
+  return {
+    level,
+    label: option.label,
+    summary: option.summary,
+    updatedByName: rows[0]?.updated_by_name ? String(rows[0].updated_by_name) : null,
+    updatedAt,
+  };
+}
+export interface FireBoardUserSummary {
+  id: string;
+  username: string;
+  name: string;
+  officerTitle: string | null;
+}
+export async function getFireBoardUsers(): Promise<FireBoardUserSummary[]> {
+  await ensureGovernanceSchema();
+  const db = sql();
+  const rows = (await db`
+    SELECT id, username, first_name, last_name, officer_title
+    FROM board_users
+    WHERE role = 'fire_board'
+      AND is_active = TRUE
+      AND COALESCE(is_dev_login, FALSE) = FALSE
+    ORDER BY last_name ASC, first_name ASC`) as Record<string, unknown>[];
+  return rows.map((row) => ({
+    id: String(row.id),
+    username: String(row.username),
+    name: `${row.first_name} ${row.last_name}`,
+    officerTitle: row.officer_title ? String(row.officer_title) : null,
+  }));
+}
 /**
  * Which board's meetings a user participates in. The portal is EMS-board-first:
  * Fire Board users submit attendance requests instead of getting a Fire Board
  * quorum calendar.
  */
-export function userBoards(u: BoardUser): Board[] {
-  if (u.role === "fire_board") return [];
+export function userBoards(u: BoardUser, fireAccessLevel: FireBoardAccessLevel = "requests"): Board[] {
+  if (u.role === "fire_board") return fireBoardAccessAllows(fireAccessLevel, "meetings") ? ["ems"] : [];
   return ["ems"];
 }
 /** Is this user a voting/eligible member counted toward the board's quorum? */
@@ -279,7 +410,11 @@ export function canSubmitFireMeetingRequest(u: BoardUser): boolean {
 export function canReviewFireMeetingRequests(u: BoardUser): boolean {
   return u.role === "admin" || u.role === "ems_president" || u.officerTitle === "President";
 }
-export function canViewFinancialModel(u: BoardUser): boolean {
+export function canManageFireBoardAccess(u: BoardUser): boolean {
+  return u.role === "admin" || u.role === "ems_president" || u.officerTitle === "President";
+}
+export function canViewFinancialModel(u: BoardUser, fireAccessLevel: FireBoardAccessLevel = "requests"): boolean {
+  if (u.role === "fire_board") return fireBoardAccessAllows(fireAccessLevel, "budget");
   return u.role === "admin" || u.role === "submitter" || u.role === "ems_board" || u.role === "ems_president" || u.role === "audit_reviewer";
 }
 export function canSeeConfidential(u: BoardUser): boolean {
@@ -380,8 +515,8 @@ export async function getMeeting(id: number): Promise<Meeting | null> {
   return rows.length ? rowToMeeting(rows[0]) : null;
 }
 /** The next upcoming meeting for a user's board(s). */
-export async function getNextMeeting(u: BoardUser): Promise<Meeting | null> {
-  const list = await getUpcomingMeetings(userBoards(u), 10);
+export async function getNextMeeting(u: BoardUser, fireAccessLevel: FireBoardAccessLevel = "requests"): Promise<Meeting | null> {
+  const list = await getUpcomingMeetings(userBoards(u, fireAccessLevel), 10);
   return list.find((m) => !["Canceled", "Completed"].includes(m.status)) ?? null;
 }
 

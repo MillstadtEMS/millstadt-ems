@@ -8,6 +8,7 @@ import QuestionForm from "@/components/board/QuestionForm";
 import {
   getMeeting, getAttendance, getQuorumRequired, computeQuorum, getQuestions,
   canEditMinutes, canRecordAttendance, canSeeQuestion, isLeadership, isSecretary, userBoards, BOARD_LABEL, VISIBILITY_LABEL, type Board,
+  getFireBoardAccessLevel,
 } from "@/lib/board/governance";
 
 export const dynamic = "force-dynamic";
@@ -31,15 +32,20 @@ export default async function MeetingDetail({ params }: { params: Promise<{ id: 
   if (!user) return null;
   const meeting = await getMeeting(meetingId);
   if (!meeting) notFound();
-  if (!userBoards(user).includes(meeting.board)) redirect("/board");
+  const fireAccessLevel = await getFireBoardAccessLevel();
+  if (!userBoards(user, fireAccessLevel).includes(meeting.board)) redirect("/board");
+  const fireViewer = user.role === "fire_board";
 
   const [att, questions] = await Promise.all([getAttendance(meetingId, meeting.board), getQuestions(meetingId)]);
   const { required, isDefault } = await getQuorumRequired(meeting.board, att.length);
   const q = computeQuorum(att, required, isDefault);
   const canRespond = canRecordAttendance(user, meeting.board);
   const mine = att.find((a) => a.userId === user.id);
-  const visibleQuestions = questions.filter((question) => canSeeQuestion(user, question));
+  const visibleQuestions = fireViewer ? [] : questions.filter((question) => canSeeQuestion(user, question));
   const canEditMeetingMinutes = meeting.board === "ems" && canEditMinutes(user);
+  const canViewMeetingMinutes = fireViewer
+    ? Boolean(meeting.minutesText && meeting.minutesSignedAt)
+    : Boolean(meeting.minutesText);
   const b = BADGE[meeting.board];
   const qColor = q.status === "Quorum Confirmed" ? "var(--b-good)" : q.status === "Quorum Not Expected" ? "var(--b-crit)" : "var(--b-warn)";
 
@@ -66,47 +72,49 @@ export default async function MeetingDetail({ params }: { params: Promise<{ id: 
         </>
       )}
 
-      {/* Quorum */}
-      <h2 className="board-h2">Expected quorum</h2>
-      <div className="board-card">
-        <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-          <span style={{ fontFamily: "var(--b-sans)", fontSize: 24, fontWeight: 700, color: qColor }}>{q.status}</span>
-          <span style={{ color: "var(--b-muted)", fontSize: 14 }}>{q.attending + q.remote} attending of {q.eligible} members · quorum needs {q.required}</span>
-        </div>
-        <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginTop: 14, fontSize: 13 }}>
-          <span><strong>{q.attending}</strong> in person</span>
-          <span><strong>{q.remote}</strong> remote</span>
-          <span><strong>{q.tentative}</strong> tentative</span>
-          <span><strong>{q.notAttending}</strong> not attending</span>
-          <span><strong>{q.noResponse}</strong> no response</span>
-        </div>
-        {isDefault && <p className="board-chip review" style={{ display: "inline-flex", marginTop: 14 }}>Quorum setting requires administrator review</p>}
-      </div>
+      {!fireViewer && (
+        <>
+          <h2 className="board-h2">Expected quorum</h2>
+          <div className="board-card">
+            <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+              <span style={{ fontFamily: "var(--b-sans)", fontSize: 24, fontWeight: 700, color: qColor }}>{q.status}</span>
+              <span style={{ color: "var(--b-muted)", fontSize: 14 }}>{q.attending + q.remote} attending of {q.eligible} members · quorum needs {q.required}</span>
+            </div>
+            <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginTop: 14, fontSize: 13 }}>
+              <span><strong>{q.attending}</strong> in person</span>
+              <span><strong>{q.remote}</strong> remote</span>
+              <span><strong>{q.tentative}</strong> tentative</span>
+              <span><strong>{q.notAttending}</strong> not attending</span>
+              <span><strong>{q.noResponse}</strong> no response</span>
+            </div>
+            {isDefault && <p className="board-chip review" style={{ display: "inline-flex", marginTop: 14 }}>Quorum setting requires administrator review</p>}
+          </div>
 
-      {/* Who has responded */}
-      <h2 className="board-h2">Who has responded</h2>
-      <div className="board-tw" style={{ maxWidth: 680 }}>
-        <table>
-          <thead><tr><th>Member</th><th>Planned</th></tr></thead>
-          <tbody>
-            {att.map((a) => (
-              <tr key={a.userId}>
-                <td style={{ fontWeight: 600 }}>{a.name}{a.officerTitle ? <span style={{ color: "var(--b-muted)", fontWeight: 400 }}> · {a.officerTitle}</span> : ""}</td>
-                <td style={{ color: RSVP_COLOR[a.response], fontWeight: 600 }}>{a.response}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="board-updated" style={{ marginTop: 10 }}>Planned attendance only. The secretary confirms the official record during or after the meeting; only confirmed attendance counts toward statistics.</p>
+          <h2 className="board-h2">Who has responded</h2>
+          <div className="board-tw" style={{ maxWidth: 680 }}>
+            <table>
+              <thead><tr><th>Member</th><th>Planned</th></tr></thead>
+              <tbody>
+                {att.map((a) => (
+                  <tr key={a.userId}>
+                    <td style={{ fontWeight: 600 }}>{a.name}{a.officerTitle ? <span style={{ color: "var(--b-muted)", fontWeight: 400 }}> · {a.officerTitle}</span> : ""}</td>
+                    <td style={{ color: RSVP_COLOR[a.response], fontWeight: 600 }}>{a.response}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="board-updated" style={{ marginTop: 10 }}>Planned attendance only. The secretary confirms the official record during or after the meeting; only confirmed attendance counts toward statistics.</p>
 
-      {isSecretary(user) && (
-        <div style={{ marginTop: 18 }}>
-          <ConfirmAttendance meetingId={meeting.id} members={att} />
-        </div>
+          {isSecretary(user) && (
+            <div style={{ marginTop: 18 }}>
+              <ConfirmAttendance meetingId={meeting.id} members={att} />
+            </div>
+          )}
+        </>
       )}
 
-      {(canEditMeetingMinutes || meeting.minutesText) && (
+      {(canEditMeetingMinutes || canViewMeetingMinutes) && (
         <>
           <h2 className="board-h2">Meeting minutes</h2>
           {canEditMeetingMinutes ? (
@@ -132,33 +140,36 @@ export default async function MeetingDetail({ params }: { params: Promise<{ id: 
         </>
       )}
 
-      {/* Questions */}
-      <h2 id="briefing" className="board-h2">Questions before the meeting</h2>
-      {visibleQuestions.length === 0 && <p style={{ color: "var(--b-muted)", marginTop: -6 }}>No questions submitted yet.</p>}
-      <div style={{ display: "grid", gap: 12, margin: "6px 0 18px" }}>
-        {visibleQuestions.map((question) => (
-          <div key={question.id} className="board-card">
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
-              <span style={{ fontFamily: "var(--b-mono)", fontSize: 10.5, letterSpacing: 0, textTransform: "uppercase", color: "var(--b-accent)" }}>{question.category}</span>
-              {question.visibility !== "board" && <span className="board-chip review">{VISIBILITY_LABEL[question.visibility]}</span>}
-              {question.urgent && <span className="board-chip" style={{ color: "var(--b-crit)", borderColor: "var(--b-crit)" }}>Urgent</span>}
-              {question.afterDeadline && <span className="board-chip">Submitted After Briefing Deadline</span>}
-              <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--b-faint)" }}>{question.status}</span>
-            </div>
-            <p style={{ margin: "0 0 4px", fontWeight: 650 }}>{question.subject}</p>
-            <p style={{ margin: 0, color: "var(--b-ink-2)", fontSize: 14, whiteSpace: "pre-wrap" }}>{question.body}</p>
-            <p style={{ margin: "8px 0 0", fontSize: 12.5, color: "var(--b-muted)" }}>— {question.authorName}{question.relatedRef ? ` · re: ${question.relatedRef}` : ""}</p>
-            {question.responseBody && (
-              <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--b-hair)" }}>
-                <p style={{ margin: 0, fontSize: 14 }}><strong>Response:</strong> {question.responseBody}</p>
-                {question.responseBy && <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "var(--b-muted)" }}>— {question.responseBy}</p>}
+      {!fireViewer && (
+        <>
+          <h2 id="briefing" className="board-h2">Questions before the meeting</h2>
+          {visibleQuestions.length === 0 && <p style={{ color: "var(--b-muted)", marginTop: -6 }}>No questions submitted yet.</p>}
+          <div style={{ display: "grid", gap: 12, margin: "6px 0 18px" }}>
+            {visibleQuestions.map((question) => (
+              <div key={question.id} className="board-card">
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+                  <span style={{ fontFamily: "var(--b-mono)", fontSize: 10.5, letterSpacing: 0, textTransform: "uppercase", color: "var(--b-accent)" }}>{question.category}</span>
+                  {question.visibility !== "board" && <span className="board-chip review">{VISIBILITY_LABEL[question.visibility]}</span>}
+                  {question.urgent && <span className="board-chip" style={{ color: "var(--b-crit)", borderColor: "var(--b-crit)" }}>Urgent</span>}
+                  {question.afterDeadline && <span className="board-chip">Submitted After Briefing Deadline</span>}
+                  <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--b-faint)" }}>{question.status}</span>
+                </div>
+                <p style={{ margin: "0 0 4px", fontWeight: 650 }}>{question.subject}</p>
+                <p style={{ margin: 0, color: "var(--b-ink-2)", fontSize: 14, whiteSpace: "pre-wrap" }}>{question.body}</p>
+                <p style={{ margin: "8px 0 0", fontSize: 12.5, color: "var(--b-muted)" }}>— {question.authorName}{question.relatedRef ? ` · re: ${question.relatedRef}` : ""}</p>
+                {question.responseBody && (
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--b-hair)" }}>
+                    <p style={{ margin: 0, fontSize: 14 }}><strong>Response:</strong> {question.responseBody}</p>
+                    {question.responseBy && <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "var(--b-muted)" }}>— {question.responseBy}</p>}
+                  </div>
+                )}
               </div>
-            )}
+            ))}
           </div>
-        ))}
-      </div>
-      <QuestionForm meetingId={meeting.id} />
-      {isLeadership(user) && <p className="board-updated" style={{ marginTop: 14 }}>You have leadership visibility — you can see leadership-only submissions here. Confidential items appear only to authorized reviewers and never in the general briefing.</p>}
+          <QuestionForm meetingId={meeting.id} />
+          {isLeadership(user) && <p className="board-updated" style={{ marginTop: 14 }}>You have leadership visibility — you can see leadership-only submissions here. Confidential items appear only to authorized reviewers and never in the general briefing.</p>}
+        </>
+      )}
     </>
   );
 }

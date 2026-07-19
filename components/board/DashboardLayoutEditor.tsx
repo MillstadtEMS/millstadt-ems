@@ -6,28 +6,18 @@ import { BoardCard, BoardStatusChip } from "./BoardPrimitives";
 
 type Density = "comfortable" | "compact";
 type Preview = "desktop" | "tablet" | "mobile";
-type Role = "ems_board" | "ems_president" | "admin" | "submitter" | "fire_board";
 
 interface WidgetConfig {
   id: string;
   label: string;
   visible: boolean;
-  roles: Role[];
 }
 
-const ROLES: Array<{ id: Role; label: string }> = [
-  { id: "ems_board", label: "EMS" },
-  { id: "ems_president", label: "President" },
-  { id: "admin", label: "Admin" },
-  { id: "submitter", label: "Operations" },
-  { id: "fire_board", label: "Fire" },
-];
-
 const DEFAULT_WIDGETS: WidgetConfig[] = [
-  { id: "next-meeting", label: "Next meeting", visible: true, roles: ["ems_board", "ems_president", "admin", "submitter"] },
-  { id: "action-queue", label: "Action queue", visible: true, roles: ["ems_board", "ems_president", "admin", "submitter", "fire_board"] },
-  { id: "referendum", label: "Budget model", visible: true, roles: ["ems_board", "ems_president", "admin", "submitter"] },
-  { id: "recent-activity", label: "Recent activity", visible: true, roles: ["ems_board", "ems_president", "admin", "submitter", "fire_board"] },
+  { id: "next-meeting", label: "Next meeting", visible: true },
+  { id: "action-queue", label: "Action queue", visible: true },
+  { id: "referendum", label: "Budget model", visible: true },
+  { id: "recent-activity", label: "Recent activity", visible: true },
 ];
 
 const DRAFT_KEY = "board_dashboard_layout_admin_draft";
@@ -73,14 +63,6 @@ export default function DashboardLayoutEditor() {
     setWidgets((current) => current.map((widget) => widget.id === id ? { ...widget, visible: !widget.visible } : widget));
   }
 
-  function toggleRole(id: string, role: Role) {
-    setWidgets((current) => current.map((widget) => {
-      if (widget.id !== id) return widget;
-      const roles = widget.roles.includes(role) ? widget.roles.filter((item) => item !== role) : [...widget.roles, role];
-      return { ...widget, roles };
-    }));
-  }
-
   function onDrop(targetId: string) {
     if (!dragging || dragging === targetId) return;
     setWidgets((current) => {
@@ -102,7 +84,7 @@ export default function DashboardLayoutEditor() {
 
   function publish() {
     window.localStorage.setItem(PUBLISHED_KEY, JSON.stringify({ widgets, density, publishedAt: new Date().toISOString() }));
-    setMessage("Dashboard layout published on this device.");
+    setMessage("Dashboard layout updated in this browser.");
   }
 
   function reset() {
@@ -117,8 +99,8 @@ export default function DashboardLayoutEditor() {
       {message && <div className="board-empty compact" role="status">{message}</div>}
       <div className="board-actions">
         <button type="button" className="board-btn-secondary" onClick={reset}><RotateCcw size={16} aria-hidden="true" />Reset</button>
-        <button type="button" className="board-btn-secondary" onClick={save}><Save size={16} aria-hidden="true" />Save changes</button>
-        <button type="button" className="board-btn-primary" onClick={publish}><Send size={16} aria-hidden="true" />Publish changes</button>
+        <button type="button" className="board-btn-secondary" onClick={save}><Save size={16} aria-hidden="true" />Save draft</button>
+        <button type="button" className="board-btn-primary" onClick={publish}><Send size={16} aria-hidden="true" />Use layout</button>
       </div>
 
       <div className="board-editor-grid">
@@ -144,14 +126,6 @@ export default function DashboardLayoutEditor() {
                     </button>
                   </div>
                 </div>
-                <div className="board-role-toggles">
-                  {ROLES.map((role) => (
-                    <label key={role.id}>
-                      <input type="checkbox" checked={widget.roles.includes(role.id)} onChange={() => toggleRole(widget.id, role.id)} />
-                      {role.label}
-                    </label>
-                  ))}
-                </div>
               </div>
             ))}
           </div>
@@ -174,9 +148,9 @@ export default function DashboardLayoutEditor() {
             <div className="board-dashboard" style={{ gap: density === "compact" ? 10 : 16 }}>
               {visibleWidgets.map((widget) => (
                 <div key={widget.id} className="board-card">
-                  <BoardStatusChip tone={widget.visible ? "accent" : "neutral"}>{widget.roles.length} roles</BoardStatusChip>
+                  <BoardStatusChip tone={widget.visible ? "accent" : "neutral"}>Visible</BoardStatusChip>
                   <h3 style={{ margin: "10px 0 4px", fontSize: 17 }}>{widget.label}</h3>
-                  <p className="board-updated" style={{ margin: 0 }}>Presentation only. Permissions remain unchanged.</p>
+                  <p className="board-updated" style={{ margin: 0 }}>Layout preview.</p>
                 </div>
               ))}
               {visibleWidgets.length === 0 && <div className="board-empty">No widgets visible in this preview.</div>}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentBoardUser } from "@/lib/board/auth";
-import { canViewFinancialModel } from "@/lib/board/governance";
+import { canViewFinancialModel, getFireBoardAccessLevel } from "@/lib/board/governance";
 import { BoardActionLink, BoardCard, BoardPageHeader, BoardSectionHeader, BoardStatusChip } from "@/components/board/BoardPrimitives";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
 export default async function DocumentsPage() {
   const user = await currentBoardUser();
   if (!user) return null;
-  const showReferendum = canViewFinancialModel(user);
+  const fireAccessLevel = await getFireBoardAccessLevel();
+  const showReferendum = canViewFinancialModel(user, fireAccessLevel);
   if (!showReferendum) redirect("/board");
 
   return (

@@ -24,6 +24,7 @@ import BoardAppearanceControl from "./BoardAppearanceControl";
 import BoardSearchPalette, { type BoardCommandItem } from "./BoardSearchPalette";
 import BoardEmojiAvatar from "./BoardEmojiAvatar";
 import WelcomeOverlay from "./WelcomeOverlay";
+import SessionTimeoutGuard from "./SessionTimeoutGuard";
 import { boardUserEmoji } from "@/lib/board/personalization";
 
 interface ShellUser {
@@ -58,6 +59,7 @@ const ROLE_LABEL: Record<string, string> = {
 
 const PATH_LABEL: Record<string, string> = {
   board: "Home",
+  visibility: "Fire access",
   referendum: "Budget",
   detailed: "Detail",
   forecast: "Forecast",
@@ -199,14 +201,18 @@ function BoardTabletNav({
 export default function BoardAppShell({
   user,
   isAdmin,
+  canManageFireAccess,
   showMeetings,
+  showBriefings,
   showReferendum,
   showRequests,
   children,
 }: {
   user: ShellUser;
   isAdmin: boolean;
+  canManageFireAccess: boolean;
   showMeetings: boolean;
+  showBriefings: boolean;
   showReferendum: boolean;
   showRequests: boolean;
   children: React.ReactNode;
@@ -271,7 +277,7 @@ export default function BoardAppShell({
     const items: NavItem[] = [
       { href: "/board", label: "Home", section: "Primary", icon: Home },
       { href: "/board/meetings", label: "Meetings", section: "Primary", icon: CalendarDays, hidden: !showMeetings },
-      { href: "/board/briefings", label: "Board briefings", section: "Primary", icon: FileCheck2, hidden: !showMeetings },
+      { href: "/board/briefings", label: "Board briefings", section: "Primary", icon: FileCheck2, hidden: !showBriefings },
       {
         href: "/board/referendum",
         label: "Budget",
@@ -290,19 +296,20 @@ export default function BoardAppShell({
       },
       { href: "/board/documents", label: "Documents", section: "Primary", icon: FileText, hidden: !showDocuments },
       { href: "/board/requests", label: "Fire requests", section: "Primary", icon: ShieldCheck, hidden: !showRequests },
+      { href: "/board/admin/visibility", label: "Fire access", section: "Administration", icon: ShieldCheck, hidden: !canManageFireAccess },
       { href: "/board/admin/model-review", label: "Workbook", section: "Administration", icon: Database, hidden: !isAdmin },
       { href: "/board/admin/appearance", label: "Appearance", section: "Administration", icon: LayoutDashboard, hidden: !isAdmin },
       { href: "/board/admin", label: "Administration", section: "Administration", icon: Settings, hidden: !isAdmin },
     ];
     return items.filter((item) => !item.hidden);
-  }, [isAdmin, showDocuments, showMeetings, showReferendum, showRequests]);
+  }, [canManageFireAccess, isAdmin, showBriefings, showDocuments, showMeetings, showReferendum, showRequests]);
 
   const commandItems = useMemo<BoardCommandItem[]>(() => nav.map((item) => ({
     label: item.label,
     eyebrow: item.label.split(" ")[0] === "Board" ? "Briefings" : item.label.split(" ")[0],
     href: item.href,
     keywords: `${item.section} ${item.children?.map((child) => child.label).join(" ") ?? ""}`,
-    adminOnly: item.section === "Administration",
+    adminOnly: item.section === "Administration" && item.href !== "/board/admin/visibility",
   })), [nav]);
 
   const visiblePrimary = nav.filter((item) => item.section === "Primary");
@@ -410,6 +417,7 @@ export default function BoardAppShell({
         role={user.role}
         emoji={personalEmoji}
       />
+      <SessionTimeoutGuard />
     </div>
   );
 }

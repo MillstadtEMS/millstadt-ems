@@ -70,7 +70,7 @@ export default async function PersonnelPage() {
             </table>
           </div>
 
-          {costs.length > 0 && (
+          {hasEmployerCosts && (
             <>
               <h2 className="board-h2">Employer Cost Detail</h2>
               <div className="board-tw" style={{ maxWidth: 560 }}>

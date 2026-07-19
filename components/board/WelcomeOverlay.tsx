@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import BoardEmojiAvatar from "./BoardEmojiAvatar";
 
-const HOLD_MS = 4400;
-const EXIT_MS = 1200;
-const DISMISS_EXIT_MS = 1000;
+const HOLD_MS = 5000;
+const EXIT_MS = 1600;
+const DISMISS_EXIT_MS = 1300;
 
 /**
  * A brief welcome splash shown only after a successful login handoff.

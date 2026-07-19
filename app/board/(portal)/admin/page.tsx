@@ -23,6 +23,7 @@ export default async function BoardAdmin() {
         <BoardSectionHeader title="Admin tools" />
         <div className="board-action-queue">
           <BoardActionLink href="/board/admin/model-review" label="Budget workbook" meta="OneDrive connection and editable fields" />
+          <BoardActionLink href="/board/admin/visibility" label="Fire Board access" meta="Control what Fire Board users can see" />
           <BoardActionLink href="/board/admin/appearance" label="Appearance and dashboard layout" meta="Presentation controls" />
         </div>
       </BoardCard>

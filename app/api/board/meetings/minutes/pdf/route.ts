@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentBoardUser } from "@/lib/board/auth";
 import { buildOfficialMeetingMinutesPdf } from "@/lib/board/minutes-pdf";
-import { canEditMinutes, getMeeting, userBoards } from "@/lib/board/governance";
+import { canEditMinutes, getFireBoardAccessLevel, getMeeting, userBoards } from "@/lib/board/governance";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +18,8 @@ export async function GET(req: NextRequest) {
   if (!meeting || meeting.board !== "ems") {
     return NextResponse.json({ error: "EMS meeting not found." }, { status: 404 });
   }
-  if (!canEditMinutes(user) && !userBoards(user).includes(meeting.board)) {
+  const fireAccessLevel = await getFireBoardAccessLevel();
+  if (!canEditMinutes(user) && !userBoards(user, fireAccessLevel).includes(meeting.board)) {
     return NextResponse.json({ error: "Meeting access required." }, { status: 403 });
   }
   if (!meeting.minutesText || !meeting.minutesSignedBy || !meeting.minutesSignedAt || !meeting.minutesSignatureDataUrl) {

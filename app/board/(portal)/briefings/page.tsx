@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentBoardUser } from "@/lib/board/auth";
-import { getNextMeeting, userBoards } from "@/lib/board/governance";
+import { getFireBoardAccessLevel, getNextMeeting, userBoards } from "@/lib/board/governance";
 import { BoardActionLink, BoardCard, BoardEmptyState, BoardPageHeader, BoardSectionHeader, BoardStatusChip } from "@/components/board/BoardPrimitives";
 
 export const dynamic = "force-dynamic";
@@ -9,9 +9,11 @@ export const dynamic = "force-dynamic";
 export default async function BriefingsPage() {
   const user = await currentBoardUser();
   if (!user) return null;
-  const boards = userBoards(user);
+  if (user.role === "fire_board") redirect("/board");
+  const fireAccessLevel = await getFireBoardAccessLevel();
+  const boards = userBoards(user, fireAccessLevel);
   if (boards.length === 0) redirect("/board");
-  const meeting = await getNextMeeting(user);
+  const meeting = await getNextMeeting(user, fireAccessLevel);
 
   return (
     <>
