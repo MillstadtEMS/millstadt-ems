@@ -68,6 +68,10 @@ export default async function VisibilityPage({ searchParams }: { searchParams?: 
   const visibleBudgetLabels = FIRE_BOARD_BUDGET_SECTIONS
     .filter((section) => activeBudgetSections.has(section.value))
     .map((section) => section.navLabel);
+  const budgetAccessOn = status.level === "budget" || status.level === "meetings_budget";
+  const budgetSummary = budgetAccessOn
+    ? (visibleBudgetLabels.length ? visibleBudgetLabels.join(", ") : "No Budget tabs")
+    : "Budget access is off";
 
   return (
     <>
@@ -132,7 +136,7 @@ export default async function VisibilityPage({ searchParams }: { searchParams?: 
             <p className="board-sub" style={{ marginTop: 0 }}>{status.summary}</p>
             <div className="fire-access-summary">
               <div><strong>General access</strong><span>{status.label}</span></div>
-              <div><strong>Visible Budget tabs</strong><span>{visibleBudgetLabels.length ? visibleBudgetLabels.join(", ") : "No Budget tabs"}</span></div>
+              <div><strong>Visible Budget tabs</strong><span>{budgetSummary}</span></div>
             </div>
             <p className="board-updated">
               Last changed {status.updatedAt ? new Date(status.updatedAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "never"}
