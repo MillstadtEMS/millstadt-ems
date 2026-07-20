@@ -1,17 +1,18 @@
 import { getPersonnel } from "@/lib/board/personnel";
 import { getFinance, money } from "@/lib/board/finance";
-import { isSalaryRoleLabel, SALARY_ROLLUP_LABEL } from "@/lib/board/salaryRollup";
+import { cleanHeadcount, isSalaryRoleLabel, SALARY_ROLLUP_LABEL } from "@/lib/board/salaryRollup";
+import { requireBoardBudgetSection } from "@/lib/board/budget-access";
 
 export const dynamic = "force-dynamic";
 
 export default async function PersonnelPage() {
+  await requireBoardBudgetSection("staffing");
   const [{ groups, costs }, { byKey }] = await Promise.all([getPersonnel(), getFinance()]);
   const total = byKey["exp_personnel"]?.value ?? null;
   const loaded = groups.length > 0;
-  const staff = groups.reduce((a, g) => a + (g.count ?? 0), 0);
   const salaryGroups = groups.filter((group) => isSalaryRoleLabel(group.name));
   const otherGroups = groups.filter((group) => !isSalaryRoleLabel(group.name));
-  const salaryStaff = salaryGroups.reduce((sum, group) => sum + (group.count ?? 0), 0);
+  const salaryStaff = salaryGroups.reduce((sum, group) => sum + (cleanHeadcount(group.count) ?? 0), 0);
   const salaryAmount = salaryGroups.reduce((sum, group) => sum + (group.gross ?? group.total ?? 0), 0);
   const displayGroups = salaryGroups.length > 0
     ? [
@@ -31,6 +32,7 @@ export default async function PersonnelPage() {
       ]
     : groups;
   const displayedSubtotal = displayGroups.reduce((sum, group) => sum + (group.total ?? group.gross ?? 0), 0);
+  const staff = displayGroups.reduce((sum, group) => sum + (cleanHeadcount(group.count) ?? 0), 0);
   const hasEmployerCosts = costs.some((cost) => (cost.amount ?? 0) > 0);
   const costSummary = hasEmployerCosts ? "Salaries plus listed employer costs" : "Salaries";
 
@@ -59,7 +61,7 @@ export default async function PersonnelPage() {
                 {displayGroups.map((g) => (
                   <tr key={g.name}>
                     <td style={{ fontWeight: 600 }}>{g.name}</td>
-                    <td className="num">{g.count ?? "—"}</td>
+                    <td className="num">{cleanHeadcount(g.count) ?? "—"}</td>
                     <td className="num" style={{ fontWeight: 600 }}>{money(g.total ?? g.gross)}</td>
                   </tr>
                 ))}

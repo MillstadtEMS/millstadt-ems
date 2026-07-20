@@ -1,15 +1,18 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { CheckCircle2, CircleSlash2, ShieldCheck } from "lucide-react";
+import { Save } from "lucide-react";
 import { currentBoardUser } from "@/lib/board/auth";
 import { audit } from "@/lib/board/db";
 import {
   canManageFireBoardAccess,
   FIRE_BOARD_ACCESS_LEVELS,
   FIRE_BOARD_ACCESS_OPTIONS,
+  FIRE_BOARD_BUDGET_SECTIONS,
+  FIRE_BOARD_BUDGET_SECTION_VALUES,
   getFireBoardAccessStatus,
   getFireBoardUsers,
   setFireBoardAccessLevel,
+  type FireBoardBudgetSection,
   type FireBoardAccessLevel,
 } from "@/lib/board/governance";
 import { BoardCard, BoardPageHeader, BoardSectionHeader, BoardStatusChip } from "@/components/board/BoardPrimitives";
@@ -25,19 +28,28 @@ async function updateFireAccess(formData: FormData) {
   const level = FIRE_BOARD_ACCESS_LEVELS.includes(requested as FireBoardAccessLevel)
     ? requested as FireBoardAccessLevel
     : "requests";
+  const budgetSections = formData.getAll("budgetSections")
+    .map((section) => String(section))
+    .filter((section): section is FireBoardBudgetSection => FIRE_BOARD_BUDGET_SECTION_VALUES.includes(section as FireBoardBudgetSection));
 
-  await setFireBoardAccessLevel(level, user);
+  await setFireBoardAccessLevel(level, user, budgetSections);
   await audit({
     userId: user.id,
     username: user.username,
     role: user.role,
     action: "fire_board_access.updated",
-    detail: `Fire Board access set to ${level}`,
+    detail: `Fire Board access set to ${level}; budget sections: ${budgetSections.join(", ") || "none"}`,
   });
   revalidatePath("/board");
   revalidatePath("/board/admin/visibility");
   revalidatePath("/board/meetings");
   revalidatePath("/board/referendum");
+  revalidatePath("/board/referendum/levy");
+  revalidatePath("/board/referendum/staffing");
+  revalidatePath("/board/referendum/fleet");
+  revalidatePath("/board/referendum/debt");
+  revalidatePath("/board/referendum/forecast");
+  revalidatePath("/board/referendum/detailed");
   revalidatePath("/board/documents");
   redirect("/board/admin/visibility?saved=1");
 }
@@ -52,6 +64,10 @@ export default async function VisibilityPage({ searchParams }: { searchParams?: 
   ]);
   const params = searchParams ? await searchParams : {};
   const saved = params.saved === "1";
+  const activeBudgetSections = new Set(status.budgetSections);
+  const visibleBudgetLabels = FIRE_BOARD_BUDGET_SECTIONS
+    .filter((section) => activeBudgetSections.has(section.value))
+    .map((section) => section.navLabel);
 
   return (
     <>
@@ -65,51 +81,58 @@ export default async function VisibilityPage({ searchParams }: { searchParams?: 
       {saved && <div className="board-empty compact" role="status">Fire Board access updated.</div>}
 
       <div className="fire-access-layout">
-        <form action={updateFireAccess} className="fire-access-options">
-          {FIRE_BOARD_ACCESS_OPTIONS.map((option) => {
-            const active = option.value === status.level;
-            return (
-              <button
-                key={option.value}
-                type="submit"
-                name="accessLevel"
-                value={option.value}
-                className={`fire-access-option ${active ? "active" : ""}`}
-              >
-                <span className="fire-access-choice-icon" aria-hidden="true">
-                  {active ? <CheckCircle2 size={22} /> : <ShieldCheck size={22} />}
-                </span>
-                <span className="fire-access-choice-main">
-                  <strong>{option.label}</strong>
-                  <small>{option.summary}</small>
-                </span>
-                {active && <span className="fire-access-current">Current</span>}
-              </button>
-            );
-          })}
+        <form action={updateFireAccess} className="fire-access-control">
+          <BoardCard>
+            <BoardSectionHeader title="General access" />
+            <p className="board-sub" style={{ marginTop: 0 }}>Pick the outside boundary first. Budget sections below only matter when this includes Budget.</p>
+            <div className="fire-access-options">
+              {FIRE_BOARD_ACCESS_OPTIONS.map((option) => {
+                const active = option.value === status.level;
+                return (
+                  <label
+                    key={option.value}
+                    className={`fire-access-option ${active ? "active" : ""}`}
+                  >
+                    <input type="radio" name="accessLevel" value={option.value} defaultChecked={active} />
+                    <span className="fire-access-choice-main">
+                      <strong>{option.label}</strong>
+                      <small>{option.summary}</small>
+                    </span>
+                    {active && <span className="fire-access-current">Current</span>}
+                  </label>
+                );
+              })}
+            </div>
+          </BoardCard>
+
+          <BoardCard>
+            <BoardSectionHeader title="Budget sections" />
+            <p className="board-sub" style={{ marginTop: 0 }}>Turn on only the Budget tabs the Fire Board should be able to open.</p>
+            <div className="fire-budget-grid">
+              {FIRE_BOARD_BUDGET_SECTIONS.map((section) => {
+                const active = activeBudgetSections.has(section.value);
+                return (
+                  <label key={section.value} className="fire-budget-option">
+                    <input type="checkbox" name="budgetSections" value={section.value} defaultChecked={active} />
+                    <span>
+                      <strong>{section.label}</strong>
+                      <small>{section.summary}</small>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <button type="submit" className="board-btn-primary fire-access-save"><Save size={16} aria-hidden="true" /> Save Fire Board access</button>
+          </BoardCard>
         </form>
 
         <div className="fire-access-side">
           <BoardCard>
-            <BoardSectionHeader title="Current access" />
+            <BoardSectionHeader title="Current Fire Board view" />
             <p className="board-sub" style={{ marginTop: 0 }}>{status.summary}</p>
-            <div className="fire-access-rules">
-              <div>
-                <strong>Fire Board can see</strong>
-                <ul>
-                  {(FIRE_BOARD_ACCESS_OPTIONS.find((item) => item.value === status.level)?.allowed ?? []).map((item) => (
-                    <li key={item}><CheckCircle2 size={15} aria-hidden="true" />{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <strong>Fire Board cannot see</strong>
-                <ul>
-                  {(FIRE_BOARD_ACCESS_OPTIONS.find((item) => item.value === status.level)?.blocked ?? []).map((item) => (
-                    <li key={item}><CircleSlash2 size={15} aria-hidden="true" />{item}</li>
-                  ))}
-                </ul>
-              </div>
+            <div className="fire-access-summary">
+              <div><strong>General access</strong><span>{status.label}</span></div>
+              <div><strong>Visible Budget tabs</strong><span>{visibleBudgetLabels.length ? visibleBudgetLabels.join(", ") : "No Budget tabs"}</span></div>
             </div>
             <p className="board-updated">
               Last changed {status.updatedAt ? new Date(status.updatedAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "never"}

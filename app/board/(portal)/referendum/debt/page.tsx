@@ -1,9 +1,11 @@
 import { getDebt } from "@/lib/board/detail";
 import { money, pct } from "@/lib/board/finance";
+import { requireBoardBudgetSection } from "@/lib/board/budget-access";
 
 export const dynamic = "force-dynamic";
 
 export default async function DebtPage() {
+  await requireBoardBudgetSection("debt");
   const rows = await getDebt();
   const loaded = rows.length > 0;
   const loans = rows.filter((r) => r.kind === "amortizing");

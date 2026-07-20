@@ -6,7 +6,8 @@ import {
   canReviewFireMeetingRequests,
   canSubmitFireMeetingRequest,
   canViewFinancialModel,
-  getFireBoardAccessLevel,
+  getFireBoardAccessStatus,
+  visibleBudgetSectionsForUser,
   userBoards,
 } from "@/lib/board/governance";
 
@@ -18,10 +19,12 @@ export default async function PortalLayout({ children }: { children: React.React
   if (user.mustChangePassword) redirect("/board/change-password");
 
   const isBoardAdmin = user.role === "admin";
-  const fireAccessLevel = await getFireBoardAccessLevel();
+  const fireAccess = await getFireBoardAccessStatus();
+  const fireAccessLevel = fireAccess.level;
   const showMeetings = userBoards(user, fireAccessLevel).length > 0;
   const showBriefings = user.role !== "fire_board" && showMeetings;
-  const showReferendum = canViewFinancialModel(user, fireAccessLevel);
+  const visibleBudgetSections = visibleBudgetSectionsForUser(user, fireAccess.level, fireAccess.budgetSections);
+  const showReferendum = canViewFinancialModel(user, fireAccessLevel, fireAccess.budgetSections);
   const showRequests = canSubmitFireMeetingRequest(user) || canReviewFireMeetingRequests(user);
   const canManageFireAccess = canManageFireBoardAccess(user);
 
@@ -33,6 +36,7 @@ export default async function PortalLayout({ children }: { children: React.React
       showMeetings={showMeetings}
       showBriefings={showBriefings}
       showReferendum={showReferendum}
+      visibleBudgetSections={visibleBudgetSections}
       showRequests={showRequests}
     >
       {children}

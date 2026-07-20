@@ -1,19 +1,17 @@
 import { redirect } from "next/navigation";
 import ReferendumNav from "@/components/board/ReferendumNav";
-import { currentBoardUser } from "@/lib/board/auth";
-import { canViewFinancialModel, getFireBoardAccessLevel } from "@/lib/board/governance";
+import { getCurrentBudgetAccess } from "@/lib/board/budget-access";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReferendumLayout({ children }: { children: React.ReactNode }) {
-  const user = await currentBoardUser();
-  if (!user) redirect("/board");
-  const fireAccessLevel = await getFireBoardAccessLevel();
-  if (!canViewFinancialModel(user, fireAccessLevel)) redirect("/board");
+  const access = await getCurrentBudgetAccess();
+  if (!access) redirect("/board");
+  if (access.visibleSections.length === 0) redirect("/board");
 
   return (
     <>
-      <ReferendumNav />
+      <ReferendumNav visibleSections={access.visibleSections} />
       <div className="board-notice" role="note">
         Projected financial model for the proposed EMS District. These figures do not represent current staffing or current accounting results.
       </div>

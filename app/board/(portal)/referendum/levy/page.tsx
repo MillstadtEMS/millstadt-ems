@@ -1,10 +1,12 @@
 import { getFinance } from "@/lib/board/finance";
 import { currentBoardUser, isAdmin } from "@/lib/board/auth";
 import LevyCalculator from "@/components/board/LevyCalculator";
+import { requireBoardBudgetSection } from "@/lib/board/budget-access";
 
 export const dynamic = "force-dynamic";
 
 export default async function LevyPage() {
+  await requireBoardBudgetSection("levy");
   const [user, { byKey }] = await Promise.all([currentBoardUser(), getFinance()]);
   const eav = byKey["district_eav"]?.value ?? null;
   const currentScenario = byKey["levy_scenario"]?.textValue ?? null;

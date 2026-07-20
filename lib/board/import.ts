@@ -8,6 +8,7 @@
  */
 import * as XLSX from "xlsx";
 import { ensureBoardSchema, sql } from "./db";
+import { cleanHeadcount, isSalaryRoleLabel } from "./salaryRollup";
 
 type Sheet = Record<string, { v?: unknown }>;
 type Db = ReturnType<typeof sql>;
@@ -248,7 +249,7 @@ async function importReferendumModelWorkbook(db: Db, wb: XLSX.WorkBook): Promise
     const name = strOrNull(val(staffing, `A${r}`));
     const gross = numOrNull(val(staffing, `D${r}`));
     if (!name || gross == null) continue;
-    const count = numOrNull(val(staffing, `C${r}`));
+    const count = isSalaryRoleLabel(name) ? cleanHeadcount(numOrNull(val(staffing, `C${r}`))) : null;
     await db`INSERT INTO board_personnel (name, count, rate, gross, taxes, benefits, uniform, training, total, per_employee, sort)
              VALUES (${name}, ${count}, ${numOrNull(val(staffing, `B${r}`))}, ${gross}, NULL, NULL, NULL, NULL, ${gross}, ${count ? gross / count : null}, ${(r - 5) * 10})`;
     personnelGroups++;
@@ -389,8 +390,9 @@ async function importLegacyWorkbook(db: Db, wb: XLSX.WorkBook, exec: Sheet): Pro
       if (typeof nameRaw !== "string") continue;
       const name = titleCase(nameRaw.replace(/^GROUP\s*\d+\s*[—-]\s*/i, "").trim());
       const d = (off: number) => numOrNull(val(ps, `D${h + off}`));
+      const count = isSalaryRoleLabel(name) ? cleanHeadcount(d(2)) : null;
       await db`INSERT INTO board_personnel (name, count, rate, gross, taxes, benefits, uniform, training, total, per_employee, sort)
-               VALUES (${name}, ${d(2)}, ${d(3)}, ${d(4)}, ${d(5)}, ${d(6)}, ${d(7)}, ${d(8)}, ${d(9)}, ${d(10)}, ${g * 10})`;
+               VALUES (${name}, ${count}, ${d(3)}, ${d(4)}, ${d(5)}, ${d(6)}, ${d(7)}, ${d(8)}, ${d(9)}, ${d(10)}, ${g * 10})`;
       personnelGroups++;
     }
     await db`DELETE FROM board_personnel_costs`;

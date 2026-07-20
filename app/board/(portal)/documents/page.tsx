@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentBoardUser } from "@/lib/board/auth";
-import { canViewFinancialModel, getFireBoardAccessLevel } from "@/lib/board/governance";
+import {
+  canViewFinancialModel,
+  firstVisibleBudgetSectionPath,
+  getFireBoardAccessStatus,
+  visibleBudgetSectionsForUser,
+} from "@/lib/board/governance";
 import { BoardActionLink, BoardCard, BoardPageHeader, BoardSectionHeader, BoardStatusChip } from "@/components/board/BoardPrimitives";
 
 export const dynamic = "force-dynamic";
@@ -9,8 +14,10 @@ export const dynamic = "force-dynamic";
 export default async function DocumentsPage() {
   const user = await currentBoardUser();
   if (!user) return null;
-  const fireAccessLevel = await getFireBoardAccessLevel();
-  const showReferendum = canViewFinancialModel(user, fireAccessLevel);
+  const fireAccess = await getFireBoardAccessStatus();
+  const visibleBudgetSections = visibleBudgetSectionsForUser(user, fireAccess.level, fireAccess.budgetSections);
+  const showReferendum = canViewFinancialModel(user, fireAccess.level, fireAccess.budgetSections);
+  const budgetHref = firstVisibleBudgetSectionPath(visibleBudgetSections) ?? "/board/referendum";
   if (!showReferendum) redirect("/board");
 
   return (
@@ -19,8 +26,8 @@ export default async function DocumentsPage() {
       <BoardCard className="board-referendum-panel">
         <BoardStatusChip tone="accent">Available</BoardStatusChip>
         <BoardSectionHeader title="Budget model" />
-        <BoardActionLink href="/board/referendum" label="EMS Budget Model" meta="Board budget planning" />
-        <Link href="/board/referendum" className="board-btn-primary">Open budget</Link>
+        <BoardActionLink href={budgetHref} label="EMS Budget Model" meta="Board budget planning" />
+        <Link href={budgetHref} className="board-btn-primary">Open budget</Link>
       </BoardCard>
     </>
   );

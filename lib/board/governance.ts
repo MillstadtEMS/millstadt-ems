@@ -51,6 +51,61 @@ export type CalendarReminderRepeat = (typeof CALENDAR_REMINDER_REPEATS)[number];
 export const FIRE_BOARD_ACCESS_LEVELS = ["requests", "meetings", "budget", "meetings_budget"] as const;
 export type FireBoardAccessLevel = (typeof FIRE_BOARD_ACCESS_LEVELS)[number];
 export type FireBoardAccessArea = "meetings" | "budget";
+
+export const FIRE_BOARD_BUDGET_SECTIONS = [
+  {
+    value: "overview",
+    label: "Budget overview",
+    navLabel: "Budget",
+    href: "/board/referendum",
+    summary: "Top-line revenue, annual need, gap or margin, and annual cost buckets.",
+  },
+  {
+    value: "levy",
+    label: "Levy",
+    navLabel: "Levy",
+    href: "/board/referendum/levy",
+    summary: "EAV, levy rate, projected levy revenue, and property-tax planning.",
+  },
+  {
+    value: "staffing",
+    label: "Staffing and salaries",
+    navLabel: "Staffing",
+    href: "/board/referendum/staffing",
+    summary: "Proposed staffing count, salaries, and personnel cost lines.",
+  },
+  {
+    value: "fleet",
+    label: "Fleet",
+    navLabel: "Fleet",
+    href: "/board/referendum/fleet",
+    summary: "Ambulance and fleet-related annual costs.",
+  },
+  {
+    value: "debt",
+    label: "Debt and payables",
+    navLabel: "Debt",
+    href: "/board/referendum/debt",
+    summary: "Loans, EMSMC catch-up, Mediclaims payable, balances, and annual debt service.",
+  },
+  {
+    value: "forecast",
+    label: "Forecast",
+    navLabel: "Forecast",
+    href: "/board/referendum/forecast",
+    summary: "Five-year projection scenarios.",
+  },
+  {
+    value: "detail",
+    label: "Full detail",
+    navLabel: "Detail",
+    href: "/board/referendum/detailed",
+    summary: "Every imported workbook line item.",
+  },
+] as const;
+export type FireBoardBudgetSection = (typeof FIRE_BOARD_BUDGET_SECTIONS)[number]["value"];
+export const FIRE_BOARD_BUDGET_SECTION_VALUES = FIRE_BOARD_BUDGET_SECTIONS.map((section) => section.value) as FireBoardBudgetSection[];
+
 export const FIRE_BOARD_ACCESS_OPTIONS: Array<{
   value: FireBoardAccessLevel;
   label: string;
@@ -75,15 +130,15 @@ export const FIRE_BOARD_ACCESS_OPTIONS: Array<{
   {
     value: "budget",
     label: "Requests + Budget",
-    summary: "Fire Board members can see the budget model and documents, without EMS meeting access.",
-    allowed: ["Submit Fire Board meeting requests", "View Budget", "View Documents"],
+    summary: "Fire Board members can see only the Budget sections selected below, without EMS meeting access.",
+    allowed: ["Submit Fire Board meeting requests", "View selected Budget sections", "View Documents"],
     blocked: ["EMS meetings", "EMS quorum and attendance controls"],
   },
   {
     value: "meetings_budget",
     label: "Requests + Meetings + Budget",
-    summary: "Fire Board members can see the permitted EMS meeting view plus the budget model.",
-    allowed: ["Submit Fire Board meeting requests", "View EMS meeting list", "Open permitted EMS meeting records", "View Budget", "View Documents"],
+    summary: "Fire Board members can see the permitted EMS meeting view plus the selected Budget sections.",
+    allowed: ["Submit Fire Board meeting requests", "View EMS meeting list", "Open permitted EMS meeting records", "View selected Budget sections", "View Documents"],
     blocked: ["EMS quorum and attendance controls"],
   },
 ];
@@ -282,10 +337,17 @@ export async function ensureGovernanceSchema(): Promise<void> {
   await db`CREATE TABLE IF NOT EXISTS board_fire_access_settings (
     setting_key TEXT PRIMARY KEY,
     access_level TEXT NOT NULL DEFAULT 'requests',
+    budget_sections JSONB NOT NULL DEFAULT '["overview","levy","staffing","fleet","debt","forecast","detail"]'::jsonb,
     updated_by UUID,
     updated_by_name TEXT,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
+  await db`ALTER TABLE board_fire_access_settings ADD COLUMN IF NOT EXISTS budget_sections JSONB NOT NULL DEFAULT '["overview","levy","staffing","fleet","debt","forecast","detail"]'::jsonb`;
+  await db`
+    UPDATE board_fire_access_settings
+    SET budget_sections = '["overview","levy","staffing","fleet","debt","forecast","detail"]'::jsonb
+    WHERE budget_sections IS NULL
+  `;
   await db`
     INSERT INTO board_fire_access_settings (setting_key, access_level, updated_by_name)
     VALUES ('fire_board', 'requests', 'system-default')
@@ -298,6 +360,28 @@ export async function ensureGovernanceSchema(): Promise<void> {
 const EMS_ROLES = new Set(["ems_board", "ems_president"]);
 function normalizeFireBoardAccessLevel(value: unknown): FireBoardAccessLevel {
   return FIRE_BOARD_ACCESS_LEVELS.includes(value as FireBoardAccessLevel) ? value as FireBoardAccessLevel : "requests";
+}
+export function normalizeFireBoardBudgetSections(value: unknown): FireBoardBudgetSection[] {
+  let raw: unknown = value;
+  if (typeof raw === "string") {
+    const rawString = raw;
+    try {
+      raw = JSON.parse(rawString);
+    } catch {
+      raw = rawString.split(",").map((item) => item.trim()).filter(Boolean);
+    }
+  }
+  if (!Array.isArray(raw)) return [...FIRE_BOARD_BUDGET_SECTION_VALUES];
+  const seen = new Set<FireBoardBudgetSection>();
+  const normalized: FireBoardBudgetSection[] = [];
+  for (const item of raw) {
+    if (!FIRE_BOARD_BUDGET_SECTION_VALUES.includes(item as FireBoardBudgetSection)) continue;
+    const section = item as FireBoardBudgetSection;
+    if (seen.has(section)) continue;
+    seen.add(section);
+    normalized.push(section);
+  }
+  return normalized;
 }
 export function fireBoardAccessAllows(level: FireBoardAccessLevel, area: FireBoardAccessArea): boolean {
   if (area === "meetings") return level === "meetings" || level === "meetings_budget";
@@ -312,15 +396,17 @@ export async function getFireBoardAccessLevel(): Promise<FireBoardAccessLevel> {
     LIMIT 1`) as Record<string, unknown>[];
   return normalizeFireBoardAccessLevel(rows[0]?.access_level);
 }
-export async function setFireBoardAccessLevel(level: FireBoardAccessLevel, updatedBy: BoardUser): Promise<void> {
+export async function setFireBoardAccessLevel(level: FireBoardAccessLevel, updatedBy: BoardUser, budgetSections?: FireBoardBudgetSection[]): Promise<void> {
   await ensureGovernanceSchema();
   const normalized = normalizeFireBoardAccessLevel(level);
+  const normalizedBudgetSections = normalizeFireBoardBudgetSections(budgetSections);
   const db = sql();
   await db`
-    INSERT INTO board_fire_access_settings (setting_key, access_level, updated_by, updated_by_name, updated_at)
-    VALUES ('fire_board', ${normalized}, ${updatedBy.id}, ${`${updatedBy.firstName} ${updatedBy.lastName}`}, NOW())
+    INSERT INTO board_fire_access_settings (setting_key, access_level, budget_sections, updated_by, updated_by_name, updated_at)
+    VALUES ('fire_board', ${normalized}, ${JSON.stringify(normalizedBudgetSections)}::jsonb, ${updatedBy.id}, ${`${updatedBy.firstName} ${updatedBy.lastName}`}, NOW())
     ON CONFLICT (setting_key) DO UPDATE SET
       access_level = EXCLUDED.access_level,
+      budget_sections = EXCLUDED.budget_sections,
       updated_by = EXCLUDED.updated_by,
       updated_by_name = EXCLUDED.updated_by_name,
       updated_at = NOW()
@@ -328,6 +414,7 @@ export async function setFireBoardAccessLevel(level: FireBoardAccessLevel, updat
 }
 export interface FireBoardAccessStatus {
   level: FireBoardAccessLevel;
+  budgetSections: FireBoardBudgetSection[];
   label: string;
   summary: string;
   updatedByName: string | null;
@@ -337,7 +424,7 @@ export async function getFireBoardAccessStatus(): Promise<FireBoardAccessStatus>
   await ensureGovernanceSchema();
   const db = sql();
   const rows = (await db`
-    SELECT access_level, updated_by_name, updated_at
+    SELECT access_level, budget_sections, updated_by_name, updated_at
     FROM board_fire_access_settings
     WHERE setting_key = 'fire_board'
     LIMIT 1`) as Record<string, unknown>[];
@@ -346,6 +433,7 @@ export async function getFireBoardAccessStatus(): Promise<FireBoardAccessStatus>
   const updatedAt = rows[0]?.updated_at instanceof Date ? rows[0].updated_at.toISOString() : (rows[0]?.updated_at ? String(rows[0].updated_at) : null);
   return {
     level,
+    budgetSections: normalizeFireBoardBudgetSections(rows[0]?.budget_sections),
     label: option.label,
     summary: option.summary,
     updatedByName: rows[0]?.updated_by_name ? String(rows[0].updated_by_name) : null,
@@ -413,9 +501,40 @@ export function canReviewFireMeetingRequests(u: BoardUser): boolean {
 export function canManageFireBoardAccess(u: BoardUser): boolean {
   return u.role === "admin" || u.role === "ems_president" || u.officerTitle === "President";
 }
-export function canViewFinancialModel(u: BoardUser, fireAccessLevel: FireBoardAccessLevel = "requests"): boolean {
-  if (u.role === "fire_board") return fireBoardAccessAllows(fireAccessLevel, "budget");
+function canViewInternalFinancialModel(u: BoardUser): boolean {
   return u.role === "admin" || u.role === "submitter" || u.role === "ems_board" || u.role === "ems_president" || u.role === "audit_reviewer";
+}
+export function canViewFinancialModel(
+  u: BoardUser,
+  fireAccessLevel: FireBoardAccessLevel = "requests",
+  budgetSections: FireBoardBudgetSection[] = FIRE_BOARD_BUDGET_SECTION_VALUES,
+): boolean {
+  if (u.role === "fire_board") {
+    return fireBoardAccessAllows(fireAccessLevel, "budget") && normalizeFireBoardBudgetSections(budgetSections).length > 0;
+  }
+  return canViewInternalFinancialModel(u);
+}
+export function canViewBudgetSection(
+  u: BoardUser,
+  section: FireBoardBudgetSection,
+  fireAccessLevel: FireBoardAccessLevel = "requests",
+  budgetSections: FireBoardBudgetSection[] = FIRE_BOARD_BUDGET_SECTION_VALUES,
+): boolean {
+  if (u.role === "fire_board") {
+    return fireBoardAccessAllows(fireAccessLevel, "budget") && normalizeFireBoardBudgetSections(budgetSections).includes(section);
+  }
+  return canViewInternalFinancialModel(u);
+}
+export function visibleBudgetSectionsForUser(
+  u: BoardUser,
+  fireAccessLevel: FireBoardAccessLevel = "requests",
+  budgetSections: FireBoardBudgetSection[] = FIRE_BOARD_BUDGET_SECTION_VALUES,
+): FireBoardBudgetSection[] {
+  return FIRE_BOARD_BUDGET_SECTION_VALUES.filter((section) => canViewBudgetSection(u, section, fireAccessLevel, budgetSections));
+}
+export function firstVisibleBudgetSectionPath(sections: FireBoardBudgetSection[]): string | null {
+  const first = FIRE_BOARD_BUDGET_SECTIONS.find((section) => sections.includes(section.value));
+  return first?.href ?? null;
 }
 export function canSeeConfidential(u: BoardUser): boolean {
   return u.role === "admin" || u.role === "ems_president" || u.officerTitle === "President";

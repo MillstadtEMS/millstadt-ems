@@ -1,5 +1,6 @@
 import { getForecast } from "@/lib/board/detail";
 import { money } from "@/lib/board/finance";
+import { requireBoardBudgetSection } from "@/lib/board/budget-access";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,7 @@ function firstPositiveYear(surplus: (number | null)[]): number | null {
 }
 
 export default async function ForecastPage() {
+  await requireBoardBudgetSection("forecast");
   const byScenario = await getForecast();
   const loaded = Object.keys(byScenario).length > 0;
   const expected = byScenario["Expected"] ?? [];

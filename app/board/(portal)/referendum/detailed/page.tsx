@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { getBudgetSections } from "@/lib/board/budget";
 import { getFinance, money } from "@/lib/board/finance";
+import { requireBoardBudgetSection } from "@/lib/board/budget-access";
 
 export const dynamic = "force-dynamic";
 
 export default async function DetailedModelPage() {
+  const access = await requireBoardBudgetSection("detail");
   const [sections, { byKey }] = await Promise.all([getBudgetSections(), getFinance()]);
   const revenue = byKey["rev_total"]?.value ?? null;
   const expenses = byKey["exp_total"]?.value ?? null;
   const loaded = sections.length > 0;
+  const canSeeOverview = access.visibleSections.includes("overview");
 
   return (
     <>
@@ -18,10 +21,12 @@ export default async function DetailedModelPage() {
           <h1 className="board-h1">Budget Detail</h1>
           <p className="board-sub">Every projected line item for the proposed EMS District, straight from the workbook.</p>
         </div>
-        <div className="board-viewtoggle" role="group" aria-label="View">
-          <Link href="/board/referendum">Simple</Link>
-          <a className="on">Detail</a>
-        </div>
+        {canSeeOverview && (
+          <div className="board-viewtoggle" role="group" aria-label="View">
+            <Link href="/board/referendum">Simple</Link>
+            <a className="on">Detail</a>
+          </div>
+        )}
       </div>
 
       {!loaded && <div className="board-card" style={{ marginTop: 22 }}><p style={{ margin: 0 }}>Projected line items have not been imported yet.</p></div>}

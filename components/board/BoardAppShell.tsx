@@ -48,6 +48,16 @@ interface NavItem {
   children?: Array<{ href: string; label: string }>;
 }
 
+const BUDGET_NAV_CHILDREN = [
+  { section: "overview", href: "/board/referendum", label: "Budget" },
+  { section: "levy", href: "/board/referendum/levy", label: "Levy" },
+  { section: "staffing", href: "/board/referendum/staffing", label: "Staffing" },
+  { section: "fleet", href: "/board/referendum/fleet", label: "Fleet" },
+  { section: "debt", href: "/board/referendum/debt", label: "Debt" },
+  { section: "forecast", href: "/board/referendum/forecast", label: "Forecast" },
+  { section: "detail", href: "/board/referendum/detailed", label: "Detail" },
+];
+
 const ROLE_LABEL: Record<string, string> = {
   admin: "Administrator",
   submitter: "Board operations",
@@ -205,6 +215,7 @@ export default function BoardAppShell({
   showMeetings,
   showBriefings,
   showReferendum,
+  visibleBudgetSections,
   showRequests,
   children,
 }: {
@@ -214,6 +225,7 @@ export default function BoardAppShell({
   showMeetings: boolean;
   showBriefings: boolean;
   showReferendum: boolean;
+  visibleBudgetSections: string[];
   showRequests: boolean;
   children: React.ReactNode;
 }) {
@@ -223,6 +235,9 @@ export default function BoardAppShell({
   const [deviceMode, setDeviceMode] = useState<BoardDeviceMode>("desktop");
   const showDocuments = showReferendum;
   const personalEmoji = boardUserEmoji(user);
+  const visibleBudgetChildren = BUDGET_NAV_CHILDREN
+    .filter((child) => visibleBudgetSections.includes(child.section))
+    .map(({ href, label }) => ({ href, label }));
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -284,15 +299,7 @@ export default function BoardAppShell({
         section: "Primary",
         icon: Database,
         hidden: !showReferendum,
-        children: [
-          { href: "/board/referendum", label: "Budget" },
-          { href: "/board/referendum/detailed", label: "Detail" },
-          { href: "/board/referendum/levy", label: "Levy" },
-          { href: "/board/referendum/forecast", label: "Forecast" },
-          { href: "/board/referendum/debt", label: "Debt" },
-          { href: "/board/referendum/fleet", label: "Fleet" },
-          { href: "/board/referendum/staffing", label: "Staffing" },
-        ],
+        children: visibleBudgetChildren,
       },
       { href: "/board/documents", label: "Documents", section: "Primary", icon: FileText, hidden: !showDocuments },
       { href: "/board/requests", label: "Fire requests", section: "Primary", icon: ShieldCheck, hidden: !showRequests },
@@ -302,7 +309,7 @@ export default function BoardAppShell({
       { href: "/board/admin", label: "Administration", section: "Administration", icon: Settings, hidden: !isAdmin },
     ];
     return items.filter((item) => !item.hidden);
-  }, [canManageFireAccess, isAdmin, showBriefings, showDocuments, showMeetings, showReferendum, showRequests]);
+  }, [canManageFireAccess, isAdmin, showBriefings, showDocuments, showMeetings, showReferendum, showRequests, visibleBudgetChildren]);
 
   const commandItems = useMemo<BoardCommandItem[]>(() => nav.map((item) => ({
     label: item.label,

@@ -1,9 +1,11 @@
 import { getTruckMaintenance } from "@/lib/board/detail";
 import { money } from "@/lib/board/finance";
+import { requireBoardBudgetSection } from "@/lib/board/budget-access";
 
 export const dynamic = "force-dynamic";
 
 export default async function TrucksPage() {
+  await requireBoardBudgetSection("fleet");
   const units = await getTruckMaintenance();
   const loaded = units.length > 0;
   const total = units.reduce((a, u) => a + (u.fyTotal ?? 0), 0);

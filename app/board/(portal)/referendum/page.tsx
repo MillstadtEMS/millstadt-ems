@@ -1,4 +1,5 @@
 import { getFinance, money, pct } from "@/lib/board/finance";
+import { requireBoardBudgetSection } from "@/lib/board/budget-access";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +9,7 @@ function fmtSynced(iso: string | null): string {
 }
 
 export default async function ReferendumOverview() {
+  await requireBoardBudgetSection("overview");
   const { byKey, updatedAt } = await getFinance();
   const num = (k: string) => byKey[k]?.value ?? null;
   const txt = (k: string) => byKey[k]?.textValue ?? null;
