@@ -7,6 +7,7 @@ export const BOARD_WORKBOOK_BLOB_PATH = "board-workbook/current.xlsx";
 export const BOARD_WORKBOOK_VIEW_BLOB_PATH = "board-workbook/current.json";
 export const BOARD_WORKBOOK_PUBLIC_PATH = "/board/referendum/current.xlsx";
 export const BOARD_WORKBOOK_VIEW_PUBLIC_PATH = "/board/referendum/current.json";
+export const BOARD_WORKBOOK_VIEW_VERSION = 2;
 
 const BOARD_WORKBOOK_VIEW_LOCAL_PATH = path.join(process.cwd(), "public", "board", "referendum", "current.json");
 
@@ -56,6 +57,7 @@ export interface BoardWorkbookSheet {
 }
 
 export interface BoardWorkbookView {
+  viewVersion?: number;
   sourceName: string;
   downloadUrl: string;
   updatedAt: string | null;
@@ -219,14 +221,6 @@ function isWorkbookView(value: unknown): value is BoardWorkbookView {
   return typeof candidate.sourceName === "string" && Array.isArray(candidate.sheets);
 }
 
-type ListedBlob = Awaited<ReturnType<typeof list>>["blobs"][number];
-
-function isoFromBlobDate(value: ListedBlob["uploadedAt"]): string | null {
-  if (value instanceof Date) return value.toISOString();
-  if (typeof value === "string") return value;
-  return null;
-}
-
 function hasScenarioData(view: BoardWorkbookView): boolean {
   return Boolean(
     view.scenarios?.length &&
@@ -247,42 +241,24 @@ function hasTransferData(view: BoardWorkbookView): boolean {
 }
 
 function shouldRebuildWorkbookData(view: BoardWorkbookView): boolean {
+  if (view.viewVersion !== BOARD_WORKBOOK_VIEW_VERSION) return true;
   const hasScenarioSheet = view.sheets.some((sheet) => sheet.name === "Scenarios");
   const hasTransferSheet = view.sheets.some((sheet) => sheet.name === "Transfer Division");
   return (hasScenarioSheet && !hasScenarioData(view)) || (hasTransferSheet && !hasTransferData(view));
-}
-
-async function parseBlobWorkbookView(blob: ListedBlob): Promise<BoardWorkbookView | null> {
-  try {
-    const response = await fetch(blob.url, { cache: "no-store" });
-    if (!response.ok) return null;
-    const { parseBoardWorkbook } = await import("./workbook-parser");
-    return parseBoardWorkbook(Buffer.from(await response.arrayBuffer()), {
-      sourceName: path.basename(blob.pathname),
-      downloadUrl: blob.url,
-      updatedAt: isoFromBlobDate(blob.uploadedAt),
-      size: typeof blob.size === "number" ? blob.size : null,
-    });
-  } catch {
-    return null;
-  }
 }
 
 async function loadBlobWorkbookView(): Promise<BoardWorkbookView | null> {
   try {
     const { blobs } = await list({ prefix: "board-workbook/" });
     const exact = blobs.find((blob) => blob.pathname === BOARD_WORKBOOK_VIEW_BLOB_PATH);
-    const workbookBlob = blobs.find((blob) => blob.pathname === BOARD_WORKBOOK_BLOB_PATH);
-    if (!exact) return workbookBlob ? parseBlobWorkbookView(workbookBlob) : null;
+    if (!exact) return null;
 
     const response = await fetch(exact.url, { cache: "no-store" });
     if (!response.ok) return null;
 
     const view = await response.json();
-    if (!isWorkbookView(view)) return workbookBlob ? parseBlobWorkbookView(workbookBlob) : null;
-    if (workbookBlob && shouldRebuildWorkbookData(view)) {
-      return (await parseBlobWorkbookView(workbookBlob)) ?? view;
-    }
+    if (!isWorkbookView(view)) return null;
+    if (shouldRebuildWorkbookData(view)) return null;
     return view;
   } catch {
     return null;

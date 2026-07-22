@@ -6,6 +6,7 @@ import type {
   BoardWorkbookTransferConfig,
   BoardWorkbookView,
 } from "./workbook";
+import { BOARD_WORKBOOK_VIEW_VERSION } from "./workbook";
 
 const MAX_SHEET_ROWS = 220;
 const MAX_SHEET_COLS = 24;
@@ -830,6 +831,7 @@ export function parseBoardWorkbook(buffer: Buffer | ArrayBuffer, source: {
   });
 
   return {
+    viewVersion: BOARD_WORKBOOK_VIEW_VERSION,
     ...source,
     sheets,
     scenarios: scenarios.map(({ key, label }) => ({ key, label })),
