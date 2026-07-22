@@ -93,11 +93,11 @@ export function audienceForBoardUser(user: BoardUser): BoardWorkbookAudience {
 
 function parseSheetNames(value: unknown): string[] | null {
   let raw: unknown = value;
-  if (typeof raw === "string") {
+  if (typeof value === "string") {
     try {
-      raw = JSON.parse(raw);
+      raw = JSON.parse(value);
     } catch {
-      raw = raw.split(",").map((item) => item.trim()).filter(Boolean);
+      raw = value.split(",").map((item) => item.trim()).filter(Boolean);
     }
   }
   if (!Array.isArray(raw)) return null;
