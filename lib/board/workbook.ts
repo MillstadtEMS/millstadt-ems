@@ -71,7 +71,7 @@ function normalize(value: string | null | undefined): string {
   return (value ?? "").trim().toLowerCase();
 }
 
-export function canManageBoardWorkbook(user: BoardUser | null): boolean {
+export function canManageBoardWorkbook(user: BoardUser | null): user is BoardUser {
   if (!user || !user.isActive || user.isDevLogin) return false;
 
   const username = normalize(user.username);
