@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "test:referendum-workbook": "node --test tests/referendum-workbook-identity.test.mjs"
+    "lint": "eslint"
   },
   "dependencies": {
     "@fontsource-variable/mona-sans": "^5.2.8",

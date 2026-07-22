@@ -15,9 +15,8 @@ Routes captured:
 - Public control pages: `/`, `/board-minutes`
 - Login: `/board/login`
 - Core portal: `/board`, `/board/meetings`, `/board/meetings/2`, `/board/requests`
-- Referendum: `/board/referendum`, `/board/referendum/detailed`, `/board/referendum/levy`, `/board/referendum/forecast`, `/board/referendum/debt`, `/board/referendum/fleet`, `/board/referendum/staffing`
-- Administration: `/board/admin`, `/board/admin/model-review`
-- Legacy finance pages: `/board/budget`, `/board/cashflow`, `/board/debt`, `/board/forecast`, `/board/levy`, `/board/personnel`, `/board/trucks`
+- Referendum: `/board/referendum`
+- Administration: `/board/admin`
 - Restricted-role smoke views: Fire Board dev login `/board`, `/board/requests`
 
 Requested standalone routes not present in the current route map before redesign:
@@ -42,7 +41,6 @@ Requested standalone routes not present in the current route map before redesign
 - Meetings desktop: `outputs/board-portal-visual-redesign/before/meetings-1440.png`
 - Individual meeting mobile: `outputs/board-portal-visual-redesign/before/individual-meeting-390.png`
 - Referendum overview desktop: `outputs/board-portal-visual-redesign/before/referendum-overview-1440.png`
-- Model review mobile: `outputs/board-portal-visual-redesign/before/model-review-390.png`
 
 The screenshot manifest reported no document-level horizontal overflow in the baseline pass.
 
@@ -53,7 +51,7 @@ The screenshot manifest reported no document-level horizontal overflow in the ba
 - The dashboard has a basic page-title/card structure and does not yet feel like a command center.
 - The top bar only contains identity and sign-out controls. It lacks page context, search, notifications, appearance controls, and an account menu.
 - Most pages use inline styles heavily, creating uneven spacing, labels, chips, and component hierarchy.
-- The admin area exposes only workbook/model status links; dashboard appearance/layout controls are absent.
+- The admin area exposes only limited setup links; dashboard appearance/layout controls are absent.
 - Several requested portal sections have no page surface yet, so navigation cannot feel complete.
 
 ### What Looks Generic
@@ -72,7 +70,7 @@ The screenshot manifest reported no document-level horizontal overflow in the ba
 ### Navigation Issues
 
 - Desktop navigation is too shallow and does not distinguish primary board work from administration.
-- Referendum subnavigation is separate from the primary shell rather than being clearly expandable in the sidebar.
+- Referendum navigation is a single workbook surface in the primary shell.
 - Mobile navigation uses a small `<details>` menu, not a dedicated drawer or bottom action surface.
 - Missing requested sections make the information architecture feel incomplete.
 
@@ -101,7 +99,7 @@ The screenshot manifest reported no document-level horizontal overflow in the ba
 ### What Should Be Preserved
 
 - Board-specific CSS is already scoped under `.board-root`, protecting the public site.
-- Login/session redirects, password-change guard, role checks, Fire Board restrictions, meeting attendance, quorum logic, minutes-public flag, and referendum model pages are functional.
+- Login/session redirects, password-change guard, role checks, Fire Board restrictions, meeting attendance, quorum logic, minutes-public flag, and budget workbook access are functional.
 - The current dark visual base is a reasonable starting point and should be refined rather than discarded.
 - The no-public-minutes behavior is already supported by the data layer and should not be changed.
 

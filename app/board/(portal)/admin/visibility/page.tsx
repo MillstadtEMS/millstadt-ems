@@ -38,18 +38,12 @@ async function updateFireAccess(formData: FormData) {
     username: user.username,
     role: user.role,
     action: "fire_board_access.updated",
-    detail: `Fire Board access set to ${level}; budget sections: ${budgetSections.join(", ") || "none"}`,
+    detail: `Fire Board access set to ${level}; budget workbook: ${budgetSections.includes("overview") ? "on" : "off"}`,
   });
   revalidatePath("/board");
   revalidatePath("/board/admin/visibility");
   revalidatePath("/board/meetings");
   revalidatePath("/board/referendum");
-  revalidatePath("/board/referendum/levy");
-  revalidatePath("/board/referendum/staffing");
-  revalidatePath("/board/referendum/fleet");
-  revalidatePath("/board/referendum/debt");
-  revalidatePath("/board/referendum/forecast");
-  revalidatePath("/board/referendum/detailed");
   revalidatePath("/board/documents");
   redirect("/board/admin/visibility?saved=1");
 }
@@ -70,7 +64,7 @@ export default async function VisibilityPage({ searchParams }: { searchParams?: 
     .map((section) => section.navLabel);
   const budgetAccessOn = status.level === "budget" || status.level === "meetings_budget";
   const budgetSummary = budgetAccessOn
-    ? (visibleBudgetLabels.length ? visibleBudgetLabels.join(", ") : "No Budget tabs")
+    ? (visibleBudgetLabels.length ? visibleBudgetLabels.join(", ") : "Budget workbook off")
     : "Budget access is off";
 
   return (
@@ -88,7 +82,7 @@ export default async function VisibilityPage({ searchParams }: { searchParams?: 
         <form action={updateFireAccess} className="fire-access-control">
           <BoardCard>
             <BoardSectionHeader title="General access" />
-            <p className="board-sub" style={{ marginTop: 0 }}>Pick the outside boundary first. Budget sections below only matter when this includes Budget.</p>
+            <p className="board-sub" style={{ marginTop: 0 }}>Pick the outside boundary first. The workbook switch below only matters when this includes Budget.</p>
             <div className="fire-access-options">
               {FIRE_BOARD_ACCESS_OPTIONS.map((option) => {
                 const active = option.value === status.level;
@@ -110,8 +104,8 @@ export default async function VisibilityPage({ searchParams }: { searchParams?: 
           </BoardCard>
 
           <BoardCard>
-            <BoardSectionHeader title="Budget sections" />
-            <p className="board-sub" style={{ marginTop: 0 }}>Turn on only the Budget tabs the Fire Board should be able to open.</p>
+            <BoardSectionHeader title="Budget workbook" />
+            <p className="board-sub" style={{ marginTop: 0 }}>Controls whether Fire Board users can open the workbook. Kenneth and Joe choose the visible workbook tabs on the workbook page.</p>
             <div className="fire-budget-grid">
               {FIRE_BOARD_BUDGET_SECTIONS.map((section) => {
                 const active = activeBudgetSections.has(section.value);
@@ -136,7 +130,7 @@ export default async function VisibilityPage({ searchParams }: { searchParams?: 
             <p className="board-sub" style={{ marginTop: 0 }}>{status.summary}</p>
             <div className="fire-access-summary">
               <div><strong>General access</strong><span>{status.label}</span></div>
-              <div><strong>Visible Budget tabs</strong><span>{budgetSummary}</span></div>
+              <div><strong>Budget workbook</strong><span>{budgetSummary}</span></div>
             </div>
             <p className="board-updated">
               Last changed {status.updatedAt ? new Date(status.updatedAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "never"}

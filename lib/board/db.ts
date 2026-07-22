@@ -1,8 +1,7 @@
 /**
  * Board of Directors Portal — database layer (Neon Postgres).
  *
- * The portal is the system of record for accounts, roles, audit, and a cached
- * copy of the financial figures pulled from the FY2026-27 workbook. It never
+ * The portal is the system of record for accounts, roles, and audit. It never
  * stores passwords, signatures, or audit data inside Excel. Tables are created
  * on demand (same pattern as lib/cad/settings.ts) so no separate migration
  * step is required to stand the portal up.
@@ -65,21 +64,6 @@ export async function ensureBoardSchema(): Promise<void> {
   `;
   await db`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS photo_url TEXT`;
   await db`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS is_dev_login BOOLEAN NOT NULL DEFAULT FALSE`;
-  // Cached financial figures keyed by a stable slug, sourced from the workbook.
-  await db`
-    CREATE TABLE IF NOT EXISTS board_finance (
-      key          TEXT PRIMARY KEY,
-      label        TEXT NOT NULL,
-      value        DOUBLE PRECISION,
-      text_value   TEXT,
-      unit         TEXT,
-      grouping     TEXT,
-      sort         INTEGER NOT NULL DEFAULT 0,
-      source_cell  TEXT,
-      needs_review BOOLEAN NOT NULL DEFAULT FALSE,
-      updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
   // Append-only audit trail.
   await db`
     CREATE TABLE IF NOT EXISTS board_audit (

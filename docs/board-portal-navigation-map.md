@@ -33,17 +33,11 @@ Mobile:
 - Notifications: `/board/notifications`
 - Fire requests: `/board/requests` when permitted
 
-## Referendum Subnavigation
+## Referendum
 
-Visible only to roles that can view the financial model:
+Visible only to roles that can view the budget workbook:
 
-- Overview: `/board/referendum`
-- Detailed model: `/board/referendum/detailed`
-- Levy calculator: `/board/referendum/levy`
-- Forecast: `/board/referendum/forecast`
-- Debt: `/board/referendum/debt`
-- Fleet: `/board/referendum/fleet`
-- Staffing: `/board/referendum/staffing`
+- Budget workbook: `/board/referendum`
 
 ## Administration Navigation
 
@@ -52,7 +46,6 @@ Visible only to board admins:
 - Audit: `/board/admin/audit`
 - Users: `/board/admin/users`
 - Visibility: `/board/admin/visibility`
-- Model review: `/board/admin/model-review`
 - Appearance: `/board/admin/appearance`
 - Administration: `/board/admin`
 

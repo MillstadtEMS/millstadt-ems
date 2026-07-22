@@ -29,9 +29,8 @@ Captured:
 - Meetings
 - Individual meeting
 - Requests
-- Referendum pages
-- Admin/model review pages
-- Legacy finance pages
+- Referendum workbook
+- Admin pages
 - Fire Board restricted views
 
 ## After Screenshots
@@ -49,8 +48,7 @@ Captured:
 - Individual meeting
 - Board briefings
 - Proposals
-- Referendum overview
-- Levy calculator
+- Referendum workbook
 - Documents
 - Archive
 - Notifications
@@ -58,7 +56,6 @@ Captured:
 - Administration
 - Appearance and dashboard layout
 - Audit
-- Model review
 
 Modes and widths:
 
@@ -86,7 +83,7 @@ No public website files or global public navigation/header/footer components wer
 
 ## Business Logic Verification
 
-No financial calculations, assumptions, source data mappings, quorum rules, meeting schedules, attendance logic, permissions, audit data, or public-minutes logic were changed.
+No quorum rules, meeting schedules, attendance logic, permissions, audit data, or public-minutes logic were changed.
 
 Existing governance functions remain the source of truth for:
 
@@ -98,7 +95,7 @@ Existing governance functions remain the source of truth for:
 - Attendance recording
 - Quorum calculation
 - Minutes-public flag
-- Referendum visibility
+- Budget workbook visibility
 
 ## Visual Changes Confirmed
 

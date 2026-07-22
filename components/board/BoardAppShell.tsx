@@ -45,18 +45,7 @@ interface NavItem {
   section: string;
   icon: typeof Home;
   hidden?: boolean;
-  children?: Array<{ href: string; label: string }>;
 }
-
-const BUDGET_NAV_CHILDREN = [
-  { section: "overview", href: "/board/referendum", label: "Budget" },
-  { section: "levy", href: "/board/referendum/levy", label: "Levy" },
-  { section: "staffing", href: "/board/referendum/staffing", label: "Staffing" },
-  { section: "fleet", href: "/board/referendum/fleet", label: "Fleet" },
-  { section: "debt", href: "/board/referendum/debt", label: "Debt" },
-  { section: "forecast", href: "/board/referendum/forecast", label: "Forecast" },
-  { section: "detail", href: "/board/referendum/detailed", label: "Detail" },
-];
 
 const ROLE_LABEL: Record<string, string> = {
   admin: "Administrator",
@@ -71,10 +60,6 @@ const PATH_LABEL: Record<string, string> = {
   board: "Home",
   visibility: "Fire access",
   referendum: "Budget",
-  detailed: "Detail",
-  forecast: "Forecast",
-  levy: "Levy",
-  "model-review": "Workbook",
 };
 
 function isActive(path: string, item: NavItem) {
@@ -122,13 +107,11 @@ function BoardNavList({
   visiblePrimary,
   visibleAdmin,
   path,
-  collapsed,
 }: {
   mobile?: boolean;
   visiblePrimary: NavItem[];
   visibleAdmin: NavItem[];
   path: string;
-  collapsed: boolean;
 }) {
   return (
     <nav className="board-nav" aria-label={mobile ? "Mobile board navigation" : "Board navigation"}>
@@ -138,21 +121,10 @@ function BoardNavList({
           const Icon = item.icon;
           const active = isActive(path, item);
           return (
-            <div key={item.href} className="board-nav-group">
-              <Link href={item.href} className={active ? "on" : ""} aria-current={active ? "page" : undefined}>
-                <Icon size={18} aria-hidden="true" />
-                <span>{item.label}</span>
-              </Link>
-              {item.children && active && !collapsed && (
-                <div className="board-subnav-shell">
-                  {item.children.map((child) => (
-                    <Link key={child.href} href={child.href} className={path === child.href ? "on" : ""}>
-                      {child.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+            <Link key={item.href} href={item.href} className={active ? "on" : ""} aria-current={active ? "page" : undefined}>
+              <Icon size={18} aria-hidden="true" />
+              <span>{item.label}</span>
+            </Link>
           );
         })}
       </div>
@@ -215,7 +187,6 @@ export default function BoardAppShell({
   showMeetings,
   showBriefings,
   showReferendum,
-  visibleBudgetSections,
   showRequests,
   children,
 }: {
@@ -225,7 +196,6 @@ export default function BoardAppShell({
   showMeetings: boolean;
   showBriefings: boolean;
   showReferendum: boolean;
-  visibleBudgetSections: string[];
   showRequests: boolean;
   children: React.ReactNode;
 }) {
@@ -235,9 +205,6 @@ export default function BoardAppShell({
   const [deviceMode, setDeviceMode] = useState<BoardDeviceMode>("desktop");
   const showDocuments = showReferendum;
   const personalEmoji = boardUserEmoji(user);
-  const visibleBudgetChildren = BUDGET_NAV_CHILDREN
-    .filter((child) => visibleBudgetSections.includes(child.section))
-    .map(({ href, label }) => ({ href, label }));
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -299,23 +266,21 @@ export default function BoardAppShell({
         section: "Primary",
         icon: Database,
         hidden: !showReferendum,
-        children: visibleBudgetChildren,
       },
       { href: "/board/documents", label: "Documents", section: "Primary", icon: FileText, hidden: !showDocuments },
       { href: "/board/requests", label: "Fire requests", section: "Primary", icon: ShieldCheck, hidden: !showRequests },
       { href: "/board/admin/visibility", label: "Fire access", section: "Administration", icon: ShieldCheck, hidden: !canManageFireAccess },
-      { href: "/board/admin/model-review", label: "Workbook", section: "Administration", icon: Database, hidden: !isAdmin },
       { href: "/board/admin/appearance", label: "Appearance", section: "Administration", icon: LayoutDashboard, hidden: !isAdmin },
       { href: "/board/admin", label: "Administration", section: "Administration", icon: Settings, hidden: !isAdmin },
     ];
     return items.filter((item) => !item.hidden);
-  }, [canManageFireAccess, isAdmin, showBriefings, showDocuments, showMeetings, showReferendum, showRequests, visibleBudgetChildren]);
+  }, [canManageFireAccess, isAdmin, showBriefings, showDocuments, showMeetings, showReferendum, showRequests]);
 
   const commandItems = useMemo<BoardCommandItem[]>(() => nav.map((item) => ({
     label: item.label,
     eyebrow: item.label.split(" ")[0] === "Board" ? "Briefings" : item.label.split(" ")[0],
     href: item.href,
-    keywords: `${item.section} ${item.children?.map((child) => child.label).join(" ") ?? ""}`,
+    keywords: item.section,
     adminOnly: item.section === "Administration" && item.href !== "/board/admin/visibility",
   })), [nav]);
 
@@ -337,7 +302,7 @@ export default function BoardAppShell({
           <BoardLogo />
         </Link>
 
-        <BoardNavList visiblePrimary={visiblePrimary} visibleAdmin={visibleAdmin} path={path} collapsed={desktopCollapsed} />
+        <BoardNavList visiblePrimary={visiblePrimary} visibleAdmin={visibleAdmin} path={path} />
 
         <div className="board-side-footer">
           <Link href="/board/settings" className="board-profile-shortcut">
@@ -404,7 +369,7 @@ export default function BoardAppShell({
                 <X size={19} aria-hidden="true" />
               </button>
             </div>
-            <BoardNavList mobile visiblePrimary={visiblePrimary} visibleAdmin={visibleAdmin} path={path} collapsed={false} />
+            <BoardNavList mobile visiblePrimary={visiblePrimary} visibleAdmin={visibleAdmin} path={path} />
           </aside>
         </div>
       )}

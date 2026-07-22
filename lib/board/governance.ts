@@ -55,52 +55,10 @@ export type FireBoardAccessArea = "meetings" | "budget";
 export const FIRE_BOARD_BUDGET_SECTIONS = [
   {
     value: "overview",
-    label: "Budget overview",
+    label: "Budget workbook",
     navLabel: "Budget",
     href: "/board/referendum",
-    summary: "Top-line revenue, annual need, gap or margin, and annual cost buckets.",
-  },
-  {
-    value: "levy",
-    label: "Levy",
-    navLabel: "Levy",
-    href: "/board/referendum/levy",
-    summary: "EAV, levy rate, projected levy revenue, and property-tax planning.",
-  },
-  {
-    value: "staffing",
-    label: "Staffing and salaries",
-    navLabel: "Staffing",
-    href: "/board/referendum/staffing",
-    summary: "Proposed staffing count, salaries, and personnel cost lines.",
-  },
-  {
-    value: "fleet",
-    label: "Fleet",
-    navLabel: "Fleet",
-    href: "/board/referendum/fleet",
-    summary: "Ambulance and fleet-related annual costs.",
-  },
-  {
-    value: "debt",
-    label: "Debt and payables",
-    navLabel: "Debt",
-    href: "/board/referendum/debt",
-    summary: "Loans, EMSMC catch-up, Mediclaims payable, balances, and annual debt service.",
-  },
-  {
-    value: "forecast",
-    label: "Forecast",
-    navLabel: "Forecast",
-    href: "/board/referendum/forecast",
-    summary: "Five-year projection scenarios.",
-  },
-  {
-    value: "detail",
-    label: "Full detail",
-    navLabel: "Detail",
-    href: "/board/referendum/detailed",
-    summary: "Every imported workbook line item.",
+    summary: "Shared read-only spreadsheet view selected by Kenneth James and Joe Wagner.",
   },
 ] as const;
 export type FireBoardBudgetSection = (typeof FIRE_BOARD_BUDGET_SECTIONS)[number]["value"];
@@ -130,15 +88,15 @@ export const FIRE_BOARD_ACCESS_OPTIONS: Array<{
   {
     value: "budget",
     label: "Requests + Budget",
-    summary: "Fire Board members can see only the Budget sections selected below, without EMS meeting access.",
-    allowed: ["Submit Fire Board meeting requests", "View selected Budget sections", "View Documents"],
+    summary: "Fire Board members can see the Budget workbook, without EMS meeting access.",
+    allowed: ["Submit Fire Board meeting requests", "View Budget workbook", "View Documents"],
     blocked: ["EMS meetings", "EMS quorum and attendance controls"],
   },
   {
     value: "meetings_budget",
     label: "Requests + Meetings + Budget",
-    summary: "Fire Board members can see the permitted EMS meeting view plus the selected Budget sections.",
-    allowed: ["Submit Fire Board meeting requests", "View EMS meeting list", "Open permitted EMS meeting records", "View selected Budget sections", "View Documents"],
+    summary: "Fire Board members can see the permitted EMS meeting view plus the Budget workbook.",
+    allowed: ["Submit Fire Board meeting requests", "View EMS meeting list", "Open permitted EMS meeting records", "View Budget workbook", "View Documents"],
     blocked: ["EMS quorum and attendance controls"],
   },
 ];
@@ -337,15 +295,15 @@ export async function ensureGovernanceSchema(): Promise<void> {
   await db`CREATE TABLE IF NOT EXISTS board_fire_access_settings (
     setting_key TEXT PRIMARY KEY,
     access_level TEXT NOT NULL DEFAULT 'requests',
-    budget_sections JSONB NOT NULL DEFAULT '["overview","levy","staffing","fleet","debt","forecast","detail"]'::jsonb,
+    budget_sections JSONB NOT NULL DEFAULT '["overview"]'::jsonb,
     updated_by UUID,
     updated_by_name TEXT,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`;
-  await db`ALTER TABLE board_fire_access_settings ADD COLUMN IF NOT EXISTS budget_sections JSONB NOT NULL DEFAULT '["overview","levy","staffing","fleet","debt","forecast","detail"]'::jsonb`;
+  await db`ALTER TABLE board_fire_access_settings ADD COLUMN IF NOT EXISTS budget_sections JSONB NOT NULL DEFAULT '["overview"]'::jsonb`;
   await db`
     UPDATE board_fire_access_settings
-    SET budget_sections = '["overview","levy","staffing","fleet","debt","forecast","detail"]'::jsonb
+    SET budget_sections = '["overview"]'::jsonb
     WHERE budget_sections IS NULL
   `;
   await db`
@@ -501,10 +459,10 @@ export function canReviewFireMeetingRequests(u: BoardUser): boolean {
 export function canManageFireBoardAccess(u: BoardUser): boolean {
   return u.role === "admin" || u.role === "ems_president" || u.officerTitle === "President";
 }
-function canViewInternalFinancialModel(u: BoardUser): boolean {
+function canViewInternalBudgetWorkbook(u: BoardUser): boolean {
   return u.role === "admin" || u.role === "submitter" || u.role === "ems_board" || u.role === "ems_president" || u.role === "audit_reviewer";
 }
-export function canViewFinancialModel(
+export function canViewBudgetWorkbook(
   u: BoardUser,
   fireAccessLevel: FireBoardAccessLevel = "requests",
   budgetSections: FireBoardBudgetSection[] = FIRE_BOARD_BUDGET_SECTION_VALUES,
@@ -512,29 +470,7 @@ export function canViewFinancialModel(
   if (u.role === "fire_board") {
     return fireBoardAccessAllows(fireAccessLevel, "budget") && normalizeFireBoardBudgetSections(budgetSections).length > 0;
   }
-  return canViewInternalFinancialModel(u);
-}
-export function canViewBudgetSection(
-  u: BoardUser,
-  section: FireBoardBudgetSection,
-  fireAccessLevel: FireBoardAccessLevel = "requests",
-  budgetSections: FireBoardBudgetSection[] = FIRE_BOARD_BUDGET_SECTION_VALUES,
-): boolean {
-  if (u.role === "fire_board") {
-    return fireBoardAccessAllows(fireAccessLevel, "budget") && normalizeFireBoardBudgetSections(budgetSections).includes(section);
-  }
-  return canViewInternalFinancialModel(u);
-}
-export function visibleBudgetSectionsForUser(
-  u: BoardUser,
-  fireAccessLevel: FireBoardAccessLevel = "requests",
-  budgetSections: FireBoardBudgetSection[] = FIRE_BOARD_BUDGET_SECTION_VALUES,
-): FireBoardBudgetSection[] {
-  return FIRE_BOARD_BUDGET_SECTION_VALUES.filter((section) => canViewBudgetSection(u, section, fireAccessLevel, budgetSections));
-}
-export function firstVisibleBudgetSectionPath(sections: FireBoardBudgetSection[]): string | null {
-  const first = FIRE_BOARD_BUDGET_SECTIONS.find((section) => sections.includes(section.value));
-  return first?.href ?? null;
+  return canViewInternalBudgetWorkbook(u);
 }
 export function canSeeConfidential(u: BoardUser): boolean {
   return u.role === "admin" || u.role === "ems_president" || u.officerTitle === "President";

@@ -7,17 +7,15 @@ import {
   canManageFireBoardAccess,
   canReviewFireMeetingRequests,
   canSubmitFireMeetingRequest,
-  canViewFinancialModel,
+  canViewBudgetWorkbook,
   canRecordAttendance,
   canSeeQuestion,
-  firstVisibleBudgetSectionPath,
   getAttendance,
   getFireBoardAccessStatus,
   getFireMeetingRequests,
   getNextMeeting,
   getQuestions,
   userBoards,
-  visibleBudgetSectionsForUser,
 } from "@/lib/board/governance";
 import { boardUserEmoji } from "@/lib/board/personalization";
 
@@ -32,9 +30,8 @@ export default async function BoardHome() {
   const boards = userBoards(user, fireAccessLevel);
   const showMeetings = boards.length > 0;
   const showRequests = canSubmitFireMeetingRequest(user) || canReviewFireMeetingRequests(user);
-  const visibleBudgetSections = visibleBudgetSectionsForUser(user, fireAccess.level, fireAccess.budgetSections);
-  const showReferendum = canViewFinancialModel(user, fireAccessLevel, fireAccess.budgetSections);
-  const budgetHref = firstVisibleBudgetSectionPath(visibleBudgetSections) ?? "/board/referendum";
+  const showReferendum = canViewBudgetWorkbook(user, fireAccessLevel, fireAccess.budgetSections);
+  const budgetHref = "/board/referendum";
   const showAdmin = user.role === "admin";
   const showFireAccess = canManageFireBoardAccess(user);
   const personalEmoji = boardUserEmoji(user);
@@ -121,8 +118,8 @@ export default async function BoardHome() {
         {showReferendum && (
           <BoardCard className="board-referendum-panel">
             <BoardStatusChip tone="accent">Budget</BoardStatusChip>
-            <h2 className="board-h2">EMS Budget Model</h2>
-            <p className="board-sub">Projected budget, staffing, fleet, debt, and levy planning.</p>
+            <h2 className="board-h2">Referendum Budget Workbook</h2>
+            <p className="board-sub">Shared read-only worksheet for board review.</p>
             <Link href={budgetHref} className="board-btn-primary">Open budget</Link>
           </BoardCard>
         )}
