@@ -3,6 +3,7 @@ import type {
   BoardWorkbookScenario,
   BoardWorkbookScenarioCellOverride,
   BoardWorkbookScenarioOverrides,
+  BoardWorkbookTransferConfig,
   BoardWorkbookView,
 } from "./workbook";
 
@@ -10,6 +11,9 @@ const MAX_SHEET_ROWS = 220;
 const MAX_SHEET_COLS = 24;
 const SCENARIO_COLUMNS = ["C", "D", "E"] as const;
 const OPERATING_PERCENT_COLUMNS = ["D", "E", "F"] as const;
+const TRANSFER_CONFIG_ROWS = [45, 46, 47, 48, 49] as const;
+const TRANSFER_DYNAMIC_ROWS = [8, 10, 11, 19, 21, 28, 29, 30, 31, 38, 39, 40] as const;
+const TRANSFER_ACTIVE_ROWS = [7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 38, 39, 40] as const;
 
 type StyledCell = XLSX.CellObject & {
   z?: string;
@@ -22,6 +26,53 @@ type StyledCell = XLSX.CellObject & {
 interface ScenarioDefinition extends BoardWorkbookScenario {
   index: number;
   column: (typeof SCENARIO_COLUMNS)[number];
+}
+
+interface TransferConfigDefinition extends BoardWorkbookTransferConfig {
+  row: number;
+  emts: number;
+  paramedics: number;
+  criticalCare: number;
+}
+
+interface TransferColumnValues {
+  runs: number;
+  netCollection: number;
+  billingFee: number;
+  billingRevenue: number;
+  billingCost: number;
+  hoursPerDay: number;
+  daysPerWeek: number;
+  annualHours: number;
+  emtRate: number;
+  paramedicRate: number;
+  criticalCareRate: number;
+  crewWages: number;
+  overtime: number;
+  employerTaxes: number;
+  contingency: number;
+  poolSize: number;
+  uniforms: number;
+  truckReserve: number;
+  maintenance: number;
+  fuelPerRun: number;
+  fuel: number;
+  suppliesPerRun: number;
+  supplies: number;
+  insurance: number;
+  other1: number;
+  other2: number;
+  other3: number;
+  totalRevenue: number;
+  totalExpenses: number;
+  netImpact: number;
+}
+
+interface BudgetTransferValues {
+  enabled: boolean;
+  runs: number;
+  revenue: number;
+  expenses: number;
 }
 
 function cellKey(row: number, col: number): string {
@@ -185,6 +236,157 @@ function findScenarios(workbook: XLSX.WorkBook): {
   };
 }
 
+function transferOverrideKey(scenarioKey: string, enabled: boolean, configKey: string): string {
+  return `${scenarioKey}::transfer-${enabled ? "on" : "off"}::${configKey}`;
+}
+
+function findTransferConfigs(workbook: XLSX.WorkBook): {
+  configs: TransferConfigDefinition[];
+  defaultEnabled: boolean;
+  defaultConfigKey: string | null;
+} {
+  if (!workbook.Sheets["Transfer Division"]) return { configs: [], defaultEnabled: false, defaultConfigKey: null };
+  const crewCounts = [
+    { emts: 2, paramedics: 2, criticalCare: 0 },
+    { emts: 4, paramedics: 0, criticalCare: 0 },
+    { emts: 3, paramedics: 1, criticalCare: 0 },
+    { emts: 0, paramedics: 2, criticalCare: 2 },
+    { emts: 2, paramedics: 1, criticalCare: 1 },
+  ];
+  const configs = TRANSFER_CONFIG_ROWS
+    .map((row, index) => {
+      const label = textCell(workbook, "Transfer Division", `A${row}`);
+      if (!label) return null;
+      const counts = crewCounts[index] ?? { emts: 0, paramedics: 0, criticalCare: 0 };
+      return {
+        key: slugify(label),
+        label,
+        index: index + 1,
+        row,
+        crew: textCell(workbook, "Transfer Division", `B${row}`),
+        netCollection: displayText(sheetCell(workbook, "Transfer Division", `C${row}`)),
+        ...counts,
+      };
+    })
+    .filter((config): config is TransferConfigDefinition => Boolean(config));
+  const selected = textCell(workbook, "Transfer Division", "B4");
+  return {
+    configs,
+    defaultEnabled: textCell(workbook, "Transfer Division", "B3").toUpperCase() !== "OFF",
+    defaultConfigKey: configs.find((config) => config.label === selected)?.key ?? configs[0]?.key ?? null,
+  };
+}
+
+function calculateTransferColumn(
+  workbook: XLSX.WorkBook,
+  column: (typeof SCENARIO_COLUMNS)[number],
+  config: TransferConfigDefinition,
+): TransferColumnValues {
+  const t = (row: number) => numericCell(workbook, "Transfer Division", `${column}${row}`);
+  const runs = t(7);
+  const netCollection = numericCell(workbook, "Transfer Division", `C${config.row}`);
+  const billingFee = t(9);
+  const billingRevenue = runs * netCollection;
+  const billingCost = billingRevenue * billingFee;
+  const hoursPerDay = t(13);
+  const daysPerWeek = t(14);
+  const annualHours = t(15);
+  const emtRate = t(16);
+  const paramedicRate = t(17);
+  const criticalCareRate = t(18);
+  const overtime = t(20);
+  const crewWages = annualHours * (
+    (config.emts * emtRate) +
+    (config.paramedics * paramedicRate) +
+    (config.criticalCare * criticalCareRate)
+  );
+  const employerTaxes = (crewWages + overtime) * (numericCell(workbook, "Details", "D19") + numericCell(workbook, "Details", "D20"));
+  const contingency = t(22);
+  const poolSize = t(23);
+  const uniforms = t(24);
+  const truckReserve = t(26);
+  const maintenance = t(27);
+  const fuelPerRun = numericCell(workbook, "Transfer Division", `E${config.row}`);
+  const fuel = runs * fuelPerRun;
+  const suppliesPerRun = numericCell(workbook, "Transfer Division", `D${config.row}`);
+  const supplies = runs * suppliesPerRun;
+  const insurance = t(32);
+  const other1 = t(33);
+  const other2 = t(34);
+  const other3 = t(35);
+  const totalRevenue = billingRevenue;
+  const totalExpenses = billingCost + crewWages + overtime + employerTaxes + contingency + uniforms + truckReserve + maintenance + fuel + supplies + insurance + other1 + other2 + other3;
+
+  return {
+    runs,
+    netCollection,
+    billingFee,
+    billingRevenue,
+    billingCost,
+    hoursPerDay,
+    daysPerWeek,
+    annualHours,
+    emtRate,
+    paramedicRate,
+    criticalCareRate,
+    crewWages,
+    overtime,
+    employerTaxes,
+    contingency,
+    poolSize,
+    uniforms,
+    truckReserve,
+    maintenance,
+    fuelPerRun,
+    fuel,
+    suppliesPerRun,
+    supplies,
+    insurance,
+    other1,
+    other2,
+    other3,
+    totalRevenue,
+    totalExpenses,
+    netImpact: totalRevenue - totalExpenses,
+  };
+}
+
+function transferValueForRow(values: TransferColumnValues, row: number): number {
+  switch (row) {
+    case 7: return values.runs;
+    case 8: return values.netCollection;
+    case 9: return values.billingFee;
+    case 10: return values.billingRevenue;
+    case 11: return values.billingCost;
+    case 13: return values.hoursPerDay;
+    case 14: return values.daysPerWeek;
+    case 15: return values.annualHours;
+    case 16: return values.emtRate;
+    case 17: return values.paramedicRate;
+    case 18: return values.criticalCareRate;
+    case 19: return values.crewWages;
+    case 20: return values.overtime;
+    case 21: return values.employerTaxes;
+    case 22: return values.contingency;
+    case 23: return values.poolSize;
+    case 24: return values.uniforms;
+    case 26: return values.truckReserve;
+    case 27: return values.maintenance;
+    case 28: return values.fuelPerRun;
+    case 29: return values.fuel;
+    case 30: return values.suppliesPerRun;
+    case 31: return values.supplies;
+    case 32: return values.insurance;
+    case 33: return values.other1;
+    case 34: return values.other2;
+    case 35: return values.other3;
+    case 38: return values.totalRevenue;
+    case 39: return values.totalExpenses;
+    case 40: return values.netImpact;
+    default: return 0;
+  }
+}
+
 function sameRowChooseFormula(formula: string): number | null {
   const match = formula.match(/CHOOSE\((?:Scenarios!)?\$?H\$?2,\$?C\$?(\d+),\$?D\$?\1,\$?E\$?\1\)/i);
   return match ? Number(match[1]) : null;
@@ -344,6 +546,8 @@ function addBudgetDashboardScenarioOverrides(
   overrides: BoardWorkbookScenarioOverrides,
   scenario: ScenarioDefinition,
   details: ReturnType<typeof addDetailsScenarioOverrides>,
+  transfer?: BudgetTransferValues,
+  overrideKey = scenario.key,
 ): void {
   const n = (sheet: string, address: string) => numericCell(workbook, sheet, address);
   const eav = n("Dashboard", "B5");
@@ -357,10 +561,10 @@ function addBudgetDashboardScenarioOverrides(
   const emsBillingRevenue = calls * transportRate * netCollection;
   const levyRevenue = eav * levyRate * collection;
   const otherRevenue = ["C7", "C8", "C9", "C10", "C11"].reduce((sum, address) => sum + n("Budget", address), 0);
-  const transferEnabled = textCell(workbook, "Transfer Division", "B3").toUpperCase() !== "OFF";
-  const transferRuns = transferEnabled ? n("Transfer Division", `${scenario.column}7`) : 0;
-  const transferRevenue = transferEnabled ? n("Transfer Division", `${scenario.column}38`) : 0;
-  const transferExpenses = transferEnabled ? n("Transfer Division", `${scenario.column}39`) : 0;
+  const transferEnabled = transfer?.enabled ?? textCell(workbook, "Transfer Division", "B3").toUpperCase() !== "OFF";
+  const transferRuns = transferEnabled ? transfer?.runs ?? n("Transfer Division", `${scenario.column}7`) : 0;
+  const transferRevenue = transferEnabled ? transfer?.revenue ?? n("Transfer Division", `${scenario.column}38`) : 0;
+  const transferExpenses = transferEnabled ? transfer?.expenses ?? n("Transfer Division", `${scenario.column}39`) : 0;
   const debtService = n("Details", "H127");
   const pastDue = n("Details", "E134");
   const capitalReserve = n("Details", "H150");
@@ -371,70 +575,70 @@ function addBudgetDashboardScenarioOverrides(
   const surplus = totalRevenue - totalExpenses;
   const breakEvenRate = eav * collection === 0 ? 0 : (totalExpenses - emsBillingRevenue - otherRevenue - transferRevenue) / (eav * collection);
 
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "A2", `Annual budget at the selected ${formatCalculatedValue(sheetCell(workbook, "Dashboard", "B6"), levyRate)} levy rate  ·  Scenario: ${scenario.label}  ·  This page updates itself.`);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C5", levyRevenue);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C6", emsBillingRevenue);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C12", totalRevenue);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C15", details.fullTimePayroll);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C16", details.employerCosts);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C17", details.partTimeStaffing);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C18", details.benefits);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C19", totalPersonnel);
+  setOverride(overrides, overrideKey, "Budget", "A2", overrideFromValue(workbook, "Budget", "A2", `Annual budget at the selected ${formatCalculatedValue(sheetCell(workbook, "Dashboard", "B6"), levyRate)} levy rate  ·  Scenario: ${scenario.label}  ·  This page updates itself.`));
+  setOverride(overrides, overrideKey, "Budget", "C5", overrideFromValue(workbook, "Budget", "C5", levyRevenue));
+  setOverride(overrides, overrideKey, "Budget", "C6", overrideFromValue(workbook, "Budget", "C6", emsBillingRevenue));
+  setOverride(overrides, overrideKey, "Budget", "C12", overrideFromValue(workbook, "Budget", "C12", totalRevenue));
+  setOverride(overrides, overrideKey, "Budget", "C15", overrideFromValue(workbook, "Budget", "C15", details.fullTimePayroll));
+  setOverride(overrides, overrideKey, "Budget", "C16", overrideFromValue(workbook, "Budget", "C16", details.employerCosts));
+  setOverride(overrides, overrideKey, "Budget", "C17", overrideFromValue(workbook, "Budget", "C17", details.partTimeStaffing));
+  setOverride(overrides, overrideKey, "Budget", "C18", overrideFromValue(workbook, "Budget", "C18", details.benefits));
+  setOverride(overrides, overrideKey, "Budget", "C19", overrideFromValue(workbook, "Budget", "C19", totalPersonnel));
   for (let row = 22; row <= 29; row++) {
     const category = textCell(workbook, "Budget", `A${row}`);
-    setCalculatedOverride(workbook, overrides, scenario, "Budget", `C${row}`, details.operationsByCategory.get(category) ?? 0);
+    setOverride(overrides, overrideKey, "Budget", `C${row}`, overrideFromValue(workbook, "Budget", `C${row}`, details.operationsByCategory.get(category) ?? 0));
   }
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C30", details.operationsTotal);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C33", debtService);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C34", pastDue);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C35", capitalReserve);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C36", totalDebt);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C38", totalExpenses);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C40", surplus);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C44", homeValue * assessmentFactor * levyRate);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C45", (homeValue * assessmentFactor * levyRate) / 12);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C48", transferRevenue);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C49", transferExpenses);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C50", transferRevenue - transferExpenses);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C51", transferRuns);
-  setCalculatedOverride(workbook, overrides, scenario, "Budget", "C52", calls + transferRuns);
+  setOverride(overrides, overrideKey, "Budget", "C30", overrideFromValue(workbook, "Budget", "C30", details.operationsTotal));
+  setOverride(overrides, overrideKey, "Budget", "C33", overrideFromValue(workbook, "Budget", "C33", debtService));
+  setOverride(overrides, overrideKey, "Budget", "C34", overrideFromValue(workbook, "Budget", "C34", pastDue));
+  setOverride(overrides, overrideKey, "Budget", "C35", overrideFromValue(workbook, "Budget", "C35", capitalReserve));
+  setOverride(overrides, overrideKey, "Budget", "C36", overrideFromValue(workbook, "Budget", "C36", totalDebt));
+  setOverride(overrides, overrideKey, "Budget", "C38", overrideFromValue(workbook, "Budget", "C38", totalExpenses));
+  setOverride(overrides, overrideKey, "Budget", "C40", overrideFromValue(workbook, "Budget", "C40", surplus));
+  setOverride(overrides, overrideKey, "Budget", "C44", overrideFromValue(workbook, "Budget", "C44", homeValue * assessmentFactor * levyRate));
+  setOverride(overrides, overrideKey, "Budget", "C45", overrideFromValue(workbook, "Budget", "C45", (homeValue * assessmentFactor * levyRate) / 12));
+  setOverride(overrides, overrideKey, "Budget", "C48", overrideFromValue(workbook, "Budget", "C48", transferRevenue));
+  setOverride(overrides, overrideKey, "Budget", "C49", overrideFromValue(workbook, "Budget", "C49", transferExpenses));
+  setOverride(overrides, overrideKey, "Budget", "C50", overrideFromValue(workbook, "Budget", "C50", transferRevenue - transferExpenses));
+  setOverride(overrides, overrideKey, "Budget", "C51", overrideFromValue(workbook, "Budget", "C51", transferRuns));
+  setOverride(overrides, overrideKey, "Budget", "C52", overrideFromValue(workbook, "Budget", "C52", calls + transferRuns));
 
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "K1", scenario.label);
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "E5", totalRevenue);
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "H5", totalExpenses);
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "K5", surplus);
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "D8", `Total incl. transfers: ${formatCalculatedValue(undefined, calls + transferRuns)} runs / yr`);
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "E8", breakEvenRate);
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "B14", numericCell(workbook, "Scenarios", `${scenario.column}56`));
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "B15", numericCell(workbook, "Scenarios", `${scenario.column}8`));
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "B16", numericCell(workbook, "Scenarios", `${scenario.column}57`));
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "B17", numericCell(workbook, "Scenarios", `${scenario.column}9`));
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "B18", numericCell(workbook, "Scenarios", `${scenario.column}58`));
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "B19", numericCell(workbook, "Scenarios", `${scenario.column}10`));
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "B20", numericCell(workbook, "Scenarios", `${scenario.column}59`));
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "B21", numericCell(workbook, "Scenarios", `${scenario.column}11`));
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "B51", totalPersonnel);
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "B52", details.operationsTotal);
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "B53", debtService);
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "B54", pastDue);
-  setCalculatedOverride(workbook, overrides, scenario, "Dashboard", "B55", capitalReserve);
+  setOverride(overrides, overrideKey, "Dashboard", "K1", overrideFromValue(workbook, "Dashboard", "K1", scenario.label));
+  setOverride(overrides, overrideKey, "Dashboard", "E5", overrideFromValue(workbook, "Dashboard", "E5", totalRevenue));
+  setOverride(overrides, overrideKey, "Dashboard", "H5", overrideFromValue(workbook, "Dashboard", "H5", totalExpenses));
+  setOverride(overrides, overrideKey, "Dashboard", "K5", overrideFromValue(workbook, "Dashboard", "K5", surplus));
+  setOverride(overrides, overrideKey, "Dashboard", "D8", overrideFromValue(workbook, "Dashboard", "D8", `Total incl. transfers: ${formatCalculatedValue(undefined, calls + transferRuns)} runs / yr`));
+  setOverride(overrides, overrideKey, "Dashboard", "E8", overrideFromValue(workbook, "Dashboard", "E8", breakEvenRate));
+  setOverride(overrides, overrideKey, "Dashboard", "B14", overrideFromValue(workbook, "Dashboard", "B14", numericCell(workbook, "Scenarios", `${scenario.column}56`)));
+  setOverride(overrides, overrideKey, "Dashboard", "B15", overrideFromValue(workbook, "Dashboard", "B15", numericCell(workbook, "Scenarios", `${scenario.column}8`)));
+  setOverride(overrides, overrideKey, "Dashboard", "B16", overrideFromValue(workbook, "Dashboard", "B16", numericCell(workbook, "Scenarios", `${scenario.column}57`)));
+  setOverride(overrides, overrideKey, "Dashboard", "B17", overrideFromValue(workbook, "Dashboard", "B17", numericCell(workbook, "Scenarios", `${scenario.column}9`)));
+  setOverride(overrides, overrideKey, "Dashboard", "B18", overrideFromValue(workbook, "Dashboard", "B18", numericCell(workbook, "Scenarios", `${scenario.column}58`)));
+  setOverride(overrides, overrideKey, "Dashboard", "B19", overrideFromValue(workbook, "Dashboard", "B19", numericCell(workbook, "Scenarios", `${scenario.column}10`)));
+  setOverride(overrides, overrideKey, "Dashboard", "B20", overrideFromValue(workbook, "Dashboard", "B20", numericCell(workbook, "Scenarios", `${scenario.column}59`)));
+  setOverride(overrides, overrideKey, "Dashboard", "B21", overrideFromValue(workbook, "Dashboard", "B21", numericCell(workbook, "Scenarios", `${scenario.column}11`)));
+  setOverride(overrides, overrideKey, "Dashboard", "B51", overrideFromValue(workbook, "Dashboard", "B51", totalPersonnel));
+  setOverride(overrides, overrideKey, "Dashboard", "B52", overrideFromValue(workbook, "Dashboard", "B52", details.operationsTotal));
+  setOverride(overrides, overrideKey, "Dashboard", "B53", overrideFromValue(workbook, "Dashboard", "B53", debtService));
+  setOverride(overrides, overrideKey, "Dashboard", "B54", overrideFromValue(workbook, "Dashboard", "B54", pastDue));
+  setOverride(overrides, overrideKey, "Dashboard", "B55", overrideFromValue(workbook, "Dashboard", "B55", capitalReserve));
 
   for (let row = 34; row <= 38; row++) {
     const rate = n("Dashboard", `G${row}`);
     const rowLevyRevenue = eav * rate * collection;
     const rowTotalRevenue = rowLevyRevenue + emsBillingRevenue + otherRevenue + transferRevenue;
     const rowSurplus = rowTotalRevenue - totalExpenses;
-    setCalculatedOverride(workbook, overrides, scenario, "Dashboard", `A${row}`, rate);
-    setCalculatedOverride(workbook, overrides, scenario, "Dashboard", `B${row}`, rowLevyRevenue);
-    setCalculatedOverride(workbook, overrides, scenario, "Dashboard", `C${row}`, rowTotalRevenue);
-    setCalculatedOverride(workbook, overrides, scenario, "Dashboard", `D${row}`, totalExpenses);
-    setCalculatedOverride(workbook, overrides, scenario, "Dashboard", `E${row}`, rowSurplus);
-    setCalculatedOverride(workbook, overrides, scenario, "Dashboard", `F${row}`, rowSurplus >= 0 ? "Fully Funds Budget" : "Funding Gap");
+    setOverride(overrides, overrideKey, "Dashboard", `A${row}`, overrideFromValue(workbook, "Dashboard", `A${row}`, rate));
+    setOverride(overrides, overrideKey, "Dashboard", `B${row}`, overrideFromValue(workbook, "Dashboard", `B${row}`, rowLevyRevenue));
+    setOverride(overrides, overrideKey, "Dashboard", `C${row}`, overrideFromValue(workbook, "Dashboard", `C${row}`, rowTotalRevenue));
+    setOverride(overrides, overrideKey, "Dashboard", `D${row}`, overrideFromValue(workbook, "Dashboard", `D${row}`, totalExpenses));
+    setOverride(overrides, overrideKey, "Dashboard", `E${row}`, overrideFromValue(workbook, "Dashboard", `E${row}`, rowSurplus));
+    setOverride(overrides, overrideKey, "Dashboard", `F${row}`, overrideFromValue(workbook, "Dashboard", `F${row}`, rowSurplus >= 0 ? "Fully Funds Budget" : "Funding Gap"));
   }
 
-  setCalculatedOverride(workbook, overrides, scenario, "Transfer Division", "H10", transferRuns);
-  setCalculatedOverride(workbook, overrides, scenario, "Transfer Division", "H38", transferRevenue);
-  setCalculatedOverride(workbook, overrides, scenario, "Transfer Division", "H39", transferExpenses);
+  setOverride(overrides, overrideKey, "Transfer Division", "H10", overrideFromValue(workbook, "Transfer Division", "H10", transferRuns));
+  setOverride(overrides, overrideKey, "Transfer Division", "H38", overrideFromValue(workbook, "Transfer Division", "H38", transferRevenue));
+  setOverride(overrides, overrideKey, "Transfer Division", "H39", overrideFromValue(workbook, "Transfer Division", "H39", transferExpenses));
 }
 
 function buildScenarioOverrides(
@@ -449,6 +653,74 @@ function buildScenarioOverrides(
     addFormulaSourceOverrides(workbook, overrides, scenario);
     const details = addDetailsScenarioOverrides(workbook, overrides, scenario);
     addBudgetDashboardScenarioOverrides(workbook, overrides, scenario, details);
+  }
+  return overrides;
+}
+
+function addTransferControlOverrides(
+  workbook: XLSX.WorkBook,
+  overrides: BoardWorkbookScenarioOverrides,
+  scenario: ScenarioDefinition,
+  details: ReturnType<typeof addDetailsScenarioOverrides>,
+  config: TransferConfigDefinition,
+  enabled: boolean,
+): void {
+  const overrideKey = transferOverrideKey(scenario.key, enabled, config.key);
+  const activeValues = calculateTransferColumn(workbook, scenario.column, config);
+
+  setOverride(overrides, overrideKey, "Transfer Division", "B3", overrideFromValue(workbook, "Transfer Division", "B3", enabled ? "ON" : "OFF"));
+  setOverride(overrides, overrideKey, "Transfer Division", "B4", overrideFromValue(workbook, "Transfer Division", "B4", config.label));
+  setOverride(overrides, overrideKey, "Transfer Division", "H4", overrideFromValue(workbook, "Transfer Division", "H4", config.index));
+  setOverride(overrides, overrideKey, "Transfer Division", "B36", overrideFromValue(
+    workbook,
+    "Transfer Division",
+    "B36",
+    `${config.label} — ${config.crew} · ${config.netCollection} / run`,
+  ));
+
+  for (const column of SCENARIO_COLUMNS) {
+    const values = calculateTransferColumn(workbook, column, config);
+    for (const row of TRANSFER_DYNAMIC_ROWS) {
+      setOverride(overrides, overrideKey, "Transfer Division", `${column}${row}`, overrideFromValue(
+        workbook,
+        "Transfer Division",
+        `${column}${row}`,
+        transferValueForRow(values, row),
+      ));
+    }
+  }
+
+  for (const row of TRANSFER_ACTIVE_ROWS) {
+    setOverride(overrides, overrideKey, "Transfer Division", `F${row}`, overrideFromValue(
+      workbook,
+      "Transfer Division",
+      `F${row}`,
+      transferValueForRow(activeValues, row),
+    ));
+  }
+
+  addBudgetDashboardScenarioOverrides(workbook, overrides, scenario, details, {
+    enabled,
+    runs: activeValues.runs,
+    revenue: activeValues.totalRevenue,
+    expenses: activeValues.totalExpenses,
+  }, overrideKey);
+}
+
+function buildTransferOverrides(
+  workbook: XLSX.WorkBook,
+  scenarios: ScenarioDefinition[],
+  configs: TransferConfigDefinition[],
+): BoardWorkbookScenarioOverrides | undefined {
+  if (!scenarios.length || !configs.length) return undefined;
+  const overrides: BoardWorkbookScenarioOverrides = {};
+  for (const scenario of scenarios) {
+    const scratch: BoardWorkbookScenarioOverrides = {};
+    const details = addDetailsScenarioOverrides(workbook, scratch, scenario);
+    for (const config of configs) {
+      addTransferControlOverrides(workbook, overrides, scenario, details, config, true);
+      addTransferControlOverrides(workbook, overrides, scenario, details, config, false);
+    }
   }
   return overrides;
 }
@@ -499,7 +771,9 @@ export function parseBoardWorkbook(buffer: Buffer | ArrayBuffer, source: {
   });
 
   const { scenarios, defaultScenarioKey } = findScenarios(workbook);
+  const transfer = findTransferConfigs(workbook);
   const scenarioOverrides = buildScenarioOverrides(workbook, scenarios);
+  const transferOverrides = buildTransferOverrides(workbook, scenarios, transfer.configs);
 
   const sheets = workbook.SheetNames.map((name) => {
     const sheet = workbook.Sheets[name];
@@ -561,5 +835,9 @@ export function parseBoardWorkbook(buffer: Buffer | ArrayBuffer, source: {
     scenarios: scenarios.map(({ key, label }) => ({ key, label })),
     defaultScenarioKey,
     scenarioOverrides,
+    transferConfigs: transfer.configs.map(({ key, label, index, crew, netCollection }) => ({ key, label, index, crew, netCollection })),
+    defaultTransferEnabled: transfer.defaultEnabled,
+    defaultTransferConfigKey: transfer.defaultConfigKey,
+    transferOverrides,
   };
 }

@@ -437,6 +437,7 @@
 .board-workbook-message{display:flex;align-items:center;gap:8px;margin:0}
 .board-workbook-message.ok{border:1px solid color-mix(in srgb,var(--b-good) 34%,transparent);border-radius:8px;background:var(--b-good-bg);color:var(--b-good);padding:10px 12px}
 .board-workbook-scenario{display:flex;align-items:center;justify-content:space-between;gap:16px;border:1px solid var(--b-hair);border-radius:8px;background:var(--b-surface);box-shadow:var(--b-shadow);padding:14px 16px}
+.board-workbook-control-stack{display:grid;justify-items:end;gap:8px;min-width:0}
 .board-workbook-segmented{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--b-hair);border-radius:8px;background:var(--b-raise);padding:4px;max-width:100%;overflow-x:auto}
 .board-workbook-segmented button{border:0;border-radius:6px;background:transparent;color:var(--b-ink-2);font-size:12.5px;font-weight:800;min-height:34px;padding:7px 11px;white-space:nowrap;cursor:pointer}
 .board-workbook-segmented button:hover{background:var(--b-hover);color:var(--b-ink)}
@@ -470,6 +471,7 @@
 .board-workbook-table td.scenario-value{background-image:linear-gradient(0deg,rgba(255,211,105,.24),rgba(255,211,105,.24))}
 @media(max-width:720px){
   .board-workbook-toolbar,.board-workbook-drop,.board-workbook-scenario{grid-template-columns:1fr;display:grid}
+  .board-workbook-control-stack{justify-items:stretch}
   .board-workbook-toolbar .board-actions,.board-workbook-drop .board-btn-primary,.board-workbook-visibility-head .board-btn-primary{width:100%}
   .board-workbook-toolbar .board-actions a,.board-workbook-drop .board-btn-primary,.board-workbook-visibility-head .board-btn-primary{justify-content:center}
   .board-workbook-visibility-head{align-items:stretch;display:grid}

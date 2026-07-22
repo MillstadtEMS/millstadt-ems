@@ -3,7 +3,7 @@
 import type { CSSProperties, DragEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CheckCircle2, Download, Eye, FileSpreadsheet, LockKeyhole, RefreshCw, Save, UploadCloud } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, Eye, FileSpreadsheet, LockKeyhole, RefreshCw, Save, Truck, UploadCloud } from "lucide-react";
 import type { BoardWorkbookCell, BoardWorkbookView, BoardWorkbookVisibilitySettings } from "@/lib/board/workbook";
 
 function formatUpdated(value: string | null): string {
@@ -33,6 +33,10 @@ function cellStyle(cell: BoardWorkbookView["sheets"][number]["rows"][number][num
   };
 }
 
+function transferOverrideKey(scenarioKey: string, enabled: boolean, configKey: string): string {
+  return `${scenarioKey}::transfer-${enabled ? "on" : "off"}::${configKey}`;
+}
+
 export default function ReadonlyWorkbook({
   workbook,
   canUpload,
@@ -48,6 +52,8 @@ export default function ReadonlyWorkbook({
   const inputRef = useRef<HTMLInputElement>(null);
   const [activeSheet, setActiveSheet] = useState(workbook.sheets[0]?.name ?? "");
   const [activeScenario, setActiveScenario] = useState(workbook.defaultScenarioKey ?? workbook.scenarios?.[0]?.key ?? "");
+  const [transferEnabled, setTransferEnabled] = useState(workbook.defaultTransferEnabled ?? true);
+  const [activeTransferConfig, setActiveTransferConfig] = useState(workbook.defaultTransferConfigKey ?? workbook.transferConfigs?.[0]?.key ?? "");
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [savingVisibility, setSavingVisibility] = useState(false);
@@ -55,6 +61,7 @@ export default function ReadonlyWorkbook({
   const [fireTabs, setFireTabs] = useState(visibilitySettings?.fireBoard ?? allSheetNames);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const scenarios = useMemo(() => workbook.scenarios ?? [], [workbook.scenarios]);
+  const transferConfigs = useMemo(() => workbook.transferConfigs ?? [], [workbook.transferConfigs]);
 
   useEffect(() => {
     if (!workbook.sheets.some((sheet) => sheet.name === activeSheet)) {
@@ -69,6 +76,16 @@ export default function ReadonlyWorkbook({
   }, [activeScenario, scenarios, workbook.defaultScenarioKey]);
 
   useEffect(() => {
+    if (!transferConfigs.some((config) => config.key === activeTransferConfig)) {
+      setActiveTransferConfig(workbook.defaultTransferConfigKey ?? transferConfigs[0]?.key ?? "");
+    }
+  }, [activeTransferConfig, transferConfigs, workbook.defaultTransferConfigKey]);
+
+  useEffect(() => {
+    setTransferEnabled(workbook.defaultTransferEnabled ?? true);
+  }, [workbook.defaultTransferEnabled]);
+
+  useEffect(() => {
     setEmsTabs(visibilitySettings?.emsBoard ?? allSheetNames);
     setFireTabs(visibilitySettings?.fireBoard ?? allSheetNames);
   }, [allSheetNames, visibilitySettings]);
@@ -78,15 +95,19 @@ export default function ReadonlyWorkbook({
     [activeSheet, workbook.sheets],
   );
   const scenarioOverrides = activeScenario ? workbook.scenarioOverrides?.[activeScenario] : undefined;
+  const transferOverrides = activeScenario && activeTransferConfig
+    ? workbook.transferOverrides?.[transferOverrideKey(activeScenario, transferEnabled, activeTransferConfig)]
+    : undefined;
   const activeScenarioLabel = scenarios.find((scenario) => scenario.key === activeScenario)?.label;
+  const activeTransferLabel = transferConfigs.find((config) => config.key === activeTransferConfig)?.label;
 
   function renderedCell(sheetName: string, cell: BoardWorkbookCell): BoardWorkbookCell {
-    const override = scenarioOverrides?.[sheetName]?.[cell.address];
+    const override = transferOverrides?.[sheetName]?.[cell.address] ?? scenarioOverrides?.[sheetName]?.[cell.address];
     return override ? { ...cell, text: override.text, isNumber: override.isNumber } : cell;
   }
 
   function hasScenarioOverride(sheetName: string, cell: BoardWorkbookCell): boolean {
-    return Boolean(scenarioOverrides?.[sheetName]?.[cell.address]);
+    return Boolean(transferOverrides?.[sheetName]?.[cell.address] ?? scenarioOverrides?.[sheetName]?.[cell.address]);
   }
 
   async function upload(file: File | null) {
@@ -215,6 +236,38 @@ export default function ReadonlyWorkbook({
                 {scenario.label}
               </button>
             ))}
+          </div>
+        </section>
+      )}
+
+      {transferConfigs.length > 0 && (
+        <section className="board-workbook-scenario" aria-label="Transfer Division controls">
+          <div className="board-workbook-meta">
+            <Truck size={21} aria-hidden="true" />
+            <div>
+              <strong>Transfer Division</strong>
+              <span>{transferEnabled ? "Included in totals" : "Excluded from totals"}{activeTransferLabel ? ` · ${activeTransferLabel}` : ""}</span>
+            </div>
+          </div>
+          <div className="board-workbook-control-stack">
+            <div className="board-workbook-segmented" role="tablist" aria-label="Transfer Division include option">
+              <button type="button" className={transferEnabled ? "on" : ""} aria-selected={transferEnabled} onClick={() => setTransferEnabled(true)}>ON</button>
+              <button type="button" className={!transferEnabled ? "on" : ""} aria-selected={!transferEnabled} onClick={() => setTransferEnabled(false)}>OFF</button>
+            </div>
+            <div className="board-workbook-segmented" role="tablist" aria-label="Transfer Division fleet configuration">
+              {transferConfigs.map((config) => (
+                <button
+                  key={config.key}
+                  type="button"
+                  className={config.key === activeTransferConfig ? "on" : ""}
+                  aria-selected={config.key === activeTransferConfig}
+                  onClick={() => setActiveTransferConfig(config.key)}
+                  title={`${config.crew} · ${config.netCollection} per run`}
+                >
+                  {config.label}
+                </button>
+              ))}
+            </div>
           </div>
         </section>
       )}
