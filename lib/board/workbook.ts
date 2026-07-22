@@ -236,8 +236,20 @@ function hasScenarioData(view: BoardWorkbookView): boolean {
   );
 }
 
-function shouldRebuildScenarioData(view: BoardWorkbookView): boolean {
-  return view.sheets.some((sheet) => sheet.name === "Scenarios") && !hasScenarioData(view);
+function hasTransferData(view: BoardWorkbookView): boolean {
+  return Boolean(
+    view.transferConfigs?.length &&
+    view.defaultTransferConfigKey &&
+    typeof view.defaultTransferEnabled === "boolean" &&
+    view.transferOverrides &&
+    Object.keys(view.transferOverrides).length > 0,
+  );
+}
+
+function shouldRebuildWorkbookData(view: BoardWorkbookView): boolean {
+  const hasScenarioSheet = view.sheets.some((sheet) => sheet.name === "Scenarios");
+  const hasTransferSheet = view.sheets.some((sheet) => sheet.name === "Transfer Division");
+  return (hasScenarioSheet && !hasScenarioData(view)) || (hasTransferSheet && !hasTransferData(view));
 }
 
 async function parseBlobWorkbookView(blob: ListedBlob): Promise<BoardWorkbookView | null> {
@@ -268,7 +280,7 @@ async function loadBlobWorkbookView(): Promise<BoardWorkbookView | null> {
 
     const view = await response.json();
     if (!isWorkbookView(view)) return workbookBlob ? parseBlobWorkbookView(workbookBlob) : null;
-    if (workbookBlob && shouldRebuildScenarioData(view)) {
+    if (workbookBlob && shouldRebuildWorkbookData(view)) {
       return (await parseBlobWorkbookView(workbookBlob)) ?? view;
     }
     return view;
