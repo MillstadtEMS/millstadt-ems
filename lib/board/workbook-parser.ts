@@ -254,7 +254,7 @@ function findTransferConfigs(workbook: XLSX.WorkBook): {
     { emts: 2, paramedics: 1, criticalCare: 1 },
   ];
   const configs = TRANSFER_CONFIG_ROWS
-    .map((row, index) => {
+    .map<TransferConfigDefinition | null>((row, index) => {
       const label = textCell(workbook, "Transfer Division", `A${row}`);
       if (!label) return null;
       const counts = crewCounts[index] ?? { emts: 0, paramedics: 0, criticalCare: 0 };
@@ -262,7 +262,7 @@ function findTransferConfigs(workbook: XLSX.WorkBook): {
         key: slugify(label),
         label,
         index: index + 1,
-        row,
+        row: Number(row),
         crew: textCell(workbook, "Transfer Division", `B${row}`),
         netCollection: displayText(sheetCell(workbook, "Transfer Division", `C${row}`)),
         ...counts,
