@@ -23,11 +23,12 @@ Review date: 2026-08-16. The audit covered the financial hub source, routes, leg
 | Medium | The signature canvas mixed CSS coordinates with device-pixel backing dimensions and resized on the first stroke. | Pointer events now map directly into backing-store coordinates, retain pointer capture, preserve ink through responsive resizing, and share the same path for mouse, touch, and pen. |
 | Medium | The fixed public-site shell could paint above a scrolled financial dialog and obstruct its Close control. | Financial dialogs and the controlled viewer now render through a body-level portal above the unchanged site shell and below the privacy shield. |
 | Medium | Admin decisions did not notify the requester, and signed-PDF requester copies were not available. | Added an optional requester-copy checkbox, attached signed-PDF email, and approval/denial/revocation/expiration email attempts behind the development-only recipient allowlist. |
+| Medium | Disclosure shorthand used “Millstadt,” which could imply that the ambulance service was affiliated with the town. | Centralized the independent organization name as `Millstadt Ambulance Service / Millstadt EMS`, applied it across terms, notices, acknowledgments, and document provenance, incremented affected notice versions, and added a regression check. |
 
 ## Deliberately preserved
 
 - Existing Millstadt ticker, alerts, time, weather/moon, navigation, lounge/menu controls, branding, header, footer, and site shell.
-- Exact approved legal/disclosure constants; presentation changed, meaning did not.
+- Existing legal meaning was preserved while the organization identity was clarified as `Millstadt Ambulance Service / Millstadt EMS`.
 - Public Form 990 access without identity, account, signature, acknowledgment, or approval.
 - Restricted-document identity, terms, signature, administrator approval, expiration/revocation, audit, and controlled viewing.
 - Accuracy-report private review workflow and supporting-upload behavior.

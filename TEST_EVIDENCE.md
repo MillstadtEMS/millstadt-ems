@@ -6,7 +6,7 @@ Evidence date: 2026-08-16. All test identities use reserved `.test` addresses an
 
 | Command/check | Result |
 | --- | --- |
-| `npm run test:financials` | **27 checks passing.** Covers development availability/security headers, old dev-PIN rejection, PWA no-cache contract, privacy-shield state, Form 990 physical pages, CSRF/cross-site rejection, missing signature, persistence-before-success, idempotency, changed-payload conflict, pending viewer denial, signed PDFs, admin authorization, approval, stale approval, watermarking, revocation, accuracy CSRF/idempotency/upload magic, admin review, test-recipient filtering, signed-copy and decision notification audits, delivery-matrix routing/subjects/attachments, no recipient leakage, no URL identity, and rate limiting. |
+| `npm run test:financials` | **28 checks passing.** Covers development availability/security headers, old dev-PIN rejection, PWA no-cache contract, privacy-shield state, Form 990 physical pages, CSRF/cross-site rejection, missing signature, persistence-before-success, idempotency, changed-payload conflict, pending viewer denial, signed PDFs, admin authorization, approval, stale approval, watermarking, revocation, accuracy CSRF/idempotency/upload magic, admin review, test-recipient filtering, signed-copy and decision notification audits, delivery-matrix routing/subjects/attachments, no recipient leakage, no URL identity, independent ambulance-service disclosure naming, and rate limiting. |
 | `npx tsc --noEmit` | Passing. |
 | Scoped ESLint over all changed financial/PWA/security files | Passing. |
 | `NEXT_DIST_DIR=.next-financials-build npm run build` | Passing on Next.js 16.3.1; 116 static pages generated and dynamic financial routes compiled. |
@@ -16,7 +16,7 @@ Evidence date: 2026-08-16. All test identities use reserved `.test` addresses an
 
 ## Financial integration result
 
-The final run reported `27 financial hub integration checks passed.` The suite launches an isolated Next development server on port 3031, forces synthetic-only mode, clears Gmail/Twilio credentials, enables an allowlisted `.test` sink plus one synthetic exact-address allowlist entry, verifies a non-allowlisted address is filtered, audits requester signed-copy and decision-email attempts, restores `tsconfig.json`, and stops the server after testing. Empty Gmail/Twilio credentials ensure no message can leave the test process.
+The final run reported `28 financial hub integration checks passed.` The suite launches an isolated Next development server on port 3031, forces synthetic-only mode, clears Gmail/Twilio credentials, enables an allowlisted `.test` sink plus one synthetic exact-address allowlist entry, verifies a non-allowlisted address is filtered, audits requester signed-copy and decision-email attempts, checks the independent ambulance-service identity in disclosure sources, restores `tsconfig.json`, and stops the server after testing. Empty Gmail/Twilio credentials ensure no message can leave the test process.
 
 ## Production pre-launch smoke evidence
 
@@ -30,6 +30,7 @@ An isolated production build was started on port 3040 with hub production mode a
 - Restricted terms acknowledgment remains visibly checked while the signature panel is open; canceling leaves an explicit `Sign request` recovery action.
 - Pointer-coordinate verification covers mouse, touch, and pen coordinate scaling through the canvas backing-store mapping at desktop, tablet, and phone sizes.
 - Terms/report dialogs render above the fixed site ticker/header; the visible Close control and Escape both dismiss the dialog without changing routes.
+- Restricted-request disclosures and acknowledgment text render `Millstadt Ambulance Service / Millstadt EMS`; the live terms dialog contains no town-like organization shorthand and has no horizontal overflow.
 - Keyboard traversal from `Full name` moved through six form inputs.
 - Manual privacy activation produced an opaque `rgb(0, 0, 0)` sensitive-content layer with return warning and button.
 - Current financial tab console: zero warnings/errors during the verified flow.

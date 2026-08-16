@@ -6,6 +6,7 @@ import {
   ACCEPTED_BUTTON_TEXT,
   ACCEPTED_CHECKBOX_TEXT,
   AI_NOTICE_VERSION,
+  ORGANIZATION_NAME,
   PRIVACY_VERSION,
   RUN_COUNT_METHODOLOGY_NOTICE,
   SYNTHETIC_RECORD_LABEL,
@@ -98,7 +99,7 @@ const RAW_SYNTHETIC_DOCUMENTS = [
     version: "1.0",
     publicationDate: "2026-08-16",
     pages: [
-      `${SYNTHETIC_RECORD_LABEL}\n\nPrototype annual financial report page with invented receipt totals, disbursement totals, reserve balances, and reconciliation notes. These figures are not Millstadt Ambulance Service financial records.`,
+      `${SYNTHETIC_RECORD_LABEL}\n\nPrototype annual financial report page with invented receipt totals, disbursement totals, reserve balances, and reconciliation notes. These figures are not financial records of ${ORGANIZATION_NAME}.`,
       `${SYNTHETIC_RECORD_LABEL}\n\nPrototype line-item schedule for controlled-viewer testing. Values, dates, vendors, and notes are invented so watermarking, authorization, and audit logging can be demonstrated without real records.`,
     ],
   },

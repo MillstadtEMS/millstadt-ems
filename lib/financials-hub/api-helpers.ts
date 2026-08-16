@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/auth";
 import { getFinancialsHubConfig } from "./config";
+import { ORGANIZATION_NAME } from "./types";
 import {
   FinancialsHubError,
   isValidDevelopmentAdmin,
@@ -16,7 +17,7 @@ export function disabledFinancialsResponse() {
   return noStoreJson(
     {
       error:
-        "The Millstadt EMS Financials and Information Request Hub is disabled.",
+        `The ${ORGANIZATION_NAME} Financials and Information Request Hub is disabled.`,
       productionBehavior: "Coming Soon only",
     },
     { status: 404 },

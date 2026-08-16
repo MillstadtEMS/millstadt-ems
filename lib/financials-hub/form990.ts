@@ -1,5 +1,7 @@
 import { jsPDF } from "jspdf";
 
+import { ORGANIZATION_NAME } from "./types";
+
 export type PublicForm990 = {
   id: string;
   taxYear: string;
@@ -19,18 +21,18 @@ export const PUBLIC_FORM_990_HEADING =
 
 export const PUBLIC_FORM_990_INTRO = [
   "Published Form 990 filings are available for public inspection and copying. You may view, print, or download a listed filing. No account, identifying information, or administrator approval is required.",
-  "This page lists only filings that Millstadt has published. It does not accept requests for additional documents.",
+  `This page lists only filings that ${ORGANIZATION_NAME} has published. It does not accept requests for additional documents.`,
 ];
 
 export const PUBLIC_FORM_990_NOTICE = [
   "Published Form 990 filings are provided for public inspection and copying. They may be viewed, printed, downloaded, copied, quoted, analyzed, and discussed subject to applicable law.",
-  "The published filing is the reference document for reviewing the filing in context. An altered, cropped, incomplete, edited, summarized, transcribed, or AI-generated version should not be represented as the complete, unaltered, official, filed, verified, approved, or issued Form 990 of Millstadt.",
+  `The published filing is the reference document for reviewing the filing in context. An altered, cropped, incomplete, edited, summarized, transcribed, or AI-generated version should not be represented as the complete, unaltered, official, filed, verified, approved, or issued Form 990 of ${ORGANIZATION_NAME}.`,
   "Nothing in this notice restricts lawful printing, downloading, copying, quotation, criticism, commentary, journalism, political speech, public discussion, good-faith disagreement, or other lawful use.",
 ];
 
 export const PUBLIC_FORM_990_AI_NOTICE = [
-  "To the extent Millstadt owns or controls applicable rights, Millstadt has not authorized or requested the use of this published Form 990 for AI or machine-learning training, automated alteration, reconstruction, or generation of a representation falsely attributed to Millstadt.",
-  "This notice states Millstadt’s authorization position. It does not restrict lawful public inspection, printing, downloading, copying, quotation, analysis, criticism, commentary, journalism, or discussion. It does not represent that every AI provider, automated system, downstream recipient, or other person is technically or legally bound by this notice.",
+  `To the extent ${ORGANIZATION_NAME} owns or controls applicable rights, ${ORGANIZATION_NAME} has not authorized or requested the use of this published Form 990 for AI or machine-learning training, automated alteration, reconstruction, or generation of a representation falsely attributed to ${ORGANIZATION_NAME}.`,
+  `This notice states the authorization position of ${ORGANIZATION_NAME}. It does not restrict lawful public inspection, printing, downloading, copying, quotation, analysis, criticism, commentary, journalism, or discussion. It does not represent that every AI provider, automated system, downstream recipient, or other person is technically or legally bound by this notice.`,
 ];
 
 export const PUBLIC_FORM_990_REVIEW_NOTICE = [
@@ -51,7 +53,7 @@ export const SYNTHETIC_FORM_990S: PublicForm990[] = [
     accessibleAlternative: "Accessible HTML rendering included below.",
     pages: [
       "SYNTHETIC DEVELOPMENT DATA - NOT AN IRS FILING\n\nReturn of Organization Exempt From Income Tax\nTax Year: 2024\nFiling Year: 2025\nThis synthetic page exists only to test public Form 990 viewing, printing, and downloading.",
-      "SYNTHETIC DEVELOPMENT DATA - NOT AN IRS FILING\n\nPart I Summary\nRevenue, expenses, governance, program service accomplishments, and compensation fields are placeholder values only. No actual Millstadt financial data is included.",
+      `SYNTHETIC DEVELOPMENT DATA - NOT AN IRS FILING\n\nPart I Summary\nRevenue, expenses, governance, program service accomplishments, and compensation fields are placeholder values only. No actual financial data of ${ORGANIZATION_NAME} is included.`,
       "SYNTHETIC DEVELOPMENT DATA - NOT AN IRS FILING\n\nPublic Inspection Copy Notes\nThis synthetic filing is printable and downloadable without identity collection, clickwrap acceptance, or administrator approval.",
     ],
   },
@@ -89,11 +91,11 @@ export function findPublicForm990(id: string) {
 }
 
 export function publicForm990Provenance(doc: PublicForm990) {
-  return `MILLSTADT EMS — PUBLIC FORM 990 — TAX YEAR ${doc.taxYear} — VERSION ${doc.version}`;
+  return `${ORGANIZATION_NAME.toUpperCase()} — PUBLIC FORM 990 — TAX YEAR ${doc.taxYear} — VERSION ${doc.version}`;
 }
 
 export function publicForm990Footer(doc: PublicForm990) {
-  return `Published by Millstadt Ambulance Service / Millstadt EMS / Millstadt EMS ESD | Form 990 Tax Year ${doc.taxYear} | Original retained by Millstadt`;
+  return `Published by ${ORGANIZATION_NAME} | Form 990 Tax Year ${doc.taxYear} | Original retained by ${ORGANIZATION_NAME}`;
 }
 
 export function form990HtmlDocument(doc: PublicForm990) {
@@ -144,8 +146,8 @@ export function form990PdfBuffer(doc: PublicForm990) {
   pdf.setProperties({
     title: doc.title,
     subject: `Public Form 990 inspection copy for tax year ${doc.taxYear}`,
-    author: "Millstadt Ambulance Service",
-    creator: "Millstadt EMS Financial Information Hub",
+    author: ORGANIZATION_NAME,
+    creator: `${ORGANIZATION_NAME} Financial Information Hub`,
   });
 
   doc.pages.forEach((page, index) => {
@@ -156,7 +158,7 @@ export function form990PdfBuffer(doc: PublicForm990) {
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(10);
     pdf.setTextColor(255, 255, 255);
-    pdf.text("MILLSTADT EMS", 52, 34);
+    pdf.text(ORGANIZATION_NAME.toUpperCase(), 52, 34);
     pdf.setFont("helvetica", "normal");
     pdf.text("PUBLIC FORM 990", 560, 34, { align: "right" });
 

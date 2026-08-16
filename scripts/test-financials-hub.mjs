@@ -197,7 +197,7 @@ try {
     selectedDocIds: ["CALL-VOLUME-REQUESTS-2022-2026"],
     requestedInformationDescription: "",
     acceptedCheckboxText:
-      "I acknowledge that I reviewed the Release and Provenance Terms, AI-Processing Notice, and Privacy Notice displayed for this request. I understand that access is not approved unless and until Millstadt approves this request.",
+      "I acknowledge that I reviewed the Release and Provenance Terms, AI-Processing Notice, and Privacy Notice displayed for this request. I understand that access is not approved unless and until Millstadt Ambulance Service / Millstadt EMS approves this request.",
     acceptedButtonText: "Submit access request",
     signatureMethod: "typed",
     signatureDataUrl: "",
@@ -560,6 +560,25 @@ try {
   );
   assert.doesNotMatch(financialSource, /\?userId=/);
   pass("requester identifiers are absent from financial URLs");
+
+  const disclosureSource = (
+    await Promise.all(
+      [
+        "lib/financials-hub/types.ts",
+        "lib/financials-hub/accuracy-types.ts",
+        "lib/financials-hub/form990.ts",
+        "lib/financials-hub/dev-store.ts",
+      ].map((filename) => readFile(path.join(cwd, filename), "utf8")),
+    )
+  ).join("\n");
+  assert.match(
+    disclosureSource,
+    /ORGANIZATION_NAME = "Millstadt Ambulance Service \/ Millstadt EMS"/,
+  );
+  assert.doesNotMatch(disclosureSource, /also known as Millstadt EMS/i);
+  assert.doesNotMatch(disclosureSource, /until Millstadt approves/i);
+  assert.doesNotMatch(disclosureSource, /Original retained by Millstadt(?:[\s`";|]|$)/i);
+  pass("financial disclosures use the independent ambulance-service identity");
 
   for (let index = 0; index < 4; index += 1) {
     const rateResponse = await fetch(`${ORIGIN}/api/financials/access-requests`, {

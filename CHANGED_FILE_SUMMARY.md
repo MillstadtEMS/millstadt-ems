@@ -8,6 +8,6 @@
 - `app/api/lounge/dev-login/route.ts`, `app/lounge/login/page.tsx`, `app/admin/dev-tools/page.tsx`, `lib/truckcheck/auth.ts`, and `lib/inventory/auth.ts`: removed production-capable hardcoded development access and made missing production secrets fail closed.
 - `lib/lounge/employee-email.ts` and `app/api/sms/reply/route.ts`: attachment-capable test notification path, allowlisted signed-PDF requester copies, decision emails, and development approval-reply handling under the hub's disabled production boundary.
 - `package.json` and lockfile: framework/mail dependency security updates and official SheetJS 0.20.3 package source.
-- Root audit/release Markdown files and `scripts/test-financials-hub.mjs`: source-of-truth matrix, traceability, threat/security/audit evidence, launch/rollback procedures, environment inventory, and 27-check integration suite.
+- Root audit/release Markdown files and `scripts/test-financials-hub.mjs`: source-of-truth matrix, traceability, threat/security/audit evidence, launch/rollback procedures, environment inventory, independent ambulance-service disclosure naming, and 28-check integration suite.
 
 `AGENTS.md`, `outputs/`, and `work/` are existing/unrelated workspace state and are excluded from the intended commit.
