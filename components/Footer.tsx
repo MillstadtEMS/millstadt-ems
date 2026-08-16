@@ -16,6 +16,7 @@ const footerNav = {
   ],
   resources: [
     { href: "/billing", label: "Billing Information" },
+    { href: "/financials-information-hub", label: "Financial Information" },
     { href: "/donate", label: "Donate" },
     { href: "/forms", label: "Forms" },
     { href: "/contact", label: "Contact Us" },

@@ -42,6 +42,7 @@ const MENU_GROUPS = [
       { href: "/traffic",  label: "Traffic" },
       { href: "/donate",   label: "Donate" },
       { href: "/billing",  label: "Pay My Bill" },
+      { href: "/financials-information-hub", label: "Financial Information" },
       { href: "/forms",    label: "Forms" },
       { href: "/links",    label: "Important Links" },
       { href: "/movies",   label: "EMS in Crisis" },
