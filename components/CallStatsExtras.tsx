@@ -515,7 +515,7 @@ function Stat({
       ref={tileRef}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
-      onClick={clickable ? onToggle : undefined}
+      onClick={clickable && mobileAppLike ? onToggle : undefined}
       onKeyDown={(e) => { if (clickable && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onToggle?.(); } }}
       onMouseEnter={clickable && !mobileAppLike ? onHoverOpen : undefined}
       onMouseLeave={clickable && !mobileAppLike ? onHoverClose : undefined}
