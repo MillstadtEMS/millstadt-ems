@@ -32,9 +32,6 @@ import FinancialsPrivacyShield, {
 import styles from "./FinancialsArchivePrototype.module.css";
 import {
   ACCURACY_CERTIFICATION,
-  ACCURACY_CONTACT_ACKNOWLEDGMENT,
-  ACCURACY_IDENTITY_HELP,
-  ACCURACY_PRIVACY_NOTICE,
   ACCURACY_REPORT_CATEGORIES,
   ACCURACY_REPORT_INTRO,
   ACCURACY_REPORT_RESULT,
@@ -44,14 +41,20 @@ import {
 import {
   ACCEPTED_BUTTON_TEXT,
   ACCEPTED_CHECKBOX_TEXT,
-  ACCURATE_IDENTIFICATION_NOTICE,
-  AI_PROCESSING_NOTICE,
-  PRIVACY_NOTICE,
-  PROMINENT_LEGAL_NOTICE,
+  ABOUT_ARCHIVE_NOTICE,
+  AI_PROCESSING_NOTICE_CONCLUSION,
+  AI_PROCESSING_NOTICE_INTRO,
+  AI_PROCESSING_USES,
+  CONTROLLED_VIEWING_NOTICE,
+  FINAL_SUBMISSION_CONFIRMATION_TEXT,
+  PROVENANCE_NOTICE,
   PUBLIC_FINANCIALS_PAGE_SUBTITLE,
   PUBLIC_FINANCIALS_PAGE_TITLE,
-  RELEASE_TERMS,
-  RESTRICTED_VIEWER_NOTICE,
+  REQUESTER_INFORMATION_NOTICE,
+  REQUEST_TERMS_INTRO,
+  REQUEST_TERMS_SECTIONS,
+  REQUEST_TERMS_TEXT,
+  RESTRICTED_REQUEST_INTRO,
   RUN_COUNT_METHODOLOGY_NOTICE,
   type AccessRequestRecord,
   type CatalogDocument,
@@ -247,12 +250,16 @@ export default function FinancialsArchivePrototype() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [termsAcknowledged, setTermsAcknowledged] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const [signatureFullName, setSignatureFullName] = useState("");
+  const [finalSubmissionConfirmed, setFinalSubmissionConfirmed] = useState(false);
   const [sendSignedCopy, setSendSignedCopy] = useState(false);
   const [signature, setSignature] = useState<FinancialsSignature>(emptySignature());
   const [signatureOpen, setSignatureOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [form990NoticeOpen, setForm990NoticeOpen] = useState(false);
   const [restrictedNoticeOpen, setRestrictedNoticeOpen] = useState(false);
+  const [aiNoticeOpen, setAiNoticeOpen] = useState(false);
+  const [provenanceNoticeOpen, setProvenanceNoticeOpen] = useState(false);
   const [countingNoticeOpen, setCountingNoticeOpen] = useState(false);
   const [correctionsNoticeOpen, setCorrectionsNoticeOpen] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
@@ -267,7 +274,6 @@ export default function FinancialsArchivePrototype() {
   const [accuracyForm, setAccuracyForm] = useState<AccuracyFormState>(emptyAccuracyForm);
   const [accuracyUpload, setAccuracyUpload] = useState<File | null>(null);
   const [accuracyCertification, setAccuracyCertification] = useState(false);
-  const [accuracyContactAcknowledgment, setAccuracyContactAcknowledgment] = useState(false);
   const [accuracySignature, setAccuracySignature] = useState<FinancialsSignature>(emptySignature());
   const [accuracySignatureOpen, setAccuracySignatureOpen] = useState(false);
   const [accuracySigned, setAccuracySigned] = useState(false);
@@ -442,6 +448,8 @@ export default function FinancialsArchivePrototype() {
     if (!validateApplicantInformation()) return;
     setTermsAcknowledged(false);
     setAccepted(false);
+    setSignatureFullName(form.fullLegalName);
+    setFinalSubmissionConfirmed(false);
     setSendSignedCopy(false);
     setSignature(emptySignature(form.fullLegalName));
     setSignatureOpen(false);
@@ -451,21 +459,23 @@ export default function FinancialsArchivePrototype() {
 
   function requestSignature() {
     setAccepted(false);
-    setSignature(emptySignature(form.fullLegalName));
+    setFinalSubmissionConfirmed(false);
+    setSignature(emptySignature(signatureFullName || form.fullLegalName));
     setSignatureOpen(true);
     setErrors([]);
   }
 
   function applySignature() {
     const valid =
-      (signature.method === "drawn" && Boolean(signature.dataUrl)) ||
+      Boolean(signatureFullName.trim()) &&
+      ((signature.method === "drawn" && Boolean(signature.dataUrl)) ||
       (signature.method === "typed" &&
-        normalizeIdentity(signature.typedName) === normalizeIdentity(form.fullLegalName));
+        normalizeIdentity(signature.typedName) === normalizeIdentity(signatureFullName)));
     if (!valid) {
       setErrors([
         signature.method === "drawn"
           ? "Sign in the signature box before continuing."
-          : "The typed signature must match the full name on the request.",
+          : "The typed signature must match the full name in the signature step.",
       ]);
       return;
     }
@@ -482,8 +492,8 @@ export default function FinancialsArchivePrototype() {
       setTermsOpen(false);
       return;
     }
-    if (!accepted) {
-      setErrors(["A signed acknowledgment is required before submission."]);
+    if (!termsAcknowledged || !accepted || !finalSubmissionConfirmed) {
+      setErrors(["The terms acknowledgment, electronic signature, and final confirmation are required."]);
       return;
     }
     if (!accessCsrfToken || !accessIdempotencyKey) {
@@ -513,9 +523,13 @@ export default function FinancialsArchivePrototype() {
           requestedInformationDescription: "",
           acceptedCheckboxText: ACCEPTED_CHECKBOX_TEXT,
           acceptedButtonText: ACCEPTED_BUTTON_TEXT,
+          termsAcknowledged,
+          signatureFullName,
           signatureMethod: signature.method,
           signatureDataUrl: signature.method === "drawn" ? signature.dataUrl : "",
           signatureTypedName: signature.method === "typed" ? signature.typedName : "",
+          finalSubmissionConfirmed,
+          finalSubmissionConfirmationText: FINAL_SUBMISSION_CONFIRMATION_TEXT,
           sendSignedCopyToRequester: sendSignedCopy,
         }),
       });
@@ -531,6 +545,8 @@ export default function FinancialsArchivePrototype() {
       setSignatureOpen(false);
       setTermsAcknowledged(false);
       setAccepted(false);
+      setSignatureFullName("");
+      setFinalSubmissionConfirmed(false);
       setSendSignedCopy(false);
       setErrors([]);
     } catch {
@@ -598,6 +614,8 @@ export default function FinancialsArchivePrototype() {
     setSubmittedRequest(null);
     setTermsAcknowledged(false);
     setAccepted(false);
+    setSignatureFullName("");
+    setFinalSubmissionConfirmed(false);
     setSendSignedCopy(false);
     setSignature(emptySignature());
     setAccessIdempotencyKey(window.crypto.randomUUID());
@@ -616,7 +634,6 @@ export default function FinancialsArchivePrototype() {
     setAccuracyForm({ ...emptyAccuracyForm, pageOrSection: target.pageOrSection });
     setAccuracyUpload(null);
     setAccuracyCertification(false);
-    setAccuracyContactAcknowledgment(false);
     setAccuracySignature(emptySignature());
     setAccuracySignatureOpen(false);
     setAccuracySigned(false);
@@ -698,8 +715,8 @@ export default function FinancialsArchivePrototype() {
     ) {
       nextErrors.push("Email address must be formatted like an email address.");
     }
-    if (!accuracyCertification || !accuracyContactAcknowledgment) {
-      nextErrors.push("Both acknowledgments are required.");
+    if (!accuracyCertification) {
+      nextErrors.push("The good-faith acknowledgment is required.");
     }
     if (!accuracySigned) nextErrors.push("A signature is required.");
     if (!accuracyCsrfToken) nextErrors.push("The report form is not ready. Close it and try again.");
@@ -723,9 +740,7 @@ export default function FinancialsArchivePrototype() {
       body.set("reporterEmail", accuracyForm.reporterEmail);
       body.set("reporterTelephone", accuracyForm.reporterTelephone);
       body.set("certificationAccepted", String(accuracyCertification));
-      body.set("contactAcknowledgmentAccepted", String(accuracyContactAcknowledgment));
       body.set("certificationText", ACCURACY_CERTIFICATION.join("\n\n"));
-      body.set("contactAcknowledgmentText", ACCURACY_CONTACT_ACKNOWLEDGMENT);
       body.set("signatureMethod", accuracySignature.method);
       body.set("signatureDataUrl", accuracySignature.method === "drawn" ? accuracySignature.dataUrl : "");
       body.set("signatureTypedName", accuracySignature.method === "typed" ? accuracySignature.typedName : "");
@@ -811,6 +826,12 @@ export default function FinancialsArchivePrototype() {
             <p className={styles.sectionEyebrow}>Millstadt Ambulance Service</p>
             <h1>{PUBLIC_FINANCIALS_PAGE_TITLE}</h1>
             <p>{PUBLIC_FINANCIALS_PAGE_SUBTITLE}</p>
+            <section className={styles.archiveNotice} aria-labelledby="about-archive-heading">
+              <h2 id="about-archive-heading">{ABOUT_ARCHIVE_NOTICE[0]}</h2>
+              {ABOUT_ARCHIVE_NOTICE.slice(1).map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </section>
             <span className={styles.previewNote}>
               Development preview - synthetic test documents only.
             </span>
@@ -834,6 +855,7 @@ export default function FinancialsArchivePrototype() {
               errors={libraryStep === 1 ? errors : []}
               onToggleForm990={toggleForm990}
               onToggleRestricted={toggleDocument}
+              onOpenPublicNotice={() => setForm990NoticeOpen(true)}
               onContinue={() => {
                 if (!selectedForm990Ids.length && !selectedDocIds.length) {
                   setErrors(["Choose at least one document."]);
@@ -883,6 +905,8 @@ export default function FinancialsArchivePrototype() {
           <DocumentInformationSection
             onOpenPublicNotice={() => setForm990NoticeOpen(true)}
             onOpenRestrictedNotice={() => setRestrictedNoticeOpen(true)}
+            onOpenAiNotice={() => setAiNoticeOpen(true)}
+            onOpenProvenanceNotice={() => setProvenanceNoticeOpen(true)}
             onOpenCountingNotice={() => setCountingNoticeOpen(true)}
             onOpenCorrectionsNotice={() => setCorrectionsNoticeOpen(true)}
             onReport={() =>
@@ -911,7 +935,7 @@ export default function FinancialsArchivePrototype() {
           <ReadAloudControls
             id="form-990-notice"
             label="Read this notice aloud"
-            text={[...form990Catalog.notice, ...form990Catalog.aiNotice].join("\n\n")}
+            text={form990Catalog.notice.join("\n\n")}
             speech={speech}
             onRead={readText}
             onPause={pauseSpeech}
@@ -920,8 +944,7 @@ export default function FinancialsArchivePrototype() {
             onRateChange={(rate) => setSpeech((current) => ({ ...current, rate }))}
           />
           <div className="financials-modal-copy">
-            <NoticeText heading="Public access notice" paragraphs={form990Catalog.notice} />
-            <NoticeText heading="AI-processing notice" paragraphs={form990Catalog.aiNotice} />
+            <NoticeText paragraphs={form990Catalog.notice.slice(1)} />
           </div>
         </AccessibleModal>
       )}
@@ -939,9 +962,8 @@ export default function FinancialsArchivePrototype() {
             id="restricted-document-notice-reader"
             label="Read this notice aloud"
             text={[
-              "Additional financial documents are listed by title, reporting period, publication date, and version.",
-              "Request access to a listed document. Approval is required before viewing.",
-              ...ACCURATE_IDENTIFICATION_NOTICE,
+              ...RESTRICTED_REQUEST_INTRO,
+              ...REQUESTER_INFORMATION_NOTICE,
             ].join("\n\n")}
             speech={speech}
             onRead={readText}
@@ -952,14 +974,62 @@ export default function FinancialsArchivePrototype() {
           />
           <div className="financials-modal-copy">
             <NoticeText
-              heading="Listed document access"
-              paragraphs={[
-                "Additional financial documents are listed by title, reporting period, publication date, and version.",
-                "Request access to a listed document. Approval is required before viewing.",
-              ]}
+              heading={RESTRICTED_REQUEST_INTRO[0]}
+              paragraphs={RESTRICTED_REQUEST_INTRO.slice(1)}
             />
-            <NoticeText heading="Identifying information" paragraphs={ACCURATE_IDENTIFICATION_NOTICE} />
+            <NoticeText
+              heading={REQUESTER_INFORMATION_NOTICE[0]}
+              paragraphs={REQUESTER_INFORMATION_NOTICE.slice(1)}
+            />
           </div>
+        </AccessibleModal>
+      )}
+
+      {aiNoticeOpen && (
+        <AccessibleModal
+          id="ai-processing-notice"
+          title="AI-processing notice"
+          onClose={() => {
+            setAiNoticeOpen(false);
+            stopSpeech();
+          }}
+        >
+          <ReadAloudControls
+            id="ai-processing-notice-reader"
+            label="Read this notice aloud"
+            text={[AI_PROCESSING_NOTICE_INTRO, ...AI_PROCESSING_USES, ...AI_PROCESSING_NOTICE_CONCLUSION].join("\n\n")}
+            speech={speech}
+            onRead={readText}
+            onPause={pauseSpeech}
+            onResume={resumeSpeech}
+            onStop={stopSpeech}
+            onRateChange={(rate) => setSpeech((current) => ({ ...current, rate }))}
+          />
+          <AiProcessingNotice />
+        </AccessibleModal>
+      )}
+
+      {provenanceNoticeOpen && (
+        <AccessibleModal
+          id="provenance-notice"
+          title="Provenance and altered copies"
+          onClose={() => {
+            setProvenanceNoticeOpen(false);
+            stopSpeech();
+          }}
+        >
+          <ReadAloudControls
+            id="provenance-notice-reader"
+            label="Read this notice aloud"
+            text={PROVENANCE_NOTICE.join("\n\n")}
+            speech={speech}
+            onRead={readText}
+            onPause={pauseSpeech}
+            onResume={resumeSpeech}
+            onStop={stopSpeech}
+            onRateChange={(rate) => setSpeech((current) => ({ ...current, rate }))}
+          />
+          <NoticeText paragraphs={PROVENANCE_NOTICE.slice(1)} />
         </AccessibleModal>
       )}
 
@@ -1026,19 +1096,22 @@ export default function FinancialsArchivePrototype() {
       {termsOpen && (
         <AccessibleModal
           id="restricted-document-terms"
-          title="Review terms and submit"
+          title="Review request terms"
           onClose={() => {
             setTermsOpen(false);
             setSignatureOpen(false);
             setTermsAcknowledged(false);
             setAccepted(false);
+            setSignatureFullName("");
+            setFinalSubmissionConfirmed(false);
             setSendSignedCopy(false);
             stopSpeech();
           }}
         >
-          <p className="financials-sensitive-notice">{SENSITIVE_CAPTURE_NOTICE}</p>
-          <TermsSections
-            selectedDocs={selectedDocs}
+          <ReadAloudControls
+            id="request-terms-reader"
+            label="Read request terms aloud"
+            text={REQUEST_TERMS_TEXT.join("\n\n")}
             speech={speech}
             onRead={readText}
             onPause={pauseSpeech}
@@ -1046,6 +1119,8 @@ export default function FinancialsArchivePrototype() {
             onStop={stopSpeech}
             onRateChange={(rate) => setSpeech((current) => ({ ...current, rate }))}
           />
+          <p>{REQUEST_TERMS_INTRO}</p>
+          <RequestTermsContent />
 
           {errors.length > 0 && <ErrorMessage errors={errors} />}
 
@@ -1055,10 +1130,16 @@ export default function FinancialsArchivePrototype() {
               checked={termsAcknowledged}
               onChange={(event) => {
                 setTermsAcknowledged(event.target.checked);
-                if (event.target.checked) requestSignature();
-                else {
+                setFinalSubmissionConfirmed(false);
+                if (event.target.checked) {
+                  setSignatureFullName(form.fullLegalName);
+                  setSignature(emptySignature(form.fullLegalName));
+                  setSignatureOpen(true);
+                  setAccepted(false);
+                } else {
                   setAccepted(false);
                   setSignatureOpen(false);
+                  setSignatureFullName("");
                   setSignature(emptySignature(form.fullLegalName));
                 }
               }}
@@ -1066,22 +1147,36 @@ export default function FinancialsArchivePrototype() {
             <span>{ACCEPTED_CHECKBOX_TEXT}</span>
           </label>
 
-          <label className="financials-copy-choice">
-            <input
-              type="checkbox"
-              checked={sendSignedCopy}
-              onChange={(event) => setSendSignedCopy(event.target.checked)}
-            />
-            <span>Email me a copy of my signed request PDF for my records.</span>
-          </label>
-
           {signatureOpen && (
             <section className="financials-signature-panel" aria-labelledby="sign-request-title">
-              <h3 id="sign-request-title">Sign this request</h3>
-              <p>Your signature will be included in the agreement PDF sent with the request.</p>
+              <h3 id="sign-request-title">Sign your request</h3>
+              <p>
+                Your electronic signature will be attached to this request record together with
+                your full name, selected documents, acknowledged terms, and submission details.
+              </p>
+              <Field
+                label="Full name"
+                value={signatureFullName}
+                autoComplete="name"
+                required
+                helperText="Enter your full name as it should appear on the request record."
+                onChange={(value) => {
+                  setSignatureFullName(value);
+                  setAccepted(false);
+                  setFinalSubmissionConfirmed(false);
+                  setSignature(emptySignature(value));
+                }}
+              />
+              <div className="financials-notice-text">
+                <h3>Signature</h3>
+                <p>
+                  Sign using your mouse, touch screen, or keyboard. Your signature will be included
+                  in the PDF request record.
+                </p>
+              </div>
               <FinancialsSignaturePad
                 value={signature}
-                legalName={form.fullLegalName}
+                legalName={signatureFullName}
                 onChange={setSignature}
               />
               <div className="financials-step-actions">
@@ -1090,7 +1185,7 @@ export default function FinancialsArchivePrototype() {
                   type="button"
                   onClick={() => {
                     setSignatureOpen(false);
-                    setSignature(emptySignature(form.fullLegalName));
+                    setSignature(emptySignature(signatureFullName));
                   }}
                 >
                   Cancel
@@ -1104,7 +1199,7 @@ export default function FinancialsArchivePrototype() {
 
           {!signatureOpen && accepted && (
             <p className="financials-signature-confirmed" role="status">
-              <CheckCircle2 aria-hidden="true" /> Signed by {form.fullLegalName}
+              <CheckCircle2 aria-hidden="true" /> Signature entered for {signatureFullName}
             </p>
           )}
 
@@ -1114,11 +1209,32 @@ export default function FinancialsArchivePrototype() {
             </button>
           )}
 
+          {!signatureOpen && accepted && (
+            <>
+              <label className="financials-copy-choice">
+                <input
+                  type="checkbox"
+                  checked={sendSignedCopy}
+                  onChange={(event) => setSendSignedCopy(event.target.checked)}
+                />
+                <span>Email me a copy of my signed request PDF for my records.</span>
+              </label>
+              <label className="financials-acceptance">
+                <input
+                  type="checkbox"
+                  checked={finalSubmissionConfirmed}
+                  onChange={(event) => setFinalSubmissionConfirmed(event.target.checked)}
+                />
+                <span>{FINAL_SUBMISSION_CONFIRMATION_TEXT}</span>
+              </label>
+            </>
+          )}
+
           <div className="financials-modal-actions">
             <button
               className="financials-primary-button"
               type="button"
-              disabled={!termsAcknowledged || !accepted || submitting || !accessCsrfToken || !accessIdempotencyKey}
+              disabled={!termsAcknowledged || !accepted || !signatureFullName.trim() || !finalSubmissionConfirmed || submitting || !accessCsrfToken || !accessIdempotencyKey}
               onClick={submitAccessRequest}
             >
               {submitting
@@ -1153,7 +1269,6 @@ export default function FinancialsArchivePrototype() {
           form={accuracyForm}
           upload={accuracyUpload}
           certification={accuracyCertification}
-          contactAcknowledgment={accuracyContactAcknowledgment}
           signature={accuracySignature}
           signatureOpen={accuracySignatureOpen}
           signed={accuracySigned}
@@ -1170,16 +1285,7 @@ export default function FinancialsArchivePrototype() {
             if (!checked) {
               setAccuracySigned(false);
               setAccuracySignatureOpen(false);
-            } else if (accuracyContactAcknowledgment) {
-              openAccuracySignature();
-            }
-          }}
-          onContactAcknowledgmentChange={(checked) => {
-            setAccuracyContactAcknowledgment(checked);
-            if (!checked) {
-              setAccuracySigned(false);
-              setAccuracySignatureOpen(false);
-            } else if (accuracyCertification) {
+            } else {
               openAccuracySignature();
             }
           }}
@@ -1205,12 +1311,16 @@ export default function FinancialsArchivePrototype() {
 function DocumentInformationSection({
   onOpenPublicNotice,
   onOpenRestrictedNotice,
+  onOpenAiNotice,
+  onOpenProvenanceNotice,
   onOpenCountingNotice,
   onOpenCorrectionsNotice,
   onReport,
 }: {
   onOpenPublicNotice: () => void;
   onOpenRestrictedNotice: () => void;
+  onOpenAiNotice: () => void;
+  onOpenProvenanceNotice: () => void;
   onOpenCountingNotice: () => void;
   onOpenCorrectionsNotice: () => void;
   onReport: () => void;
@@ -1230,6 +1340,12 @@ function DocumentInformationSection({
         </button>
         <button className="financials-secondary-button" type="button" onClick={onOpenRestrictedNotice}>
           About restricted documents
+        </button>
+        <button className="financials-secondary-button" type="button" onClick={onOpenAiNotice}>
+          AI-processing notice
+        </button>
+        <button className="financials-secondary-button" type="button" onClick={onOpenProvenanceNotice}>
+          Provenance and altered copies
         </button>
         <button className="financials-secondary-button" type="button" onClick={onOpenCountingNotice}>
           How financial figures are counted
@@ -1262,7 +1378,6 @@ function AccuracyReportDialog({
   form,
   upload,
   certification,
-  contactAcknowledgment,
   signature,
   signatureOpen,
   signed,
@@ -1275,7 +1390,6 @@ function AccuracyReportDialog({
   onFieldChange,
   onUploadChange,
   onCertificationChange,
-  onContactAcknowledgmentChange,
   onSignatureChange,
   onOpenSignature,
   onCancelSignature,
@@ -1291,7 +1405,6 @@ function AccuracyReportDialog({
   form: AccuracyFormState;
   upload: File | null;
   certification: boolean;
-  contactAcknowledgment: boolean;
   signature: FinancialsSignature;
   signatureOpen: boolean;
   signed: boolean;
@@ -1304,7 +1417,6 @@ function AccuracyReportDialog({
   onFieldChange: (field: keyof AccuracyFormState, value: string) => void;
   onUploadChange: (file: File | null) => void;
   onCertificationChange: (checked: boolean) => void;
-  onContactAcknowledgmentChange: (checked: boolean) => void;
   onSignatureChange: (signature: FinancialsSignature) => void;
   onOpenSignature: () => void;
   onCancelSignature: () => void;
@@ -1323,7 +1435,6 @@ function AccuracyReportDialog({
       form.pageOrSection.trim() &&
       form.description.trim() &&
       certification &&
-      contactAcknowledgment &&
       signed &&
       csrfReady,
   );
@@ -1331,7 +1442,7 @@ function AccuracyReportDialog({
   return (
     <AccessibleModal
       id="accuracy-report-dialog"
-      title="Report an Accuracy or Document-Integrity Concern"
+      title="Report an accuracy or document-integrity concern"
       onClose={onClose}
     >
       {receipt ? (
@@ -1360,7 +1471,7 @@ function AccuracyReportDialog({
             onStop={onStop}
             onRateChange={onRateChange}
           />
-          <NoticeText paragraphs={ACCURACY_REPORT_INTRO} />
+          <NoticeText paragraphs={ACCURACY_REPORT_INTRO.slice(1)} />
 
           {errors.length > 0 && <ErrorMessage errors={errors} />}
 
@@ -1419,9 +1530,6 @@ function AccuracyReportDialog({
                 ))}
               </select>
             </label>
-            <p className={`financials-identification-note ${styles.reportFull}`}>
-              {ACCURACY_IDENTITY_HELP}
-            </p>
             <label className={`financials-field ${styles.reportFull}`}>
               <span>Page, section, statement, or location</span>
               <input
@@ -1445,7 +1553,8 @@ function AccuracyReportDialog({
             </label>
             <div className={styles.reportFull}>
               <div className={styles.uploadNotice}>
-                {ACCURACY_UPLOAD_NOTICE.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                <h3>{ACCURACY_UPLOAD_NOTICE[0]}</h3>
+                {ACCURACY_UPLOAD_NOTICE.slice(1).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
               </div>
               <label className="financials-field">
                 <span><Upload aria-hidden="true" /> Upload supporting document (optional)</span>
@@ -1464,11 +1573,11 @@ function AccuracyReportDialog({
           </div>
 
           <details className="financials-disclosure" open>
-            <summary>Good-faith certification</summary>
+            <summary>Good-faith acknowledgment</summary>
             <ReadAloudControls
               id="accuracy-certification"
               label="Read this section aloud"
-              text={[...ACCURACY_CERTIFICATION, ACCURACY_CONTACT_ACKNOWLEDGMENT].join("\n\n")}
+              text={ACCURACY_CERTIFICATION.join("\n\n")}
               speech={speech}
               onRead={onRead}
               onPause={onPause}
@@ -1484,18 +1593,6 @@ function AccuracyReportDialog({
               />
               <span>{ACCURACY_CERTIFICATION.join("\n\n")}</span>
             </label>
-            <label className="financials-acceptance">
-              <input
-                type="checkbox"
-                checked={contactAcknowledgment}
-                onChange={(event) => onContactAcknowledgmentChange(event.target.checked)}
-              />
-              <span>{ACCURACY_CONTACT_ACKNOWLEDGMENT}</span>
-            </label>
-            <details className="financials-disclosure">
-              <summary>Privacy notice</summary>
-              <NoticeText paragraphs={ACCURACY_PRIVACY_NOTICE} />
-            </details>
           </details>
 
           {signatureOpen && (
@@ -1519,7 +1616,7 @@ function AccuracyReportDialog({
             </section>
           )}
 
-          {!signatureOpen && certification && contactAcknowledgment && !signed && (
+          {!signatureOpen && certification && !signed && (
             <button className="financials-secondary-button" type="button" onClick={onOpenSignature}>
               <ShieldCheck aria-hidden="true" /> Sign report
             </button>
@@ -1561,6 +1658,7 @@ function DocumentLibrarySection({
   errors,
   onToggleForm990,
   onToggleRestricted,
+  onOpenPublicNotice,
   onContinue,
   onBack,
   onReport,
@@ -1575,6 +1673,7 @@ function DocumentLibrarySection({
   errors: string[];
   onToggleForm990: (documentId: string) => void;
   onToggleRestricted: (documentId: string) => void;
+  onOpenPublicNotice: () => void;
   onContinue: () => void;
   onBack: () => void;
   onReport: (target: AccuracyTarget) => void;
@@ -1620,8 +1719,13 @@ function DocumentLibrarySection({
             <div className={styles.pickerBody}>
               <div className={styles.pickerGroup}>
                 <div className={styles.pickerGroupHeading}>
-                  <span>Public Form 990 filings</span>
-                  <small>No identification or approval required</small>
+                  <span>
+                    Public Form 990 filings
+                    <button className={styles.reportLink} type="button" onClick={onOpenPublicNotice}>
+                      About public Form 990 access
+                    </button>
+                  </span>
+                  <small>No identification, signature, or approval required</small>
                 </div>
                 {catalog.documents.map((doc) => (
                   <label key={doc.id} className={styles.pickerRow}>
@@ -1818,8 +1922,10 @@ function RequestAccessSection({
       <div className="financials-section-heading">
         <div>
           <p className={styles.sectionEyebrow}>Administrative review</p>
-          <h2 id="request-access-heading">Additional financial documents</h2>
-          <p>Request access to a listed document. Approval is required before viewing.</p>
+          <h2 id="request-access-heading">{RESTRICTED_REQUEST_INTRO[0]}</h2>
+          {RESTRICTED_REQUEST_INTRO.slice(1).map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
         </div>
       </div>
 
@@ -1899,17 +2005,22 @@ function RequestAccessSection({
 
       {step === 2 && (
         <div className="financials-request-step">
-          <h3>Your information</h3>
+          <h3>{REQUESTER_INFORMATION_NOTICE[0]}</h3>
+          {REQUESTER_INFORMATION_NOTICE.slice(1).map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
           <SelectedDocuments docs={selectedDocs} />
           <div className="financials-form-grid">
             <Field
               label="Full name"
+              required
               autoComplete="name"
               value={form.fullLegalName}
               onChange={(value) => onFieldChange("fullLegalName", value)}
             />
             <Field
               label="Email address"
+              required
               type="email"
               autoComplete="email"
               value={form.verifiedEmail}
@@ -1917,6 +2028,7 @@ function RequestAccessSection({
             />
             <Field
               label="Mailing address"
+              required
               className="financials-field--full"
               autoComplete="street-address"
               value={form.mailingAddress}
@@ -1924,24 +2036,26 @@ function RequestAccessSection({
             />
             <Field
               label="City"
+              required
               autoComplete="address-level2"
               value={form.city}
               onChange={(value) => onFieldChange("city", value)}
             />
             <Field
               label="State"
+              required
               autoComplete="address-level1"
               value={form.state}
               onChange={(value) => onFieldChange("state", value)}
             />
             <Field
               label="ZIP code"
+              required
               autoComplete="postal-code"
               value={form.postalCode}
               onChange={(value) => onFieldChange("postalCode", value)}
             />
           </div>
-          <p className="financials-identification-note">{ACCURATE_IDENTIFICATION_NOTICE[0]}</p>
           <div className="financials-step-actions">
             <button className="financials-secondary-button" type="button" onClick={onBack}>
               Back
@@ -1959,10 +2073,12 @@ function RequestAccessSection({
           <div>
             <h3>Request submitted</h3>
             <p>
-              The signed request was sent for administrative review. Restricted documents remain
-              unavailable unless and until access is approved.
+              Your restricted-document request has been submitted for administrative review. A PDF
+              request record containing your submitted information, acknowledged terms, full name,
+              and electronic signature has been created for administrator review.
             </p>
             <p>Request ID: <code>{submittedRequest.id}</code></p>
+            <p>Submission does not guarantee access. Millstadt may contact you if clarification is needed.</p>
             <button className="financials-secondary-button" type="button" onClick={onStartAnother}>
               Submit another request
             </button>
@@ -2041,69 +2157,43 @@ function RequestStatusList({
   );
 }
 
-function TermsSections({
-  selectedDocs,
-  speech,
-  onRead,
-  onPause,
-  onResume,
-  onStop,
-  onRateChange,
-}: {
-  selectedDocs: CatalogDocument[];
-  speech: SpeechState;
-  onRead: (id: string, text: string) => void;
-  onPause: () => void;
-  onResume: () => void;
-  onStop: () => void;
-  onRateChange: (rate: number) => void;
-}) {
-  const includesCallVolume = selectedDocs.some(
-    (doc) => doc.id === "CALL-VOLUME-REQUESTS-2022-2026",
-  );
-  const sections: Array<{ id: string; title: string; groups: NoticeGroup[] }> = [
-    {
-      id: "accurate-information",
-      title: "Accurate information requirement",
-      groups: [
-        { paragraphs: ACCURATE_IDENTIFICATION_NOTICE },
-        { heading: "Privacy notice", paragraphs: PRIVACY_NOTICE },
-      ],
-    },
-    {
-      id: "release-provenance",
-      title: "Release and provenance terms",
-      groups: [
-        { paragraphs: PROMINENT_LEGAL_NOTICE },
-        { heading: "Release terms", paragraphs: RELEASE_TERMS },
-        ...(includesCallVolume
-          ? [{ heading: "Call-volume methodology notice", paragraphs: RUN_COUNT_METHODOLOGY_NOTICE }]
-          : []),
-      ],
-    },
-    {
-      id: "ai-processing",
-      title: "AI-processing notice",
-      groups: [{ paragraphs: AI_PROCESSING_NOTICE }],
-    },
-  ];
-
+function RequestTermsContent() {
   return (
-    <div className="financials-disclosure-stack">
-      {sections.map((section) => (
-        <NoticeDisclosure
-          key={section.id}
-          id={section.id}
-          title={section.title}
-          groups={section.groups}
-          speech={speech}
-          onRead={onRead}
-          onPause={onPause}
-          onResume={onResume}
-          onStop={onStop}
-          onRateChange={onRateChange}
-        />
+    <div className="financials-modal-copy">
+      {REQUEST_TERMS_SECTIONS.map((section) => (
+        <section key={section.heading}>
+          <h3>{section.heading}</h3>
+          {section.bullets && (
+            <ul>
+              {section.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}
+            </ul>
+          )}
+          {section.paragraphs?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+          {section.heading === "AI and automated processing" && (
+            <div className="financials-notice-text">
+              <h4>AI-processing notice</h4>
+              <p>{AI_PROCESSING_NOTICE_INTRO}</p>
+              <ul>{AI_PROCESSING_USES.map((item) => <li key={item}>{item}</li>)}</ul>
+              {AI_PROCESSING_NOTICE_CONCLUSION.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </div>
+          )}
+        </section>
       ))}
+      <NoticeText heading={PROVENANCE_NOTICE[0]} paragraphs={PROVENANCE_NOTICE.slice(1)} />
+    </div>
+  );
+}
+
+function AiProcessingNotice() {
+  return (
+    <div className="financials-modal-copy">
+      <section>
+        <p>{AI_PROCESSING_NOTICE_INTRO}</p>
+        <ul>{AI_PROCESSING_USES.map((item) => <li key={item}>{item}</li>)}</ul>
+        {AI_PROCESSING_NOTICE_CONCLUSION.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+      </section>
     </div>
   );
 }
@@ -2191,58 +2281,6 @@ function AccessibleModal({
       </div>
     </div>,
     document.body,
-  );
-}
-
-function NoticeDisclosure({
-  id,
-  title,
-  groups,
-  speech,
-  onRead,
-  onPause,
-  onResume,
-  onStop,
-  onRateChange,
-}: {
-  id: string;
-  title: string;
-  groups: NoticeGroup[];
-  speech: SpeechState;
-  onRead: (id: string, text: string) => void;
-  onPause: () => void;
-  onResume: () => void;
-  onStop: () => void;
-  onRateChange: (rate: number) => void;
-}) {
-  const text = groups
-    .flatMap((group) => [group.heading ?? "", ...group.paragraphs])
-    .filter(Boolean)
-    .join("\n\n");
-  return (
-    <details className="financials-disclosure">
-      <summary>{title}</summary>
-      <ReadAloudControls
-        id={id}
-        label="Read this section aloud"
-        text={text}
-        speech={speech}
-        onRead={onRead}
-        onPause={onPause}
-        onResume={onResume}
-        onStop={onStop}
-        onRateChange={onRateChange}
-      />
-      <div className="financials-notice-text">
-        {groups.map((group, index) => (
-          <NoticeText
-            key={`${group.heading ?? title}-${index}`}
-            heading={group.heading}
-            paragraphs={group.paragraphs}
-          />
-        ))}
-      </div>
-    </details>
   );
 }
 
@@ -2395,14 +2433,32 @@ function ViewerDialog({
         </div>
         <p className="financials-sensitive-notice">{SENSITIVE_CAPTURE_NOTICE}</p>
         <details className="financials-disclosure financials-viewer-details">
-          <summary>Document details</summary>
-          <p>{RESTRICTED_VIEWER_NOTICE}</p>
+          <summary>Controlled viewing notice</summary>
+          {CONTROLLED_VIEWING_NOTICE.slice(1).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+        </details>
+        <details className="financials-disclosure financials-viewer-details">
+          <summary>Document information</summary>
           <dl className="financials-admin-dl">
             <MetaRow label="Document" value={page.document.title} />
-            <MetaRow label="Release" value={page.session.releaseId} />
-            <MetaRow label="Version" value={page.document.version} />
-            <MetaRow label="Hash" value={page.document.individualizedHash} />
+            <MetaRow label="Reporting period" value={page.document.publicationDate.slice(0, 4)} />
+            <MetaRow label="Document version" value={page.document.version} />
+            <MetaRow label="Release date" value={page.session.createdAtUtc} />
+            <MetaRow label="Release ID" value={page.session.releaseId} />
+            <MetaRow label="SHA-256" value={page.document.individualizedHash} />
           </dl>
+          <p>
+            This release is identified by the information above. If you believe the document
+            contains an accuracy, attribution, completeness, or document-integrity concern, use the
+            available reporting process to submit a specific concern for administrative review.
+          </p>
+          <p>
+            The SHA-256 value identifies this particular file version. It does not prove that every
+            later copy is authentic.
+          </p>
+        </details>
+        <details className="financials-disclosure financials-viewer-details">
+          <summary>Provenance and altered copies</summary>
+          {PROVENANCE_NOTICE.slice(1).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
         </details>
         <ReadAloudControls
           id={readerId}
@@ -2420,7 +2476,9 @@ function ViewerDialog({
             {Array.from({ length: 10 }, (_, index) => <span key={index}>{page.watermark}</span>)}
           </div>
           <pre>{page.pageText}</pre>
-          <footer>{page.footerText}</footer>
+          <footer>
+            {page.footerText.split("\n").map((line) => <span key={line}>{line}</span>)}
+          </footer>
         </article>
       </section>
       </div>
@@ -2444,6 +2502,8 @@ function Field({
   type = "text",
   className = "",
   autoComplete,
+  required = false,
+  helperText,
   onChange,
 }: {
   label: string;
@@ -2451,17 +2511,22 @@ function Field({
   type?: string;
   className?: string;
   autoComplete?: string;
+  required?: boolean;
+  helperText?: string;
   onChange: (value: string) => void;
 }) {
   return (
     <label className={`financials-field ${className}`.trim()}>
-      <span>{label}</span>
+      <span>{label}{required ? " (required)" : ""}</span>
       <input
         type={type}
         value={value}
         autoComplete={autoComplete}
+        required={required}
+        aria-required={required}
         onChange={(event) => onChange(event.target.value)}
       />
+      {helperText && <small>{helperText}</small>}
     </label>
   );
 }

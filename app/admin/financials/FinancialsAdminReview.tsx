@@ -310,7 +310,7 @@ export default function FinancialsAdminReview() {
               </div>
               <span>{loading ? "Loading" : `${filteredRequests.length} shown`}</span>
             </div>
-            <div className="financials-admin-table" role="table" aria-label="Financial information requests">
+            <div className="financials-admin-table" role="table" aria-label="Restricted document requests">
               <div className="financials-admin-table__head" role="row">
                 <span>Applicant</span>
                 <span>Requested document</span>
@@ -520,7 +520,7 @@ function AdminRequestRow({
             rel="noreferrer"
           >
             <FileSignature aria-hidden="true" />
-            Signed agreement
+            Signed request PDF
           </a>
         )}
       </div>

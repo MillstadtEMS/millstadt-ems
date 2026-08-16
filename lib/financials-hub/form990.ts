@@ -17,23 +17,20 @@ export type PublicForm990 = {
 export type PublicForm990CatalogItem = Omit<PublicForm990, "pages">;
 
 export const PUBLIC_FORM_990_HEADING =
-  "Public Form 990s — Inspection and Copying";
+  "Public Form 990 filings";
 
 export const PUBLIC_FORM_990_INTRO = [
-  "Published Form 990 filings are available for public inspection and copying. You may view, print, or download a listed filing. No account, identifying information, or administrator approval is required.",
-  `This page lists only filings that ${ORGANIZATION_NAME} has published. It does not accept requests for additional documents.`,
+  "Published Form 990 filings are provided for public inspection and copying. You do not need to create an account, provide identifying information, obtain administrator approval, sign a request, or acknowledge terms to view, print, or download a published Form 990.",
 ];
 
 export const PUBLIC_FORM_990_NOTICE = [
-  "Published Form 990 filings are provided for public inspection and copying. They may be viewed, printed, downloaded, copied, quoted, analyzed, and discussed subject to applicable law.",
-  `The published filing is the reference document for reviewing the filing in context. An altered, cropped, incomplete, edited, summarized, transcribed, or AI-generated version should not be represented as the complete, unaltered, official, filed, verified, approved, or issued Form 990 of ${ORGANIZATION_NAME}.`,
-  "Nothing in this notice restricts lawful printing, downloading, copying, quotation, criticism, commentary, journalism, political speech, public discussion, good-faith disagreement, or other lawful use.",
+  "About public Form 990 access",
+  "Published Form 990 filings are provided for public inspection and copying. You do not need to create an account, provide identifying information, obtain administrator approval, sign a request, or acknowledge terms to view, print, or download a published Form 990.",
+  "This notice is informational only. It is not a condition of access and does not limit any right of access that may apply under applicable law.",
+  "Public Form 990 access is separate from the administrative request process for restricted documents.",
 ];
 
-export const PUBLIC_FORM_990_AI_NOTICE = [
-  `To the extent ${ORGANIZATION_NAME} owns or controls applicable rights, ${ORGANIZATION_NAME} has not authorized or requested the use of this published Form 990 for AI or machine-learning training, automated alteration, reconstruction, or generation of a representation falsely attributed to ${ORGANIZATION_NAME}.`,
-  `This notice states the authorization position of ${ORGANIZATION_NAME}. It does not restrict lawful public inspection, printing, downloading, copying, quotation, analysis, criticism, commentary, journalism, or discussion. It does not represent that every AI provider, automated system, downstream recipient, or other person is technically or legally bound by this notice.`,
-];
+export const PUBLIC_FORM_990_AI_NOTICE: string[] = [];
 
 export const PUBLIC_FORM_990_REVIEW_NOTICE = [
   "Public-Version Review Required",

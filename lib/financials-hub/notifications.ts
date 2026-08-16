@@ -45,9 +45,9 @@ export async function notifyFinancialsHubAdmins(
       const agreement = signedAgreementForRequest(request.id);
       await sendEmployeeEmail({
         to: emailRecipients,
-        subject: `[Millstadt EMS] New information request ${request.id}`,
-        kicker: "Information Request Hub",
-        headline: "New Information Request Submitted",
+        subject: `[Millstadt EMS] Restricted document request ${request.id}`,
+        kicker: "Financial Document Archive",
+        headline: "Restricted Document Request Submitted",
         meta: `${request.id} | ${request.flags.length ? "Flagged for extra attention" : "Ready for admin review"}`,
         bodyText: notificationBody,
         attachments: agreement
@@ -98,14 +98,14 @@ export async function notifyRequesterSignedAgreement(
       if (agreement) {
         await sendEmployeeEmail({
           to: request.verifiedEmail,
-          subject: `[Millstadt EMS] Signed information request ${request.id}`,
-          kicker: "Information Request Hub",
+          subject: `[Millstadt EMS] Signed restricted-document request ${request.id}`,
+          kicker: "Financial Document Archive",
           headline: "Your Signed Request Copy",
           meta: `${request.id} | Submitted ${request.submittedAtUtc}`,
           bodyText: [
             `Hello ${request.fullLegalName},`,
             "",
-            "Your signed information-access request was received and is awaiting administrative review.",
+            "Your signed restricted-document request was received and is awaiting administrative review.",
             "This copy confirms submission only. It does not grant access to a restricted document.",
             "",
             `Request ID: ${request.id}`,
@@ -152,7 +152,7 @@ export async function notifyRequesterAccessDecision(
       await sendEmployeeEmail({
         to: request.verifiedEmail,
         subject: `[Millstadt EMS] Information request ${request.id}: ${request.status}`,
-        kicker: "Information Request Hub",
+        kicker: "Financial Document Archive",
         headline: decisionHeadline(request.status),
         meta: `${request.id} | ${request.status}`,
         bodyText: buildRequesterDecisionBody(request),
@@ -225,7 +225,7 @@ function buildAdminNotificationBody(request: AccessRequestRecord) {
     : "No automated fake-submission flags were detected.";
 
   return [
-    "A new information request has been submitted to millstadtems.org.",
+    "A new restricted-document request has been submitted to millstadtems.org.",
     "",
     `Request ID: ${request.id}`,
     `Request Type: ${labelRequestKind(request.requestKind)}`,
@@ -241,8 +241,8 @@ function buildAdminNotificationBody(request: AccessRequestRecord) {
     risk,
     "",
     request.agreementFilename
-      ? `Signed agreement attached: ${request.agreementFilename}`
-      : "Signed agreement attachment was not available.",
+      ? `Signed request PDF attached: ${request.agreementFilename}`
+      : "Signed request PDF attachment was not available.",
     "",
     "If this listed-document access request only needs an approve/deny decision, reply to the SMS with:",
     `YES ${request.id} to approve`,
@@ -261,7 +261,7 @@ function buildAdminSmsBody(request: AccessRequestRecord) {
     : "No automated fake-submission flags.";
 
   return [
-    "New information request submitted to millstadtems.org.",
+    "New restricted-document request submitted to millstadtems.org.",
     `ID ${request.id}.`,
     `Type: ${labelRequestKind(request.requestKind)}.`,
     risk,
@@ -311,7 +311,7 @@ function buildRequesterDecisionBody(request: AccessRequestRecord) {
   const lines = [
     `Hello ${request.fullLegalName},`,
     "",
-    `Millstadt EMS has updated information request ${request.id}.`,
+    `Millstadt EMS has updated restricted-document request ${request.id}.`,
     `Decision: ${request.status}`,
   ];
 

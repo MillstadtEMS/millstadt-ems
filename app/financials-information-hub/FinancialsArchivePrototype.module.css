@@ -91,6 +91,26 @@
   font-weight: 720;
 }
 
+.archiveNotice {
+  max-width: 800px;
+  margin-top: 1.15rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  padding-top: 1rem;
+}
+
+.archiveNotice h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 760;
+  letter-spacing: 0;
+}
+
+.hub .archiveNotice p {
+  margin-top: 0.45rem;
+  font-size: 0.95rem;
+}
+
 .hub :global(.financials-workspace) {
   padding: 0 0 clamp(3rem, 7vw, 5.5rem);
 }
@@ -681,6 +701,9 @@
 }
 
 .pickerGroupHeading span {
+  display: grid;
+  width: fit-content;
+  gap: 0.2rem;
   color: #f8fafc;
   font-size: 0.9rem;
   font-weight: 760;
@@ -1012,6 +1035,19 @@
   line-height: 1.68;
 }
 
+.hub :global(.financials-modal-copy ul),
+.hub :global(.financials-notice-text ul) {
+  margin: 0.65rem 0 0;
+  padding-left: 1.3rem;
+  color: #c1cedd;
+  line-height: 1.65;
+}
+
+.hub :global(.financials-modal-copy li + li),
+.hub :global(.financials-notice-text li + li) {
+  margin-top: 0.35rem;
+}
+
 .hub :global(.financials-disclosure-stack) {
   display: grid;
   gap: 0.7rem;
@@ -1279,6 +1315,16 @@
 
 .uploadNotice p {
   margin: 0;
+}
+
+.uploadNotice h3 {
+  margin: 0 0 0.45rem;
+  color: #ffffff;
+  font-size: 1rem;
+}
+
+.hub :global(.financials-viewer-page footer span) {
+  display: block;
 }
 
 .uploadNotice p + p {

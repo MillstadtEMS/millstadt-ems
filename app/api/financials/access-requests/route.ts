@@ -39,9 +39,13 @@ const ALLOWED_REQUEST_KEYS = [
   "requestedInformationDescription",
   "acceptedCheckboxText",
   "acceptedButtonText",
+  "termsAcknowledged",
+  "signatureFullName",
   "signatureMethod",
   "signatureDataUrl",
   "signatureTypedName",
+  "finalSubmissionConfirmed",
+  "finalSubmissionConfirmationText",
   "sendSignedCopyToRequester",
 ] as const;
 

@@ -3,6 +3,7 @@ import path from "path";
 import type { AgreementSignature } from "./agreement-pdf";
 import { signedAccuracyReportPdf } from "./accuracy-report-pdf";
 import {
+  ACCURACY_CERTIFICATION,
   ACCURACY_REPORT_CATEGORIES,
   ACCURACY_REPORT_STATUSES,
   ACCURACY_REPORT_VERSION,
@@ -32,9 +33,7 @@ type AccuracyInput = {
   reporterEmail?: unknown;
   reporterTelephone?: unknown;
   certificationAccepted?: unknown;
-  contactAcknowledgmentAccepted?: unknown;
   certificationText?: unknown;
-  contactAcknowledgmentText?: unknown;
   signatureMethod?: unknown;
   signatureDataUrl?: unknown;
   signatureTypedName?: unknown;
@@ -335,8 +334,8 @@ function validateAccuracyInput(input: AccuracyInput) {
   if (input.certificationAccepted !== "true") {
     errors.push("The good-faith certification is required.");
   }
-  if (input.contactAcknowledgmentAccepted !== "true") {
-    errors.push("The contact and retention acknowledgment is required.");
+  if (cleanString(input.certificationText) !== ACCURACY_CERTIFICATION.join("\n\n")) {
+    errors.push("The good-faith certification text was not recorded.");
   }
 
   const signatureMethod = cleanString(input.signatureMethod);
@@ -370,7 +369,7 @@ function accuracyPayloadHash(input: AccuracyInput, upload: AccuracyUploadInput |
       reporterEmail: cleanString(input.reporterEmail).toLowerCase(),
       reporterTelephone: cleanString(input.reporterTelephone),
       certificationAccepted: cleanString(input.certificationAccepted),
-      contactAcknowledgmentAccepted: cleanString(input.contactAcknowledgmentAccepted),
+      certificationText: cleanString(input.certificationText),
       signatureMethod: cleanString(input.signatureMethod),
       signatureDataHash: sha256(cleanString(input.signatureDataUrl)),
       signatureTypedName: cleanString(input.signatureTypedName),

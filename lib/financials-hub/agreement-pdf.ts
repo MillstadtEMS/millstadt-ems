@@ -1,10 +1,13 @@
 import { jsPDF } from "jspdf";
 import {
   ACCEPTED_CHECKBOX_TEXT,
-  ACCURATE_IDENTIFICATION_NOTICE,
-  AI_PROCESSING_NOTICE,
-  PRIVACY_NOTICE,
-  RELEASE_TERMS,
+  AI_PROCESSING_NOTICE_CONCLUSION,
+  AI_PROCESSING_NOTICE_INTRO,
+  AI_PROCESSING_USES,
+  FINAL_SUBMISSION_CONFIRMATION_TEXT,
+  PROVENANCE_NOTICE,
+  REQUEST_TERMS_INTRO,
+  REQUEST_TERMS_SECTIONS,
   RUN_COUNT_METHODOLOGY_NOTICE,
   type AccessRequestRecord,
   type SyntheticDocument,
@@ -27,8 +30,8 @@ export function signedAgreementPdf(
 ) {
   const doc = new jsPDF({ unit: "pt", format: "letter", compress: true });
   doc.setProperties({
-    title: `Signed access request ${request.id}`,
-    subject: `Millstadt EMS restricted document access agreement ${request.termsVersion}`,
+    title: `Millstadt EMS restricted-document access request ${request.id}`,
+    subject: `Administrative request record ${request.termsVersion}`,
     author: "Millstadt Ambulance Service",
     creator: "Millstadt EMS Financial Information Hub",
   });
@@ -42,7 +45,7 @@ export function signedAgreementPdf(
     doc.setTextColor(255, 255, 255);
     doc.text("MILLSTADT EMS", MARGIN, 32);
     doc.setFont("helvetica", "normal");
-    doc.text("Restricted document access agreement", PAGE_WIDTH - MARGIN, 32, {
+    doc.text("Administrative request record", PAGE_WIDTH - MARGIN, 32, {
       align: "right",
     });
     y = 82;
@@ -98,18 +101,29 @@ export function signedAgreementPdf(
     for (const paragraph of paragraphs) addParagraph(paragraph);
   };
 
+  const addBulletSection = (title: string, bullets: string[], paragraphs: string[] = []) => {
+    addHeading(title);
+    for (const bullet of bullets) addParagraph(`- ${bullet}`, { indent: 12 });
+    for (const paragraph of paragraphs) addParagraph(paragraph);
+  };
+
   drawPageFrame();
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(24);
+  doc.setFontSize(21);
   doc.setTextColor(15, 39, 72);
-  doc.text("Signed access request", MARGIN, y);
-  y += 34;
+  doc.text("Millstadt EMS restricted-document access request", MARGIN, y);
+  y += 28;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.setTextColor(71, 85, 105);
+  doc.text("Administrative request record - not the released document", MARGIN, y);
+  y += 28;
 
   const summaryRows = [
     ["Request ID", request.id],
     ["Request version", request.requestVersion],
     ["Submitted", formatUtc(request.submittedAtUtc)],
-    ["Applicant", request.fullLegalName],
+    ["Requester full name", request.fullLegalName],
     ["Email", request.verifiedEmail],
     [
       "Mailing address",
@@ -138,10 +152,19 @@ export function signedAgreementPdf(
     );
   }
 
-  addHeading("Electronic acknowledgment");
+  addHeading("Acknowledgment record");
   addParagraph(ACCEPTED_CHECKBOX_TEXT);
   addParagraph(
-    `The applicant electronically signed this request at ${formatUtc(request.acceptedAtUtc)} using a ${signature.method} signature. Submission records acceptance of Terms Version ${request.termsVersion}, AI Notice Version ${request.aiNoticeVersion}, and Privacy Notice Version ${request.privacyVersion}.`,
+    `Acknowledged electronically on: ${formatUtc(request.acceptedAtUtc)}. Request Terms Version: ${request.termsVersion}. AI Notice Version: ${request.aiNoticeVersion}.`,
+  );
+
+  addHeading("Requester certification");
+  addParagraph(`Full name: ${request.signatureFullName}`);
+  addParagraph(`Electronic signature: ${signature.method === "typed" ? signature.name : "Drawn signature image shown below"}`);
+  addParagraph(`Signed electronically on: ${formatUtc(request.signatureCapturedAtUtc ?? request.acceptedAtUtc)}`);
+  addParagraph(`Request ID: ${request.id}`);
+  addParagraph(
+    "The requester acknowledged the displayed Request Terms and Release Notice and submitted the request electronically.",
   );
 
   ensureSpace(112);
@@ -168,17 +191,40 @@ export function signedAgreementPdf(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(71, 85, 105);
-  doc.text(`${pdfText(signature.name)} | ${signature.method} signature`, MARGIN + 14, y + 82);
+  doc.text(`${pdfText(request.signatureFullName)} | ${signature.method} signature`, MARGIN + 14, y + 82);
   y += 116;
 
+  addHeading("Electronic-submission confirmation");
+  addParagraph(FINAL_SUBMISSION_CONFIRMATION_TEXT);
+  addParagraph(
+    `Confirmed electronically on: ${formatUtc(request.finalSubmissionConfirmedAtUtc)}. Submission action: ${request.acceptedButtonText}.`,
+  );
+
   addPage();
-  addSection("Accurate information requirement", ACCURATE_IDENTIFICATION_NOTICE);
-  addSection("Release and provenance terms", RELEASE_TERMS);
-  if (documents.some((item) => item.id === CALL_VOLUME_DOCUMENT_ID)) {
-    addSection("Call-volume methodology notice", RUN_COUNT_METHODOLOGY_NOTICE);
+  addHeading("Request Terms and Release Notice", 18);
+  addParagraph(REQUEST_TERMS_INTRO);
+  for (const section of REQUEST_TERMS_SECTIONS) {
+    addBulletSection(section.heading, section.bullets ?? [], section.paragraphs ?? []);
   }
-  addSection("AI-processing notice", AI_PROCESSING_NOTICE);
-  addSection("Privacy notice", PRIVACY_NOTICE);
+
+  addPage();
+  addHeading("AI-processing notice");
+  addParagraph(AI_PROCESSING_NOTICE_INTRO);
+  for (const use of AI_PROCESSING_USES) addParagraph(`- ${use}`, { indent: 12 });
+  for (const paragraph of AI_PROCESSING_NOTICE_CONCLUSION) addParagraph(paragraph);
+  addSection(PROVENANCE_NOTICE[0], PROVENANCE_NOTICE.slice(1));
+
+  if (documents.some((item) => item.id === CALL_VOLUME_DOCUMENT_ID)) {
+    addPage();
+    addSection("Document-specific methodology appendix", RUN_COUNT_METHODOLOGY_NOTICE);
+  }
+
+  addHeading("Application audit record");
+  addParagraph(`Application-generated event: Restricted-document request submitted.`);
+  addParagraph(`Event time: ${formatUtc(request.submittedAtUtc)}`);
+  addParagraph(`Request ID: ${request.id}`);
+  addParagraph(`Request-record hash: ${request.requestVersion}`);
+  addParagraph(`Stored PDF filename: ${request.agreementFilename ?? "Assigned after generation"}`);
 
   const totalPages = doc.getNumberOfPages();
   for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
@@ -188,7 +234,7 @@ export function signedAgreementPdf(
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(71, 85, 105);
-    doc.text(`Signed agreement | ${request.id}`, MARGIN, PAGE_HEIGHT - 24);
+    doc.text(`Administrative request record | ${request.id}`, MARGIN, PAGE_HEIGHT - 24);
     doc.text(`Page ${pageNumber} of ${totalPages}`, PAGE_WIDTH - MARGIN, PAGE_HEIGHT - 24, {
       align: "right",
     });

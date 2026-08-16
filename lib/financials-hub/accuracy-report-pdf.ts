@@ -2,9 +2,6 @@ import { jsPDF } from "jspdf";
 import type { AgreementSignature } from "./agreement-pdf";
 import {
   ACCURACY_CERTIFICATION,
-  ACCURACY_CONTACT_ACKNOWLEDGMENT,
-  ACCURACY_IDENTITY_HELP,
-  ACCURACY_PRIVACY_NOTICE,
   ACCURACY_REPORT_INTRO,
   ACCURACY_UPLOAD_NOTICE,
   type AccuracyReportRecord,
@@ -117,16 +114,10 @@ export function signedAccuracyReportPdf(
   addPage();
   heading("Purpose and identity notice");
   for (const text of ACCURACY_REPORT_INTRO) paragraph(text);
-  paragraph(ACCURACY_IDENTITY_HELP);
-  heading("Upload notice");
-  for (const text of ACCURACY_UPLOAD_NOTICE) paragraph(text);
-  heading("Good-faith certification");
+  heading(ACCURACY_UPLOAD_NOTICE[0]);
+  for (const text of ACCURACY_UPLOAD_NOTICE.slice(1)) paragraph(text);
+  heading("Good-faith acknowledgment");
   for (const text of ACCURACY_CERTIFICATION) paragraph(text);
-  paragraph(ACCURACY_CONTACT_ACKNOWLEDGMENT);
-  addPage();
-  heading("Privacy notice");
-  for (const text of ACCURACY_PRIVACY_NOTICE) paragraph(text);
-
   addPage();
   heading("Electronic signature");
   paragraph(

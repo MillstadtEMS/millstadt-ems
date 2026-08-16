@@ -6,6 +6,7 @@ import {
   ACCEPTED_BUTTON_TEXT,
   ACCEPTED_CHECKBOX_TEXT,
   AI_NOTICE_VERSION,
+  FINAL_SUBMISSION_CONFIRMATION_TEXT,
   ORGANIZATION_NAME,
   PRIVACY_VERSION,
   RUN_COUNT_METHODOLOGY_NOTICE,
@@ -49,9 +50,13 @@ type CreateRequestInput = {
   requestedInformationDescription?: unknown;
   acceptedCheckboxText?: unknown;
   acceptedButtonText?: unknown;
+  termsAcknowledged?: unknown;
+  signatureFullName?: unknown;
   signatureMethod?: unknown;
   signatureDataUrl?: unknown;
   signatureTypedName?: unknown;
+  finalSubmissionConfirmed?: unknown;
+  finalSubmissionConfirmationText?: unknown;
   sendSignedCopyToRequester?: unknown;
 };
 
@@ -171,6 +176,13 @@ const seedRequest: AccessRequestRecord = {
   acceptedCheckboxText: ACCEPTED_CHECKBOX_TEXT,
   acceptedButtonText: ACCEPTED_BUTTON_TEXT,
   acceptedAtUtc: "2026-08-16T14:00:00.000Z",
+  termsAcknowledged: true,
+  signatureFullName: "Anonymous Test User",
+  signatureMethod: "typed",
+  signatureName: "Anonymous Test User",
+  signatureCapturedAtUtc: "2026-08-16T14:00:00.000Z",
+  finalSubmissionConfirmationText: FINAL_SUBMISSION_CONFIRMATION_TEXT,
+  finalSubmissionConfirmedAtUtc: "2026-08-16T14:00:00.000Z",
   signedCopyRequested: false,
   requestVersion: "sha256:dev-seed-request-version",
   releaseIds: [],
@@ -350,17 +362,21 @@ export function createAccessRequest(input: CreateRequestInput, context: AuditCon
     acceptedCheckboxText: ACCEPTED_CHECKBOX_TEXT,
     acceptedButtonText: ACCEPTED_BUTTON_TEXT,
     acceptedAtUtc: now,
+    termsAcknowledged: true,
+    signatureFullName: limitedString(input.signatureFullName, 160),
     requestVersion: `sha256:${sha256(`${payloadHash}|${now}`)}`,
     signatureMethod: signature.method,
     signatureName: signature.name,
     signatureCapturedAtUtc: now,
+    finalSubmissionConfirmationText: FINAL_SUBMISSION_CONFIRMATION_TEXT,
+    finalSubmissionConfirmedAtUtc: now,
     signedCopyRequested: input.sendSignedCopyToRequester === true,
     releaseIds: [],
     flags: flagSubmission(input),
   };
 
+  request.agreementFilename = `Millstadt-EMS-${request.id}-signed-request-record.pdf`;
   const agreement = signedAgreementPdf(request, selectedDocuments, signature);
-  request.agreementFilename = `Millstadt-EMS-${request.id}-signed-agreement.pdf`;
   request.agreementHash = `sha256:${sha256(agreement)}`;
 
   current.requests.unshift(request);
@@ -676,8 +692,14 @@ export function getViewerPage(input: {
   }
 
   const viewedAtUtc = new Date().toISOString();
-  const watermark = `MILLSTADT EMS RELEASE ${session.releaseId} • AUTHORIZED VIEWER ${request.fullLegalName} • AI PROCESSING NOT AUTHORIZED BY MILLSTADT • ALTERED COPIES ARE NOT ORIGINAL MILLSTADT RECORDS`;
-  const footerText = `MILLSTADT EMS RELEASE ${session.releaseId} | AUTHORIZED VIEWER ${request.fullLegalName} | DOCUMENT ${doc.id} | VERSION ${doc.version} | PAGE ${input.pageNumber} OF ${doc.pages.length} | VIEWED ${viewedAtUtc}`;
+  const watermark = `MILLSTADT EMS RELEASE • RELEASE ID ${session.releaseId} • SEE FULL NOTICE`;
+  const footerText = [
+    "Millstadt EMS release",
+    `Release ID: ${session.releaseId}`,
+    `Document version: ${doc.version}`,
+    `Released: ${session.createdAtUtc}`,
+    `Page: ${input.pageNumber} of ${doc.pages.length}`,
+  ].join("\n");
 
   recordAudit({
     eventType: "document_page_viewed",
@@ -905,6 +927,7 @@ function validateRequestInput(input: CreateRequestInput) {
     ["State", input.state],
     ["ZIP code", input.postalCode],
     ["Email address", input.verifiedEmail],
+    ["Signature full name", input.signatureFullName],
   ];
 
   for (const [label, value] of required) {
@@ -919,6 +942,7 @@ function validateRequestInput(input: CreateRequestInput) {
     ["State", input.state, 30],
     ["ZIP code", input.postalCode, 10],
     ["Email address", input.verifiedEmail, 254],
+    ["Signature full name", input.signatureFullName, 160],
   ];
   for (const [label, value, maximum] of limits) {
     if (cleanString(value).length > maximum) {
@@ -949,8 +973,20 @@ function validateRequestInput(input: CreateRequestInput) {
   if (cleanString(input.acceptedCheckboxText) !== ACCEPTED_CHECKBOX_TEXT) {
     errors.push("The required acceptance checkbox was not recorded.");
   }
+  if (input.termsAcknowledged !== true) {
+    errors.push("The request terms must be affirmatively acknowledged.");
+  }
   if (cleanString(input.acceptedButtonText) !== ACCEPTED_BUTTON_TEXT) {
     errors.push("The required submission action was not recorded.");
+  }
+  if (input.finalSubmissionConfirmed !== true) {
+    errors.push("The electronic-submission confirmation is required.");
+  }
+  if (
+    cleanString(input.finalSubmissionConfirmationText) !==
+    FINAL_SUBMISSION_CONFIRMATION_TEXT
+  ) {
+    errors.push("The electronic-submission confirmation text was not recorded.");
   }
 
   const signatureMethod = cleanString(input.signatureMethod);
@@ -961,7 +997,7 @@ function validateRequestInput(input: CreateRequestInput) {
     }
   } else if (signatureMethod === "typed") {
     const typedName = cleanString(input.signatureTypedName);
-    const fullName = cleanString(input.fullLegalName);
+    const fullName = cleanString(input.signatureFullName);
     if (!typedName || normalizeIdentity(typedName) !== normalizeIdentity(fullName)) {
       errors.push("The typed signature must match the full name on the request.");
     }
@@ -974,7 +1010,7 @@ function validateRequestInput(input: CreateRequestInput) {
 
 function signatureFromInput(input: CreateRequestInput): AgreementSignature {
   const method = cleanString(input.signatureMethod);
-  const name = limitedString(input.fullLegalName, 160);
+  const name = limitedString(input.signatureFullName, 160);
   if (method === "drawn") {
     return { method, name, dataUrl: cleanString(input.signatureDataUrl) };
   }
@@ -1065,9 +1101,13 @@ function requestPayloadHash(input: CreateRequestInput) {
       selectedDocIds: stringArray(input.selectedDocIds),
       acceptedCheckboxText: cleanString(input.acceptedCheckboxText),
       acceptedButtonText: cleanString(input.acceptedButtonText),
+      termsAcknowledged: input.termsAcknowledged === true,
+      signatureFullName: cleanString(input.signatureFullName),
       signatureMethod: cleanString(input.signatureMethod),
       signatureDataHash: sha256(cleanString(input.signatureDataUrl)),
       signatureTypedName: cleanString(input.signatureTypedName),
+      finalSubmissionConfirmed: input.finalSubmissionConfirmed === true,
+      finalSubmissionConfirmationText: cleanString(input.finalSubmissionConfirmationText),
       sendSignedCopyToRequester: input.sendSignedCopyToRequester === true,
     }),
   );

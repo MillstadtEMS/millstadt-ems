@@ -197,11 +197,16 @@ try {
     selectedDocIds: ["CALL-VOLUME-REQUESTS-2022-2026"],
     requestedInformationDescription: "",
     acceptedCheckboxText:
-      "I acknowledge that I reviewed the Release and Provenance Terms, AI-Processing Notice, and Privacy Notice displayed for this request. I understand that access is not approved unless and until Millstadt Ambulance Service / Millstadt EMS approves this request.",
-    acceptedButtonText: "Submit access request",
+      "I have read and agree to the Request Terms and Release Notice. I certify that the information I have submitted is accurate to the best of my knowledge and that I have not knowingly provided materially false or misleading information. I understand that Millstadt may contact me for clarification and that submitting a request does not guarantee access unless applicable law requires disclosure.",
+    acceptedButtonText: "Sign and submit request",
+    termsAcknowledged: true,
+    signatureFullName: "Morgan Avery",
     signatureMethod: "typed",
     signatureDataUrl: "",
     signatureTypedName: "Morgan Avery",
+    finalSubmissionConfirmed: true,
+    finalSubmissionConfirmationText:
+      "I am submitting this request electronically under the name shown above, and I authorize Millstadt to include my electronic signature and acknowledged terms in the administrative request record.",
     sendSignedCopyToRequester: true,
   };
 
@@ -245,6 +250,30 @@ try {
   assert.equal(unsignedRequest.status, 400);
   pass("access request rejects a missing electronic signature");
 
+  const unacknowledgedRequest = await fetch(`${ORIGIN}/api/financials/access-requests`, {
+    method: "POST",
+    headers: submitHeaders,
+    body: JSON.stringify({
+      ...requestPayload,
+      idempotencyKey: crypto.randomUUID(),
+      termsAcknowledged: false,
+    }),
+  });
+  assert.equal(unacknowledgedRequest.status, 400);
+  pass("access request rejects missing affirmative terms acknowledgment");
+
+  const unconfirmedRequest = await fetch(`${ORIGIN}/api/financials/access-requests`, {
+    method: "POST",
+    headers: submitHeaders,
+    body: JSON.stringify({
+      ...requestPayload,
+      idempotencyKey: crypto.randomUUID(),
+      finalSubmissionConfirmed: false,
+    }),
+  });
+  assert.equal(unconfirmedRequest.status, 400);
+  pass("access request rejects missing electronic-submission confirmation");
+
   const created = await json(
     await fetch(`${ORIGIN}/api/financials/access-requests`, {
       method: "POST",
@@ -257,6 +286,9 @@ try {
   assert.equal(created.body.request.selectedDocumentVersions["CALL-VOLUME-REQUESTS-2022-2026"], "2026.08.16");
   assert.match(created.body.request.agreementHash, /^sha256:[a-f0-9]{64}$/);
   assert.equal(created.body.request.signedCopyRequested, true);
+  assert.equal(created.body.request.termsAcknowledged, true);
+  assert.equal(created.body.request.signatureFullName, "Morgan Avery");
+  assert.equal(created.body.request.finalSubmissionConfirmationText, requestPayload.finalSubmissionConfirmationText);
   assert.equal("notifications" in created.body, false);
   const request = created.body.request;
   pass("signed access request is stored pending without exposing recipients");
@@ -303,11 +335,16 @@ try {
   const agreementText = execFileSync("pdftotext", [agreementPath, "-"], { encoding: "utf8" });
   const agreementPages = assertReadableUniquePages(agreementPath);
   assert.match(agreementText, new RegExp(request.id));
-  assert.match(agreementText, /Request version/);
-  assert.match(agreementText, /Submit access request/);
+  assert.match(agreementText, /Administrative request record - not the released document/);
+  assert.match(agreementText, /Request-record hash/);
+  assert.match(agreementText, /Sign and submit request/);
+  assert.match(agreementText, /Request Terms and Release Notice/);
+  assert.match(agreementText, /AI-processing notice/);
+  assert.match(agreementText, /Provenance and altered copies/);
+  assert.match(agreementText, /I am submitting this request electronically/);
   assert.match(agreementText, /Page 1 of/);
-  assert.ok(agreementPages.length <= 5);
-  pass("signed access PDF contains request, version, exact action, and page numbers");
+  assert.ok(agreementPages.length <= 8);
+  pass("signed access PDF contains the request, exact terms, signature, confirmation, and audit record");
 
   const adminList = await json(
     await fetch(`${ORIGIN}/api/admin/financials/access-requests`, { headers: ADMIN_HEADERS }),
@@ -379,9 +416,14 @@ try {
     }),
   );
   assert.equal(viewerPage.response.status, 200);
-  assert.match(viewerPage.body.watermark, /AUTHORIZED VIEWER MORGAN AVERY/i);
-  assert.match(viewerPage.body.footerText, /PAGE 1 OF 16/);
-  pass("approved viewer uses header identity and individualized watermarking");
+  assert.equal(
+    viewerPage.body.watermark,
+    `MILLSTADT EMS RELEASE • RELEASE ID ${session.releaseId} • SEE FULL NOTICE`,
+  );
+  assert.match(viewerPage.body.footerText, new RegExp(`Release ID: ${session.releaseId}`));
+  assert.match(viewerPage.body.footerText, /Document version: 2026\.08\.16/);
+  assert.match(viewerPage.body.footerText, /Page: 1 of 16/);
+  pass("approved viewer uses the short release watermark and complete document footer");
 
   const revokeBody = {
     reviewReason: "Synthetic revocation check.",
@@ -418,7 +460,10 @@ try {
   reportData.set("reporterEmail", "taylor.morgan@example.test");
   reportData.set("reporterTelephone", "");
   reportData.set("certificationAccepted", "true");
-  reportData.set("contactAcknowledgmentAccepted", "true");
+  reportData.set(
+    "certificationText",
+    "I certify that I am submitting this report in good faith; that the factual information I have provided is accurate to the best of my knowledge after reasonable care; and that I have not knowingly submitted materially false information or fabricated, altered, or misrepresented supporting material. I understand that an honest mistake, disagreement, criticism, opinion, inference, or inability to prove a concern does not by itself mean that I violated this certification.",
+  );
   reportData.set("signatureMethod", "typed");
   reportData.set("signatureTypedName", "Taylor Morgan");
   reportData.set("signatureDataUrl", "");
@@ -542,10 +587,10 @@ try {
     "utf8",
   );
   assert.match(deliveryMatrix, /POST \/api\/financials\/access-requests/);
-  assert.match(deliveryMatrix, /\[Millstadt EMS\] New information request \{request ID\}/);
-  assert.match(deliveryMatrix, /Signed agreement PDF when generation succeeds/);
+  assert.match(deliveryMatrix, /\[Millstadt EMS\] Restricted document request \{request ID\}/);
+  assert.match(deliveryMatrix, /Signed request PDF when generation succeeds/);
   assert.match(deliveryMatrix, /\[Millstadt EMS\] Accuracy report \{report ID\}/);
-  assert.match(notificationSource, /New information request \$\{request\.id\}/);
+  assert.match(notificationSource, /Restricted document request \$\{request\.id\}/);
   assert.match(notificationSource, /Accuracy report \$\{report\.id\}/);
   assert.match(notificationSource, /filename: agreement\.filename/);
   assert.match(notificationSource, /contentType: "application\/pdf"/);
@@ -571,14 +616,12 @@ try {
       ].map((filename) => readFile(path.join(cwd, filename), "utf8")),
     )
   ).join("\n");
-  assert.match(
-    disclosureSource,
-    /ORGANIZATION_NAME = "Millstadt Ambulance Service \/ Millstadt EMS"/,
-  );
+  assert.match(disclosureSource, /This page is an archive of available documents/);
+  assert.match(disclosureSource, /Request Terms and Release Notice/);
+  assert.match(disclosureSource, /Technical viewing controls are intended/);
+  assert.match(disclosureSource, /Provenance and altered copies/);
   assert.doesNotMatch(disclosureSource, /also known as Millstadt EMS/i);
-  assert.doesNotMatch(disclosureSource, /until Millstadt approves/i);
-  assert.doesNotMatch(disclosureSource, /Original retained by Millstadt(?:[\s`";|]|$)/i);
-  pass("financial disclosures use the independent ambulance-service identity");
+  pass("financial disclosures match the supplied archive and release workflow copy");
 
   for (let index = 0; index < 4; index += 1) {
     const rateResponse = await fetch(`${ORIGIN}/api/financials/access-requests`, {
@@ -588,6 +631,7 @@ try {
         ...requestPayload,
         idempotencyKey: crypto.randomUUID(),
         fullLegalName: `Synthetic Rate Test ${index + 1}`,
+        signatureFullName: `Synthetic Rate Test ${index + 1}`,
         signatureTypedName: `Synthetic Rate Test ${index + 1}`,
       }),
     });
@@ -600,6 +644,7 @@ try {
       ...requestPayload,
       idempotencyKey: crypto.randomUUID(),
       fullLegalName: "Synthetic Rate Test Blocked",
+      signatureFullName: "Synthetic Rate Test Blocked",
       signatureTypedName: "Synthetic Rate Test Blocked",
     }),
   });
