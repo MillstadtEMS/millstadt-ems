@@ -338,6 +338,7 @@ function getAlertRank(event: string, severity: string, headline = "", descriptio
 }
 
 function WeatherTicker() {
+  const pathname = usePathname();
   const [alerts, setAlerts] = useState<ProcessedAlert[]>([]);
   const [idx, setIdx]       = useState(0);
   const [hover, setHover]   = useState(false);
@@ -351,6 +352,11 @@ function WeatherTicker() {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setHover(false));
+    return () => window.cancelAnimationFrame(frame);
+  }, [pathname]);
 
   useEffect(() => {
     if (alerts.length <= 1) return;
@@ -426,7 +432,7 @@ function WeatherTicker() {
       style={{ flex: 1, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      onClick={() => canExpand && setHover(v => !v)}
+      onClick={() => compact && canExpand && setHover(v => !v)}
     >
       {/* ── Rotating ticker line — must stay constrained so the long text
           truncates with an ellipsis and never spills over the nav buttons. ── */}

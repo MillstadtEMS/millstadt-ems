@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { PLATFORM_ORIGIN_DISCLAIMER, DISPOSITION_DISCLAIMER } from "@/lib/cad/disclaimers";
 import { DEFAULT_HOVER_SETTINGS, type HoverFieldSettings } from "@/lib/cad/hoverSettings";
 
@@ -343,6 +344,7 @@ function CallInfoBox({ call, accent, cfg }: { call: Call; accent: string; cfg: H
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function CallTicker() {
+  const pathname = usePathname();
   const [latest, setLatest]       = useState<Call[]>([]);
   const [allCalls, setAllCalls]   = useState<Call[]>([]);
   const [callCount, setCallCount] = useState<number | null>(null);
@@ -350,35 +352,25 @@ export default function CallTicker() {
   const [loading, setLoading]     = useState(true);
   const [now, setNow]           = useState<Date>(new Date());
   const [popup, setPopup]       = useState<{ call: Call; rect: DOMRect } | null>(null);
-  const [pinned, setPinned]     = useState(false);
   const [hoverCfg, setHoverCfg] = useState<HoverFieldSettings>(DEFAULT_HOVER_SETTINGS);
   const wrapperRef              = useRef<HTMLDivElement>(null);
   const scrollRef               = useRef<HTMLDivElement>(null);
-  const popupRef                = useRef<HTMLDivElement>(null);
   const prevIdsRef              = useRef<Set<string>>(new Set());
 
   // Open/close helpers for the hover info box.
   const hoverIn = useCallback((call: Call, el: HTMLElement) => {
-    if (!pinned) setPopup({ call, rect: el.getBoundingClientRect() });
-  }, [pinned]);
-  const hoverOut = useCallback(() => { if (!pinned) setPopup(null); }, [pinned]);
-  const pinInfo = useCallback((call: Call, el: HTMLElement) => {
     setPopup({ call, rect: el.getBoundingClientRect() });
-    setPinned(true);
   }, []);
-  const closeInfo = useCallback(() => { setPopup(null); setPinned(false); }, []);
+  const closeInfo = useCallback(() => setPopup(null), []);
 
-  // Dismiss the pinned popup on outside click / Escape.
+  // Persistent shell components survive navigation, so clear transient UI.
   useEffect(() => {
-    if (!popup) return;
-    const onDown = (e: MouseEvent) => {
-      if (popupRef.current && !popupRef.current.contains(e.target as Node)) closeInfo();
-    };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeInfo(); };
-    if (pinned) document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
-  }, [popup, pinned, closeInfo]);
+    const frame = window.requestAnimationFrame(() => {
+      setPopup(null);
+      setExpanded(false);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [pathname]);
 
   const fetchLatest = useCallback(async () => {
     try {
@@ -497,8 +489,7 @@ export default function CallTicker() {
                       key={call.id}
                       className="flex items-center gap-3 py-2.5 px-1 cursor-pointer hover:bg-white/[0.03] rounded"
                       onMouseEnter={(e) => hoverIn(call, e.currentTarget)}
-                      onMouseLeave={hoverOut}
-                      onClick={(e) => { e.stopPropagation(); pinInfo(call, e.currentTarget); }}
+                      onMouseLeave={closeInfo}
                     >
                       {active && <span className="w-2 h-2 rounded-full shrink-0 bg-emerald-400 animate-pulse" />}
                       <span className="text-white/70 text-sm tabular-nums w-24 shrink-0">{call.dispatchDate}</span>
@@ -548,8 +539,7 @@ export default function CallTicker() {
                 <div
                   className="flex items-center gap-1.5 min-w-0 cursor-pointer"
                   onMouseEnter={(e) => hoverIn(activeCall, e.currentTarget)}
-                  onMouseLeave={hoverOut}
-                  onClick={(e) => { e.stopPropagation(); pinInfo(activeCall, e.currentTarget); }}
+                  onMouseLeave={closeInfo}
                 >
                   <span className="text-emerald-300 font-black text-[11px] tracking-widest uppercase whitespace-nowrap">Responding</span>
                   <span className="text-white/20 shrink-0">&middot;</span>
@@ -559,8 +549,7 @@ export default function CallTicker() {
                 <div
                   className="flex items-center gap-1.5 min-w-0 cursor-pointer"
                   onMouseEnter={(e) => hoverIn(lastRun, e.currentTarget)}
-                  onMouseLeave={hoverOut}
-                  onClick={(e) => { e.stopPropagation(); pinInfo(lastRun, e.currentTarget); }}
+                  onMouseLeave={closeInfo}
                 >
                   <span className="text-slate-500 text-[10px] whitespace-nowrap shrink-0">Last</span>
                   <span className="text-white font-bold tabular-nums font-mono text-[10px] whitespace-nowrap shrink-0">{shortDate(lastRun.dispatchDate)} {lastRun.dispatchTime}</span>
@@ -604,7 +593,7 @@ export default function CallTicker() {
         </div>
       </div>
 
-      {/* ── Hover / tap info box ── */}
+      {/* ── Hover info box ── */}
       {popup && (() => {
         const margin = 12;
         const r = popup.rect;
@@ -619,7 +608,7 @@ export default function CallTicker() {
           ? { position: "fixed", left, width: boxW, bottom: Math.max(margin, vh - r.top + 6), zIndex: 80 }
           : { position: "fixed", left, width: boxW, top: r.bottom + 6, zIndex: 80 };
         return (
-          <div ref={popupRef} style={pos} onMouseEnter={() => { if (!pinned) setPopup(popup); }}>
+          <div style={{ ...pos, pointerEvents: "none" }}>
             <CallInfoBox call={popup.call} accent={boxAccent(popup.call)} cfg={hoverCfg} />
           </div>
         );

@@ -110,6 +110,7 @@ export default function TopCallCategories() {
         role="button"
         tabIndex={0}
         onClick={() => {
+          if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
           setOpen((v) => {
             const next = !v;
             if (next) openHeroPopover("top-categories");
@@ -117,8 +118,12 @@ export default function TopCallCategories() {
           });
         }}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen((v) => !v); } }}
-        onMouseEnter={openHover}
-        onMouseLeave={scheduleClose}
+        onMouseEnter={() => {
+          if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) openHover();
+        }}
+        onMouseLeave={() => {
+          if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) scheduleClose();
+        }}
         onFocus={openHover}
         onBlur={scheduleClose}
         style={{
