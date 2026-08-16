@@ -12,6 +12,8 @@ import { put } from "@vercel/blob";
 import { requireAdmin } from "@/lib/admin/auth";
 import { currentEmployee } from "@/lib/lounge/auth";
 import { getRecord, logOnboardingAudit, setProgress } from "@/lib/lounge/onboarding/db";
+import { privateBlobReference } from "@/lib/lounge/private-blobs";
+import { inspectUploadedFile, PRIVATE_DOCUMENT_TYPES } from "@/lib/security/upload-inspection";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,13 +37,15 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (file.size > 25 * 1024 * 1024) {
     return NextResponse.json({ error: "File too large (max 25 MB)" }, { status: 400 });
   }
+  const inspected = await inspectUploadedFile(file, PRIVATE_DOCUMENT_TYPES);
+  if (!inspected.ok) return NextResponse.json({ error: inspected.error }, { status: 400 });
 
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const path = `lounge/onboarding/${id}/${itemId}/${Date.now()}_${safeName}`;
   const blob = await put(path, file, {
-    access: "public",
+    access: "private",
     allowOverwrite: false,
-    contentType: file.type || "application/octet-stream",
+    contentType: inspected.mime,
   });
 
   const progress = await setProgress({
@@ -50,7 +54,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     actorId: me.id,
     actorName: `${me.firstName} ${me.lastName}`.trim(),
     patch: {
-      fileUrl: blob.url,
+      fileUrl: privateBlobReference(blob.pathname),
       fileName: file.name,
       expirationDate,
     },
@@ -64,5 +68,5 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     details: `Item ${itemId.slice(0, 8)} — ${file.name}`,
   });
 
-  return NextResponse.json({ progress, url: blob.url });
+  return NextResponse.json({ progress, url: progress?.fileUrl ?? null });
 }

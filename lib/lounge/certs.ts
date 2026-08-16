@@ -16,6 +16,7 @@
  */
 import { randomUUID } from "crypto";
 import { sql } from "./db";
+import { privateBlobDeleteTarget, privateLoungeBlobUrl } from "./private-blobs";
 
 export type AlertKind = "scheduled" | "final_7" | "expired";
 
@@ -373,7 +374,7 @@ function toEmployeeCert(r: DbEmpCertRow): EmployeeCert {
     certTypeName: r.cert_type_name,
     certTypeSlug: r.cert_type_slug,
     certRequiresExpiration: r.cert_requires_expiration,
-    fileUrl: r.file_url,
+    fileUrl: privateLoungeBlobUrl(r.file_url) ?? r.file_url,
     fileMime: r.file_mime,
     fileName: r.file_name,
     issuedOn: r.issued_on,
@@ -441,7 +442,7 @@ export async function deleteEmployeeCert(certId: string): Promise<string | null>
   `) as unknown as { file_url: string }[];
   const url = rows[0]?.file_url ?? null;
   await db`DELETE FROM lounge_employee_certs WHERE id = ${certId}`;
-  return url;
+  return url ? privateBlobDeleteTarget(url) : null;
 }
 
 // ── Cert status views ───────────────────────────────────────────────────

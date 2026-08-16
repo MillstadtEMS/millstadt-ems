@@ -123,8 +123,8 @@ export default function DevToolsPage() {
         </h1>
         <p style={{ color: "#94a3b8", fontSize: "0.92rem", marginTop: 4, lineHeight: 1.55 }}>
           Push forms, write-ups, acknowledgments, and notifications to the synthetic <strong>@testuser</strong> account
-          so you can verify the employee-facing experience without spamming real crew. The dev-login PIN (set under
-          Vercel env) drops you straight into that account with no 2FA.
+          so you can verify the employee-facing experience without spamming real crew. Sign in to test accounts through
+          the same password and authenticator flow used by every employee.
         </p>
       </header>
 
@@ -167,7 +167,7 @@ export default function DevToolsPage() {
 
           <section style={card}>
             <h2 style={cardTitle}>Send to test user</h2>
-            <p style={cardHelp}>Each button targets only the @testuser account. Real crew won't see any of it.</p>
+            <p style={cardHelp}>Each button targets only the @testuser account. Real crew will not see any of it.</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginTop: 10 }}>
               <Link
                 href={`/admin/forms?targetTest=1`}
@@ -216,19 +216,6 @@ export default function DevToolsPage() {
             </button>
           </section>
 
-          <section style={card}>
-            <h2 style={cardTitle}>Dev login</h2>
-            <p style={cardHelp}>
-              At <Link href="/lounge/login" style={{ color: "#f0b429" }}>/lounge/login</Link> the
-              <strong> Dev Shortcut</strong> card at the bottom lets you skip 2FA with PIN
-              <code style={code}>95723935</code>. Pick <strong>Employee</strong> to drop straight
-              into the @testuser account or <strong>Admin</strong> to land as kjames.
-            </p>
-            <p style={cardHelp}>
-              The PIN is the auth — no Vercel env vars required. Rotate the PIN by editing
-              <code style={code}>app/api/lounge/dev-login/route.ts</code> if it ever leaks.
-            </p>
-          </section>
         </>
       )}
     </div>

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { currentEmployee } from "@/lib/lounge/auth";
 import { getEmployee } from "@/lib/lounge/employees";
 import LoungeShell from "@/components/lounge/LoungeShell";
+import { getAnalyticsConfig } from "@/lib/analytics/config";
 
 export const metadata: Metadata = {
   title: { default: "Admin", template: "%s · MAS Admin" },
@@ -28,6 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     certification: emp?.certification ?? null,
     photoUrl: emp?.photoUrl ?? null,
     isAdmin: session.isAdmin,
+    canViewAnalytics: getAnalyticsConfig().supervisorEmployeeIds.includes(session.id),
   };
 
   return <LoungeShell me={me}>{children}</LoungeShell>;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import SignaturePad from "@/components/lounge/SignaturePad";
 
@@ -185,7 +185,25 @@ export default function ApplicationForm() {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [signature, setSignature] = useState<string | null>(null);
+  const [csrfToken, setCsrfToken] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/apply", { cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || typeof data.csrfToken !== "string") throw new Error("CSRF token unavailable");
+        if (!cancelled) setCsrfToken(data.csrfToken);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setErrorMsg("The secure application form could not be initialized. Refresh and try again.");
+          setStatus("error");
+        }
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   function updateCert(i: number, field: keyof Cert, val: string | boolean) {
     setCerts((prev) => prev.map((c, idx) => idx === i ? { ...c, [field]: val } : c));
@@ -235,6 +253,10 @@ export default function ApplicationForm() {
       `College #${i + 1}: ${c.name} | Degree: ${c.degree} | Grad: ${c.gradYear} | Honors: ${c.honors} | GPA: ${c.gpa}`
     ).join("\n"));
 
+    for (const key of [...fd.keys()]) {
+      if (/^(?:college|cert|emp|ref)_\d+_/.test(key)) fd.delete(key);
+    }
+
     if (!signature) {
       setErrorMsg("Please sign at the bottom of the form before submitting.");
       setStatus("error");
@@ -244,7 +266,11 @@ export default function ApplicationForm() {
     fd.set("applicant_signed_at", new Date().toLocaleString("en-US", { timeZone: "America/Chicago" }) + " CDT");
 
     try {
-      const res = await fetch("/api/apply", { method: "POST", body: fd });
+      const res = await fetch("/api/apply", {
+        method: "POST",
+        headers: { "X-CSRF-Token": csrfToken },
+        body: fd,
+      });
       const data = await res.json().catch(() => null);
       if (res.ok && data?.success) {
         setStatus("sent");
@@ -346,10 +372,6 @@ export default function ApplicationForm() {
                 <Input name="dob" type="date" required />
               </div>
               <div>
-                <Label required>Social Security Number</Label>
-                <Input name="ssn_last4" placeholder="XXX-XX-XXXX" required maxLength={11} />
-              </div>
-              <div>
                 <Label required>Phone Number</Label>
                 <Input name="phone" type="tel" placeholder="(618) 555-0100" required />
               </div>
@@ -368,10 +390,6 @@ export default function ApplicationForm() {
               <div>
                 <Label>Driver&apos;s License State</Label>
                 <Input name="dl_state" placeholder="IL" maxLength={2} />
-              </div>
-              <div>
-                <Label>Driver&apos;s License Number</Label>
-                <Input name="dl_number" placeholder="D12345678" />
               </div>
               <div className="sm:col-span-2">
                 <Label>Driver&apos;s License Expiration</Label>
@@ -741,36 +759,9 @@ export default function ApplicationForm() {
             </div>
           </Section>
 
-          {/* ── SECTION 12: Attachments ── */}
+          {/* ── SECTION 12: Certification & Signature ── */}
           <Section>
-            <SectionHeader number="12" title="Attachments" subtitle="Upload your resume, license copies, and certifications. 4MB total maximum." />
-
-            <div className="space-y-4">
-              {[
-                { name: "file_resume", label: "Resume / CV" },
-                { name: "file_cover", label: "Cover Letter" },
-                { name: "file_dl", label: "Driver's License Copy" },
-                { name: "file_license", label: "Professional Licenses" },
-                { name: "file_certs", label: "Certification Cards" },
-                { name: "file_immunizations", label: "Immunization Records" },
-                { name: "file_other", label: "Additional Documents" },
-              ].map((f) => (
-                <div key={f.name} className="grid grid-cols-1 sm:grid-cols-[260px_1fr] gap-3 items-center p-4 bg-[#0d0d0d] border border-white/5">
-                  <span className="text-slate-300 text-sm font-bold uppercase tracking-wider whitespace-nowrap">{f.label}</span>
-                  <input
-                    type="file"
-                    name={f.name}
-                    multiple
-                    className="text-slate-400 text-sm file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-[#f0b429]/15 file:text-[#f0b429] file:font-bold file:text-xs file:tracking-wider hover:file:bg-[#f0b429]/25 file:cursor-pointer cursor-pointer"
-                  />
-                </div>
-              ))}
-            </div>
-          </Section>
-
-          {/* ── SECTION 13: Certification & Signature ── */}
-          <Section>
-            <SectionHeader number="13" title="Applicant Certification" />
+            <SectionHeader number="12" title="Applicant Certification" />
 
             <DisclaimerBox>
               I certify that all information provided in this application is true and complete to the best of my knowledge.
@@ -814,7 +805,7 @@ export default function ApplicationForm() {
           <div className="mt-8 flex flex-col sm:flex-row gap-3">
             <button
               type="submit"
-              disabled={status === "sending" || !signature}
+              disabled={status === "sending" || !signature || !csrfToken}
               title={!signature ? "Add your signature above before submitting." : undefined}
               className="bg-[#f0b429] text-[#040d1a] font-black uppercase tracking-wider px-8 py-4 hover:bg-[#f7c847] transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm sm:text-base"
             >

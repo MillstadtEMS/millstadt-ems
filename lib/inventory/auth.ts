@@ -4,7 +4,7 @@
  * Session cookie: mas_inventory (httpOnly, 8h TTL).
  */
 
-import { scryptSync, randomBytes, createHmac } from "crypto";
+import { scryptSync, randomBytes, createHmac, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { neon } from "@neondatabase/serverless";
 import { currentEmployee } from "@/lib/lounge/auth";
@@ -40,7 +40,9 @@ function verifyPassword(password: string, stored: string): boolean {
   const [salt, hash] = stored.split(":");
   if (!salt || !hash) return false;
   const testHash = scryptSync(password, salt, 64).toString("hex");
-  return hash === testHash;
+  const actual = Buffer.from(testHash, "hex");
+  const expected = Buffer.from(hash, "hex");
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
 // ── Password storage (in site_content table) ───────────────────────────────
@@ -83,7 +85,11 @@ export async function setPasswordHash(hash: string): Promise<void> {
 export async function ensurePassword(): Promise<void> {
   const existing = await getPasswordHash();
   if (existing) return;
-  const initial = process.env.INVENTORY_PASSWORD ?? "$Millstadt3935!";
+  const configured = process.env.INVENTORY_PASSWORD;
+  if (!configured && process.env.NODE_ENV === "production") {
+    throw new Error("INVENTORY_PASSWORD is not configured");
+  }
+  const initial = configured ?? "development-only-inventory-password";
   const hash = hashPassword(initial);
   await setPasswordHash(hash);
 }
@@ -129,9 +135,13 @@ export async function makeInventorySessionToken(): Promise<string> {
 export async function verifyInventorySession(token: string): Promise<boolean> {
   const [ts, sig] = token.split(".");
   if (!ts || !sig) return false;
-  if (Date.now() - Number(ts) > MAX_AGE * 1000) return false;
+  const issuedAt = Number(ts);
+  const age = Date.now() - issuedAt;
+  if (!Number.isFinite(issuedAt) || age < -60_000 || age > MAX_AGE * 1000) return false;
   const secret = await getSigningSecret();
-  return signWithSecret(ts, secret) === sig;
+  const actual = Buffer.from(sig, "hex");
+  const expected = Buffer.from(signWithSecret(ts, secret), "hex");
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
 export async function isInventoryAuthed(): Promise<boolean> {

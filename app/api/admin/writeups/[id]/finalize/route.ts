@@ -22,6 +22,11 @@ import { createRecord, createAttachment } from "@/lib/lounge/personnel";
 import { sendEmployeeEmail } from "@/lib/lounge/employee-email";
 import { emailAdmins } from "@/lib/lounge/notify-admins";
 import { createNotifications } from "@/lib/lounge/notifications";
+import {
+  privateBlobReference,
+  privateLoungeBlobAbsoluteUrl,
+  privateLoungeBlobUrl,
+} from "@/lib/lounge/private-blobs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,8 +64,10 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
   const blob = await put(
     `lounge/writeups/${wu.employeeId}/${slug}-${filename}`,
     pdf,
-    { access: "public", contentType: "application/pdf" },
+    { access: "private", contentType: "application/pdf" },
   );
+  const pdfReference = privateBlobReference(blob.pathname);
+  const protectedPdfUrl = privateLoungeBlobAbsoluteUrl(pdfReference);
 
   // Optionally create the personnel record + attachment.
   let personnelRecordId: string | null = null;
@@ -90,7 +97,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
       recordId: record.id,
       employeeId: wu.employeeId,
       fileName: filename,
-      fileUrl: blob.url,
+      fileUrl: pdfReference,
       fileMime: "application/pdf",
       fileSize: pdf.length,
       documentCategory: "Corrective action",
@@ -109,7 +116,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
 
   const finalized = await finalizeWriteUp({
     id,
-    pdfUrl: blob.url,
+    pdfUrl: pdfReference,
     pdfFilename: filename,
     personnelRecordId,
     finalizedById: me.id,
@@ -171,7 +178,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
             `Issue category: ${wu.issueCategory ?? "—"}\n\n` +
             `You can review the signed PDF using the link below, and you'll also find it in the Employee Lounge under "My File".\n\n` +
             `If anything in this document is inaccurate, contact leadership before signing your acknowledgment.`,
-          link: { url: blob.url, label: "Open the signed PDF" },
+          link: { url: protectedPdfUrl, label: "Open the signed PDF" },
         });
         emailedEmployee = true;
         await logWriteUpAudit({
@@ -194,7 +201,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
         `Issue: ${wu.issueCategory ?? "—"}\n` +
         `Employee acknowledged: ${wu.employeeSignature ? "yes" : wu.employeeRefusedToSign ? "refused" : "pending"}\n` +
         `Shared with employee: ${wu.saveToFile ? "yes" : "no (admin-only)"}\n`,
-      link: { url: blob.url, label: "Open PDF" },
+      link: { url: protectedPdfUrl, label: "Open PDF" },
       subject: `[EMS HR] Write-up filed — ${employeeName} — ${subjectStamp}`,
     });
   } catch (e) {
@@ -203,7 +210,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
 
   return NextResponse.json({
     writeup: finalized,
-    pdfUrl: blob.url,
+    pdfUrl: privateLoungeBlobUrl(pdfReference),
     pdfFilename: filename,
     personnelRecordId,
     emailedEmployee,

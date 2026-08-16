@@ -30,6 +30,8 @@ import {
   type AttachmentSummary,
 } from "@/lib/reports/pdf-system";
 import { fallbackText, normalizePunctuation } from "@/lib/reports/sanitize";
+import { get } from "@vercel/blob";
+import { privateBlobPath } from "./private-blobs";
 
 export interface IncidentPdfInput {
   id: string;
@@ -163,7 +165,7 @@ export async function buildIncidentPdf(input: IncidentPdfInput): Promise<Buffer>
       index: i + 1,
       total: imageAtts.length,
       name: r.name,
-      caption: `Source: ${r.url}`,
+      caption: "Stored with the protected incident report",
       dataUri: `data:image/${r.kind};base64,${Buffer.from(bytes).toString("base64")}`,
       format,
       pxW: dims.width,
@@ -190,7 +192,7 @@ function attachmentMeta(r: { kind: string; bytes: Uint8Array | null; url: string
     r.kind === "pdf"  ? "PDF document" :
     r.kind === "unknown" ? "File" : `File (${r.kind})`;
   const size = r.bytes ? formatBytes(r.bytes.byteLength) : null;
-  return [kindLabel, size, r.url].filter(Boolean).join(" · ");
+  return [kindLabel, size].filter(Boolean).join(" · ");
 }
 
 function formatBytes(n: number): string {
@@ -200,6 +202,12 @@ function formatBytes(n: number): string {
 }
 
 async function fetchBytes(url: string): Promise<Uint8Array> {
+  const pathname = privateBlobPath(url);
+  if (pathname) {
+    const result = await get(pathname, { access: "private", useCache: false });
+    if (!result || result.statusCode !== 200) throw new Error("Private attachment not found");
+    return new Uint8Array(await new Response(result.stream).arrayBuffer());
+  }
   const r = await fetch(url, { cache: "no-store" });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return new Uint8Array(await r.arrayBuffer());

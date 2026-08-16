@@ -28,6 +28,7 @@ import {
   setFinalizedState,
 } from "@/lib/lounge/onboarding/db";
 import { buildOnboardingPdf, onboardingFilename } from "@/lib/lounge/onboarding/pdf";
+import { privateBlobReference, privateLoungeBlobUrl } from "@/lib/lounge/private-blobs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -90,8 +91,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const blob = await put(
     `lounge/onboarding/${rec.id}/${slug}-${filename}`,
     pdf,
-    { access: "public", contentType: "application/pdf" },
+    { access: "private", contentType: "application/pdf" },
   );
+  const pdfReference = privateBlobReference(blob.pathname);
 
   // Bridge to personnel records so the document is browsable from
   // /admin/filing-cabinet/[id] alongside other personnel paperwork.
@@ -114,7 +116,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     recordId: personnel.id,
     employeeId: rec.employeeId,
     fileName: filename,
-    fileUrl: blob.url,
+    fileUrl: pdfReference,
     fileMime: "application/pdf",
     fileSize: pdf.length,
     documentCategory: "Onboarding Checklist",
@@ -124,7 +126,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
   await setFinalizedState({
     id: rec.id,
-    pdfUrl: blob.url,
+    pdfUrl: pdfReference,
     pdfFilename: filename,
     personnelRecordId: personnel.id,
     finalizedById: me.id,
@@ -139,7 +141,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   });
 
   return NextResponse.json({
-    pdfUrl: blob.url,
+    pdfUrl: privateLoungeBlobUrl(pdfReference),
     pdfFilename: filename,
     personnelRecordId: personnel.id,
   });

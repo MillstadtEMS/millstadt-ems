@@ -14,6 +14,7 @@
  */
 import { randomUUID } from "crypto";
 import { sql } from "./db";
+import { privateLoungeBlobUrl } from "./private-blobs";
 
 export const CORRECTIVE_ACTION_TYPES = [
   "Documented verbal counseling",
@@ -208,7 +209,7 @@ function toWriteUp(r: DbRow): WriteUp {
     employeeRefusedToSign: Boolean(r.employee_refused_to_sign),
     witnessSignature: r.witness_signature,
     saveToFile: Boolean(r.save_to_file),
-    pdfUrl: r.pdf_url,
+    pdfUrl: privateLoungeBlobUrl(r.pdf_url),
     pdfFilename: r.pdf_filename,
     personnelRecordId: r.personnel_record_id,
     createdById: r.created_by_id,

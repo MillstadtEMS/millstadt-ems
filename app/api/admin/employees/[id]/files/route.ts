@@ -17,6 +17,8 @@ import {
   addEmployeeFile,
   type EmployeeFile,
 } from "@/lib/lounge/employees";
+import { privateBlobReference } from "@/lib/lounge/private-blobs";
+import { inspectUploadedFile, PRIVATE_DOCUMENT_TYPES } from "@/lib/security/upload-inspection";
 
 export const runtime = "nodejs";
 
@@ -60,22 +62,24 @@ export async function POST(
   if (!["cert", "license", "writeup", "other"].includes(fileType)) {
     return NextResponse.json({ error: "Invalid fileType" }, { status: 400 });
   }
+  const inspected = await inspectUploadedFile(file, PRIVATE_DOCUMENT_TYPES);
+  if (!inspected.ok) return NextResponse.json({ error: inspected.error }, { status: 400 });
 
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const path = `lounge/employees/${id}/${fileType}/${Date.now()}_${safeName}`;
 
   const blob = await put(path, file, {
-    access: "public",
+    access: "private",
     allowOverwrite: false,
-    contentType: file.type || "application/octet-stream",
+    contentType: inspected.mime,
   });
 
   const saved = await addEmployeeFile({
     employeeId: id,
     fileType: fileType as EmployeeFile["fileType"],
     title,
-    fileUrl: blob.url,
-    fileMime: file.type || undefined,
+    fileUrl: privateBlobReference(blob.pathname),
+    fileMime: inspected.mime,
     notes,
     expiresOn,
     uploadedBy: me.id,

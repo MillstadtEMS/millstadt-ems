@@ -23,6 +23,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { del as blobDel } from "@vercel/blob";
+import { privateBlobDeleteTarget } from "@/lib/lounge/private-blobs";
 import { requireAdmin } from "@/lib/admin/auth";
 import { currentEmployee } from "@/lib/lounge/auth";
 import { getEmployee } from "@/lib/lounge/employees";
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     try {
       const attachments = await listAttachmentsForRecord(wu.personnelRecordId);
       for (const a of attachments) {
-        try { await blobDel(a.fileUrl); blobsDeleted++; } catch (e) { console.error("[writeups rescind] blob delete:", e); }
+        try { await blobDel(privateBlobDeleteTarget(a.fileUrl)); blobsDeleted++; } catch (e) { console.error("[writeups rescind] blob delete:", e); }
         try { await deleteAttachment(a.id); attachmentsDeleted++; } catch (e) { console.error("[writeups rescind] attachment delete:", e); }
       }
     } catch (e) { console.error("[writeups rescind] list attachments:", e); }
@@ -82,7 +83,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   // Also kill the standalone PDF blob the finalize uploaded, in case
   // saveToFile was false (no personnel record was ever created).
   if (wu.pdfUrl) {
-    try { await blobDel(wu.pdfUrl); blobsDeleted++; } catch (e) { console.error("[writeups rescind] blob delete pdf:", e); }
+    try { await blobDel(privateBlobDeleteTarget(wu.pdfUrl)); blobsDeleted++; } catch (e) { console.error("[writeups rescind] blob delete pdf:", e); }
   }
 
   // 2. Status flip — keep the row + audit trail so HR can prove the
