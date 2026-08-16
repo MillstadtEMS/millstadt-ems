@@ -20,6 +20,11 @@ interface EmployeeEmailOpts {
   bodyHtml?: string;
   bodyText?: string;
   link?: { url: string; label: string };
+  attachments?: Array<{
+    filename: string;
+    contentType: string;
+    content: Buffer;
+  }>;
 }
 
 export async function sendEmployeeEmail(opts: EmployeeEmailOpts): Promise<void> {
@@ -52,19 +57,62 @@ export async function sendEmployeeEmail(opts: EmployeeEmailOpts): Promise<void> 
     </div>
   `;
 
-  const raw = Buffer.from(
+  const headers =
     `From: Millstadt EMS Lounge <${from}>\r\n` +
     `To: ${recipients.join(", ")}\r\n` +
     `Subject: ${encodeMimeSubject(opts.subject)}\r\n` +
-    `MIME-Version: 1.0\r\n` +
-    `Content-Type: text/html; charset=utf-8\r\n` +
-    `Content-Transfer-Encoding: base64\r\n` +
-    `\r\n` +
-    Buffer.from(html, "utf8").toString("base64").replace(/(.{76})/g, "$1\r\n"),
-  ).toString("base64url");
+    `MIME-Version: 1.0\r\n`;
+  const attachments = opts.attachments ?? [];
+  const message = attachments.length
+    ? multipartMessage(headers, html, attachments)
+    :
+      headers +
+      `Content-Type: text/html; charset=utf-8\r\n` +
+      `Content-Transfer-Encoding: base64\r\n` +
+      `\r\n` +
+      wrapBase64(Buffer.from(html, "utf8"));
+  const raw = Buffer.from(message, "utf8").toString("base64url");
 
   const gmail = google.gmail({ version: "v1", auth });
   await gmail.users.messages.send({ userId: from, requestBody: { raw } });
+}
+
+function multipartMessage(
+  headers: string,
+  html: string,
+  attachments: NonNullable<EmployeeEmailOpts["attachments"]>,
+) {
+  const boundary = `millstadt-ems-${Date.now().toString(36)}`;
+  const parts = [
+    `--${boundary}\r\n` +
+      `Content-Type: text/html; charset=utf-8\r\n` +
+      `Content-Transfer-Encoding: base64\r\n\r\n` +
+      wrapBase64(Buffer.from(html, "utf8")),
+    ...attachments.map((attachment) => {
+      const filename = safeAttachmentFilename(attachment.filename);
+      return (
+        `--${boundary}\r\n` +
+        `Content-Type: ${attachment.contentType}\r\n` +
+        `Content-Transfer-Encoding: base64\r\n` +
+        `Content-Disposition: attachment; filename="${filename}"\r\n\r\n` +
+        wrapBase64(attachment.content)
+      );
+    }),
+    `--${boundary}--\r\n`,
+  ];
+  return (
+    headers +
+    `Content-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n` +
+    parts.join("\r\n")
+  );
+}
+
+function wrapBase64(value: Buffer) {
+  return value.toString("base64").replace(/(.{76})/g, "$1\r\n");
+}
+
+function safeAttachmentFilename(value: string) {
+  return value.replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 120) || "attachment";
 }
 
 function escapeHtml(s: string): string {

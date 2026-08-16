@@ -13,7 +13,7 @@ import { verifySessionToken as verifyTruckCheckToken } from "@/lib/truckcheck/au
  *   (microphone for the inventory voice input); geolocation/payment off
  * - Strict-Transport-Security: 2-year HSTS, production only
  */
-function withSecurityHeaders(res: NextResponse): NextResponse {
+function withSecurityHeaders(res: NextResponse, pathname = ""): NextResponse {
   res.headers.set("X-Content-Type-Options", "nosniff");
   res.headers.set("X-Frame-Options", "DENY");
   res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -27,11 +27,45 @@ function withSecurityHeaders(res: NextResponse): NextResponse {
       "max-age=63072000; includeSubDomains; preload",
     );
   }
+  if (
+    pathname.startsWith("/financials-information-hub") ||
+    pathname.startsWith("/admin/financials") ||
+    pathname.startsWith("/api/financials") ||
+    pathname.startsWith("/api/admin/financials")
+  ) {
+    res.headers.set("Cache-Control", "no-store, private");
+    res.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+    res.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+    res.headers.set(
+      "Content-Security-Policy",
+      [
+        "default-src 'self'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+        "object-src 'none'",
+        "script-src 'self' 'unsafe-inline'" +
+          (process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"),
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: blob:",
+        "font-src 'self' data:",
+        "connect-src 'self'",
+        "worker-src 'self' blob:",
+      ].join("; "),
+    );
+  }
   return res;
 }
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  if (
+    process.env.NODE_ENV === "production" &&
+    (pathname.startsWith("/admin/dev-tools") || pathname.startsWith("/api/admin/dev/"))
+  ) {
+    return withSecurityHeaders(new NextResponse("Not found", { status: 404 }), pathname);
+  }
 
   // Protect all /admin/* except /admin/login
   if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
@@ -46,7 +80,7 @@ export function proxy(req: NextRequest) {
       const url = req.nextUrl.clone();
       url.pathname = "/admin/login";
       url.searchParams.set("from", pathname);
-      return withSecurityHeaders(NextResponse.redirect(url));
+      return withSecurityHeaders(NextResponse.redirect(url), pathname);
     }
   }
 
@@ -60,11 +94,11 @@ export function proxy(req: NextRequest) {
     if (!token || !verifyTruckCheckToken(token)) {
       const url = req.nextUrl.clone();
       url.pathname = "/truckcheck/login";
-      return withSecurityHeaders(NextResponse.redirect(url));
+      return withSecurityHeaders(NextResponse.redirect(url), pathname);
     }
   }
 
-  return withSecurityHeaders(NextResponse.next());
+  return withSecurityHeaders(NextResponse.next(), pathname);
 }
 
 export const config = {

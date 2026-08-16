@@ -1,0 +1,33 @@
+# Financial Information Hub Audit Report
+
+Review date: 2026-08-16. The audit covered the financial hub source, routes, legal-constant usage, signatures, PDFs, uploads, approval/viewer logic, notifications, PWA/privacy code, shared authentication boundaries, dependencies, configuration, and repository-wide high-risk patterns.
+
+## Issues found and fixed
+
+| Severity | Finding and root cause | Fix and regression evidence |
+| --- | --- | --- |
+| High | Existing lounge dev-login route used hardcoded PINs and was intentionally production-capable. | Removed embedded PINs/personal bypass, made route development-only and environment-gated, hid UI by explicit flag, added old-PIN 404 test. |
+| High | Next.js, Nodemailer, transitive HTTP/sanitizer packages, and npm-registry SheetJS had known advisories. | Updated Next/Nodemailer/transitives and installed official SheetJS 0.20.3 tarball. `npm audit` now reports zero vulnerabilities. |
+| High | Restricted requests lacked complete CSRF/same-origin, idempotency, stale-action, and exact document-version enforcement. | Added server request boundary, payload-hash idempotency, expected status/version checks, and viewer version binding; direct tests pass. |
+| High | Real/test delivery configuration could be confused and recipients could be returned/logged. | Production hard-disable, explicit test-sink domain, SMS off, recipient counts only, no recipient API fields; delivery-isolation test passes. |
+| High | Requester IDs appeared in query strings. | Moved identity to request headers/body and added source/API regression checks. |
+| High | Known fallback secrets existed for truck-check signing and inventory initialization. | Production now fails closed when required secrets are absent; development-only fallback values are non-production. Existing deployed credentials still require owner verification/rotation. |
+| Medium | Form 990 catalog reported 2/3 pages while each PDF had one physical page. | Generator now creates one searchable US Letter page per catalog page; `pdfinfo` assertions pass. |
+| Medium | Signed agreement pagination orphaned a heading and created a nearly empty sixth page. | Deterministic paragraph continuation and heading reservation produce five readable, unique pages; all pages rendered and inspected. |
+| Medium | Viewer/status/catalog network exceptions could escape UI handling and contribute to blank behavior. | Added guarded fetch handling that preserves form/selection state and reports recoverable errors. Browser click-through stays on the route. |
+| Medium | Accuracy multipart route did not reject unknown field names. | Added a server-side allowed-field set before upload processing. |
+| Medium | Unexpected/provider error objects were written verbatim to logs. | Logs now record only generic operation and error class; user responses remain generic. |
+| Medium | No scoped CSP and production dev-tool paths remained reachable after authentication. | Added financial-route CSP and production 404 boundary for dev-tool page/APIs. |
+| Low | Signature UI had incomplete responsive styling and PWA icon metadata did not match physical dimensions. | Completed signature controls and generated 192/512 approved-logo icons with correct manifests. |
+
+## Deliberately preserved
+
+- Existing Millstadt ticker, alerts, time, weather/moon, navigation, lounge/menu controls, branding, header, footer, and site shell.
+- Exact approved legal/disclosure constants; presentation changed, meaning did not.
+- Public Form 990 access without identity, account, signature, acknowledgment, or approval.
+- Restricted-document identity, terms, signature, administrator approval, expiration/revocation, audit, and controlled viewing.
+- Accuracy-report private review workflow and supporting-upload behavior.
+
+## Open audit results
+
+Production remains disabled because the durable data, identity, delivery, retention, MFA/roles, infrastructure, and complete release-testing requirements in `BLOCKERS.md` are not implemented or verified. Full repository lint also has pre-existing failures outside this scope. No public deployment or branch push was performed during this audit because preview protection and production hosting controls were not proven.

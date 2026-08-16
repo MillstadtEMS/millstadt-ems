@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:financials": "node scripts/test-financials-hub.mjs"
   },
   "dependencies": {
     "@fontsource-variable/mona-sans": "^5.2.8",
@@ -22,15 +23,15 @@
     "jspdf-autotable": "^5.0.7",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.25.0",
-    "next": "16.2.2",
+    "next": "16.3.1",
     "node-ical": "^0.26.1",
-    "nodemailer": "^8.0.4",
+    "nodemailer": "^9.0.5",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-leaflet": "^5.0.0",
     "twilio": "^5.13.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -38,7 +39,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.2",
+    "eslint-config-next": "16.3.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

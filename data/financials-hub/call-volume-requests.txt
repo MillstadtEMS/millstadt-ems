@@ -1,0 +1,565 @@
+Call Volume Requests - Page 1 of 16
+
+Call Volume Requests
+Bundled operational call-volume PDFs and methodology notice
+Reporting period: calendar years 2022, 2023, 2024, 2025, and 2026 through August 13, 2026.
+Source files included
+Period Source file Pages
+2026 through August 13, 2026 2026 Overall 911 Call Volume Thru 8_13_26 (2).pdf 2
+2025 2025 Overall 911 Call Volume (1).pdf 2
+2024 2024 Overall 911 Call Volume (1).pdf 2
+2023 2023 Overall 911 Call Volume (1).pdf 2
+2022 2022 Overall 911 Call Volume (1).pdf 1
+Methodology notice
+1. This document bundle contains run-number, dispatch, and patient-care-report information relating to Millstadt
+Ambulance Service, Millstadt EMS, and Millstadt EMS ESD for calendar years 2022, 2023, 2024, 2025, and 2026
+through August 13, 2026.
+2. The figures in this bundle represent different types of operational information and should not be treated as identical or
+directly interchangeable without considering the definitions and limitations described below.
+3. ESO patient-care-report figures represent the number of patient care reports, or PCRs, generated in ESO during the
+applicable period. An ESO PCR count is an administrative record count. It is not necessarily a count of unique
+dispatches, unique incidents, unique patients, transports, ambulance responses, CENCOM call numbers, or individual
+run numbers.
+4. Website dispatch-tracking figures represent dispatch events recorded in the Millstadt EMS website call-volume
+reporting export reflected in the source PDFs for the applicable period. The website dispatch-tracking system is
+maintained separately from the ESO patient-care-report system. The two systems use different records and counting
+methods.
+5. The term "independently verified" should not be used for these figures unless Millstadt has separately completed and
+documented an independent reconciliation against identified source records.
+6. Before January 1, 2026, CENCOM records and tracking practices did not consistently identify or maintain individual
+Millstadt EMS run numbers in the same manner as the current website dispatch-tracking system. CENCOM-related call
+numbers, historical run numbers, website dispatch totals, and ESO PCR counts for periods before January 1, 2026,
+may differ and should not be treated as exact equivalents.
+7. A difference between these figures does not, by itself, establish that a dispatch, call, patient-care report, transport, or
+run was omitted or improperly counted. Differences may reflect numbering conventions, dispatch-recording practices,
+system fields, reporting periods, data-entry practices, corrections or adjustments, the distinction between dispatches
+and PCRs, or the transition between recordkeeping systems.
+MILLSTADT EMS RELEASE CALL-VOLUME-REQUESTS | ESO FIGURES COUNT PCRs GENERATED; WEBSITE FIGURES COUNT RECORDED DISPATCH EVENTS |
+HISTORICAL PRE-2026 CENCOM FIGURES MAY DIFFER DUE TO PRIOR TRACKING METHODS | ALTERED OR INCOMPLETE COPIES ARE NOT THE COMPLETE
+Page 1 of 16
+--- MILLSTADT EMS PAGE BREAK ---
+Call Volume Requests - Page 2 of 16
+
+8. The figures should be quoted and characterized according to the definitions above. A person reviewing, quoting,
+reproducing, or distributing this material should not knowingly combine different categories of counts and present the
+result as a single undifferentiated total, omit a material limitation in a manner that creates a materially misleading
+impression about what a number measures, or identify Millstadt as the author, verifier, approver, or source of a modified
+or generated version that Millstadt did not create or approve.
+9. This notice does not state that every discrepancy, error, estimate, inference, opinion, criticism, or unfavorable
+characterization is unlawful or defamatory. It does not restrict lawful criticism, commentary, journalism, quotation,
+political speech, public discussion, good-faith disagreement, or other use protected by applicable law.
+10. This bundle is intended to contain operational counts and run-number information, not medical or patient-specific
+information. Medical and patient-specific information must not be included in the public bundle merely because it
+appears in an underlying dispatch or ESO record.
+11. An altered, cropped, incomplete, edited, summarized, transcribed, reconstructed, or AI-generated version should be
+identified as a modification or derivative and should not be represented as the complete, unaltered Millstadt record.
+MILLSTADT EMS RUN-COUNT NOTICE - ESO = PCRs GENERATED; WEBSITE TOTAL = RECORDED DISPATCHES - PRE-2026
+FIGURES MAY DIFFER
+MILLSTADT EMS RELEASE CALL-VOLUME-REQUESTS | ESO FIGURES COUNT PCRs GENERATED; WEBSITE FIGURES COUNT RECORDED DISPATCH EVENTS |
+HISTORICAL PRE-2026 CENCOM FIGURES MAY DIFFER DUE TO PRIOR TRACKING METHODS | ALTERED OR INCOMPLETE COPIES ARE NOT THE COMPLETE
+Page 2 of 16
+--- MILLSTADT EMS PAGE BREAK ---
+Call Volume Requests - Page 3 of 16
+
+Overall 911 Call Volume
+Period: 2026 through August 13, 2026
+Source file: 2026 Overall 911 Call Volume Thru 8_13_26 (2).pdf
+Included in the Call Volume Requests bundle.
+MILLSTADT EMS RUN-COUNT NOTICE - ESO = PCRs GENERATED; WEBSITE TOTAL = RECORDED DISPATCHES - PRE-2026 FIGURES MAY
+DIFFER
+MILLSTADT EMS RELEASE CALL-VOLUME-REQUESTS | ESO FIGURES COUNT PCRs GENERATED; WEBSITE FIGURES COUNT RECORDED DISPATCH EVENTS |
+HISTORICAL PRE-2026 CENCOM FIGURES MAY DIFFER DUE TO PRIOR TRACKING METHODS | ALTERED OR INCOMPLETE COPIES ARE NOT THE COMPLETE
+Page 3 of 16
+--- MILLSTADT EMS PAGE BREAK ---
+Call Volume Requests - Page 4 of 16
+
+ANALYTICS
+Section 1a: Overall 911 Call Volume
+Custom Jan 1, 2026 - Aug 13, 2026
+54%
+TRANSPORTS 7
+Percentage of Patient
+Encounters
+6
+31%
+5
+NON TRANSPORTS
+Percentage of Patient
+Encounters
+4
+14%
+3
+OTHER DISPOSITIONS
+Percentage of Patient
+Encounters 2
+599
+1
+RECORDS
+In Selected Time Slice 0
+Jan '26 Feb '26 Mar '26 Apr '26 May '26 Jun '26 Jul '26 Aug '26
+2020 2021 2022 2023 2024 2025 2026
+Counts % Rows % Columns % All
+Jan '26 Feb '26 Mar '26 Apr '26 May '26 Jun '26 Jul '26 Aug '26 Sep '26 Oct '26 Nov '26 Dec '26 Jan '27 Total
+Assist, Agency 1 1
+Assist, Public 1 1 2 4
+Cancelled (No
+Patient 10 4 3 2 8 4 7 3 41
+Contact)
+Cancelled
+(Prior to Arrival 2 5 6 3 9 4 2 31
+at Scene)
+Cancelled on
+Scene/No 1 3 1 5
+Patient Found
+Patient Dead
+on Scene -
+R A e tt s e u m sc p i t t e a d tion 1 1 1 3
+(Without
+Transport)
+Patient
+E Tr v e a a lu tm at e e n d t , / N Tr o a… 2 1 2 2 4 1 1 13
+Required
+Patient
+Refused
+Evaluation/Ca… 27 19 22 12 15 20 16 9 140
+(Without
+Transport)
+Patient
+T R r e e le a a te s d e , d 1 4 5 4 6 5 4 2 31
+(AMA)
+Patient
+T R r e e le a a te s d e , d (per 1 1
+protocol)
+Patient
+Treated,
+Transported 1 1
+by Law
+Enforcement
+Patient
+Treated,
+Transported 1 1
+by Private
+Vehicle
+T Li r g a h n t s s p /S o i r r t e e n d 22 20 28 33 21 31 15 10 180
+Page 1 of 2
+MILLSTADT EMS RELEASE CALL-VOLUME-REQUESTS | ESO FIGURES COUNT PCRs GENERATED; WEBSITE FIGURES COUNT RECORDED DISPATCH EVENTS |
+HISTORICAL PRE-2026 CENCOM FIGURES MAY DIFFER DUE TO PRIOR TRACKING METHODS | ALTERED OR INCOMPLETE COPIES ARE NOT THE COMPLETE
+Page 4 of 16
+--- MILLSTADT EMS PAGE BREAK ---
+Call Volume Requests - Page 5 of 16
+
+Jan '26 Feb '26 Mar '26 Apr '26 May '26 Jun '26 Jul '26 Aug '26 Sep '26 Oct '26 Nov '26 Dec '26 Jan '27 Total
+Transported
+Lights/Siren, 1 1 2
+Downgraded
+Transported
+No 18 19 19 22 25 19 16 6 144
+Lights/Siren
+NULL 1 1
+Total 87 74 89 79 91 86 62 31 599
+Page 2 of 2
+MILLSTADT EMS RELEASE CALL-VOLUME-REQUESTS | ESO FIGURES COUNT PCRs GENERATED; WEBSITE FIGURES COUNT RECORDED DISPATCH EVENTS |
+HISTORICAL PRE-2026 CENCOM FIGURES MAY DIFFER DUE TO PRIOR TRACKING METHODS | ALTERED OR INCOMPLETE COPIES ARE NOT THE COMPLETE
+Page 5 of 16
+--- MILLSTADT EMS PAGE BREAK ---
+Call Volume Requests - Page 6 of 16
+
+Overall 911 Call Volume
+Period: 2025
+Source file: 2025 Overall 911 Call Volume (1).pdf
+Included in the Call Volume Requests bundle.
+MILLSTADT EMS RUN-COUNT NOTICE - ESO = PCRs GENERATED; WEBSITE TOTAL = RECORDED DISPATCHES - PRE-2026 FIGURES MAY
+DIFFER
+MILLSTADT EMS RELEASE CALL-VOLUME-REQUESTS | ESO FIGURES COUNT PCRs GENERATED; WEBSITE FIGURES COUNT RECORDED DISPATCH EVENTS |
+HISTORICAL PRE-2026 CENCOM FIGURES MAY DIFFER DUE TO PRIOR TRACKING METHODS | ALTERED OR INCOMPLETE COPIES ARE NOT THE COMPLETE
+Page 6 of 16
+--- MILLSTADT EMS PAGE BREAK ---
+Call Volume Requests - Page 7 of 16
+
+ANALYTICS
+Section 1a: Overall 911 Call Volume
+Custom Jan 1, 2025 - Dec 31, 2025
+64%
+TRANSPORTS
+Percentage of Patient 10
+Encounters
+25%
+8
+NON TRANSPORTS
+Percentage of Patient
+Encounters
+6
+10%
+OTHER DISPOSITIONS 4
+Percentage of Patient
+Encounters
+880 2
+RECORDS
+In Selected Time Slice 0
+Jan '25 Feb '25 Mar '25 Apr '25 May '25 Jun '25 Jul '25 Aug '25 Sep '25 Oct '25 Nov '25 Dec '25
+2020 2021 2022 2023 2024 2025
+Counts % Rows % Columns % All
+Jan '25 Feb '25 Mar '25 Apr '25 May '25 Jun '25 Jul '25 Aug '25 Sep '25 Oct '25 Nov '25 Dec '25 Jan '26 Total
+Assist, Agency 1 1
+Assist, Public 2 1 1 1 1 6
+Cancelled (No
+Patient 3 4 5 3 3 3 2 3 5 5 36
+Contact)
+Cancelled
+(Prior to Arrival 1 1 3 3 2 4 1 3 3 1 3 8 33
+at Scene)
+Cancelled on
+Scene/No 1 1 2 2 1 7
+Patient Found
+Patient Dead
+on Scene -
+R A e tt s e u m sc p i t t e a d tion 1 1
+(With
+Transport)
+Patient Dead
+on Scene -
+R A e tt s e u m sc p i t t e a d tion 1 1 2
+(Without
+Transport)
+Patient
+E Tr v e a a lu tm at e e n d t , / N Tr o a… 1 2 1 3 5 3 2 4 2 23
+Required
+Patient
+Refused
+Evaluation/Ca… 17 12 15 15 19 16 21 9 15 18 12 12 181
+(Without
+Transport)
+Patient
+T R r e e le a a te s d e , d 1 2 3 1 7 1 3 1 19
+(AMA)
+Patient
+Treated,
+T C r a a r n e s t f o erred 1 1 1 1 4
+Another EMS
+Professional/U…
+T Li r g a h n t s s p /S o i r r t e e n d 16 18 16 13 16 21 28 13 23 26 22 23 235
+Transported
+Lights/Siren, 1 1 2
+Downgraded
+Page 1 of 2
+MILLSTADT EMS RELEASE CALL-VOLUME-REQUESTS | ESO FIGURES COUNT PCRs GENERATED; WEBSITE FIGURES COUNT RECORDED DISPATCH EVENTS |
+HISTORICAL PRE-2026 CENCOM FIGURES MAY DIFFER DUE TO PRIOR TRACKING METHODS | ALTERED OR INCOMPLETE COPIES ARE NOT THE COMPLETE
+Page 7 of 16
+--- MILLSTADT EMS PAGE BREAK ---
+Call Volume Requests - Page 8 of 16
+
+Jan '25 Feb '25 Mar '25 Apr '25 May '25 Jun '25 Jul '25 Aug '25 Sep '25 Oct '25 Nov '25 Dec '25 Jan '26 Total
+Transported
+No 29 30 34 36 21 30 29 18 22 27 15 29 320
+Lights/Siren
+Transported
+N Li o ghts/Siren, 1 1 1 1 4
+Upgraded
+NULL 1 2 2 1 6
+Total 66 71 72 81 65 80 90 50 78 82 64 81 880
+Page 2 of 2
+MILLSTADT EMS RELEASE CALL-VOLUME-REQUESTS | ESO FIGURES COUNT PCRs GENERATED; WEBSITE FIGURES COUNT RECORDED DISPATCH EVENTS |
+HISTORICAL PRE-2026 CENCOM FIGURES MAY DIFFER DUE TO PRIOR TRACKING METHODS | ALTERED OR INCOMPLETE COPIES ARE NOT THE COMPLETE
+Page 8 of 16
+--- MILLSTADT EMS PAGE BREAK ---
+Call Volume Requests - Page 9 of 16
+
+Overall 911 Call Volume
+Period: 2024
+Source file: 2024 Overall 911 Call Volume (1).pdf
+Included in the Call Volume Requests bundle.
+MILLSTADT EMS RUN-COUNT NOTICE - ESO = PCRs GENERATED; WEBSITE TOTAL = RECORDED DISPATCHES - PRE-2026 FIGURES MAY
+DIFFER
+MILLSTADT EMS RELEASE CALL-VOLUME-REQUESTS | ESO FIGURES COUNT PCRs GENERATED; WEBSITE FIGURES COUNT RECORDED DISPATCH EVENTS |
+HISTORICAL PRE-2026 CENCOM FIGURES MAY DIFFER DUE TO PRIOR TRACKING METHODS | ALTERED OR INCOMPLETE COPIES ARE NOT THE COMPLETE
+Page 9 of 16
+--- MILLSTADT EMS PAGE BREAK ---
+Call Volume Requests - Page 10 of 16
+
+ANALYTICS
+Section 1a: Overall 911 Call Volume
+Custom Jan 1, 2024 - Dec 31, 2024
+61%
+TRANSPORTS
+Percentage of Patient
+Encounters 8
+30%
+NON TRANSPORTS 6
+Percentage of Patient
+Encounters
+6%
+4
+OTHER DISPOSITIONS
+Percentage of Patient
+Encounters
+2
+748
+RECORDS
+In Selected Time Slice 0
+Jan '24 Feb '24 Mar '24 Apr '24 May '24 Jun '24 Jul '24 Aug '24 Sep '24 Oct '24 Nov '24 Dec '24
+2020 2021 2022 2023 2024
+Counts % Rows % Columns % All
+Jan '24 Feb '24 Mar '24 Apr '24 May '24 Jun '24 Jul '24 Aug '24 Sep '24 Oct '24 Nov '24 Dec '24 Jan '25 Total
+Assist, Public 2 2 1 1 6
+Cancelled (No
+Patient 2 4 1 2 2 1 4 16
+Contact)
+Cancelled
+(Prior to Arrival 1 1 3 1 1 3 1 1 1 13
+at Scene)
+Cancelled on
+Scene/No 1 1 1 3
+Patient Found
+Patient Dead
+on Scene - No
+R A e tt s e u m sc p i t t e a d tion 1 1
+(Without
+Transport)
+Patient Dead
+on Scene -
+R A e tt s e u m sc p i t t e a d tion 2 1 1 4
+(Without
+Transport)
+Patient
+E Tr v e a a lu tm at e e n d t , / N Tr o a… 2 3 3 5 4 1 3 4 1 1 3 30
+Required
+Patient
+Refused
+Evaluation/Ca… 7 16 19 7 8 16 23 25 18 12 11 13 175
+(Without
+Transport)
+Patient
+T R r e e le a a te s d e , d 1 2 1 1 3 3 6 2 19
+(AMA)
+Patient
+T R r e e le a a te s d e , d (per 1 1 2
+protocol)
+Patient
+Treated,
+T C r a a r n e s t f o erred 1 1 1 3
+Another EMS
+Professional/U…
+T Li r g a h n t s s p /S o i r r t e e n d 9 9 15 18 10 14 21 13 17 16 12 12 166
+Transported
+Lights/Siren, 2 2 1 1 1 1 1 9
+Downgraded
+Page 1 of 2
+MILLSTADT EMS RELEASE CALL-VOLUME-REQUESTS | ESO FIGURES COUNT PCRs GENERATED; WEBSITE FIGURES COUNT RECORDED DISPATCH EVENTS |
+HISTORICAL PRE-2026 CENCOM FIGURES MAY DIFFER DUE TO PRIOR TRACKING METHODS | ALTERED OR INCOMPLETE COPIES ARE NOT THE COMPLETE
+Page 10 of 16
+--- MILLSTADT EMS PAGE BREAK ---
+Call Volume Requests - Page 11 of 16
+
+Jan '24 Feb '24 Mar '24 Apr '24 May '24 Jun '24 Jul '24 Aug '24 Sep '24 Oct '24 Nov '24 Dec '24 Jan '25 Total
+Transported
+No 31 24 24 25 25 12 15 33 28 21 20 25 283
+Lights/Siren
+Transported
+N Li o ghts/Siren, 1 1
+Upgraded
+NULL 4 5 1 3 4 17
+Total 54 64 71 64 54 53 70 82 72 54 51 59 748
+Page 2 of 2
+MILLSTADT EMS RELEASE CALL-VOLUME-REQUESTS | ESO FIGURES COUNT PCRs GENERATED; WEBSITE FIGURES COUNT RECORDED DISPATCH EVENTS |
+HISTORICAL PRE-2026 CENCOM FIGURES MAY DIFFER DUE TO PRIOR TRACKING METHODS | ALTERED OR INCOMPLETE COPIES ARE NOT THE COMPLETE
+Page 11 of 16
+--- MILLSTADT EMS PAGE BREAK ---
+Call Volume Requests - Page 12 of 16
+
+Overall 911 Call Volume
+Period: 2023
+Source file: 2023 Overall 911 Call Volume (1).pdf
+Included in the Call Volume Requests bundle.
+MILLSTADT EMS RUN-COUNT NOTICE - ESO = PCRs GENERATED; WEBSITE TOTAL = RECORDED DISPATCHES - PRE-2026 FIGURES MAY
+DIFFER
+MILLSTADT EMS RELEASE CALL-VOLUME-REQUESTS | ESO FIGURES COUNT PCRs GENERATED; WEBSITE FIGURES COUNT RECORDED DISPATCH EVENTS |
+HISTORICAL PRE-2026 CENCOM FIGURES MAY DIFFER DUE TO PRIOR TRACKING METHODS | ALTERED OR INCOMPLETE COPIES ARE NOT THE COMPLETE
+Page 12 of 16
+--- MILLSTADT EMS PAGE BREAK ---
+Call Volume Requests - Page 13 of 16
+
+ANALYTICS
+Section 1a: Overall 911 Call Volume
+Custom Jan 1, 2023 - Dec 31, 2023
+66%
+TRANSPORTS
+Percentage of Patient
+Encounters 8
+26%
+NON TRANSPORTS 6
+Percentage of Patient
+Encounters
+7%
+4
+OTHER DISPOSITIONS
+Percentage of Patient
+Encounters
+2
+734
+RECORDS
+In Selected Time Slice 0
+Jan '23 Feb '23 Mar '23 Apr '23 May '23 Jun '23 Jul '23 Aug '23 Sep '23 Oct '23 Nov '23 Dec '23
+2020 2021 2022 2023
+Counts % Rows % Columns % All
+Jan '23 Feb '23 Mar '23 Apr '23 May '23 Jun '23 Jul '23 Aug '23 Sep '23 Oct '23 Nov '23 Dec '23 Jan '24 Total
+Assist, Public 1 1
+Cancelled (No
+Patient 1 1 1 1 2 4 2 1 13
+Contact)
+Cancelled
+(Prior to Arrival 1 3 3 3 1 2 13
+at Scene)
+Cancelled on
+Scene/No 1 1 1 3
+Patient Found
+Patient Dead
+on Scene - No
+R A e tt s e u m sc p i t t e a d tion 1 2 1 1 2 2 1 1 11
+(Without
+Transport)
+Patient Dead
+on Scene -
+R A e tt s e u m sc p i t t e a d tion 1 1 1 1 1 5
+(Without
+Transport)
+Patient
+E Tr v e a a lu tm at e e n d t , / N Tr o a… 4 7 3 6 10 10 3 2 8 6 2 61
+Required
+Patient
+Refused
+Evaluation/Ca… 4 1 1 9 1 4 4 7 3 7 41
+(Without
+Transport)
+Patient
+T R r e e le a a te s d e , d 7 4 3 4 8 4 2 4 9 11 12 6 74
+(AMA)
+Patient
+T R r e e le a a te s d e , d (per 2 1 3 2 4 1 13
+protocol)
+Patient
+Treated,
+T C r a a r n e s t f o erred 1 2 1 2 6
+Another EMS
+Professional/U…
+Patient
+Treated,
+Transported 1 1
+by Law
+Enforcement
+Page 1 of 2
+MILLSTADT EMS RELEASE CALL-VOLUME-REQUESTS | ESO FIGURES COUNT PCRs GENERATED; WEBSITE FIGURES COUNT RECORDED DISPATCH EVENTS |
+HISTORICAL PRE-2026 CENCOM FIGURES MAY DIFFER DUE TO PRIOR TRACKING METHODS | ALTERED OR INCOMPLETE COPIES ARE NOT THE COMPLETE
+Page 13 of 16
+--- MILLSTADT EMS PAGE BREAK ---
+Call Volume Requests - Page 14 of 16
+
+Jan '23 Feb '23 Mar '23 Apr '23 May '23 Jun '23 Jul '23 Aug '23 Sep '23 Oct '23 Nov '23 Dec '23 Jan '24 Total
+Patient
+Treated,
+Transported 1 1
+by Private
+Vehicle
+Standby - No
+S S e u r p v p ic o e r t or 1 1 2
+Provided
+T Li r g a h n t s s p /S o i r r t e e n d 2 2 4 8 2 3 4 4 5 1 1 36
+Transported
+Lights/Siren, 1 1
+Downgraded
+Transported
+No 42 29 40 40 37 42 34 35 43 39 32 36 449
+Lights/Siren
+NULL 3 3
+Total 62 40 57 69 60 71 60 56 74 70 57 58 734
+Page 2 of 2
+MILLSTADT EMS RELEASE CALL-VOLUME-REQUESTS | ESO FIGURES COUNT PCRs GENERATED; WEBSITE FIGURES COUNT RECORDED DISPATCH EVENTS |
+HISTORICAL PRE-2026 CENCOM FIGURES MAY DIFFER DUE TO PRIOR TRACKING METHODS | ALTERED OR INCOMPLETE COPIES ARE NOT THE COMPLETE
+Page 14 of 16
+--- MILLSTADT EMS PAGE BREAK ---
+Call Volume Requests - Page 15 of 16
+
+Overall 911 Call Volume
+Period: 2022
+Source file: 2022 Overall 911 Call Volume (1).pdf
+Included in the Call Volume Requests bundle.
+MILLSTADT EMS RUN-COUNT NOTICE - ESO = PCRs GENERATED; WEBSITE TOTAL = RECORDED DISPATCHES - PRE-2026 FIGURES MAY
+DIFFER
+MILLSTADT EMS RELEASE CALL-VOLUME-REQUESTS | ESO FIGURES COUNT PCRs GENERATED; WEBSITE FIGURES COUNT RECORDED DISPATCH EVENTS |
+HISTORICAL PRE-2026 CENCOM FIGURES MAY DIFFER DUE TO PRIOR TRACKING METHODS | ALTERED OR INCOMPLETE COPIES ARE NOT THE COMPLETE
+Page 15 of 16
+--- MILLSTADT EMS PAGE BREAK ---
+Call Volume Requests - Page 16 of 16
+
+ANALYTICS
+Section 1a: Overall 911 Call Volume
+Custom Jan 1, 2022 - Dec 31, 2022
+84%
+TRANSPORTS 7
+Percentage of Patient
+Encounters
+6
+14%
+5
+NON TRANSPORTS
+Percentage of Patient
+Encounters
+4
+2%
+3
+OTHER DISPOSITIONS
+Percentage of Patient
+Encounters 2
+618
+1
+RECORDS
+In Selected Time Slice 0
+Jan '22 Feb '22 Mar '22 Apr '22 May '22 Jun '22 Jul '22 Aug '22 Sep '22 Oct '22 Nov '22 Dec '22
+Jan '20 Jul '20 Jan '21 Jul '21 Jan '22 Jul '22
+Counts % Rows % Columns % All
+Jan '22 Feb '22 Mar '22 Apr '22 May '22 Jun '22 Jul '22 Aug '22 Sep '22 Oct '22 Nov '22 Dec '22 Jan '23 Total
+Patient Dead
+on Scene - No
+R A e tt s e u m sc p i t t e a d tion 2 1 2 1 1 1 1 9
+(Without
+Transport)
+Patient Dead
+on Scene -
+R A e tt s e u m sc p i t t e a d tion 2 1 3
+(Without
+Transport)
+Patient
+E Tr v e a a lu tm at e e n d t , / N Tr o a… 2 1 1 1 2 4 2 2 1 16
+Required
+Patient
+Refused
+Evaluation/Ca… 2 3 2 1 4 1 5 3 2 3 26
+(Without
+Transport)
+Patient
+T R r e e le a a te s d e , d 3 2 4 3 3 2 2 4 4 2 4 33
+(AMA)
+Patient
+T R r e e le a a te s d e , d (per 1 1 2 1 1 2 8
+protocol)
+Patient
+Treated,
+T C r a a r n e s t f o erred 1 1 2
+Another EMS
+Professional/U…
+Patient
+Treated,
+Transported 1 1 1 3
+by Private
+Vehicle
+T Li r g a h n t s s p /S o i r r t e e n d 5 2 5 7 2 3 4 3 4 2 4 41
+Transported
+Lights/Siren, 1 1 2 4
+Downgraded
+Transported
+No 47 34 34 37 35 37 42 48 37 38 49 35 473
+Lights/Siren
+Total 60 42 44 44 48 45 58 60 56 51 58 52 618
+Page 1 of 1
+MILLSTADT EMS RELEASE CALL-VOLUME-REQUESTS | ESO FIGURES COUNT PCRs GENERATED; WEBSITE FIGURES COUNT RECORDED DISPATCH EVENTS |
+HISTORICAL PRE-2026 CENCOM FIGURES MAY DIFFER DUE TO PRIOR TRACKING METHODS | ALTERED OR INCOMPLETE COPIES ARE NOT THE COMPLETE
+Page 16 of 16

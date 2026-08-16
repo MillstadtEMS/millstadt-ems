@@ -6,7 +6,11 @@ const COOKIE = "mas_truckcheck";
 const MAX_AGE = 60 * 60 * 24 * 30; // 30 days — phones stay logged in
 
 function sign(value: string): string {
-  const secret = process.env.TRUCKCHECK_PASSWORD ?? "changeme-truckcheck";
+  const configured = process.env.TRUCKCHECK_PASSWORD;
+  if (!configured && process.env.NODE_ENV === "production") {
+    throw new Error("TRUCKCHECK_PASSWORD is not configured");
+  }
+  const secret = configured ?? "development-only-truckcheck-secret";
   return createHmac("sha256", secret).update(value).digest("hex");
 }
 

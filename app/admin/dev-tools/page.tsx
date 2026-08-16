@@ -167,7 +167,7 @@ export default function DevToolsPage() {
 
           <section style={card}>
             <h2 style={cardTitle}>Send to test user</h2>
-            <p style={cardHelp}>Each button targets only the @testuser account. Real crew won't see any of it.</p>
+            <p style={cardHelp}>Each button targets only the @testuser account. Real crew will not see any of it.</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginTop: 10 }}>
               <Link
                 href={`/admin/forms?targetTest=1`}
@@ -220,13 +220,14 @@ export default function DevToolsPage() {
             <h2 style={cardTitle}>Dev login</h2>
             <p style={cardHelp}>
               At <Link href="/lounge/login" style={{ color: "#f0b429" }}>/lounge/login</Link> the
-              <strong> Dev Shortcut</strong> card at the bottom lets you skip 2FA with PIN
-              <code style={code}>95723935</code>. Pick <strong>Employee</strong> to drop straight
-              into the @testuser account or <strong>Admin</strong> to land as kjames.
+              <strong> Dev Shortcut</strong> card can be enabled for local development only. Pick
+              <strong> Employee</strong> to use the synthetic @testuser account or
+              <strong> Admin</strong> to use the configured development administrator.
             </p>
             <p style={cardHelp}>
-              The PIN is the auth — no Vercel env vars required. Rotate the PIN by editing
-              <code style={code}>app/api/lounge/dev-login/route.ts</code> if it ever leaks.
+              It requires <code style={code}>LOUNGE_DEV_LOGIN_ENABLED</code>, a server-only
+              <code style={code}> LOUNGE_DEV_LOGIN_PIN</code>, and the public UI flag. The route
+              is disabled unconditionally in production.
             </p>
           </section>
         </>

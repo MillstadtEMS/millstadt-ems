@@ -11,6 +11,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getLatestUnrepliedSms, markSmsReplied } from "@/lib/db";
 import { updateCallNature } from "@/lib/cad/db";
 import { sendSms } from "@/lib/sms";
+import { getFinancialsHubConfig } from "@/lib/financials-hub/config";
+import {
+  auditContextFromHeaders,
+  decideAccessRequestFromSms,
+} from "@/lib/financials-hub/dev-store";
 
 export const runtime = "nodejs";
 
@@ -19,6 +24,19 @@ export async function POST(req: NextRequest) {
   const body = String(form.get("Body") ?? "").trim();
 
   if (!body) return new NextResponse("<?xml version=\"1.0\"?><Response/>", { headers: { "Content-Type": "text/xml" } });
+
+  const financialsConfig = getFinancialsHubConfig();
+  if (
+    financialsConfig.environment === "development" &&
+    financialsConfig.enabled &&
+    /^(YES|NO)\b/i.test(body)
+  ) {
+    const handled = decideAccessRequestFromSms(
+      body,
+      auditContextFromHeaders(req.headers),
+    );
+    if (handled?.handled) return twimlResponse(handled.message);
+  }
 
   const pending = await getLatestUnrepliedSms();
 

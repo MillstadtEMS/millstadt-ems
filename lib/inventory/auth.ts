@@ -83,7 +83,11 @@ export async function setPasswordHash(hash: string): Promise<void> {
 export async function ensurePassword(): Promise<void> {
   const existing = await getPasswordHash();
   if (existing) return;
-  const initial = process.env.INVENTORY_PASSWORD ?? "$Millstadt3935!";
+  const configured = process.env.INVENTORY_PASSWORD;
+  if (!configured && process.env.NODE_ENV === "production") {
+    throw new Error("INVENTORY_PASSWORD is not configured");
+  }
+  const initial = configured ?? "development-only-inventory-password";
   const hash = hashPassword(initial);
   await setPasswordHash(hash);
 }

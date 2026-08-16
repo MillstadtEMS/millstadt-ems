@@ -1,0 +1,25 @@
+{
+  "name": "Millstadt EMS Financial Information",
+  "short_name": "EMS Financials",
+  "description": "Millstadt EMS financial information and document-access requests.",
+  "id": "/financials-information-hub",
+  "start_url": "/financials-information-hub",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#040d1a",
+  "theme_color": "#040d1a",
+  "icons": [
+    {
+      "src": "/images/millstadt-ems/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/millstadt-ems/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

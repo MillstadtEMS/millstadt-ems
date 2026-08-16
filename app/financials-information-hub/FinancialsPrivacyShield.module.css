@@ -1,0 +1,123 @@
+.notice {
+  display: flex;
+  width: min(100% - 2rem, 1120px);
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 auto;
+  border-right: 1px solid rgba(103, 232, 249, 0.2);
+  border-bottom: 1px solid rgba(103, 232, 249, 0.2);
+  border-left: 1px solid rgba(103, 232, 249, 0.2);
+  background: #07182b;
+  color: #dce8f5;
+  padding: 0.8rem 1rem;
+  font: 650 0.88rem/1.5 var(--font-inter), Inter, system-ui, sans-serif;
+}
+
+.notice p {
+  margin: 0;
+}
+
+.notice button,
+.shield button {
+  display: inline-flex;
+  min-height: 2.65rem;
+  flex: 0 0 auto;
+  gap: 0.45rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(103, 232, 249, 0.4);
+  border-radius: 6px;
+  background: rgba(34, 211, 238, 0.08);
+  color: #e6f9fc;
+  padding: 0.6rem 0.8rem;
+  font: 720 0.86rem/1.2 var(--font-inter), Inter, system-ui, sans-serif;
+}
+
+.notice button:focus-visible,
+.shield button:focus-visible {
+  outline: 3px solid #67e8f9;
+  outline-offset: 3px;
+}
+
+.shield {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483600;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  background: #000000;
+  color: #ffffff;
+  padding:
+    max(1.5rem, env(safe-area-inset-top))
+    max(1.5rem, env(safe-area-inset-right))
+    max(1.5rem, env(safe-area-inset-bottom))
+    max(1.5rem, env(safe-area-inset-left));
+  font-family: var(--font-inter), Inter, system-ui, sans-serif;
+}
+
+.shieldPanel {
+  display: grid;
+  width: min(100%, 540px);
+  gap: 1rem;
+  text-align: center;
+}
+
+.shieldPanel svg {
+  width: 2rem;
+  height: 2rem;
+  margin: 0 auto;
+  color: #67e8f9;
+}
+
+.shieldPanel h2,
+.shieldPanel p {
+  margin: 0;
+}
+
+.shieldPanel h2 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  letter-spacing: 0;
+}
+
+.shieldPanel p {
+  color: #d1d5db;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.shieldPanel button {
+  justify-self: center;
+  border-color: #f0b429;
+  background: #f0b429;
+  color: #071428;
+}
+
+@media (max-width: 600px) {
+  .notice {
+    display: grid;
+  }
+
+  .notice button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notice *,
+  .shield * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
+
+@media print {
+  .notice {
+    display: none !important;
+  }
+
+  .shield {
+    display: grid !important;
+  }
+}
