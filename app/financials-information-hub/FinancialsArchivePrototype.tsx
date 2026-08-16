@@ -1569,16 +1569,46 @@ function DocumentLibrarySection({
                     </div>
                   </div>
                   <div className="financials-form990-actions">
-                    <a className="financials-primary-button" href={`/api/financials/form-990/${doc.id}/html`} target="_blank" rel="noreferrer">
+                    <a
+                      className="financials-primary-button"
+                      href={`/api/financials/form-990/${doc.id}/html`}
+                      target="_blank"
+                      rel="noreferrer"
+                      data-analytics-event="document_view"
+                      data-analytics-document-kind="public_form_990"
+                      data-analytics-document-id={doc.id}
+                    >
                       <FileText aria-hidden="true" /> View
                     </a>
-                    <a className="financials-secondary-button" href={`/api/financials/form-990/${doc.id}/pdf?download=1`}>
+                    <a
+                      className="financials-secondary-button"
+                      href={`/api/financials/form-990/${doc.id}/pdf?download=1`}
+                      data-analytics-event="document_download"
+                      data-analytics-document-kind="public_form_990"
+                      data-analytics-document-id={doc.id}
+                    >
                       <Download aria-hidden="true" /> Download PDF
                     </a>
-                    <a className="financials-secondary-button" href={`/api/financials/form-990/${doc.id}/html?print=1`} target="_blank" rel="noreferrer">
+                    <a
+                      className="financials-secondary-button"
+                      href={`/api/financials/form-990/${doc.id}/html?print=1`}
+                      target="_blank"
+                      rel="noreferrer"
+                      data-analytics-event="print_selection"
+                      data-analytics-document-kind="public_form_990"
+                      data-analytics-document-id={doc.id}
+                    >
                       <Printer aria-hidden="true" /> Print
                     </a>
-                    <a className="financials-text-link" href={`/api/financials/form-990/${doc.id}/html`} target="_blank" rel="noreferrer">
+                    <a
+                      className="financials-text-link"
+                      href={`/api/financials/form-990/${doc.id}/html`}
+                      target="_blank"
+                      rel="noreferrer"
+                      data-analytics-event="accessible_alternative"
+                      data-analytics-document-kind="public_form_990"
+                      data-analytics-document-id={doc.id}
+                    >
                       Accessible alternative
                     </a>
                   </div>
@@ -1911,6 +1941,9 @@ function RequestStatusList({
                     className="financials-primary-button"
                     type="button"
                     onClick={() => onOpenViewer(request, doc)}
+                    data-analytics-event="document_view"
+                    data-analytics-document-kind="restricted_document"
+                    data-analytics-document-id={doc.id}
                   >
                     Open viewer
                   </button>
@@ -2065,6 +2098,7 @@ function ReadAloudControls({
   onResume,
   onStop,
   onRateChange,
+  documentKind,
 }: {
   id: string;
   label: string;
@@ -2075,11 +2109,18 @@ function ReadAloudControls({
   onResume: () => void;
   onStop: () => void;
   onRateChange: (rate: number) => void;
+  documentKind?: "public_form_990" | "restricted_document";
 }) {
   const active = speech.id === id;
   return (
     <div className="financials-speech-controls" aria-label={label}>
-      <button type="button" onClick={() => onRead(id, text)}>
+      <button
+        type="button"
+        onClick={() => onRead(id, text)}
+        data-analytics-event="read_aloud"
+        data-analytics-control={documentKind ? "document_reader" : "notice_reader"}
+        data-analytics-document-kind={documentKind}
+      >
         <Play aria-hidden="true" /> {label}
       </button>
       <button type="button" disabled={!active || speech.status !== "playing"} onClick={onPause}>
@@ -2178,10 +2219,24 @@ function ViewerDialog({
             >
               <ChevronRight aria-hidden="true" />
             </button>
-            <button type="button" onClick={() => onZoomChange(Math.max(0.7, zoom - 0.1))} aria-label="Zoom out">
+            <button
+              type="button"
+              onClick={() => onZoomChange(Math.max(0.7, zoom - 0.1))}
+              aria-label="Zoom out"
+              data-analytics-event="accessibility_control"
+              data-analytics-control="document_zoom_out"
+              data-analytics-document-kind="restricted_document"
+            >
               <ZoomOut aria-hidden="true" />
             </button>
-            <button type="button" onClick={() => onZoomChange(Math.min(1.4, zoom + 0.1))} aria-label="Zoom in">
+            <button
+              type="button"
+              onClick={() => onZoomChange(Math.min(1.4, zoom + 0.1))}
+              aria-label="Zoom in"
+              data-analytics-event="accessibility_control"
+              data-analytics-control="document_zoom_in"
+              data-analytics-document-kind="restricted_document"
+            >
               <ZoomIn aria-hidden="true" />
             </button>
           </div>
@@ -2225,6 +2280,7 @@ function ViewerDialog({
           onResume={onResume}
           onStop={onStop}
           onRateChange={onRateChange}
+          documentKind="restricted_document"
         />
         <article className="financials-viewer-page" style={{ fontSize: `${zoom}rem` }}>
           <div className="financials-watermark" aria-hidden="true">

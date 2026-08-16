@@ -46,6 +46,43 @@ const server = spawn(
       TWILIO_ACCOUNT_SID: "",
       TWILIO_AUTH_TOKEN: "",
       TWILIO_FROM_NUMBER: "",
+      ANALYTICS_PRODUCTION_ENABLED: "false",
+      ANALYTICS_DEVELOPMENT_ENABLED: "true",
+      ANALYTICS_DEVELOPMENT_MEMORY_STORE: "true",
+      ANALYTICS_PRIVACY_CONTACT: "privacy@example.test",
+      ANALYTICS_JURISDICTIONS: "Illinois,United States",
+      ANALYTICS_SYSTEM: "First-party synthetic integration store",
+      ANALYTICS_DATA_CATEGORIES:
+        "aggregate website usage,pseudonymous returning-browser estimates,broad geography",
+      ANALYTICS_SUPERVISOR_EMPLOYEE_IDS: "TEST-SUPERVISOR",
+      ANALYTICS_SERVICE_PROVIDER_CONTRACTS: "No external analytics provider in synthetic test",
+      ANALYTICS_SECURITY_CONTROLS_REVIEWED: "true",
+      ANALYTICS_BREACH_RESPONSE_CONTACTS: "Synthetic integration test procedure",
+      ANALYTICS_CHILDREN_PRIVACY_SETTING: "Age survey disabled",
+      ANALYTICS_HEALTH_INFORMATION_EXCLUSIONS_REVIEWED: "true",
+      ANALYTICS_GEOLOCATION_SETTING: "Broad hosting headers only; precise disabled",
+      ANALYTICS_AGE_RANGE_SETTING: "Disabled until child-directed separation is reviewed",
+      ANALYTICS_CONSENT_SETTINGS_REVIEWED: "true",
+      ANALYTICS_LEGAL_REVIEW_APPROVED: "true",
+      ANALYTICS_ROLE_CONFIGURATION_REVIEWED: "true",
+      ANALYTICS_RETENTION_DELETION_REVIEWED: "true",
+      ANALYTICS_BACKUP_CONTROLS_REVIEWED: "true",
+      ANALYTICS_INCIDENT_RESPONSE_DOCUMENTED: "true",
+      ANALYTICS_HASH_KEY: "synthetic-analytics-hmac-key-not-for-production",
+      ANALYTICS_SECURITY_ENCRYPTION_KEY: "synthetic-security-encryption-key-not-for-production",
+      ANALYTICS_MINIMUM_GROUP_SIZE: "15",
+      ANALYTICS_COMMUNITY_SURVEY_ENABLED: "true",
+      ANALYTICS_RETENTION_SECURITY_DAYS: "30",
+      ANALYTICS_RETENTION_EVENT_DAYS: "90",
+      ANALYTICS_RETENTION_VISITOR_DAYS: "180",
+      ANALYTICS_RETENTION_GEOGRAPHY_DAYS: "90",
+      ANALYTICS_RETENTION_AGE_SURVEY_DAYS: "0",
+      ANALYTICS_RETENTION_PRECISE_LOCATION_DAYS: "0",
+      ANALYTICS_RETENTION_RESTRICTED_DOCUMENT_AUDIT_DAYS: "365",
+      ANALYTICS_RETENTION_REQUEST_PDF_DAYS: "365",
+      ANALYTICS_RETENTION_ADMIN_ACTION_DAYS: "365",
+      ANALYTICS_RETENTION_INCIDENT_HOLD_DAYS: "30",
+      ANALYTICS_RETENTION_CONSENT_DAYS: "365",
       NEXT_DIST_DIR: ".next-financials-test",
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -92,6 +129,13 @@ function cookiePair(setCookie) {
   return (setCookie ?? "").split(";", 1)[0];
 }
 
+function responseCookieHeader(response) {
+  const values = typeof response.headers.getSetCookie === "function"
+    ? response.headers.getSetCookie()
+    : [response.headers.get("set-cookie")].filter(Boolean);
+  return values.map(cookiePair).join("; ");
+}
+
 async function json(response) {
   const body = await response.json();
   return { response, body };
@@ -114,6 +158,133 @@ async function waitForServer() {
 
 try {
   await waitForServer();
+
+  const privacyPage = await fetch(`${ORIGIN}/privacy`);
+  assert.equal(privacyPage.status, 200);
+  const privacyHtml = await privacyPage.text();
+  assert.match(privacyHtml, /Website privacy and analytics/);
+  assert.match(privacyHtml, /No sale or targeted advertising/);
+  assert.match(privacyHtml, /Returning-visitor estimates/);
+  assert.match(privacyHtml, /privacy@example\.test/);
+  pass("privacy page publishes the configured notice and contact");
+
+  const initialPreference = await json(await fetch(`${ORIGIN}/api/privacy/preferences`));
+  assert.equal(initialPreference.response.status, 200);
+  assert.equal(initialPreference.body.optionalAnalyticsEnabled, true);
+  assert.equal(initialPreference.body.preference.status, "unknown");
+  assert.equal(initialPreference.response.headers.get("set-cookie"), null);
+  pass("optional analytics set no identifier before an affirmative choice");
+
+  const crossSitePreference = await fetch(`${ORIGIN}/api/privacy/preferences`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      origin: "https://attacker.invalid",
+      "sec-fetch-site": "cross-site",
+    },
+    body: JSON.stringify({ status: "allowed", categories: ["aggregate"] }),
+  });
+  assert.equal(crossSitePreference.status, 403);
+  pass("privacy preference update rejects cross-site requests");
+
+  const allowedPreference = await json(await fetch(`${ORIGIN}/api/privacy/preferences`, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...SAME_ORIGIN_HEADERS },
+    body: JSON.stringify({
+      status: "allowed",
+      categories: ["aggregate", "returning_visitor", "broad_geography"],
+    }),
+  }));
+  assert.equal(allowedPreference.response.status, 200);
+  const analyticsCookies = responseCookieHeader(allowedPreference.response);
+  assert.match(analyticsCookies, /mas_analytics_consent=/);
+  assert.match(analyticsCookies, /mas_analytics_browser=[A-Za-z0-9_-]{43}/);
+  assert.match(analyticsCookies, /mas_analytics_session=[A-Za-z0-9_-]{43}/);
+  assert.doesNotMatch(analyticsCookies, /127\.0\.0\.1|localhost/);
+  pass("affirmative consent creates random first-party browser and session identifiers");
+
+  const analyticsHeaders = {
+    "content-type": "application/json",
+    cookie: analyticsCookies,
+    ...SAME_ORIGIN_HEADERS,
+  };
+  const aggregateEvent = await fetch(`${ORIGIN}/api/analytics/events`, {
+    method: "POST",
+    headers: analyticsHeaders,
+    body: JSON.stringify({
+      eventName: "page_view",
+      path: "/privacy",
+      occurredAt: new Date().toISOString(),
+    }),
+  });
+  assert.equal(aggregateEvent.status, 202);
+  const rejectedSensitivePayload = await fetch(`${ORIGIN}/api/analytics/events`, {
+    method: "POST",
+    headers: analyticsHeaders,
+    body: JSON.stringify({
+      eventName: "page_view",
+      path: "/privacy",
+      occurredAt: new Date().toISOString(),
+      name: "This field must never enter analytics",
+    }),
+  });
+  assert.equal(rejectedSensitivePayload.status, 400);
+  pass("analytics accepts allowlisted aggregate events and rejects unexpected identity fields");
+
+  const publicDocumentEvent = await fetch(`${ORIGIN}/api/analytics/events`, {
+    method: "POST",
+    headers: analyticsHeaders,
+    body: JSON.stringify({
+      eventName: "document_download",
+      path: "/financials-information-hub",
+      occurredAt: new Date().toISOString(),
+      documentKind: "public_form_990",
+      documentId: "SYN-990-2024-001",
+    }),
+  });
+  assert.equal(publicDocumentEvent.status, 202);
+  assert.equal(publicDocumentEvent.headers.get("set-cookie"), null);
+  pass("public document events are accepted without refreshing visitor identifiers");
+
+  const communitySurvey = await fetch(`${ORIGIN}/api/analytics/community-area`, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...SAME_ORIGIN_HEADERS },
+    body: JSON.stringify({ area: "prefer_not_to_say" }),
+  });
+  assert.equal(communitySurvey.status, 201);
+  assert.equal(communitySurvey.headers.get("set-cookie"), null);
+  pass("voluntary community survey stores an unlinked broad-area response");
+
+  const deniedAnalyticsAdmin = await fetch(`${ORIGIN}/api/admin/analytics/summary`);
+  assert.equal(deniedAnalyticsAdmin.status, 403);
+  pass("website analytics API requires a named Supervisor session");
+
+  const declinedPreference = await json(await fetch(`${ORIGIN}/api/privacy/preferences`, {
+    method: "POST",
+    headers: analyticsHeaders,
+    body: JSON.stringify({ status: "withdrawn", categories: [] }),
+  }));
+  assert.equal(declinedPreference.response.status, 200);
+  const declinedCookies = responseCookieHeader(declinedPreference.response);
+  assert.match(declinedCookies, /mas_analytics_optout=1/);
+  const afterWithdrawal = await fetch(`${ORIGIN}/api/analytics/events`, {
+    method: "POST",
+    headers: { ...analyticsHeaders, cookie: declinedCookies },
+    body: JSON.stringify({ eventName: "page_view", path: "/privacy", occurredAt: new Date().toISOString() }),
+  });
+  assert.equal(afterWithdrawal.status, 403);
+  pass("withdrawal clears optional identifiers and blocks later optional events");
+
+  const analyticsSource = (
+    await Promise.all([
+      "components/analytics/AnalyticsTracker.tsx",
+      "lib/analytics/validation.ts",
+      "app/api/analytics/events/route.ts",
+    ].map((filename) => readFile(path.join(cwd, filename), "utf8")))
+  ).join("\n");
+  assert.doesNotMatch(analyticsSource, /canvas\.toDataURL|hardwareConcurrency|deviceMemory|geolocation\.getCurrentPosition|AudioContext/);
+  assert.match(analyticsSource, /documentEventsMustBeUnlinked\(parsed\.eventName\) \|\| Boolean\(parsed\.documentKind\)/);
+  pass("analytics source excludes fingerprinting and precise-location collection and unlinks document events");
 
   const hubPage = await fetch(`${ORIGIN}/financials-information-hub`);
   assert.equal(hubPage.status, 200);

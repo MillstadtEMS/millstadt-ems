@@ -8,6 +8,8 @@ import CallTicker from "@/components/cad/CallTicker";
 import AmboScroll from "@/components/AmboScroll";
 import SiteShell from "@/components/SiteShell";
 import PwaRegistration from "@/components/PwaRegistration";
+import AnalyticsTracker from "@/components/analytics/AnalyticsTracker";
+import PrivacyPreferences from "@/components/analytics/PrivacyPreferences";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -44,6 +46,8 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-[#040d1a] text-slate-100 antialiased overflow-x-hidden">
         <PwaRegistration />
+        <AnalyticsTracker />
+        <PrivacyPreferences />
         <SiteShell
           header={
             <>

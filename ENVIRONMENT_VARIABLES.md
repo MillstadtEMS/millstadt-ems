@@ -21,6 +21,52 @@ No values are recorded here. `Required` means required when the named workflow/e
 
 Production financial recipient, sender, database, object-storage, scanner, outbox, and post-`GO LIVE` feature variables do not exist yet and must be designed after the corresponding blockers are resolved. Do not repurpose the development variables for production.
 
+## Website analytics and privacy
+
+Optional analytics fail closed. `ANALYTICS_PRODUCTION_ENABLED=true` does not activate collection unless every required configuration/review field is valid. The age-range survey and precise location remain disabled in source.
+
+| Name | Purpose | Scope | Required |
+| --- | --- | --- | --- |
+| `ANALYTICS_PRODUCTION_ENABLED` | Final production runtime switch | Server | Explicit true only after all review gates; false by default |
+| `ANALYTICS_DEVELOPMENT_ENABLED` | Local optional-analytics switch | Server, development only | Optional |
+| `ANALYTICS_DEVELOPMENT_MEMORY_STORE` | Explicit synthetic in-memory analytics store | Server, development only | Optional; never production |
+| `ANALYTICS_PRIVACY_CONTACT` | Published privacy contact | Server-rendered privacy page | Required before optional collection |
+| `ANALYTICS_JURISDICTIONS` | Reviewed operating jurisdictions | Server | Required before optional collection |
+| `ANALYTICS_SYSTEM` | Approved first-party system or provider | Server | Required before optional collection |
+| `ANALYTICS_DATA_CATEGORIES` | Approved collected-data categories | Server | Required before optional collection |
+| `ANALYTICS_SUPERVISOR_EMPLOYEE_IDS` | Named lounge employee IDs authorized for website analytics | Server secret | Required; never public |
+| `ANALYTICS_SERVICE_PROVIDER_CONTRACTS` | Records provider-contract review or approved first-party-only determination | Server | Required before optional collection |
+| `ANALYTICS_SECURITY_CONTROLS_REVIEWED` | Security-control approval gate | Server | Required true |
+| `ANALYTICS_BREACH_RESPONSE_CONTACTS` | Protected incident/breach contacts or procedure reference | Server | Required |
+| `ANALYTICS_CHILDREN_PRIVACY_SETTING` | Reviewed child-directed-content setting | Server | Required |
+| `ANALYTICS_HEALTH_INFORMATION_EXCLUSIONS_REVIEWED` | Confirms health/EMS exclusions were reviewed | Server | Required true |
+| `ANALYTICS_GEOLOCATION_SETTING` | Reviewed broad-location setting; does not enable precise location | Server | Required |
+| `ANALYTICS_AGE_RANGE_SETTING` | Reviewed age-survey setting; source currently disables the survey | Server | Required |
+| `ANALYTICS_CONSENT_SETTINGS_REVIEWED` | Consent and preference review gate | Server | Required true |
+| `ANALYTICS_LEGAL_REVIEW_APPROVED` | Records completion of required legal review without claiming legal compliance | Server | Required true |
+| `ANALYTICS_ROLE_CONFIGURATION_REVIEWED` | Admin/Supervisor role review gate | Server | Required true |
+| `ANALYTICS_RETENTION_DELETION_REVIEWED` | Retention/deletion process review gate | Server | Required true |
+| `ANALYTICS_BACKUP_CONTROLS_REVIEWED` | Hosting/database backup-control review gate | Server | Required true |
+| `ANALYTICS_INCIDENT_RESPONSE_DOCUMENTED` | Incident-response procedure review gate | Server | Required true |
+| `ANALYTICS_HASH_KEY` | HMAC key for consent tokens and pseudonymous identifiers | Server secret | Required |
+| `ANALYTICS_SECURITY_ENCRYPTION_KEY` | AES-GCM key for raw security identifiers | Server secret | Required |
+| `ANALYTICS_CONSENT_VERSION` | Public optional-consent version | Server | Optional override |
+| `ANALYTICS_MINIMUM_GROUP_SIZE` | Geography/survey reporting suppression threshold; minimum 15 | Server | Optional; defaults to 15 |
+| `ANALYTICS_COMMUNITY_SURVEY_ENABLED` | Enables the voluntary, unlinked broad-area survey | Server | Optional; false by default |
+| `ANALYTICS_RETENTION_SECURITY_DAYS` | Raw protected security-log retention | Server | Explicit value required |
+| `ANALYTICS_RETENTION_EVENT_DAYS` | Aggregate/pseudonymous event retention | Server | Explicit value required |
+| `ANALYTICS_RETENTION_VISITOR_DAYS` | First-party recurring-browser identifier retention | Server | Explicit value required |
+| `ANALYTICS_RETENTION_GEOGRAPHY_DAYS` | Broad geography and community-survey retention | Server | Explicit value required |
+| `ANALYTICS_RETENTION_AGE_SURVEY_DAYS` | Disabled age-survey retention; normally zero | Server | Explicit value required |
+| `ANALYTICS_RETENTION_PRECISE_LOCATION_DAYS` | Disabled precise-location retention; normally zero | Server | Explicit value required |
+| `ANALYTICS_RETENTION_RESTRICTED_DOCUMENT_AUDIT_DAYS` | Separate document-audit policy period | Server | Explicit value required |
+| `ANALYTICS_RETENTION_REQUEST_PDF_DAYS` | Separate signed request-PDF policy period | Server | Explicit value required |
+| `ANALYTICS_RETENTION_ADMIN_ACTION_DAYS` | Analytics admin audit and released-hold retention | Server | Explicit value required |
+| `ANALYTICS_RETENTION_INCIDENT_HOLD_DAYS` | Maximum duration of an active security-incident preservation hold | Server | Explicit value required |
+| `ANALYTICS_RETENTION_CONSENT_DAYS` | Consent-choice record and consent-cookie retention | Server | Explicit value required |
+
+The scheduled `/api/cron/analytics-retention` route requires the existing `CRON_SECRET`. See `ANALYTICS_DATA_GOVERNANCE.md` for deletion, hold, export, and backup boundaries.
+
 ## Shared application runtime
 
 | Name | Purpose | Scope | Required |

@@ -198,6 +198,20 @@ export default function Footer() {
               &copy; {new Date().getFullYear()} Millstadt Ambulance Service. All rights reserved.
             </p>
             <div className="flex items-center gap-4">
+              <Link
+                href="/privacy"
+                className="text-slate-500 hover:text-white text-xs transition-colors underline-offset-4 hover:underline"
+              >
+                Privacy
+              </Link>
+              <button
+                type="button"
+                className="text-slate-500 hover:text-white text-xs transition-colors underline-offset-4 hover:underline"
+                onClick={() => window.dispatchEvent(new Event("millstadt:open-privacy"))}
+              >
+                Manage preferences
+              </button>
+              <span className="text-slate-700 text-xs">·</span>
               <div className="flex items-center gap-1.5 text-slate-600 text-xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot inline-block" />
                 <span>Units Active</span>

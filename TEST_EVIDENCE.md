@@ -6,17 +6,17 @@ Evidence date: 2026-08-16. All test identities use reserved `.test` addresses an
 
 | Command/check | Result |
 | --- | --- |
-| `npm run test:financials` | **30 checks passing.** Covers development availability/security headers, old dev-PIN rejection, PWA no-cache contract, privacy-shield state, Form 990 physical pages, CSRF/cross-site rejection, missing signature, missing terms acknowledgment, missing final electronic-submission confirmation, persistence-before-success, idempotency, changed-payload conflict, pending viewer denial, signed PDFs, admin authorization, approval, stale approval, controlled-view watermark/footer text, revocation, accuracy CSRF/idempotency/upload magic, admin review, test-recipient filtering, signed-copy and decision notification audits, delivery-matrix routing/subjects/attachments, no recipient leakage, no URL identity, exact disclosure-copy coverage, and rate limiting. |
+| `npm run test:financials` | **40 checks passing.** Preserves all 30 financial checks and adds configured privacy-page rendering, no identifier before consent, cross-site preference rejection, random first-party identifiers, strict event-field rejection, unlinked public-document events, unlinked community survey, Supervisor-only API denial, withdrawal enforcement, and source checks excluding fingerprinting/precise location. |
 | `npx tsc --noEmit` | Passing. |
 | Scoped ESLint over all changed financial/PWA/security files | Passing. |
-| `NEXT_DIST_DIR=.next-financials-build npm run build` | Passing on Next.js 16.3.1; 116 static pages generated and dynamic financial routes compiled. |
+| `NEXT_DIST_DIR=.next-analytics-build npm run build` | Passing on Next.js 16.3.1; 116 static pages generated and the privacy, retention, public event-intake, and Supervisor analytics routes compiled. Temporary build output and generated `tsconfig.json` edits were removed afterward. |
 | `npm audit` and `npm audit --omit=dev` | Zero known vulnerabilities after updates. |
 | Tracked-source and Git-history credential-pattern scan | Passing across 1,067 staged/tracked paths and Git patch history: zero AWS, Google API, GitHub token, OpenAI key, bounded Twilio SID, Slack token, or private-key markers. |
 | Full `npm run lint` | **Not passing:** 93 errors and 67 warnings in pre-existing unrelated admin/lounge/game/CAD files. No rule was disabled. This remains a release blocker. |
 
 ## Financial integration result
 
-The final run reported `30 financial hub integration checks passed.` The suite launches an isolated Next development server on port 3031, forces synthetic-only mode, clears Gmail/Twilio credentials, enables an allowlisted `.test` sink plus one synthetic exact-address allowlist entry, verifies a non-allowlisted address is filtered, audits requester signed-copy and decision-email attempts, checks exact request/AI/provenance/viewer copy, restores `tsconfig.json`, and stops the server after testing. Empty Gmail/Twilio credentials ensure no message can leave the test process.
+The final run reported `40 financial hub integration checks passed.` The suite launches an isolated Next development server on port 3031, forces synthetic-only financial and analytics memory stores, clears Gmail/Twilio credentials, enables an allowlisted `.test` sink plus one synthetic exact-address allowlist entry, verifies a non-allowlisted address is filtered, tests consent and withdrawal, audits requester signed-copy and decision-email attempts, checks exact request/AI/provenance/viewer copy, restores `tsconfig.json`, and stops the server after testing. Empty Gmail/Twilio credentials ensure no message can leave the test process.
 
 ## Production pre-launch smoke evidence
 
@@ -25,6 +25,10 @@ An isolated production build was started on port 3040 with hub production mode a
 ## Browser evidence
 
 - Chromium in-app browser: 390×844, 768×1024, and 1440×900.
+- Privacy page and preference dialog: existing weather/navigation/ticker shell remained present, no console errors, focusable close and equal-choice controls rendered, and limited mode accurately disclosed that optional analytics are disabled.
+- Privacy page at 390×844: `scrollWidth` 385 with `innerWidth` 390, confirming no horizontal overflow; the footer Privacy link remained in the accessibility tree.
+- Financial hub at 390×844: ticker and weather both loaded, `scrollWidth` 385 with `innerWidth` 390, and no application error.
+- `Call Volume Requests` selection -> `Continue`: URL remained `/financials-information-hub`, the requester form and `Review terms and submit` rendered, and the page remained nonblank.
 - At each viewport: `Financial Information` rendered, no horizontal document overflow, no application error.
 - Restricted `Call Volume Requests` selection -> `Continue`: URL remained `/financials-information-hub`, `Your information` rendered with six inputs, and page body remained nonblank.
 - Restricted terms acknowledgment remains visibly checked while the signature panel is open. Applying a signature reveals the separate final electronic-submission confirmation, and `Sign and submit request` stays disabled until that final confirmation is checked.
