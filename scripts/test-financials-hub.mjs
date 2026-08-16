@@ -33,6 +33,8 @@ const server = spawn(
       MILLSTADT_INFORMATION_HUB_DEV_ADMIN_CODE: "TEST-ADMIN",
       MILLSTADT_INFORMATION_HUB_TEST_DELIVERY_ENABLED: "true",
       MILLSTADT_INFORMATION_HUB_TEST_SINK_DOMAIN: "example.test",
+      MILLSTADT_INFORMATION_HUB_TEST_RECIPIENT_ALLOWLIST:
+        "allowlisted-recipient@production.invalid",
       MILLSTADT_INFORMATION_HUB_TEST_ADMIN_EMAILS:
         "financials-test@example.test,blocked-recipient@production.invalid",
       LOUNGE_DEV_LOGIN_ENABLED: "false",
@@ -200,6 +202,7 @@ try {
     signatureMethod: "typed",
     signatureDataUrl: "",
     signatureTypedName: "Morgan Avery",
+    sendSignedCopyToRequester: true,
   };
 
   const missingCsrf = await fetch(`${ORIGIN}/api/financials/access-requests`, {
@@ -253,6 +256,7 @@ try {
   assert.equal(created.body.request.status, "pending");
   assert.equal(created.body.request.selectedDocumentVersions["CALL-VOLUME-REQUESTS-2022-2026"], "2026.08.16");
   assert.match(created.body.request.agreementHash, /^sha256:[a-f0-9]{64}$/);
+  assert.equal(created.body.request.signedCopyRequested, true);
   assert.equal("notifications" in created.body, false);
   const request = created.body.request;
   pass("signed access request is stored pending without exposing recipients");
@@ -518,6 +522,20 @@ try {
   assert.doesNotMatch(notificationAudit.reason, /@/);
   pass("test mode filters non-sink recipients and records skipped delivery without leakage");
 
+  const signedCopyAudit = auditResult.body.auditEvents.find(
+    (event) =>
+      event.requestId === request.id && event.eventType === "requester_signed_copy_notified",
+  );
+  assert.ok(signedCopyAudit);
+  assert.match(signedCopyAudit.reason, /email=skipped/);
+  assert.match(signedCopyAudit.reason, /allowed test recipient/);
+  const decisionAudits = auditResult.body.auditEvents.filter(
+    (event) => event.requestId === request.id && event.eventType === "requester_decision_notified",
+  );
+  assert.ok(decisionAudits.length >= 2);
+  assert.ok(decisionAudits.every((event) => !event.reason.includes("@")));
+  pass("signed-copy and access-decision requester emails are allowlisted and audited");
+
   const deliveryMatrix = await readFile(path.join(cwd, "FORM_DELIVERY_MATRIX.md"), "utf8");
   const notificationSource = await readFile(
     path.join(cwd, "lib/financials-hub/notifications.ts"),
@@ -531,6 +549,8 @@ try {
   assert.match(notificationSource, /Accuracy report \$\{report\.id\}/);
   assert.match(notificationSource, /filename: agreement\.filename/);
   assert.match(notificationSource, /contentType: "application\/pdf"/);
+  assert.match(notificationSource, /notifyRequesterSignedAgreement/);
+  assert.match(notificationSource, /notifyRequesterAccessDecision/);
   assert.doesNotMatch(notificationSource, /@millstadtems\.org|@yahoo\.com/i);
   pass("delivery routes, subjects, attachments, and environment-only recipients match the matrix");
 

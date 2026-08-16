@@ -16,6 +16,7 @@ import {
   auditContextFromHeaders,
   decideAccessRequestFromSms,
 } from "@/lib/financials-hub/dev-store";
+import { notifyRequesterAccessDecision } from "@/lib/financials-hub/notifications";
 
 export const runtime = "nodejs";
 
@@ -31,11 +32,14 @@ export async function POST(req: NextRequest) {
     financialsConfig.enabled &&
     /^(YES|NO)\b/i.test(body)
   ) {
-    const handled = decideAccessRequestFromSms(
-      body,
-      auditContextFromHeaders(req.headers),
-    );
-    if (handled?.handled) return twimlResponse(handled.message);
+    const context = auditContextFromHeaders(req.headers);
+    const handled = decideAccessRequestFromSms(body, context);
+    if (handled?.handled) {
+      if ("request" in handled && handled.request) {
+        await notifyRequesterAccessDecision(handled.request, context);
+      }
+      return twimlResponse(handled.message);
+    }
   }
 
   const pending = await getLatestUnrepliedSms();

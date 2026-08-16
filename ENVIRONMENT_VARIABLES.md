@@ -16,7 +16,8 @@ No values are recorded here. `Required` means required when the named workflow/e
 | `MILLSTADT_INFORMATION_HUB_DEV_ADMIN_CODE` | Optional server-only development admin bypass | Server, local/automated only | Optional; never production |
 | `MILLSTADT_INFORMATION_HUB_TEST_DELIVERY_ENABLED` | Explicit test-email transport gate | Server, local/protected test only | Optional; false by default |
 | `MILLSTADT_INFORMATION_HUB_TEST_SINK_DOMAIN` | Allowlists a reserved test recipient domain | Server, test delivery only | Required if test delivery enabled |
-| `MILLSTADT_INFORMATION_HUB_TEST_ADMIN_EMAILS` | Test-sink recipients; values are filtered by sink domain | Server, test delivery only | Required if test delivery enabled |
+| `MILLSTADT_INFORMATION_HUB_TEST_RECIPIENT_ALLOWLIST` | Exact-address allowlist for authorized non-sink test recipients | Server, local/protected test only | Optional; values must remain in ignored environment configuration |
+| `MILLSTADT_INFORMATION_HUB_TEST_ADMIN_EMAILS` | Test admin recipients; every value is filtered by the sink-domain or exact-address allowlist | Server, test delivery only | Required if test delivery enabled |
 
 Production financial recipient, sender, database, object-storage, scanner, outbox, and post-`GO LIVE` feature variables do not exist yet and must be designed after the corresponding blockers are resolved. Do not repurpose the development variables for production.
 

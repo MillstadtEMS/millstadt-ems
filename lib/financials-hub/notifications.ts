@@ -1,9 +1,13 @@
 import { sendSms } from "@/lib/sms";
 import { sendEmployeeEmail } from "@/lib/lounge/employee-email";
-import { getFinancialsHubConfig } from "./config";
+import {
+  getFinancialsHubConfig,
+  isAllowedFinancialsTestRecipient,
+} from "./config";
 import {
   catalog,
   recordAdminNotificationResult,
+  recordRequesterNotificationResult,
   signedAgreementForRequest,
 } from "./dev-store";
 import {
@@ -73,6 +77,101 @@ export async function notifyFinancialsHubAdmins(
   const result = { emailSent, smsSent, emailRecipients, smsNumber };
   recordAdminNotificationResult(request, result, context);
   return result;
+}
+
+export async function notifyRequesterSignedAgreement(
+  request: AccessRequestRecord,
+  context: NotificationContext,
+) {
+  const config = getFinancialsHubConfig();
+  const recipientAllowed = isAllowedFinancialsTestRecipient(request.verifiedEmail, config);
+  let emailSent = false;
+
+  if (
+    request.signedCopyRequested &&
+    recipientAllowed &&
+    config.testDeliveryEnabled &&
+    gmailConfigured()
+  ) {
+    try {
+      const agreement = signedAgreementForRequest(request.id);
+      if (agreement) {
+        await sendEmployeeEmail({
+          to: request.verifiedEmail,
+          subject: `[Millstadt EMS] Signed information request ${request.id}`,
+          kicker: "Information Request Hub",
+          headline: "Your Signed Request Copy",
+          meta: `${request.id} | Submitted ${request.submittedAtUtc}`,
+          bodyText: [
+            `Hello ${request.fullLegalName},`,
+            "",
+            "Your signed information-access request was received and is awaiting administrative review.",
+            "This copy confirms submission only. It does not grant access to a restricted document.",
+            "",
+            `Request ID: ${request.id}`,
+            `Status: ${request.status}`,
+            "",
+            "Your signed request PDF is attached for your records.",
+          ].join("\n"),
+          attachments: [
+            {
+              filename: agreement.filename,
+              contentType: "application/pdf",
+              content: agreement.pdf,
+            },
+          ],
+        });
+        emailSent = true;
+      }
+    } catch (error) {
+      console.error(
+        "[financials hub] requester signed-copy email failed",
+        error instanceof Error ? error.name : "UnknownError",
+      );
+    }
+  }
+
+  recordRequesterNotificationResult(
+    request,
+    { notificationType: "signed_copy", emailSent, recipientAllowed },
+    context,
+  );
+  return { emailSent, recipientAllowed };
+}
+
+export async function notifyRequesterAccessDecision(
+  request: AccessRequestRecord,
+  context: NotificationContext,
+) {
+  const config = getFinancialsHubConfig();
+  const recipientAllowed = isAllowedFinancialsTestRecipient(request.verifiedEmail, config);
+  let emailSent = false;
+
+  if (recipientAllowed && config.testDeliveryEnabled && gmailConfigured()) {
+    try {
+      await sendEmployeeEmail({
+        to: request.verifiedEmail,
+        subject: `[Millstadt EMS] Information request ${request.id}: ${request.status}`,
+        kicker: "Information Request Hub",
+        headline: decisionHeadline(request.status),
+        meta: `${request.id} | ${request.status}`,
+        bodyText: buildRequesterDecisionBody(request),
+      });
+      emailSent = true;
+    } catch (error) {
+      console.error(
+        "[financials hub] requester decision email failed",
+        error instanceof Error ? error.name : "UnknownError",
+      );
+    }
+  }
+
+  recordRequesterNotificationResult(
+    request,
+    { notificationType: "decision", emailSent, recipientAllowed },
+    context,
+  );
+  return { emailSent, recipientAllowed };
 }
 
 export async function notifyAccuracyReportAdmins(
@@ -206,6 +305,54 @@ function buildAccuracyNotificationBody(report: AccuracyReportRecord) {
     `Signed report attached: ${report.agreementFilename}`,
     "The report and any supporting upload are private administrative-review records and are not published automatically.",
   ].join("\n");
+}
+
+function buildRequesterDecisionBody(request: AccessRequestRecord) {
+  const lines = [
+    `Hello ${request.fullLegalName},`,
+    "",
+    `Millstadt EMS has updated information request ${request.id}.`,
+    `Decision: ${request.status}`,
+  ];
+
+  if (request.status === "approved") {
+    const approvedDocuments = docsForRequest(request).filter((line) =>
+      request.approvedDocIds.some((documentId) => line.startsWith(`${documentId} -`)),
+    );
+    lines.push(
+      `Access expires: ${request.expirationAtUtc ?? "See the request status displayed in the hub."}`,
+      "",
+      "Approved document(s):",
+      ...approvedDocuments,
+      "",
+      "Return to the Financial Information page in the same browser and refresh Request status to open the controlled viewer.",
+    );
+  } else if (request.status === "denied") {
+    lines.push("Access was not approved for this request.");
+  } else if (request.status === "revoked") {
+    lines.push("Previously approved access has been revoked and the controlled viewer is no longer available.");
+  } else if (request.status === "expired") {
+    lines.push("The approval period has ended and the controlled viewer is no longer available.");
+  }
+
+  if (request.reviewReason) lines.push("", `Administrative note: ${request.reviewReason}`);
+  lines.push("", "This message concerns only the request ID and document versions shown above.");
+  return lines.join("\n");
+}
+
+function decisionHeadline(status: AccessRequestRecord["status"]) {
+  switch (status) {
+    case "approved":
+      return "Your Document Request Was Approved";
+    case "denied":
+      return "Your Document Request Was Not Approved";
+    case "revoked":
+      return "Document Access Was Revoked";
+    case "expired":
+      return "Document Access Has Expired";
+    default:
+      return "Your Document Request Was Updated";
+  }
 }
 
 function docsForRequest(request: AccessRequestRecord) {

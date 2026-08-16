@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Download,
   FileText,
+  MessageSquareWarning,
   Pause,
   Play,
   Printer,
@@ -21,6 +22,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import FinancialsSignaturePad, {
   type FinancialsSignature,
 } from "./FinancialsSignaturePad";
@@ -156,6 +158,54 @@ const emptySignature = (legalName = ""): FinancialsSignature => ({
   typedName: legalName,
 });
 
+const preferredVoiceNames = [
+  "samantha",
+  "ava",
+  "siri",
+  "aria",
+  "jenny",
+  "zira",
+  "allison",
+  "victoria",
+  "serena",
+  "tessa",
+  "moira",
+  "fiona",
+  "google us english",
+];
+
+const lowerPriorityVoiceNames = [
+  "daniel",
+  "alex",
+  "fred",
+  "tom",
+  "arthur",
+  "aaron",
+  "ralph",
+  "junior",
+  "albert",
+  "reed",
+  "eddy",
+  "evan",
+];
+
+function chooseNaturalEnglishVoice(voices: SpeechSynthesisVoice[]) {
+  return [...voices]
+    .filter((voice) => voice.lang.toLowerCase().startsWith("en"))
+    .sort((left, right) => voiceScore(right) - voiceScore(left))[0] ?? null;
+}
+
+function voiceScore(voice: SpeechSynthesisVoice) {
+  const name = voice.name.toLowerCase();
+  let score = voice.lang.toLowerCase() === "en-us" ? 30 : 10;
+  const preferredIndex = preferredVoiceNames.findIndex((candidate) => name.includes(candidate));
+  if (preferredIndex >= 0) score += 200 - preferredIndex * 5;
+  if (/natural|premium|enhanced|neural/.test(name)) score += 80;
+  if (voice.localService) score += 8;
+  if (lowerPriorityVoiceNames.some((candidate) => name.includes(candidate))) score -= 120;
+  return score;
+}
+
 const statusDescriptions: Record<RequestStatus, string> = {
   pending: "Your request is awaiting administrative review.",
   under_review: "Your request is under administrative review.",
@@ -195,7 +245,9 @@ export default function FinancialsArchivePrototype() {
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
   const [selectedForm990Ids, setSelectedForm990Ids] = useState<string[]>([]);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [termsAcknowledged, setTermsAcknowledged] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const [sendSignedCopy, setSendSignedCopy] = useState(false);
   const [signature, setSignature] = useState<FinancialsSignature>(emptySignature());
   const [signatureOpen, setSignatureOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
@@ -227,6 +279,7 @@ export default function FinancialsArchivePrototype() {
   const [accuracySubmitting, setAccuracySubmitting] = useState(false);
   const [submittedAccuracyReport, setSubmittedAccuracyReport] = useState<AccuracyReportReceipt | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const preferredVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
 
   useEffect(() => {
     setAccessIdempotencyKey(window.crypto.randomUUID());
@@ -238,6 +291,16 @@ export default function FinancialsArchivePrototype() {
     return () => {
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     };
+  }, []);
+
+  useEffect(() => {
+    if (!("speechSynthesis" in window)) return;
+    const loadPreferredVoice = () => {
+      preferredVoiceRef.current = chooseNaturalEnglishVoice(window.speechSynthesis.getVoices());
+    };
+    loadPreferredVoice();
+    window.speechSynthesis.addEventListener("voiceschanged", loadPreferredVoice);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", loadPreferredVoice);
   }, []);
 
   const docsById = useMemo(
@@ -377,7 +440,9 @@ export default function FinancialsArchivePrototype() {
 
   function openTerms() {
     if (!validateApplicantInformation()) return;
+    setTermsAcknowledged(false);
     setAccepted(false);
+    setSendSignedCopy(false);
     setSignature(emptySignature(form.fullLegalName));
     setSignatureOpen(false);
     setTermsOpen(true);
@@ -451,6 +516,7 @@ export default function FinancialsArchivePrototype() {
           signatureMethod: signature.method,
           signatureDataUrl: signature.method === "drawn" ? signature.dataUrl : "",
           signatureTypedName: signature.method === "typed" ? signature.typedName : "",
+          sendSignedCopyToRequester: sendSignedCopy,
         }),
       });
       const data = (await response.json()) as { request?: AccessRequestRecord; error?: string };
@@ -463,7 +529,9 @@ export default function FinancialsArchivePrototype() {
       setRequestStep(3);
       setTermsOpen(false);
       setSignatureOpen(false);
+      setTermsAcknowledged(false);
       setAccepted(false);
+      setSendSignedCopy(false);
       setErrors([]);
     } catch {
       setErrors([
@@ -528,6 +596,9 @@ export default function FinancialsArchivePrototype() {
     setSelectedDocIds([]);
     setSelectedForm990Ids([]);
     setSubmittedRequest(null);
+    setTermsAcknowledged(false);
+    setAccepted(false);
+    setSendSignedCopy(false);
     setSignature(emptySignature());
     setAccessIdempotencyKey(window.crypto.randomUUID());
     void prepareAccessRequestSubmission();
@@ -689,6 +760,15 @@ export default function FinancialsArchivePrototype() {
     stopSpeech();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = speech.rate;
+    utterance.pitch = 1.03;
+    utterance.lang = "en-US";
+    const preferredVoice =
+      preferredVoiceRef.current ?? chooseNaturalEnglishVoice(window.speechSynthesis.getVoices());
+    if (preferredVoice) {
+      preferredVoiceRef.current = preferredVoice;
+      utterance.voice = preferredVoice;
+      utterance.lang = preferredVoice.lang;
+    }
     utterance.onend = () =>
       setSpeech((current) =>
         current.id === id ? { ...current, id: null, status: "idle" } : current,
@@ -950,7 +1030,9 @@ export default function FinancialsArchivePrototype() {
           onClose={() => {
             setTermsOpen(false);
             setSignatureOpen(false);
+            setTermsAcknowledged(false);
             setAccepted(false);
+            setSendSignedCopy(false);
             stopSpeech();
           }}
         >
@@ -970,8 +1052,9 @@ export default function FinancialsArchivePrototype() {
           <label className="financials-acceptance">
             <input
               type="checkbox"
-              checked={accepted}
+              checked={termsAcknowledged}
               onChange={(event) => {
+                setTermsAcknowledged(event.target.checked);
                 if (event.target.checked) requestSignature();
                 else {
                   setAccepted(false);
@@ -981,6 +1064,15 @@ export default function FinancialsArchivePrototype() {
               }}
             />
             <span>{ACCEPTED_CHECKBOX_TEXT}</span>
+          </label>
+
+          <label className="financials-copy-choice">
+            <input
+              type="checkbox"
+              checked={sendSignedCopy}
+              onChange={(event) => setSendSignedCopy(event.target.checked)}
+            />
+            <span>Email me a copy of my signed request PDF for my records.</span>
           </label>
 
           {signatureOpen && (
@@ -1016,11 +1108,17 @@ export default function FinancialsArchivePrototype() {
             </p>
           )}
 
+          {!signatureOpen && termsAcknowledged && !accepted && (
+            <button className="financials-secondary-button" type="button" onClick={requestSignature}>
+              <ShieldCheck aria-hidden="true" /> Sign request
+            </button>
+          )}
+
           <div className="financials-modal-actions">
             <button
               className="financials-primary-button"
               type="button"
-              disabled={!accepted || submitting || !accessCsrfToken || !accessIdempotencyKey}
+              disabled={!termsAcknowledged || !accepted || submitting || !accessCsrfToken || !accessIdempotencyKey}
               onClick={submitAccessRequest}
             >
               {submitting
@@ -1150,7 +1248,8 @@ function DocumentInformationSection({
             administrative review.
           </p>
         </div>
-        <button className={styles.reportLink} type="button" onClick={onReport}>
+        <button className={styles.reportButton} type="button" onClick={onReport}>
+          <MessageSquareWarning aria-hidden="true" />
           Report an accuracy or document-integrity concern
         </button>
       </div>
@@ -2068,8 +2167,11 @@ function AccessibleModal({
     };
   }, []);
 
-  return (
-    <div className="financials-modal-backdrop">
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div className={`${styles.hub} ${styles.modalPortal}`}>
+      <div className="financials-modal-backdrop">
       <section
         ref={dialogRef}
         className="financials-modal"
@@ -2086,7 +2188,9 @@ function AccessibleModal({
         </header>
         <div className="financials-modal__body">{children}</div>
       </section>
-    </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -2241,8 +2345,10 @@ function ViewerDialog({
   onRateChange: (rate: number) => void;
 }) {
   const readerId = `viewer-${page.session.id}-${page.pageNumber}`;
-  return (
-    <div className="financials-viewer-backdrop" role="dialog" aria-modal="true">
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div className={`${styles.hub} ${styles.modalPortal}`}>
+      <div className="financials-viewer-backdrop" role="dialog" aria-modal="true">
       <section className="financials-viewer">
         <div className="financials-viewer__toolbar">
           <div>
@@ -2317,7 +2423,9 @@ function ViewerDialog({
           <footer>{page.footerText}</footer>
         </article>
       </section>
-    </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 

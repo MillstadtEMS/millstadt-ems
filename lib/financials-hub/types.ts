@@ -82,6 +82,7 @@ export type AccessRequestRecord = {
   signatureCapturedAtUtc?: string;
   agreementFilename?: string;
   agreementHash?: string;
+  signedCopyRequested: boolean;
   requestVersion: string;
   reviewedBy?: string;
   reviewedAtUtc?: string;

@@ -51,6 +51,7 @@ type CreateRequestInput = {
   signatureMethod?: unknown;
   signatureDataUrl?: unknown;
   signatureTypedName?: unknown;
+  sendSignedCopyToRequester?: unknown;
 };
 
 type AdminDecisionInput = {
@@ -169,6 +170,7 @@ const seedRequest: AccessRequestRecord = {
   acceptedCheckboxText: ACCEPTED_CHECKBOX_TEXT,
   acceptedButtonText: ACCEPTED_BUTTON_TEXT,
   acceptedAtUtc: "2026-08-16T14:00:00.000Z",
+  signedCopyRequested: false,
   requestVersion: "sha256:dev-seed-request-version",
   releaseIds: [],
   flags: [
@@ -351,6 +353,7 @@ export function createAccessRequest(input: CreateRequestInput, context: AuditCon
     signatureMethod: signature.method,
     signatureName: signature.name,
     signatureCapturedAtUtc: now,
+    signedCopyRequested: input.sendSignedCopyToRequester === true,
     releaseIds: [],
     flags: flagSubmission(input),
   };
@@ -802,6 +805,7 @@ export function decideAccessRequestFromSms(
     return {
       handled: true,
       message: `Approved ${updated.id} for ${updated.approvedDocIds.length} document(s).`,
+      request: updated,
     };
   }
 
@@ -817,6 +821,7 @@ export function decideAccessRequestFromSms(
   return {
     handled: true,
     message: `Denied ${updated.id}.`,
+    request: updated,
   };
 }
 
@@ -839,6 +844,31 @@ export function recordAdminNotificationResult(
     aiNoticeVersion: request.aiNoticeVersion,
     result: "recorded",
     reason: `Admin notification email=${input.emailSent ? "sent" : "skipped"} to ${input.emailRecipients.length} configured test recipient(s); sms=${input.smsSent ? "sent" : "skipped"}.`,
+    context,
+  });
+}
+
+export function recordRequesterNotificationResult(
+  request: AccessRequestRecord,
+  input: {
+    notificationType: "signed_copy" | "decision";
+    emailSent: boolean;
+    recipientAllowed: boolean;
+  },
+  context: AuditContext,
+) {
+  recordAudit({
+    eventType:
+      input.notificationType === "signed_copy"
+        ? "requester_signed_copy_notified"
+        : "requester_decision_notified",
+    userId: request.userId,
+    requestId: request.id,
+    termsVersion: request.termsVersion,
+    privacyVersion: request.privacyVersion,
+    aiNoticeVersion: request.aiNoticeVersion,
+    result: "recorded",
+    reason: `Requester ${input.notificationType === "signed_copy" ? "signed-copy" : "decision"} email=${input.emailSent ? "sent" : "skipped"}; recipient=${input.recipientAllowed ? "allowed test recipient" : "outside test allowlist"}.`,
     context,
   });
 }
@@ -1037,6 +1067,7 @@ function requestPayloadHash(input: CreateRequestInput) {
       signatureMethod: cleanString(input.signatureMethod),
       signatureDataHash: sha256(cleanString(input.signatureDataUrl)),
       signatureTypedName: cleanString(input.signatureTypedName),
+      sendSignedCopyToRequester: input.sendSignedCopyToRequester === true,
     }),
   );
 }

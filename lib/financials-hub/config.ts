@@ -10,6 +10,8 @@ export type FinancialsHubConfig = {
   adminEmails: string[];
   adminSmsNumber: string;
   testDeliveryEnabled: boolean;
+  testSinkDomain: string;
+  testRecipientAllowlist: string[];
 };
 
 function boolEnv(name: string, fallback: boolean) {
@@ -18,15 +20,11 @@ function boolEnv(name: string, fallback: boolean) {
   return value.toLowerCase() === "true";
 }
 
-function testSinkEmails() {
-  const sinkDomain = (process.env.MILLSTADT_INFORMATION_HUB_TEST_SINK_DOMAIN ?? "example.test")
-    .trim()
-    .toLowerCase();
-  return (process.env.MILLSTADT_INFORMATION_HUB_TEST_ADMIN_EMAILS ?? "")
+function emailList(name: string) {
+  return (process.env[name] ?? "")
     .split(",")
     .map((value) => value.trim().toLowerCase())
-    .filter(Boolean)
-    .filter((email) => email.endsWith(`@${sinkDomain}`));
+    .filter(Boolean);
 }
 
 export function getFinancialsHubConfig(): FinancialsHubConfig {
@@ -47,6 +45,8 @@ export function getFinancialsHubConfig(): FinancialsHubConfig {
       adminEmails: [],
       adminSmsNumber: "",
       testDeliveryEnabled: false,
+      testSinkDomain: "",
+      testRecipientAllowlist: [],
     };
   }
 
@@ -59,6 +59,17 @@ export function getFinancialsHubConfig(): FinancialsHubConfig {
     "MILLSTADT_INFORMATION_HUB_TEST_DELIVERY_ENABLED",
     false,
   );
+  const testSinkDomain = (
+    process.env.MILLSTADT_INFORMATION_HUB_TEST_SINK_DOMAIN ?? "example.test"
+  )
+    .trim()
+    .toLowerCase();
+  const testRecipientAllowlist = emailList(
+    "MILLSTADT_INFORMATION_HUB_TEST_RECIPIENT_ALLOWLIST",
+  );
+  const permitted = (email: string) =>
+    testRecipientAllowlist.includes(email) ||
+    Boolean(testSinkDomain && email.endsWith(`@${testSinkDomain}`));
 
   return {
     environment: "development",
@@ -71,10 +82,28 @@ export function getFinancialsHubConfig(): FinancialsHubConfig {
       enabled && boolEnv("MILLSTADT_INFORMATION_HUB_ALLOW_PUBLIC_990S", true),
     syntheticDataOnly,
     adminCode: process.env.MILLSTADT_INFORMATION_HUB_DEV_ADMIN_CODE ?? "",
-    adminEmails: testDeliveryEnabled ? testSinkEmails() : [],
+    adminEmails: testDeliveryEnabled
+      ? emailList("MILLSTADT_INFORMATION_HUB_TEST_ADMIN_EMAILS").filter(permitted)
+      : [],
     adminSmsNumber: "",
     testDeliveryEnabled,
+    testSinkDomain,
+    testRecipientAllowlist,
   };
+}
+
+export function isAllowedFinancialsTestRecipient(
+  email: string,
+  config = getFinancialsHubConfig(),
+) {
+  const normalized = email.trim().toLowerCase();
+  return Boolean(
+    config.environment === "development" &&
+      config.testDeliveryEnabled &&
+      normalized &&
+      (config.testRecipientAllowlist.includes(normalized) ||
+        (config.testSinkDomain && normalized.endsWith(`@${config.testSinkDomain}`))),
+  );
 }
 
 export function isFinancialsHubDevelopmentEnabled() {

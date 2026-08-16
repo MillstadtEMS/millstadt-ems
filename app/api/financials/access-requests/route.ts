@@ -9,7 +9,10 @@ import {
   auditContextFromHeaders,
   createAccessRequest,
 } from "@/lib/financials-hub/dev-store";
-import { notifyFinancialsHubAdmins } from "@/lib/financials-hub/notifications";
+import {
+  notifyFinancialsHubAdmins,
+  notifyRequesterSignedAgreement,
+} from "@/lib/financials-hub/notifications";
 import {
   assertAllowedObjectKeys,
   enforceContentLength,
@@ -39,6 +42,7 @@ const ALLOWED_REQUEST_KEYS = [
   "signatureMethod",
   "signatureDataUrl",
   "signatureTypedName",
+  "sendSignedCopyToRequester",
 ] as const;
 
 export async function GET() {
@@ -64,7 +68,12 @@ export async function POST(req: NextRequest) {
     assertAllowedObjectKeys(body, ALLOWED_REQUEST_KEYS, "The request contains unsupported fields.");
     const context = auditContextFromHeaders(req.headers);
     const result = createAccessRequest(body, context);
-    if (result.created) await notifyFinancialsHubAdmins(result.request, context);
+    if (result.created) {
+      await notifyFinancialsHubAdmins(result.request, context);
+      if (result.request.signedCopyRequested) {
+        await notifyRequesterSignedAgreement(result.request, context);
+      }
+    }
     return noStoreJson(
       { request: result.request, duplicate: !result.created },
       { status: result.created ? 201 : 200 },

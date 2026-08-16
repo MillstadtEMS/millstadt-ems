@@ -19,6 +19,10 @@ Review date: 2026-08-16. The audit covered the financial hub source, routes, leg
 | Medium | Unexpected/provider error objects were written verbatim to logs. | Logs now record only generic operation and error class; user responses remain generic. |
 | Medium | No scoped CSP and production dev-tool paths remained reachable after authentication. | Added financial-route CSP and production 404 boundary for dev-tool page/APIs. |
 | Low | Signature UI had incomplete responsive styling and PWA icon metadata did not match physical dimensions. | Completed signature controls and generated 192/512 approved-logo icons with correct manifests. |
+| Medium | The acknowledgment checkbox was bound to completed-signature state, so opening the signature panel immediately cleared the visible check. | Split terms acknowledgment from completed signature state and added a recoverable `Sign request` action; submission still requires both states. |
+| Medium | The signature canvas mixed CSS coordinates with device-pixel backing dimensions and resized on the first stroke. | Pointer events now map directly into backing-store coordinates, retain pointer capture, preserve ink through responsive resizing, and share the same path for mouse, touch, and pen. |
+| Medium | The fixed public-site shell could paint above a scrolled financial dialog and obstruct its Close control. | Financial dialogs and the controlled viewer now render through a body-level portal above the unchanged site shell and below the privacy shield. |
+| Medium | Admin decisions did not notify the requester, and signed-PDF requester copies were not available. | Added an optional requester-copy checkbox, attached signed-PDF email, and approval/denial/revocation/expiration email attempts behind the development-only recipient allowlist. |
 
 ## Deliberately preserved
 

@@ -35,42 +35,82 @@ export default function FinancialsSignaturePad({
     function fitCanvas() {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const savedImage = valueRef.current.dataUrl || (hasInk ? canvas.toDataURL("image/png") : "");
       const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
       const ratio = Math.max(window.devicePixelRatio || 1, 1);
-      canvas.width = Math.max(1, Math.round(rect.width * ratio));
-      canvas.height = Math.round(170 * ratio);
+      const nextWidth = Math.max(1, Math.round(rect.width * ratio));
+      const nextHeight = Math.max(1, Math.round(rect.height * ratio));
+      if (canvas.width === nextWidth && canvas.height === nextHeight) return;
+
+      const snapshot = document.createElement("canvas");
+      snapshot.width = canvas.width;
+      snapshot.height = canvas.height;
+      if (inkRef.current && canvas.width && canvas.height) {
+        snapshot.getContext("2d")?.drawImage(canvas, 0, 0);
+      }
+
+      canvas.width = nextWidth;
+      canvas.height = nextHeight;
       const context = canvas.getContext("2d");
       if (!context) return;
-      context.setTransform(ratio, 0, 0, ratio, 0, 0);
       context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, rect.width, 170);
-      context.lineWidth = 2.4;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.lineWidth = 2.4 * (canvas.width / rect.width);
       context.lineCap = "round";
       context.lineJoin = "round";
       context.strokeStyle = "#111827";
-      if (savedImage) {
+
+      if (snapshot.width && snapshot.height && inkRef.current) {
+        context.drawImage(snapshot, 0, 0, snapshot.width, snapshot.height, 0, 0, canvas.width, canvas.height);
+      } else if (valueRef.current.dataUrl) {
         const image = new Image();
-        image.onload = () => context.drawImage(image, 0, 0, rect.width, 170);
-        image.src = savedImage;
+        image.onload = () => {
+          const currentCanvas = canvasRef.current;
+          const currentContext = currentCanvas?.getContext("2d");
+          if (!currentCanvas || !currentContext) return;
+          currentContext.drawImage(image, 0, 0, currentCanvas.width, currentCanvas.height);
+          inkRef.current = true;
+          setHasInk(true);
+        };
+        image.src = valueRef.current.dataUrl;
       }
     }
 
     fitCanvas();
+    const canvas = canvasRef.current;
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(fitCanvas);
+    if (canvas) observer?.observe(canvas);
     window.addEventListener("resize", fitCanvas);
-    return () => window.removeEventListener("resize", fitCanvas);
-  }, [hasInk]);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", fitCanvas);
+    };
+  }, [value.method]);
 
   function pointFromEvent(event: React.PointerEvent<HTMLCanvasElement>) {
-    const rect = event.currentTarget.getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    const canvas = event.currentTarget;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (event.clientX - rect.left) * (canvas.width / rect.width),
+      y: (event.clientY - rect.top) * (canvas.height / rect.height),
+    };
   }
 
   function startDrawing(event: React.PointerEvent<HTMLCanvasElement>) {
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     drawingRef.current = true;
-    lastPointRef.current = pointFromEvent(event);
+    const point = pointFromEvent(event);
+    lastPointRef.current = point;
+    const context = event.currentTarget.getContext("2d");
+    if (context) {
+      context.fillStyle = "#111827";
+      context.beginPath();
+      context.arc(point.x, point.y, Math.max(1.5, context.lineWidth / 2), 0, Math.PI * 2);
+      context.fill();
+      inkRef.current = true;
+      setHasInk(true);
+    }
   }
 
   function draw(event: React.PointerEvent<HTMLCanvasElement>) {
@@ -78,18 +118,28 @@ export default function FinancialsSignaturePad({
     event.preventDefault();
     const context = event.currentTarget.getContext("2d");
     if (!context) return;
-    const point = pointFromEvent(event);
-    context.beginPath();
-    context.moveTo(lastPointRef.current.x, lastPointRef.current.y);
-    context.lineTo(point.x, point.y);
-    context.stroke();
-    lastPointRef.current = point;
+    const pointerEvents = event.nativeEvent.getCoalescedEvents?.() ?? [event.nativeEvent];
+    for (const pointerEvent of pointerEvents) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const point = {
+        x: (pointerEvent.clientX - rect.left) * (event.currentTarget.width / rect.width),
+        y: (pointerEvent.clientY - rect.top) * (event.currentTarget.height / rect.height),
+      };
+      context.beginPath();
+      context.moveTo(lastPointRef.current.x, lastPointRef.current.y);
+      context.lineTo(point.x, point.y);
+      context.stroke();
+      lastPointRef.current = point;
+    }
     inkRef.current = true;
     setHasInk(true);
   }
 
-  function finishDrawing() {
+  function finishDrawing(event?: React.PointerEvent<HTMLCanvasElement>) {
     if (!drawingRef.current) return;
+    if (event?.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     drawingRef.current = false;
     lastPointRef.current = null;
     if (!inkRef.current) return;
@@ -167,7 +217,6 @@ export default function FinancialsSignaturePad({
               onPointerMove={draw}
               onPointerUp={finishDrawing}
               onPointerCancel={finishDrawing}
-              onPointerLeave={finishDrawing}
             />
             {!hasInk && <span aria-hidden="true">Sign above the line</span>}
           </div>

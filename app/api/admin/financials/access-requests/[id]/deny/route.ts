@@ -8,6 +8,7 @@ import {
   auditContextFromHeaders,
   denyAccessRequest,
 } from "@/lib/financials-hub/dev-store";
+import { notifyRequesterAccessDecision } from "@/lib/financials-hub/notifications";
 import {
   assertAllowedObjectKeys,
   enforceContentLength,
@@ -34,7 +35,9 @@ export async function POST(
       ["reviewReason", "expectedStatus", "expectedRequestVersion"],
       "The admin action contains unsupported fields.",
     );
-    const request = denyAccessRequest(id, body, auditContextFromHeaders(req.headers));
+    const context = auditContextFromHeaders(req.headers);
+    const request = denyAccessRequest(id, body, context);
+    await notifyRequesterAccessDecision(request, context);
     return noStoreJson({ request });
   } catch (error) {
     return handleFinancialsError(error);

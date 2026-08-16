@@ -8,6 +8,7 @@ import {
   auditContextFromHeaders,
   expireAccessRequest,
 } from "@/lib/financials-hub/dev-store";
+import { notifyRequesterAccessDecision } from "@/lib/financials-hub/notifications";
 import {
   assertAllowedObjectKeys,
   enforceContentLength,
@@ -34,11 +35,13 @@ export async function POST(
       ["reviewReason", "expectedStatus", "expectedRequestVersion"],
       "The admin action contains unsupported fields.",
     );
+    const context = auditContextFromHeaders(req.headers);
     const request = expireAccessRequest(
       id,
       body,
-      auditContextFromHeaders(req.headers),
+      context,
     );
+    await notifyRequesterAccessDecision(request, context);
     return noStoreJson({ request });
   } catch (error) {
     return handleFinancialsError(error);
