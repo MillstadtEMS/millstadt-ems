@@ -13,8 +13,18 @@ import { sql } from "@/lib/lounge/db";
 import { sendLoginCode } from "@/lib/lounge/sms-login";
 import {
   TRUST_COOKIE_NAME,
+  rotateTrustedDevice,
+  trustCookieOptions,
   verifyTrustedDevice,
 } from "@/lib/lounge/trusted-devices";
+import {
+  contentLengthWithin,
+  hasContentType,
+  isSameOriginRequest,
+  noStoreJson,
+} from "@/lib/security/http";
+import { checkRateLimit } from "@/lib/security/rate-limit";
+import { recordSecurityAudit } from "@/lib/security/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +34,14 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
   const ua = req.headers.get("user-agent") ?? null;
+
+  if (
+    !isSameOriginRequest(req) ||
+    !hasContentType(req, "application/json") ||
+    !contentLengthWithin(req, 8 * 1024)
+  ) {
+    return noStoreJson({ error: "Invalid request" }, { status: 403 });
+  }
 
   let body: { username?: string; password?: string };
   try {
@@ -35,19 +53,42 @@ export async function POST(req: NextRequest) {
   const password = body.password ?? "";
 
   if (!username || !password) {
-    return NextResponse.json({ error: "Username and password required" }, { status: 400 });
+    return noStoreJson({ error: "Username and password required" }, { status: 400 });
+  }
+  if (username.length > 254 || password.length > 1_024) {
+    return noStoreJson({ error: "Invalid username or password" }, { status: 401 });
+  }
+
+  const limit = await checkRateLimit(req, "lounge-login", {
+    limit: 5,
+    windowMs: 15 * 60_000,
+    blockMs: 30 * 60_000,
+    discriminator: username,
+  });
+  if (!limit.allowed) {
+    await logLogin(null, username, false, ip, ua);
+    await recordSecurityAudit({
+      actorType: "employee",
+      action: "lounge_login_rate_limited",
+      resourceType: "authentication",
+      outcome: "denied",
+      req,
+    });
+    const response = noStoreJson({ error: "Too many attempts. Please wait and try again." }, { status: 429 });
+    response.headers.set("Retry-After", String(limit.retryAfterSeconds));
+    return response;
   }
 
   const emp = await findEmployeeByUsername(username);
   if (!emp || !emp.isActive || !verifyPassword(password, emp.passwordHash)) {
     await logLogin(emp?.id ?? null, username, false, ip, ua);
-    return NextResponse.json({ error: "Invalid username or password" }, { status: 401 });
+    return noStoreJson({ error: "Invalid username or password" }, { status: 401 });
   }
 
   // Trust-this-device shortcut: if the caller carries a valid trust
-  // cookie for this employee, skip the whole 2FA dance and issue the
-  // session straight away. Cookie is rotated... well, not rotated yet,
-  // but it does have a hard 30-day expiry enforced server-side.
+  // cookie for this employee, skip the 2FA challenge and issue the session.
+  // Rotate the opaque trust token on every successful use so a previously
+  // observed cookie cannot be replayed for the rest of the trust window.
   const trustCookie = req.cookies.get(TRUST_COOKIE_NAME)?.value;
   if (trustCookie) {
     const trusted = await verifyTrustedDevice(emp.id, trustCookie);
@@ -67,6 +108,17 @@ export async function POST(req: NextRequest) {
         maxAge: sOpts.maxAge,
         path: sOpts.path,
       });
+      const rotatedTrustToken = await rotateTrustedDevice(emp.id, trusted.trustedDeviceId);
+      if (rotatedTrustToken) {
+        const tOpts = trustCookieOptions(rotatedTrustToken);
+        trustedRes.cookies.set(tOpts.name, tOpts.value, {
+          httpOnly: tOpts.httpOnly,
+          secure: tOpts.secure,
+          sameSite: tOpts.sameSite,
+          maxAge: tOpts.maxAge,
+          path: tOpts.path,
+        });
+      }
       return trustedRes;
     }
   }
@@ -100,7 +152,9 @@ export async function POST(req: NextRequest) {
     step = "verify_sms";
     const sent = await sendLoginCode(emp.id);
     phoneTail = sent.phoneTail ?? null;
-    if (sent.via === "fallback" && sent.devCode) smsDevCode = sent.devCode;
+    if (process.env.NODE_ENV !== "production" && sent.via === "fallback" && sent.devCode) {
+      smsDevCode = sent.devCode;
+    }
   } else if (totpEnrolled) {
     step = "verify_2fa";
   } else {

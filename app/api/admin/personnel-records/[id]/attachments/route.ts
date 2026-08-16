@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put } from "@vercel/blob";
+import { del, put } from "@vercel/blob";
 import { currentEmployee } from "@/lib/lounge/auth";
 import {
   audit,
@@ -8,18 +8,11 @@ import {
   getRecord,
   listAttachmentsForRecord,
 } from "@/lib/lounge/personnel";
+import { privateBlobReference } from "@/lib/lounge/private-blobs";
+import { inspectUploadedFile, PRIVATE_DOCUMENT_TYPES } from "@/lib/security/upload-inspection";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-const ALLOWED = [
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "image/jpeg", "image/png", "image/heic", "image/webp",
-];
 
 function meta(req: NextRequest) {
   return {
@@ -62,9 +55,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const file = form.get("file");
   if (!(file instanceof File)) return NextResponse.json({ error: "No file" }, { status: 400 });
   if (file.size > 25 * 1024 * 1024) return NextResponse.json({ error: "File too large (max 25MB)" }, { status: 400 });
-  if (file.type && !ALLOWED.includes(file.type)) {
-    return NextResponse.json({ error: `Unsupported file type: ${file.type}` }, { status: 400 });
-  }
+  const inspected = await inspectUploadedFile(file, PRIVATE_DOCUMENT_TYPES);
+  if (!inspected.ok) return NextResponse.json({ error: inspected.error }, { status: 400 });
 
   const visibility = (form.get("visibility") as string) || "admin";
   const documentCategory = (form.get("documentCategory") as string) || null;
@@ -74,17 +66,17 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 100);
   const stamp = Date.now();
   const blob = await put(`personnel/${record.employeeId}/${id}/${stamp}-${safeName}`, file, {
-    access: "public",  // signed-ish via long random URL; we also gate the metadata API
+    access: "private",
     addRandomSuffix: true,
-    contentType: file.type || "application/octet-stream",
+    contentType: inspected.mime,
   });
 
   const created = await createAttachment({
     recordId: id,
     employeeId: record.employeeId,
     fileName: file.name,
-    fileUrl: blob.url,
-    fileMime: file.type || undefined,
+    fileUrl: privateBlobReference(blob.pathname),
+    fileMime: inspected.mime,
     fileSize: file.size,
     documentCategory: documentCategory ?? undefined,
     visibilityLevel: visibility === "employee" ? "employee" : visibility === "restricted_hr" ? "restricted_hr" : "admin",
@@ -119,6 +111,9 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
   if (!record) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const url2 = await deleteAttachment(attachmentId);
+  if (url2) {
+    try { await del(url2); } catch { /* best-effort blob cleanup */ }
+  }
   await audit({
     recordId: id,
     attachmentId,

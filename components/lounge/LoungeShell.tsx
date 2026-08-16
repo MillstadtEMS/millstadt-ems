@@ -15,6 +15,7 @@ export interface SidebarMe {
   certification: string | null;
   photoUrl: string | null;
   isAdmin: boolean;
+  canViewAnalytics?: boolean;
 }
 
 interface NavItem {
@@ -24,6 +25,7 @@ interface NavItem {
   icon: LoungeIconName;
   external?: boolean; // routes outside /lounge that need SSO
   adminOnly?: boolean;
+  supervisorOnly?: boolean;
 }
 
 interface ShellBadges {
@@ -83,6 +85,7 @@ const NAV: NavItem[] = [
   { href: "/admin/onboarding",            label: "Onboarding",            icon: "checkCircle", adminOnly: true },
   { href: "/admin/volunteers",            label: "Volunteer Hours",       icon: "users", adminOnly: true },
   { href: "/admin/login-analytics",       label: "Login Activity",        icon: "chart", adminOnly: true },
+  { href: "/admin/analytics",             label: "Website Analytics",      icon: "chart", adminOnly: true, supervisorOnly: true },
   { href: "/admin/dev-tools",             label: "Dev Tools",             icon: "toolbox", adminOnly: true },
   { href: "/admin/polls",                 label: "Polls & Surveys",       icon: "chart", adminOnly: true },
 ];
@@ -117,7 +120,7 @@ const ADMIN_NAV_SECTIONS = [
   },
   {
     title: "Control Room",
-    hrefs: ["/admin/filing-cabinet", "/admin/website-config", "/admin/inventory-editor", "/admin/login-analytics", "/admin/dev-tools"],
+    hrefs: ["/admin/filing-cabinet", "/admin/website-config", "/admin/inventory-editor", "/admin/login-analytics", "/admin/analytics", "/admin/dev-tools"],
   },
 ];
 
@@ -132,8 +135,8 @@ export default function LoungeShell({
   const pathname = usePathname() || "/lounge";
   const router = useRouter();
 
-  // First-login password lockdown: new employees get a default password
-  // (`firstInitial + lastName + 3935`) and must replace it before they can
+  // First-login password lockdown: new employees use their username once
+  // and must replace it before they can
   // use the lounge. /api/lounge/me carries the must_change_password flag
   // straight off the session. We send everyone whose flag is true to
   // /lounge/change-password — except the change-password page itself and
@@ -268,7 +271,9 @@ export default function LoungeShell({
     };
   }, []);
 
-  const items = NAV.filter((n) => !n.adminOnly || me.isAdmin);
+  const items = NAV.filter(
+    (item) => (!item.adminOnly || me.isAdmin) && (!item.supervisorOnly || me.canViewAnalytics),
+  );
 
   return (
     <div

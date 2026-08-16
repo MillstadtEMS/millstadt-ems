@@ -13,10 +13,9 @@ import { createHash, randomBytes } from "crypto";
 import { sql } from "./db";
 
 export const TRUST_COOKIE_NAME = "mas_lounge_trust";
-// Lifted from 30 → 365 days so users only have to clear 2FA once per
-// device. Server still validates the row + auto-deletes on expiry, so
-// extending the cookie life can't be used to bypass a revoked device.
-export const TRUST_TTL_DAYS = 365;
+// A trusted device is still a long-lived MFA bypass. Keep the convenience
+// window bounded and allow immediate revocation from Lounge security.
+export const TRUST_TTL_DAYS = 30;
 export const TRUST_TTL_SECONDS = TRUST_TTL_DAYS * 24 * 60 * 60;
 
 let schemaEnsured = false;
@@ -102,6 +101,24 @@ export async function verifyTrustedDevice(
   }
   await db`UPDATE lounge_trusted_devices SET last_used_at = NOW() WHERE id = ${row.id}`;
   return { trustedDeviceId: row.id };
+}
+
+export async function rotateTrustedDevice(
+  employeeId: string,
+  trustedDeviceId: string,
+): Promise<string | null> {
+  await ensureSchema();
+  const token = newTrustToken();
+  const tokenHash = hashToken(token);
+  const expires = new Date(Date.now() + TRUST_TTL_SECONDS * 1000).toISOString();
+  const db = sql();
+  const rows = (await db`
+    UPDATE lounge_trusted_devices
+    SET token_hash = ${tokenHash}, last_used_at = NOW(), expires_at = ${expires}
+    WHERE id = ${trustedDeviceId} AND employee_id = ${employeeId}
+    RETURNING id
+  `) as unknown as { id: string }[];
+  return rows.length ? token : null;
 }
 
 export interface TrustedDeviceRow {

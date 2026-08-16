@@ -52,13 +52,17 @@ async function ensureSchema() {
 }
 
 /**
- * Origin allowed for WebAuthn ceremonies. Tries (in order):
- *   1. NEXT_PUBLIC_SITE_URL if set
- *   2. The Host header on this request (so prod just works on any
- *      domain Vercel hosts us under)
- *   3. localhost fallback for local dev
+ * Local requests must use their actual localhost origin even when the
+ * canonical production URL is configured in .env.local. Production uses
+ * the canonical URL so registrations and assertions stay on one RP ID.
  */
 function originAndRp(host?: string | null): { rpID: string; origin: string } {
+  if (host) {
+    const cleanHost = host.trim().toLowerCase();
+    if (cleanHost.startsWith("localhost") || cleanHost.startsWith("127.")) {
+      return { rpID: cleanHost.split(":")[0], origin: `http://${cleanHost}` };
+    }
+  }
   const explicit = process.env.NEXT_PUBLIC_SITE_URL;
   if (explicit) {
     try {
@@ -165,7 +169,8 @@ export async function startRegistration(employeeId: string, userName: string, di
       transports: c.transports ? (c.transports.split(",") as AuthenticatorTransportFuture[]) : undefined,
     })),
     authenticatorSelection: {
-      residentKey: "preferred",
+      residentKey: "required",
+      requireResidentKey: true,
       userVerification: "required",
     },
   });
@@ -275,6 +280,9 @@ export async function finishAuthentication(
   `) as unknown as DbCredentialRow[];
   if (rows.length === 0) return { verified: false, reason: "credential not registered" };
   const row = rows[0];
+  if (popped.employeeId && popped.employeeId !== row.employee_id) {
+    return { verified: false, reason: "credential does not match requested account" };
+  }
 
   let verification;
   try {

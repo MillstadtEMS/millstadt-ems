@@ -42,6 +42,10 @@ export default function ChangePassword() {
       setError("New password required");
       return;
     }
+    if (newPassword.length < 12) {
+      setError("New password must be at least 12 characters");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/lounge/change-password", {
@@ -128,8 +132,8 @@ export default function ChangePassword() {
           </h1>
           <p style={{ color: "#94a3b8", fontSize: "0.9rem", marginTop: 8, lineHeight: 1.55 }}>
             {me.mustChangePassword
-              ? "Pick a new password to use going forward. No requirements — make it something you'll remember."
-              : "No requirements. Make it something you'll remember."}
+              ? "Choose a permanent password with at least 12 characters. It will not expire on a schedule."
+              : "Choose a permanent password with at least 12 characters. It will not expire on a schedule."}
           </p>
         </div>
 
@@ -141,6 +145,8 @@ export default function ChangePassword() {
             onChange={(e) => setCurrentPassword(e.target.value)}
             autoComplete="current-password"
             autoFocus
+            maxLength={1024}
+            required
             style={inputStyle}
           />
 
@@ -150,6 +156,9 @@ export default function ChangePassword() {
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             autoComplete="new-password"
+            minLength={12}
+            maxLength={128}
+            required
             style={inputStyle}
           />
 
@@ -159,6 +168,9 @@ export default function ChangePassword() {
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             autoComplete="new-password"
+            minLength={12}
+            maxLength={128}
+            required
             style={inputStyle}
           />
 

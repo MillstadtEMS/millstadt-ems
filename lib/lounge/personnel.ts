@@ -9,6 +9,7 @@
 
 import { randomUUID } from "crypto";
 import { sql } from "./db";
+import { privateBlobDeleteTarget, privateLoungeBlobUrl } from "./private-blobs";
 
 export type PersonnelCategory =
   | "conduct"
@@ -406,7 +407,7 @@ function toAttachment(r: AttachmentRow): PersonnelAttachment {
     recordId: r.record_id,
     employeeId: r.employee_id,
     fileName: r.file_name,
-    fileUrl: r.file_url,
+    fileUrl: privateLoungeBlobUrl(r.file_url) ?? r.file_url,
     fileMime: r.file_mime,
     fileSize: r.file_size,
     documentCategory: r.document_category,
@@ -472,10 +473,13 @@ export async function createAttachment(input: CreateAttachmentInput): Promise<Pe
 
 export async function deleteAttachment(id: string): Promise<string | null> {
   const db = sql();
-  const a = await getAttachment(id);
-  if (!a) return null;
+  const rows = (await db`
+    SELECT file_url FROM lounge_personnel_attachments WHERE id = ${id} LIMIT 1
+  `) as unknown as { file_url: string }[];
+  const fileUrl = rows[0]?.file_url ?? null;
+  if (!fileUrl) return null;
   await db`DELETE FROM lounge_personnel_attachments WHERE id = ${id}`;
-  return a.fileUrl;
+  return privateBlobDeleteTarget(fileUrl);
 }
 
 // ── Audit ───────────────────────────────────────────────────────────────

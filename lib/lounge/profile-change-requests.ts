@@ -12,6 +12,8 @@
  */
 import { randomUUID } from "crypto";
 import { sql } from "./db";
+import { decrypt, encrypt } from "./encryption";
+import { privateLoungeBlobUrl } from "./private-blobs";
 
 export type ChangeRequestStatus = "pending" | "approved" | "denied";
 
@@ -58,20 +60,35 @@ function dateTime(v: unknown): string | null {
   return String(v);
 }
 
+const ENCRYPTED_PREFIX = "profile-change-v1:";
+
+function protect(value: string | null | undefined) {
+  return value ? `${ENCRYPTED_PREFIX}${encrypt(value)}` : null;
+}
+
+function reveal(value: string | null) {
+  if (!value?.startsWith(ENCRYPTED_PREFIX)) return value;
+  try {
+    return decrypt(value.slice(ENCRYPTED_PREFIX.length));
+  } catch {
+    return null;
+  }
+}
+
 function toReq(r: DbRow): ProfileChangeRequest {
   return {
     id: r.id,
     employeeId: r.employee_id,
     fieldKey: r.field_key,
     fieldLabel: r.field_label,
-    proposedValue: r.proposed_value,
-    comments: r.comments,
-    attachmentUrl: r.attachment_url,
+    proposedValue: reveal(r.proposed_value),
+    comments: reveal(r.comments) ?? "",
+    attachmentUrl: privateLoungeBlobUrl(r.attachment_url),
     attachmentName: r.attachment_name,
     attachmentMime: r.attachment_mime,
     shareWithEmployee: Boolean(r.share_with_employee),
     status: r.status,
-    adminDecisionNotes: r.admin_decision_notes,
+    adminDecisionNotes: reveal(r.admin_decision_notes),
     decidedAt: dateTime(r.decided_at),
     decidedById: r.decided_by_id,
     createdAt: dateTime(r.created_at) ?? "",
@@ -127,7 +144,7 @@ export async function createChangeRequest(input: CreateChangeRequestInput): Prom
        attachment_url, attachment_name, attachment_mime)
     VALUES
       (${id}, ${input.employeeId}, ${input.fieldKey}, ${input.fieldLabel},
-       ${input.proposedValue}, ${input.comments},
+       ${protect(input.proposedValue)}, ${protect(input.comments)},
        ${input.attachmentUrl ?? null}, ${input.attachmentName ?? null}, ${input.attachmentMime ?? null})
   `;
   const rows = (await db`SELECT * FROM lounge_profile_change_requests WHERE id = ${id}`) as unknown as DbRow[];
@@ -176,7 +193,7 @@ export async function setRequestDecision(id: string, input: DecisionInput): Prom
   await db`
     UPDATE lounge_profile_change_requests SET
       status               = ${input.status},
-      admin_decision_notes = ${input.adminDecisionNotes ?? null},
+      admin_decision_notes = ${protect(input.adminDecisionNotes)},
       share_with_employee  = ${Boolean(input.shareWithEmployee)},
       decided_at           = NOW(),
       decided_by_id        = ${input.decidedById}

@@ -5,6 +5,7 @@
  */
 import { randomUUID } from "crypto";
 import { sql } from "../db";
+import { privateLoungeBlobUrl } from "../private-blobs";
 
 export type FormStatus = "draft" | "finalized" | "rescinded";
 
@@ -109,7 +110,7 @@ function toFormInstance(r: DbRow): FormInstance {
       emailAdminInbox: r.email_admin_inbox,
     },
     assignmentId: r.assignment_id,
-    pdfUrl: r.pdf_url,
+    pdfUrl: privateLoungeBlobUrl(r.pdf_url),
     pdfFilename: r.pdf_filename,
     personnelRecordId: r.personnel_record_id,
     emailedToEmployee: r.emailed_to_employee,

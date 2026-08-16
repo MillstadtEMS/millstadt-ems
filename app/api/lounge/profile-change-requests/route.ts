@@ -28,6 +28,8 @@ import {
 } from "@/lib/lounge/profile-change-requests";
 import { notifyAdminsInLounge, emailAdmins } from "@/lib/lounge/notify-admins";
 import { sendEmployeeEmail } from "@/lib/lounge/employee-email";
+import { privateBlobReference } from "@/lib/lounge/private-blobs";
+import { inspectUploadedFile, PRIVATE_DOCUMENT_TYPES } from "@/lib/security/upload-inspection";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,9 +60,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Add a new value, a comment, or an attachment so we know what to change." }, { status: 400 });
   }
 
-  // Optional attachment — store in Vercel Blob with a long random slug so
-  // the URL itself is hard to guess. This is obscurity-not-security; the
-  // admin reviewer page is the canonical entry point.
+  // Optional attachment. The database stores only an opaque private blob
+  // reference; authenticated routes authorize every subsequent read.
   let attachmentUrl: string | null = null;
   let attachmentName: string | null = null;
   let attachmentMime: string | null = null;
@@ -68,17 +69,19 @@ export async function POST(req: NextRequest) {
     if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json({ error: "Attachment is over 10MB. Please trim or upload a smaller version." }, { status: 400 });
     }
+    const inspected = await inspectUploadedFile(file, PRIVATE_DOCUMENT_TYPES);
+    if (!inspected.ok) return NextResponse.json({ error: inspected.error }, { status: 400 });
     const ext = (file.name.split(".").pop() ?? "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
     const slug = `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
     const safeName = file.name.replace(/[^\w.\- ]+/g, "_").slice(0, 80);
     const blob = await put(
       `lounge/profile-change-requests/${me.id}/${slug}.${ext}`,
       file,
-      { access: "public", contentType: file.type || "application/octet-stream" },
+      { access: "private", contentType: inspected.mime },
     );
-    attachmentUrl = blob.url;
+    attachmentUrl = privateBlobReference(blob.pathname);
     attachmentName = safeName;
-    attachmentMime = file.type || null;
+    attachmentMime = inspected.mime;
   }
 
   const created = await createChangeRequest({

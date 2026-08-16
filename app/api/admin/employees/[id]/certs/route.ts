@@ -19,6 +19,8 @@ import {
   listCertTypes,
   listEmployeeCerts,
 } from "@/lib/lounge/certs";
+import { privateBlobReference } from "@/lib/lounge/private-blobs";
+import { CREDENTIAL_DOCUMENT_TYPES, inspectUploadedFile } from "@/lib/security/upload-inspection";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,6 +48,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (expiresFlag && !expiresOn) {
     return NextResponse.json({ error: "Expiration date required when 'Expires' is yes" }, { status: 400 });
   }
+  const inspected = await inspectUploadedFile(file, CREDENTIAL_DOCUMENT_TYPES);
+  if (!inspected.ok) return NextResponse.json({ error: inspected.error }, { status: 400 });
 
   // If a custom name was provided and no certTypeId, create the custom
   // cert type up front so it shows up in the global list next time.
@@ -83,16 +87,16 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const path = `lounge/certs/${employeeId}/${certType.slug}/${Date.now()}_${safeName}`;
   const blob = await put(path, file, {
-    access: "public",
+    access: "private",
     allowOverwrite: false,
-    contentType: file.type || "application/octet-stream",
+    contentType: inspected.mime,
   });
 
   const saved = await addEmployeeCert({
     employeeId,
     certTypeId,
-    fileUrl: blob.url,
-    fileMime: file.type || undefined,
+    fileUrl: privateBlobReference(blob.pathname),
+    fileMime: inspected.mime,
     fileName: file.name,
     issuedOn,
     expiresOn: expiresFlag ? expiresOn : undefined,

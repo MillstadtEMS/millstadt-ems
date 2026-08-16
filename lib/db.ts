@@ -4,6 +4,7 @@
  */
 
 import { sql } from "@/lib/neon";
+import { decrypt, encrypt } from "@/lib/lounge/encryption";
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -200,6 +201,28 @@ export async function deleteAnnouncement(id: string): Promise<void> {
 
 // ── Form Submissions ───────────────────────────────────────────────────────
 
+const ENCRYPTED_FIELDS_VERSION = "aes-256-gcm-v1";
+
+function protectSubmissionFields(fields: Record<string, unknown>) {
+  return {
+    encrypted: ENCRYPTED_FIELDS_VERSION,
+    ciphertext: encrypt(JSON.stringify(fields)),
+  };
+}
+
+function revealSubmissionFields(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const candidate = value as Record<string, unknown>;
+  if (candidate.encrypted !== ENCRYPTED_FIELDS_VERSION || typeof candidate.ciphertext !== "string") {
+    return candidate;
+  }
+  const parsed = JSON.parse(decrypt(candidate.ciphertext));
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Invalid encrypted form submission payload");
+  }
+  return parsed as Record<string, unknown>;
+}
+
 export interface FormSubmission {
   id: string;
   formType: string;
@@ -221,7 +244,7 @@ function toSubmission(r: any): FormSubmission {
   return {
     id: r.id,
     formType: r.form_type,
-    fields: r.fields,
+    fields: revealSubmissionFields(r.fields),
     submittedAt: r.submitted_at instanceof Date ? r.submitted_at.toISOString() : String(r.submitted_at),
     readAt: r.read_at ? (r.read_at instanceof Date ? r.read_at.toISOString() : String(r.read_at)) : null,
   };
@@ -235,7 +258,8 @@ export async function createFormSubmission(
   await ensureSiteSchema();
   const db = sql();
   const id = uid();
-  await db`INSERT INTO form_submissions (id, form_type, fields) VALUES (${id}, ${formType}, ${JSON.stringify(fields)})`;
+  const protectedFields = protectSubmissionFields(fields);
+  await db`INSERT INTO form_submissions (id, form_type, fields) VALUES (${id}, ${formType}, ${JSON.stringify(protectedFields)})`;
   const rows = await db`SELECT * FROM form_submissions WHERE id = ${id}`;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return toSubmission((rows as any[])[0]);

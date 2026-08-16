@@ -8,6 +8,7 @@
  */
 import { randomUUID } from "crypto";
 import { sql } from "./db";
+import { privateBlobDeleteTarget, privateLoungeBlobUrl } from "./private-blobs";
 import { hashPassword } from "./auth";
 import { encrypt, decrypt, ssnLast4 } from "./encryption";
 
@@ -133,6 +134,21 @@ function dateTime(v: unknown): string | null {
   return String(v);
 }
 
+const SENSITIVE_TEXT_PREFIX = "employee-sensitive-v1:";
+
+function protectSensitiveText(value: string | null) {
+  return value ? `${SENSITIVE_TEXT_PREFIX}${encrypt(value)}` : null;
+}
+
+function revealSensitiveText(value: string | null) {
+  if (!value?.startsWith(SENSITIVE_TEXT_PREFIX)) return value;
+  try {
+    return decrypt(value.slice(SENSITIVE_TEXT_PREFIX.length));
+  } catch {
+    return null;
+  }
+}
+
 function toAdminEmployee(row: DbEmployeeRow): AdminEmployeeRow {
   let last4: string | null = null;
   if (row.ssn_encrypted) {
@@ -163,20 +179,20 @@ function toAdminEmployee(row: DbEmployeeRow): AdminEmployeeRow {
     addressCity: row.address_city,
     addressState: row.address_state,
     addressZip: row.address_zip,
-    driverLicenseNum: row.driver_license_num,
+    driverLicenseNum: revealSensitiveText(row.driver_license_num),
     driverLicenseState: row.driver_license_state,
-    ecName: row.ec_name,
+    ecName: revealSensitiveText(row.ec_name),
     ecRelationship: row.ec_relationship,
-    ecPhone: row.ec_phone,
-    ec2Name: row.ec2_name,
+    ecPhone: revealSensitiveText(row.ec_phone),
+    ec2Name: revealSensitiveText(row.ec2_name),
     ec2Relationship: row.ec2_relationship,
-    ec2Phone: row.ec2_phone,
+    ec2Phone: revealSensitiveText(row.ec2_phone),
     shirtSize: row.shirt_size,
     pantSize: row.pant_size,
     jacketSize: row.jacket_size,
-    allergies: row.allergies,
-    medicalConditions: row.medical_conditions,
-    bloodType: row.blood_type,
+    allergies: revealSensitiveText(row.allergies),
+    medicalConditions: revealSensitiveText(row.medical_conditions),
+    bloodType: revealSensitiveText(row.blood_type),
     phoneVerifiedAt: dateTime(row.phone_verified_at),
     profileCompletedAt: dateTime(row.profile_completed_at),
     emailSecondary: row.email_secondary,
@@ -273,7 +289,6 @@ export interface CreateEmployeeInput {
   hireDate?: string;
   notes?: string;
   isAdmin?: boolean;
-  initialPassword?: string;  // defaults to firstinitial+lastname+3935
   username?: string;         // optional override; defaults to firstinitial+lastname
 }
 
@@ -281,8 +296,8 @@ export function defaultUsername(firstName: string, lastName: string): string {
   return (firstName.trim()[0] + lastName.trim()).toLowerCase().replace(/[^a-z]/g, "");
 }
 
-export function defaultInitialPassword(firstName: string, lastName: string): string {
-  return `${defaultUsername(firstName, lastName)}3935`;
+export function defaultInitialPassword(username: string): string {
+  return username.trim().toLowerCase();
 }
 
 export async function createEmployee(
@@ -291,7 +306,7 @@ export async function createEmployee(
   const id = randomUUID();
   const cleanUsername = (input.username ?? "").trim().toLowerCase().replace(/[^a-z0-9_.-]/g, "");
   const username = cleanUsername || defaultUsername(input.firstName, input.lastName);
-  const pw = input.initialPassword || defaultInitialPassword(input.firstName, input.lastName);
+  const pw = defaultInitialPassword(username);
   const passwordHash = hashPassword(pw);
   const ssnEnc = input.ssn ? encrypt(input.ssn) : null;
 
@@ -434,21 +449,21 @@ export async function updateEmployee(
   if (input.addressZip !== undefined)
     await db`UPDATE lounge_employees SET address_zip = ${input.addressZip}, updated_at = NOW() WHERE id = ${id}`;
   if (input.driverLicenseNum !== undefined)
-    await db`UPDATE lounge_employees SET driver_license_num = ${input.driverLicenseNum}, updated_at = NOW() WHERE id = ${id}`;
+    await db`UPDATE lounge_employees SET driver_license_num = ${protectSensitiveText(input.driverLicenseNum)}, updated_at = NOW() WHERE id = ${id}`;
   if (input.driverLicenseState !== undefined)
     await db`UPDATE lounge_employees SET driver_license_state = ${input.driverLicenseState}, updated_at = NOW() WHERE id = ${id}`;
   if (input.ecName !== undefined)
-    await db`UPDATE lounge_employees SET ec_name = ${input.ecName}, updated_at = NOW() WHERE id = ${id}`;
+    await db`UPDATE lounge_employees SET ec_name = ${protectSensitiveText(input.ecName)}, updated_at = NOW() WHERE id = ${id}`;
   if (input.ecRelationship !== undefined)
     await db`UPDATE lounge_employees SET ec_relationship = ${input.ecRelationship}, updated_at = NOW() WHERE id = ${id}`;
   if (input.ecPhone !== undefined)
-    await db`UPDATE lounge_employees SET ec_phone = ${input.ecPhone}, updated_at = NOW() WHERE id = ${id}`;
+    await db`UPDATE lounge_employees SET ec_phone = ${protectSensitiveText(input.ecPhone)}, updated_at = NOW() WHERE id = ${id}`;
   if (input.ec2Name !== undefined)
-    await db`UPDATE lounge_employees SET ec2_name = ${input.ec2Name}, updated_at = NOW() WHERE id = ${id}`;
+    await db`UPDATE lounge_employees SET ec2_name = ${protectSensitiveText(input.ec2Name)}, updated_at = NOW() WHERE id = ${id}`;
   if (input.ec2Relationship !== undefined)
     await db`UPDATE lounge_employees SET ec2_relationship = ${input.ec2Relationship}, updated_at = NOW() WHERE id = ${id}`;
   if (input.ec2Phone !== undefined)
-    await db`UPDATE lounge_employees SET ec2_phone = ${input.ec2Phone}, updated_at = NOW() WHERE id = ${id}`;
+    await db`UPDATE lounge_employees SET ec2_phone = ${protectSensitiveText(input.ec2Phone)}, updated_at = NOW() WHERE id = ${id}`;
   if (input.shirtSize !== undefined)
     await db`UPDATE lounge_employees SET shirt_size = ${input.shirtSize}, updated_at = NOW() WHERE id = ${id}`;
   if (input.pantSize !== undefined)
@@ -456,11 +471,11 @@ export async function updateEmployee(
   if (input.jacketSize !== undefined)
     await db`UPDATE lounge_employees SET jacket_size = ${input.jacketSize}, updated_at = NOW() WHERE id = ${id}`;
   if (input.allergies !== undefined)
-    await db`UPDATE lounge_employees SET allergies = ${input.allergies}, updated_at = NOW() WHERE id = ${id}`;
+    await db`UPDATE lounge_employees SET allergies = ${protectSensitiveText(input.allergies)}, updated_at = NOW() WHERE id = ${id}`;
   if (input.medicalConditions !== undefined)
-    await db`UPDATE lounge_employees SET medical_conditions = ${input.medicalConditions}, updated_at = NOW() WHERE id = ${id}`;
+    await db`UPDATE lounge_employees SET medical_conditions = ${protectSensitiveText(input.medicalConditions)}, updated_at = NOW() WHERE id = ${id}`;
   if (input.bloodType !== undefined)
-    await db`UPDATE lounge_employees SET blood_type = ${input.bloodType}, updated_at = NOW() WHERE id = ${id}`;
+    await db`UPDATE lounge_employees SET blood_type = ${protectSensitiveText(input.bloodType)}, updated_at = NOW() WHERE id = ${id}`;
   if (input.emailSecondary !== undefined)
     await db`UPDATE lounge_employees SET email_secondary = ${input.emailSecondary}, updated_at = NOW() WHERE id = ${id}`;
   if (input.emailSecondaryAlerts !== undefined)
@@ -517,7 +532,7 @@ function toFile(row: DbFileRow): EmployeeFile {
     employeeId: row.employee_id,
     fileType: row.file_type as EmployeeFile["fileType"],
     title: row.title,
-    fileUrl: row.file_url,
+    fileUrl: privateLoungeBlobUrl(row.file_url) ?? row.file_url,
     fileMime: row.file_mime,
     notes: row.notes,
     expiresOn: row.expires_on,
@@ -575,5 +590,5 @@ export async function deleteEmployeeFile(fileId: string): Promise<string | null>
   `) as unknown as { file_url: string }[];
   const url = rows[0]?.file_url ?? null;
   await db`DELETE FROM lounge_employee_files WHERE id = ${fileId}`;
-  return url;  // caller may del() from Vercel Blob
+  return url ? privateBlobDeleteTarget(url) : null;
 }
