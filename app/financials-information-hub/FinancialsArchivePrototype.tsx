@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Download,
   FileText,
-  MessageSquareWarning,
   Pause,
   Play,
   Printer,
@@ -55,7 +54,6 @@ import {
   REQUEST_TERMS_SECTIONS,
   REQUEST_TERMS_TEXT,
   RESTRICTED_REQUEST_INTRO,
-  RUN_COUNT_METHODOLOGY_NOTICE,
   type AccessRequestRecord,
   type CatalogDocument,
   type RequestStatus,
@@ -257,11 +255,6 @@ export default function FinancialsArchivePrototype() {
   const [signatureOpen, setSignatureOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [form990NoticeOpen, setForm990NoticeOpen] = useState(false);
-  const [restrictedNoticeOpen, setRestrictedNoticeOpen] = useState(false);
-  const [aiNoticeOpen, setAiNoticeOpen] = useState(false);
-  const [provenanceNoticeOpen, setProvenanceNoticeOpen] = useState(false);
-  const [countingNoticeOpen, setCountingNoticeOpen] = useState(false);
-  const [correctionsNoticeOpen, setCorrectionsNoticeOpen] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -902,23 +895,6 @@ export default function FinancialsArchivePrototype() {
             />
           )}
 
-          <DocumentInformationSection
-            onOpenPublicNotice={() => setForm990NoticeOpen(true)}
-            onOpenRestrictedNotice={() => setRestrictedNoticeOpen(true)}
-            onOpenAiNotice={() => setAiNoticeOpen(true)}
-            onOpenProvenanceNotice={() => setProvenanceNoticeOpen(true)}
-            onOpenCountingNotice={() => setCountingNoticeOpen(true)}
-            onOpenCorrectionsNotice={() => setCorrectionsNoticeOpen(true)}
-            onReport={() =>
-              void openAccuracyReport({
-                id: "PAGE-FINANCIAL-INFORMATION",
-                title: "Financial Information page",
-                version: "Development preview",
-                sourceUrl: "/financials-information-hub",
-                pageOrSection: "Financial Information page",
-              })
-            }
-          />
         </div>
       </div>
 
@@ -945,150 +921,6 @@ export default function FinancialsArchivePrototype() {
           />
           <div className="financials-modal-copy">
             <NoticeText paragraphs={form990Catalog.notice.slice(1)} />
-          </div>
-        </AccessibleModal>
-      )}
-
-      {restrictedNoticeOpen && (
-        <AccessibleModal
-          id="restricted-document-notice"
-          title="About restricted documents"
-          onClose={() => {
-            setRestrictedNoticeOpen(false);
-            stopSpeech();
-          }}
-        >
-          <ReadAloudControls
-            id="restricted-document-notice-reader"
-            label="Read this notice aloud"
-            text={[
-              ...RESTRICTED_REQUEST_INTRO,
-              ...REQUESTER_INFORMATION_NOTICE,
-            ].join("\n\n")}
-            speech={speech}
-            onRead={readText}
-            onPause={pauseSpeech}
-            onResume={resumeSpeech}
-            onStop={stopSpeech}
-            onRateChange={(rate) => setSpeech((current) => ({ ...current, rate }))}
-          />
-          <div className="financials-modal-copy">
-            <NoticeText
-              heading={RESTRICTED_REQUEST_INTRO[0]}
-              paragraphs={RESTRICTED_REQUEST_INTRO.slice(1)}
-            />
-            <NoticeText
-              heading={REQUESTER_INFORMATION_NOTICE[0]}
-              paragraphs={REQUESTER_INFORMATION_NOTICE.slice(1)}
-            />
-          </div>
-        </AccessibleModal>
-      )}
-
-      {aiNoticeOpen && (
-        <AccessibleModal
-          id="ai-processing-notice"
-          title="AI-processing notice"
-          onClose={() => {
-            setAiNoticeOpen(false);
-            stopSpeech();
-          }}
-        >
-          <ReadAloudControls
-            id="ai-processing-notice-reader"
-            label="Read this notice aloud"
-            text={[AI_PROCESSING_NOTICE_INTRO, ...AI_PROCESSING_USES, ...AI_PROCESSING_NOTICE_CONCLUSION].join("\n\n")}
-            speech={speech}
-            onRead={readText}
-            onPause={pauseSpeech}
-            onResume={resumeSpeech}
-            onStop={stopSpeech}
-            onRateChange={(rate) => setSpeech((current) => ({ ...current, rate }))}
-          />
-          <AiProcessingNotice />
-        </AccessibleModal>
-      )}
-
-      {provenanceNoticeOpen && (
-        <AccessibleModal
-          id="provenance-notice"
-          title="Provenance and altered copies"
-          onClose={() => {
-            setProvenanceNoticeOpen(false);
-            stopSpeech();
-          }}
-        >
-          <ReadAloudControls
-            id="provenance-notice-reader"
-            label="Read this notice aloud"
-            text={PROVENANCE_NOTICE.join("\n\n")}
-            speech={speech}
-            onRead={readText}
-            onPause={pauseSpeech}
-            onResume={resumeSpeech}
-            onStop={stopSpeech}
-            onRateChange={(rate) => setSpeech((current) => ({ ...current, rate }))}
-          />
-          <NoticeText paragraphs={PROVENANCE_NOTICE.slice(1)} />
-        </AccessibleModal>
-      )}
-
-      {countingNoticeOpen && (
-        <AccessibleModal
-          id="financial-counting-notice"
-          title="How financial figures are counted"
-          onClose={() => {
-            setCountingNoticeOpen(false);
-            stopSpeech();
-          }}
-        >
-          <ReadAloudControls
-            id="financial-counting-reader"
-            label="Read this notice aloud"
-            text={RUN_COUNT_METHODOLOGY_NOTICE.join("\n\n")}
-            speech={speech}
-            onRead={readText}
-            onPause={pauseSpeech}
-            onResume={resumeSpeech}
-            onStop={stopSpeech}
-            onRateChange={(rate) => setSpeech((current) => ({ ...current, rate }))}
-          />
-          <NoticeText paragraphs={RUN_COUNT_METHODOLOGY_NOTICE} />
-        </AccessibleModal>
-      )}
-
-      {correctionsNoticeOpen && (
-        <AccessibleModal
-          id="financial-corrections-notice"
-          title="Corrections and document concerns"
-          onClose={() => {
-            setCorrectionsNoticeOpen(false);
-            stopSpeech();
-          }}
-        >
-          <NoticeText
-            paragraphs={[
-              "Reports may identify a specific concern about accuracy, attribution, completeness, or document integrity for private administrative review.",
-              "Submitting a report does not establish that material is inaccurate and does not automatically remove, change, or republish a document.",
-            ]}
-          />
-          <div className="financials-modal-actions">
-            <button
-              className="financials-secondary-button"
-              type="button"
-              onClick={() => {
-                setCorrectionsNoticeOpen(false);
-                void openAccuracyReport({
-                  id: "PAGE-FINANCIAL-INFORMATION",
-                  title: "Financial Information page",
-                  version: "Development preview",
-                  sourceUrl: "/financials-information-hub",
-                  pageOrSection: "Financial Information page",
-                });
-              }}
-            >
-              Report an accuracy or document-integrity concern
-            </button>
           </div>
         </AccessibleModal>
       )}
@@ -1305,71 +1137,6 @@ export default function FinancialsArchivePrototype() {
         />
       )}
     </div>
-  );
-}
-
-function DocumentInformationSection({
-  onOpenPublicNotice,
-  onOpenRestrictedNotice,
-  onOpenAiNotice,
-  onOpenProvenanceNotice,
-  onOpenCountingNotice,
-  onOpenCorrectionsNotice,
-  onReport,
-}: {
-  onOpenPublicNotice: () => void;
-  onOpenRestrictedNotice: () => void;
-  onOpenAiNotice: () => void;
-  onOpenProvenanceNotice: () => void;
-  onOpenCountingNotice: () => void;
-  onOpenCorrectionsNotice: () => void;
-  onReport: () => void;
-}) {
-  return (
-    <section className="financials-section" aria-labelledby="document-information-heading">
-      <div className="financials-section-heading">
-        <div>
-          <p className={styles.sectionEyebrow}>Reference and review</p>
-          <h2 id="document-information-heading">Document information and corrections</h2>
-          <p>Review access details, counting methods, and the correction process.</p>
-        </div>
-      </div>
-      <div className={styles.informationControls}>
-        <button className="financials-secondary-button" type="button" onClick={onOpenPublicNotice}>
-          About public Form 990 access
-        </button>
-        <button className="financials-secondary-button" type="button" onClick={onOpenRestrictedNotice}>
-          About restricted documents
-        </button>
-        <button className="financials-secondary-button" type="button" onClick={onOpenAiNotice}>
-          AI-processing notice
-        </button>
-        <button className="financials-secondary-button" type="button" onClick={onOpenProvenanceNotice}>
-          Provenance and altered copies
-        </button>
-        <button className="financials-secondary-button" type="button" onClick={onOpenCountingNotice}>
-          How financial figures are counted
-        </button>
-        <button className="financials-secondary-button" type="button" onClick={onOpenCorrectionsNotice}>
-          Corrections and document concerns
-        </button>
-      </div>
-      <div className={styles.transparencyPanel}>
-        <div>
-          <h3>Document transparency</h3>
-          <p>
-            Published documents are identified by their reporting period, publication date,
-            document version, and source information. If you believe a document contains an
-            accuracy, attribution, or document-integrity concern, you may submit a report for
-            administrative review.
-          </p>
-        </div>
-        <button className={styles.reportButton} type="button" onClick={onReport}>
-          <MessageSquareWarning aria-hidden="true" />
-          Report an accuracy or document-integrity concern
-        </button>
-      </div>
-    </section>
   );
 }
 
@@ -2182,18 +1949,6 @@ function RequestTermsContent() {
         </section>
       ))}
       <NoticeText heading={PROVENANCE_NOTICE[0]} paragraphs={PROVENANCE_NOTICE.slice(1)} />
-    </div>
-  );
-}
-
-function AiProcessingNotice() {
-  return (
-    <div className="financials-modal-copy">
-      <section>
-        <p>{AI_PROCESSING_NOTICE_INTRO}</p>
-        <ul>{AI_PROCESSING_USES.map((item) => <li key={item}>{item}</li>)}</ul>
-        {AI_PROCESSING_NOTICE_CONCLUSION.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-      </section>
     </div>
   );
 }
