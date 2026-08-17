@@ -7,13 +7,13 @@ import FinancialsAdminReview from "./FinancialsAdminReview";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Financial Information Review",
-  description: "Admin review for development financial information requests.",
+  title: "Financial and Other Public Requests",
+  description: "Protected document publishing and public request review.",
   robots: { index: false, follow: false, noarchive: true },
 };
 
 export default async function FinancialsAdminPage() {
   if (!isFinancialsHubDevelopmentEnabled()) notFound();
-  if (!(await isAdminAuthed())) redirect("/lounge/login");
+  if (!(await isAdminAuthed())) redirect("/lounge/login?next=/admin/financials");
   return <FinancialsAdminReview />;
 }

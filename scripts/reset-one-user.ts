@@ -1,9 +1,9 @@
 /**
  * One-shot: reset a single user's lounge credentials.
- * Wipes WebAuthn passkeys, clears TOTP enrollment, resets the password
- * to the default ({firstInitial}{lastName}3935), and flips
+ * Resets the one-time password to the assigned username and flips
  * must_change_password = TRUE so the new first-login gate sends them
- * straight to /lounge/change-password.
+ * straight to /lounge/change-password. Existing passkeys and TOTP
+ * enrollment are preserved.
  *
  * Run: npx tsx scripts/reset-one-user.ts <username>
  */
@@ -47,19 +47,15 @@ async function main() {
     process.exit(1);
   }
   const u = rows[0];
-  const newPassword = defaultInitialPassword(u.first_name, u.last_name);
+  const newPassword = defaultInitialPassword(u.username);
   const newHash = hashPassword(newPassword);
 
   console.log(`Resetting ${u.username} (${u.first_name} ${u.last_name})${u.is_admin ? " [admin]" : ""}…`);
 
-  await db`DELETE FROM lounge_webauthn_credentials WHERE employee_id = ${u.id}`;
-  await db`DELETE FROM lounge_webauthn_challenges  WHERE employee_id = ${u.id}`;
   await db`
     UPDATE lounge_employees SET
       password_hash         = ${newHash},
       must_change_password  = TRUE,
-      totp_secret_encrypted = NULL,
-      totp_enrolled_at      = NULL,
       updated_at            = NOW()
     WHERE id = ${u.id}
   `;
@@ -67,7 +63,8 @@ async function main() {
   console.log("Done.");
   console.log(`  username: ${u.username}`);
   console.log(`  password: ${newPassword}`);
-  console.log("  Next sign-in will force password change, then prompt 2FA + biometrics again.");
+  console.log("  Next password sign-in will force a permanent password change.");
+  console.log("  Existing authenticator and passkey enrollment was preserved.");
 }
 
 main().catch((err) => {

@@ -123,8 +123,8 @@ export default function DevToolsPage() {
         </h1>
         <p style={{ color: "#94a3b8", fontSize: "0.92rem", marginTop: 4, lineHeight: 1.55 }}>
           Push forms, write-ups, acknowledgments, and notifications to the synthetic <strong>@testuser</strong> account
-          so you can verify the employee-facing experience without spamming real crew. The dev-login PIN (set under
-          Vercel env) drops you straight into that account with no 2FA.
+          so you can verify the employee-facing experience without spamming real crew. Sign in to test accounts through
+          the same password and authenticator flow used by every employee.
         </p>
       </header>
 
@@ -216,20 +216,6 @@ export default function DevToolsPage() {
             </button>
           </section>
 
-          <section style={card}>
-            <h2 style={cardTitle}>Dev login</h2>
-            <p style={cardHelp}>
-              At <Link href="/lounge/login" style={{ color: "#f0b429" }}>/lounge/login</Link> the
-              <strong> Dev Shortcut</strong> card can be enabled for local development only. Pick
-              <strong> Employee</strong> to use the synthetic @testuser account or
-              <strong> Admin</strong> to use the configured development administrator.
-            </p>
-            <p style={cardHelp}>
-              It requires <code style={code}>LOUNGE_DEV_LOGIN_ENABLED</code>, a server-only
-              <code style={code}> LOUNGE_DEV_LOGIN_PIN</code>, and the public UI flag. The route
-              is disabled unconditionally in production.
-            </p>
-          </section>
         </>
       )}
     </div>

@@ -1,6 +1,6 @@
 /**
- * Idempotent: make sure a "Test User" employee exists so the dev-login
- * shortcut has a non-real account to drop into. Run with:
+ * Idempotent: make sure a synthetic "Test User" employee exists for
+ * safely exercising employee-facing workflows. Run with:
  *   npx tsx scripts/ensure-test-user.ts
  */
 
@@ -48,12 +48,12 @@ async function main() {
     lastName: LAST,
     email: EMAIL,
     certification: "EMT",
-    position: "Dev shortcut test account",
+    position: "Synthetic workflow test account",
     isAdmin: false,
     username: USERNAME,
   });
   console.log(`Created: ${created.firstName} ${created.lastName} (${created.username})`);
-  console.log(`First-time password: ${defaultInitialPassword(FIRST, LAST)}`);
+  console.log(`First-time password: ${defaultInitialPassword(USERNAME)}`);
 }
 
 main().catch((err) => {

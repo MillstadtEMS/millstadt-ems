@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:financials": "node scripts/test-financials-hub.mjs"
+    "lounge:initialize-passwords": "node scripts/initialize-lounge-passwords.mjs",
+    "test:financials": "node scripts/test-financials-hub.mjs",
+    "test:security": "node scripts/test-security-hardening.mjs"
   },
   "dependencies": {
     "@fontsource-variable/mona-sans": "^5.2.8",
@@ -26,12 +28,14 @@
     "next": "16.3.1",
     "node-ical": "^0.26.1",
     "nodemailer": "^9.0.5",
+    "pdfjs-dist": "5.5.207",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-leaflet": "^5.0.0",
     "twilio": "^5.13.1",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

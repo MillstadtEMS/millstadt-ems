@@ -51,7 +51,7 @@ political speech, public discussion, good-faith disagreement, or other use prote
 10. This bundle is intended to contain operational counts and run-number information, not medical or patient-specific
 information. Medical and patient-specific information must not be included in the public bundle merely because it
 appears in an underlying dispatch or ESO record.
-11. An altered, cropped, incomplete, edited, summarized, transcribed, reconstructed, or AI-generated version should be
+11. An altered, cropped, incomplete, edited, summarized, transcribed, or reconstructed version should be
 identified as a modification or derivative and should not be represented as the complete, unaltered Millstadt record.
 MILLSTADT EMS RUN-COUNT NOTICE - ESO = PCRs GENERATED; WEBSITE TOTAL = RECORDED DISPATCHES - PRE-2026
 FIGURES MAY DIFFER

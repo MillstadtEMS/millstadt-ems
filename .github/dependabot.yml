@@ -1,0 +1,32 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Chicago
+    open-pull-requests-limit: 5
+    versioning-strategy: increase-if-necessary
+    groups:
+      patched-production-dependencies:
+        dependency-type: production
+        update-types:
+          - patch
+          - minor
+      patched-development-dependencies:
+        dependency-type: development
+        update-types:
+          - patch
+          - minor
+    ignore:
+      - dependency-name: pdfjs-dist
+        versions:
+          - ">=5.6.0"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3

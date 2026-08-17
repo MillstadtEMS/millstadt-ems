@@ -1,9 +1,9 @@
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { currentEmployee } from "@/lib/lounge/auth";
 
 const COOKIE = "mas_truckcheck";
-const MAX_AGE = 60 * 60 * 24 * 30; // 30 days — phones stay logged in
+const MAX_AGE = 60 * 60 * 12;
 
 function sign(value: string): string {
   const configured = process.env.TRUCKCHECK_PASSWORD;
@@ -22,8 +22,12 @@ export function makeSessionToken(): string {
 export function verifySessionToken(token: string): boolean {
   const [ts, sig] = token.split(".");
   if (!ts || !sig) return false;
-  if (Date.now() - Number(ts) > MAX_AGE * 1000) return false;
-  return sign(ts) === sig;
+  const issuedAt = Number(ts);
+  const age = Date.now() - issuedAt;
+  if (!Number.isFinite(issuedAt) || age < -60_000 || age > MAX_AGE * 1000) return false;
+  const actual = Buffer.from(sig, "hex");
+  const expected = Buffer.from(sign(ts), "hex");
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
 export async function isTruckCheckAuthed(): Promise<boolean> {

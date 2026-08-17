@@ -17,7 +17,6 @@ export default function NewEmployeePage() {
   const [hireDate, setHireDate] = useState("");
   const [notes, setNotes] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
-  const [overridePassword, setOverridePassword] = useState("");
   const [overrideUsername, setOverrideUsername] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -40,7 +39,7 @@ export default function NewEmployeePage() {
     return (firstName.trim()[0] + lastName.trim()).toLowerCase().replace(/[^a-z]/g, "");
   }, [firstName, lastName]);
   const username = overrideUsername.trim() || autoUsername;
-  const defaultPassword = username ? `${username}3935` : "";
+  const defaultPassword = username;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -66,7 +65,6 @@ export default function NewEmployeePage() {
           hireDate: hireDate || undefined,
           notes: notes.trim() || undefined,
           isAdmin,
-          initialPassword: overridePassword.trim() || undefined,
           username: overrideUsername.trim() || undefined,
         }),
       });
@@ -99,9 +97,9 @@ export default function NewEmployeePage() {
         <p style={{ color: "#94a3b8", fontSize: "0.92rem", marginTop: 6 }}>
           Initial password will be{" "}
           <code style={{ color: "#f0b429" }}>
-            {overridePassword || defaultPassword || "<firstinitial><lastname>3935"}
+            {defaultPassword || "the assigned username"}
           </code>
-          . They&apos;ll be required to change it on first login.
+          . It works once; they&apos;ll be required to choose a permanent password on first login.
         </p>
 
         <form onSubmit={handleSubmit} style={{ marginTop: 28, display: "grid", gap: 16 }}>
@@ -176,16 +174,6 @@ export default function NewEmployeePage() {
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
-            />
-          </Field>
-
-          <Field label="Override initial password (optional)">
-            <input
-              type="text"
-              value={overridePassword}
-              onChange={(e) => setOverridePassword(e.target.value)}
-              placeholder={defaultPassword || "Leave blank for default"}
-              style={inputStyle}
             />
           </Field>
 

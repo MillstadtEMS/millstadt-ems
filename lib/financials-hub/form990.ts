@@ -1,5 +1,10 @@
 import { jsPDF } from "jspdf";
 
+import {
+  activeManagedDocuments,
+  readDocumentPages,
+  readManagedDocumentPdf,
+} from "./document-library";
 import { ORGANIZATION_NAME } from "./types";
 
 export type PublicForm990 = {
@@ -16,28 +21,6 @@ export type PublicForm990 = {
 
 export type PublicForm990CatalogItem = Omit<PublicForm990, "pages">;
 
-export const PUBLIC_FORM_990_HEADING =
-  "Public Form 990 filings";
-
-export const PUBLIC_FORM_990_INTRO = [
-  "Published Form 990 filings are provided for public inspection and copying. You do not need to create an account, provide identifying information, obtain administrator approval, sign a request, or acknowledge terms to view, print, or download a published Form 990.",
-];
-
-export const PUBLIC_FORM_990_NOTICE = [
-  "About public Form 990 access",
-  "Published Form 990 filings are provided for public inspection and copying. You do not need to create an account, provide identifying information, obtain administrator approval, sign a request, or acknowledge terms to view, print, or download a published Form 990.",
-  "This notice is informational only. It is not a condition of access and does not limit any right of access that may apply under applicable law.",
-  "Public Form 990 access is separate from the administrative request process for restricted documents.",
-];
-
-export const PUBLIC_FORM_990_AI_NOTICE: string[] = [];
-
-export const PUBLIC_FORM_990_REVIEW_NOTICE = [
-  "Public-Version Review Required",
-  "Before a Form 990 is published, an authorized administrator must verify that the posted file is the lawful public version, including any required Schedule B or contributor-information treatment and any legally permissible redactions.",
-  "Print-blocking, download restrictions, or a view-only interface must not be used as a substitute for legally required redaction.",
-];
-
 export const SYNTHETIC_FORM_990S: PublicForm990[] = [
   {
     id: "SYN-990-2024-001",
@@ -50,7 +33,7 @@ export const SYNTHETIC_FORM_990S: PublicForm990[] = [
     accessibleAlternative: "Accessible HTML rendering included below.",
     pages: [
       "SYNTHETIC DEVELOPMENT DATA - NOT AN IRS FILING\n\nReturn of Organization Exempt From Income Tax\nTax Year: 2024\nFiling Year: 2025\nThis synthetic page exists only to test public Form 990 viewing, printing, and downloading.",
-      `SYNTHETIC DEVELOPMENT DATA - NOT AN IRS FILING\n\nPart I Summary\nRevenue, expenses, governance, program service accomplishments, and compensation fields are placeholder values only. No actual financial data of ${ORGANIZATION_NAME} is included.`,
+      `SYNTHETIC DEVELOPMENT DATA - NOT AN IRS FILING\n\nPart I Summary\nRevenue, expenses, governance, program service accomplishments, and compensation fields contain fictional test data. No actual financial data of ${ORGANIZATION_NAME} is included.`,
       "SYNTHETIC DEVELOPMENT DATA - NOT AN IRS FILING\n\nPublic Inspection Copy Notes\nThis synthetic filing is printable and downloadable without identity collection, clickwrap acceptance, or administrator approval.",
     ],
   },
@@ -71,7 +54,7 @@ export const SYNTHETIC_FORM_990S: PublicForm990[] = [
 ];
 
 export function publicForm990Catalog(): PublicForm990CatalogItem[] {
-  return SYNTHETIC_FORM_990S.map((doc) => ({
+  return publicForm990s().map((doc) => ({
     id: doc.id,
     taxYear: doc.taxYear,
     filingYear: doc.filingYear,
@@ -84,7 +67,7 @@ export function publicForm990Catalog(): PublicForm990CatalogItem[] {
 }
 
 export function findPublicForm990(id: string) {
-  return SYNTHETIC_FORM_990S.find((doc) => doc.id === id) ?? null;
+  return publicForm990s().find((doc) => doc.id === id) ?? null;
 }
 
 export function publicForm990Provenance(doc: PublicForm990) {
@@ -124,7 +107,7 @@ export function form990HtmlDocument(doc: PublicForm990) {
     `<button type="button" onclick="window.print()">Print</button>`,
     ...doc.pages.map(
       (page, index) => `
-        <section class="page" aria-label="Synthetic Form 990 page ${index + 1}">
+        <section class="page" aria-label="Form 990 page ${index + 1}">
           <div class="watermark">${escapeHtml(publicForm990Provenance(doc))}</div>
           <pre>${escapeHtml(page)}</pre>
           <footer>${escapeHtml(publicForm990Footer(doc))} | Page ${index + 1} of ${doc.pages.length}</footer>
@@ -139,6 +122,9 @@ export function form990HtmlDocument(doc: PublicForm990) {
 }
 
 export function form990PdfBuffer(doc: PublicForm990) {
+  const uploaded = readManagedDocumentPdf(doc.id);
+  if (uploaded) return uploaded;
+
   const pdf = new jsPDF({ unit: "pt", format: "letter", compress: true });
   pdf.setProperties({
     title: doc.title,
@@ -201,6 +187,23 @@ export function form990PdfBuffer(doc: PublicForm990) {
   });
 
   return Buffer.from(new Uint8Array(pdf.output("arraybuffer")));
+}
+
+function publicForm990s() {
+  const uploaded: PublicForm990[] = activeManagedDocuments("public_form_990").map(
+    (document) => ({
+      id: document.id,
+      taxYear: document.taxYear,
+      filingYear: document.filingYear,
+      title: document.title,
+      filingDate: document.publicationDate,
+      version: document.version,
+      pageCount: document.pageCount,
+      accessibleAlternative: "Accessible text rendering included below.",
+      pages: readDocumentPages(document),
+    }),
+  );
+  return [...uploaded, ...SYNTHETIC_FORM_990S];
 }
 
 function escapeHtml(value: string) {

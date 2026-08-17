@@ -6,17 +6,18 @@ Evidence date: 2026-08-16. All test identities use reserved `.test` addresses an
 
 | Command/check | Result |
 | --- | --- |
-| `npm run test:financials` | **40 checks passing.** Preserves all 30 financial checks and adds configured privacy-page rendering, no identifier before consent, cross-site preference rejection, random first-party identifiers, strict event-field rejection, unlinked public-document events, unlinked community survey, Supervisor-only API denial, withdrawal enforcement, and source checks excluding fingerprinting/precise location. |
+| `npm run test:financials` | **49 checks passing.** Covers the established financial and privacy controls plus the required production Coming Soon source, login return routing, administrator authorization, protected PDF upload and original-file access, private catalog persistence, archive/restore, exact public Form 990 delivery, malformed-PDF rejection, and approval-controlled viewing of an uploaded restricted document. |
+| `npm run test:security` | **22 checks passing.** Covers public-form CSRF/schema/rate boundaries, retired patient/identity fields, encrypted new writes, private sensitive uploads and byte-signature checks, authenticated private reads, named admin access, session/login controls, headers, dependency automation, and the ticker/CAD shell contract. |
 | `npx tsc --noEmit` | Passing. |
 | Scoped ESLint over all changed financial/PWA/security files | Passing. |
-| `NEXT_DIST_DIR=.next-analytics-build npm run build` | Passing on Next.js 16.3.1; 116 static pages generated and the privacy, retention, public event-intake, and Supervisor analytics routes compiled. Temporary build output and generated `tsconfig.json` edits were removed afterward. |
+| `NEXT_DIST_DIR=.next-security-build npm run build` | Passing on Next.js 16.3.1; 116 static pages generated and all reviewed public, Lounge, administrator, financial, privacy, and security routes compiled. Temporary build output and generated `tsconfig.json` edits were removed afterward. |
 | `npm audit` and `npm audit --omit=dev` | Zero known vulnerabilities after updates. |
 | Tracked-source and Git-history credential-pattern scan | Passing across 1,067 staged/tracked paths and Git patch history: zero AWS, Google API, GitHub token, OpenAI key, bounded Twilio SID, Slack token, or private-key markers. |
 | Full `npm run lint` | **Not passing:** 93 errors and 67 warnings in pre-existing unrelated admin/lounge/game/CAD files. No rule was disabled. This remains a release blocker. |
 
 ## Financial integration result
 
-The final run reported `40 financial hub integration checks passed.` The suite launches an isolated Next development server on port 3031, forces synthetic-only financial and analytics memory stores, clears Gmail/Twilio credentials, enables an allowlisted `.test` sink plus one synthetic exact-address allowlist entry, verifies a non-allowlisted address is filtered, tests consent and withdrawal, audits requester signed-copy and decision-email attempts, checks exact request/AI/provenance/viewer copy, restores `tsconfig.json`, and stops the server after testing. Empty Gmail/Twilio credentials ensure no message can leave the test process.
+The final run reported `49 financial hub integration checks passed.` The suite launches an isolated Next development server on port 3031, uses a temporary private document-library directory, forces synthetic-only financial and analytics stores, clears Gmail/Twilio credentials, enables an allowlisted `.test` sink plus one synthetic exact-address allowlist entry, verifies a non-allowlisted address is filtered, tests consent and withdrawal, audits requester signed-copy and decision-email attempts, exercises upload/catalog/approval/viewer/revocation behavior, restores `tsconfig.json`, removes the entire isolated Next build tree, and stops the server after testing. Empty Gmail/Twilio credentials ensure no message can leave the test process.
 
 ## Production pre-launch smoke evidence
 

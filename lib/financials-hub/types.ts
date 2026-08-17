@@ -1,6 +1,6 @@
 export const ORGANIZATION_NAME = "Millstadt Ambulance Service / Millstadt EMS";
 
-export const HUB_TITLE = "Millstadt EMS Financials and Information Request Hub";
+export const HUB_TITLE = "Millstadt EMS Financial and Other Public Requests";
 
 export const PUBLIC_FINANCIALS_PAGE_TITLE = "Financial Information";
 
@@ -13,40 +13,24 @@ export const DEVELOPMENT_STATUS_BANNER =
 export const SYNTHETIC_RECORD_LABEL =
   "SYNTHETIC DEVELOPMENT DATA — NOT A RECORD OF MILLSTADT AMBULANCE SERVICE / MILLSTADT EMS";
 
-export const PRODUCTION_NOTICE =
-  `The ${ORGANIZATION_NAME} Financials and Information Request Hub is being prepared. The archive and document-access system are not currently available for public use.\n\nThis page does not accept document requests, information requests, applications, uploads, comments, or submissions. No documents are available for viewing through this page at this time.`;
-
-export const TERMS_VERSION = "DEV-2026.08.16.3";
-export const AI_NOTICE_VERSION = "DEV-AI-2026.08.16.3";
+export const TERMS_VERSION = "DEV-2026.08.16.4";
 export const PRIVACY_VERSION = "DEV-PRIVACY-2026.08.16.3";
 
-export const ABOUT_ARCHIVE_NOTICE = [
-  "About this archive",
-  "This page provides access to published Form 990 filings and information about additional financial documents. Published Form 990 filings may be viewed, printed, and downloaded without an account, identifying information, administrator approval, or acknowledgment.",
-  "This page is an archive of available documents. It is not a new information-request portal.",
-];
-
 export const RESTRICTED_REQUEST_INTRO = [
-  "Request access to a restricted document",
-  "The documents selected below are provided through an administrative review process rather than unrestricted public download. Millstadt will review the request and may contact the requester for clarification before making an access decision.",
-  "Please provide complete and truthful information so Millstadt can identify the request, communicate with the requester, and maintain an administrative release record.",
-  "Where Millstadt may lawfully require identification for the selected document category, knowingly providing materially false or misleading identifying information may result in denial or cancellation of the request.",
-  "This process does not apply to published Form 990 filings and does not override any applicable legal right of access.",
+  "Request access",
 ];
 
 export const REQUESTER_INFORMATION_NOTICE = [
   "Requester information",
-  "Provide the information requested below so Millstadt can identify and communicate about this request. Required fields must be limited to information reasonably necessary for the selected document and administrative release process.",
-  "The requester must provide a full name and reliable email address. Retain any existing address or telephone fields only as currently configured by the application or administrator policy.",
 ];
 
 export const ACCEPTED_CHECKBOX_TEXT =
-  "I have read and agree to the Request Terms and Release Notice. I certify that the information I have submitted is accurate to the best of my knowledge and that I have not knowingly provided materially false or misleading information. I understand that Millstadt may contact me for clarification and that submitting a request does not guarantee access unless applicable law requires disclosure.";
+  "I reviewed the request terms, confirm that the information I provided is accurate to the best of my knowledge, understand that access requires approval, and agree that my electronic signature authenticates this request.";
 
 export const FINAL_SUBMISSION_CONFIRMATION_TEXT =
-  "I am submitting this request electronically under the name shown above, and I authorize Millstadt to include my electronic signature and acknowledged terms in the administrative request record.";
+  `I authorize ${ORGANIZATION_NAME} to attach my electronic signature to this request.`;
 
-export const ACCEPTED_BUTTON_TEXT = "Sign and submit request";
+export const ACCEPTED_BUTTON_TEXT = "Submit signed request";
 
 export type RequestStatus =
   | "pending"
@@ -97,7 +81,6 @@ export type AccessRequestRecord = {
   status: RequestStatus;
   submittedAtUtc: string;
   termsVersion: string;
-  aiNoticeVersion: string;
   privacyVersion: string;
   acceptedCheckboxText: string;
   acceptedButtonText: string;
@@ -133,7 +116,6 @@ export type AuditEvent = {
   releaseId?: string;
   termsVersion?: string;
   privacyVersion?: string;
-  aiNoticeVersion?: string;
   ipAddress: string;
   userAgent: string;
   result: "allowed" | "blocked" | "recorded";
@@ -159,108 +141,86 @@ export type RequestTermsSection = {
   paragraphs?: string[];
 };
 
-export const REQUEST_TERMS_INTRO =
-  "Before submitting this request, review the following information.";
+export const REQUEST_TERMS_INTRO = "Restricted-document access";
+
+export const REQUEST_TERMS_INTRO_PARAGRAPHS = [
+  "This request process applies only to documents identified as restricted. Publicly available Form 990 filings remain accessible without an account, identification, approval, acknowledgment, or signature.",
+  `Submitting a request does not guarantee approval. ${ORGANIZATION_NAME} will review each request under applicable policies and law.`,
+];
 
 export const REQUEST_TERMS_SECTIONS: RequestTermsSection[] = [
   {
     heading: "Administrative review",
-    bullets: [
-      "Submission of a request does not guarantee access unless disclosure is otherwise required by applicable law.",
-      "Millstadt may request clarification before making an access decision.",
-      "An approved release may be limited to the selected documents, version, viewing period, and conditions identified by Millstadt.",
-      "Millstadt may maintain an administrative record of the request, decision, release version, release identifier, and related communications.",
-    ],
-  },
-  {
-    heading: "Accuracy of submitted information",
-    bullets: [
-      "The requester must provide information that is accurate to the best of the requester’s knowledge.",
-      "Knowingly providing materially false or misleading information may result in denial or cancellation of the request.",
-      "A good-faith mistake, disagreement, criticism, opinion, inference, or inability to establish a concern does not by itself constitute knowingly false information.",
-    ],
-  },
-  {
-    heading: "Document presentation and provenance",
-    bullets: [
-      "The released document may contain a release identifier, document version, release date, page numbering, watermark, or other provenance information.",
-      "A cropped, edited, annotated, transcribed, summarized, or otherwise modified version should not be represented as a complete or unaltered original Millstadt record.",
-      "These provisions address attribution and provenance. They do not prohibit lawful criticism, commentary, journalism, reporting, political speech, or other lawful discussion.",
-    ],
-  },
-  {
-    heading: "AI and automated processing",
-    bullets: [
-      "To the extent Millstadt has authority to grant or withhold permission, the release does not authorize downstream AI or automated processing for the uses described in the AI-processing notice below.",
-      "No permission or license is granted by the notice for those uses, except as required by law or separately authorized in writing.",
-      "The notice states Millstadt’s permission and provenance position. It does not represent that it automatically binds every AI provider, automated system, or third party.",
-    ],
-  },
-  {
-    heading: "Technical viewing controls",
-    bullets: [
-      "Technical viewing controls are intended to manage the approved viewing session.",
-      "They are not a guarantee that the document cannot be copied, captured, photographed, transcribed, or otherwise reproduced.",
-    ],
-  },
-  {
-    heading: "Applicable rights",
     paragraphs: [
-      "Nothing in this request process is intended to waive, limit, or override an access right or other right that applies under law.",
+      "Access is subject to administrative review. An approval applies only to the documents, version, requester, release identifier, and access period stated in the approval. Access may expire or be cancelled as stated in the approval or where permitted by applicable law.",
+    ],
+  },
+  {
+    heading: "Accurate information",
+    paragraphs: [
+      "The requester confirms that the information provided is accurate to the best of the requester's knowledge. Knowingly providing materially false or misleading identifying information may result in denial or cancellation of the request, subject to applicable law.",
+    ],
+  },
+  {
+    heading: "Electronic signature",
+    paragraphs: [
+      "By signing and submitting this request, the requester confirms that the requester reviewed these terms, provided the information knowingly, and agrees that the electronic signature is intended to authenticate this submission.",
+    ],
+  },
+  {
+    heading: "Document integrity and attribution",
+    paragraphs: [
+      `A document supplied through this process must not be represented as a different document, a complete record when pages or attachments are missing, or an unaltered ${ORGANIZATION_NAME} record when it has been modified.`,
+      `Any excerpt, quotation, summary, transcription, translation, annotation, or other derivative presentation should be identified as such and should not be attributed to ${ORGANIZATION_NAME} as an original or official document unless ${ORGANIZATION_NAME} has expressly issued or approved it.`,
+    ],
+  },
+  {
+    heading: "Legal rights",
+    paragraphs: [
+      `This request process does not waive, limit, or override any right or remedy available under applicable law. It also does not require ${ORGANIZATION_NAME} to disclose information that it may lawfully withhold.`,
+      "Nothing in these terms is intended to restrict lawful speech, criticism, reporting, or use of information that the requester lawfully possesses.",
     ],
   },
 ];
 
-export const AI_PROCESSING_NOTICE_INTRO =
-  "To the extent Millstadt Ambulance Service, Millstadt EMS, or Millstadt EMS ESD has authority to grant or withhold permission, Millstadt does not authorize downstream use of this released document or its contents for artificial-intelligence or automated processing, including:";
-
-export const AI_PROCESSING_USES = [
-  "reading or extracting the document for automated processing;",
-  "automated summarization or analysis;",
-  "model training or machine-learning training;",
-  "inclusion in an AI dataset, model-training corpus, or public data repository;",
-  "ingestion into a public vector database, retrieval system, knowledge base, or similar repository;",
-  "creation of embeddings or other machine-readable representations;",
-  "redistribution to a data broker or similar data repository;",
-  "automated alteration, manipulation, or transformation; or",
-  "creation of a modified or derivative file presented as an original Millstadt record.",
-];
-
-export const AI_PROCESSING_NOTICE_CONCLUSION = [
-  "No permission or license is granted by this notice for those uses, except as required by law or separately authorized in writing.",
-  "This notice states Millstadt’s permission and provenance position. It does not represent that the notice independently binds every AI provider, automated system, or third party. It does not restrict lawful criticism, commentary, journalism, reporting, political speech, research, or other lawful discussion.",
-];
-
-export const AI_PROCESSING_NOTICE = [
-  "AI-processing notice",
-  AI_PROCESSING_NOTICE_INTRO,
-  ...AI_PROCESSING_USES,
-  ...AI_PROCESSING_NOTICE_CONCLUSION,
-];
-
-export const PROVENANCE_NOTICE = [
-  "Provenance and altered copies",
-  "This release is identified by the release ID, document version, and release date shown on the document.",
-  "A cropped, edited, annotated, transcribed, summarized, or otherwise modified version is not the complete, unaltered released copy and should not be represented as a complete or unaltered Millstadt Ambulance Service, Millstadt EMS, or Millstadt EMS ESD record.",
-  "Excerpts should retain material context and should not be presented as the complete record when they are not. This notice addresses attribution and provenance. It does not prohibit lawful criticism, commentary, journalism, reporting, political speech, or other lawful discussion.",
-];
-
-export const CONTROLLED_VIEWING_NOTICE = [
-  "Controlled viewing notice",
-  "This document is being provided through an administrator-approved viewing session. The document version, release date, and release identifier may be recorded for security and provenance purposes.",
-  "Technical viewing controls are intended to manage the approved viewing session. They are not a guarantee that the document cannot be copied, captured, photographed, transcribed, or otherwise reproduced.",
+export const REQUEST_ADDITIONAL_TERMS_SECTIONS: RequestTermsSection[] = [
+  {
+    heading: "AI processing and alteration",
+    paragraphs: [
+      `${ORGANIZATION_NAME} does not authorize the alteration of an original released document or the creation of an additional file that presents ${ORGANIZATION_NAME}'s data, records, or original expression as an original ${ORGANIZATION_NAME} document.`,
+      `No permission or license is granted through this request to modify, reattribute, impersonate, or falsely present a released document. This notice states ${ORGANIZATION_NAME}'s permission and provenance position; it is not a claim that every downstream use is automatically unlawful or that it binds persons who did not agree to these terms.`,
+      "Lawful criticism, commentary, reporting, fair use, independent analysis, and other rights available under applicable law are not waived by this notice.",
+    ],
+  },
+  {
+    heading: "Copying and technical limitations",
+    paragraphs: [
+      "The controlled viewer, watermark, logging, and other technical measures are intended to support document administration and provenance. They cannot guarantee that a document will not be copied, photographed, captured, retransmitted, or altered.",
+    ],
+  },
+  {
+    heading: "No guarantee of accuracy or completeness outside the released document",
+    paragraphs: [
+      `${ORGANIZATION_NAME} makes no representation that an excerpt, summary, interpretation, or third-party reproduction accurately reflects the complete released document. The released document and its identified version, pages, date, and release identifier control.`,
+    ],
+  },
 ];
 
 export const REQUEST_TERMS_TEXT = [
   "Review request terms",
   REQUEST_TERMS_INTRO,
+  ...REQUEST_TERMS_INTRO_PARAGRAPHS,
   ...REQUEST_TERMS_SECTIONS.flatMap((section) => [
     section.heading,
     ...(section.bullets ?? []),
     ...(section.paragraphs ?? []),
   ]),
-  ...AI_PROCESSING_NOTICE,
-  ...PROVENANCE_NOTICE,
+  "Additional terms and limitations",
+  ...REQUEST_ADDITIONAL_TERMS_SECTIONS.flatMap((section) => [
+    section.heading,
+    ...(section.bullets ?? []),
+    ...(section.paragraphs ?? []),
+  ]),
 ];
 
 export const RUN_COUNT_METHODOLOGY_NOTICE = [
@@ -275,7 +235,7 @@ export const RUN_COUNT_METHODOLOGY_NOTICE = [
   `The figures should be quoted and characterized according to the definitions above. A person reviewing, quoting, reproducing, or distributing this material should not knowingly combine different categories of counts and present the result as a single undifferentiated total, omit a material limitation in a manner that creates a materially misleading impression about what a number measures, or identify ${ORGANIZATION_NAME} as the author, verifier, approver, or source of a modified or generated version that ${ORGANIZATION_NAME} did not create or approve.`,
   "This notice does not state that every discrepancy, error, estimate, inference, opinion, criticism, or unfavorable characterization is unlawful or defamatory. It does not restrict lawful criticism, commentary, journalism, quotation, political speech, public discussion, good-faith disagreement, or other use protected by applicable law.",
   "This bundle is intended to contain operational counts and run-number information, not medical or patient-specific information. Medical and patient-specific information must not be included in the public bundle merely because it appears in an underlying dispatch or ESO record.",
-  `An altered, cropped, incomplete, edited, summarized, transcribed, reconstructed, or AI-generated version should be identified as a modification or derivative and should not be represented as the complete, unaltered record of ${ORGANIZATION_NAME}.`,
+  `An altered, cropped, incomplete, edited, summarized, transcribed, or reconstructed version should be identified as a modification or derivative and should not be represented as the complete, unaltered record of ${ORGANIZATION_NAME}.`,
 ];
 
 export const RUN_COUNT_SHORT_FOOTER =

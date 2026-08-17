@@ -135,8 +135,8 @@ export default function LoungeShell({
   const pathname = usePathname() || "/lounge";
   const router = useRouter();
 
-  // First-login password lockdown: new employees get a default password
-  // (`firstInitial + lastName + 3935`) and must replace it before they can
+  // First-login password lockdown: new employees use their username once
+  // and must replace it before they can
   // use the lounge. /api/lounge/me carries the must_change_password flag
   // straight off the session. We send everyone whose flag is true to
   // /lounge/change-password — except the change-password page itself and

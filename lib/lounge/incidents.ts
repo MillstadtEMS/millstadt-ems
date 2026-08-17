@@ -9,6 +9,7 @@
  */
 import { randomUUID } from "crypto";
 import { sql } from "./db";
+import { decrypt, encrypt } from "./encryption";
 
 export type IncidentStatus = "pending" | "under_review" | "resolved" | "dismissed";
 
@@ -75,6 +76,28 @@ function asObject(v: unknown): Record<string, unknown> {
   return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
 }
 
+const ENCRYPTED_JSON = "incident-aes-256-gcm-v1";
+const ENCRYPTED_TEXT = "incident-text-v1:";
+
+function protectJson(value: unknown) {
+  return { encrypted: ENCRYPTED_JSON, ciphertext: encrypt(JSON.stringify(value)) };
+}
+
+function revealJson(value: unknown): unknown {
+  const candidate = asObject(value);
+  if (candidate.encrypted !== ENCRYPTED_JSON || typeof candidate.ciphertext !== "string") return value;
+  return JSON.parse(decrypt(candidate.ciphertext));
+}
+
+function protectText(value: string | null | undefined) {
+  return value ? `${ENCRYPTED_TEXT}${encrypt(value)}` : null;
+}
+
+function revealText(value: string | null) {
+  if (!value?.startsWith(ENCRYPTED_TEXT)) return value;
+  return decrypt(value.slice(ENCRYPTED_TEXT.length));
+}
+
 function rowToReport(r: DbRow): IncidentReport {
   return {
     id: r.id,
@@ -88,11 +111,11 @@ function rowToReport(r: DbRow): IncidentReport {
     incidentDate: r.incident_date,
     incidentTime: r.incident_time,
     city: r.city,
-    specificLocation: r.specific_location,
+    specificLocation: revealText(r.specific_location),
     unitInvolved: r.unit_involved,
-    media: asArray<IncidentMedia>(r.media),
-    adminNotes: asArray<IncidentAdminNote>(r.admin_notes),
-    payload: asObject(r.payload),
+    media: asArray<IncidentMedia>(revealJson(r.media)),
+    adminNotes: asArray<IncidentAdminNote>(revealJson(r.admin_notes)),
+    payload: asObject(revealJson(r.payload)),
     pdfUrl: r.pdf_url,
     emailSentAt: r.email_sent_at,
     createdAt: r.created_at,
@@ -175,10 +198,10 @@ export async function createIncident(input: CreateIncidentInput): Promise<Incide
     VALUES
       (${id}, ${input.authorId},
        ${input.incidentDate ?? null}, ${input.incidentTime ?? null},
-       ${input.city ?? null}, ${input.specificLocation ?? null},
+       ${input.city ?? null}, ${protectText(input.specificLocation)},
        ${input.unitInvolved ?? null},
-       ${JSON.stringify(input.media ?? [])}::jsonb,
-       ${JSON.stringify(input.payload ?? {})}::jsonb)
+       ${JSON.stringify(protectJson(input.media ?? []))}::jsonb,
+       ${JSON.stringify(protectJson(input.payload ?? {}))}::jsonb)
   `;
   const created = await getIncident(id);
   if (!created) throw new Error("Created but not retrievable");
@@ -224,10 +247,13 @@ export async function addAdminNote(input: {
     body: input.body.trim(),
     at: new Date().toISOString(),
   };
+  const incident = await getIncident(input.incidentId);
+  if (!incident) throw new Error("Incident not found");
+  const notes = [...incident.adminNotes, note];
   const db = sql();
   await db`
     UPDATE lounge_incident_reports
-    SET admin_notes = COALESCE(admin_notes, '[]'::jsonb) || ${JSON.stringify(note)}::jsonb,
+    SET admin_notes = ${JSON.stringify(protectJson(notes))}::jsonb,
         updated_at = NOW()
     WHERE id = ${input.incidentId}
   `;

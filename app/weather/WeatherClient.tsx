@@ -18,6 +18,12 @@ const NWS_HEADERS = {
   Accept: "application/geo+json",
 };
 
+async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
+  const response = await fetch(url, init);
+  if (!response.ok) throw new Error(`Weather request failed with ${response.status}`);
+  return response.json();
+}
+
 function mToMiles(m: number | null): number | null {
   if (m == null) return null;
   return Math.round(m / 1609.34 * 10) / 10;
@@ -499,7 +505,7 @@ export default function WeatherClient() {
       if (!ptRes.ok) throw new Error("points failed");
       const pt = await ptRes.json();
 
-      const { forecast: forecastUrl, forecastHourly: _fh, observationStations: stnsUrl } = pt.properties;
+      const forecastUrl = pt.properties.forecast;
 
       // Open-Meteo — real-time model-based conditions, no API key needed
       const OPEN_METEO_URL =
@@ -511,19 +517,21 @@ export default function WeatherClient() {
         "&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America/Chicago";
 
       // Step 2: parallel fetches
-      const [forecastRes, alertsRes, openMeteoRes, obsRes, metarRes] = await Promise.all([
-        fetch(forecastUrl, { headers: NWS_HEADERS }),
-        fetch("https://api.weather.gov/alerts/active?zone=ILC163", { headers: NWS_HEADERS }),
-        fetch(OPEN_METEO_URL),
-        fetch("https://api.weather.gov/stations/KCPS/observations/latest", { headers: NWS_HEADERS }),
-        fetch("/api/metar"),
+      const [forecastResult, alertsResult, openMeteoResult, observationResult, metarResult] = await Promise.allSettled([
+        fetchJson(forecastUrl, { headers: NWS_HEADERS }),
+        fetchJson("https://api.weather.gov/alerts/active?zone=ILC163", { headers: NWS_HEADERS }),
+        fetchJson(OPEN_METEO_URL),
+        fetchJson("https://api.weather.gov/stations/KCPS/observations/latest", { headers: NWS_HEADERS }),
+        fetchJson("/api/metar"),
       ]);
 
-      const [forecastData, alertsData, openMeteoData] = await Promise.all([
-        forecastRes.json(),
-        alertsRes.json(),
-        openMeteoRes.json(),
-      ]);
+      const forecastData = forecastResult.status === "fulfilled" ? forecastResult.value as { properties?: { periods?: Period[] } } : null;
+      const alertsData = alertsResult.status === "fulfilled" ? alertsResult.value as { features?: Alert[] } : null;
+      const openMeteoData = openMeteoResult.status === "fulfilled" ? openMeteoResult.value as { current?: Record<string, number | null> } : null;
+
+      if (!forecastData && !openMeteoData) {
+        throw new Error("Primary weather services unavailable");
+      }
 
       // Parse Open-Meteo current conditions
       const om = openMeteoData?.current ?? {};
@@ -542,15 +550,15 @@ export default function WeatherClient() {
 
       // NWS observation — cloudLayers fallback
       let observation: Observation | null = null;
-      if (obsRes.ok) {
-        const obsData = await obsRes.json();
+      if (observationResult.status === "fulfilled") {
+        const obsData = observationResult.value as { properties?: Observation };
         observation = obsData.properties ?? null;
       }
 
       // METAR — primary ceiling source
       let metar: MetarData | null = null;
-      if (metarRes.ok) {
-        const metarArr = await metarRes.json();
+      if (metarResult.status === "fulfilled") {
+        const metarArr = metarResult.value;
         const m = Array.isArray(metarArr) ? metarArr[0] : null;
         if (m) {
           metar = {
@@ -570,11 +578,11 @@ export default function WeatherClient() {
       }
 
       setData({
-        alerts: alertsData.features ?? [],
+        alerts: alertsData?.features ?? [],
         current,
         observation,
         metar,
-        periods: forecastData.properties?.periods ?? [],
+        periods: forecastData?.properties?.periods ?? [],
         fetchedAt: new Date(),
       });
       setStatus("ok");
@@ -598,7 +606,7 @@ export default function WeatherClient() {
 
   if (status === "error") return (
     <div className="wrap py-20 text-center">
-      <p className="text-slate-400 text-lg">Could not load weather data. NWS may be temporarily unavailable.</p>
+      <p className="text-slate-400 text-lg">Weather services are temporarily unavailable.</p>
       <button onClick={fetchAll} className="mt-6 px-8 py-4 bg-[#071428] border border-white/8 hover:border-[#f0b429]/40 text-white rounded-2xl font-bold transition-colors">
         Try Again
       </button>

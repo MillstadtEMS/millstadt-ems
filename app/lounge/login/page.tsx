@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 
 /**
  * Pull a ?next= path off the URL and only honor it if it's a relative
- * path inside the lounge (so an attacker can't redirect to a foreign
+ * approved internal path (so an attacker can't redirect to a foreign
  * host via the login screen).
  */
 function safeNext(raw: string | null): string {
   if (!raw) return "/lounge";
   if (!raw.startsWith("/") || raw.startsWith("//")) return "/lounge";
-  if (!raw.startsWith("/lounge")) return "/lounge";
+  if (!raw.startsWith("/lounge") && raw !== "/admin" && !raw.startsWith("/admin/")) return "/lounge";
   return raw;
 }
 import { startAuthentication as browserStartAuthentication } from "@simplewebauthn/browser";
@@ -247,7 +247,12 @@ export default function LoungeLogin() {
               {loading ? "Checking…" : "Continue"}
             </button>
 
-            <BiometricSignIn router={router} setError={setError} />
+            <BiometricSignIn
+              router={router}
+              setError={setError}
+              username={username}
+              next={next}
+            />
           </form>
         )}
 
@@ -379,95 +384,8 @@ export default function LoungeLogin() {
           Don&apos;t have your password? Contact management.
         </p>
 
-        {process.env.NEXT_PUBLIC_LOUNGE_DEV_LOGIN === "true" && <DevShortcut />}
       </div>
     </div>
-  );
-}
-
-function DevShortcut() {
-  const router = useRouter();
-  const [pin, setPin] = useState("");
-  const [busy, setBusy] = useState<"admin" | "employee" | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const [handingOff, setHandingOff] = useState(false);
-
-  async function login(role: "admin" | "employee") {
-    setErr(null);
-    setBusy(role);
-    try {
-      const r = await fetch("/api/lounge/dev-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin: pin.trim(), role }),
-      });
-      const d = await r.json();
-      if (!r.ok) { setErr(d.error || "Login failed"); return; }
-      try { sessionStorage.setItem("lounge:welcome", "1"); } catch {}
-      setHandingOff(true);
-      router.push("/lounge");
-    } catch {
-      setErr("Connection error");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  return (
-    <>
-    {handingOff && (
-      <div
-        aria-hidden
-        style={{ position: "fixed", inset: 0, background: "#000", zIndex: 99999 }}
-      />
-    )}
-    <div
-      style={{
-        marginTop: 22,
-        padding: 14,
-        border: "1px dashed rgba(240,180,41,0.25)",
-        borderRadius: 12,
-        background: "rgba(240,180,41,0.04)",
-      }}
-    >
-      <div style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.20em", textTransform: "uppercase", marginBottom: 6 }}>
-        Dev Shortcut
-      </div>
-      <p style={{ color: "#94a3b8", fontSize: 12, margin: "0 0 10px" }}>
-        Enter the dev PIN to skip 2FA while building.
-      </p>
-      <input
-        type="password"
-        inputMode="numeric"
-        autoComplete="off"
-        value={pin}
-        onChange={(e) => setPin(e.target.value)}
-        placeholder="Dev PIN"
-        style={{ ...inputStyle, padding: "10px 12px", fontSize: 14, letterSpacing: "0.3em", textAlign: "center" }}
-      />
-      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-        <button
-          type="button"
-          onClick={() => login("admin")}
-          disabled={!pin || busy !== null}
-          style={{ flex: 1, padding: "10px 12px", background: "#f0b429", color: "#040d1a", border: 0, borderRadius: 10, fontWeight: 900, fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", cursor: !pin || busy ? "not-allowed" : "pointer", opacity: !pin || busy ? 0.5 : 1, fontFamily: "inherit" }}
-        >
-          {busy === "admin" ? "…" : "Admin"}
-        </button>
-        <button
-          type="button"
-          onClick={() => login("employee")}
-          disabled={!pin || busy !== null}
-          style={{ flex: 1, padding: "10px 12px", background: "rgba(255,255,255,0.06)", color: "#cbd5e1", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 10, fontWeight: 900, fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", cursor: !pin || busy ? "not-allowed" : "pointer", opacity: !pin || busy ? 0.5 : 1, fontFamily: "inherit" }}
-        >
-          {busy === "employee" ? "…" : "Employee"}
-        </button>
-      </div>
-      {err && (
-        <p style={{ color: "#fca5a5", fontSize: 12, marginTop: 8, marginBottom: 0 }}>{err}</p>
-      )}
-    </div>
-    </>
   );
 }
 
@@ -673,9 +591,13 @@ const authGuideLink: React.CSSProperties = {
 function BiometricSignIn({
   router,
   setError,
+  username,
+  next,
 }: {
   router: ReturnType<typeof useRouter>;
   setError: (msg: string) => void;
+  username: string;
+  next: string;
 }) {
   const [supported, setSupported] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -693,7 +615,7 @@ function BiometricSignIn({
       const startRes = await fetch("/api/lounge/webauthn/assert-start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ username: username.trim() || undefined }),
       });
       if (!startRes.ok) {
         setError("Biometric sign-in unavailable.");
@@ -711,7 +633,8 @@ function BiometricSignIn({
         setError(data.error || "Biometric sign-in failed.");
         return;
       }
-      router.push("/lounge");
+      try { sessionStorage.setItem("lounge:welcome", "1"); } catch {}
+      router.push(next);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Biometric sign-in cancelled.";
       // User-cancelled on iOS shows "NotAllowedError"; treat as silent.

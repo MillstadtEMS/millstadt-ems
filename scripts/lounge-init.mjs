@@ -6,7 +6,7 @@
  *
  * Each employee gets:
  *   - username:  firstinitial + lastname (lowercase)
- *   - password:  username + "3935"  (scrypt-hashed)
+ *   - password:  username (scrypt-hashed, one-time bootstrap only)
  *   - must_change_password = TRUE
  *   - is_admin = TRUE for kjames + jgoetz only
  *
@@ -182,7 +182,7 @@ async function seedEmployees() {
   let skipped = 0;
   for (const [first, last, cert] of ROSTER) {
     const username = usernameFor(first, last);
-    const initialPw = `${username}3935`;
+    const initialPw = username;
     const contact = CONTACT[username] ?? {};
     const id = randomUUID();
     const isAdmin = ADMIN_USERNAMES.has(username);
@@ -222,7 +222,7 @@ async function main() {
   console.log("\nInitial passwords (give these out — everyone must change on first login):\n");
   for (const [first, last] of ROSTER) {
     const u = usernameFor(first, last);
-    console.log(`  ${first.padEnd(11)} ${last.padEnd(13)} →  username: ${u.padEnd(13)} password: ${u}3935`);
+    console.log(`  ${first.padEnd(11)} ${last.padEnd(13)} →  username: ${u.padEnd(13)} password: ${u}`);
   }
   console.log("\nDone.");
 }

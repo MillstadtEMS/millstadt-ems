@@ -83,9 +83,6 @@ The scheduled `/api/cron/analytics-retention` route requires the existing `CRON_
 | `ADMIN_PASSWORD` | Existing legacy administrator login secret | Server | Required if legacy admin login is enabled |
 | `ADMIN_PHONE_NUMBER` | Existing SMS approval/admin destination | Server | Required only for that SMS workflow |
 | `LOUNGE_ENCRYPTION_KEY` | Encrypts/signs existing lounge data/session material | Server | Required for lounge production |
-| `LOUNGE_DEV_LOGIN_ENABLED` | Explicit local lounge development-login gate | Server, development only | Optional; false by default |
-| `LOUNGE_DEV_LOGIN_PIN` | Server-only local lounge development PIN | Server, development only | Required only when dev login enabled |
-| `NEXT_PUBLIC_LOUNGE_DEV_LOGIN` | Displays local dev-login UI | Client, development only | Optional; never true production |
 | `TRUCKCHECK_PASSWORD` | Truck-check session signing/credential secret | Server | Required for truck-check production |
 | `INVENTORY_PASSWORD` | Inventory initialization/access secret | Server | Required for inventory production |
 | `APPROVAL_SECRET` | Existing testimonial approval-link signing secret | Server | Required for that workflow |

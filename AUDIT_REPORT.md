@@ -6,7 +6,7 @@ Review date: 2026-08-16. The audit covered the financial hub source, routes, leg
 
 | Severity | Finding and root cause | Fix and regression evidence |
 | --- | --- | --- |
-| High | Existing lounge dev-login route used hardcoded PINs and was intentionally production-capable. | Removed embedded PINs/personal bypass, made route development-only and environment-gated, hid UI by explicit flag, added old-PIN 404 test. |
+| High | Existing lounge dev-login route used hardcoded PINs and was intentionally production-capable. | Removed the route, UI, and environment switches entirely; automated checks require the endpoint to remain absent. |
 | High | Next.js, Nodemailer, transitive HTTP/sanitizer packages, and npm-registry SheetJS had known advisories. | Updated Next/Nodemailer/transitives and installed official SheetJS 0.20.3 tarball. `npm audit` now reports zero vulnerabilities. |
 | High | Restricted requests lacked complete CSRF/same-origin, idempotency, stale-action, and exact document-version enforcement. | Added server request boundary, payload-hash idempotency, expected status/version checks, and viewer version binding; direct tests pass. |
 | High | Real/test delivery configuration could be confused and recipients could be returned/logged. | Production hard-disable, explicit test-sink domain, SMS off, recipient counts only, no recipient API fields; delivery-isolation test passes. |

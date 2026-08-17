@@ -17,7 +17,7 @@ export function disabledFinancialsResponse() {
   return noStoreJson(
     {
       error:
-        `The ${ORGANIZATION_NAME} Financials and Information Request Hub is disabled.`,
+        `The ${ORGANIZATION_NAME} Financial and Other Public Requests hub is disabled.`,
       productionBehavior: "Coming Soon only",
     },
     { status: 404 },

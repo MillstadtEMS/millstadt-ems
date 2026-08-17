@@ -23,7 +23,10 @@ export default async function Home({
 }) {
   const params = await searchParams;
   const isPreview = params?.preview === "ve";
-  const archiveBadge = isFinancialsHubDevelopmentEnabled() ? "DEV PREVIEW" : "COMING SOON";
+  const financialsReadyForTesting = isFinancialsHubDevelopmentEnabled();
+  const financialsBadge = financialsReadyForTesting
+    ? "Ready for testing"
+    : "Under construction";
 
   const [
     eyebrow,
@@ -113,6 +116,15 @@ export default async function Home({
               >
                 {secondaryBtnText}
               </Link>
+              <Link
+                href="/financials-information-hub"
+                className="flex min-h-[70px] min-w-[220px] flex-col items-center justify-center rounded-2xl border-2 border-white/25 bg-[#040d1a]/70 px-8 py-3 text-center font-black text-white backdrop-blur-sm transition-colors hover:border-[#f0b429] hover:text-[#f0b429]"
+              >
+                <span className="text-base">Financial Information</span>
+                <span className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[#f0b429]">
+                  {financialsBadge}
+                </span>
+              </Link>
             </div>
           </div>
 
@@ -168,14 +180,19 @@ export default async function Home({
           >
             <span className="text-center md:text-left">
               <span className="inline-flex rounded-full border border-[#f0b429]/35 bg-[#f0b429]/10 px-3 py-1 text-xs font-black uppercase text-[#f8d980]">
-                {archiveBadge}
+                {financialsBadge}
               </span>
               <span className="mt-3 block text-2xl font-black leading-tight text-white transition-colors group-hover:text-[#f0b429] md:text-3xl">
                 {PUBLIC_FINANCIALS_PAGE_TITLE}
               </span>
+              <span className="mt-2 block text-base leading-7 text-slate-400">
+                {financialsReadyForTesting
+                  ? "Open the complete local financial document workflow."
+                  : "Financial filings and document-access information."}
+              </span>
             </span>
             <span className="inline-flex min-h-12 items-center justify-center gap-3 rounded-2xl bg-[#f0b429] px-6 py-4 text-sm font-black uppercase text-[#040d1a] transition group-hover:bg-[#ffd45c] md:justify-self-end">
-              View Page
+              Open page
               <SiteIcon name="external" className="h-4 w-4 transition group-hover:translate-x-1" />
             </span>
           </Link>

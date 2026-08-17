@@ -2,10 +2,10 @@ import { createHash, randomBytes } from "crypto";
 import { existsSync, readFileSync } from "fs";
 import path from "path";
 import { signedAgreementPdf, type AgreementSignature } from "./agreement-pdf";
+import { managedRestrictedDocuments } from "./document-library";
 import {
   ACCEPTED_BUTTON_TEXT,
   ACCEPTED_CHECKBOX_TEXT,
-  AI_NOTICE_VERSION,
   FINAL_SUBMISSION_CONFIRMATION_TEXT,
   ORGANIZATION_NAME,
   PRIVACY_VERSION,
@@ -158,7 +158,7 @@ const seedRequest: AccessRequestRecord = {
   userId: "MAS-DEV-USER-FLAGGED",
   requestKind: "published_document_access",
   fullLegalName: "Anonymous Test User",
-  mailingAddress: "123 Placeholder Lane",
+  mailingAddress: "123 Test Record Way",
   addressLine2: "",
   city: "Testville",
   state: "IL",
@@ -171,7 +171,6 @@ const seedRequest: AccessRequestRecord = {
   status: "pending",
   submittedAtUtc: "2026-08-16T14:00:00.000Z",
   termsVersion: TERMS_VERSION,
-  aiNoticeVersion: AI_NOTICE_VERSION,
   privacyVersion: PRIVACY_VERSION,
   acceptedCheckboxText: ACCEPTED_CHECKBOX_TEXT,
   acceptedButtonText: ACCEPTED_BUTTON_TEXT,
@@ -187,10 +186,10 @@ const seedRequest: AccessRequestRecord = {
   requestVersion: "sha256:dev-seed-request-version",
   releaseIds: [],
   flags: [
-    "Name appears anonymous or placeholder-like.",
+    "Name appears anonymous or test-like.",
     "Email domain is reserved for testing.",
     "Phone or identity details are not independently verified in this prototype.",
-    "Address appears placeholder-like.",
+    "Address appears test-like.",
   ],
 };
 
@@ -203,7 +202,6 @@ const seedAudit: AuditEvent[] = [
     requestId: seedRequest.id,
     termsVersion: TERMS_VERSION,
     privacyVersion: PRIVACY_VERSION,
-    aiNoticeVersion: AI_NOTICE_VERSION,
     ipAddress: "127.0.0.1",
     userAgent: "Synthetic development seed",
     result: "recorded",
@@ -282,7 +280,7 @@ export function snapshot() {
 }
 
 export function catalog(): CatalogDocument[] {
-  return SYNTHETIC_DOCUMENTS.map(({ pages, ...doc }) => ({
+  return restrictedDocuments().map(({ pages, ...doc }) => ({
     ...doc,
     pageCount: pages.length,
     accessStatement: "Access requires administrator approval.",
@@ -357,7 +355,6 @@ export function createAccessRequest(input: CreateRequestInput, context: AuditCon
     status: "pending",
     submittedAtUtc: now,
     termsVersion: TERMS_VERSION,
-    aiNoticeVersion: AI_NOTICE_VERSION,
     privacyVersion: PRIVACY_VERSION,
     acceptedCheckboxText: ACCEPTED_CHECKBOX_TEXT,
     acceptedButtonText: ACCEPTED_BUTTON_TEXT,
@@ -405,7 +402,6 @@ export function createAccessRequest(input: CreateRequestInput, context: AuditCon
     requestId: request.id,
     termsVersion: TERMS_VERSION,
     privacyVersion: PRIVACY_VERSION,
-    aiNoticeVersion: AI_NOTICE_VERSION,
     result: "recorded",
     reason: "Signed electronic acknowledgment recorded.",
     context,
@@ -416,7 +412,6 @@ export function createAccessRequest(input: CreateRequestInput, context: AuditCon
     requestId: request.id,
     termsVersion: TERMS_VERSION,
     privacyVersion: PRIVACY_VERSION,
-    aiNoticeVersion: AI_NOTICE_VERSION,
     documentHash: request.agreementHash,
     result: "recorded",
     reason: `${signature.method === "drawn" ? "Drawn" : "Typed"} electronic signature captured and signed agreement PDF generated.`,
@@ -428,7 +423,6 @@ export function createAccessRequest(input: CreateRequestInput, context: AuditCon
     requestId: request.id,
     termsVersion: TERMS_VERSION,
     privacyVersion: PRIVACY_VERSION,
-    aiNoticeVersion: AI_NOTICE_VERSION,
     result: "recorded",
     reason: `Submitted access request for ${selectedDocIds.length} listed document(s).`,
     context,
@@ -753,6 +747,29 @@ export function auditEvents() {
   return store().auditEvents;
 }
 
+export function recordDocumentLibraryEvent(
+  input: {
+    eventType: "document_uploaded" | "document_archived" | "document_restored";
+    documentId: string;
+    documentVersion?: string;
+    documentHash?: string;
+    reason: string;
+  },
+  context: AuditContext,
+) {
+  recordAudit({
+    eventType: input.eventType,
+    userId: DEVELOPMENT_ADMIN_ID,
+    administratorId: DEVELOPMENT_ADMIN_ID,
+    documentId: input.documentId,
+    documentVersion: input.documentVersion,
+    documentHash: input.documentHash,
+    result: "recorded",
+    reason: input.reason,
+    context,
+  });
+}
+
 export function getAccessRequest(requestId: string) {
   return store().requests.find((request) => request.id === requestId) ?? null;
 }
@@ -864,7 +881,6 @@ export function recordAdminNotificationResult(
     requestId: request.id,
     termsVersion: request.termsVersion,
     privacyVersion: request.privacyVersion,
-    aiNoticeVersion: request.aiNoticeVersion,
     result: "recorded",
     reason: `Admin notification email=${input.emailSent ? "sent" : "skipped"} to ${input.emailRecipients.length} configured test recipient(s); sms=${input.smsSent ? "sent" : "skipped"}.`,
     context,
@@ -889,7 +905,6 @@ export function recordRequesterNotificationResult(
     requestId: request.id,
     termsVersion: request.termsVersion,
     privacyVersion: request.privacyVersion,
-    aiNoticeVersion: request.aiNoticeVersion,
     result: "recorded",
     reason: `Requester ${input.notificationType === "signed_copy" ? "signed-copy" : "decision"} email=${input.emailSent ? "sent" : "skipped"}; recipient=${input.recipientAllowed ? "allowed test recipient" : "outside test allowlist"}.`,
     context,
@@ -897,7 +912,11 @@ export function recordRequesterNotificationResult(
 }
 
 export function findDocument(documentId: string) {
-  return SYNTHETIC_DOCUMENTS.find((doc) => doc.id === documentId);
+  return restrictedDocuments().find((doc) => doc.id === documentId);
+}
+
+function restrictedDocuments() {
+  return [...SYNTHETIC_DOCUMENTS, ...managedRestrictedDocuments()];
 }
 
 export function auditContextFromHeaders(headers: Headers): AuditContext {
@@ -1045,16 +1064,16 @@ function flagSubmission(input: CreateRequestInput) {
   const zip = cleanString(input.postalCode);
 
   if (/(anonymous|fake|test|asdf|unknown|n\/a|none|john doe|jane doe)/.test(name)) {
-    flags.push("Name appears anonymous or placeholder-like.");
+    flags.push("Name appears anonymous or test-like.");
   }
   if (email.endsWith(".test") || email.includes("example") || email.includes("fake")) {
-    flags.push("Email domain appears reserved or placeholder-like.");
+    flags.push("Email domain appears reserved or test-like.");
   }
   if (/(placeholder|unknown|fake|test|n\/a|none)/i.test(address)) {
-    flags.push("Address appears placeholder-like.");
+    flags.push("Address appears test-like.");
   }
   if (/(testville|nowhere|unknown|fake)/i.test(city)) {
-    flags.push("City appears placeholder-like.");
+    flags.push("City appears test-like.");
   }
   if (!/^\d{5}(-\d{4})?$/.test(zip) || /^0+$/.test(zip.replace(/\D/g, ""))) {
     flags.push("ZIP code appears incomplete or invalid.");
@@ -1203,7 +1222,6 @@ function recordAudit(input: {
   releaseId?: string;
   termsVersion?: string;
   privacyVersion?: string;
-  aiNoticeVersion?: string;
   documentHash?: string;
   result: AuditEvent["result"];
   reason: string;
@@ -1221,7 +1239,6 @@ function recordAudit(input: {
     releaseId: input.releaseId,
     termsVersion: input.termsVersion,
     privacyVersion: input.privacyVersion,
-    aiNoticeVersion: input.aiNoticeVersion,
     ipAddress: input.context.ipAddress,
     userAgent: input.context.userAgent,
     result: input.result,

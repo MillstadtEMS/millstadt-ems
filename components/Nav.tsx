@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronDown, ChevronRight, X } from "lucide-react";
 
 // ── Menu structure ──────────────────────────────────────────────────────────
 
 const MENU_GROUPS = [
   {
     heading: "About Us",
+    description: "Our agency, people, capabilities, and service.",
     color: "text-blue-400",
     links: [
       { href: "/about",               label: "Who We Are" },
@@ -24,6 +26,7 @@ const MENU_GROUPS = [
   },
   {
     heading: "What's Happening",
+    description: "Community programs, events, news, and notices.",
     color: "text-[#f0b429]",
     links: [
       { href: "/events",          label: "Events Calendar" },
@@ -36,23 +39,20 @@ const MENU_GROUPS = [
   },
   {
     heading: "Help & Resources",
+    description: "Billing, forms, public information, and local resources.",
     color: "text-purple-400",
     links: [
       { href: "/weather",  label: "Weather" },
       { href: "/traffic",  label: "Traffic" },
       { href: "/donate",   label: "Donate" },
       { href: "/billing",  label: "Pay My Bill" },
+      { href: "/financials-information-hub", label: "Financial Information" },
       { href: "/forms",    label: "Forms" },
       { href: "/links",    label: "Important Links" },
       { href: "/movies",   label: "EMS in Crisis" },
+      { href: "/contact",  label: "Contact Us" },
     ],
   },
-];
-
-const QUICK_LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/contact", label: "Contact Us" },
-  { href: "/lounge", label: "Employee Lounge", featured: true },
 ];
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -60,8 +60,12 @@ const QUICK_LINKS = [
 export default function Nav() {
   const pathname = usePathname();
   const [open, setOpen]               = useState(false);
+  const [activeGroup, setActiveGroup] = useState(MENU_GROUPS[0].heading);
+  const [expandedMobileGroup, setExpandedMobileGroup] = useState<string | null>(MENU_GROUPS[0].heading);
   const [dispatchFlash, setDispatchFlash] = useState(false);
   const [showBoardMinutes, setShowBoardMinutes] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -77,9 +81,36 @@ export default function Nav() {
 
   // Close on route change
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => setOpen(false));
+    const frame = window.requestAnimationFrame(() => {
+      setOpen(false);
+      const currentGroup = MENU_GROUPS.find(group =>
+        group.links.some(link => link.href === "/" ? pathname === "/" : pathname.startsWith(link.href)),
+      );
+      if (currentGroup) {
+        setActiveGroup(currentGroup.heading);
+        setExpandedMobileGroup(currentGroup.heading);
+      }
+    });
     return () => window.cancelAnimationFrame(frame);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    function closeOnOutsideClick(event: MouseEvent) {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) setOpen(false);
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      menuButtonRef.current?.focus();
+    }
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
 
   useEffect(() => {
     let alive = true;
@@ -90,8 +121,32 @@ export default function Nav() {
     return () => { alive = false; };
   }, []);
 
+  const linksForGroup = (heading: string) => {
+    const group = MENU_GROUPS.find(item => item.heading === heading) ?? MENU_GROUPS[0];
+    return group.heading === "What's Happening" && showBoardMinutes
+      ? [...group.links, { href: "/board-minutes", label: "Board Minutes" }]
+      : group.links;
+  };
+
+  const selectedGroup = MENU_GROUPS.find(group => group.heading === activeGroup) ?? MENU_GROUPS[0];
+
+  function toggleMenu() {
+    if (!open) {
+      const currentGroup = MENU_GROUPS.find(group =>
+        linksForGroup(group.heading).some(link =>
+          link.href === "/" ? pathname === "/" : pathname.startsWith(link.href),
+        ),
+      );
+      if (currentGroup) {
+        setActiveGroup(currentGroup.heading);
+        setExpandedMobileGroup(currentGroup.heading);
+      }
+    }
+    setOpen(current => !current);
+  }
+
   return (
-    <header className="mems-site-nav fixed top-[46px] left-0 right-0 z-50">
+    <header ref={navRef} className="mems-site-nav fixed top-[46px] left-0 right-0 z-50">
 
       {/* ── Nav bar ── */}
       <div className="mems-nav-bar bg-[#020912] border-b border-white/8" style={{ overflow: "visible" }}>
@@ -140,14 +195,18 @@ export default function Nav() {
           {/* Ambulance menu button */}
           <div className="flex shrink-0 flex-col items-center">
             <button
-              onClick={() => setOpen(v => !v)}
+              ref={menuButtonRef}
+              type="button"
+              onClick={toggleMenu}
               className="ambo-menu-btn relative flex flex-col items-center outline-none"
-              aria-label="Toggle menu"
+              aria-label={open ? "Close menu" : "Open menu"}
+              aria-expanded={open}
+              aria-controls="site-navigation-panel"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               {/* Lights animate while the menu is open or a dispatch flashes.
                   Desktop hover glow is CSS-only (.ambo-menu-btn:hover under
                   @media hover:hover) so they can't stick on after a touch. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/images/millstadt-ems/cartoon-ambo.png"
                 alt=""
@@ -164,64 +223,150 @@ export default function Nav() {
 
       {/* ── Dropdown menu ── */}
       <div className={`overflow-hidden transition-all duration-300 ${open ? "max-h-[90vh]" : "max-h-0"}`}>
-        <div className="mems-nav-panel bg-[#030c1a]/99 backdrop-blur-md border-b border-white/8 overflow-y-auto" style={{ maxHeight: "80vh" }}>
-          <div className="wrap py-5">
-
-            {/* Quick links row */}
-            <div className="flex flex-wrap gap-2 mb-5 pb-5 border-b border-white/6">
-              {QUICK_LINKS.map(l => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  onClick={() => setOpen(false)}
-                  className={`px-5 py-2.5 rounded-xl font-black text-sm transition-colors border ${
-                    l.featured
-                      ? "bg-[#f0b429] text-[#040d1a] border-[#f0b429] hover:bg-[#fcd34d]"
-                      : isActive(l.href)
-                      ? "bg-[#f0b429]/10 text-[#f0b429] border-[#f0b429]/20"
-                      : "text-slate-300 hover:text-white border-white/10 hover:border-white/20 hover:bg-white/5"
-                  }`}
-                >
-                  {l.label}
-                </Link>
-              ))}
-            </div>
-
-            {/* Group grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-              {MENU_GROUPS.map(group => {
-                const links = group.heading === "What's Happening" && showBoardMinutes
-                  ? [...group.links, { href: "/board-minutes", label: "Board Minutes" }]
-                  : group.links;
-                return (
-                <div key={group.heading}>
-                  {/* Section heading */}
-                  <div className={`text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${group.color}`}>
-                    {group.heading}
-                  </div>
-
-                  <div className="space-y-0.5">
-                    {links.map(l => (
-                      <Link
-                        key={l.href}
-                        href={l.href}
-                        onClick={() => setOpen(false)}
-                        className={`flex items-center px-3 py-2.5 rounded-xl font-semibold text-sm transition-colors ${
-                          isActive(l.href)
-                            ? "text-[#f0b429] bg-[#f0b429]/8"
-                            : "text-slate-400 hover:text-white hover:bg-white/5"
+        <nav
+          id="site-navigation-panel"
+          aria-label="Primary navigation"
+          className="mems-nav-panel bg-[#030c1a]/99 backdrop-blur-md border-b border-white/8 overflow-y-auto"
+          style={{ maxHeight: "80vh" }}
+        >
+          <div className="wrap py-4 md:py-5">
+            {/* Desktop: compact vertical category rail with one visible group. */}
+            <div className="mx-auto hidden max-w-[980px] overflow-hidden rounded-lg border border-white/10 bg-[#061120] shadow-[0_24px_70px_rgba(0,0,0,0.48)] md:grid md:grid-cols-[260px_minmax(0,1fr)]">
+              <div className="border-r border-white/10 bg-[#020912] p-3">
+                <div className="mb-3 flex items-center justify-between px-2 py-1">
+                  <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Explore</span>
+                </div>
+                <div className="grid gap-2">
+                  {MENU_GROUPS.map(group => {
+                    const selected = group.heading === activeGroup;
+                    return (
+                      <button
+                        key={group.heading}
+                        type="button"
+                        onClick={() => setActiveGroup(group.heading)}
+                        aria-expanded={selected}
+                        aria-controls="desktop-navigation-links"
+                        className={`group min-h-[72px] w-full rounded-md border px-4 py-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b429] ${
+                          selected
+                            ? "border-[#f0b429]/35 bg-[#f0b429]/10 text-white"
+                            : "border-transparent text-slate-300 hover:border-white/10 hover:bg-white/5 hover:text-white"
                         }`}
                       >
-                        {l.label}
-                      </Link>
-                    ))}
-                  </div>
+                        <span className="flex items-center justify-between gap-3 text-[17px] font-extrabold">
+                          {group.heading}
+                          <ChevronRight aria-hidden size={18} className={selected ? "text-[#f0b429]" : "text-slate-600 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-300"} />
+                        </span>
+                        <span className="mt-1 block text-[13px] leading-5 text-slate-500 group-hover:text-slate-400">
+                          {group.description}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
-              );})}
+              </div>
+
+              <div id="desktop-navigation-links" className="min-w-0 p-6 lg:p-7">
+                <div className="mb-5 flex items-start justify-between gap-5 border-b border-white/8 pb-4">
+                  <div>
+                    <div className={`text-xs font-black uppercase tracking-[0.18em] ${selectedGroup.color}`}>Directory</div>
+                    <h2 className="mt-1 text-2xl font-black text-white">{selectedGroup.heading}</h2>
+                    <p className="mt-1 text-[15px] leading-6 text-slate-400">{selectedGroup.description}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      menuButtonRef.current?.focus();
+                    }}
+                    aria-label="Close menu"
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-white/10 text-slate-400 transition-colors hover:border-white/20 hover:bg-white/5 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b429]"
+                  >
+                    <X aria-hidden size={20} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {linksForGroup(selectedGroup.heading).map(link => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setOpen(false)}
+                      aria-current={isActive(link.href) ? "page" : undefined}
+                      className={`group flex min-h-12 items-center justify-between gap-3 rounded-md border px-4 py-3 text-[17px] font-bold leading-6 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b429] ${
+                        isActive(link.href)
+                          ? "border-[#f0b429]/30 bg-[#f0b429]/10 text-[#f0b429]"
+                          : "border-transparent text-slate-300 hover:border-white/10 hover:bg-white/5 hover:text-white"
+                      }`}
+                    >
+                      <span>{link.label}</span>
+                      <ChevronRight aria-hidden size={17} className="shrink-0 text-slate-600 transition-transform group-hover:translate-x-0.5 group-hover:text-[#f0b429]" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
             </div>
 
+            {/* Mobile/tablet: the same categories become one-open-at-a-time accordions. */}
+            <div className="mx-auto max-w-xl overflow-hidden rounded-lg border border-white/10 bg-[#061120] shadow-[0_20px_55px_rgba(0,0,0,0.48)] md:hidden">
+              <div className="flex items-center justify-between border-b border-white/10 bg-[#020912] px-4 py-3">
+                <div>
+                  <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#f0b429]">Navigation</div>
+                  <div className="text-lg font-black text-white">Explore Millstadt EMS</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close menu"
+                  className="grid h-11 w-11 place-items-center rounded-md border border-white/10 text-slate-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b429]"
+                >
+                  <X aria-hidden size={20} />
+                </button>
+              </div>
+
+              {MENU_GROUPS.map(group => {
+                const selected = group.heading === expandedMobileGroup;
+                return (
+                  <div key={group.heading} className="border-b border-white/8 last:border-b-0">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedMobileGroup(current => current === group.heading ? null : group.heading)}
+                      aria-expanded={selected}
+                      aria-controls={`mobile-navigation-${group.heading.replace(/[^a-z]+/gi, "-").toLowerCase()}`}
+                      className={`flex min-h-14 w-full items-center justify-between gap-4 px-4 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[#f0b429] ${selected ? "bg-white/5 text-white" : "text-slate-300"}`}
+                    >
+                      <span>
+                        <span className="block text-[17px] font-extrabold">{group.heading}</span>
+                        <span className="mt-0.5 block text-[13px] leading-5 text-slate-500">{group.description}</span>
+                      </span>
+                      <ChevronDown aria-hidden size={19} className={`shrink-0 transition-transform ${selected ? "rotate-180 text-[#f0b429]" : "text-slate-500"}`} />
+                    </button>
+                    {selected ? (
+                      <div
+                        id={`mobile-navigation-${group.heading.replace(/[^a-z]+/gi, "-").toLowerCase()}`}
+                        className="grid gap-1 bg-[#020912]/55 px-3 py-3"
+                      >
+                        {linksForGroup(group.heading).map(link => (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            onClick={() => setOpen(false)}
+                            aria-current={isActive(link.href) ? "page" : undefined}
+                            className={`flex min-h-12 items-center justify-between gap-3 rounded-md px-3 py-2.5 text-[16px] font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b429] ${
+                              isActive(link.href) ? "bg-[#f0b429]/10 text-[#f0b429]" : "text-slate-300"
+                            }`}
+                          >
+                            {link.label}
+                            <ChevronRight aria-hidden size={17} className="shrink-0 text-slate-600" />
+                          </Link>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </nav>
       </div>
 
       {/* ── Mobile bottom tab bar ── */}
@@ -337,6 +482,7 @@ function getAlertRank(event: string, severity: string, headline = "", descriptio
 }
 
 function WeatherTicker() {
+  const pathname = usePathname();
   const [alerts, setAlerts] = useState<ProcessedAlert[]>([]);
   const [idx, setIdx]       = useState(0);
   const [hover, setHover]   = useState(false);
@@ -350,6 +496,11 @@ function WeatherTicker() {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setHover(false));
+    return () => window.cancelAnimationFrame(frame);
+  }, [pathname]);
 
   useEffect(() => {
     if (alerts.length <= 1) return;
@@ -425,7 +576,7 @@ function WeatherTicker() {
       style={{ flex: 1, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      onClick={() => canExpand && setHover(v => !v)}
+      onClick={() => compact && canExpand && setHover(v => !v)}
     >
       {/* ── Rotating ticker line — must stay constrained so the long text
           truncates with an ellipsis and never spills over the nav buttons. ── */}

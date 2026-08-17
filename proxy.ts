@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifySessionToken as verifyAdminToken } from "@/lib/admin/auth";
 import { verifySessionToken as verifyTruckCheckToken } from "@/lib/truckcheck/auth";
+import { verifySessionToken as verifyLoungeToken } from "@/lib/lounge/auth";
 
 /**
  * Attach a conservative set of security headers to every response so
@@ -16,6 +16,9 @@ import { verifySessionToken as verifyTruckCheckToken } from "@/lib/truckcheck/au
 function withSecurityHeaders(res: NextResponse, pathname = ""): NextResponse {
   res.headers.set("X-Content-Type-Options", "nosniff");
   res.headers.set("X-Frame-Options", "DENY");
+  res.headers.set("X-Permitted-Cross-Domain-Policies", "none");
+  res.headers.set("X-Download-Options", "noopen");
+  res.headers.set("Origin-Agent-Cluster", "?1");
   res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   res.headers.set(
     "Permissions-Policy",
@@ -26,6 +29,38 @@ function withSecurityHeaders(res: NextResponse, pathname = ""): NextResponse {
       "Strict-Transport-Security",
       "max-age=63072000; includeSubDomains; preload",
     );
+  }
+  const productionUpgrade = process.env.NODE_ENV === "production" ? "; upgrade-insecure-requests" : "";
+  res.headers.set(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      "object-src 'none'",
+      "script-src 'self' 'unsafe-inline'" +
+        (process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"),
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com https://api.weather.gov https://tilecache.rainviewer.com https://*.basemaps.cartocdn.com https://mesonet.agron.iastate.edu",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      "connect-src 'self' https://api.weather.gov https://api.open-meteo.com https://api.rainviewer.com https://tilecache.rainviewer.com",
+      "frame-src 'self' https://calendar.google.com https://embed.waze.com https://www.youtube.com",
+      "media-src 'self' blob:",
+      "worker-src 'self' blob:",
+      `manifest-src 'self'${productionUpgrade}`,
+    ].join("; "),
+  );
+  const protectedPath =
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/lounge") ||
+    pathname.startsWith("/board") ||
+    pathname.startsWith("/inventory") ||
+    pathname.startsWith("/truckcheck") ||
+    pathname.startsWith("/api/");
+  if (protectedPath) {
+    res.headers.set("Cache-Control", "no-store, private");
+    res.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
   }
   if (
     pathname.startsWith("/financials-information-hub") ||
@@ -57,8 +92,14 @@ function withSecurityHeaders(res: NextResponse, pathname = ""): NextResponse {
   return res;
 }
 
-export function proxy(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  if (process.env.NODE_ENV === "production" && req.headers.get("x-forwarded-proto") === "http") {
+    const secureUrl = req.nextUrl.clone();
+    secureUrl.protocol = "https:";
+    return withSecurityHeaders(NextResponse.redirect(secureUrl, 308), pathname);
+  }
 
   if (
     process.env.NODE_ENV === "production" &&
@@ -67,19 +108,32 @@ export function proxy(req: NextRequest) {
     return withSecurityHeaders(new NextResponse("Not found", { status: 404 }), pathname);
   }
 
-  // Protect all /admin/* except /admin/login
-  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
-    const adminToken = req.cookies.get("mas_admin")?.value;
+  // Protect administrator pages and APIs with a verified named Lounge
+  // session. Financial APIs keep their own feature-gated guard so disabled
+  // production routes continue to return 404 without disclosing them.
+  const protectedAdminPage = pathname.startsWith("/admin") && !pathname.startsWith("/admin/login");
+  const protectedAdminApi =
+    pathname.startsWith("/api/admin") &&
+    !pathname.startsWith("/api/admin/login") &&
+    !pathname.startsWith("/api/admin/analytics") &&
+    !pathname.startsWith("/api/admin/financials");
+  if (protectedAdminPage || protectedAdminApi) {
     const loungeToken = req.cookies.get("mas_lounge")?.value;
-    const adminOk = adminToken && verifyAdminToken(adminToken);
-    // Lounge SSO: any active lounge admin gets through middleware. The
-    // /admin routes call isAdminAuthed() which re-verifies the lounge
-    // cookie against the DB and checks isAdmin — so a forged lounge
-    // cookie still can't see admin data, it just gets past the gate.
-    if (!adminOk && !loungeToken) {
+    const employee = loungeToken ? await verifyLoungeToken(loungeToken) : null;
+    const tickerEditorApi =
+      pathname.startsWith("/api/admin/calls") || pathname.startsWith("/api/admin/cad-poll");
+    const authorized = tickerEditorApi ? Boolean(employee?.isActive) : Boolean(employee?.isActive && employee.isAdmin);
+    if (!authorized) {
+      if (protectedAdminApi) {
+        return withSecurityHeaders(
+          NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+          pathname,
+        );
+      }
       const url = req.nextUrl.clone();
-      url.pathname = "/admin/login";
-      url.searchParams.set("from", pathname);
+      url.pathname = "/lounge/login";
+      url.search = "";
+      url.searchParams.set("next", pathname);
       return withSecurityHeaders(NextResponse.redirect(url), pathname);
     }
   }

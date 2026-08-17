@@ -6,7 +6,7 @@
  * outstanding sessions), but identifies employees by username instead of
  * a single shared password.
  */
-import { scryptSync, randomBytes, createHmac } from "crypto";
+import { scryptSync, randomBytes, createHmac, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { sql } from "./db";
 import { encrypt, decrypt } from "./encryption";
@@ -19,7 +19,16 @@ export const LOUNGE_PREAUTH_COOKIE_NAME = "mas_lounge_preauth";
 const PREAUTH_MAX_AGE = 60 * 10; // 10 minutes to finish 2FA
 
 function preauthKey(): string {
-  return `lounge_preauth_${process.env.LOUNGE_ENCRYPTION_KEY ?? "dev"}`;
+  return `lounge_preauth_${sessionKey()}`;
+}
+
+function sessionKey(): string {
+  const configured = process.env.LOUNGE_SESSION_SECRET || process.env.LOUNGE_ENCRYPTION_KEY;
+  if (configured) return configured;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("LOUNGE_SESSION_SECRET or LOUNGE_ENCRYPTION_KEY is required in production");
+  }
+  return "development-only-lounge-session-key";
 }
 
 export function makePreauthToken(employeeId: string): string {
@@ -32,8 +41,13 @@ export function verifyPreauthToken(token: string): { employeeId: string } | null
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   const [empId, ts, sig] = parts;
-  if (Date.now() - Number(ts) > PREAUTH_MAX_AGE * 1000) return null;
-  if (createHmac("sha256", preauthKey()).update(`${empId}.${ts}`).digest("hex") !== sig) return null;
+  const issuedAt = Number(ts);
+  const age = Date.now() - issuedAt;
+  if (!Number.isFinite(issuedAt) || age < -60_000 || age > PREAUTH_MAX_AGE * 1000) return null;
+  const expected = createHmac("sha256", preauthKey()).update(`${empId}.${ts}`).digest("hex");
+  const actualBytes = Buffer.from(sig, "hex");
+  const expectedBytes = Buffer.from(expected, "hex");
+  if (actualBytes.length !== expectedBytes.length || !timingSafeEqual(actualBytes, expectedBytes)) return null;
   return { employeeId: empId };
 }
 
@@ -61,7 +75,9 @@ export function verifyPassword(password: string, stored: string): boolean {
   const [salt, hash] = stored.split(":");
   if (!salt || !hash) return false;
   const testHash = scryptSync(password, salt, 64).toString("hex");
-  return hash === testHash;
+  const actualBytes = Buffer.from(testHash, "hex");
+  const expectedBytes = Buffer.from(hash, "hex");
+  return actualBytes.length === expectedBytes.length && timingSafeEqual(actualBytes, expectedBytes);
 }
 
 // ── Employee record (auth-relevant fields only) ─────────────────────────
@@ -178,17 +194,29 @@ export async function findEmployeeById(
 
 export async function updatePassword(
   employeeId: string,
+  expectedPasswordHash: string,
   newPassword: string,
-): Promise<void> {
+): Promise<boolean> {
   const hash = hashPassword(newPassword);
   const db = sql();
-  await db`
+  const rows = (await db`
     UPDATE lounge_employees
     SET password_hash = ${hash},
         must_change_password = FALSE,
         updated_at = NOW()
-    WHERE id = ${employeeId}
-  `;
+    WHERE id = ${employeeId} AND password_hash = ${expectedPasswordHash}
+    RETURNING id
+  `) as unknown as { id: string }[];
+  return rows.length === 1;
+}
+
+export function permanentPasswordError(password: string, username: string): string | null {
+  if (password.length < 12) return "New password must be at least 12 characters";
+  if (password.length > 128) return "New password must be 128 characters or fewer";
+  if (password.trim().toLowerCase() === username.trim().toLowerCase()) {
+    return "New password cannot be your username";
+  }
+  return null;
 }
 
 // ── Session token ───────────────────────────────────────────────────────
@@ -197,7 +225,7 @@ export async function updatePassword(
 // outstanding cookie for that user.
 
 function signingSecret(emp: LoungeEmployee): string {
-  return `lounge_${emp.id}_${emp.passwordHash}`;
+  return `${sessionKey()}\nlounge\n${emp.id}\n${emp.passwordHash}`;
 }
 
 function sign(value: string, secret: string): string {
@@ -216,10 +244,14 @@ export async function verifySessionToken(
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   const [empId, ts, sig] = parts;
-  if (Date.now() - Number(ts) > MAX_AGE * 1000) return null;
+  const issuedAt = Number(ts);
+  const age = Date.now() - issuedAt;
+  if (!Number.isFinite(issuedAt) || age < -60_000 || age > MAX_AGE * 1000) return null;
   const emp = await findEmployeeById(empId);
   if (!emp || !emp.isActive) return null;
-  if (sign(`${empId}.${ts}`, signingSecret(emp)) !== sig) return null;
+  const expected = Buffer.from(sign(`${empId}.${ts}`, signingSecret(emp)), "hex");
+  const actual = Buffer.from(sig, "hex");
+  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return null;
   return emp;
 }
 

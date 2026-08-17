@@ -1,16 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import {
+  Archive,
+  ArchiveRestore,
   CheckCircle2,
   Clock,
   Download,
   FileSearch,
   FileSignature,
+  FileText,
+  Globe2,
+  LockKeyhole,
   RefreshCw,
   RotateCcw,
   Search,
   ShieldCheck,
+  Upload,
   XCircle,
 } from "lucide-react";
 import {
@@ -25,6 +31,7 @@ import {
   type CatalogDocument,
   type RequestStatus,
 } from "@/lib/financials-hub/types";
+import type { ManagedDocumentRecord } from "@/lib/financials-hub/document-library";
 import FinancialsPrivacyShield from "@/app/financials-information-hub/FinancialsPrivacyShield";
 
 type DecisionDraft = {
@@ -64,6 +71,12 @@ export default function FinancialsAdminReview() {
   const [accuracyReports, setAccuracyReports] = useState<AccuracyReportRecord[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [docs, setDocs] = useState<CatalogDocument[]>([]);
+  const [managedDocs, setManagedDocs] = useState<ManagedDocumentRecord[]>([]);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadAccess, setUploadAccess] = useState<ManagedDocumentRecord["access"]>(
+    "restricted",
+  );
+  const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<RequestStatus | "all">("all");
   const [documentFilter, setDocumentFilter] = useState("all");
@@ -105,19 +118,23 @@ export default function FinancialsAdminReview() {
     setLoading(true);
     setMessage("");
     try {
-      const [requestRes, auditRes, catalogRes, reportRes] = await Promise.all([
+      const [requestRes, auditRes, catalogRes, reportRes, documentRes] = await Promise.all([
         fetch("/api/admin/financials/access-requests", { cache: "no-store" }),
         fetch("/api/admin/financials/audit-events", { cache: "no-store" }),
         fetch("/api/financials/documents/catalog", { cache: "no-store" }),
         fetch("/api/admin/financials/accuracy-reports", { cache: "no-store" }),
+        fetch("/api/admin/financials/documents", { cache: "no-store" }),
       ]);
-      if (!requestRes.ok || !auditRes.ok || !reportRes.ok) {
+      if (!requestRes.ok || !auditRes.ok || !reportRes.ok || !documentRes.ok) {
         setMessage("Admin review is unavailable. Sign in with an authorized admin account.");
         return;
       }
       const requestData = (await requestRes.json()) as { requests: AccessRequestRecord[] };
       const auditData = (await auditRes.json()) as { auditEvents: AuditEvent[] };
       const reportData = (await reportRes.json()) as { reports: AccuracyReportRecord[] };
+      const documentData = (await documentRes.json()) as {
+        documents: ManagedDocumentRecord[];
+      };
       const catalogData = catalogRes.ok
         ? ((await catalogRes.json()) as { documents: CatalogDocument[] })
         : { documents: [] };
@@ -125,11 +142,59 @@ export default function FinancialsAdminReview() {
       setAuditEvents(auditData.auditEvents);
       setAccuracyReports(reportData.reports);
       setDocs(catalogData.documents);
+      setManagedDocs(documentData.documents);
       setDrafts((current) => seedDrafts(current, requestData.requests));
       setReportDrafts((current) => seedReportDrafts(current, reportData.reports));
     } finally {
       setLoading(false);
     }
+  }
+
+  async function uploadDocument(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setUploading(true);
+    setMessage("");
+    const form = event.currentTarget;
+    const response = await fetch("/api/admin/financials/documents", {
+      method: "POST",
+      body: new FormData(form),
+    });
+    const data = (await response.json()) as {
+      document?: ManagedDocumentRecord;
+      error?: string;
+    };
+    setUploading(false);
+    if (!response.ok || !data.document) {
+      setMessage(data.error ?? "The document could not be uploaded.");
+      return;
+    }
+    setMessage(`${data.document.title} was added to the document library.`);
+    form.reset();
+    setUploadAccess("restricted");
+    setUploadOpen(false);
+    await refresh();
+  }
+
+  async function setDocumentArchived(document: ManagedDocumentRecord, archived: boolean) {
+    const response = await fetch(`/api/admin/financials/documents/${document.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ archived }),
+    });
+    const data = (await response.json()) as {
+      document?: ManagedDocumentRecord;
+      error?: string;
+    };
+    if (!response.ok || !data.document) {
+      setMessage(data.error ?? "The document library could not be updated.");
+      return;
+    }
+    setMessage(
+      archived
+        ? `${data.document.title} was archived.`
+        : `${data.document.title} was restored.`,
+    );
+    await refresh();
   }
 
   function updateDraft(request: AccessRequestRecord, patch: Partial<DecisionDraft>) {
@@ -231,9 +296,9 @@ export default function FinancialsAdminReview() {
         <div className="wrap financials-hub-wrap financials-compact-hero__inner">
           <div>
             <p className="financials-kicker">Millstadt EMS Admin</p>
-            <h1>Financial Information Review</h1>
+            <h1>Financial and Other Public Requests</h1>
             <p className="financials-hero-copy">
-              Review development document-access requests, approval windows, and audit history.
+              Publish PDFs and review document-access requests.
             </p>
           </div>
           <span className="financials-status financials-status--dev">
@@ -244,6 +309,167 @@ export default function FinancialsAdminReview() {
 
       <section className="financials-workspace">
         <div className="wrap financials-hub-wrap financials-workspace__stack">
+          <section className="financials-panel financials-admin-library">
+            <div className="financials-section-head">
+              <div>
+                <p className="financials-kicker">Document library</p>
+                <h2>Published documents</h2>
+              </div>
+              <button
+                className="financials-primary-button"
+                type="button"
+                onClick={() => setUploadOpen((current) => !current)}
+                aria-expanded={uploadOpen}
+                aria-controls="financial-document-upload"
+              >
+                <Upload aria-hidden="true" />
+                Add PDF
+              </button>
+            </div>
+
+            {uploadOpen && (
+              <form
+                id="financial-document-upload"
+                className="financials-admin-upload"
+                onSubmit={uploadDocument}
+              >
+                <div className="financials-admin-upload__intro">
+                  <FileText aria-hidden="true" />
+                  <div>
+                    <h3>Add a document</h3>
+                    <p>
+                      Public Form 990s are immediately available. Restricted documents
+                      remain blocked until an administrator approves a signed request.
+                    </p>
+                  </div>
+                </div>
+                <div className="financials-form-grid">
+                  <label className="financials-field financials-field--full">
+                    <span>Access</span>
+                    <select
+                      name="access"
+                      value={uploadAccess}
+                      onChange={(event) =>
+                        setUploadAccess(event.target.value as ManagedDocumentRecord["access"])
+                      }
+                    >
+                      <option value="restricted">Request and approval required</option>
+                      <option value="public_form_990">Public Form 990</option>
+                    </select>
+                  </label>
+                  <label className="financials-field financials-field--full">
+                    <span>Document title</span>
+                    <input name="title" required maxLength={160} />
+                  </label>
+                  <label className="financials-field">
+                    <span>Category</span>
+                    <select name="category" defaultValue="Financial report">
+                      <option>Financial report</option>
+                      <option>Budget</option>
+                      <option>Audit</option>
+                      <option>Operational</option>
+                    </select>
+                  </label>
+                  <label className="financials-field">
+                    <span>Reporting period</span>
+                    <input name="reportingPeriod" required maxLength={80} />
+                  </label>
+                  {uploadAccess === "public_form_990" && (
+                    <>
+                      <label className="financials-field">
+                        <span>Tax year</span>
+                        <input name="taxYear" required inputMode="numeric" pattern="[0-9]{4}" />
+                      </label>
+                      <label className="financials-field">
+                        <span>Filing year</span>
+                        <input name="filingYear" required inputMode="numeric" pattern="[0-9]{4}" />
+                      </label>
+                    </>
+                  )}
+                  <label className="financials-field">
+                    <span>Version</span>
+                    <input name="version" required maxLength={60} placeholder="1.0" />
+                  </label>
+                  <label className="financials-field">
+                    <span>Publication date</span>
+                    <input name="publicationDate" required type="date" />
+                  </label>
+                  <label className="financials-field financials-field--full">
+                    <span>PDF file</span>
+                    <input name="file" required type="file" accept="application/pdf,.pdf" />
+                    <small>PDF only, up to 20 MB and 200 pages.</small>
+                  </label>
+                </div>
+                <div className="financials-step-actions">
+                  <button
+                    className="financials-secondary-button"
+                    type="button"
+                    onClick={() => setUploadOpen(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button className="financials-primary-button" type="submit" disabled={uploading}>
+                    <Upload aria-hidden="true" />
+                    {uploading ? "Checking PDF" : "Publish document"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="financials-admin-document-list">
+              {managedDocs.length === 0 ? (
+                <p className="financials-admin-empty">No administrator-uploaded documents yet.</p>
+              ) : (
+                managedDocs.map((document) => (
+                  <article className="financials-admin-document" key={document.id}>
+                    <div className="financials-admin-document__icon" aria-hidden="true">
+                      {document.access === "public_form_990" ? <Globe2 /> : <LockKeyhole />}
+                    </div>
+                    <div className="financials-admin-document__body">
+                      <strong>{document.title}</strong>
+                      <span>
+                        {document.id} | {document.reportingPeriod} | Version {document.version} |
+                        {` ${document.pageCount} pages`}
+                      </span>
+                    </div>
+                    <span
+                      className={`financials-pill${document.archivedAtUtc ? " financials-pill--expired" : ""}`}
+                    >
+                      {document.archivedAtUtc
+                        ? "Archived"
+                        : document.access === "public_form_990"
+                          ? "Public Form 990"
+                          : "Request access"}
+                    </span>
+                    <div className="financials-admin-document__actions">
+                      <a
+                        className="financials-secondary-button"
+                        href={`/api/admin/financials/documents/${document.id}/file`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <FileSearch aria-hidden="true" />
+                        View
+                      </a>
+                      <button
+                        className="financials-secondary-button"
+                        type="button"
+                        onClick={() => setDocumentArchived(document, !document.archivedAtUtc)}
+                      >
+                        {document.archivedAtUtc ? (
+                          <ArchiveRestore aria-hidden="true" />
+                        ) : (
+                          <Archive aria-hidden="true" />
+                        )}
+                        {document.archivedAtUtc ? "Restore" : "Archive"}
+                      </button>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+          </section>
+
           <section className="financials-panel">
             <div className="financials-admin-toolbar">
               <label className="financials-field">
@@ -296,7 +522,7 @@ export default function FinancialsAdminReview() {
               </button>
               <button className="financials-secondary-button" type="button" onClick={resetSyntheticData}>
                 <RotateCcw aria-hidden="true" />
-                Reset
+                Reset requests
               </button>
             </div>
             {message && <p className="financials-admin-message">{message}</p>}
@@ -305,7 +531,7 @@ export default function FinancialsAdminReview() {
           <section className="financials-panel">
             <div className="financials-section-head">
               <div>
-                <p className="financials-kicker">Requests</p>
+                <p className="financials-kicker">Financial and other public requests</p>
                 <h2>Admin review</h2>
               </div>
               <span>{loading ? "Loading" : `${filteredRequests.length} shown`}</span>

@@ -1458,7 +1458,6 @@ body {
 .financials-flags,
 .financials-admin-other,
 .financials-admin-docs,
-.financials-ai-notice,
 .financials-approved-row,
 .financials-audit-list > div,
 .financials-inline-notice {
@@ -1603,14 +1602,6 @@ body {
   color: #f8fafc;
 }
 
-.financials-ai-notice {
-  margin-top: 1rem;
-  padding: 1rem;
-  border-color: rgba(34, 211, 238, 0.24);
-  background: rgba(8, 47, 73, 0.28);
-}
-
-.financials-ai-notice h3,
 .financials-status-message h3,
 .financials-error strong,
 .financials-flags strong,
@@ -1621,12 +1612,6 @@ body {
   color: #ffffff;
   font-size: 0.96rem;
   font-weight: 900;
-}
-
-.financials-ai-notice p {
-  margin: 0.65rem 0 0;
-  color: #cbd5e1;
-  line-height: 1.6;
 }
 
 .financials-primary-button,
@@ -1982,10 +1967,6 @@ body {
   background: rgba(120, 53, 15, 0.22);
   color: #fde68a;
   line-height: 1.55;
-}
-
-.financials-ai-notice--viewer {
-  margin: 1rem;
 }
 
 .financials-viewer-page {
@@ -2999,6 +2980,101 @@ body {
   background: linear-gradient(180deg, #ffffff, #eef2ff);
 }
 
+.financials-admin-library {
+  display: grid;
+  gap: 1rem;
+}
+
+.financials-admin-upload {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+.financials-admin-upload__intro {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+}
+
+.financials-admin-upload__intro > svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  flex: 0 0 auto;
+  color: #0891b2;
+}
+
+.financials-admin-upload__intro h3,
+.financials-admin-upload__intro p {
+  margin: 0;
+}
+
+.financials-admin-upload__intro p {
+  margin-top: 0.3rem;
+  color: #475569;
+}
+
+.financials-admin-document-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.financials-admin-document {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 0.85rem;
+  align-items: center;
+  border: 1px solid #d9e2ee;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.85rem;
+}
+
+.financials-admin-document__icon {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: 6px;
+  background: #e8f7fb;
+  color: #0e7490;
+}
+
+.financials-admin-document__icon svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.financials-admin-document__body {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.financials-admin-document__body span {
+  overflow-wrap: anywhere;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.financials-admin-document__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.financials-admin-empty {
+  margin: 0;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  color: #64748b;
+  padding: 1rem;
+  text-align: center;
+}
+
 .financials-admin-toolbar {
   display: grid;
   grid-template-columns: minmax(220px, 1fr) minmax(160px, 0.45fr) minmax(200px, 0.7fr) repeat(3, auto);
@@ -3093,6 +3169,7 @@ body {
   .financials-approved-row,
   .financials-viewer__toolbar,
   .financials-admin-toolbar,
+  .financials-admin-document,
   .financials-admin-table__head,
   .financials-admin-table__row {
     grid-template-columns: 1fr;

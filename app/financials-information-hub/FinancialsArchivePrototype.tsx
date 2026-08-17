@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  BadgeCheck,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -40,17 +39,11 @@ import {
 import {
   ACCEPTED_BUTTON_TEXT,
   ACCEPTED_CHECKBOX_TEXT,
-  ABOUT_ARCHIVE_NOTICE,
-  AI_PROCESSING_NOTICE_CONCLUSION,
-  AI_PROCESSING_NOTICE_INTRO,
-  AI_PROCESSING_USES,
-  CONTROLLED_VIEWING_NOTICE,
   FINAL_SUBMISSION_CONFIRMATION_TEXT,
-  PROVENANCE_NOTICE,
-  PUBLIC_FINANCIALS_PAGE_SUBTITLE,
-  PUBLIC_FINANCIALS_PAGE_TITLE,
+  REQUEST_ADDITIONAL_TERMS_SECTIONS,
   REQUESTER_INFORMATION_NOTICE,
   REQUEST_TERMS_INTRO,
+  REQUEST_TERMS_INTRO_PARAGRAPHS,
   REQUEST_TERMS_SECTIONS,
   REQUEST_TERMS_TEXT,
   RESTRICTED_REQUEST_INTRO,
@@ -92,11 +85,6 @@ type ViewerPage = {
 };
 
 type Form990CatalogState = {
-  heading: string;
-  intro: string[];
-  notice: string[];
-  aiNotice: string[];
-  reviewNotice: string[];
   documents: PublicForm990CatalogItem[];
 };
 
@@ -104,11 +92,6 @@ type SpeechState = {
   id: string | null;
   status: "idle" | "playing" | "paused";
   rate: number;
-};
-
-type NoticeGroup = {
-  heading?: string;
-  paragraphs: string[];
 };
 
 type AccuracyTarget = {
@@ -254,7 +237,6 @@ export default function FinancialsArchivePrototype() {
   const [signature, setSignature] = useState<FinancialsSignature>(emptySignature());
   const [signatureOpen, setSignatureOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
-  const [form990NoticeOpen, setForm990NoticeOpen] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -817,17 +799,7 @@ export default function FinancialsArchivePrototype() {
         <div className="wrap financials-hub-wrap">
           <div className={styles.introPanel}>
             <p className={styles.sectionEyebrow}>Millstadt Ambulance Service</p>
-            <h1>{PUBLIC_FINANCIALS_PAGE_TITLE}</h1>
-            <p>{PUBLIC_FINANCIALS_PAGE_SUBTITLE}</p>
-            <section className={styles.archiveNotice} aria-labelledby="about-archive-heading">
-              <h2 id="about-archive-heading">{ABOUT_ARCHIVE_NOTICE[0]}</h2>
-              {ABOUT_ARCHIVE_NOTICE.slice(1).map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
-              ))}
-            </section>
-            <span className={styles.previewNote}>
-              Development preview - synthetic test documents only.
-            </span>
+            <h1>Financial and Other Public Requests</h1>
           </div>
         </div>
       </header>
@@ -848,7 +820,6 @@ export default function FinancialsArchivePrototype() {
               errors={libraryStep === 1 ? errors : []}
               onToggleForm990={toggleForm990}
               onToggleRestricted={toggleDocument}
-              onOpenPublicNotice={() => setForm990NoticeOpen(true)}
               onContinue={() => {
                 if (!selectedForm990Ids.length && !selectedDocIds.length) {
                   setErrors(["Choose at least one document."]);
@@ -870,8 +841,6 @@ export default function FinancialsArchivePrototype() {
           {libraryStep === 2 && selectedDocs.length > 0 && (
             <RequestAccessSection
               step={requestStep}
-              docs={catalogDocs}
-              selectedDocIds={selectedDocIds}
               selectedDocs={selectedDocs}
               form={form}
               errors={errors}
@@ -879,9 +848,7 @@ export default function FinancialsArchivePrototype() {
               docsById={docsById}
               submittedRequest={submittedRequest}
               refreshing={refreshing}
-              onToggleDocument={toggleDocument}
               onFieldChange={updateForm}
-              onContinue={() => setRequestStep(2)}
               onBack={() => {
                 setErrors([]);
                 setLibraryStep(1);
@@ -891,39 +858,11 @@ export default function FinancialsArchivePrototype() {
               onRefresh={refreshMyRequests}
               onOpenViewer={beginViewer}
               onStartAnother={startAnotherRequest}
-              onReport={(target) => void openAccuracyReport(target)}
             />
           )}
 
         </div>
       </div>
-
-      {form990NoticeOpen && form990Catalog && (
-        <AccessibleModal
-          id="form-990-access-notice"
-          title="About public Form 990 access"
-          onClose={() => {
-            setForm990NoticeOpen(false);
-            stopSpeech();
-          }}
-          closeText="Close"
-        >
-          <ReadAloudControls
-            id="form-990-notice"
-            label="Read this notice aloud"
-            text={form990Catalog.notice.join("\n\n")}
-            speech={speech}
-            onRead={readText}
-            onPause={pauseSpeech}
-            onResume={resumeSpeech}
-            onStop={stopSpeech}
-            onRateChange={(rate) => setSpeech((current) => ({ ...current, rate }))}
-          />
-          <div className="financials-modal-copy">
-            <NoticeText paragraphs={form990Catalog.notice.slice(1)} />
-          </div>
-        </AccessibleModal>
-      )}
 
       {termsOpen && (
         <AccessibleModal
@@ -951,7 +890,6 @@ export default function FinancialsArchivePrototype() {
             onStop={stopSpeech}
             onRateChange={(rate) => setSpeech((current) => ({ ...current, rate }))}
           />
-          <p>{REQUEST_TERMS_INTRO}</p>
           <RequestTermsContent />
 
           {errors.length > 0 && <ErrorMessage errors={errors} />}
@@ -982,16 +920,11 @@ export default function FinancialsArchivePrototype() {
           {signatureOpen && (
             <section className="financials-signature-panel" aria-labelledby="sign-request-title">
               <h3 id="sign-request-title">Sign your request</h3>
-              <p>
-                Your electronic signature will be attached to this request record together with
-                your full name, selected documents, acknowledged terms, and submission details.
-              </p>
               <Field
                 label="Full name"
                 value={signatureFullName}
                 autoComplete="name"
                 required
-                helperText="Enter your full name as it should appear on the request record."
                 onChange={(value) => {
                   setSignatureFullName(value);
                   setAccepted(false);
@@ -999,13 +932,6 @@ export default function FinancialsArchivePrototype() {
                   setSignature(emptySignature(value));
                 }}
               />
-              <div className="financials-notice-text">
-                <h3>Signature</h3>
-                <p>
-                  Sign using your mouse, touch screen, or keyboard. Your signature will be included
-                  in the PDF request record.
-                </p>
-              </div>
               <FinancialsSignaturePad
                 value={signature}
                 legalName={signatureFullName}
@@ -1226,19 +1152,7 @@ function AccuracyReportDialog({
         </div>
       ) : (
         <>
-          <p className="financials-sensitive-notice">{SENSITIVE_CAPTURE_NOTICE}</p>
-          <ReadAloudControls
-            id="accuracy-report-intro"
-            label="Read this notice aloud"
-            text={ACCURACY_REPORT_INTRO.join("\n\n")}
-            speech={speech}
-            onRead={onRead}
-            onPause={onPause}
-            onResume={onResume}
-            onStop={onStop}
-            onRateChange={onRateChange}
-          />
-          <NoticeText paragraphs={ACCURACY_REPORT_INTRO.slice(1)} />
+          <p>{ACCURACY_REPORT_INTRO[1]}</p>
 
           {errors.length > 0 && <ErrorMessage errors={errors} />}
 
@@ -1425,7 +1339,6 @@ function DocumentLibrarySection({
   errors,
   onToggleForm990,
   onToggleRestricted,
-  onOpenPublicNotice,
   onContinue,
   onBack,
   onReport,
@@ -1440,7 +1353,6 @@ function DocumentLibrarySection({
   errors: string[];
   onToggleForm990: (documentId: string) => void;
   onToggleRestricted: (documentId: string) => void;
-  onOpenPublicNotice: () => void;
   onContinue: () => void;
   onBack: () => void;
   onReport: (target: AccuracyTarget) => void;
@@ -1450,15 +1362,9 @@ function DocumentLibrarySection({
     <section className="financials-section" aria-labelledby="document-library-heading">
       <div className="financials-section-heading">
         <div>
-          <p className={styles.sectionEyebrow}>Document library</p>
           <h2 id="document-library-heading">
-            {step === 1 ? "Choose documents" : "Your document selection"}
+            {step === 1 ? "Select documents" : "Selected documents"}
           </h2>
-          <p>
-            {step === 1
-              ? "Select one or more records, then continue. Public filings open immediately; additional documents require review."
-              : "Public filings are ready below. Complete the access request only for selections marked Request access."}
-          </p>
         </div>
         <div className={styles.stepIndicator} aria-label={`Step ${step} of 2`}>
           <span className={styles.stepActive}>1</span>
@@ -1467,33 +1373,24 @@ function DocumentLibrarySection({
         </div>
       </div>
 
-      {step === 2 && selectedRestrictedIds.length > 0 && (
-        <p className="financials-sensitive-notice">{SENSITIVE_CAPTURE_NOTICE}</p>
-      )}
-
       {errors.length > 0 && <ErrorMessage errors={errors} />}
 
       {step === 1 ? (
         <>
-          <details className={styles.documentPicker} open>
-            <summary>
-              <span>
-                <FileText aria-hidden="true" />
-                <strong>Documents</strong>
-              </span>
-              <small>{selectedCount ? `${selectedCount} selected` : "Choose documents"}</small>
-            </summary>
-            <div className={styles.pickerBody}>
-              <div className={styles.pickerGroup}>
-                <div className={styles.pickerGroupHeading}>
-                  <span>
-                    Public Form 990 filings
-                    <button className={styles.reportLink} type="button" onClick={onOpenPublicNotice}>
-                      About public Form 990 access
-                    </button>
-                  </span>
-                  <small>No identification, signature, or approval required</small>
-                </div>
+          <div className={styles.pickerStack}>
+            <details className={styles.documentPicker}>
+              <summary>
+                <span>
+                  <ChevronRight className={styles.pickerChevron} aria-hidden="true" />
+                  <strong>Public Form 990 filings</strong>
+                </span>
+                <small>
+                  {selectedForm990Ids.length
+                    ? `${selectedForm990Ids.length} selected`
+                    : `${catalog.documents.length} available`}
+                </small>
+              </summary>
+              <div className={styles.pickerBody}>
                 {catalog.documents.map((doc) => (
                   <label key={doc.id} className={styles.pickerRow}>
                     <input
@@ -1505,15 +1402,24 @@ function DocumentLibrarySection({
                       <strong>Form 990 - tax year {doc.taxYear}</strong>
                       <small>{doc.title} | Filed {doc.filingDate} | {doc.pageCount} pages</small>
                     </span>
-                    <span className={styles.badge}>Public</span>
                   </label>
                 ))}
               </div>
-              <div className={styles.pickerGroup}>
-                <div className={styles.pickerGroupHeading}>
-                  <span>Additional financial documents</span>
-                  <small>Administrative review required</small>
-                </div>
+            </details>
+
+            <details className={styles.documentPicker}>
+              <summary>
+                <span>
+                  <ChevronRight className={styles.pickerChevron} aria-hidden="true" />
+                  <strong>Additional financial documents</strong>
+                </span>
+                <small>
+                  {selectedRestrictedIds.length
+                    ? `${selectedRestrictedIds.length} selected`
+                    : `${restrictedDocs.length} available`}
+                </small>
+              </summary>
+              <div className={styles.pickerBody}>
                 {restrictedDocs.map((doc) => (
                   <label key={doc.id} className={styles.pickerRow}>
                     <input
@@ -1525,17 +1431,16 @@ function DocumentLibrarySection({
                       <strong>{doc.title}</strong>
                       <small>{doc.category} | {doc.publicationDate} | {doc.pageCount} pages</small>
                     </span>
-                    <span className={`${styles.badge} ${styles.badgeRequest}`}>Request access</span>
                   </label>
                 ))}
               </div>
-            </div>
-          </details>
+            </details>
+          </div>
           <div className={styles.selectionBar}>
             <p>
               {selectedCount
                 ? `${selectedCount} document${selectedCount === 1 ? "" : "s"} selected`
-                : "Nothing selected yet"}
+                : "Select one or more documents"}
             </p>
             <button
               className="financials-primary-button"
@@ -1543,7 +1448,7 @@ function DocumentLibrarySection({
               disabled={!selectedCount}
               onClick={onContinue}
             >
-              Continue
+              {!selectedCount || selectedRestrictedIds.length ? "Request access" : "View selected"}
               <ChevronRight aria-hidden="true" />
             </button>
           </div>
@@ -1554,8 +1459,7 @@ function DocumentLibrarySection({
             <div className={styles.resultGroup}>
               <div className={styles.resultGroupHeading}>
                 <div>
-                  <span className={styles.badge}>Public filings</span>
-                  <h3>Ready to view</h3>
+                  <h3>Public filings</h3>
                 </div>
                 <span>{selectedForm990s.length} selected</span>
               </div>
@@ -1634,8 +1538,7 @@ function DocumentLibrarySection({
             <div className={`${styles.resultGroup} ${styles.resultGroupRestricted}`}>
               <div className={styles.resultGroupHeading}>
                 <div>
-                  <span className={`${styles.badge} ${styles.badgeRequest}`}>Request access</span>
-                  <h3>Administrative review required</h3>
+                  <h3>Restricted documents</h3>
                 </div>
                 <span>{selectedRestrictedDocs.length} selected</span>
               </div>
@@ -1675,8 +1578,6 @@ function DocumentLibrarySection({
 
 function RequestAccessSection({
   step,
-  docs,
-  selectedDocIds,
   selectedDocs,
   form,
   errors,
@@ -1684,19 +1585,14 @@ function RequestAccessSection({
   docsById,
   submittedRequest,
   refreshing,
-  onToggleDocument,
   onFieldChange,
-  onContinue,
   onBack,
   onOpenTerms,
   onRefresh,
   onOpenViewer,
   onStartAnother,
-  onReport,
 }: {
   step: RequestStep;
-  docs: CatalogDocument[];
-  selectedDocIds: string[];
   selectedDocs: CatalogDocument[];
   form: FormState;
   errors: string[];
@@ -1704,15 +1600,12 @@ function RequestAccessSection({
   docsById: Map<string, CatalogDocument>;
   submittedRequest: AccessRequestRecord | null;
   refreshing: boolean;
-  onToggleDocument: (documentId: string) => void;
   onFieldChange: (field: keyof FormState, value: string) => void;
-  onContinue: () => void;
   onBack: () => void;
   onOpenTerms: () => void;
   onRefresh: () => void;
   onOpenViewer: (request: AccessRequestRecord, doc: CatalogDocument) => void;
   onStartAnother: () => void;
-  onReport: (target: AccuracyTarget) => void;
 }) {
   return (
     <section className="financials-section" aria-labelledby="request-access-heading">
@@ -1720,92 +1613,14 @@ function RequestAccessSection({
         <div>
           <p className={styles.sectionEyebrow}>Administrative review</p>
           <h2 id="request-access-heading">{RESTRICTED_REQUEST_INTRO[0]}</h2>
-          {RESTRICTED_REQUEST_INTRO.slice(1).map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
-          ))}
         </div>
       </div>
 
       {errors.length > 0 && <ErrorMessage errors={errors} />}
 
-      {step === 1 && (
-        <div className="financials-request-step">
-          <div className="financials-catalog-grid">
-            {docs.map((doc) => {
-              const selected = selectedDocIds.includes(doc.id);
-              return (
-                <article
-                  key={doc.id}
-                  className={`financials-doc-card ${styles.restrictedCard}`}
-                  aria-label={`${doc.title}${selected ? ", selected" : ""}`}
-                >
-                  <div className={styles.documentTopline}>
-                    <span className={`${styles.badge} ${styles.badgeRequest}`}>Request access</span>
-                    {selected && <BadgeCheck aria-label="Selected" />}
-                  </div>
-                  <div>
-                    <h3>{doc.title}</h3>
-                    <p>{doc.category}</p>
-                  </div>
-                  <dl className={styles.documentMeta}>
-                    <div><dt>Reporting period</dt><dd>{doc.publicationDate.slice(0, 4)}</dd></div>
-                    <div><dt>Published</dt><dd>{doc.publicationDate}</dd></div>
-                    <div><dt>Version</dt><dd>{doc.version}</dd></div>
-                    <div><dt>Length</dt><dd>{doc.pageCount} pages</dd></div>
-                  </dl>
-                  <div className={styles.restrictedCardActions}>
-                    <button
-                      className={selected ? "financials-secondary-button" : "financials-primary-button"}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => onToggleDocument(doc.id)}
-                    >
-                      {selected ? "Selected" : "Request access"}
-                    </button>
-                    <button
-                      className={styles.reportLink}
-                      type="button"
-                      onClick={() =>
-                        onReport({
-                          id: doc.id,
-                          title: doc.title,
-                          version: doc.version,
-                          sourceUrl: "/financials-information-hub",
-                          pageOrSection: "Catalog listing or released document",
-                        })
-                      }
-                    >
-                      Report a concern
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-          <div className={styles.selectionBar}>
-            <p>
-              {selectedDocIds.length
-                ? `${selectedDocIds.length} document${selectedDocIds.length === 1 ? "" : "s"} selected`
-                : "Select one or more documents to continue."}
-            </p>
-            <button
-              className="financials-primary-button"
-              type="button"
-              disabled={!selectedDocIds.length}
-              onClick={onContinue}
-            >
-              Continue with selected documents
-            </button>
-          </div>
-        </div>
-      )}
-
       {step === 2 && (
         <div className="financials-request-step">
           <h3>{REQUESTER_INFORMATION_NOTICE[0]}</h3>
-          {REQUESTER_INFORMATION_NOTICE.slice(1).map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
-          ))}
           <SelectedDocuments docs={selectedDocs} />
           <div className="financials-form-grid">
             <Field
@@ -1869,13 +1684,8 @@ function RequestAccessSection({
           <CheckCircle2 aria-hidden="true" />
           <div>
             <h3>Request submitted</h3>
-            <p>
-              Your restricted-document request has been submitted for administrative review. A PDF
-              request record containing your submitted information, acknowledged terms, full name,
-              and electronic signature has been created for administrator review.
-            </p>
+            <p>Your signed request was sent for administrative review.</p>
             <p>Request ID: <code>{submittedRequest.id}</code></p>
-            <p>Submission does not guarantee access. Millstadt may contact you if clarification is needed.</p>
             <button className="financials-secondary-button" type="button" onClick={onStartAnother}>
               Submit another request
             </button>
@@ -1960,6 +1770,10 @@ function RequestStatusList({
 function RequestTermsContent() {
   return (
     <div className="financials-modal-copy">
+      <section>
+        <h3>{REQUEST_TERMS_INTRO}</h3>
+        {REQUEST_TERMS_INTRO_PARAGRAPHS.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+      </section>
       {REQUEST_TERMS_SECTIONS.map((section) => (
         <section key={section.heading}>
           <h3>{section.heading}</h3>
@@ -1969,19 +1783,19 @@ function RequestTermsContent() {
             </ul>
           )}
           {section.paragraphs?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-          {section.heading === "AI and automated processing" && (
-            <div className="financials-notice-text">
-              <h4>AI-processing notice</h4>
-              <p>{AI_PROCESSING_NOTICE_INTRO}</p>
-              <ul>{AI_PROCESSING_USES.map((item) => <li key={item}>{item}</li>)}</ul>
-              {AI_PROCESSING_NOTICE_CONCLUSION.map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
-              ))}
-            </div>
-          )}
         </section>
       ))}
-      <NoticeText heading={PROVENANCE_NOTICE[0]} paragraphs={PROVENANCE_NOTICE.slice(1)} />
+      <details className="financials-disclosure">
+        <summary>Additional terms and limitations</summary>
+        <div className="financials-disclosure-stack">
+          {REQUEST_ADDITIONAL_TERMS_SECTIONS.map((section) => (
+            <section key={section.heading}>
+              <h3>{section.heading}</h3>
+              {section.paragraphs?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+            </section>
+          ))}
+        </div>
+      </details>
     </div>
   );
 }
@@ -2069,22 +1883,6 @@ function AccessibleModal({
       </div>
     </div>,
     document.body,
-  );
-}
-
-function NoticeText({ heading, paragraphs }: NoticeGroup) {
-  return (
-    <section>
-      {heading && <h3>{heading}</h3>}
-      {paragraphs.map((paragraph, index) =>
-        heading && index === 0 && paragraph.length < 90 ? null :
-        index === 0 && paragraph.length < 90 ? (
-          <h4 key={paragraph}>{paragraph}</h4>
-        ) : (
-          <p key={paragraph}>{paragraph}</p>
-        ),
-      )}
-    </section>
   );
 }
 
@@ -2187,7 +1985,6 @@ function ViewerDialog({
         <div className="financials-viewer__toolbar">
           <div>
             <h2>Approved document</h2>
-            <span>You are authorized to view only the document identified in your approval record.</span>
           </div>
           <div className="financials-viewer__actions">
             <button type="button" onClick={onClose}>
@@ -2243,11 +2040,7 @@ function ViewerDialog({
         </div>
         <p className="financials-sensitive-notice">{SENSITIVE_CAPTURE_NOTICE}</p>
         <details className="financials-disclosure financials-viewer-details">
-          <summary>Controlled viewing notice</summary>
-          {CONTROLLED_VIEWING_NOTICE.slice(1).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-        </details>
-        <details className="financials-disclosure financials-viewer-details">
-          <summary>Document information</summary>
+          <summary>Document details</summary>
           <dl className="financials-admin-dl">
             <MetaRow label="Document" value={page.document.title} />
             <MetaRow label="Reporting period" value={page.document.publicationDate.slice(0, 4)} />
@@ -2256,19 +2049,6 @@ function ViewerDialog({
             <MetaRow label="Release ID" value={page.session.releaseId} />
             <MetaRow label="SHA-256" value={page.document.individualizedHash} />
           </dl>
-          <p>
-            This release is identified by the information above. If you believe the document
-            contains an accuracy, attribution, completeness, or document-integrity concern, use the
-            available reporting process to submit a specific concern for administrative review.
-          </p>
-          <p>
-            The SHA-256 value identifies this particular file version. It does not prove that every
-            later copy is authentic.
-          </p>
-        </details>
-        <details className="financials-disclosure financials-viewer-details">
-          <summary>Provenance and altered copies</summary>
-          {PROVENANCE_NOTICE.slice(1).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
         </details>
         <ReadAloudControls
           id={readerId}

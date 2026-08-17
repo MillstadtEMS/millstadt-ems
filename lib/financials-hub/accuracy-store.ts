@@ -491,13 +491,13 @@ function flagAccuracyReport(input: AccuracyInput) {
   const email = cleanString(input.reporterEmail).toLowerCase();
   const description = cleanString(input.description).toLowerCase();
   if (/(anonymous|fake|test|asdf|unknown|n\/a|none|john doe|jane doe)/.test(name)) {
-    flags.push("Name appears anonymous or placeholder-like.");
+    flags.push("Name appears anonymous or test-like.");
   }
   if (email.endsWith(".test") || email.includes("example") || email.includes("fake")) {
-    flags.push("Email domain appears reserved or placeholder-like.");
+    flags.push("Email domain appears reserved or test-like.");
   }
   if (description.length < 30 || /(asdf|lorem ipsum|just testing)/.test(description)) {
-    flags.push("Concern description appears unusually short or placeholder-like.");
+    flags.push("Concern description appears unusually short or test-like.");
   }
   return flags;
 }

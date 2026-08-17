@@ -218,20 +218,17 @@ export default function EmployeeDetailPage() {
 
   async function resetPassword() {
     if (!emp) return;
-    const def = `${emp.username}3935`;
-    const custom = prompt(
-      `Reset ${emp.firstName}'s password.\n\nLeave blank for default: ${def}`,
-    );
-    if (custom === null) return;
+    if (!confirm(
+      `Reset ${emp.firstName}'s password to their username (${emp.username})?\n\n` +
+      "They must choose a permanent password at the next sign-in. Existing Face ID, fingerprint, and authenticator enrollment will be preserved.",
+    )) return;
     const res = await fetch(`/api/admin/employees/${id}/reset-password`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ newPassword: custom.trim() || undefined }),
     });
     const data = await res.json();
     if (res.ok) {
       alert(
-        `Password reset.\n\nNew password: ${data.newPassword}\n\nThey'll be asked to change it on next login.`,
+        `Password reset.\n\nUsername: ${emp.username}\nOne-time password: ${data.initialPassword}\n\nThey'll be asked to choose a permanent password at the next sign-in.`,
       );
       reload();
     } else {

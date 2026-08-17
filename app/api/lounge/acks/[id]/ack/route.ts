@@ -5,6 +5,7 @@ import { getAckForUser, linkAckToPersonnelRecord, markAcknowledged } from "@/lib
 import { createAttachment, createRecord } from "@/lib/lounge/personnel";
 import { getEmployee } from "@/lib/lounge/employees";
 import { buildAckMemorandumPdf } from "@/lib/lounge/ack-pdf";
+import { privateBlobReference } from "@/lib/lounge/private-blobs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -76,9 +77,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       const blob = await put(
         `lounge/ack-memorandums/${ack.id}-${me.id}-${safeTitle}.pdf`,
         pdfBytes,
-        { access: "public", addRandomSuffix: false, contentType: "application/pdf" },
+        { access: "private", addRandomSuffix: false, contentType: "application/pdf" },
       );
-      memoUrl = blob.url;
+      memoUrl = privateBlobReference(blob.pathname);
     } catch (e) {
       console.error("[ack] memorandum PDF build/upload failed:", e);
     }

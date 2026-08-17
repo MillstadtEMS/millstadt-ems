@@ -96,7 +96,13 @@ export default function PeakActivity({ months, accent = "#f0b429" }: { months: M
       {months.length > 1 && (
         <div style={{ marginTop: 14 }}>
           <div style={{ color: "#64748b", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Hover a month</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          <div
+            style={{ display: "flex", flexWrap: "wrap", gap: 6 }}
+            onMouseLeave={() => setActiveKey(null)}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setActiveKey(null);
+            }}
+          >
             {months.map((m) => {
               const on = m.key === active.key;
               return (
@@ -105,7 +111,6 @@ export default function PeakActivity({ months, accent = "#f0b429" }: { months: M
                   type="button"
                   onMouseEnter={() => setActiveKey(m.key)}
                   onFocus={() => setActiveKey(m.key)}
-                  onClick={() => setActiveKey(m.key)}
                   title={`${m.label} ${m.year} · ${m.total} calls`}
                   style={{
                     cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: on ? 700 : 600,

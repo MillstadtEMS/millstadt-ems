@@ -16,6 +16,7 @@
  */
 import { randomUUID } from "crypto";
 import { sql } from "../db";
+import { privateLoungeBlobUrl } from "../private-blobs";
 import { SEED_SECTIONS } from "./seed";
 import type {
   CredentialLevel,
@@ -436,7 +437,7 @@ function toRecord(r: RecordDbRow): OnboardingRecord {
     status: r.status as RecordStatus,
     finalOutcome: (r.final_outcome ?? null) as FinalOutcome | null,
     finalNotes: r.final_notes,
-    pdfUrl: r.pdf_url,
+    pdfUrl: privateLoungeBlobUrl(r.pdf_url),
     pdfFilename: r.pdf_filename,
     personnelRecordId: r.personnel_record_id,
     finalizedAt: dateTime(r.finalized_at),
@@ -620,7 +621,7 @@ function toProgress(r: ProgressDbRow): ProgressRow {
     itemId: r.item_id,
     status: r.status as ItemStatus,
     notes: r.notes,
-    fileUrl: r.file_url,
+    fileUrl: privateLoungeBlobUrl(r.file_url),
     fileName: r.file_name,
     expirationDate: dateOnly(r.expiration_date),
     completedById: r.completed_by_id,

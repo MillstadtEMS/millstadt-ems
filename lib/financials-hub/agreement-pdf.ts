@@ -1,12 +1,11 @@
 import { jsPDF } from "jspdf";
 import {
   ACCEPTED_CHECKBOX_TEXT,
-  AI_PROCESSING_NOTICE_CONCLUSION,
-  AI_PROCESSING_NOTICE_INTRO,
-  AI_PROCESSING_USES,
   FINAL_SUBMISSION_CONFIRMATION_TEXT,
-  PROVENANCE_NOTICE,
+  ORGANIZATION_NAME,
+  REQUEST_ADDITIONAL_TERMS_SECTIONS,
   REQUEST_TERMS_INTRO,
+  REQUEST_TERMS_INTRO_PARAGRAPHS,
   REQUEST_TERMS_SECTIONS,
   RUN_COUNT_METHODOLOGY_NOTICE,
   type AccessRequestRecord,
@@ -32,7 +31,7 @@ export function signedAgreementPdf(
   doc.setProperties({
     title: `Millstadt EMS restricted-document access request ${request.id}`,
     subject: `Administrative request record ${request.termsVersion}`,
-    author: "Millstadt Ambulance Service",
+    author: ORGANIZATION_NAME,
     creator: "Millstadt EMS Financial Information Hub",
   });
   let y = 0;
@@ -121,7 +120,10 @@ export function signedAgreementPdf(
 
   const summaryRows = [
     ["Request ID", request.id],
+    ["Request type", request.requestKind],
+    ["Submission status", request.status],
     ["Request version", request.requestVersion],
+    ["Terms version", request.termsVersion],
     ["Submitted", formatUtc(request.submittedAtUtc)],
     ["Requester full name", request.fullLegalName],
     ["Email", request.verifiedEmail],
@@ -129,6 +131,9 @@ export function signedAgreementPdf(
       "Mailing address",
       `${request.mailingAddress}${request.addressLine2 ? `, ${request.addressLine2}` : ""}, ${request.city}, ${request.state} ${request.postalCode}`,
     ],
+    ...(request.releaseIds.length
+      ? [["Release or provenance ID", request.releaseIds.join(", ")] as const]
+      : []),
   ] as const;
   const summaryHeight =
     34 +
@@ -155,7 +160,7 @@ export function signedAgreementPdf(
   addHeading("Acknowledgment record");
   addParagraph(ACCEPTED_CHECKBOX_TEXT);
   addParagraph(
-    `Acknowledged electronically on: ${formatUtc(request.acceptedAtUtc)}. Request Terms Version: ${request.termsVersion}. AI Notice Version: ${request.aiNoticeVersion}.`,
+    `Acknowledged electronically on: ${formatUtc(request.acceptedAtUtc)}. Request Terms Version: ${request.termsVersion}.`,
   );
 
   addHeading("Requester certification");
@@ -202,17 +207,14 @@ export function signedAgreementPdf(
 
   addPage();
   addHeading("Request Terms and Release Notice", 18);
-  addParagraph(REQUEST_TERMS_INTRO);
+  addSection(REQUEST_TERMS_INTRO, REQUEST_TERMS_INTRO_PARAGRAPHS);
   for (const section of REQUEST_TERMS_SECTIONS) {
     addBulletSection(section.heading, section.bullets ?? [], section.paragraphs ?? []);
   }
-
-  addPage();
-  addHeading("AI-processing notice");
-  addParagraph(AI_PROCESSING_NOTICE_INTRO);
-  for (const use of AI_PROCESSING_USES) addParagraph(`- ${use}`, { indent: 12 });
-  for (const paragraph of AI_PROCESSING_NOTICE_CONCLUSION) addParagraph(paragraph);
-  addSection(PROVENANCE_NOTICE[0], PROVENANCE_NOTICE.slice(1));
+  addHeading("Additional terms and limitations");
+  for (const section of REQUEST_ADDITIONAL_TERMS_SECTIONS) {
+    addBulletSection(section.heading, section.bullets ?? [], section.paragraphs ?? []);
+  }
 
   if (documents.some((item) => item.id === CALL_VOLUME_DOCUMENT_ID)) {
     addPage();

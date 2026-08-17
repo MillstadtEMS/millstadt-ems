@@ -12,15 +12,19 @@
 
 # testing
 /coverage
+/outputs/
+/work/
 
 # next.js
 /.next/
-/.next-financials-build/
-/.next-financials-test/
+/.next-*/
 /out/
 
 # production
 /build
+
+# localhost-only financial document storage
+/.local-data/
 
 # misc
 .DS_Store

@@ -78,39 +78,6 @@
   line-height: 1.62;
 }
 
-.previewNote {
-  display: inline-flex;
-  width: fit-content;
-  margin-top: 1rem;
-  border: 1px solid rgba(34, 211, 238, 0.28);
-  border-radius: 999px;
-  background: rgba(34, 211, 238, 0.08);
-  color: #a5f3fc;
-  padding: 0.38rem 0.7rem;
-  font-size: 0.78rem;
-  font-weight: 720;
-}
-
-.archiveNotice {
-  max-width: 800px;
-  margin-top: 1.15rem;
-  border-top: 1px solid rgba(148, 163, 184, 0.2);
-  padding-top: 1rem;
-}
-
-.archiveNotice h2 {
-  margin: 0;
-  color: #ffffff;
-  font-size: 1rem;
-  font-weight: 760;
-  letter-spacing: 0;
-}
-
-.hub .archiveNotice p {
-  margin-top: 0.45rem;
-  font-size: 0.95rem;
-}
-
 .hub :global(.financials-workspace) {
   padding: 0 0 clamp(3rem, 7vw, 5.5rem);
 }
@@ -237,70 +204,10 @@
   line-height: 1.5;
 }
 
-.documentTopline {
-  grid-column: 1 / -1;
-  display: flex;
-  gap: 0.7rem;
-  align-items: center;
-  justify-content: space-between;
-}
-
 .yearMark {
   color: #f8fafc;
   font-size: 1.35rem;
   font-weight: 820;
-}
-
-.badge {
-  display: inline-flex;
-  width: fit-content;
-  border: 1px solid rgba(52, 211, 153, 0.34);
-  border-radius: 999px;
-  background: rgba(16, 185, 129, 0.1);
-  color: #86efac;
-  padding: 0.3rem 0.62rem;
-  font-size: 0.78rem;
-  font-weight: 740;
-}
-
-.badgeRequest {
-  border-color: rgba(240, 180, 41, 0.38);
-  background: rgba(240, 180, 41, 0.1);
-  color: #fde68a;
-}
-
-.badgeSoon {
-  border-color: rgba(148, 163, 184, 0.28);
-  background: rgba(148, 163, 184, 0.08);
-  color: #cbd5e1;
-}
-
-.documentMeta {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
-  margin: 0;
-}
-
-.hub :global(.financials-doc-card--public) .documentMeta {
-  grid-column: 1 / -1;
-}
-
-.documentMeta div {
-  min-width: 0;
-}
-
-.documentMeta dt {
-  color: #718399;
-  font-size: 0.74rem;
-  font-weight: 700;
-}
-
-.documentMeta dd {
-  margin: 0.15rem 0 0;
-  color: #dce7f4;
-  font-size: 0.9rem;
-  overflow-wrap: anywhere;
 }
 
 .hub :global(.financials-form990-actions) {
@@ -404,26 +311,6 @@
 .hub :global(summary:focus-visible) {
   outline: 3px solid rgba(103, 232, 249, 0.62);
   outline-offset: 3px;
-}
-
-.restrictedCard {
-  display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  gap: 0.9rem;
-  min-height: 230px;
-  padding: 1.1rem;
-}
-
-.restrictedCard[aria-pressed="true"] {
-  border-color: rgba(240, 180, 41, 0.56);
-  box-shadow: 0 0 0 2px rgba(240, 180, 41, 0.1), 0 12px 30px rgba(0, 0, 0, 0.2);
-}
-
-.restrictedCardActions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.65rem;
-  align-items: center;
 }
 
 .selectionBar {
@@ -600,6 +487,11 @@
   color: #071428;
 }
 
+.pickerStack {
+  display: grid;
+  gap: 0.85rem;
+}
+
 .documentPicker {
   overflow: hidden;
   border: 1px solid rgba(148, 163, 184, 0.24);
@@ -616,7 +508,7 @@
   gap: 1rem;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(90deg, rgba(13, 40, 74, 0.95), rgba(8, 27, 52, 0.95));
+  background: #0d284a;
   padding: 0.9rem 1rem;
 }
 
@@ -637,6 +529,14 @@
   color: #67e8f9;
 }
 
+.documentPicker > summary .pickerChevron {
+  transition: transform 160ms ease;
+}
+
+.documentPicker[open] > summary .pickerChevron {
+  transform: rotate(90deg);
+}
+
 .documentPicker > summary small {
   display: inline-flex;
   border: 1px solid rgba(240, 180, 41, 0.3);
@@ -649,40 +549,13 @@
 }
 
 .pickerBody {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: block;
   border-top: 1px solid rgba(148, 163, 184, 0.18);
-}
-
-.pickerGroup + .pickerGroup {
-  border-left: 1px solid rgba(148, 163, 184, 0.18);
-}
-
-.pickerGroupHeading {
-  display: grid;
-  gap: 0.25rem;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(2, 12, 25, 0.5);
-  padding: 0.85rem 1rem;
-}
-
-.pickerGroupHeading span {
-  display: grid;
-  width: fit-content;
-  gap: 0.2rem;
-  color: #f8fafc;
-  font-size: 0.9rem;
-  font-weight: 760;
-}
-
-.pickerGroupHeading small {
-  color: #8293a8;
-  font-size: 0.78rem;
 }
 
 .pickerRow {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 0.8rem;
   align-items: center;
   min-height: 5rem;
@@ -1283,22 +1156,12 @@
     grid-template-columns: 1fr;
   }
 
-  .pickerBody,
   .documentResultRow {
     grid-template-columns: 1fr;
   }
 
-  .pickerGroup + .pickerGroup {
-    border-top: 1px solid rgba(148, 163, 184, 0.18);
-    border-left: 0;
-  }
-
   .pickerRow {
     grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .pickerRow .badge {
-    grid-column: 2;
   }
 
   .documentResultRow :global(.financials-form990-actions) {
@@ -1321,10 +1184,6 @@
   .hub :global(.financials-field--full),
   .reportFull {
     grid-column: auto;
-  }
-
-  .restrictedCardActions {
-    grid-template-columns: 1fr;
   }
 
   .hub :global(.financials-modal-backdrop) {

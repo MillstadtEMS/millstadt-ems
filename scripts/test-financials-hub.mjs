@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -16,6 +16,11 @@ const SAME_ORIGIN_HEADERS = {
 const cwd = process.cwd();
 const tsconfigPath = path.join(cwd, "tsconfig.json");
 const originalTsconfig = await readFile(tsconfigPath, "utf8");
+const testDistPath = path.join(cwd, ".next-financials-test");
+const documentLibraryPath = path.join(
+  testDistPath,
+  `document-library-${process.pid}`,
+);
 const server = spawn(
   process.execPath,
   ["node_modules/next/dist/bin/next", "dev", "-p", String(PORT)],
@@ -31,15 +36,13 @@ const server = spawn(
       MILLSTADT_INFORMATION_HUB_ALLOW_PUBLIC_990S: "true",
       MILLSTADT_INFORMATION_HUB_SYNTHETIC_DATA_ONLY: "true",
       MILLSTADT_INFORMATION_HUB_DEV_ADMIN_CODE: "TEST-ADMIN",
+      MILLSTADT_INFORMATION_HUB_DOCUMENT_LIBRARY_PATH: documentLibraryPath,
       MILLSTADT_INFORMATION_HUB_TEST_DELIVERY_ENABLED: "true",
       MILLSTADT_INFORMATION_HUB_TEST_SINK_DOMAIN: "example.test",
       MILLSTADT_INFORMATION_HUB_TEST_RECIPIENT_ALLOWLIST:
         "allowlisted-recipient@production.invalid",
       MILLSTADT_INFORMATION_HUB_TEST_ADMIN_EMAILS:
         "financials-test@example.test,blocked-recipient@production.invalid",
-      LOUNGE_DEV_LOGIN_ENABLED: "false",
-      LOUNGE_DEV_LOGIN_PIN: "",
-      NEXT_PUBLIC_LOUNGE_DEV_LOGIN: "false",
       GMAIL_CLIENT_ID: "",
       GMAIL_CLIENT_SECRET: "",
       GMAIL_REFRESH_TOKEN: "",
@@ -297,6 +300,56 @@ try {
   assert.match(await hubPage.text(), /Financial Information/);
   pass("development hub is available with scoped security headers");
 
+  const requestTermsSource = await readFile(
+    path.join(cwd, "lib/financials-hub/types.ts"),
+    "utf8",
+  );
+  const agreementPdfSource = await readFile(
+    path.join(cwd, "lib/financials-hub/agreement-pdf.ts"),
+    "utf8",
+  );
+  assert.match(requestTermsSource, /Restricted-document access/);
+  assert.match(requestTermsSource, /heading: "Administrative review"/);
+  assert.match(requestTermsSource, /heading: "Accurate information"/);
+  assert.match(requestTermsSource, /heading: "Electronic signature"/);
+  assert.match(requestTermsSource, /heading: "Document integrity and attribution"/);
+  assert.match(requestTermsSource, /heading: "Legal rights"/);
+  assert.match(requestTermsSource, /Additional terms and limitations/);
+  assert.match(requestTermsSource, /\$\{ORGANIZATION_NAME\}/);
+  assert.match(agreementPdfSource, /REQUEST_ADDITIONAL_TERMS_SECTIONS/);
+  assert.match(agreementPdfSource, /request\.termsVersion/);
+  assert.match(agreementPdfSource, /signature\.method/);
+  pass("restricted request terms and signed PDF preserve the required review, signature, provenance, and additional-term record");
+
+  const productionHubSource = await readFile(
+    path.join(cwd, "app/financials-information-hub/page.tsx"),
+    "utf8",
+  );
+  assert.match(productionHubSource, /Financial and Other Public Requests/);
+  assert.match(productionHubSource, /Coming Soon/);
+  assert.match(
+    productionHubSource,
+    /The Millstadt EMS Financial and Other Public Requests hub is being prepared/,
+  );
+  assert.match(
+    productionHubSource,
+    /This page does not accept document requests, information requests/,
+  );
+  pass("production source preserves the required Coming Soon page");
+
+  const adminPageSource = await readFile(
+    path.join(cwd, "app/admin/financials/page.tsx"),
+    "utf8",
+  );
+  const loungeLoginSource = await readFile(
+    path.join(cwd, "app/lounge/login/page.tsx"),
+    "utf8",
+  );
+  assert.match(adminPageSource, /lounge\/login\?next=\/admin\/financials/);
+  assert.match(loungeLoginSource, /raw\.startsWith\("\/admin\/"\)/);
+  assert.match(loungeLoginSource, /raw\.startsWith\("\/lounge"\)/);
+  pass("financial admin login returns to the protected document portal");
+
   const legacyDevLogin = await fetch(`${ORIGIN}/api/lounge/dev-login`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -340,16 +393,156 @@ try {
   assert.equal(catalogResult.response.status, 200);
   assert.equal(catalogResult.body.documents.length, 2);
   await mkdir(path.join(cwd, "work/test-evidence"), { recursive: true });
+  let samplePdfBuffer;
   for (const item of catalogResult.body.documents) {
     const pdfResponse = await fetch(`${ORIGIN}/api/financials/form-990/${item.id}/pdf`);
     assert.equal(pdfResponse.status, 200);
+    const pdfBuffer = Buffer.from(await pdfResponse.arrayBuffer());
+    samplePdfBuffer ??= pdfBuffer;
     const pdfPath = path.join(cwd, "work/test-evidence", `${item.id}.pdf`);
-    await writeFile(pdfPath, Buffer.from(await pdfResponse.arrayBuffer()));
+    await writeFile(pdfPath, pdfBuffer);
     const info = execFileSync("pdfinfo", [pdfPath], { encoding: "utf8" });
     assert.match(info, new RegExp(`Pages:\\s+${item.pageCount}\\b`));
     assert.equal(assertReadableUniquePages(pdfPath).length, item.pageCount);
   }
   pass("public Form 990 downloads match catalog page counts");
+
+  const unauthorizedDocumentLibrary = await fetch(
+    `${ORIGIN}/api/admin/financials/documents`,
+  );
+  assert.equal(unauthorizedDocumentLibrary.status, 401);
+  pass("document library requires administrator authentication");
+
+  const adminDocumentHeaders = { ...ADMIN_HEADERS, ...SAME_ORIGIN_HEADERS };
+  const restrictedUpload = new FormData();
+  restrictedUpload.set("access", "restricted");
+  restrictedUpload.set("title", "Uploaded Integration Financial Report");
+  restrictedUpload.set("category", "Financial report");
+  restrictedUpload.set("reportingPeriod", "Integration test period");
+  restrictedUpload.set("taxYear", "");
+  restrictedUpload.set("filingYear", "");
+  restrictedUpload.set("version", "TEST-1.0");
+  restrictedUpload.set("publicationDate", "2026-08-16");
+  restrictedUpload.set(
+    "file",
+    new Blob([samplePdfBuffer], { type: "application/pdf" }),
+    "integration-restricted.pdf",
+  );
+  const restrictedUploadResult = await json(
+    await fetch(`${ORIGIN}/api/admin/financials/documents`, {
+      method: "POST",
+      headers: adminDocumentHeaders,
+      body: restrictedUpload,
+    }),
+  );
+  assert.equal(
+    restrictedUploadResult.response.status,
+    201,
+    JSON.stringify(restrictedUploadResult.body),
+  );
+  assert.equal(restrictedUploadResult.body.document.access, "restricted");
+  const uploadedRestrictedId = restrictedUploadResult.body.document.id;
+  const restrictedCatalogAfterUpload = await json(
+    await fetch(`${ORIGIN}/api/financials/documents/catalog`),
+  );
+  assert.ok(
+    restrictedCatalogAfterUpload.body.documents.some(
+      (document) => document.id === uploadedRestrictedId,
+    ),
+  );
+  pass("admin PDF upload publishes metadata to the restricted catalog");
+
+  const unauthorizedOriginal = await fetch(
+    `${ORIGIN}/api/admin/financials/documents/${uploadedRestrictedId}/file`,
+  );
+  assert.equal(unauthorizedOriginal.status, 401);
+  const authorizedOriginal = await fetch(
+    `${ORIGIN}/api/admin/financials/documents/${uploadedRestrictedId}/file`,
+    { headers: ADMIN_HEADERS },
+  );
+  assert.equal(authorizedOriginal.status, 200);
+  assert.ok(Buffer.from(await authorizedOriginal.arrayBuffer()).equals(samplePdfBuffer));
+  pass("uploaded originals remain behind administrator authorization");
+
+  const archiveResult = await json(
+    await fetch(`${ORIGIN}/api/admin/financials/documents/${uploadedRestrictedId}`, {
+      method: "PATCH",
+      headers: { ...adminDocumentHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ archived: true }),
+    }),
+  );
+  assert.equal(archiveResult.response.status, 200);
+  const catalogAfterArchive = await json(
+    await fetch(`${ORIGIN}/api/financials/documents/catalog`),
+  );
+  assert.ok(
+    !catalogAfterArchive.body.documents.some(
+      (document) => document.id === uploadedRestrictedId,
+    ),
+  );
+  const restoreResult = await fetch(
+    `${ORIGIN}/api/admin/financials/documents/${uploadedRestrictedId}`,
+    {
+      method: "PATCH",
+      headers: { ...adminDocumentHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ archived: false }),
+    },
+  );
+  assert.equal(restoreResult.status, 200);
+  pass("admin can archive and restore uploaded documents");
+
+  const publicUpload = new FormData();
+  publicUpload.set("access", "public_form_990");
+  publicUpload.set("title", "Uploaded Integration Form 990");
+  publicUpload.set("category", "Financial report");
+  publicUpload.set("reportingPeriod", "Tax year 2022");
+  publicUpload.set("taxYear", "2022");
+  publicUpload.set("filingYear", "2023");
+  publicUpload.set("version", "TEST-1.0");
+  publicUpload.set("publicationDate", "2023-05-15");
+  publicUpload.set(
+    "file",
+    new Blob([samplePdfBuffer], { type: "application/pdf" }),
+    "integration-form-990.pdf",
+  );
+  const publicUploadResult = await json(
+    await fetch(`${ORIGIN}/api/admin/financials/documents`, {
+      method: "POST",
+      headers: adminDocumentHeaders,
+      body: publicUpload,
+    }),
+  );
+  assert.equal(publicUploadResult.response.status, 201);
+  const uploadedPublicId = publicUploadResult.body.document.id;
+  const publicCatalogAfterUpload = await json(
+    await fetch(`${ORIGIN}/api/financials/form-990/catalog`),
+  );
+  assert.ok(
+    publicCatalogAfterUpload.body.documents.some(
+      (document) => document.id === uploadedPublicId,
+    ),
+  );
+  const uploadedPublicPdf = await fetch(
+    `${ORIGIN}/api/financials/form-990/${uploadedPublicId}/pdf`,
+  );
+  assert.equal(uploadedPublicPdf.status, 200);
+  assert.ok(Buffer.from(await uploadedPublicPdf.arrayBuffer()).equals(samplePdfBuffer));
+  pass("admin PDF upload publishes exact public Form 990 bytes");
+
+  const invalidUpload = new FormData();
+  for (const [key, value] of restrictedUpload.entries()) invalidUpload.set(key, value);
+  invalidUpload.set(
+    "file",
+    new Blob(["not a pdf"], { type: "application/pdf" }),
+    "invalid.pdf",
+  );
+  const invalidUploadResponse = await fetch(`${ORIGIN}/api/admin/financials/documents`, {
+    method: "POST",
+    headers: adminDocumentHeaders,
+    body: invalidUpload,
+  });
+  assert.equal(invalidUploadResponse.status, 400);
+  pass("admin upload rejects a mismatched PDF signature");
 
   const csrfPrep = await json(await fetch(`${ORIGIN}/api/financials/access-requests`));
   assert.equal(csrfPrep.response.status, 200);
@@ -365,11 +558,11 @@ try {
     city: "Millstadt",
     state: "IL",
     postalCode: "62260",
-    selectedDocIds: ["CALL-VOLUME-REQUESTS-2022-2026"],
+    selectedDocIds: ["CALL-VOLUME-REQUESTS-2022-2026", uploadedRestrictedId],
     requestedInformationDescription: "",
     acceptedCheckboxText:
-      "I have read and agree to the Request Terms and Release Notice. I certify that the information I have submitted is accurate to the best of my knowledge and that I have not knowingly provided materially false or misleading information. I understand that Millstadt may contact me for clarification and that submitting a request does not guarantee access unless applicable law requires disclosure.",
-    acceptedButtonText: "Sign and submit request",
+      "I reviewed the request terms, confirm that the information I provided is accurate to the best of my knowledge, understand that access requires approval, and agree that my electronic signature authenticates this request.",
+    acceptedButtonText: "Submit signed request",
     termsAcknowledged: true,
     signatureFullName: "Morgan Avery",
     signatureMethod: "typed",
@@ -377,7 +570,7 @@ try {
     signatureTypedName: "Morgan Avery",
     finalSubmissionConfirmed: true,
     finalSubmissionConfirmationText:
-      "I am submitting this request electronically under the name shown above, and I authorize Millstadt to include my electronic signature and acknowledged terms in the administrative request record.",
+      "I authorize Millstadt Ambulance Service / Millstadt EMS to attach my electronic signature to this request.",
     sendSignedCopyToRequester: true,
   };
 
@@ -455,6 +648,7 @@ try {
   assert.equal(created.response.status, 201);
   assert.equal(created.body.request.status, "pending");
   assert.equal(created.body.request.selectedDocumentVersions["CALL-VOLUME-REQUESTS-2022-2026"], "2026.08.16");
+  assert.equal(created.body.request.selectedDocumentVersions[uploadedRestrictedId], "TEST-1.0");
   assert.match(created.body.request.agreementHash, /^sha256:[a-f0-9]{64}$/);
   assert.equal(created.body.request.signedCopyRequested, true);
   assert.equal(created.body.request.termsAcknowledged, true);
@@ -508,11 +702,10 @@ try {
   assert.match(agreementText, new RegExp(request.id));
   assert.match(agreementText, /Administrative request record - not the released document/);
   assert.match(agreementText, /Request-record hash/);
-  assert.match(agreementText, /Sign and submit request/);
+  assert.match(agreementText, /Submit signed request/);
   assert.match(agreementText, /Request Terms and Release Notice/);
-  assert.match(agreementText, /AI-processing notice/);
-  assert.match(agreementText, /Provenance and altered copies/);
-  assert.match(agreementText, /I am submitting this request electronically/);
+  assert.doesNotMatch(agreementText, /AI-processing notice/i);
+  assert.match(agreementText, /I authorize Millstadt Ambulance Service \/ Millstadt EMS/);
   assert.match(agreementText, /Page 1 of/);
   assert.ok(agreementPages.length <= 8);
   pass("signed access PDF contains the request, exact terms, signature, confirmation, and audit record");
@@ -525,7 +718,7 @@ try {
   assert.ok(adminRequest);
 
   const approvalBody = {
-    approvedDocIds: ["CALL-VOLUME-REQUESTS-2022-2026"],
+    approvedDocIds: ["CALL-VOLUME-REQUESTS-2022-2026", uploadedRestrictedId],
     expirationAtUtc: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     reviewReason: "Synthetic integration approval.",
     expectedStatus: adminRequest.status,
@@ -596,6 +789,32 @@ try {
   assert.match(viewerPage.body.footerText, /Page: 1 of 16/);
   pass("approved viewer uses the short release watermark and complete document footer");
 
+  const uploadedViewer = await json(
+    await fetch(`${ORIGIN}/api/financials/viewer-sessions`, {
+      method: "POST",
+      headers: { "content-type": "application/json", ...SAME_ORIGIN_HEADERS },
+      body: JSON.stringify({
+        requestId: request.id,
+        documentId: uploadedRestrictedId,
+        userId: request.userId,
+      }),
+    }),
+  );
+  assert.equal(uploadedViewer.response.status, 201);
+  const uploadedViewerPage = await json(
+    await fetch(
+      `${ORIGIN}/api/financials/viewer-sessions/${uploadedViewer.body.session.id}/pages/1`,
+      { headers: { "x-millstadt-user-id": request.userId } },
+    ),
+  );
+  assert.equal(uploadedViewerPage.response.status, 200);
+  assert.equal(uploadedViewerPage.body.document.id, uploadedRestrictedId);
+  assert.match(
+    uploadedViewerPage.body.pageText,
+    /Return\s+of\s+Organization Exempt From Income\s+Tax/,
+  );
+  pass("approved uploaded PDF opens through the controlled viewer");
+
   const revokeBody = {
     reviewReason: "Synthetic revocation check.",
     expectedStatus: approved.body.request.status,
@@ -633,7 +852,7 @@ try {
   reportData.set("certificationAccepted", "true");
   reportData.set(
     "certificationText",
-    "I certify that I am submitting this report in good faith; that the factual information I have provided is accurate to the best of my knowledge after reasonable care; and that I have not knowingly submitted materially false information or fabricated, altered, or misrepresented supporting material. I understand that an honest mistake, disagreement, criticism, opinion, inference, or inability to prove a concern does not by itself mean that I violated this certification.",
+    "I certify that I am submitting this report in good faith and that the information I provided is accurate to the best of my knowledge.",
   );
   reportData.set("signatureMethod", "typed");
   reportData.set("signatureTypedName", "Taylor Morgan");
@@ -787,12 +1006,15 @@ try {
       ].map((filename) => readFile(path.join(cwd, filename), "utf8")),
     )
   ).join("\n");
-  assert.match(disclosureSource, /This page is an archive of available documents/);
-  assert.match(disclosureSource, /Request Terms and Release Notice/);
-  assert.match(disclosureSource, /Technical viewing controls are intended/);
-  assert.match(disclosureSource, /Provenance and altered copies/);
+  assert.match(disclosureSource, /Restricted-document access/);
+  assert.match(disclosureSource, /Submitting a request does not guarantee approval/);
+  assert.match(disclosureSource, /Additional terms and limitations/);
+  assert.match(disclosureSource, /AI processing and alteration/);
+  assert.match(disclosureSource, /Millstadt Ambulance Service \/ Millstadt EMS/);
+  assert.match(disclosureSource, /Identify the document and describe the specific concern/);
+  assert.doesNotMatch(disclosureSource, /This page is an archive of available documents/);
   assert.doesNotMatch(disclosureSource, /also known as Millstadt EMS/i);
-  pass("financial disclosures match the supplied archive and release workflow copy");
+  pass("financial disclosures use the restored request terms and organization name without obsolete archive copy");
 
   for (let index = 0; index < 4; index += 1) {
     const rateResponse = await fetch(`${ORIGIN}/api/financials/access-requests`, {
@@ -837,5 +1059,10 @@ try {
       resolve();
     });
   });
+  // Next may finish its TypeScript setup immediately after the process exits.
+  // Restore the user's config after that work settles and remove the entire
+  // isolated build tree so other dev servers cannot scan generated output.
+  await new Promise((resolve) => setTimeout(resolve, 750));
   await writeFile(tsconfigPath, originalTsconfig);
+  await rm(testDistPath, { recursive: true, force: true });
 }

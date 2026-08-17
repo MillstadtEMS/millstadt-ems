@@ -20,6 +20,8 @@ import {
   getCertType,
   listEmployeeCerts,
 } from "@/lib/lounge/certs";
+import { privateBlobReference } from "@/lib/lounge/private-blobs";
+import { CREDENTIAL_DOCUMENT_TYPES, inspectUploadedFile } from "@/lib/security/upload-inspection";
 
 export const runtime = "nodejs";
 
@@ -56,6 +58,8 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
+  const inspected = await inspectUploadedFile(file, CREDENTIAL_DOCUMENT_TYPES);
+  if (!inspected.ok) return NextResponse.json({ error: inspected.error }, { status: 400 });
 
   // Replace any existing upload of the same cert type for this employee.
   // Newest wins; the old blob is best-effort deleted.
@@ -76,16 +80,16 @@ export async function POST(req: NextRequest) {
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const path = `lounge/certs/${me.id}/${certType.slug}/${Date.now()}_${safeName}`;
   const blob = await put(path, file, {
-    access: "public",
+    access: "private",
     allowOverwrite: false,
-    contentType: file.type || "application/octet-stream",
+    contentType: inspected.mime,
   });
 
   const saved = await addEmployeeCert({
     employeeId: me.id,
     certTypeId,
-    fileUrl: blob.url,
-    fileMime: file.type || undefined,
+    fileUrl: privateBlobReference(blob.pathname),
+    fileMime: inspected.mime,
     fileName: file.name,
     issuedOn,
     expiresOn,

@@ -16,7 +16,12 @@ const MAX_AGE = 60 * 30; // 30 minutes inactivity (brief §15)
 export const BOARD_COOKIE_NAME = COOKIE;
 
 function sessionKey(): string {
-  return `board_session_${process.env.LOUNGE_ENCRYPTION_KEY ?? process.env.DATABASE_URL ?? "dev"}`;
+  const configured = process.env.BOARD_SESSION_SECRET || process.env.LOUNGE_ENCRYPTION_KEY;
+  if (configured) return `board_session_${configured}`;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("BOARD_SESSION_SECRET or LOUNGE_ENCRYPTION_KEY is required in production");
+  }
+  return "board_session_development-only-key";
 }
 
 // ── Password hashing (scrypt) ───────────────────────────────────────────────
@@ -103,7 +108,9 @@ export async function currentBoardUser(): Promise<BoardUser | null> {
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   const [userId, ts, sig] = parts;
-  if (Date.now() - Number(ts) > MAX_AGE * 1000) return null;
+  const issuedAt = Number(ts);
+  const age = Date.now() - issuedAt;
+  if (!Number.isFinite(issuedAt) || age < -60_000 || age > MAX_AGE * 1000) return null;
   const user = await getUserById(userId);
   if (!user || !user.isActive) return null;
   const expected = createHmac("sha256", sessionKey())
