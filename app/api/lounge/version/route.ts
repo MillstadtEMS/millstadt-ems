@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { SITE_VERSION } from "@/lib/site-version";
+import { SITE_BUILD_REVISION, SITE_DISPLAY_VERSION, SITE_VERSION } from "@/lib/site-version";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,5 +15,11 @@ export async function GET() {
     process.env.GITHUB_SHA ||
     process.env.NEXT_PUBLIC_BUILD_ID ||
     "dev";
-  return NextResponse.json({ version: SITE_VERSION, sha, builtAt: new Date().toISOString() });
+  return NextResponse.json({
+    version: SITE_VERSION,
+    build: SITE_BUILD_REVISION,
+    displayVersion: SITE_DISPLAY_VERSION,
+    sha,
+    builtAt: new Date().toISOString(),
+  });
 }

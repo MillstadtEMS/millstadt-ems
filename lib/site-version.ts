@@ -1,1 +1,3 @@
-export const SITE_VERSION = "1.0.0";
+export const SITE_VERSION = process.env.NEXT_PUBLIC_SITE_RELEASE_VERSION || "1.0.0";
+export const SITE_BUILD_REVISION = process.env.NEXT_PUBLIC_SITE_BUILD_REVISION || "local";
+export const SITE_DISPLAY_VERSION = `${SITE_VERSION}+${SITE_BUILD_REVISION}`;

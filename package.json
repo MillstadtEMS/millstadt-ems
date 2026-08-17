@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "version:patch": "npm version patch --no-git-tag-version",
+    "version:minor": "npm version minor --no-git-tag-version",
+    "version:major": "npm version major --no-git-tag-version",
     "lounge:initialize-passwords": "node scripts/initialize-lounge-passwords.mjs",
     "test:financials": "node scripts/test-financials-hub.mjs",
     "test:security": "node scripts/test-security-hardening.mjs"
