@@ -64,6 +64,20 @@ export default function SerenityPrayer() {
             Serenity Prayer
           </cite>
         </blockquote>
+
+        <div
+          className="mt-12 flex w-full max-w-2xl items-center justify-center gap-4 sm:mt-14 sm:gap-6"
+          aria-label="In God We Trust"
+        >
+          <span className="h-px flex-1 bg-gradient-to-r from-transparent to-[#f0b429]/60" aria-hidden="true" />
+          <p
+            className="shrink-0 text-center text-[clamp(1.5rem,4vw,2.25rem)] font-black uppercase leading-none text-[#fff7df]"
+            style={{ textShadow: "0 2px 8px rgba(4,13,26,0.98)" }}
+          >
+            In God We Trust
+          </p>
+          <span className="h-px flex-1 bg-gradient-to-l from-transparent to-[#f0b429]/60" aria-hidden="true" />
+        </div>
       </div>
     </section>
   );
