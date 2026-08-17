@@ -1,11 +1,18 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import LazyKidsGame from "@/components/kids/LazyKidsGame";
 import { PARTNER_LINKS } from "@/lib/kids/activities";
 
+export const metadata: Metadata = {
+  title: "Kids Club Safety Games",
+  description:
+    "Explore a Millstadt EMS ambulance, practice simple 911 decisions, and find trusted family safety resources.",
+};
+
 export default function KidsClubGamesPage() {
   return (
-    <main className="bg-[#f4f8fb] text-[#061121]">
+    <div className="bg-[#f4f8fb] text-[#061121]">
       <section className="relative isolate overflow-hidden bg-[#030914] text-white">
         <Image
           src="/images/millstadt-ems/IMG_8516.jpeg"
@@ -150,7 +157,7 @@ export default function KidsClubGamesPage() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 

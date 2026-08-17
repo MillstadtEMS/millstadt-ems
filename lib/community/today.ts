@@ -35,10 +35,10 @@ export const todayRailItems: TodayRailItem[] = [
   },
   {
     title: "Today Around Millstadt",
-    label: "Source-aware hub",
+    label: "Community preview",
     href: "/community/today",
     tone: "blue",
-    detail: "Sports, schools, flags, sky, and event slots stay honest until official sources are connected.",
+    detail: "Official sports links are live; school, flag, and sky updates remain clearly marked until verified sources are connected.",
   },
 ];
 

@@ -13,30 +13,31 @@ type ToolbarItem = {
 export default function CommunityStatusToolbar() {
   const today = getTodayAroundMillstadt();
   const hasVerifiedSportsData = today.sports.some((item) => item.status === "verified-data");
-  const hasSportsLinks = today.sports.some((item) => item.status === "source-link");
   const hasSchoolSource = today.schools.some((item) => item.status !== "setup-required");
-  const hasFlagReview = today.flags.some((item) => item.state === "Needs Administrative Review");
+  const hasCurrentFlagStatus = today.flags.some(
+    (item) => item.state === "Full Staff" || item.state === "Half-Staff",
+  );
 
   const items: ToolbarItem[] = [
     {
       href: "/community/today#sports",
       icon: "heartbeat",
       title: "Sports",
-      status: hasVerifiedSportsData ? "Verified data" : hasSportsLinks ? "Official links" : "Source setup",
+      status: hasVerifiedSportsData ? "Verified data" : "Official links",
       tone: "blue",
     },
     {
       href: "/community/today#schools",
       icon: "education",
       title: "Schools",
-      status: hasSchoolSource ? "Source review" : "Feed setup",
+      status: hasSchoolSource ? "Updates staged" : "Coming soon",
       tone: "green",
     },
     {
       href: "/community/today#flags",
       icon: "shield",
       title: "Flags",
-      status: hasFlagReview ? "Needs review" : "Checking",
+      status: hasCurrentFlagStatus ? "Current status" : "Unavailable",
       tone: "red",
     },
     {
@@ -57,15 +58,15 @@ export default function CommunityStatusToolbar() {
 
   return (
     <nav aria-label="Today Around Millstadt status" className="relative z-20 w-full px-4 py-4 sm:px-6">
-      <div className="mx-auto flex max-w-7xl flex-col gap-3 rounded-2xl border border-white/10 bg-[#040d1a]/86 p-3 shadow-2xl shadow-black/30 backdrop-blur md:flex-row md:items-center">
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-[#040d1a]/86 p-3 shadow-2xl shadow-black/30 backdrop-blur md:flex md:items-center md:gap-3">
         <Link
           href="/community/today"
-          className="flex min-h-16 items-center justify-center rounded-xl border border-[#f0b429]/35 bg-[#f0b429]/10 px-4 text-center text-xs font-black uppercase tracking-[0.16em] text-[#f8d980] transition hover:border-[#f0b429] hover:bg-[#f0b429]/18 focus:outline-none focus:ring-2 focus:ring-[#f0b429] focus:ring-offset-2 focus:ring-offset-[#040d1a] md:w-52"
+          className="flex min-h-14 items-center justify-center rounded-xl border border-[#f0b429]/35 bg-[#f0b429]/10 px-3 text-center text-[11px] font-black uppercase tracking-[0.12em] text-[#f8d980] transition hover:border-[#f0b429] hover:bg-[#f0b429]/18 focus:outline-none focus:ring-2 focus:ring-[#f0b429] focus:ring-offset-2 focus:ring-offset-[#040d1a] md:min-h-16 md:w-52 md:px-4 md:text-xs md:tracking-[0.16em]"
         >
           Today Around Millstadt
         </Link>
 
-        <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="contents md:grid md:flex-1 md:grid-cols-2 md:gap-2 lg:grid-cols-5">
           {items.map((item) => (
             <ToolbarLink key={item.title} item={item} />
           ))}
@@ -87,14 +88,14 @@ function ToolbarLink({ item }: { item: ToolbarItem }) {
   return (
     <Link
       href={item.href}
-      className={`group flex min-h-16 items-center gap-3 rounded-xl border px-3 py-3 transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-white/70 focus:ring-offset-2 focus:ring-offset-[#040d1a] ${toneClass}`}
+      className={`group flex min-h-14 min-w-0 items-center gap-2 rounded-xl border px-2 py-2 transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-white/70 focus:ring-offset-2 focus:ring-offset-[#040d1a] md:min-h-16 md:gap-3 md:px-3 md:py-3 ${toneClass}`}
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-current/25 bg-white/7">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-current/25 bg-white/7 md:h-10 md:w-10">
         <SiteIcon name={item.icon} className="h-5 w-5" />
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-sm font-black leading-tight text-white">{item.title}</span>
-        <span className="mt-1 block truncate text-[10px] font-black uppercase tracking-[0.12em] opacity-90">
+        <span className="block truncate text-[13px] font-black leading-tight text-white md:text-sm">{item.title}</span>
+        <span className="mt-1 block truncate text-[10px] font-black uppercase tracking-[0.1em] opacity-90 md:tracking-[0.12em]">
           {item.status}
         </span>
       </span>

@@ -23,10 +23,10 @@ export function getSchoolEventStatus(): SchoolEventSourceStatus[] {
     status,
     statusLabel:
       status === "verified-data"
-        ? "Verified feed ready"
+        ? "Verified events available"
         : status === "source-staged"
-          ? "Source review staged"
-          : "Official calendar source required",
+          ? "Official source being reviewed"
+          : "Events not available yet",
     note:
       status === "verified-data"
         ? "Approved event data can appear after source timestamp and review checks pass."

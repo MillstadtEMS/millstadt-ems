@@ -1,4 +1,4 @@
-import { publicFeatureStatus, publicVerifiedDataStatus } from "@/lib/feature-flags/public-features";
+import { publicVerifiedDataStatus } from "@/lib/feature-flags/public-features";
 
 export type SportsSourceStatus = {
   team: string;
@@ -10,9 +10,8 @@ export type SportsSourceStatus = {
 };
 
 export function getProfessionalSportsStatus(): SportsSourceStatus[] {
-  const visible = publicFeatureStatus("professionalSports") === "enabled";
   const verified = publicVerifiedDataStatus("professionalSports") === "verified";
-  const status = verified ? "verified-data" : visible ? "source-link" : "setup-required";
+  const status = verified ? "verified-data" : "source-link";
 
   return [
     {

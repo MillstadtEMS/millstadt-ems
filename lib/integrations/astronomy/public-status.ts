@@ -30,7 +30,8 @@ export function getMillstadtSkyFeatures(): SkyFeature[] {
         timing: "Always-on guidance",
         detail:
           "Solar events will require reviewed eye-safety language before they can appear as active public items.",
-        safetyNote: "Never look directly at the Sun without certified solar viewing protection.",
+        safetyNote:
+          "Use only reputable solar viewers that meet ISO 12312-2. Ordinary sunglasses are not safe for looking directly at the Sun.",
       },
     ];
   }

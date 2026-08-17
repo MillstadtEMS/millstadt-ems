@@ -15,18 +15,18 @@ export function getFlagStatus(): FlagJurisdictionStatus[] {
     return [
       {
         jurisdiction: "Federal",
-        state: "Needs Administrative Review",
+        state: "Status Temporarily Unavailable",
         source: enabled
-          ? "Official federal half-staff source staged for review"
-          : "Official federal half-staff source required before public activation",
+          ? "Official federal half-staff source is being reviewed"
+          : "Official federal half-staff notices are not connected yet",
         note: "No public half-staff claim is shown until an official source is configured.",
       },
       {
         jurisdiction: "Illinois",
-        state: "Needs Administrative Review",
+        state: "Status Temporarily Unavailable",
         source: enabled
-          ? "Official Illinois half-staff source staged for review"
-          : "Official Illinois half-staff source required before public activation",
+          ? "Official Illinois half-staff source is being reviewed"
+          : "Official Illinois half-staff notices are not connected yet",
         note: "No Illinois flag-status claim is shown until an official source is configured.",
       },
     ];

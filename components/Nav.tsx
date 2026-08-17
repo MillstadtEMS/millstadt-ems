@@ -327,7 +327,10 @@ export default function Nav() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    setOpen(false);
+                    window.requestAnimationFrame(() => menuButtonRef.current?.focus());
+                  }}
                   aria-label="Close menu"
                   className="grid h-11 w-11 place-items-center rounded-md border border-white/10 text-slate-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b429]"
                 >
@@ -424,7 +427,11 @@ function MobileBottomNav({
             </Link>
           ))}
           <button
+            type="button"
             onClick={() => setOpen(v => !v)}
+            aria-expanded={open}
+            aria-controls="site-navigation-panel"
+            aria-label={open ? "Close more menu" : "Open more menu"}
             className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
               open ? "text-[#f0b429]" : "text-slate-500 hover:text-slate-300"
             }`}

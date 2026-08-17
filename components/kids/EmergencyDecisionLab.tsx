@@ -75,13 +75,13 @@ const scenarios: Scenario[] = [
     id: "smoke",
     title: "Smoke smell inside",
     situation: "You smell smoke inside a building and hear an alarm.",
-    bestAction: "Get out, stay out, and meet at the family meeting place.",
+    bestAction: "Get out, stay out, and call 911 from the family meeting place.",
     choices: [
       {
         id: "out",
         label: "Get out and stay out",
         correct: true,
-        feedback: "Correct. Leave quickly, do not hide, and go to the meeting place.",
+        feedback: "Correct. Leave quickly, stay outside, and call 911 from the family meeting place.",
       },
       {
         id: "things",
@@ -224,7 +224,7 @@ export default function EmergencyDecisionLab() {
                   <button
                     key={choice.id}
                     type="button"
-                    aria-disabled={showResult}
+                    disabled={showResult}
                     aria-pressed={chosen}
                     aria-describedby={showResult ? feedbackId : undefined}
                     onClick={() => choose(choice)}

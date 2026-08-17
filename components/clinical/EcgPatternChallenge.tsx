@@ -21,7 +21,7 @@ const cases: EcgCase[] = [
     level: "Warm-up",
     prompt: "Regular rhythm, narrow QRS, and a consistent P wave before each complex.",
     answer: "Normal sinus rhythm",
-    explanation: "The strip is regular, the rate is in the expected adult range, and each QRS has a consistent preceding P wave.",
+    explanation: "The strip is regular, and each narrow QRS has a consistent preceding P wave in this synthetic teaching example.",
     path: "M0 72 L22 72 L26 66 L30 72 L42 72 L46 30 L50 92 L55 72 L86 72 L91 66 L95 72 L108 72 L112 30 L116 92 L121 72 L152 72 L157 66 L161 72 L174 72 L178 30 L182 92 L187 72 L220 72 L225 66 L229 72 L242 72 L246 30 L250 92 L255 72 L288 72 L293 66 L297 72 L310 72 L314 30 L318 92 L323 72 L360 72",
     choices: ["Normal sinus rhythm", "Atrial fibrillation", "Ventricular tachycardia"],
   },
@@ -156,7 +156,7 @@ export default function EcgPatternChallenge() {
                   <button
                     key={choice}
                     type="button"
-                    aria-disabled={Boolean(selected)}
+                    disabled={Boolean(selected)}
                     aria-pressed={chosen}
                     aria-describedby={selected ? feedbackId : undefined}
                     onClick={() => answer(choice)}

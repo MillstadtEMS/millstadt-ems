@@ -22,16 +22,16 @@ export default function TodayAroundMillstadtPage() {
   const today = getTodayAroundMillstadt();
 
   return (
-    <main className="bg-[#040d1a] text-white">
+    <div className="bg-[#040d1a] text-white">
       <PublicPageHero
-        eyebrow="Community Status"
+        eyebrow="Community Preview"
         title="Today Around"
         accent="Millstadt"
-        description="A polished public dashboard for things people actually come back to check, built so it never invents data when a source is missing."
+        description="Official local links and public updates in one place. Items that are not available yet are clearly marked."
       >
         <PublicMetric label="Sports links" value={today.sports.length} tone="blue" />
-        <PublicMetric label="Flag gates" value={today.flags.length} tone="red" />
-        <PublicMetric label="School slots" value={today.schools.length} tone="green" />
+        <PublicMetric label="Flag regions" value={today.flags.length} tone="red" />
+        <PublicMetric label="Local schools" value={today.schools.length} tone="green" />
       </PublicPageHero>
 
       <section className="bg-[#040d1a] py-12">
@@ -49,7 +49,7 @@ export default function TodayAroundMillstadtPage() {
         </div>
       </section>
 
-      <section id="sports" className="bg-[#071428] py-14">
+      <section id="sports" className="scroll-mt-[150px] bg-[#071428] py-14">
         <div className="wrap">
           <SectionHeader
             eyebrow="Game Day"
@@ -85,7 +85,7 @@ export default function TodayAroundMillstadtPage() {
         </div>
       </section>
 
-      <section id="schools" className="bg-[#040d1a] py-14">
+      <section id="schools" className="scroll-mt-[150px] bg-[#040d1a] py-14">
         <div className="wrap">
           <SectionHeader
             eyebrow="School Events"
@@ -107,7 +107,7 @@ export default function TodayAroundMillstadtPage() {
         </div>
       </section>
 
-      <section id="flags" className="bg-[#071428] py-14">
+      <section id="flags" className="scroll-mt-[150px] bg-[#071428] py-14">
         <div className="wrap">
           <SectionHeader
             eyebrow="Civic Notice"
@@ -122,7 +122,7 @@ export default function TodayAroundMillstadtPage() {
                     <div className="text-xs font-black uppercase tracking-[0.18em] text-rose-300">{flag.jurisdiction}</div>
                     <h3 className="mt-3 text-2xl font-black leading-tight text-white">{flag.state}</h3>
                   </div>
-                  <StatusPill tone="red">Review gate</StatusPill>
+                  <StatusPill tone="red">Status unavailable</StatusPill>
                 </div>
                 <p className="mt-5 text-sm font-semibold leading-7 text-slate-300">{flag.note}</p>
                 <p className="mt-4 text-xs font-black uppercase tracking-[0.14em] text-slate-500">{flag.source}</p>
@@ -132,12 +132,12 @@ export default function TodayAroundMillstadtPage() {
         </div>
       </section>
 
-      <section id="sky" className="bg-[#040d1a] py-14">
+      <section id="sky" className="scroll-mt-[150px] bg-[#040d1a] py-14">
         <div className="wrap">
           <SectionHeader
             eyebrow="Millstadt Sky"
-            title="A reason to check back after sunset"
-            text="Sky items are built as a curated public feature, not a noisy feed. Visibility, direction, timing, and safety language must be verified before an item becomes active."
+            title="Preview: Millstadt sky"
+            text="This preview shows the kinds of sky notices planned for Millstadt. Dated viewing details will appear only after timing, direction, visibility, and safety guidance are verified."
           />
           <div className="mt-8 grid gap-5 lg:grid-cols-3">
             {today.sky.map((item) => (
@@ -179,7 +179,7 @@ export default function TodayAroundMillstadtPage() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 

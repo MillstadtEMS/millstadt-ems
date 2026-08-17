@@ -39,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full`}>
+    <html lang="en" data-scroll-behavior="smooth" className={`${inter.variable} h-full`}>
       <head>
         <meta name="theme-color" content="#040d1a" />
         <link rel="apple-touch-icon" href="/images/millstadt-ems/pwa-icon.png" />

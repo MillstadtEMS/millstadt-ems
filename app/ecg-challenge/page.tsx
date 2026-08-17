@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function PublicEcgChallengePage() {
   return (
-    <main className="bg-[#040d1a] text-white">
+    <div className="bg-[#040d1a] text-white">
       <PublicPageHero
         eyebrow="Clinical Education"
         title="ECG"
@@ -50,6 +50,6 @@ export default function PublicEcgChallengePage() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

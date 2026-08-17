@@ -16,6 +16,7 @@ const EmergencyDecisionLab = dynamic(() => import("@/components/kids/EmergencyDe
 export default function LazyKidsGame({ game }: { game: GameKind }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [shouldLoad, setShouldLoad] = useState(false);
+  const title = game === "ambulance" ? "Ambulance explorer" : "911 decision lab";
 
   useEffect(() => {
     if (shouldLoad) return;
@@ -32,21 +33,24 @@ export default function LazyKidsGame({ game }: { game: GameKind }) {
         setShouldLoad(true);
         observer.disconnect();
       },
-      { rootMargin: "520px 0px" },
+      { rootMargin: game === "ambulance" ? "360px 0px" : "0px" },
     );
 
     observer.observe(root);
     return () => observer.disconnect();
-  }, [shouldLoad]);
+  }, [game, shouldLoad]);
 
   return (
-    <div ref={rootRef}>
+    <div ref={rootRef} aria-busy={!shouldLoad}>
+      <span className="sr-only" role="status" aria-live="polite">
+        {shouldLoad ? `${title} ready` : `${title} loading`}
+      </span>
       {shouldLoad ? (
         game === "ambulance" ? <AmbulanceExplorer /> : <EmergencyDecisionLab />
       ) : (
         <GameLoading
           tone={game === "ambulance" ? "light" : "dark"}
-          title={game === "ambulance" ? "Ambulance explorer" : "911 decision lab"}
+          title={title}
         />
       )}
     </div>
