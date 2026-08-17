@@ -9,11 +9,10 @@
 - GitHub tracker: issue `#13`
 - Deployment policy: preview/development only unless the owner separately requests production.
 
-The owner separately directed production promotion of the completed Serenity Prayer
-checkpoint on August 17, 2026. Production deployment
-`dpl_CidNch9whmc9rycVTRD4VRyEUZTs` was verified at
-`https://www.millstadtems.org/` before remaining master work resumed on the isolated
-development branch.
+The owner separately directed production promotions on August 17, 2026. The current
+verified production deployment is `dpl_HCgWxmDjEyPfLST6PUzgh3TDXwCh`, build
+`83a8477c`, at `https://www.millstadtems.org/`. Remaining master work continues on
+the isolated development branch.
 
 ## Protected Areas
 
@@ -25,10 +24,14 @@ These values were recorded at elite baseline `d4270d9`:
 | Public ticker | `components/cad/CallTicker.tsx` SHA-256 `119b2cd80079463b0cf0ac07f2a1d70272908c3ee084a9a9ddf9dc21e06e5756` |
 | Ticker duration | `ACTIVE_MINUTES = 120` |
 | Homepage Financial Information hero entry | SHA-256 `3d94ea2a14dfcc6e243321d2c9a7a5ea1b9287fc6890262ea3a4aebb198c3dcf` |
-| Homepage Financial Information feature entry | SHA-256 `bd5028dfceeffc115edb4522a27d3bb3b06963f2995f3a61dc2073646be5ccf0` |
 | Navigation Financial Information entry | SHA-256 `312b9cb33439630cec0851b960c2f9329975278835d50356464138ff332c7249` |
 
 Run `npm run test:elite-protected` before every checkpoint commit.
+
+On August 17, 2026, the owner explicitly retired the second, wide homepage
+Financial Information feature entry. The protected homepage invariant now requires
+exactly one entry: the compact button in the hero. Production Financials remains
+Coming Soon, and all public financial APIs remain disabled.
 
 ## Completed Checkpoints
 
@@ -47,18 +50,37 @@ Run `npm run test:elite-protected` before every checkpoint commit.
   `https://millstadt-5pg3wox6m-kennethjames-7371s-projects.vercel.app`
 - Revert: `git revert d4270d9`, then `git revert 985a360`.
 
-### Community Platform Prototype
+### Phase 5: Header-Only Community Monitors
 
-- Status: truthful prototype complete; real external data connections remain pending.
-- Commits: `bdad461`, `b92ea2a`
-- Behavior: top community toolbar, `/community/today`, official professional-sports
-  links, school/flag/sky unavailable states, two Kids Club experiences, and a separate
-  four-case public ECG challenge.
-- Verification: targeted ESLint, TypeScript, full Next.js build, responsive browser
-  review, security tests, and financial-workflow regression tests.
-- Known limitations: no licensed live-score provider, official school feed, official
-  flag feed, or computed astronomy adapter is connected.
-- Revert: `git revert b92ea2a`, then `git revert bdad461`.
+- Status: complete to the authorized schedule-only scope and verified in production.
+- Commits: `bca6d31`, `eef9052`, `83a8477`.
+- Owner-directed presentation: no new public dashboard or permanent team buttons.
+  `/community/today` redirects home. Verified items appear only in the existing top
+  bar when they apply that day.
+- One logo represents each brand, including doubleheaders or multiple same-brand
+  events. Distinct brands alternate from the EMS and Lounge sides while retaining a
+  consistent full-size treatment. Event logos are desktop-only; phone navigation is
+  unchanged and remains reserved for weather warnings and existing controls.
+- Hover, keyboard focus, and click/tap expose source-attributed details. Times use
+  military time first with a 12-hour value in parentheses.
+- Connected sources: official MLB Cardinals schedule, official NHL Blues schedule,
+  official CITY SC calendar, Millstadt EMS public calendar, St. James official
+  calendar, Millstadt CCSD official athletics feed, Belleville West official
+  athletics feed, and a local solar-eclipse calculation.
+- Visibility starts at 07:00 America/Chicago. Normal game-day display ends at local
+  midnight; late games use the documented two-hour carryover rule. Same-brand events
+  are deduplicated into one logo.
+- Weather failures remain silent rather than displaying an inaccurate unavailable
+  banner. Multiple real warnings rotate one at a time, with the complete list
+  available on hover, focus, or tap.
+- Source requests use timeouts, schema validation, five-minute revalidation, and
+  per-source failure isolation. Manual school, flag, and sky entries require an
+  explicit verified marker and source URL.
+- Production deployment: `dpl_HCgWxmDjEyPfLST6PUzgh3TDXwCh`.
+- Verification: targeted ESLint, TypeScript, 118-route optimized build, protected
+  invariant test, 50 financial integration checks, desktop and 390px browser review,
+  live API review, and a ten-perspective audit.
+- Revert: `git revert 83a8477`, then `git revert eef9052`, then `git revert bca6d31`.
 
 ## Current Checkpoint
 
@@ -70,13 +92,16 @@ Run `npm run test:elite-protected` before every checkpoint commit.
   and direct professional form copy.
 - Real email/SMS sends: prohibited during development verification.
 - Fictional data only for security and output tests.
+- Five owner-supplied public Form 990 PDFs are loaded only in the ignored local
+  development library. The archive labels the misnamed file as tax year 2021 and
+  orders the real filings 2023, 2022, 2021, 2020, 2019. No real PDF is tracked by Git
+  or available in production.
 
 ## Remaining Phases
 
 - Complete foundation security and reliability.
 - Build complete PDF and email registries; render fictional samples.
 - Consolidate public design and accessibility patterns.
-- Complete authorized community data adapters and administrative fallbacks.
 - Finish Kids Club, public ECG, seasonal themes, and repeat-visit features.
 - Run the full acceptance matrix and ten-perspective final audit.
 - Publish and verify preview checkpoints only unless the owner gives a separate,
@@ -84,9 +109,12 @@ Run `npm run test:elite-protected` before every checkpoint commit.
 
 ## Known External Dependencies
 
-- Licensed/authorized live sports provider credentials or contract.
-- Official school calendar/athletics sources or school partnership.
+- Licensed/authorized live-score provider credentials or contract. Official
+  schedule-only behavior is active without this dependency.
+- Official school closure/safety notice integration and administrator approval
+  workflow. Athletics/calendar feeds are connected where available.
 - Official federal and Illinois flag-status sources suitable for automation.
+- Curated meteor-shower and conjunction source. Solar-eclipse calculation is active;
+  other sky notices require a verified manual record.
 - Owner-approved notification recipients and production delivery configuration.
 - Medical-director review for advanced public ECG content.
-
