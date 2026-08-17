@@ -8,6 +8,7 @@ import TopCallCategories from "@/components/TopCallCategories";
 import DistrictMapStat from "@/components/DistrictMapStat";
 import PublicStatsSummary from "@/components/PublicStatsSummary";
 import SectionDivider from "@/components/SectionDivider";
+import SerenityPrayer from "@/components/SerenityPrayer";
 import SiteIcon from "@/components/site/SiteIcon";
 import { getContent } from "@/lib/db";
 import { isFinancialsHubDevelopmentEnabled } from "@/lib/financials-hub/config";
@@ -465,6 +466,7 @@ export default async function Home({
           </div>
         </div>
       </section>
+      <SerenityPrayer />
       </>
   );
 }
