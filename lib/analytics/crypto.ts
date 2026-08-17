@@ -1,11 +1,7 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from "crypto";
 
 function hashKey() {
-  const source =
-    process.env.ANALYTICS_HASH_KEY ||
-    process.env.LOUNGE_ENCRYPTION_KEY ||
-    process.env.ADMIN_PASSWORD ||
-    "";
+  const source = process.env.ANALYTICS_HASH_KEY || "";
   return source ? createHash("sha256").update(source).digest() : null;
 }
 

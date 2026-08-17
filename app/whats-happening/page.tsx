@@ -20,6 +20,14 @@ const cards = [
     label: "View Calendar",
   },
   {
+    href: "/community/today",
+    icon: "spark",
+    title: "Today Around Millstadt",
+    desc: "Sports, school events, flags, sky features, and civic notices with source-aware status.",
+    tone: "cyan",
+    label: "Open Today",
+  },
+  {
     href: "/kids-club",
     icon: "ambulance",
     title: "Kids Club",
@@ -58,6 +66,14 @@ const cards = [
     desc: "Latest stories and headlines pulled directly from millstadtnews.com.",
     tone: "red",
     label: "Read News",
+  },
+  {
+    href: "/ecg-challenge",
+    icon: "heartbeat",
+    title: "Public ECG Challenge",
+    desc: "A separate rhythm-pattern challenge for clinicians, students, and medically knowledgeable visitors.",
+    tone: "blue",
+    label: "Try Challenge",
   },
 ] satisfies {
   href: string;

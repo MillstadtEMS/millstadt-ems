@@ -16,7 +16,7 @@ type EventName =
   | "accessible_alternative"
   | "client_error";
 
-const EXCLUDED = ["/admin", "/api", "/board", "/inventory", "/lounge", "/truckcheck"];
+const EXCLUDED = ["/admin", "/api", "/board", "/inventory", "/kids-club", "/lounge", "/truckcheck"];
 
 export default function AnalyticsTracker() {
   const pathname = usePathname() || "/";
@@ -25,6 +25,7 @@ export default function AnalyticsTracker() {
   const pathRef = useRef(pathname);
   const startedAt = useRef(0);
   const performanceSent = useRef(false);
+  const trackingExcluded = isExcluded(pathname);
 
   useEffect(() => {
     startedAt.current = Date.now();
@@ -32,6 +33,10 @@ export default function AnalyticsTracker() {
   }, [categories]);
 
   useEffect(() => {
+    if (trackingExcluded) {
+      return;
+    }
+
     let active = true;
     fetch("/api/privacy/preferences", { cache: "no-store" })
       .then((response) => response.json())
@@ -53,7 +58,7 @@ export default function AnalyticsTracker() {
       active = false;
       window.removeEventListener("millstadt:privacy-updated", update);
     };
-  }, []);
+  }, [trackingExcluded]);
 
   useEffect(() => {
     pathRef.current = pathname;

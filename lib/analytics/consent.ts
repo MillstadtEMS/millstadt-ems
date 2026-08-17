@@ -21,12 +21,7 @@ type ConsentCookie = {
 };
 
 function signingSecret() {
-  return (
-    process.env.ANALYTICS_HASH_KEY ||
-    process.env.LOUNGE_ENCRYPTION_KEY ||
-    process.env.ADMIN_PASSWORD ||
-    ""
-  );
+  return process.env.ANALYTICS_HASH_KEY || "";
 }
 
 function sign(value: string) {

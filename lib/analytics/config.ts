@@ -91,11 +91,7 @@ export function getAnalyticsConfig(): AnalyticsConfig {
   const developmentMemoryStore =
     !productionRuntime && boolEnv("ANALYTICS_DEVELOPMENT_MEMORY_STORE");
   const hasDatabase = Boolean(textEnv("DATABASE_URL"));
-  const hasHashKey = Boolean(
-    textEnv("ANALYTICS_HASH_KEY") ||
-      textEnv("LOUNGE_ENCRYPTION_KEY") ||
-      textEnv("ADMIN_PASSWORD"),
-  );
+  const hasHashKey = Boolean(textEnv("ANALYTICS_HASH_KEY"));
   const hasSecurityEncryptionKey = Boolean(
     textEnv("ANALYTICS_SECURITY_ENCRYPTION_KEY"),
   );

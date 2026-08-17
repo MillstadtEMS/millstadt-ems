@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import LazyKidsGame from "@/components/kids/LazyKidsGame";
 import { PARTNER_LINKS } from "@/lib/kids/activities";
 
 export default function KidsClubGamesPage() {
@@ -32,12 +33,16 @@ export default function KidsClubGamesPage() {
               More ways to practice safety.
             </h1>
             <p className="mt-6 max-w-2xl text-xl font-semibold leading-9 text-slate-200">
-              Open these with a grown-up for more fire-safety games, videos, and
-              easy emergency lessons you can do together at home.
+              Tap through the ambulance explorer, practice 911 decisions, and
+              open extra grown-up approved safety resources.
             </p>
           </div>
         </div>
       </section>
+
+      <LazyKidsGame game="ambulance" />
+
+      <LazyKidsGame game="decisions" />
 
       <section style={{ paddingTop: 56, paddingBottom: 56 }}>
         <div className="wrap box-border">
@@ -73,6 +78,7 @@ export default function KidsClubGamesPage() {
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label={`${link.name} opens in a new tab`}
                   className="group flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/70 transition hover:-translate-y-0.5 hover:border-[#1b58c9]/40 focus:outline-none focus:ring-2 focus:ring-[#1b58c9] focus:ring-offset-2 sm:flex-row sm:items-start sm:justify-between"
                 >
                   <div className="flex-1">

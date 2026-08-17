@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
@@ -19,6 +20,7 @@ const MENU_GROUPS = [
       { href: "/fleet",               label: "Our Fleet" },
       { href: "/medical-control",     label: "Medical Control" },
       { href: "/community-education", label: "Community Education" },
+      { href: "/ecg-challenge",        label: "ECG Challenge" },
       { href: "/testimonials",        label: "Testimonials" },
       { href: "/careers",             label: "Careers" },
       { href: "/gallery",             label: "Photo Gallery" },
@@ -29,8 +31,10 @@ const MENU_GROUPS = [
     description: "Community programs, events, news, and notices.",
     color: "text-[#f0b429]",
     links: [
+      { href: "/community/today", label: "Today Around Millstadt" },
       { href: "/events",          label: "Events Calendar" },
       { href: "/kids-club",        label: "Kids Club" },
+      { href: "/kids-club/games",  label: "Kids Club Games" },
       { href: "/senior-center",   label: "Senior Center" },
       { href: "/commercial-club", label: "Commercial Club" },
       { href: "/bulletin",        label: "Bulletin Board" },
@@ -55,6 +59,17 @@ const MENU_GROUPS = [
   },
 ];
 
+function routeMatches(pathname: string, href: string) {
+  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function linksForMenuGroup(heading: string, showBoardMinutes: boolean) {
+  const group = MENU_GROUPS.find(item => item.heading === heading) ?? MENU_GROUPS[0];
+  return group.heading === "What's Happening" && showBoardMinutes
+    ? [...group.links, { href: "/board-minutes", label: "Board Minutes" }]
+    : group.links;
+}
+
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function Nav() {
@@ -67,8 +82,12 @@ export default function Nav() {
   const navRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const activeHref = MENU_GROUPS
+    .flatMap((group) => linksForMenuGroup(group.heading, showBoardMinutes))
+    .filter((link) => routeMatches(pathname, link.href))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
+  const isActive = (href: string) => activeHref === href;
 
   useEffect(() => {
     function onNewDispatch() {
@@ -84,7 +103,7 @@ export default function Nav() {
     const frame = window.requestAnimationFrame(() => {
       setOpen(false);
       const currentGroup = MENU_GROUPS.find(group =>
-        group.links.some(link => link.href === "/" ? pathname === "/" : pathname.startsWith(link.href)),
+        linksForMenuGroup(group.heading, showBoardMinutes).some(link => routeMatches(pathname, link.href)),
       );
       if (currentGroup) {
         setActiveGroup(currentGroup.heading);
@@ -92,7 +111,7 @@ export default function Nav() {
       }
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [pathname]);
+  }, [pathname, showBoardMinutes]);
 
   useEffect(() => {
     if (!open) return;
@@ -121,20 +140,13 @@ export default function Nav() {
     return () => { alive = false; };
   }, []);
 
-  const linksForGroup = (heading: string) => {
-    const group = MENU_GROUPS.find(item => item.heading === heading) ?? MENU_GROUPS[0];
-    return group.heading === "What's Happening" && showBoardMinutes
-      ? [...group.links, { href: "/board-minutes", label: "Board Minutes" }]
-      : group.links;
-  };
-
   const selectedGroup = MENU_GROUPS.find(group => group.heading === activeGroup) ?? MENU_GROUPS[0];
 
   function toggleMenu() {
     if (!open) {
       const currentGroup = MENU_GROUPS.find(group =>
-        linksForGroup(group.heading).some(link =>
-          link.href === "/" ? pathname === "/" : pathname.startsWith(link.href),
+        linksForMenuGroup(group.heading, showBoardMinutes).some(link =>
+          routeMatches(pathname, link.href),
         ),
       );
       if (currentGroup) {
@@ -157,7 +169,7 @@ export default function Nav() {
           <div className="flex-1 flex items-center justify-start min-w-0">
           {/* Logo */}
           <Link href="/" className="shrink-0 group">
-            <img
+            <Image
               src="/images/millstadt-ems/logo.png"
               alt="Millstadt EMS"
               width={140}
@@ -286,7 +298,7 @@ export default function Nav() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
-                  {linksForGroup(selectedGroup.heading).map(link => (
+                  {linksForMenuGroup(selectedGroup.heading, showBoardMinutes).map(link => (
                     <Link
                       key={link.href}
                       href={link.href}
@@ -345,7 +357,7 @@ export default function Nav() {
                         id={`mobile-navigation-${group.heading.replace(/[^a-z]+/gi, "-").toLowerCase()}`}
                         className="grid gap-1 bg-[#020912]/55 px-3 py-3"
                       >
-                        {linksForGroup(group.heading).map(link => (
+                        {linksForMenuGroup(group.heading, showBoardMinutes).map(link => (
                           <Link
                             key={link.href}
                             href={link.href}
@@ -386,7 +398,7 @@ function MobileBottomNav({
   setOpen: (v: boolean | ((p: boolean) => boolean)) => void;
 }) {
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+    href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
   const tabs = [
     { href: "/", label: "Home", icon: <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg> },
