@@ -11,6 +11,7 @@
     "version:minor": "npm version minor --no-git-tag-version",
     "version:major": "npm version major --no-git-tag-version",
     "lounge:initialize-passwords": "node scripts/initialize-lounge-passwords.mjs",
+    "test:elite-protected": "node scripts/verify-elite-protected-areas.mjs",
     "test:financials": "node scripts/test-financials-hub.mjs",
     "test:security": "node scripts/test-security-hardening.mjs"
   },
