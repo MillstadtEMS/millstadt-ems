@@ -10,6 +10,7 @@ const prayerFont = Dancing_Script({
 export default function SerenityPrayer() {
   return (
     <section
+      id="serenity-prayer"
       aria-labelledby="serenity-prayer-heading"
       className="relative isolate flex min-h-[680px] items-center justify-center overflow-hidden bg-[#071428] px-6 py-20 sm:min-h-[740px] sm:py-24 lg:min-h-[780px]"
     >
@@ -19,9 +20,10 @@ export default function SerenityPrayer() {
         aria-hidden="true"
         width={1600}
         height={1600}
-        sizes="(max-width: 768px) 300px, 760px"
-        className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-auto max-w-none -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.28] sm:opacity-[0.24]"
-        style={{ width: "clamp(300px, 72vw, 760px)" }}
+        loading="eager"
+        sizes="(max-width: 640px) 280px, 620px"
+        className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-auto max-w-none -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.54] sm:opacity-[0.5]"
+        style={{ width: "clamp(280px, 64vw, 620px)" }}
       />
 
       <div
@@ -29,7 +31,7 @@ export default function SerenityPrayer() {
         className="absolute inset-0 z-10"
         style={{
           background:
-            "linear-gradient(180deg, rgba(7,20,40,0) 0%, rgba(7,20,40,0.12) 28%, rgba(4,13,26,0.42) 100%), radial-gradient(ellipse at center, rgba(7,20,40,0.18) 0%, rgba(7,20,40,0.48) 58%, rgba(7,20,40,0.82) 100%)",
+            "linear-gradient(180deg, rgba(7,20,40,0) 0%, rgba(7,20,40,0.08) 48%, rgba(4,13,26,0.24) 100%), radial-gradient(ellipse at center, rgba(7,20,40,0.08) 0%, rgba(7,20,40,0.28) 62%, rgba(7,20,40,0.56) 100%)",
         }}
       />
 
@@ -48,6 +50,10 @@ export default function SerenityPrayer() {
           <p
             aria-label="God, grant me the serenity to accept the things I cannot change, the courage to change the things I can, and the wisdom to know the difference."
             className={`${prayerFont.className} mx-auto max-w-5xl text-balance text-[clamp(1.85rem,8vw,3.5rem)] font-bold leading-[1.04] text-[#fff7df] sm:text-[clamp(2.2rem,4.9vw,4.85rem)] sm:leading-[1.08]`}
+            style={{
+              textShadow:
+                "0 2px 8px rgba(4,13,26,0.98), 0 0 22px rgba(4,13,26,0.9)",
+            }}
           >
             <span aria-hidden="true" className="block">God, grant me the serenity</span>
             <span aria-hidden="true" className="mt-2 block sm:mt-4">to accept the things I cannot change,</span>
