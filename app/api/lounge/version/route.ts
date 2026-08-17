@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
+import { SITE_VERSION } from "@/lib/site-version";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
  * Tiny endpoint the installed PWA polls to detect whether a newer build
- * is available. Returns the current Vercel deployment SHA. The lounge
- * shell compares the cached value and forces a reload when it changes.
+ * is available. Returns the public site version and current deployment SHA.
+ * The lounge shell compares the cached SHA and reloads when it changes.
  */
 export async function GET() {
   const sha =
@@ -14,5 +15,5 @@ export async function GET() {
     process.env.GITHUB_SHA ||
     process.env.NEXT_PUBLIC_BUILD_ID ||
     "dev";
-  return NextResponse.json({ sha, builtAt: new Date().toISOString() });
+  return NextResponse.json({ version: SITE_VERSION, sha, builtAt: new Date().toISOString() });
 }

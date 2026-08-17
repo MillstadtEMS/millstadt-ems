@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { SITE_VERSION } from "@/lib/site-version";
 
 const footerNav = {
   agency: [
@@ -202,9 +203,14 @@ export default function Footer() {
 
           {/* Bottom bar */}
           <div className="mt-8 pt-6 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-slate-600 text-xs">
-              &copy; {new Date().getFullYear()} Millstadt Ambulance Service. All rights reserved.
-            </p>
+            <div className="text-center md:text-left">
+              <p className="text-slate-600 text-xs">
+                &copy; {new Date().getFullYear()} Millstadt Ambulance Service. All rights reserved.
+              </p>
+              <p className="mt-1 text-[10px] text-slate-700" aria-label={`Website version ${SITE_VERSION}`}>
+                Website v{SITE_VERSION}
+              </p>
+            </div>
             <div className="flex items-center gap-4">
               <Link
                 href="/privacy"
