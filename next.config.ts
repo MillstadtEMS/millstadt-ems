@@ -22,7 +22,7 @@ function resolveBuildRevision(): string {
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   poweredByHeader: false,
-  serverExternalPackages: ["pdfjs-dist"],
+  serverExternalPackages: ["node-ical", "pdfjs-dist"],
   env: {
     NEXT_PUBLIC_SITE_RELEASE_VERSION: packageMetadata.version,
     NEXT_PUBLIC_SITE_BUILD_REVISION: resolveBuildRevision(),

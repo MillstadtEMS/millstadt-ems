@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronRight, X } from "lucide-react";
+import CommunityAlertTicker from "@/components/CommunityAlertTicker";
 
 // ── Menu structure ──────────────────────────────────────────────────────────
 
@@ -31,7 +32,6 @@ const MENU_GROUPS = [
     description: "Community programs, events, news, and notices.",
     color: "text-[#f0b429]",
     links: [
-      { href: "/community/today", label: "Today Around Millstadt" },
       { href: "/events",          label: "Events Calendar" },
       { href: "/kids-club",        label: "Kids Club" },
       { href: "/kids-club/games",  label: "Kids Club Games" },
@@ -162,11 +162,11 @@ export default function Nav() {
 
       {/* ── Nav bar ── */}
       <div className="mems-nav-bar bg-[#020912] border-b border-white/8" style={{ overflow: "visible" }}>
-        <div className="wrap flex items-center gap-4 py-3" style={{ overflow: "visible" }}>
+        <div className="mems-nav-content wrap flex items-center gap-4 py-3" style={{ overflow: "visible" }}>
 
           {/* Left group (flex-1) — balances the right group so the weather
               ticker in the middle sits at the TRUE center of the bar. */}
-          <div className="flex-1 flex items-center justify-start min-w-0">
+          <div className="mems-nav-alert-group flex-1 flex items-center justify-start min-w-0">
           {/* Logo */}
           <Link href="/" className="shrink-0 group">
             <Image
@@ -177,16 +177,17 @@ export default function Nav() {
               className="h-14 w-auto object-contain group-hover:opacity-80 transition-opacity"
             />
           </Link>
+          <CommunityAlertTicker />
           </div>
 
           {/* Center group (flex-1) — weather ticker. Wrapper must NOT clip;
               the hover popup drops below the bar. Truncation handled inside. */}
-          <div className="flex-1 flex items-center justify-center min-w-0">
+          <div className="mems-nav-weather flex-1 flex items-center justify-center min-w-0">
             <WeatherTicker />
           </div>
 
           {/* Right group (flex-1) — mirrors the left group's width. */}
-          <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+          <div className="mems-nav-actions flex-1 flex items-center justify-end gap-2 min-w-0">
           {/* Employee Lounge button (left of menu) */}
           <Link
             href="/lounge"
@@ -450,7 +451,21 @@ function MobileBottomNav({
 interface NWSAlert {
   properties: { event: string; headline: string; description: string; severity: string };
 }
-interface ProcessedAlert { text: string; level: "red" | "yellow" | "green"; rank: number; headline: string; description: string }
+interface ProcessedAlert {
+  text: string;
+  level: "red" | "yellow" | "green";
+  rank: number;
+  headline: string;
+  description: string;
+}
+
+const WEATHER_CLEAR: ProcessedAlert = {
+  text: "NO ACTIVE WEATHER ALERTS — MILLSTADT, ILLINOIS",
+  level: "green",
+  rank: 0,
+  headline: "No active weather alerts for Millstadt, Illinois.",
+  description: "",
+};
 
 /** Split an NWS alert description into its "* WHAT... * WHERE..." sections
  * so the hover popup can render them as neat labeled blocks. Returns [] when
@@ -506,6 +521,7 @@ function WeatherTicker() {
   const [idx, setIdx]       = useState(0);
   const [hover, setHover]   = useState(false);
   const [compact, setCompact] = useState(false);
+  const weatherRootRef = useRef<HTMLDivElement>(null);
 
   // On phones/tablets the full alert headline is too wide and spills over the
   // logos — collapse it to a short "tap for details" chip instead.
@@ -522,6 +538,25 @@ function WeatherTicker() {
   }, [pathname]);
 
   useEffect(() => {
+    if (!hover || !compact) return;
+
+    function closeOnOutsideClick(event: MouseEvent) {
+      if (weatherRootRef.current && !weatherRootRef.current.contains(event.target as Node)) setHover(false);
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setHover(false);
+    }
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [compact, hover]);
+
+  useEffect(() => {
     if (alerts.length <= 1) return;
     const id = setInterval(() => setIdx(i => (i + 1) % alerts.length), 5000);
     return () => clearInterval(id);
@@ -529,7 +564,7 @@ function WeatherTicker() {
 
   useEffect(() => {
     function processAlerts(raw: NWSAlert[]): ProcessedAlert[] {
-      if (raw.length === 0) return [{ text: "NO ACTIVE WEATHER ALERTS — MILLSTADT, ILLINOIS", level: "green", rank: 0, headline: "No active weather alerts for Millstadt, Illinois.", description: "" }];
+      if (raw.length === 0) return [WEATHER_CLEAR];
       return raw.map(a => {
         const desc = (a.properties.description ?? "").trim();
         const h = (a.properties.headline + " " + desc).toLowerCase();
@@ -547,11 +582,13 @@ function WeatherTicker() {
     async function fetchAlerts() {
       try {
         const res  = await fetch("https://api.weather.gov/alerts/active?zone=ILC163", { headers: { "User-Agent": "(millstadtems.org, millstadtems@gmail.com)", Accept: "application/geo+json" } });
+        if (!res.ok) throw new Error(`Weather source returned ${res.status}`);
         const data = await res.json();
         setAlerts(processAlerts(data.features ?? []));
         setIdx(0);
       } catch {
-        setAlerts([{ text: "NO ACTIVE WEATHER ALERTS — MILLSTADT, ILLINOIS", level: "green", rank: 0, headline: "No active weather alerts for Millstadt, Illinois.", description: "" }]);
+        setAlerts([]);
+        setIdx(0);
       }
     }
     fetchAlerts();
@@ -574,7 +611,7 @@ function WeatherTicker() {
     return () => { clearInterval(id); window.removeEventListener("weather-test-scenario", handleTest); };
   }, []);
 
-  const current = alerts[idx] ?? { text: "NO ACTIVE WEATHER ALERTS — MILLSTADT, ILLINOIS", level: "green" as const, rank: 0, headline: "No active weather alerts for Millstadt, Illinois.", description: "" };
+  const current = alerts[idx] ?? WEATHER_CLEAR;
   const color   = current.level === "red" ? "#f87171" : current.level === "yellow" ? "#facc15" : "#34d399";
   const levelColor = (lvl: "red" | "yellow" | "green") => lvl === "red" ? "#f87171" : lvl === "yellow" ? "#facc15" : "#34d399";
 
@@ -587,36 +624,51 @@ function WeatherTicker() {
   // so the bar never carries the long redundant headline string.
   const eventLabel = current.text.split(" — ")[0];
   const displayText = compact
-    ? (canExpand ? `⚠ ${realAlerts.length} Alert${realAlerts.length > 1 ? "s" : ""} · Tap for more` : "No Weather Alerts")
+    ? (canExpand ? `⚠ ${realAlerts.length}` : "")
     : eventLabel;
+
+  if (alerts.length === 0 || (compact && !canExpand)) return null;
 
   return (
     <div
+      ref={weatherRootRef}
+      role={canExpand ? "button" : undefined}
+      tabIndex={canExpand ? 0 : undefined}
+      aria-label={canExpand ? `${realAlerts.length} active weather ${realAlerts.length === 1 ? "alert" : "alerts"}. Show details.` : undefined}
+      aria-expanded={canExpand ? hover : undefined}
+      aria-haspopup={canExpand ? "dialog" : undefined}
       style={{ flex: 1, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      onClick={() => compact && canExpand && setHover(v => !v)}
+      onMouseEnter={() => { if (!compact) setHover(true); }}
+      onMouseLeave={() => { if (!compact) setHover(false); }}
+      onFocus={() => { if (canExpand) setHover(true); }}
+      onBlur={(event) => {
+        if (!compact && !event.currentTarget.contains(event.relatedTarget as Node | null)) setHover(false);
+      }}
+      onClick={() => { if (compact && canExpand) setHover(true); }}
+      onKeyDown={(event) => {
+        if (!canExpand || (event.key !== "Enter" && event.key !== " ")) return;
+        event.preventDefault();
+        setHover(true);
+      }}
     >
       {/* ── Rotating ticker line — must stay constrained so the long text
           truncates with an ellipsis and never spills over the nav buttons. ── */}
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, overflow: "hidden", padding: "0 28px", minWidth: 0, cursor: canExpand ? "pointer" : "default" }}>
         {compact ? (
           // Mobile/tablet: single compact chip (unchanged).
-          <span key={current.level} className="text-[10px]" style={{ color, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: "100%", animation: `weather-pulse-${current.level} 2.5s ease-in-out infinite` }}>
+          <span key={current.level} className="text-[10px]" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 32, height: 32, padding: "0 7px", border: `1px solid ${color}70`, borderRadius: 6, background: `${color}16`, color, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: "100%", animation: `weather-pulse-${current.level} 2.5s ease-in-out infinite` }}>
             {displayText}
           </span>
         ) : canExpand ? (
-          // Desktop: one pill per active alert, side by side. The 28px wrapper
-          // padding keeps them clear of the logo / menu buttons either side.
-          realAlerts.map((a, i) => {
-            const c = levelColor(a.level);
-            return (
-              <span key={i} className="text-[13px]" style={{ display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0, color: c, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", padding: "3px 12px", border: `1px solid ${c}59`, borderRadius: 999, background: `${c}14`, boxShadow: `0 0 0 1px ${c}1a`, animation: `weather-pulse-${a.level} 2.5s ease-in-out infinite` }}>
-                <span style={{ fontSize: "0.95em", flexShrink: 0, lineHeight: 1 }}>⚠</span>
-                {a.text.split(" — ")[0]}
-              </span>
-            );
-          })
+          // Desktop rotates one warning at a time. Hover reveals the complete list.
+          <span
+            key={current.text}
+            className={`text-[13px] ${realAlerts.length > 1 ? "weather-alert-swap" : ""}`}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0, color, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", padding: "3px 12px", border: `1px solid ${color}59`, borderRadius: 999, background: `${color}14`, boxShadow: `0 0 0 1px ${color}1a` }}
+          >
+            <span style={{ fontSize: "0.95em", flexShrink: 0, lineHeight: 1 }}>⚠</span>
+            {eventLabel}
+          </span>
         ) : (
           // Desktop, all-clear: subtle green "no alerts" pill.
           <span key="clear" className="text-[13px]" style={{ display: "inline-flex", alignItems: "center", gap: 6, color, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", maxWidth: "100%", animation: `weather-pulse-${current.level} 2.5s ease-in-out infinite` }}>
@@ -630,8 +682,13 @@ function WeatherTicker() {
       {/* ── Hover / tap popup: full text of every active alert ── */}
       {hover && canExpand && (
         <div
+          role="dialog"
+          aria-label="Active weather alerts"
           style={{
-            position: "absolute", top: "calc(100% + 7px)", left: "50%", transform: "translateX(-50%)",
+            position: compact ? "fixed" : "absolute",
+            top: compact ? 124 : "calc(100% + 7px)",
+            left: compact ? "3vw" : "50%",
+            transform: compact ? "none" : "translateX(-50%)",
             width: "min(620px, 94vw)", maxHeight: "60vh", overflowY: "auto", textAlign: "left",
             background: "linear-gradient(165deg, rgba(10,22,40,0.985) 0%, rgba(2,9,18,0.985) 60%)",
             backdropFilter: "blur(10px)",

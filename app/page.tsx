@@ -9,7 +9,6 @@ import DistrictMapStat from "@/components/DistrictMapStat";
 import PublicStatsSummary from "@/components/PublicStatsSummary";
 import SectionDivider from "@/components/SectionDivider";
 import SerenityPrayer from "@/components/SerenityPrayer";
-import CommunityStatusToolbar from "@/components/CommunityStatusToolbar";
 import SiteIcon from "@/components/site/SiteIcon";
 import { getContent } from "@/lib/db";
 import { isFinancialsHubDevelopmentEnabled } from "@/lib/financials-hub/config";
@@ -73,8 +72,6 @@ export default async function Home({
 
         {/* ── Hero — single flex parent, 3 sections ── */}
         <div className="hero-content relative z-10 w-full" style={{ paddingTop: "96px" }}>
-          <CommunityStatusToolbar />
-
           {/* ── hero-top: headline, subtext, buttons ── */}
           <div className="hero-top w-full flex flex-col items-center text-center px-6 pt-8 md:pt-16">
             <div className="flex items-center justify-center gap-3 mb-6 sm:mb-10">
