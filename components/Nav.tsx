@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronRight, X } from "lucide-react";
-import CommunityAlertTicker from "@/components/CommunityAlertTicker";
+import CommunityAlertTicker, { CommunityAlertProvider } from "@/components/CommunityAlertTicker";
 
 // ── Menu structure ──────────────────────────────────────────────────────────
 
@@ -161,23 +161,24 @@ export default function Nav() {
     <header ref={navRef} className="mems-site-nav fixed top-[46px] left-0 right-0 z-50">
 
       {/* ── Nav bar ── */}
+      <CommunityAlertProvider>
       <div className="mems-nav-bar bg-[#020912] border-b border-white/8" style={{ overflow: "visible" }}>
         <div className="mems-nav-content wrap flex items-center gap-4 py-3" style={{ overflow: "visible" }}>
 
           {/* Left group (flex-1) — balances the right group so the weather
               ticker in the middle sits at the TRUE center of the bar. */}
           <div className="mems-nav-alert-group flex-1 flex items-center justify-start min-w-0">
-          {/* Logo */}
-          <Link href="/" className="shrink-0 group">
-            <Image
-              src="/images/millstadt-ems/logo.png"
-              alt="Millstadt EMS"
-              width={140}
-              height={60}
-              className="h-14 w-auto object-contain group-hover:opacity-80 transition-opacity"
-            />
-          </Link>
-          <CommunityAlertTicker />
+            {/* Logo */}
+            <Link href="/" className="shrink-0 group">
+              <Image
+                src="/images/millstadt-ems/logo.png"
+                alt="Millstadt EMS"
+                width={140}
+                height={60}
+                className="h-14 w-auto object-contain group-hover:opacity-80 transition-opacity"
+              />
+            </Link>
+            <CommunityAlertTicker placement="left" />
           </div>
 
           {/* Center group (flex-1) — weather ticker. Wrapper must NOT clip;
@@ -188,22 +189,23 @@ export default function Nav() {
 
           {/* Right group (flex-1) — mirrors the left group's width. */}
           <div className="mems-nav-actions flex-1 flex items-center justify-end gap-2 min-w-0">
-          {/* Employee Lounge button (left of menu) */}
-          <Link
-            href="/lounge"
-            aria-label="Employee Lounge"
-            className="lounge-hover-expand shrink-0 flex flex-col items-center group relative"
-            style={{ marginRight: 6 }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/lounge/lounge-button.png"
-              alt=""
-              className="lounge-hover-expand-img"
-              style={{ height: "clamp(36px, 4.6vw, 52px)", width: "auto", display: "block", transition: "transform 0.22s cubic-bezier(0.22,1.2,0.36,1), filter 0.22s" }}
-            />
-            <div className="text-[9px] text-[#f0b429] uppercase tracking-widest font-black mt-0.5">Lounge</div>
-          </Link>
+            <CommunityAlertTicker placement="right" />
+            {/* Employee Lounge button (left of menu) */}
+            <Link
+              href="/lounge"
+              aria-label="Employee Lounge"
+              className="lounge-hover-expand shrink-0 flex flex-col items-center group relative"
+              style={{ marginRight: 6 }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/lounge/lounge-button.png"
+                alt=""
+                className="lounge-hover-expand-img"
+                style={{ height: "clamp(36px, 4.6vw, 52px)", width: "auto", display: "block", transition: "transform 0.22s cubic-bezier(0.22,1.2,0.36,1), filter 0.22s" }}
+              />
+              <div className="text-[9px] text-[#f0b429] uppercase tracking-widest font-black mt-0.5">Lounge</div>
+            </Link>
 
           {/* Ambulance menu button */}
           <div className="flex shrink-0 flex-col items-center">
@@ -233,6 +235,7 @@ export default function Nav() {
 
         </div>
       </div>
+      </CommunityAlertProvider>
 
       {/* ── Dropdown menu ── */}
       <div className={`overflow-hidden transition-all duration-300 ${open ? "max-h-[90vh]" : "max-h-0"}`}>

@@ -2,7 +2,15 @@
 
 import Image from "next/image";
 import { CalendarDays, ExternalLink, Flag, GraduationCap, Telescope, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type {
   CommunityAlert,
   CommunityAlertBrand,
@@ -14,9 +22,21 @@ const DISMISSED_KEY = "mems-dismissed-community-alerts";
 type BrandStyle = {
   label: string;
   logo?: string;
+  logoScale?: number;
   primary: string;
   secondary: string;
 };
+
+type CommunityAlertContextValue = {
+  alerts: CommunityAlert[];
+  dismissed: string[];
+  dismiss: (id: string) => void;
+};
+
+const CommunityAlertContext = createContext<CommunityAlertContextValue | null>(null);
+const EMPTY_ALERTS: CommunityAlert[] = [];
+const EMPTY_DISMISSED: string[] = [];
+const NOOP_DISMISS = () => undefined;
 
 const TEAM_STYLES: Record<Exclude<CommunityAlertBrand, "generic">, BrandStyle> = {
   cardinals: {
@@ -52,6 +72,7 @@ const TEAM_STYLES: Record<Exclude<CommunityAlertBrand, "generic">, BrandStyle> =
   "belleville-west": {
     label: "Belleville West",
     logo: "/images/community-alerts/belleville-west.png",
+    logoScale: 1.55,
     primary: "#c22b4c",
     secondary: "#ffffff",
   },
@@ -110,11 +131,9 @@ function groupItemLabel(kind: CommunityAlertKind, index: number) {
   return `Notice ${index + 1}`;
 }
 
-export default function CommunityAlertTicker() {
+export function CommunityAlertProvider({ children }: { children: ReactNode }) {
   const [alerts, setAlerts] = useState<CommunityAlert[]>([]);
   const [dismissed, setDismissed] = useState<string[]>([]);
-  const [openGroup, setOpenGroup] = useState<string | null>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -150,6 +169,31 @@ export default function CommunityAlertTicker() {
     };
   }, []);
 
+  function dismiss(id: string) {
+    const next = [...new Set([...dismissed, id])];
+    setDismissed(next);
+    try {
+      window.sessionStorage.setItem(DISMISSED_KEY, JSON.stringify(next));
+    } catch {
+      // Session storage can be unavailable in strict privacy modes.
+    }
+  }
+
+  return (
+    <CommunityAlertContext.Provider value={{ alerts, dismissed, dismiss }}>
+      {children}
+    </CommunityAlertContext.Provider>
+  );
+}
+
+export default function CommunityAlertTicker({ placement }: { placement: "left" | "right" }) {
+  const context = useContext(CommunityAlertContext);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const alerts = context?.alerts ?? EMPTY_ALERTS;
+  const dismissed = context?.dismissed ?? EMPTY_DISMISSED;
+  const dismiss = context?.dismiss ?? NOOP_DISMISS;
+
   useEffect(() => {
     if (!openGroup) return;
 
@@ -178,28 +222,18 @@ export default function CommunityAlertTicker() {
     }
     return [...grouped.entries()].map(([key, items]) => ({ key, items }));
   }, [alerts, dismissed]);
-  const density = groups.length >= 5 ? "dense" : groups.length >= 3 ? "compact" : "normal";
+  const placedGroups = groups.filter((_, index) => index % 2 === (placement === "left" ? 0 : 1));
 
-  function dismiss(id: string) {
-    const next = [...new Set([...dismissed, id])];
-    setDismissed(next);
-    try {
-      window.sessionStorage.setItem(DISMISSED_KEY, JSON.stringify(next));
-    } catch {
-      // Session storage can be unavailable in strict privacy modes.
-    }
-  }
-
-  if (groups.length === 0) return null;
+  if (placedGroups.length === 0) return null;
 
   return (
     <div
       ref={rootRef}
       className="community-team-alerts flex min-w-0 items-center overflow-visible"
       aria-label="Active community alerts"
-      data-density={density}
+      data-placement={placement}
     >
-      {groups.map(({ key, items }) => {
+      {placedGroups.map(({ key, items }) => {
         const first = items[0];
         const style = first.brand === "generic" ? genericStyle(first.kind) : TEAM_STYLES[first.brand];
         const isOpen = openGroup === key;
@@ -232,6 +266,7 @@ export default function CommunityAlertTicker() {
                   width={52}
                   height={52}
                   className="h-12 w-12 object-contain"
+                  style={style.logoScale ? { transform: `scale(${style.logoScale})` } : undefined}
                 />
               ) : (
                 <span className="flex h-10 w-10 items-center justify-center rounded-md border border-current/30 bg-black/25" style={{ color: style.primary }}>
@@ -248,7 +283,20 @@ export default function CommunityAlertTicker() {
                 style={{ borderTopColor: style.primary, borderTopWidth: 3 }}
               >
                 <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
-                  {style.logo ? <Image src={style.logo} alt="" width={36} height={36} className="h-9 w-9 object-contain" /> : <GenericIcon kind={first.kind} />}
+                  {style.logo ? (
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden">
+                      <Image
+                        src={style.logo}
+                        alt=""
+                        width={36}
+                        height={36}
+                        className="h-9 w-9 object-contain"
+                        style={style.logoScale ? { transform: `scale(${style.logoScale})` } : undefined}
+                      />
+                    </span>
+                  ) : (
+                    <GenericIcon kind={first.kind} />
+                  )}
                   <div className="min-w-0">
                     <h2 className="truncate text-sm font-black" style={{ color: style.primary }}>{style.label}</h2>
                     <p className="mt-0.5 text-[9px] font-black uppercase tracking-[0.1em]" style={{ color: style.secondary }}>

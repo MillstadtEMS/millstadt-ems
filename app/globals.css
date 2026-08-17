@@ -52,6 +52,10 @@ body {
   scrollbar-width: none;
 }
 
+.community-team-alerts[data-placement="right"] {
+  flex-direction: row-reverse;
+}
+
 .community-team-alerts::-webkit-scrollbar {
   display: none;
 }
@@ -65,26 +69,6 @@ body {
 .community-team-alert-button:hover {
   transform: translateY(-1px) scale(1.07);
   filter: drop-shadow(0 0 10px color-mix(in srgb, var(--team-color) 78%, transparent));
-}
-
-.community-team-alerts[data-density="compact"] .community-team-alert-button {
-  height: 50px;
-  width: 50px;
-}
-
-.community-team-alerts[data-density="compact"] .community-team-alert-button img {
-  height: 44px;
-  width: 44px;
-}
-
-.community-team-alerts[data-density="dense"] .community-team-alert-button {
-  height: 44px;
-  width: 44px;
-}
-
-.community-team-alerts[data-density="dense"] .community-team-alert-button img {
-  height: 40px;
-  width: 40px;
 }
 
 @media (max-width: 767px) {
@@ -103,38 +87,9 @@ body {
   }
 
   .community-team-alerts {
-    max-width: 100%;
-    overflow-x: auto;
+    display: none;
   }
 
-  .community-team-alert-button {
-    width: 46px;
-  }
-
-  .community-team-alert-button img {
-    height: 42px;
-    width: 42px;
-  }
-
-  .community-team-alerts[data-density="compact"] .community-team-alert-button {
-    height: 50px;
-    width: 40px;
-  }
-
-  .community-team-alerts[data-density="compact"] .community-team-alert-button img {
-    height: 38px;
-    width: 38px;
-  }
-
-  .community-team-alerts[data-density="dense"] .community-team-alert-button {
-    height: 48px;
-    width: 34px;
-  }
-
-  .community-team-alerts[data-density="dense"] .community-team-alert-button img {
-    height: 32px;
-    width: 32px;
-  }
 }
 
 .weather-alert-swap {

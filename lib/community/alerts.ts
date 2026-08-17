@@ -244,11 +244,18 @@ function gameDisplayEndsAt(start: Date, gameDateKey = centralClock(start).dateKe
 
 function formatCentralTime(value: string | Date) {
   const date = typeof value === "string" ? new Date(value) : value;
-  return new Intl.DateTimeFormat("en-US", {
+  const military = new Intl.DateTimeFormat("en-US", {
+    timeZone: CENTRAL_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(date);
+  const familiar = new Intl.DateTimeFormat("en-US", {
     timeZone: CENTRAL_TIME_ZONE,
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
+  return `${military} (${familiar})`;
 }
 
 function seriesLabel(gameType?: string) {
@@ -562,7 +569,7 @@ async function getBellevilleWestAlerts(now: Date): Promise<CommunityAlert[]> {
       ? `${locationType === "A" ? "at" : locationType === "H" ? "vs." : "with"} ${opponent}`
       : event.title?.trim() || "scheduled event";
     const isCanceled = Boolean(event.cancellationStatus && event.cancellationStatus !== "0");
-    const timeLabel = hasUsableTime(event.startTime) ? event.startTime!.trim() : "Time TBA";
+    const timeLabel = hasUsableTime(event.startTime) ? formatCentralTime(gameStart) : "Time TBA";
     const eventLabel = [sport, level].filter(Boolean).join(" - ");
 
     return [{

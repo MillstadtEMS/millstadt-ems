@@ -280,13 +280,14 @@ export default async function Home({
             className="group grid rounded-2xl border border-white/8 bg-[#071428] shadow-xl shadow-black/20 transition hover:-translate-y-0.5 hover:border-[#f0b429]/50 hover:bg-[#0c1e3d] focus:outline-none focus:ring-2 focus:ring-[#f0b429] focus:ring-offset-2 focus:ring-offset-[#040d1a] md:grid-cols-[auto_1fr_auto] md:items-center"
           >
             {/* Millstadt EMS Kids Club logo — the service's own artwork. */}
-            <div className="relative mx-auto h-24 w-24 min-w-[6rem] shrink-0 self-center overflow-hidden rounded-2xl border border-[#f0b429]/40 bg-white transition-all duration-200 group-hover:border-[#f0b429]/70 md:mx-0 md:h-28 md:w-28 md:min-w-[7rem]">
+            <div className="mx-auto h-24 w-24 min-w-[6rem] shrink-0 self-center overflow-hidden rounded-2xl border border-[#f0b429]/40 bg-white transition-all duration-200 group-hover:border-[#f0b429]/70 md:mx-0 md:h-28 md:w-28 md:min-w-[7rem]">
               <Image
-                src="/kids-club/coloring/kids-club-logo.png"
+                src="/kids-club/kids-club-home.png"
                 alt="Millstadt EMS Kids Club"
-                fill
+                width={112}
+                height={112}
                 sizes="112px"
-                className="object-contain p-1.5"
+                className="h-full w-full object-contain p-1.5"
               />
             </div>
             <div className="text-center md:text-left">

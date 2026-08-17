@@ -203,7 +203,15 @@ function publicForm990s() {
       pages: readDocumentPages(document),
     }),
   );
-  return [...uploaded, ...SYNTHETIC_FORM_990S];
+  const newestFirst = (left: PublicForm990, right: PublicForm990) => {
+    const taxYearOrder = right.taxYear.localeCompare(left.taxYear);
+    return taxYearOrder || right.filingDate.localeCompare(left.filingDate);
+  };
+
+  return [
+    ...uploaded.sort(newestFirst),
+    ...[...SYNTHETIC_FORM_990S].sort(newestFirst),
+  ];
 }
 
 function escapeHtml(value: string) {
