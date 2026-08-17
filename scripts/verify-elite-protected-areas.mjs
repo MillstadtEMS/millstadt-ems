@@ -14,7 +14,6 @@ const expectedFileHashes = {
 
 const expectedFinancialHashes = [
   "3d94ea2a14dfcc6e243321d2c9a7a5ea1b9287fc6890262ea3a4aebb198c3dcf",
-  "bd5028dfceeffc115edb4522a27d3bb3b06963f2995f3a61dc2073646be5ccf0",
 ];
 const expectedNavHash =
   "312b9cb33439630cec0851b960c2f9329975278835d50356464138ff332c7249";
@@ -73,4 +72,3 @@ if (!navEntry || sha256(navEntry) !== expectedNavHash) {
 if (!process.exitCode) {
   console.log("Elite protected-area invariants verified.");
 }
-
