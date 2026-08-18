@@ -46,7 +46,7 @@ export function getAiMonitorConfig(): AiMonitorConfig {
     ready: enabled && missingConfiguration.length === 0,
     missingConfiguration,
     model: SUPPORTED_MODEL,
-    monthlyBudgetUsd: boundedNumber("AI_MONITOR_MONTHLY_BUDGET_USD", 18, 1, 20),
+    monthlyBudgetUsd: boundedNumber("AI_MONITOR_MONTHLY_BUDGET_USD", 10, 1, 10),
     maxOutputTokens: Math.floor(boundedNumber("AI_MONITOR_MAX_OUTPUT_TOKENS", 900, 400, 1600)),
     reportRetentionDays: Math.floor(
       boundedNumber("AI_MONITOR_REPORT_RETENTION_DAYS", 35, 14, 90),
