@@ -3,6 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+function safeNext(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/lounge";
+  if (!raw.startsWith("/lounge") && raw !== "/admin" && !raw.startsWith("/admin/")) {
+    return "/lounge";
+  }
+  return raw;
+}
+
 export default function ChangePassword() {
   const router = useRouter();
   const [currentPassword, setCurrentPassword] = useState("");
@@ -10,11 +18,15 @@ export default function ChangePassword() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [next, setNext] = useState("/lounge");
   const [me, setMe] = useState<{ firstName: string; mustChangePassword: boolean } | null>(
     null,
   );
 
   useEffect(() => {
+    try {
+      setNext(safeNext(new URL(window.location.href).searchParams.get("next")));
+    } catch { /* keep the Lounge fallback */ }
     fetch("/api/lounge/me")
       .then(async (r) => {
         if (!r.ok) {
@@ -62,7 +74,7 @@ export default function ChangePassword() {
       try {
         sessionStorage.setItem("lounge:welcome", "1");
       } catch {}
-      router.push("/lounge");
+      router.push(next);
     } catch {
       setError("Connection error");
       setLoading(false);

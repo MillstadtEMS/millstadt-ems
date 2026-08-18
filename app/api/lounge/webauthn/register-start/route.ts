@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
     me.username,
     `${me.firstName} ${me.lastName}`,
     host,
+    req.headers.get("origin"),
   );
   return noStoreJson({ options });
 }

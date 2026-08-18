@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { currentEmployee } from "@/lib/lounge/auth";
 import { canEditTicker } from "@/lib/admin/auth";
+import { listCredentialsForEmployee } from "@/lib/lounge/webauthn";
 import TickerControlClient, {
   TickerControlDenied,
   TickerControlLogin,
@@ -38,5 +39,6 @@ export default async function TickerControlPage() {
   // can_edit_ticker flag is TRUE. Lets specific crew members curate
   // the ticker without needing global admin rights.
   if (!(await canEditTicker())) return <TickerControlDenied />;
-  return <TickerControlClient firstName={me.firstName} />;
+  const passkeys = await listCredentialsForEmployee(me.id);
+  return <TickerControlClient firstName={me.firstName} hasPasskey={passkeys.length > 0} />;
 }

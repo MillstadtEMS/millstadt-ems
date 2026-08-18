@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { startAuthentication as browserStartAuthentication } from "@simplewebauthn/browser";
+import {
+  startAuthentication as browserStartAuthentication,
+  startRegistration as browserStartRegistration,
+} from "@simplewebauthn/browser";
 import StructuredCallForm, {
   EMPTY_STRUCTURED,
   previewDispatchNature,
@@ -112,6 +115,17 @@ function timeAgo(input: string | null) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+function biometricDeviceLabel(): string {
+  if (typeof navigator === "undefined") return "This device";
+  const ua = navigator.userAgent;
+  if (/iPhone/.test(ua)) return "iPhone Face ID";
+  if (/iPad/.test(ua)) return "iPad Face ID";
+  if (/Android/.test(ua)) return "Android fingerprint";
+  if (/Macintosh/.test(ua)) return "Mac Touch ID";
+  if (/Windows/.test(ua)) return "Windows Hello";
+  return "This device";
+}
+
 export function TickerControlLogin() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -153,7 +167,11 @@ export function TickerControlLogin() {
       window.location.reload();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Face ID sign-in was cancelled.";
-      if (!/notallowed|cancel/i.test(msg)) setError(msg);
+      if (/notallowed/i.test(msg)) {
+        setError("No Face ID passkey is available on this device. Use the full Lounge login once, then enable Face ID in the ticker editor.");
+      } else if (!/cancel/i.test(msg)) {
+        setError(msg);
+      }
     } finally {
       setBusy(false);
     }
@@ -184,6 +202,68 @@ export function TickerControlLogin() {
   );
 }
 
+function TickerBiometricSetup({ hasPasskey }: { hasPasskey: boolean }) {
+  const [ready, setReady] = useState(hasPasskey);
+  const [supported, setSupported] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    setSupported(typeof window !== "undefined" && !!window.PublicKeyCredential);
+  }, []);
+
+  async function enable() {
+    setBusy(true);
+    setMessage("");
+    try {
+      const startRes = await fetch("/api/lounge/webauthn/register-start", { method: "POST" });
+      const startData = await startRes.json().catch(() => ({}));
+      if (!startRes.ok || !startData.options) {
+        setMessage(startData.error || "Face ID setup could not start.");
+        return;
+      }
+
+      const attested = await browserStartRegistration({ optionsJSON: startData.options });
+      const finishRes = await fetch("/api/lounge/webauthn/register-finish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ response: attested, deviceLabel: biometricDeviceLabel() }),
+      });
+      const finishData = await finishRes.json().catch(() => ({}));
+      if (!finishRes.ok) {
+        setMessage(finishData.error || "Face ID setup failed.");
+        return;
+      }
+      setReady(true);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Face ID setup was cancelled.";
+      if (!/notallowed|cancel/i.test(msg)) setMessage(msg);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (ready) return null;
+  return (
+    <aside className="ticker-biometric-setup" aria-label="Biometric sign-in setup">
+      <div className="ticker-biometric-copy">
+        <span className="ticker-kicker">Quick sign-in</span>
+        <h2>Enable Face ID on this device</h2>
+        <p>Use biometrics the next time you open the ticker editor.</p>
+        {message && <div className="ticker-error" role="status">{message}</div>}
+      </div>
+      {supported ? (
+        <button className="ticker-ghost-button" type="button" onClick={enable} disabled={busy}>
+          <LockIcon />
+          {busy ? "Opening biometrics..." : "Enable Face ID"}
+        </button>
+      ) : (
+        <a className="ticker-primary-link" href="/lounge/security">Sign-in devices</a>
+      )}
+    </aside>
+  );
+}
+
 export function TickerControlDenied() {
   return (
     <main className="ticker-control-page">
@@ -199,7 +279,13 @@ export function TickerControlDenied() {
   );
 }
 
-export default function TickerControlClient({ firstName }: { firstName: string }) {
+export default function TickerControlClient({
+  firstName,
+  hasPasskey,
+}: {
+  firstName: string;
+  hasPasskey: boolean;
+}) {
   const [calls, setCalls] = useState<TickerCall[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -377,6 +463,8 @@ export default function TickerControlClient({ firstName }: { firstName: string }
             <Metric label="Sync" value="30s" tone="cyan" />
           </div>
         </header>
+
+        <TickerBiometricSetup hasPasskey={hasPasskey} />
 
         <div className="ticker-action-row">
           <button className="ticker-primary-button" type="button" onClick={() => setShowAdd((v) => !v)}>
@@ -761,6 +849,38 @@ const TICKER_CONTROL_CSS = `
   font-size: 13px;
   font-weight: 700;
 }
+
+.ticker-biometric-setup {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid rgba(240, 180, 41, 0.34);
+  border-radius: 8px;
+  background: rgba(240, 180, 41, 0.07);
+}
+
+.ticker-biometric-copy {
+  min-width: 0;
+}
+
+.ticker-biometric-copy h2 {
+  margin: 3px 0 2px;
+  color: #fff;
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.ticker-biometric-copy p {
+  margin: 0;
+  color: #b9c7d8;
+  font-size: 13px;
+}
+
+.ticker-biometric-copy .ticker-error {
+  margin-top: 8px;
+}
 .ticker-error {
   color: #fecaca;
   background: rgba(248,113,113,0.10);
@@ -1077,6 +1197,14 @@ const TICKER_CONTROL_CSS = `
 /* Wider tap targets + larger font on mobile so the structured form
    doesn't feel like a desktop port shrunk to phone width. */
 @media (max-width: 520px) {
+  .ticker-biometric-setup {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .ticker-biometric-setup .ticker-ghost-button,
+  .ticker-biometric-setup .ticker-primary-link {
+    width: 100%;
+  }
   .ticker-structured-wrap input,
   .ticker-structured-wrap select,
   .ticker-structured-wrap textarea {

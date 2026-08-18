@@ -45,6 +45,10 @@ export async function POST(req: NextRequest) {
     }
     employeeId = emp.id;
   }
-  const options = await startAuthentication(employeeId, req.headers.get("host"));
+  const options = await startAuthentication(
+    employeeId,
+    req.headers.get("host"),
+    req.headers.get("origin"),
+  );
   return noStoreJson({ options });
 }

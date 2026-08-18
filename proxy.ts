@@ -172,6 +172,7 @@ export async function proxy(req: NextRequest) {
         const url = req.nextUrl.clone();
         url.pathname = "/lounge/change-password";
         url.search = "";
+        url.searchParams.set("next", pathname);
         return withSecurityHeaders(NextResponse.redirect(url), pathname);
       }
     }

@@ -23,7 +23,13 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   if (!body.response) return noStoreJson({ error: "Missing response" }, { status: 400 });
   const deviceLabel = typeof body.deviceLabel === "string" ? body.deviceLabel.trim().slice(0, 80) : undefined;
-  const result = await finishRegistration(me.id, body.response, deviceLabel, req.headers.get("host"));
+  const result = await finishRegistration(
+    me.id,
+    body.response,
+    deviceLabel,
+    req.headers.get("host"),
+    req.headers.get("origin"),
+  );
   if (!result.verified) {
     return noStoreJson({ error: result.reason ?? "Could not register" }, { status: 400 });
   }

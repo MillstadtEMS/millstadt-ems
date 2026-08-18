@@ -45,7 +45,11 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   if (!body.response) return noStoreJson({ error: "Missing response" }, { status: 400 });
 
-  const result = await finishAuthentication(body.response, req.headers.get("host"));
+  const result = await finishAuthentication(
+    body.response,
+    req.headers.get("host"),
+    req.headers.get("origin"),
+  );
   if (!result.verified || !result.employeeId) {
     return noStoreJson({ error: result.reason ?? "Sign-in failed" }, { status: 401 });
   }

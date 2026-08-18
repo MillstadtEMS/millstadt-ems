@@ -52,34 +52,38 @@ async function ensureSchema() {
 }
 
 /**
- * Local requests must use their actual localhost origin even when the
- * canonical production URL is configured in .env.local. Production uses
- * the canonical URL so registrations and assertions stay on one RP ID.
+ * Local requests use their actual localhost origin. Production can pin a
+ * parent RP ID (for example, millstadtems.org) while still verifying the
+ * exact request origin (for example, https://www.millstadtems.org).
  */
-function originAndRp(host?: string | null): { rpID: string; origin: string } {
-  if (host) {
-    const cleanHost = host.trim().toLowerCase();
-    if (cleanHost.startsWith("localhost") || cleanHost.startsWith("127.")) {
-      return { rpID: cleanHost.split(":")[0], origin: `http://${cleanHost}` };
-    }
-  }
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
-  if (explicit) {
+export function resolveWebAuthnRequestContext(
+  host?: string | null,
+  requestOrigin?: string | null,
+): { rpID: string; origin: string } {
+  const cleanHost = (host ?? "").trim().toLowerCase();
+  const hostname = cleanHost.split(":")[0];
+  const isLocal = hostname === "localhost" || hostname.startsWith("127.");
+
+  let origin = `${isLocal ? "http" : "https"}://${cleanHost || "localhost:3000"}`;
+  if (requestOrigin) {
     try {
-      const u = new URL(explicit);
-      return { rpID: u.hostname, origin: explicit.replace(/\/$/, "") };
-    } catch { /* fall through */ }
+      const candidate = new URL(requestOrigin);
+      const validProtocol = candidate.protocol === "https:" || (isLocal && candidate.protocol === "http:");
+      if (validProtocol && candidate.host.toLowerCase() === cleanHost) origin = candidate.origin;
+    } catch { /* use the request host */ }
   }
-  if (host) {
-    const cleanHost = host.trim().toLowerCase();
-    const proto = cleanHost.startsWith("localhost") || cleanHost.startsWith("127.")
-      ? "http"
-      : "https";
-    return { rpID: cleanHost.split(":")[0], origin: `${proto}://${cleanHost}` };
+
+  if (isLocal) return { rpID: hostname, origin };
+
+  const configuredRpID = process.env.WEBAUTHN_RP_ID?.trim().toLowerCase().replace(/\.$/, "");
+  if (
+    configuredRpID &&
+    (hostname === configuredRpID || hostname.endsWith(`.${configuredRpID}`))
+  ) {
+    return { rpID: configuredRpID, origin };
   }
-  const vercel = process.env.VERCEL_URL;
-  if (vercel) return { rpID: vercel.split(":")[0], origin: `https://${vercel}` };
-  return { rpID: "localhost", origin: "http://localhost:3000" };
+
+  return { rpID: hostname || process.env.VERCEL_URL?.split(":")[0] || "localhost", origin };
 }
 
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;
@@ -98,14 +102,31 @@ async function popChallenge(challenge: string, purpose: string): Promise<{ emplo
   await ensureSchema();
   const db = sql();
   const rows = (await db`
-    SELECT id, employee_id, expires_at FROM lounge_webauthn_challenges
-    WHERE challenge = ${challenge} AND purpose = ${purpose}
-    LIMIT 1
-  `) as unknown as { id: string; employee_id: string | null; expires_at: string }[];
+    WITH selected AS (
+      SELECT id
+      FROM lounge_webauthn_challenges
+      WHERE challenge = ${challenge} AND purpose = ${purpose}
+      LIMIT 1
+      FOR UPDATE SKIP LOCKED
+    )
+    DELETE FROM lounge_webauthn_challenges AS stored
+    USING selected
+    WHERE stored.id = selected.id
+    RETURNING stored.employee_id, stored.expires_at
+  `) as unknown as { employee_id: string | null; expires_at: string }[];
   if (rows.length === 0) return null;
-  await db`DELETE FROM lounge_webauthn_challenges WHERE id = ${rows[0].id}`;
   if (new Date(rows[0].expires_at).getTime() < Date.now()) return null;
   return { employeeId: rows[0].employee_id };
+}
+
+function challengeFromClientData(clientDataJSON?: string): string | null {
+  if (!clientDataJSON) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(clientDataJSON, "base64url").toString("utf8"));
+    return typeof parsed.challenge === "string" ? parsed.challenge : null;
+  } catch {
+    return null;
+  }
 }
 
 interface DbCredentialRow {
@@ -149,9 +170,15 @@ export async function deleteCredential(employeeId: string, credentialRowId: stri
 
 // ── Registration ────────────────────────────────────────────────────────
 
-export async function startRegistration(employeeId: string, userName: string, displayName: string, host?: string | null) {
+export async function startRegistration(
+  employeeId: string,
+  userName: string,
+  displayName: string,
+  host?: string | null,
+  requestOrigin?: string | null,
+) {
   await ensureSchema();
-  const { rpID } = originAndRp(host);
+  const { rpID } = resolveWebAuthnRequestContext(host, requestOrigin);
   const db = sql();
   const existing = (await db`
     SELECT credential_id, transports FROM lounge_webauthn_credentials WHERE employee_id = ${employeeId}
@@ -183,12 +210,11 @@ export async function finishRegistration(
   response: RegistrationResponseJSON,
   deviceLabel?: string,
   host?: string | null,
+  requestOrigin?: string | null,
 ): Promise<{ verified: boolean; reason?: string }> {
   await ensureSchema();
-  const { rpID, origin } = originAndRp(host);
-  const challenge = response.response.clientDataJSON
-    ? JSON.parse(Buffer.from(response.response.clientDataJSON, "base64url").toString("utf8")).challenge
-    : null;
+  const { rpID, origin } = resolveWebAuthnRequestContext(host, requestOrigin);
+  const challenge = challengeFromClientData(response.response.clientDataJSON);
   if (!challenge) return { verified: false, reason: "no challenge" };
   const popped = await popChallenge(challenge, "register");
   if (!popped) return { verified: false, reason: "challenge expired" };
@@ -234,9 +260,13 @@ export async function finishRegistration(
 
 // ── Assertion (passwordless sign-in) ─────────────────────────────────────
 
-export async function startAuthentication(employeeIdHint?: string, host?: string | null) {
+export async function startAuthentication(
+  employeeIdHint?: string,
+  host?: string | null,
+  requestOrigin?: string | null,
+) {
   await ensureSchema();
-  const { rpID } = originAndRp(host);
+  const { rpID } = resolveWebAuthnRequestContext(host, requestOrigin);
   const db = sql();
   let allowCredentials: { id: string; transports?: AuthenticatorTransportFuture[] }[] = [];
   if (employeeIdHint) {
@@ -260,12 +290,11 @@ export async function startAuthentication(employeeIdHint?: string, host?: string
 export async function finishAuthentication(
   response: AuthenticationResponseJSON,
   host?: string | null,
+  requestOrigin?: string | null,
 ): Promise<{ verified: boolean; employeeId?: string; reason?: string }> {
   await ensureSchema();
-  const { rpID, origin } = originAndRp(host);
-  const challenge = response.response.clientDataJSON
-    ? JSON.parse(Buffer.from(response.response.clientDataJSON, "base64url").toString("utf8")).challenge
-    : null;
+  const { rpID, origin } = resolveWebAuthnRequestContext(host, requestOrigin);
+  const challenge = challengeFromClientData(response.response.clientDataJSON);
   if (!challenge) return { verified: false, reason: "no challenge" };
   const popped = await popChallenge(challenge, "assert");
   if (!popped) return { verified: false, reason: "challenge expired" };
