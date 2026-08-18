@@ -80,6 +80,25 @@ export interface OpenedBoardDocument {
   contentType: string;
 }
 
+const LEGACY_LOCAL_DOCUMENT_PATHS = {
+  "board/referendum/current.xlsx": path.join(
+    process.cwd(),
+    "public",
+    "board",
+    "referendum",
+    "current.xlsx",
+  ),
+  "board/referendum/current.json": path.join(
+    process.cwd(),
+    "public",
+    "board",
+    "referendum",
+    "current.json",
+  ),
+} as const;
+
+type LegacyLocalDocumentPath = keyof typeof LEGACY_LOCAL_DOCUMENT_PATHS;
+
 let manifestReady = false;
 
 async function ensureBoardDocumentManifestSchema(): Promise<void> {
@@ -233,12 +252,12 @@ async function legacyPublicSource(
 }
 
 async function legacyLocalSource(
-  relativePath: string,
+  relativePath: LegacyLocalDocumentPath,
   sourceName: string,
   contentType: string,
 ): Promise<StoredBoardDocument | null> {
   try {
-    const absolutePath = path.join(process.cwd(), "public", relativePath);
+    const absolutePath = LEGACY_LOCAL_DOCUMENT_PATHS[relativePath];
     const details = await stat(absolutePath);
     return {
       storage: "legacy-local",
