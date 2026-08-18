@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { FileText } from "lucide-react";
 import { COLORING_PAGES } from "@/lib/kids/activities";
 
 export default function KidsClubPrintablesPage() {
@@ -37,7 +38,7 @@ export default function KidsClubPrintablesPage() {
             <div className="text-xs font-black uppercase tracking-[0.24em] text-[#f0b429]">
               Color And Learn
             </div>
-            <h1 className="mt-5 text-balance text-5xl font-black leading-[0.95] tracking-tight text-white md:text-7xl">
+            <h1 className="mt-5 text-balance text-5xl font-black leading-[0.95] text-white md:text-7xl">
               Printable Pages
             </h1>
             <p className="mt-6 max-w-2xl text-xl font-semibold leading-9 text-slate-200">
@@ -49,7 +50,23 @@ export default function KidsClubPrintablesPage() {
         </div>
       </section>
 
-      <section className="md:" style={{ paddingTop: 24, paddingBottom: 24 }}>
+      <section className="border-b border-slate-200 bg-white py-7">
+        <div className="wrap flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="text-xs font-black uppercase tracking-[0.16em] text-[#1b58c9]">Family Safety Guide</div>
+            <h2 className="mt-2 text-2xl font-black text-[#061121]">What happens when you call 911?</h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">An eight-step guide designed to read and practice with a grown-up.</p>
+          </div>
+          <Link
+            href="/kids-club/printables/911-call-guide"
+            className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 border-2 border-[#061121] px-5 font-black text-[#061121] hover:bg-[#f0b429] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1b58c9]"
+          >
+            <FileText className="h-4 w-4" aria-hidden /> Open guide
+          </Link>
+        </div>
+      </section>
+
+      <section style={{ paddingTop: 24, paddingBottom: 24 }}>
         <div className="wrap box-border">
           {featured && (
             <div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
@@ -69,7 +86,7 @@ export default function KidsClubPrintablesPage() {
                     href={`/kids-club/coloring/${featured.slug}.pdf`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-xl bg-[#061121] text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-[#1b58c9] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
+                    className="rounded-lg bg-[#061121] text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-[#1b58c9] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
                     style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 56, padding: "0 28px" }}
                   >
                     Print PDF
@@ -79,7 +96,7 @@ export default function KidsClubPrintablesPage() {
                     href={`/kids-club/coloring/${featured.slug}.png`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-xl border-2 border-[#061121] bg-white text-sm font-black uppercase tracking-[0.14em] text-[#061121] transition hover:bg-[#d7ff22] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
+                    className="rounded-lg border-2 border-[#061121] bg-white text-sm font-black uppercase tracking-[0.14em] text-[#061121] transition hover:bg-[#d7ff22] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
                     style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: 56, padding: "0 28px" }}
                   >
                     View Page
@@ -87,8 +104,8 @@ export default function KidsClubPrintablesPage() {
                 </div>
               </div>
 
-              <div className="rounded-[1.6rem] border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-200/80 md:p-5">
-                <div className="relative aspect-[4/3] overflow-hidden rounded-[1.5rem] bg-white">
+              <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-200/80 md:p-5">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-white">
                   <Image
                     src={`/kids-club/coloring/${featured.slug}.png`}
                     alt={featured.title}
@@ -120,7 +137,7 @@ export default function KidsClubPrintablesPage() {
               </div>
               <Link
                 href="/kids-club/activities"
-                className="rounded-xl border-2 border-[#061121] bg-white text-sm font-black uppercase tracking-[0.14em] text-[#061121] transition hover:bg-[#f0b429] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
+                className="rounded-lg border-2 border-[#061121] bg-white text-sm font-black uppercase tracking-[0.14em] text-[#061121] transition hover:bg-[#f0b429] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
                 style={{ display: "inline-flex", alignItems: "center", minHeight: 48, padding: "0 20px" }}
               >
                 Monthly Missions
@@ -131,10 +148,10 @@ export default function KidsClubPrintablesPage() {
               {sorted.map((page, index) => (
                 <article
                   key={page.slug}
-                  className="flex flex-col rounded-[1.4rem] border border-slate-200 bg-white p-4 shadow-xl shadow-slate-200/80"
+                  className="flex flex-col rounded-lg border border-slate-200 bg-white p-4 shadow-xl shadow-slate-200/80"
                 >
                   <div
-                    className={`relative overflow-hidden rounded-[1.15rem] bg-white ${
+                    className={`relative overflow-hidden rounded-lg bg-white ${
                       page.orientation === "portrait" ? "aspect-[3/4]" : "aspect-[4/3]"
                     }`}
                   >
@@ -159,7 +176,7 @@ export default function KidsClubPrintablesPage() {
                         href={`/kids-club/coloring/${page.slug}.pdf`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="rounded-xl bg-[#061121] text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-[#1b58c9] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
+                        className="rounded-lg bg-[#061121] text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-[#1b58c9] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
                         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 52, padding: "0 20px" }}
                       >
                         Print
@@ -170,7 +187,7 @@ export default function KidsClubPrintablesPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`View ${page.title}`}
-                        className="rounded-xl border-2 border-[#061121] bg-white text-[#061121] transition hover:bg-[#d7ff22] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
+                        className="rounded-lg border-2 border-[#061121] bg-white text-[#061121] transition hover:bg-[#d7ff22] focus:outline-none focus:ring-2 focus:ring-[#061121] focus:ring-offset-2"
                         style={{ display: "grid", placeItems: "center", minHeight: 52 }}
                       >
                         <EyeIcon style={{ width: 20, height: 20 }} />

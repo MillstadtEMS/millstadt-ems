@@ -42,8 +42,6 @@ const schema = z.object({
   nremt_level: text(80),
   nremt_number: text(120),
   nremt_expiry: date,
-  dea_number: text(120),
-  dea_expiry: date,
   additional_certs: text(12_000),
   work_history: text(20_000),
   years_ems: text(8),

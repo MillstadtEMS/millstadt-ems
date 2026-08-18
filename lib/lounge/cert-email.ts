@@ -6,33 +6,18 @@
  *   sendAdminCertDigest    — weekly Monday roll-up of everyone's expiring
  *                            certs to admins (KJ + Goetz).
  */
-import { google } from "googleapis";
 import type { EmployeeCert } from "./certs";
-import { encodeMimeSubject } from "@/lib/reports/subject";
-
-function gmailAuth() {
-  const auth = new google.auth.OAuth2(
-    process.env.GMAIL_CLIENT_ID,
-    process.env.GMAIL_CLIENT_SECRET,
-  );
-  auth.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
-  return auth;
-}
+import { plainTextFromHtml, sendGmailMessage } from "@/lib/reports/gmail-message";
+import { escapeHtml } from "@/lib/security/http";
 
 async function sendRaw(to: string[], subject: string, html: string) {
-  const from = process.env.GMAIL_USER ?? "millstadtcad@gmail.com";
-  const raw = Buffer.from(
-    `From: Millstadt EMS Lounge <${from}>\r\n` +
-      `To: ${to.join(", ")}\r\n` +
-      `Subject: ${encodeMimeSubject(subject)}\r\n` +
-      `MIME-Version: 1.0\r\n` +
-      `Content-Type: text/html; charset=utf-8\r\n` +
-      `Content-Transfer-Encoding: base64\r\n` +
-      `\r\n` +
-      Buffer.from(html, "utf8").toString("base64").replace(/(.{76})/g, "$1\r\n"),
-  ).toString("base64url");
-  const gmail = google.gmail({ version: "v1", auth: gmailAuth() });
-  await gmail.users.messages.send({ userId: from, requestBody: { raw } });
+  await sendGmailMessage({
+    fromName: "Millstadt EMS Lounge",
+    to,
+    subject,
+    text: plainTextFromHtml(html),
+    html,
+  });
 }
 
 function shell(title: string, subtitle: string, body: string): string {
@@ -41,8 +26,8 @@ function shell(title: string, subtitle: string, body: string): string {
       <div style="margin-bottom:8px;">
         <span style="color:#f0b429;font-size:12px;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;">Employee Lounge</span>
       </div>
-      <h1 style="color:#ffffff;font-size:24px;font-weight:900;margin:0 0 6px;">${title}</h1>
-      <p style="color:#64748b;font-size:14px;margin:0 0 24px;">${subtitle}</p>
+      <h1 style="color:#ffffff;font-size:24px;font-weight:900;margin:0 0 6px;">${escapeHtml(title)}</h1>
+      <p style="color:#64748b;font-size:14px;margin:0 0 24px;">${escapeHtml(subtitle)}</p>
       <div style="background:#071428;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:24px;margin-bottom:24px;">
         ${body}
       </div>
@@ -81,7 +66,7 @@ export async function sendEmployeeCertAlert(params: {
     ? `<div style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);border-radius:10px;padding:16px;margin-top:18px;">
          <div style="color:#fca5a5;font-weight:900;text-transform:uppercase;letter-spacing:0.16em;font-size:11px;margin-bottom:6px;">Action Required</div>
          <div style="color:#fecaca;font-size:14px;line-height:1.55;">
-           Your ${cert.certTypeName} is expired. <strong>Do not pick up another shift</strong> until you've spoken with management and uploaded a renewed copy.
+           Your ${escapeHtml(cert.certTypeName)} is expired. <strong>Do not pick up another shift</strong> until you've spoken with management and uploaded a renewed copy.
          </div>
        </div>`
     : `<div style="background:rgba(240,180,41,0.10);border:1px solid rgba(240,180,41,0.30);border-radius:10px;padding:16px;margin-top:18px;">
@@ -93,13 +78,13 @@ export async function sendEmployeeCertAlert(params: {
 
   const body = `
     <div style="display:flex;flex-direction:column;gap:8px;">
-      <div style="color:#94a3b8;font-size:13px;">Hey ${employeeName},</div>
+      <div style="color:#94a3b8;font-size:13px;">Hello ${escapeHtml(employeeName)},</div>
       <div style="color:#f1f5f9;font-size:15px;line-height:1.55;">
-        Your <strong style="color:#f0b429;">${cert.certTypeName}</strong> ${expired ? "expired on" : "expires on"} <strong>${fmtDate(cert.expiresOn)}</strong>${expired ? "." : daysLeft === 0 ? " (today)." : ` — that's <strong>${daysLeft} day${daysLeft === 1 ? "" : "s"}</strong> from now.`}
+        Your <strong style="color:#f0b429;">${escapeHtml(cert.certTypeName)}</strong> ${expired ? "expired on" : "expires on"} <strong>${escapeHtml(fmtDate(cert.expiresOn))}</strong>${expired ? "." : daysLeft === 0 ? " (today)." : ` — that's <strong>${daysLeft} day${daysLeft === 1 ? "" : "s"}</strong> from now.`}
       </div>
       ${ctaBlock}
       <div style="margin-top:18px;">
-        <a href="${siteUrl()}/lounge/certs" style="display:inline-block;background:#f0b429;color:#040d1a;font-weight:900;padding:12px 18px;border-radius:10px;text-decoration:none;letter-spacing:0.12em;text-transform:uppercase;font-size:12px;">Upload renewal</a>
+        <a href="${escapeHtml(siteUrl())}/lounge/certs" style="display:inline-block;background:#f0b429;color:#040d1a;font-weight:900;padding:12px 18px;border-radius:10px;text-decoration:none;letter-spacing:0.12em;text-transform:uppercase;font-size:12px;">Upload renewal</a>
       </div>
     </div>
   `;
@@ -136,8 +121,8 @@ export async function sendAdminCertDigest(params: {
              .map(
                (r) => `
              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 0;border-top:1px solid rgba(255,255,255,0.06);">
-               <div style="color:#fecaca;font-weight:700;">${r.employeeName}</div>
-               <div style="color:#f1f5f9;font-size:13px;">${r.cert.certTypeName} <span style="color:#fca5a5;">· expired ${Math.abs(r.daysLeft)}d ago</span></div>
+               <div style="color:#fecaca;font-weight:700;">${escapeHtml(r.employeeName)}</div>
+               <div style="color:#f1f5f9;font-size:13px;">${escapeHtml(r.cert.certTypeName)} <span style="color:#fca5a5;">· expired ${Math.abs(r.daysLeft)}d ago</span></div>
              </div>`,
              )
              .join("")}
@@ -153,8 +138,8 @@ export async function sendAdminCertDigest(params: {
              .map(
                (r) => `
              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 0;border-top:1px solid rgba(255,255,255,0.06);">
-               <div style="color:#fef3c7;font-weight:700;">${r.employeeName}</div>
-               <div style="color:#f1f5f9;font-size:13px;">${r.cert.certTypeName} <span style="color:#f0b429;">· in ${r.daysLeft}d</span></div>
+               <div style="color:#fef3c7;font-weight:700;">${escapeHtml(r.employeeName)}</div>
+               <div style="color:#f1f5f9;font-size:13px;">${escapeHtml(r.cert.certTypeName)} <span style="color:#f0b429;">· in ${r.daysLeft}d</span></div>
              </div>`,
              )
              .join("")}
@@ -164,7 +149,7 @@ export async function sendAdminCertDigest(params: {
     ${expiredHtml}
     ${soonHtml}
     <div style="margin-top:18px;">
-      <a href="${siteUrl()}/admin/employees" style="display:inline-block;background:#f0b429;color:#040d1a;font-weight:900;padding:12px 18px;border-radius:10px;text-decoration:none;letter-spacing:0.12em;text-transform:uppercase;font-size:12px;">Open admin</a>
+      <a href="${escapeHtml(siteUrl())}/admin/employees" style="display:inline-block;background:#f0b429;color:#040d1a;font-weight:900;padding:12px 18px;border-radius:10px;text-decoration:none;letter-spacing:0.12em;text-transform:uppercase;font-size:12px;">Open admin</a>
     </div>
   `;
   await sendRaw(to, subject, shell("Weekly cert digest", "Crew certifications expiring or expired", body));

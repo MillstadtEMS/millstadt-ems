@@ -88,9 +88,6 @@ export function buildApplicationFlags(fields: ApplicationFields): string[] {
   if (isExpired(get("nremt_expiry"))) {
     flags.push(`NREMT certification is EXPIRED (${get("nremt_expiry")})`);
   }
-  if (isExpired(get("dea_expiry"))) {
-    flags.push(`DEA registration is EXPIRED (${get("dea_expiry")})`);
-  }
   // Each cert in additional_certs (BLS, ACLS, etc.)
   for (const line of get("additional_certs").split("\n")) {
     const m = line.match(/^([^:]+):\s*#[^\s]*\s*Exp:\s*(\S+)/);

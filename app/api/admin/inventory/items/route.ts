@@ -8,14 +8,16 @@
  * the inventory-password-gated counting/voice flow — untouched here.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
+import { currentAdmin } from "@/lib/admin/auth";
 import { getItems, getCategories, createItem } from "@/lib/inventory/db";
+import { isSameOriginRequest } from "@/lib/security/http";
+import { inventoryActor } from "@/lib/inventory/mutation-security";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+  const admin = await currentAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const type = new URL(req.url).searchParams.get("type") ?? "backstock";
   const [items, allCats] = await Promise.all([getItems(undefined, type), getCategories()]);
@@ -24,13 +26,19 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+  const admin = await currentAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isSameOriginRequest(req)) {
+    return NextResponse.json({ error: "Cross-origin request denied" }, { status: 403 });
+  }
 
   const body = await req.json().catch(() => ({}));
   const { categoryId, name, location, par, vendorSource, skipOrder, sortOrder } = body;
-  if (!categoryId || !name || !String(name).trim()) {
+  if (!categoryId || !name || !String(name).trim() || String(name).trim().length > 160) {
     return NextResponse.json({ error: "categoryId and name are required" }, { status: 400 });
+  }
+  if (typeof par === "number" && (!Number.isInteger(par) || par < 0 || par > 100_000)) {
+    return NextResponse.json({ error: "Invalid par value" }, { status: 400 });
   }
 
   const item = await createItem({
@@ -41,6 +49,6 @@ export async function POST(req: NextRequest) {
     vendorSource: vendorSource ?? undefined,
     skipOrder: !!skipOrder,
     sortOrder: typeof sortOrder === "number" ? sortOrder : 9999,
-  });
+  }, inventoryActor(admin));
   return NextResponse.json({ item });
 }

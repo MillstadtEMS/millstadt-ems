@@ -23,8 +23,10 @@ import {
   PAGE_W,
   drawMetadataGrid,
   drawOfficialHeader,
+  drawContainedImage,
   drawSectionHeading,
   drawTitleBlock,
+  drawWrappedText,
   ensureSpace,
   newDoc,
   stampFooter,
@@ -85,18 +87,30 @@ function drawAck(c: Cursor, text: string) {
   doc.setFont("helvetica", "italic");
   doc.setFontSize(9.5);
   doc.setTextColor(...COLORS.inkSoft);
-  const lines = doc.splitTextToSize(text, CONTENT_W);
-  ensureSpace(c, lines.length * 12 + 8);
-  doc.text(lines, M, c.y + 8);
-  c.y += lines.length * 12 + 10;
+  drawWrappedText(c, text, { lineHeight: 12, topOffset: 8, bottomGap: 10 });
 }
 
 function drawChecklistRow(c: Cursor, item: ItemRow, prog: ProgressRow | undefined) {
   const doc = c.doc;
   const rowH = 16;
-  ensureSpace(c, rowH + 14);
   const status = (prog?.status ?? "pending") as ItemStatus;
   const [r, g, b] = statusColor(status);
+  const labelText = item.label + (item.required ? "  *" : "");
+  const labelLines = doc.splitTextToSize(labelText, CONTENT_W - 34);
+  let lineH = Math.max(rowH, labelLines.length * 12 + 4);
+
+  const detail: string[] = [];
+  if (prog?.completedByName && (status === "completed" || status === "completed_with_followup")) {
+    detail.push(`${prog.completedByName} · ${fmtDateTime(prog.completedAt)}`);
+  }
+  if (prog?.notes && prog.notes.trim()) detail.push(`Notes: ${prog.notes.trim()}`);
+  if (item.hasUpload && prog?.fileName) detail.push(`File: ${prog.fileName}`);
+  if (item.hasExpiration && prog?.expirationDate) detail.push(`Expires: ${fmtDate(prog.expirationDate)}`);
+  const detailLines = detail.length
+    ? doc.splitTextToSize(detail.join("  ·  "), CONTENT_W - 34)
+    : [];
+  if (detailLines.length) lineH += detailLines.length * 10 + 2;
+  ensureSpace(c, lineH + 4);
 
   // Status pill
   doc.setFont("helvetica", "bold");
@@ -108,32 +122,13 @@ function drawChecklistRow(c: Cursor, item: ItemRow, prog: ProgressRow | undefine
   doc.setFont("helvetica", item.required ? "bold" : "normal");
   doc.setFontSize(10);
   doc.setTextColor(...COLORS.ink);
-  const labelText = item.label + (item.required ? "  *" : "");
-  const labelLines = doc.splitTextToSize(labelText, CONTENT_W - 34);
   doc.text(labelLines, M + 28, c.y + 11);
-  let lineH = Math.max(rowH, labelLines.length * 12 + 4);
-
-  // Detail line under the label: completion stamp, notes, file, expiry
-  const detail: string[] = [];
-  if (prog?.completedByName && (status === "completed" || status === "completed_with_followup")) {
-    detail.push(`${prog.completedByName} · ${fmtDateTime(prog.completedAt)}`);
-  }
-  if (prog?.notes && prog.notes.trim()) {
-    detail.push(`Notes: ${prog.notes.trim()}`);
-  }
-  if (item.hasUpload && prog?.fileName) {
-    detail.push(`File: ${prog.fileName}`);
-  }
-  if (item.hasExpiration && prog?.expirationDate) {
-    detail.push(`Expires: ${fmtDate(prog.expirationDate)}`);
-  }
-  if (detail.length) {
+  if (detailLines.length) {
     doc.setFont("helvetica", "italic");
     doc.setFontSize(8.5);
     doc.setTextColor(...COLORS.inkSoft);
-    const detailLines = doc.splitTextToSize(detail.join("  ·  "), CONTENT_W - 34);
-    doc.text(detailLines, M + 28, c.y + lineH);
-    lineH += detailLines.length * 10 + 2;
+    const detailY = c.y + Math.max(rowH, labelLines.length * 12 + 4);
+    doc.text(detailLines, M + 28, detailY);
   }
 
   c.y += lineH + 4;
@@ -155,15 +150,14 @@ function drawSignaturePanel(c: Cursor, label: string, ack: string, sig: Signatur
   doc.text(label.toUpperCase(), M + 10, c.y + 14);
 
   if (sig) {
-    try {
-      doc.addImage(sig.signatureDataUrl, "PNG", M + 10, c.y + 22, 180, 50);
-    } catch { /* ignore bad image */ }
+    drawContainedImage(doc, sig.signatureDataUrl, "PNG", M + 10, c.y + 22, 180, 50);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(...COLORS.ink);
-    doc.text(`Signed: ${sig.printedName}`, M + 200, c.y + 30);
-    doc.text(`Date / time: ${fmtDateTime(sig.signedAt)}`, M + 200, c.y + 46);
+    const detailWidth = CONTENT_W - 210;
+    doc.text(doc.splitTextToSize(`Signed: ${sig.printedName}`, detailWidth), M + 200, c.y + 30);
+    doc.text(doc.splitTextToSize(`Date / time: ${fmtDateTime(sig.signedAt)}`, detailWidth), M + 200, c.y + 58);
   } else {
     doc.setFont("helvetica", "italic");
     doc.setFontSize(9);
@@ -247,10 +241,7 @@ export async function buildOnboardingPdf(input: BuildOnboardingPdfInput): Promis
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10.5);
     doc.setTextColor(...COLORS.ink);
-    const notesLines = doc.splitTextToSize(record.finalNotes.trim(), CONTENT_W);
-    ensureSpace(c, notesLines.length * 13 + 6);
-    doc.text(notesLines, M, c.y + 9);
-    c.y += notesLines.length * 13 + 8;
+    drawWrappedText(c, record.finalNotes.trim(), { lineHeight: 13 });
   }
 
   // Signatures
@@ -271,7 +262,7 @@ export async function buildOnboardingPdf(input: BuildOnboardingPdfInput): Promis
   const left = record.status === "finalized"
     ? `Finalized ${fmtDateTime(record.finalizedAt)} · Generated ${fmtDateTime(generatedAt)}`
     : record.status === "rescinded"
-      ? `Rescinded ${fmtDateTime(record.rescindedAt)} — ${record.rescindedReason ?? ""}`
+      ? `Rescinded ${fmtDateTime(record.rescindedAt)}`
       : `Draft preview · Generated ${fmtDateTime(generatedAt)}`;
   c.doc.text(left, M, c.y);
   const right = `Doc ID: ${record.id.slice(0, 8)}`;

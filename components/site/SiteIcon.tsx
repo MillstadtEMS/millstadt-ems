@@ -1,6 +1,7 @@
 import type { ReactNode, SVGProps } from "react";
 
 export type SiteIconName =
+  | "arrow-right"
   | "ambulance"
   | "calendar"
   | "cake"
@@ -43,6 +44,12 @@ export default function SiteIcon({
 }
 
 const paths: Record<SiteIconName, ReactNode> = {
+  "arrow-right": (
+    <>
+      <path d="M5 12h14" />
+      <path d="m13 6 6 6-6 6" />
+    </>
+  ),
   ambulance: (
     <>
       <path d="M4 16V8.6c0-.9.7-1.6 1.6-1.6h8.2c.7 0 1.3.4 1.5 1.1l.7 2.1h1.3c.5 0 1 .3 1.3.7l1.4 2.1c.2.3.3.6.3.9V16" />

@@ -256,12 +256,30 @@ export async function getCategories(): Promise<InventoryCategory[]> {
   return (rows as any[]).map(toCategory);
 }
 
-export async function createCategory(data: { name: string; slug: string; sortOrder: number; hasExpiry: boolean; inventoryType?: string }): Promise<InventoryCategory> {
+export async function createCategory(
+  data: { name: string; slug: string; sortOrder: number; hasExpiry: boolean; inventoryType?: string },
+  changedBy = "system:inventory-import",
+): Promise<InventoryCategory> {
   await ensureInventorySchema();
   const db = sql();
   const id = uid();
+  const auditId = uid();
   const invType = data.inventoryType ?? "backstock";
-  await db`INSERT INTO inventory_categories (id, name, slug, sort_order, has_expiry, inventory_type) VALUES (${id}, ${data.name}, ${data.slug}, ${data.sortOrder}, ${data.hasExpiry}, ${invType})`;
+  await db`
+    WITH inserted AS (
+      INSERT INTO inventory_categories (
+        id, name, slug, sort_order, has_expiry, inventory_type
+      )
+      VALUES (${id}, ${data.name}, ${data.slug}, ${data.sortOrder}, ${data.hasExpiry}, ${invType})
+      RETURNING id, name, slug
+    )
+    INSERT INTO inventory_audit_log (
+      id, item_id, field_changed, old_value, new_value, changed_by
+    )
+    SELECT ${auditId}, ${`category:${id}`}, 'category_created', NULL,
+           jsonb_build_object('name', name, 'slug', slug)::text, ${changedBy}
+    FROM inserted
+  `;
   const rows = await db`SELECT * FROM inventory_categories WHERE id = ${id}`;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return toCategory((rows as any[])[0]);
@@ -372,7 +390,7 @@ export async function updateItem(
   id: string,
   version: number,
   updates: ItemUpdate,
-  changedBy = "inventory"
+  changedBy: string,
 ): Promise<{ success: boolean; item?: InventoryItem; conflict?: boolean }> {
   await ensureInventorySchema();
   const db = sql();
@@ -384,7 +402,9 @@ export async function updateItem(
     // Check if item exists at all
     const exists = await db`SELECT version FROM inventory_items WHERE id = ${id}`;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((exists as any[]).length) return { success: false, conflict: true };
+    if ((exists as any[]).length) {
+      return { success: false, conflict: true, item: (await getItem(id)) ?? undefined };
+    }
     return { success: false };
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -416,22 +436,49 @@ export async function updateItem(
   const newNotes = updates.notes !== undefined ? updates.notes : old.notes;
   const newPar = updates.par ?? Number(old.par);
 
-  await db`
-    UPDATE inventory_items SET
-      current_stock = ${newStock},
-      prior_stock = ${priorStock},
-      expired_qty = ${newExpired},
-      notes = ${newNotes},
-      par = ${newPar},
-      version = version + 1,
-      updated_at = NOW()
-    WHERE id = ${id} AND version = ${version}
-  `;
-
-  // Write audit log
-  for (const entry of auditEntries) {
-    const aid = uid();
-    await db`INSERT INTO inventory_audit_log (id, item_id, field_changed, old_value, new_value, changed_by) VALUES (${aid}, ${id}, ${entry.field}, ${entry.oldVal}, ${entry.newVal}, ${changedBy})`;
+  const auditPayload = JSON.stringify(auditEntries.map((entry) => ({
+    id: uid(),
+    field: entry.field,
+    old_value: entry.oldVal,
+    new_value: entry.newVal,
+  })));
+  const updated = (await db`
+    WITH updated AS (
+      UPDATE inventory_items SET
+        current_stock = ${newStock},
+        prior_stock = ${priorStock},
+        expired_qty = ${newExpired},
+        notes = ${newNotes},
+        par = ${newPar},
+        version = version + 1,
+        updated_at = NOW()
+      WHERE id = ${id} AND version = ${version}
+      RETURNING id
+    ), audited AS (
+      INSERT INTO inventory_audit_log (
+        id, item_id, field_changed, old_value, new_value, changed_by
+      )
+      SELECT
+        entry.id,
+        updated.id,
+        entry.field,
+        entry.old_value,
+        entry.new_value,
+        ${changedBy}
+      FROM updated
+      CROSS JOIN jsonb_to_recordset(${auditPayload}::jsonb) AS entry(
+        id TEXT,
+        field TEXT,
+        old_value TEXT,
+        new_value TEXT
+      )
+      RETURNING id
+    )
+    SELECT updated.id, (SELECT COUNT(*) FROM audited) AS audit_count
+    FROM updated
+  `) as unknown as Array<{ id: string; audit_count: number }>;
+  if (updated.length === 0) {
+    return { success: false, conflict: true, item: (await getItem(id)) ?? undefined };
   }
 
   const item = await getItem(id);
@@ -447,13 +494,36 @@ export async function createItem(data: {
   vendorSource?: string;
   skipOrder?: boolean;
   sortOrder?: number;
-}): Promise<InventoryItem> {
+}, changedBy = "system:inventory-import"): Promise<InventoryItem> {
   await ensureInventorySchema();
   const db = sql();
   const id = uid();
+  const auditId = uid();
+  const snapshot = JSON.stringify({
+    name: data.name,
+    categoryId: data.categoryId,
+    location: data.location ?? null,
+    par: data.par ?? 0,
+    currentStock: data.currentStock ?? 0,
+  });
   await db`
-    INSERT INTO inventory_items (id, category_id, name, location, par, current_stock, vendor_source, skip_order, sort_order)
-    VALUES (${id}, ${data.categoryId}, ${data.name}, ${data.location ?? null}, ${data.par ?? 0}, ${data.currentStock ?? 0}, ${data.vendorSource ?? null}, ${data.skipOrder ?? false}, ${data.sortOrder ?? 0})
+    WITH inserted AS (
+      INSERT INTO inventory_items (
+        id, category_id, name, location, par, current_stock,
+        vendor_source, skip_order, sort_order
+      )
+      VALUES (
+        ${id}, ${data.categoryId}, ${data.name}, ${data.location ?? null},
+        ${data.par ?? 0}, ${data.currentStock ?? 0},
+        ${data.vendorSource ?? null}, ${data.skipOrder ?? false}, ${data.sortOrder ?? 0}
+      )
+      RETURNING id
+    )
+    INSERT INTO inventory_audit_log (
+      id, item_id, field_changed, old_value, new_value, changed_by
+    )
+    SELECT ${auditId}, inserted.id, 'item_created', NULL, ${snapshot}, ${changedBy}
+    FROM inserted
   `;
   const item = await getItem(id);
   return item!;
@@ -479,7 +549,11 @@ export interface AdminItemFields {
   categoryId?: string;
 }
 
-export async function adminUpdateItem(id: string, fields: AdminItemFields): Promise<InventoryItem | null> {
+export async function adminUpdateItem(
+  id: string,
+  fields: AdminItemFields,
+  changedBy: string,
+): Promise<InventoryItem | null> {
   await ensureInventorySchema();
   const db = sql();
   const rows = await db`SELECT * FROM inventory_items WHERE id = ${id}`;
@@ -494,29 +568,98 @@ export async function adminUpdateItem(id: string, fields: AdminItemFields): Prom
   const skip = fields.skipOrder !== undefined ? fields.skipOrder : Boolean(old.skip_order);
   const sortOrder = fields.sortOrder !== undefined ? fields.sortOrder : Number(old.sort_order);
   const categoryId = fields.categoryId !== undefined ? fields.categoryId : old.category_id;
+  const auditEntries = [
+    ["name", old.name, name],
+    ["location", old.location, location],
+    ["par", Number(old.par), par],
+    ["vendor_source", old.vendor_source, vendor],
+    ["skip_order", Boolean(old.skip_order), skip],
+    ["sort_order", Number(old.sort_order), sortOrder],
+    ["category_id", old.category_id, categoryId],
+  ]
+    .filter(([, before, after]) => before !== after)
+    .map(([field, before, after]) => ({
+      id: uid(),
+      field,
+      old_value: before == null ? null : String(before),
+      new_value: after == null ? null : String(after),
+    }));
+  const auditPayload = JSON.stringify(auditEntries);
 
-  await db`
-    UPDATE inventory_items SET
-      name = ${name},
-      location = ${location},
-      par = ${par},
-      vendor_source = ${vendor},
-      skip_order = ${skip},
-      sort_order = ${sortOrder},
-      category_id = ${categoryId},
-      version = version + 1,
-      updated_at = NOW()
-    WHERE id = ${id}
-  `;
+  const updated = (await db`
+    WITH updated AS (
+      UPDATE inventory_items SET
+        name = ${name},
+        location = ${location},
+        par = ${par},
+        vendor_source = ${vendor},
+        skip_order = ${skip},
+        sort_order = ${sortOrder},
+        category_id = ${categoryId},
+        version = version + 1,
+        updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING id
+    ), audited AS (
+      INSERT INTO inventory_audit_log (
+        id, item_id, field_changed, old_value, new_value, changed_by
+      )
+      SELECT entry.id, updated.id, entry.field, entry.old_value, entry.new_value, ${changedBy}
+      FROM updated
+      CROSS JOIN jsonb_to_recordset(${auditPayload}::jsonb) AS entry(
+        id TEXT,
+        field TEXT,
+        old_value TEXT,
+        new_value TEXT
+      )
+      RETURNING id
+    )
+    SELECT updated.id, (SELECT COUNT(*) FROM audited) AS audit_count
+    FROM updated
+  `) as unknown as Array<{ id: string; audit_count: number }>;
+  if (updated.length === 0) return null;
   return getItem(id);
 }
 
-export async function deleteItem(id: string): Promise<void> {
+export async function deleteItem(id: string, changedBy: string): Promise<boolean> {
   await ensureInventorySchema();
   const db = sql();
-  await db`DELETE FROM inventory_audit_log WHERE item_id = ${id}`;
-  await db`DELETE FROM inventory_qr_tokens WHERE item_id = ${id}`;
-  await db`DELETE FROM inventory_items WHERE id = ${id}`;
+  const auditId = uid();
+  const deleted = (await db`
+    WITH target AS (
+      SELECT id, name, category_id, location, par, current_stock, expired_qty, version
+      FROM inventory_items
+      WHERE id = ${id}
+    ), audited AS (
+      INSERT INTO inventory_audit_log (
+        id, item_id, field_changed, old_value, new_value, changed_by
+      )
+      SELECT
+        ${auditId},
+        target.id,
+        'item_deleted',
+        jsonb_build_object(
+          'name', target.name,
+          'categoryId', target.category_id,
+          'location', target.location,
+          'par', target.par,
+          'currentStock', target.current_stock,
+          'expiredQty', target.expired_qty,
+          'version', target.version
+        )::text,
+        NULL,
+        ${changedBy}
+      FROM target
+      RETURNING item_id
+    ), deleted AS (
+      DELETE FROM inventory_items AS item
+      USING audited
+      WHERE item.id = audited.item_id
+      RETURNING item.id
+    )
+    SELECT id FROM deleted
+  `) as unknown as Array<{ id: string }>;
+  return deleted.length === 1;
 }
 
 /**
@@ -526,31 +669,42 @@ export async function deleteItem(id: string): Promise<void> {
  */
 export async function reorderItems(
   updates: { id: string; sortOrder: number; location?: string | null; categoryId?: string }[],
+  changedBy: string,
 ): Promise<void> {
-  await ensureInventorySchema();
-  const db = sql();
   for (const u of updates) {
-    if (u.location !== undefined && u.categoryId !== undefined) {
-      await db`UPDATE inventory_items SET sort_order = ${u.sortOrder}, location = ${u.location}, category_id = ${u.categoryId}, version = version + 1, updated_at = NOW() WHERE id = ${u.id}`;
-    } else if (u.location !== undefined) {
-      await db`UPDATE inventory_items SET sort_order = ${u.sortOrder}, location = ${u.location}, version = version + 1, updated_at = NOW() WHERE id = ${u.id}`;
-    } else if (u.categoryId !== undefined) {
-      await db`UPDATE inventory_items SET sort_order = ${u.sortOrder}, category_id = ${u.categoryId}, version = version + 1, updated_at = NOW() WHERE id = ${u.id}`;
-    } else {
-      await db`UPDATE inventory_items SET sort_order = ${u.sortOrder}, version = version + 1, updated_at = NOW() WHERE id = ${u.id}`;
-    }
+    await adminUpdateItem(u.id, {
+      sortOrder: u.sortOrder,
+      ...(u.location !== undefined ? { location: u.location } : {}),
+      ...(u.categoryId !== undefined ? { categoryId: u.categoryId } : {}),
+    }, changedBy);
   }
 }
 
 // ── QR Tokens ──────────────────────────────────────────────────────────────
 
-export async function createQrToken(itemId: string, label?: string): Promise<{ id: string; token: string }> {
+export async function createQrToken(
+  itemId: string,
+  label?: string,
+  changedBy = "system:qr-generation",
+): Promise<{ id: string; token: string }> {
   await ensureInventorySchema();
   const db = sql();
   const id = uid();
+  const auditId = uid();
   const { randomBytes } = await import("crypto");
   const token = randomBytes(32).toString("base64url");
-  await db`INSERT INTO inventory_qr_tokens (id, token, item_id, label) VALUES (${id}, ${token}, ${itemId}, ${label ?? null})`;
+  await db`
+    WITH inserted AS (
+      INSERT INTO inventory_qr_tokens (id, token, item_id, label)
+      VALUES (${id}, ${token}, ${itemId}, ${label ?? null})
+      RETURNING id, item_id, label
+    )
+    INSERT INTO inventory_audit_log (
+      id, item_id, field_changed, old_value, new_value, changed_by
+    )
+    SELECT ${auditId}, item_id, 'qr_token_created', NULL, id, ${changedBy}
+    FROM inserted
+  `;
   return { id, token };
 }
 
@@ -575,10 +729,30 @@ export async function getQrTokens(): Promise<{ id: string; token: string; itemId
   }));
 }
 
-export async function revokeQrToken(id: string): Promise<void> {
+export async function revokeQrToken(
+  id: string,
+  changedBy: string,
+): Promise<boolean> {
   await ensureInventorySchema();
   const db = sql();
-  await db`UPDATE inventory_qr_tokens SET active = FALSE WHERE id = ${id}`;
+  const auditId = uid();
+  const rows = (await db`
+    WITH revoked AS (
+      UPDATE inventory_qr_tokens
+      SET active = FALSE
+      WHERE id = ${id} AND active = TRUE
+      RETURNING id, item_id
+    ), audited AS (
+      INSERT INTO inventory_audit_log (
+        id, item_id, field_changed, old_value, new_value, changed_by
+      )
+      SELECT ${auditId}, item_id, 'qr_token_active', 'true', 'false', ${changedBy}
+      FROM revoked
+      RETURNING item_id
+    )
+    SELECT item_id FROM audited
+  `) as unknown as Array<{ item_id: string }>;
+  return rows.length === 1;
 }
 
 // ── Audit Log ──────────────────────────────────────────────────────────────
@@ -691,21 +865,34 @@ export async function getInventoryStats(): Promise<{
 
 // ── Seed helper — clear all inventory data ─────────────────────────────────
 
-export async function clearInventoryData(): Promise<void> {
+export async function clearInventoryData(changedBy = "system:inventory-import"): Promise<void> {
   await ensureInventorySchema();
   const db = sql();
-  await db`DELETE FROM inventory_audit_log`;
+  await db`
+    INSERT INTO inventory_audit_log (
+      id, item_id, field_changed, old_value, new_value, changed_by
+    )
+    VALUES (${uid()}, 'inventory', 'inventory_reset', 'all', NULL, ${changedBy})
+  `;
   await db`DELETE FROM inventory_qr_tokens`;
   await db`DELETE FROM inventory_items`;
   await db`DELETE FROM inventory_categories`;
   await db`DELETE FROM inventory_submissions`;
 }
 
-export async function clearInventoryDataByType(inventoryType: string): Promise<void> {
+export async function clearInventoryDataByType(
+  inventoryType: string,
+  changedBy = "system:inventory-import",
+): Promise<void> {
   await ensureInventorySchema();
   const db = sql();
+  await db`
+    INSERT INTO inventory_audit_log (
+      id, item_id, field_changed, old_value, new_value, changed_by
+    )
+    VALUES (${uid()}, ${`inventory:${inventoryType}`}, 'inventory_type_reset', ${inventoryType}, NULL, ${changedBy})
+  `;
   // Delete items and related data for categories of a specific type
-  await db`DELETE FROM inventory_audit_log WHERE item_id IN (SELECT i.id FROM inventory_items i JOIN inventory_categories c ON i.category_id = c.id WHERE c.inventory_type = ${inventoryType})`;
   await db`DELETE FROM inventory_qr_tokens WHERE item_id IN (SELECT i.id FROM inventory_items i JOIN inventory_categories c ON i.category_id = c.id WHERE c.inventory_type = ${inventoryType})`;
   await db`DELETE FROM inventory_items WHERE category_id IN (SELECT id FROM inventory_categories WHERE inventory_type = ${inventoryType})`;
   await db`DELETE FROM inventory_categories WHERE inventory_type = ${inventoryType}`;

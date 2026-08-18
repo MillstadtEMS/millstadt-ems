@@ -10,6 +10,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { InventoryItem } from "./db";
+import { drawContainedImage, loadLogo } from "@/lib/reports/pdf-system";
 
 const NAVY: [number, number, number] = [4, 13, 26];
 const GOLD: [number, number, number] = [240, 180, 41];
@@ -92,7 +93,7 @@ export interface OrderPdfMeta {
  * "expired" = a plain expired-count sheet. Returns null if there are no
  * rows to show for that mode.
  */
-export function buildOrderPdf(items: InventoryItem[], meta: OrderPdfMeta = {}): { buffer: Buffer; lineCount: number; totalUnits: number; categories: string[] } | null {
+export async function buildOrderPdf(items: InventoryItem[], meta: OrderPdfMeta = {}): Promise<{ buffer: Buffer; lineCount: number; totalUnits: number; categories: string[] } | null> {
   const mode: OrderMode = meta.mode ?? "order";
   const expiredMode = mode === "expired";
   const { groups, lineCount, totalUnits } = buildOrderGroups(items, mode);
@@ -111,25 +112,6 @@ export function buildOrderPdf(items: InventoryItem[], meta: OrderPdfMeta = {}): 
     ? `${lineCount} item(s) · ${totalUnits} expired unit(s)`
     : `${lineCount} line item(s) · ${totalUnits} unit(s) to order`;
 
-  // Header band
-  doc.setFillColor(...NAVY);
-  doc.rect(0, 0, PAGE_W, 86, "F");
-  doc.setTextColor(...GOLD);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text("MILLSTADT EMS · INVENTORY", M, 30);
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(20);
-  doc.text(title, M, 54);
-  doc.setTextColor(180, 190, 205);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(`${dateStr}${meta.submittedBy ? ` · ${meta.submittedBy}` : ""}`, M, 72);
-  doc.setFontSize(9);
-  doc.setTextColor(150, 160, 175);
-  doc.text(summary, PAGE_W - M, 54, { align: "right" });
-  doc.text(`Generated ${genStr}`, PAGE_W - M, 72, { align: "right" });
-
   const headCols = expiredMode
     ? ["#", "Item", "Location / Shelf", "Expired"]
     : ["#", "Item", "Location / Shelf", "Par", "Hand", "Exp", "Order"];
@@ -144,8 +126,8 @@ export function buildOrderPdf(items: InventoryItem[], meta: OrderPdfMeta = {}): 
     );
     const groupUnits = g.rows.reduce((n, r) => n + (expiredMode ? r.exp : r.order), 0);
     const groupLabel = expiredMode
-      ? `${g.name}  —  ${g.rows.length} item(s), ${groupUnits} expired`
-      : `${g.name}  —  ${g.rows.length} item(s), ${groupUnits} unit(s)`;
+      ? `${g.name} - ${g.rows.length} item(s), ${groupUnits} expired`
+      : `${g.name} - ${g.rows.length} item(s), ${groupUnits} unit(s)`;
     autoTable(doc, {
       startY: cursorY,
       head: [
@@ -154,7 +136,7 @@ export function buildOrderPdf(items: InventoryItem[], meta: OrderPdfMeta = {}): 
       ],
       body,
       theme: "grid",
-      margin: { left: M, right: M },
+      margin: { left: M, right: M, top: 104, bottom: 48 },
       styles: { font: "helvetica", fontSize: 8, cellPadding: 4, overflow: "linebreak", lineColor: [226, 232, 240], textColor: [30, 41, 59], valign: "middle" },
       headStyles: { fillColor: NAVY, textColor: 255, fontStyle: "bold", fontSize: 8 },
       columnStyles: expiredMode
@@ -166,8 +148,8 @@ export function buildOrderPdf(items: InventoryItem[], meta: OrderPdfMeta = {}): 
           }
         : {
             0: { cellWidth: 20, halign: "center", textColor: SLATE },
-            1: { cellWidth: 212 },
-            2: { cellWidth: 140, textColor: SLATE, fontSize: 7 },
+            1: { cellWidth: 232 },
+            2: { cellWidth: 160, textColor: SLATE, fontSize: 7 },
             3: { cellWidth: 28, halign: "center" },
             4: { cellWidth: 30, halign: "center" },
             5: { cellWidth: 26, halign: "center", textColor: [220, 38, 38] },
@@ -181,17 +163,38 @@ export function buildOrderPdf(items: InventoryItem[], meta: OrderPdfMeta = {}): 
           data.cell.styles.cellPadding = 5;
         }
       },
-      didDrawPage: () => {
-        const ph = doc.internal.pageSize.getHeight();
-        doc.setFontSize(7.5);
-        doc.setTextColor(...SLATE);
-        doc.setFont("helvetica", "normal");
-        doc.text("Millstadt EMS · millstadtems.org", M, ph - 18);
-        doc.text(`Page ${doc.getNumberOfPages()}`, PAGE_W - M, ph - 18, { align: "right" });
-      },
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     cursorY = (doc as any).lastAutoTable.finalY + 16;
+  }
+
+  const logo = await loadLogo();
+  const pageCount = doc.getNumberOfPages();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  for (let page = 1; page <= pageCount; page += 1) {
+    doc.setPage(page);
+    doc.setFillColor(...NAVY);
+    doc.rect(0, 0, PAGE_W, 86, "F");
+    if (logo) drawContainedImage(doc, logo.dataUri, "PNG", M, 18, 44, 44);
+    doc.setTextColor(...GOLD);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text("MILLSTADT EMS - INVENTORY", M + 56, 30);
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.text(title, M + 56, 54);
+    doc.setTextColor(180, 190, 205);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(`${dateStr}${meta.submittedBy ? ` - ${meta.submittedBy}` : ""}`, M + 56, 72);
+    doc.text(summary, PAGE_W - M, 54, { align: "right" });
+    doc.text(`Generated ${genStr}`, PAGE_W - M, 72, { align: "right" });
+    doc.setDrawColor(221, 226, 233);
+    doc.line(M, pageHeight - 34, PAGE_W - M, pageHeight - 34);
+    doc.setTextColor(...SLATE);
+    doc.setFontSize(7.5);
+    doc.text("Millstadt EMS - millstadtems.org", M, pageHeight - 18);
+    doc.text(`Page ${page} of ${pageCount}`, PAGE_W - M, pageHeight - 18, { align: "right" });
   }
 
   const buffer = Buffer.from(doc.output("arraybuffer"));

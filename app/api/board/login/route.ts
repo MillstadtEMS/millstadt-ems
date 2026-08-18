@@ -5,7 +5,12 @@
  * password-change screen when mustChange is true.
  */
 import { NextRequest } from "next/server";
-import { getUserByUsername, verifyPassword, setSession } from "@/lib/board/auth";
+import {
+  consumeBoardSetupToken,
+  getUserByUsername,
+  setSession,
+  verifyBoardLoginCredential,
+} from "@/lib/board/auth";
 import { audit } from "@/lib/board/db";
 import {
   contentLengthWithin,
@@ -52,13 +57,30 @@ export async function POST(req: NextRequest) {
   }
 
   const user = await getUserByUsername(username);
-  const ok = !!user && user.isActive && verifyPassword(password, user.passwordHash);
+  const credential = user ? verifyBoardLoginCredential(user, password) : null;
+  const productionDevLogin = process.env.NODE_ENV === "production" && user?.isDevLogin === true;
+  const ok = !!user && user.isActive && !productionDevLogin && credential?.ok === true;
 
   if (!ok || !user) {
     // Small delay to blunt guessing.
     await new Promise((r) => setTimeout(r, 350));
     await audit({ username, action: "login_failed", ip });
     return noStoreJson({ error: "That username or password isn't right." }, { status: 401 });
+  }
+
+  if (credential.usesSetupToken) {
+    const consumed = await consumeBoardSetupToken(user.id);
+    if (!consumed) {
+      await audit({ username, action: "setup_token_replay_denied", ip });
+      return noStoreJson({ error: "That setup password was already used or expired. Contact management." }, { status: 409 });
+    }
+    await audit({
+      userId: user.id,
+      username: user.username,
+      role: user.role,
+      action: "setup_token_consumed",
+      ip,
+    });
   }
 
   await setSession(user.id, user.passwordHash);

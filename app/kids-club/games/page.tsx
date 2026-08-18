@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import Call911Story from "@/components/kids/Call911Story";
 import LazyKidsGame from "@/components/kids/LazyKidsGame";
 import { PARTNER_LINKS } from "@/lib/kids/activities";
 
@@ -36,7 +37,7 @@ export default function KidsClubGamesPage() {
             <div className="text-xs font-black uppercase tracking-[0.24em] text-[#f0b429]">
               Safety Games
             </div>
-            <h1 className="mt-5 text-balance text-5xl font-black leading-[0.95] tracking-tight text-white md:text-7xl">
+            <h1 className="mt-5 text-balance text-5xl font-black leading-[0.95] text-white md:text-7xl">
               More ways to practice safety.
             </h1>
             <p className="mt-6 max-w-2xl text-xl font-semibold leading-9 text-slate-200">
@@ -48,6 +49,8 @@ export default function KidsClubGamesPage() {
       </section>
 
       <LazyKidsGame game="ambulance" />
+
+      <Call911Story />
 
       <LazyKidsGame game="decisions" />
 
@@ -66,7 +69,7 @@ export default function KidsClubGamesPage() {
                 line up with the same emergency basics kids learn at our
                 station visits.
               </p>
-              <div className="mt-8 rounded-2xl border border-[#061121]/10 bg-white p-6 shadow-lg shadow-slate-200/60">
+              <div className="mt-8 rounded-lg border border-[#061121]/10 bg-white p-6 shadow-lg shadow-slate-200/60">
                 <div className="text-xs font-black uppercase tracking-[0.22em] text-[#1b58c9]">
                   Tip for Grown-Ups
                 </div>
@@ -86,7 +89,7 @@ export default function KidsClubGamesPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`${link.name} opens in a new tab`}
-                  className="group flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/70 transition hover:-translate-y-0.5 hover:border-[#1b58c9]/40 focus:outline-none focus:ring-2 focus:ring-[#1b58c9] focus:ring-offset-2 sm:flex-row sm:items-start sm:justify-between"
+                  className="group flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/70 transition hover:-translate-y-0.5 hover:border-[#1b58c9]/40 focus:outline-none focus:ring-2 focus:ring-[#1b58c9] focus:ring-offset-2 sm:flex-row sm:items-start sm:justify-between"
                 >
                   <div className="flex-1">
                     <div className="text-2xl font-black leading-tight text-[#061121]">
@@ -96,7 +99,7 @@ export default function KidsClubGamesPage() {
                       {link.desc}
                     </p>
                   </div>
-                  <span className="inline-flex h-12 shrink-0 items-center gap-2 self-start rounded-xl bg-[#061121] px-5 text-sm font-black uppercase tracking-[0.14em] text-white transition group-hover:bg-[#1b58c9] sm:self-center">
+                  <span className="inline-flex h-12 shrink-0 items-center gap-2 self-start rounded-lg bg-[#061121] px-5 text-sm font-black uppercase tracking-[0.14em] text-white transition group-hover:bg-[#1b58c9] sm:self-center">
                     Open
                     <ExternalIcon className="h-4 w-4" />
                   </span>
@@ -105,7 +108,7 @@ export default function KidsClubGamesPage() {
 
               <Link
                 href="/community-education"
-                className="group flex flex-col gap-4 rounded-2xl border-2 border-[#061121] bg-[#061121] p-7 text-white shadow-xl shadow-slate-300/60 transition hover:-translate-y-0.5 hover:bg-[#1b58c9] hover:border-[#1b58c9] focus:outline-none focus:ring-2 focus:ring-[#f0b429] focus:ring-offset-2 sm:flex-row sm:items-start sm:justify-between"
+                className="group flex flex-col gap-4 rounded-lg border-2 border-[#061121] bg-[#061121] p-7 text-white shadow-xl shadow-slate-300/60 transition hover:-translate-y-0.5 hover:bg-[#1b58c9] hover:border-[#1b58c9] focus:outline-none focus:ring-2 focus:ring-[#f0b429] focus:ring-offset-2 sm:flex-row sm:items-start sm:justify-between"
               >
                 <div className="flex-1">
                   <div className="text-xs font-black uppercase tracking-[0.22em] text-[#f0b429]">
@@ -119,7 +122,7 @@ export default function KidsClubGamesPage() {
                     Millstadt EMS in person.
                   </p>
                 </div>
-                <span className="inline-flex h-12 shrink-0 items-center gap-2 self-start rounded-xl bg-[#f0b429] px-5 text-sm font-black uppercase tracking-[0.14em] text-[#061121] sm:self-center">
+                <span className="inline-flex h-12 shrink-0 items-center gap-2 self-start rounded-lg bg-[#f0b429] px-5 text-sm font-black uppercase tracking-[0.14em] text-[#061121] sm:self-center">
                   Visit
                   <ArrowRightIcon className="h-4 w-4" />
                 </span>
@@ -143,13 +146,13 @@ export default function KidsClubGamesPage() {
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/kids-club/printables"
-                className="inline-flex min-h-13 items-center justify-center rounded-xl bg-[#f0b429] px-6 text-sm font-black uppercase tracking-[0.14em] text-[#030914] transition hover:bg-[#ffd45c] focus:outline-none focus:ring-2 focus:ring-[#f0b429] focus:ring-offset-2 focus:ring-offset-[#061121]"
+                className="inline-flex min-h-13 items-center justify-center rounded-lg bg-[#f0b429] px-6 text-sm font-black uppercase tracking-[0.14em] text-[#030914] transition hover:bg-[#ffd45c] focus:outline-none focus:ring-2 focus:ring-[#f0b429] focus:ring-offset-2 focus:ring-offset-[#061121]"
               >
                 Printable Pages
               </Link>
               <Link
                 href="/kids-club/activities"
-                className="inline-flex min-h-13 items-center justify-center rounded-xl border-2 border-white/30 bg-white/5 px-6 text-sm font-black uppercase tracking-[0.14em] text-white transition hover:border-[#f0b429] hover:bg-[#f0b429]/10 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#061121]"
+                className="inline-flex min-h-13 items-center justify-center rounded-lg border-2 border-white/30 bg-white/5 px-6 text-sm font-black uppercase tracking-[0.14em] text-white transition hover:border-[#f0b429] hover:bg-[#f0b429]/10 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#061121]"
               >
                 Monthly Missions
               </Link>

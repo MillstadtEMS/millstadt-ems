@@ -22,10 +22,12 @@ import {
   PAGE_H,
   PAGE_W,
   drawBodyText,
+  drawContainedImage,
   drawMetadataGrid,
   drawOfficialHeader,
   drawSectionHeading,
   drawTitleBlock,
+  drawWrappedText,
   ensureSpace,
   newDoc,
   stampFooter,
@@ -84,10 +86,7 @@ function drawProse(c: Cursor, heading: string, text: string, opts?: { italic?: b
   doc.setFont("helvetica", opts?.italic ? "italic" : "normal");
   doc.setFontSize(11);
   doc.setTextColor(...COLORS.ink);
-  const lines = doc.splitTextToSize(t, CONTENT_W);
-  ensureSpace(c, lines.length * 14 + 4);
-  doc.text(lines, M, c.y + 9);
-  c.y += lines.length * 14 + 10;
+  drawWrappedText(c, t, { bottomGap: 10 });
 }
 
 function drawSignatureBlock(c: Cursor, label: string, sig: WriteUpSignature) {
@@ -111,9 +110,7 @@ function drawSignatureBlock(c: Cursor, label: string, sig: WriteUpSignature) {
   const sigBoxY = c.y + 24;
   const sigBoxW = CONTENT_W * 0.55;
   const sigBoxH = 48;
-  try {
-    doc.addImage(sig.signatureDataUrl, "PNG", sigBoxX, sigBoxY, sigBoxW, sigBoxH, undefined, "FAST");
-  } catch {
+  if (!drawContainedImage(doc, sig.signatureDataUrl, "PNG", sigBoxX, sigBoxY, sigBoxW, sigBoxH)) {
     // Signature image failed to embed — fall back to typed name in italics so the line still reads as signed.
     doc.setFont("helvetica", "italic");
     doc.setFontSize(13);
@@ -130,15 +127,16 @@ function drawSignatureBlock(c: Cursor, label: string, sig: WriteUpSignature) {
 
   // Right column — printed name + role + signed-at
   const rcX = M + 14 + sigBoxW + 22;
+  const rcW = PAGE_W - M - rcX;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10.5);
   doc.setTextColor(...COLORS.ink);
-  doc.text(sig.printedName || "—", rcX, sigBoxY + 14);
+  doc.text(doc.splitTextToSize(sig.printedName || "—", rcW), rcX, sigBoxY + 14);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
+  doc.setFontSize(8.5);
   doc.setTextColor(...COLORS.inkSoft);
-  doc.text(sig.role || "—", rcX, sigBoxY + 30);
-  doc.text(fmtDateTime(sig.signedAt), rcX, sigBoxY + 46);
+  doc.text(doc.splitTextToSize(sig.role || "—", rcW), rcX, sigBoxY + 42);
+  doc.text(doc.splitTextToSize(fmtDateTime(sig.signedAt), rcW), rcX, sigBoxY + 58);
 
   c.y += blockH + 12;
 }
@@ -167,13 +165,10 @@ function drawRefusalBlock(c: Cursor, managerName: string, signedAt: string | nul
 
 function drawAcknowledgmentNote(c: Cursor, text: string) {
   const doc = c.doc;
-  const lines = doc.splitTextToSize(text, CONTENT_W);
-  ensureSpace(c, lines.length * 12 + 8);
   doc.setFont("helvetica", "italic");
   doc.setFontSize(9.5);
   doc.setTextColor(...COLORS.inkMuted);
-  doc.text(lines, M, c.y + 8);
-  c.y += lines.length * 12 + 12;
+  drawWrappedText(c, text, { lineHeight: 12, topOffset: 8, bottomGap: 12 });
 }
 
 function drawDocumentFooter(c: Cursor, w: WriteUp, generatedAt: string) {

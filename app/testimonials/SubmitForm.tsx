@@ -26,6 +26,16 @@ export default function SubmitForm() {
 
   return (
     <form action={action}>
+      <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden">
+        <label htmlFor="testimonial-website">Website</label>
+        <input
+          id="testimonial-website"
+          name="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+        />
+      </div>
       <Section>
         <SectionHeader number="1" title="Share Your Experience" subtitle="Tell us about your experience with Millstadt EMS." />
 

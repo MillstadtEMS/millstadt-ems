@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { getItems, getCategories, getReports, saveReport, getAuditLog, getSubmissions } from "@/lib/inventory/db";
 import { generateOrderReport, generateExpiredReport, generateFullInventoryReport } from "@/lib/inventory/pdf";
 import { put } from "@vercel/blob";
+import { privateBlobReference, privateLoungeBlobUrl } from "@/lib/lounge/private-blobs";
 
 export async function GET(req: NextRequest) {
   const denied = await requireAdmin(); if (denied) return denied;
@@ -25,7 +26,10 @@ export async function GET(req: NextRequest) {
   // Return saved reports
   const reportType = searchParams.get("reportType");
   const reports = await getReports(reportType ?? undefined);
-  return NextResponse.json(reports);
+  return NextResponse.json(reports.map((report) => ({
+    ...report,
+    blobUrl: privateLoungeBlobUrl(report.blobUrl),
+  })));
 }
 
 export async function POST(req: NextRequest) {
@@ -43,15 +47,15 @@ export async function POST(req: NextRequest) {
 
     switch (reportType) {
       case "order":
-        pdfBuffer = generateOrderReport(items, categories);
+        pdfBuffer = await generateOrderReport(items, categories);
         filename = `Order_Report_${timestamp}.pdf`;
         break;
       case "expired":
-        pdfBuffer = generateExpiredReport(items, categories);
+        pdfBuffer = await generateExpiredReport(items, categories);
         filename = `Expired_Items_${timestamp}.pdf`;
         break;
       case "general":
-        pdfBuffer = generateFullInventoryReport(items, categories);
+        pdfBuffer = await generateFullInventoryReport(items, categories);
         filename = `Full_Inventory_${timestamp}.pdf`;
         break;
       default:
@@ -60,17 +64,21 @@ export async function POST(req: NextRequest) {
 
     // Store PDF via Vercel Blob
     const blob = await put(`inventory-reports/${filename}`, pdfBuffer, {
-      access: "public",
+      access: "private",
       contentType: "application/pdf",
     });
+    const blobReference = privateBlobReference(blob.pathname);
 
     const report = await saveReport({
       reportType,
       filename,
-      blobUrl: blob.url,
+      blobUrl: blobReference,
     });
 
-    return NextResponse.json({ ok: true, report });
+    return NextResponse.json({
+      ok: true,
+      report: { ...report, blobUrl: privateLoungeBlobUrl(report.blobUrl) },
+    });
   } catch (e) {
     console.error("Report generation error:", e);
     return NextResponse.json({ error: String(e) }, { status: 500 });

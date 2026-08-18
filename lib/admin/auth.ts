@@ -7,12 +7,16 @@ import { currentEmployee } from "@/lib/lounge/auth";
  * path is intentionally retired.
  */
 export async function isAdminAuthed(): Promise<boolean> {
+  return Boolean(await currentAdmin());
+}
+
+export async function currentAdmin() {
   const employee = await currentEmployee();
-  return Boolean(employee?.isAdmin && employee.isActive);
+  return employee?.isAdmin && employee.isActive ? employee : null;
 }
 
 export async function requireAdmin(): Promise<NextResponse | null> {
-  if (await isAdminAuthed()) return null;
+  if (await currentAdmin()) return null;
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }
 

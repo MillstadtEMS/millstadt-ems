@@ -23,7 +23,7 @@ import path from "node:path";
 })();
 
 import { sql } from "../lib/lounge/db";
-import { createEmployee, defaultInitialPassword } from "../lib/lounge/employees";
+import { createEmployee } from "../lib/lounge/employees";
 
 const USERNAME = "testuser";
 const FIRST = "Test";
@@ -43,7 +43,7 @@ async function main() {
     return;
   }
 
-  const created = await createEmployee({
+  const { employee, setupToken, setupTokenExpiresAt } = await createEmployee({
     firstName: FIRST,
     lastName: LAST,
     email: EMAIL,
@@ -52,8 +52,10 @@ async function main() {
     isAdmin: false,
     username: USERNAME,
   });
-  console.log(`Created: ${created.firstName} ${created.lastName} (${created.username})`);
-  console.log(`First-time password: ${defaultInitialPassword(USERNAME)}`);
+  console.log(`Created: ${employee.firstName} ${employee.lastName} (${employee.username})`);
+  console.log(`One-time setup password: ${setupToken}`);
+  console.log(`Expires: ${setupTokenExpiresAt}`);
+  console.log("This credential is shown once and must be changed after first sign-in.");
 }
 
 main().catch((err) => {

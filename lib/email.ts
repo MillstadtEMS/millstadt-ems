@@ -1,7 +1,7 @@
-import { google } from "googleapis";
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Testimonial } from "./testimonials";
-import { encodeMimeSubject } from "./reports/subject";
+import { sendGmailMessage } from "./reports/gmail-message";
+import { escapeHtml, safeHeaderValue } from "./security/http";
 
 export function signToken(id: string, action: string): string {
   const secret = process.env.APPROVAL_SECRET;
@@ -12,25 +12,21 @@ export function signToken(id: string, action: string): string {
     .slice(0, 32);
 }
 
-function getAuth() {
-  const auth = new google.auth.OAuth2(
-    process.env.GMAIL_CLIENT_ID,
-    process.env.GMAIL_CLIENT_SECRET,
-  );
-  auth.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
-  return auth;
+export function verifySignedToken(id: string, action: string, signature: string) {
+  const expected = Buffer.from(signToken(id, action));
+  const actual = Buffer.from(signature);
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
 export async function sendApprovalEmail(t: Testimonial) {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://millstadtems.org";
-  const approveUrl = `${base}/api/testimonials/approve?id=${t.id}&action=approve&sig=${signToken(t.id, "approve")}`;
-  const denyUrl    = `${base}/api/testimonials/approve?id=${t.id}&action=deny&sig=${signToken(t.id, "deny")}`;
-  const deleteUrl  = `${base}/api/testimonials/approve?id=${t.id}&action=delete&sig=${signToken(t.id, "delete")}`;
-  const displayName = t.anonymous ? "Anonymous" : (t.name || "Anonymous");
+  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.millstadtems.org").replace(/\/$/, "");
+  const reviewUrl = `${base}/admin/testimonials?review=${encodeURIComponent(t.id)}`;
+  const displayNameValue = t.anonymous ? "Anonymous" : (t.name || "Anonymous");
+  const displayName = escapeHtml(displayNameValue);
+  const message = escapeHtml(t.message);
 
-  const from    = process.env.GMAIL_USER ?? "millstadtcad@gmail.com";
-  const to      = "millstadtems@gmail.com";
-  const subject = `New Testimonial — ${displayName}`;
+  const to = safeHeaderValue(process.env.TESTIMONIAL_REVIEW_EMAIL ?? "millstadtems@gmail.com", 254);
+  const subject = safeHeaderValue(`New Testimonial - ${displayNameValue}`, 180);
 
   const html = `
     <div style="font-family:system-ui,sans-serif;max-width:580px;margin:0 auto;background:#040d1a;color:#f1f5f9;padding:40px;border-radius:16px;">
@@ -41,40 +37,32 @@ export async function sendApprovalEmail(t: Testimonial) {
       <p style="color:#64748b;font-size:14px;margin:0 0 32px;">From: <strong style="color:#94a3b8;">${displayName}</strong> &nbsp;·&nbsp; ${new Date(t.submittedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
 
       <div style="background:#071428;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:28px;margin-bottom:32px;">
-        <p style="font-size:17px;line-height:1.75;color:#cbd5e1;margin:0;font-style:italic;">"${t.message}"</p>
+        <p style="font-size:17px;line-height:1.75;color:#cbd5e1;margin:0;font-style:italic;">&ldquo;${message}&rdquo;</p>
       </div>
 
-      <table width="100%" cellpadding="0" cellspacing="0">
-        <tr>
-          <td style="padding-right:8px;">
-            <a href="${approveUrl}" style="display:block;text-align:center;background:#22c55e;color:#fff;font-weight:900;font-size:16px;padding:18px;border-radius:12px;text-decoration:none;">✓ &nbsp;Approve</a>
-          </td>
-          <td style="padding-left:8px;">
-            <a href="${denyUrl}" style="display:block;text-align:center;background:#ef4444;color:#fff;font-weight:900;font-size:16px;padding:18px;border-radius:12px;text-decoration:none;">✕ &nbsp;Deny</a>
-          </td>
-        </tr>
-        <tr>
-          <td colspan="2" style="padding-top:8px;">
-            <a href="${deleteUrl}" style="display:block;text-align:center;background:#1e293b;color:#94a3b8;font-weight:700;font-size:14px;padding:14px;border-radius:12px;text-decoration:none;border:1px solid rgba(255,255,255,0.08);">🗑 &nbsp;Permanently Delete</a>
-          </td>
-        </tr>
-      </table>
+      <a href="${escapeHtml(reviewUrl)}" style="display:block;text-align:center;background:#f0b429;color:#040d1a;font-weight:900;font-size:16px;padding:18px;border-radius:12px;text-decoration:none;">Open Protected Review</a>
+      <p style="color:#64748b;font-size:12px;line-height:1.6;margin-top:16px;text-align:center;">Email links never approve, deny, or delete a submission. Sign in with a named administrator account to take action.</p>
 
       <p style="color:#1e293b;font-size:11px;margin-top:32px;text-align:center;">Millstadt EMS · millstadtems.org</p>
     </div>
   `;
 
-  const raw = Buffer.from(
-    `From: Millstadt EMS Website <${from}>\r\n` +
-    `To: ${to}\r\n` +
-    `Subject: ${encodeMimeSubject(subject)}\r\n` +
-    `MIME-Version: 1.0\r\n` +
-    `Content-Type: text/html; charset=utf-8\r\n` +
-    `Content-Transfer-Encoding: base64\r\n` +
-    `\r\n` +
-    Buffer.from(html, "utf8").toString("base64").replace(/(.{76})/g, "$1\r\n")
-  ).toString("base64url");
-
-  const gmail = google.gmail({ version: "v1", auth: getAuth() });
-  await gmail.users.messages.send({ userId: from, requestBody: { raw } });
+  const text = [
+    "New testimonial submitted for review",
+    `From: ${displayNameValue}`,
+    `Submitted: ${new Date(t.submittedAt).toLocaleDateString("en-US", { timeZone: "America/Chicago" })}`,
+    "",
+    t.message,
+    "",
+    `Protected review: ${reviewUrl}`,
+    "",
+    "Email links never approve, deny, or delete a submission. Sign in with a named administrator account to take action.",
+  ].join("\n");
+  await sendGmailMessage({
+    fromName: "Millstadt EMS Website",
+    to: [to],
+    subject,
+    text,
+    html,
+  });
 }

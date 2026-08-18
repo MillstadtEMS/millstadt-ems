@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { currentEmployee } from "@/lib/lounge/auth";
+import { currentEmployeeForPasswordChange } from "@/lib/lounge/auth";
 import { getEmployee } from "@/lib/lounge/employees";
 
 export async function GET() {
-  const emp = await currentEmployee();
+  const emp = await currentEmployeeForPasswordChange();
   if (!emp) {
     return NextResponse.json({ employee: null }, { status: 401 });
   }

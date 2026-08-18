@@ -67,7 +67,7 @@ function GameLoading({ tone, title }: { tone: "light" | "dark"; title: string })
     >
       <div className="wrap">
         <div
-          className={`min-h-[340px] rounded-2xl border p-8 ${
+          className={`min-h-[340px] rounded-lg border p-8 ${
             dark
               ? "border-white/10 bg-white/5 text-slate-300"
               : "border-[#061121]/10 bg-white text-slate-700 shadow-xl shadow-slate-200/60"

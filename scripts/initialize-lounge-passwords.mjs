@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 /**
- * Reset every active Lounge employee to username/username exactly once.
- * The default mode is a dry run. Pass --apply to perform the reset after
- * the matching authentication release is deployed.
+ * Rotate every active Lounge employee to a distinct random, expiring,
+ * one-time setup password. The default mode is a dry run. Pass --apply to
+ * perform the reset after the P0 auth migration and release are deployed.
  *
- * Passkeys and authenticator enrollment are intentionally preserved.
+ * Existing sessions, trusted devices, SMS codes, and pre-auth challenges are
+ * revoked. Passkeys and authenticator enrollment are intentionally preserved.
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { randomBytes, scryptSync } from "node:crypto";
+import { createHash, randomBytes, scryptSync } from "node:crypto";
 import { neon } from "@neondatabase/serverless";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -40,6 +41,20 @@ function hashPassword(password) {
   return `${salt}:${hash}`;
 }
 
+function setupTokenHash(token) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function createSetupCredential() {
+  const token = randomBytes(24).toString("base64url");
+  return {
+    token,
+    tokenHash: setupTokenHash(token),
+    passwordHash: hashPassword(token),
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+  };
+}
+
 const apply = process.argv.includes("--apply");
 const db = neon(process.env.DATABASE_URL);
 const employees = await db`
@@ -53,19 +68,48 @@ console.log(`${apply ? "Applying" : "Dry run for"} ${employees.length} active em
 for (const employee of employees) {
   console.log(`  ${employee.username} (${employee.first_name} ${employee.last_name})`);
   if (!apply) continue;
-  const passwordHash = hashPassword(employee.username);
+  const credential = createSetupCredential();
   await db`
-    UPDATE lounge_employees
-    SET password_hash = ${passwordHash},
-        must_change_password = TRUE,
-        updated_at = NOW()
-    WHERE id = ${employee.id}
+    WITH updated AS (
+      UPDATE lounge_employees
+      SET password_hash = ${credential.passwordHash},
+          must_change_password = TRUE,
+          setup_token_hash = ${credential.tokenHash},
+          setup_token_expires_at = ${credential.expiresAt},
+          setup_token_used_at = NULL,
+          sms_login_code_hash = NULL,
+          sms_login_code_expires_at = NULL,
+          sms_login_code_attempts = 0,
+          updated_at = NOW()
+      WHERE id = ${employee.id}
+      RETURNING id
+    ), revoked_challenges AS (
+      UPDATE lounge_preauth_challenges challenge
+      SET revoked_at = COALESCE(challenge.revoked_at, NOW())
+      FROM updated
+      WHERE challenge.employee_id = updated.id
+        AND challenge.used_at IS NULL
+        AND challenge.revoked_at IS NULL
+    ), deleted_devices AS (
+      DELETE FROM lounge_trusted_devices device
+      USING updated
+      WHERE device.employee_id = updated.id
+    )
+    INSERT INTO lounge_personnel_audit (employee_id, action, detail)
+    SELECT id, 'password_reset', ${JSON.stringify({
+      source: "initialize-lounge-passwords",
+      setupTokenExpiresAt: credential.expiresAt,
+      sessionsAndTrustedDevicesRevoked: true,
+    })}::jsonb
+    FROM updated
   `;
+  console.log(`    one-time setup password: ${credential.token}`);
+  console.log(`    expires: ${credential.expiresAt}`);
 }
 
 if (apply) {
-  console.log("Reset complete. Each employee must sign in with username/username and choose a permanent password.");
-  console.log("Passkeys and authenticator enrollment were preserved.");
+  console.log("Reset complete. Deliver each one-time password securely; it cannot be recovered or reused.");
+  console.log("Passkeys and authenticator enrollment were preserved; sessions and trusted devices were revoked.");
 } else {
-  console.log("No records changed. Re-run with --apply only after the matching authentication release is live.");
+  console.log("No records changed. Run the P0 auth migration first, then re-run with --apply only after approval.");
 }

@@ -6,7 +6,7 @@
  *
  * Each employee gets:
  *   - username:  firstinitial + lastname (lowercase)
- *   - password:  username (scrypt-hashed, one-time bootstrap only)
+ *   - password:  a distinct random, expiring, one-time setup credential
  *   - must_change_password = TRUE
  *   - is_admin = TRUE for kjames + jgoetz only
  *
@@ -24,7 +24,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { neon } from "@neondatabase/serverless";
-import { scryptSync, randomBytes, randomUUID } from "node:crypto";
+import { createHash, scryptSync, randomBytes, randomUUID } from "node:crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -138,6 +138,16 @@ function hashPassword(plain) {
   return `${salt}:${hash}`;
 }
 
+function createSetupCredential() {
+  const token = randomBytes(24).toString("base64url");
+  return {
+    token,
+    tokenHash: createHash("sha256").update(token).digest("hex"),
+    passwordHash: hashPassword(token),
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+  };
+}
+
 // ── Run ────────────────────────────────────────────────────────────────
 const db = neon(process.env.DATABASE_URL);
 
@@ -180,13 +190,12 @@ function splitStatements(text) {
 async function seedEmployees() {
   let inserted = 0;
   let skipped = 0;
+  const credentials = [];
   for (const [first, last, cert] of ROSTER) {
     const username = usernameFor(first, last);
-    const initialPw = username;
     const contact = CONTACT[username] ?? {};
     const id = randomUUID();
     const isAdmin = ADMIN_USERNAMES.has(username);
-    const passwordHash = hashPassword(initialPw);
 
     const existing = await db`
       SELECT id FROM lounge_employees WHERE LOWER(username) = LOWER(${username}) LIMIT 1
@@ -196,18 +205,30 @@ async function seedEmployees() {
       continue;
     }
 
+    const credential = createSetupCredential();
+
     await db`
-      INSERT INTO lounge_employees
-        (id, username, first_name, last_name, certification, email, phone,
-         password_hash, must_change_password, is_admin, is_active)
-      VALUES
-        (${id}, ${username}, ${first}, ${last}, ${cert},
-         ${contact.email ?? null}, ${contact.phone ?? null},
-         ${passwordHash}, TRUE, ${isAdmin}, TRUE)
+      WITH inserted AS (
+        INSERT INTO lounge_employees
+          (id, username, first_name, last_name, certification, email, phone,
+           password_hash, must_change_password, setup_token_hash,
+           setup_token_expires_at, setup_token_used_at, is_admin, is_active)
+        VALUES
+          (${id}, ${username}, ${first}, ${last}, ${cert},
+           ${contact.email ?? null}, ${contact.phone ?? null},
+           ${credential.passwordHash}, TRUE, ${credential.tokenHash},
+           ${credential.expiresAt}, NULL, ${isAdmin}, TRUE)
+        RETURNING id
+      )
+      INSERT INTO lounge_personnel_audit (employee_id, action, detail)
+      SELECT id, 'employee_setup_token_created',
+             ${JSON.stringify({ source: "lounge-init", setupTokenExpiresAt: credential.expiresAt })}::jsonb
+      FROM inserted
     `;
+    credentials.push({ first, last, username, ...credential });
     inserted++;
   }
-  return { inserted, skipped };
+  return { inserted, skipped, credentials };
 }
 
 async function main() {
@@ -216,13 +237,16 @@ async function main() {
   console.log(`  ✓ ${n} statements executed`);
 
   console.log("→ Seeding employees…");
-  const { inserted, skipped } = await seedEmployees();
+  const { inserted, skipped, credentials } = await seedEmployees();
   console.log(`  ✓ ${inserted} inserted, ${skipped} already existed`);
 
-  console.log("\nInitial passwords (give these out — everyone must change on first login):\n");
-  for (const [first, last] of ROSTER) {
-    const u = usernameFor(first, last);
-    console.log(`  ${first.padEnd(11)} ${last.padEnd(13)} →  username: ${u.padEnd(13)} password: ${u}`);
+  if (credentials.length) {
+    console.log("\nNew one-time setup passwords (shown once; deliver securely):\n");
+  }
+  for (const credential of credentials) {
+    console.log(
+      `  ${credential.first.padEnd(11)} ${credential.last.padEnd(13)} →  username: ${credential.username.padEnd(13)} password: ${credential.token}  expires: ${credential.expiresAt}`,
+    );
   }
   console.log("\nDone.");
 }

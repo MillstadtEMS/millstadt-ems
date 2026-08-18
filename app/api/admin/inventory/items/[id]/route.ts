@@ -9,14 +9,19 @@
  * editor, not the concurrent counting flow.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
+import { currentAdmin } from "@/lib/admin/auth";
 import { adminUpdateItem, deleteItem, type AdminItemFields } from "@/lib/inventory/db";
+import { isSameOriginRequest } from "@/lib/security/http";
+import { inventoryActor } from "@/lib/inventory/mutation-security";
 
 export const runtime = "nodejs";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+  const admin = await currentAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isSameOriginRequest(req)) {
+    return NextResponse.json({ error: "Cross-origin request denied" }, { status: 403 });
+  }
 
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
@@ -30,16 +35,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (typeof body.sortOrder === "number") fields.sortOrder = body.sortOrder;
   if (typeof body.categoryId === "string") fields.categoryId = body.categoryId;
 
-  const item = await adminUpdateItem(id, fields);
+  const item = await adminUpdateItem(id, fields, inventoryActor(admin));
   if (!item) return NextResponse.json({ error: "Item not found" }, { status: 404 });
   return NextResponse.json({ item });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await currentAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isSameOriginRequest(req)) {
+    return NextResponse.json({ error: "Cross-origin request denied" }, { status: 403 });
+  }
 
   const { id } = await params;
-  await deleteItem(id);
+  const deleted = await deleteItem(id, inventoryActor(admin));
+  if (!deleted) return NextResponse.json({ error: "Item not found" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

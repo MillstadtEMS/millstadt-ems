@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { currentBoardUser } from "@/lib/board/auth";
+import { currentBoardUserForPasswordChange } from "@/lib/board/auth";
 import BoardAppShell from "@/components/board/BoardAppShell";
 import {
   canManageFireBoardAccess,
@@ -13,7 +13,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
-  const user = await currentBoardUser();
+  const user = await currentBoardUserForPasswordChange();
   if (!user) redirect("/board/login");
   if (user.mustChangePassword) redirect("/board/change-password");
 

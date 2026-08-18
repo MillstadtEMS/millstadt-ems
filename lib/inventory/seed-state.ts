@@ -347,9 +347,11 @@ const STATE_CATEGORIES: StateCategory[] = [
  * Seed state/system inspection items into the database.
  * Clears existing state items first (does NOT touch backstock).
  */
-export async function seedStateItems(): Promise<{ categories: number; items: number }> {
+export async function seedStateItems(
+  changedBy = "system:inventory-import",
+): Promise<{ categories: number; items: number }> {
   await ensureInventorySchema();
-  await clearInventoryDataByType("state");
+  await clearInventoryDataByType("state", changedBy);
 
   let totalItems = 0;
 
@@ -362,7 +364,7 @@ export async function seedStateItems(): Promise<{ categories: number; items: num
       sortOrder: si,
       hasExpiry: cat.hasExpiry,
       inventoryType: "state",
-    });
+    }, changedBy);
 
     for (let ii = 0; ii < cat.items.length; ii++) {
       const item = cat.items[ii];
@@ -373,7 +375,7 @@ export async function seedStateItems(): Promise<{ categories: number; items: num
         par: item.par,
         currentStock: 0,
         sortOrder: ii,
-      });
+      }, changedBy);
       totalItems++;
     }
   }

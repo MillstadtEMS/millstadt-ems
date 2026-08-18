@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     attachmentsByRecord[r.id] = await listAttachmentsForRecord(r.id);
   }
 
-  const pdf = buildPersonnelPacketPdf({
+  const pdf = await buildPersonnelPacketPdf({
     employee: {
       id: employee.id,
       firstName: employee.firstName,

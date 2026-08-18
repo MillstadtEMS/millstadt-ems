@@ -36,7 +36,7 @@ export default function LoungeLogin() {
   // 2FA state
   const [step, setStep] = useState<"password" | "verify_sms" | "verify_2fa" | "setup_2fa">("password");
   const [code, setCode] = useState("");
-  const [trustDevice, setTrustDevice] = useState(true);
+  const [trustDevice, setTrustDevice] = useState(false);
   const [qr, setQr] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
@@ -124,6 +124,27 @@ export default function LoungeLogin() {
       setPhoneTail(d.phoneTail ?? phoneTail);
       setDevCode(d.devCode ?? null);
     } finally { setResending(false); }
+  }
+
+  async function useTotpInstead() {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/lounge/verify-2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ switchToTotp: true }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(data.error || "Authenticator sign-in is unavailable.");
+        return;
+      }
+      setStep("verify_2fa");
+      setCode("");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function submitCode(endpoint: string) {
@@ -293,7 +314,7 @@ export default function LoungeLogin() {
               {resending ? "Sending…" : "Resend code"}
             </button>
             {canUseTotp && (
-              <button type="button" onClick={() => { setStep("verify_2fa"); setCode(""); setError(""); }} style={{ ...ghostBtn, color: "#94a3b8" }}>
+              <button type="button" onClick={useTotpInstead} disabled={loading} style={{ ...ghostBtn, color: "#94a3b8" }}>
                 Use authenticator app instead
               </button>
             )}
@@ -506,7 +527,7 @@ function TrustDeviceCheckbox({
         style={{ width: 18, height: 18, accentColor: "#f0b429" }}
       />
       <span>
-        Trust this device for 365 days.
+        Trust this device for 30 days.
         <span style={{ color: "#94a3b8", display: "block", fontSize: 11.5, marginTop: 2 }}>
         Skip the 2FA code on this device next time. You can revoke it from <em>Sign-in &amp; Devices</em>.
         </span>

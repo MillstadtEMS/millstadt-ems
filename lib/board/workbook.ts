@@ -1,15 +1,20 @@
-import { readFile } from "fs/promises";
-import path from "path";
-import { list } from "@vercel/blob";
 import { ensureBoardSchema, sql, type BoardUser } from "./db";
+import {
+  BOARD_WORKBOOK_DOWNLOAD_PATH,
+  LEGACY_BOARD_WORKBOOK_BLOB_PATH,
+  LEGACY_BOARD_WORKBOOK_PUBLIC_PATH,
+  LEGACY_BOARD_WORKBOOK_VIEW_BLOB_PATH,
+  LEGACY_BOARD_WORKBOOK_VIEW_PUBLIC_PATH,
+  readStoredBoardDocumentJson,
+  resolveCurrentBoardWorkbookViewSource,
+  resolveLegacyBoardWorkbookViewSource,
+} from "./document-storage";
 
-export const BOARD_WORKBOOK_BLOB_PATH = "board-workbook/current.xlsx";
-export const BOARD_WORKBOOK_VIEW_BLOB_PATH = "board-workbook/current.json";
-export const BOARD_WORKBOOK_PUBLIC_PATH = "/board/referendum/current.xlsx";
-export const BOARD_WORKBOOK_VIEW_PUBLIC_PATH = "/board/referendum/current.json";
+export const BOARD_WORKBOOK_BLOB_PATH = LEGACY_BOARD_WORKBOOK_BLOB_PATH;
+export const BOARD_WORKBOOK_VIEW_BLOB_PATH = LEGACY_BOARD_WORKBOOK_VIEW_BLOB_PATH;
+export const BOARD_WORKBOOK_PUBLIC_PATH = LEGACY_BOARD_WORKBOOK_PUBLIC_PATH;
+export const BOARD_WORKBOOK_VIEW_PUBLIC_PATH = LEGACY_BOARD_WORKBOOK_VIEW_PUBLIC_PATH;
 export const BOARD_WORKBOOK_VIEW_VERSION = 2;
-
-const BOARD_WORKBOOK_VIEW_LOCAL_PATH = path.join(process.cwd(), "public", "board", "referendum", "current.json");
 
 export interface BoardWorkbookCell {
   id: string;
@@ -209,9 +214,32 @@ export function filterWorkbookForAudience(
 ): BoardWorkbookView {
   const selected = audience === "fire_board" ? settings.fireBoard : settings.emsBoard;
   const allowed = new Set(selected);
+  const filterOverrides = (
+    overrides: BoardWorkbookScenarioOverrides | undefined,
+  ): BoardWorkbookScenarioOverrides | undefined => {
+    if (!overrides) return undefined;
+    return Object.fromEntries(
+      Object.entries(overrides).map(([variant, sheets]) => [
+        variant,
+        Object.fromEntries(
+          Object.entries(sheets).filter(([sheetName]) => allowed.has(sheetName)),
+        ),
+      ]),
+    );
+  };
+  const scenariosAllowed = allowed.has("Scenarios");
+  const transfersAllowed = allowed.has("Transfer Division");
   return {
     ...workbook,
+    downloadUrl: "",
     sheets: workbook.sheets.filter((sheet) => allowed.has(sheet.name)),
+    scenarios: scenariosAllowed ? workbook.scenarios : undefined,
+    defaultScenarioKey: scenariosAllowed ? workbook.defaultScenarioKey : undefined,
+    scenarioOverrides: scenariosAllowed ? filterOverrides(workbook.scenarioOverrides) : undefined,
+    transferConfigs: transfersAllowed ? workbook.transferConfigs : undefined,
+    defaultTransferEnabled: transfersAllowed ? workbook.defaultTransferEnabled : undefined,
+    defaultTransferConfigKey: transfersAllowed ? workbook.defaultTransferConfigKey : undefined,
+    transferOverrides: transfersAllowed ? filterOverrides(workbook.transferOverrides) : undefined,
   };
 }
 
@@ -247,31 +275,33 @@ function shouldRebuildWorkbookData(view: BoardWorkbookView): boolean {
   return (hasScenarioSheet && !hasScenarioData(view)) || (hasTransferSheet && !hasTransferData(view));
 }
 
-async function loadBlobWorkbookView(): Promise<BoardWorkbookView | null> {
+function protectWorkbookDownloadUrl(view: BoardWorkbookView): BoardWorkbookView {
+  return { ...view, downloadUrl: BOARD_WORKBOOK_DOWNLOAD_PATH };
+}
+
+async function loadWorkbookViewSource(
+  source: Awaited<ReturnType<typeof resolveCurrentBoardWorkbookViewSource>>,
+): Promise<BoardWorkbookView | null> {
+  if (!source) return null;
   try {
-    const { blobs } = await list({ prefix: "board-workbook/" });
-    const exact = blobs.find((blob) => blob.pathname === BOARD_WORKBOOK_VIEW_BLOB_PATH);
-    if (!exact) return null;
-
-    const response = await fetch(exact.url, { cache: "no-store" });
-    if (!response.ok) return null;
-
-    const view = await response.json();
+    const view = await readStoredBoardDocumentJson(source);
     if (!isWorkbookView(view)) return null;
     if (shouldRebuildWorkbookData(view)) return null;
-    return view;
+    return protectWorkbookDownloadUrl(view);
   } catch {
     return null;
   }
 }
 
-async function loadLocalWorkbookView(): Promise<BoardWorkbookView> {
-  const raw = await readFile(BOARD_WORKBOOK_VIEW_LOCAL_PATH, "utf8");
-  const view = JSON.parse(raw) as unknown;
-  if (!isWorkbookView(view)) throw new Error("Board workbook view snapshot is invalid.");
-  return view;
-}
-
 export async function getCurrentBoardWorkbookView(): Promise<BoardWorkbookView> {
-  return (await loadBlobWorkbookView()) ?? (await loadLocalWorkbookView());
+  const currentSource = await resolveCurrentBoardWorkbookViewSource();
+  const current = await loadWorkbookViewSource(currentSource);
+  if (current) return current;
+
+  if (currentSource?.storage === "private") {
+    const legacy = await loadWorkbookViewSource(await resolveLegacyBoardWorkbookViewSource());
+    if (legacy) return legacy;
+  }
+
+  throw new Error("Board workbook view snapshot is unavailable or invalid.");
 }

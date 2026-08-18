@@ -1,21 +1,16 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { siteSans } from "./fonts";
 import "./globals.css";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
-import WeatherAlertOverlay from "@/components/WeatherAlertOverlay";
 import CallTicker from "@/components/cad/CallTicker";
 import AmboScroll from "@/components/AmboScroll";
 import SiteShell from "@/components/SiteShell";
 import PwaRegistration from "@/components/PwaRegistration";
 import AnalyticsTracker from "@/components/analytics/AnalyticsTracker";
 import PrivacyPreferences from "@/components/analytics/PrivacyPreferences";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
+import SeasonalThemeController from "@/components/SeasonalThemeController";
+import { getSeasonalThemePublicConfig } from "@/lib/seasonal/themes";
 
 export const metadata: Metadata = {
   title: {
@@ -38,8 +33,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const seasonalTheme = getSeasonalThemePublicConfig();
+
   return (
-    <html lang="en" data-scroll-behavior="smooth" className={`${inter.variable} h-full`}>
+    <html
+      lang="en"
+      data-scroll-behavior="smooth"
+      data-mems-season={seasonalTheme.initialTheme}
+      className={`${siteSans.variable} h-full`}
+    >
       <head>
         <meta name="theme-color" content="#040d1a" />
         <link rel="apple-touch-icon" href="/images/millstadt-ems/pwa-icon.png" />
@@ -48,17 +50,17 @@ export default function RootLayout({
         <PwaRegistration />
         <AnalyticsTracker />
         <PrivacyPreferences />
+        <SeasonalThemeController config={seasonalTheme} />
         <SiteShell
           header={
             <>
               <CallTicker />
               <Nav />
-              <WeatherAlertOverlay />
             </>
           }
           footer={
             <>
-              <AmboScroll />
+              <AmboScroll enabled={process.env.ENABLE_PUBLIC_AMBULANCE_DRIVE_BY !== "false"} />
               <Footer />
             </>
           }

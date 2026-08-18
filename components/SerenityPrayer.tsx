@@ -1,11 +1,5 @@
 import Image from "next/image";
-import { Dancing_Script } from "next/font/google";
-
-const prayerFont = Dancing_Script({
-  subsets: ["latin"],
-  weight: "700",
-  display: "swap",
-});
+import { serenityScript } from "@/app/fonts";
 
 export default function SerenityPrayer() {
   return (
@@ -49,7 +43,7 @@ export default function SerenityPrayer() {
         <blockquote className="m-0 w-full">
           <p
             aria-label="God, grant me the serenity to accept the things I cannot change, the courage to change the things I can, and the wisdom to know the difference."
-            className={`${prayerFont.className} mx-auto max-w-5xl text-balance text-[clamp(1.85rem,8vw,3.5rem)] font-bold leading-[1.04] text-[#fff7df] sm:text-[clamp(2.2rem,4.9vw,4.85rem)] sm:leading-[1.08]`}
+            className={`${serenityScript.className} mx-auto max-w-5xl text-balance text-[clamp(1.85rem,8vw,3.5rem)] font-bold leading-[1.04] text-[#fff7df] sm:text-[clamp(2.2rem,4.9vw,4.85rem)] sm:leading-[1.08]`}
             style={{
               textShadow:
                 "0 2px 8px rgba(4,13,26,0.98), 0 0 22px rgba(4,13,26,0.9)",

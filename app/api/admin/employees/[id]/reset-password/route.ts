@@ -1,14 +1,13 @@
 /**
  * POST /api/admin/employees/[id]/reset-password
- *   Resets the one-time password to the employee's username and sets
- *   must_change_password = TRUE. Passkeys and TOTP enrollment are preserved.
+ *   Issues a random, expiring one-use setup credential, revokes every session,
+ *   trusted device, and pending MFA challenge. Passkeys and TOTP are preserved.
  */
 import { NextRequest } from "next/server";
 import { currentEmployee } from "@/lib/lounge/auth";
 import {
   getEmployee,
   resetEmployeePassword,
-  defaultInitialPassword,
 } from "@/lib/lounge/employees";
 import { isSameOriginRequest, noStoreJson } from "@/lib/security/http";
 import { checkRateLimit } from "@/lib/security/rate-limit";
@@ -42,8 +41,14 @@ export async function POST(
   const emp = await getEmployee(id);
   if (!emp) return noStoreJson({ error: "Not found" }, { status: 404 });
 
-  const initialPassword = defaultInitialPassword(emp.username);
-  await resetEmployeePassword(id, initialPassword);
+  const reset = await resetEmployeePassword(id);
+  if (!reset) return noStoreJson({ error: "Not found" }, { status: 404 });
+  const {
+    setupToken,
+    setupTokenExpiresAt,
+    revokedTrustedDevices,
+    revokedPreauthChallenges,
+  } = reset;
   await recordSecurityAudit({
     actorType: "administrator",
     actorId: me.id,
@@ -52,7 +57,13 @@ export async function POST(
     resourceId: id,
     outcome: "completed",
     req,
-    detail: { preservedPasskeysAndTotp: true, forcedPasswordChange: true },
+    detail: {
+      preservedPasskeysAndTotp: true,
+      forcedPasswordChange: true,
+      setupTokenExpiresAt,
+      revokedTrustedDevices,
+      revokedPreauthChallenges,
+    },
   });
-  return noStoreJson({ ok: true, initialPassword });
+  return noStoreJson({ ok: true, setupToken, setupTokenExpiresAt });
 }

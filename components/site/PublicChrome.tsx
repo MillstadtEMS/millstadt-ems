@@ -18,7 +18,7 @@ export function PublicPageHero({
   return (
     <section className="mems-page-hero">
       <div className="wrap">
-        <div className="mems-page-hero__grid">
+        <div className={`mems-page-hero__grid${children ? "" : " mems-page-hero__grid--single"}`}>
           <div className="mems-page-hero__copy">
             <div className="mems-eyebrow">
               <span />
@@ -68,7 +68,7 @@ export function PublicActionCard({
       </div>
       <span className="mems-card-link">
         {label}
-        <SiteIcon name="external" />
+        <SiteIcon name="arrow-right" />
       </span>
     </Link>
   );
@@ -116,7 +116,7 @@ export function PublicCallout({
         <h2>{title}</h2>
         <p>{body}</p>
       </div>
-      {href && label && <span className="mems-card-link">{label}<SiteIcon name="external" /></span>}
+      {href && label && <span className="mems-card-link">{label}<SiteIcon name="arrow-right" /></span>}
     </>
   );
 

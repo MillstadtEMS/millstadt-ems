@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   rhythmsForLevel,
@@ -45,17 +45,6 @@ export default function LeadIIApp({
   const [route, setRoute] = useState<Route>(
     initialLevel ? { name: "timed", level: initialLevel } : { name: "intro" },
   );
-  // Load VT323 once.
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    if (document.getElementById("vt323-font")) return;
-    const link = document.createElement("link");
-    link.id = "vt323-font";
-    link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=VT323&display=swap";
-    document.head.appendChild(link);
-  }, []);
-
   return (
     <div style={{ background: LEAD_II_COLORS.black, minHeight: "100vh", fontFamily: LEAD_II_FONT, color: LEAD_II_COLORS.phosphor }}>
       <TopBar />
@@ -85,8 +74,7 @@ export default function LeadIIApp({
 
 // ── Top bar ──────────────────────────────────────────────────────────────
 function TopBar() {
-  const [muted, setMutedState] = useState(false);
-  useEffect(() => { setMutedState(isMuted()); }, []);
+  const [muted, setMutedState] = useState(isMuted);
   return (
     <div style={{
       display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -175,7 +163,7 @@ function LevelSelect({
   return (
     <div style={{ maxWidth: 720, margin: "0 auto" }}>
       <div style={{ textAlign: "center", marginTop: 24 }}>
-        <div style={{ color: LEAD_II_COLORS.amber, fontSize: 18, letterSpacing: "0.2em" }}>// SELECT MODE //</div>
+        <div style={{ color: LEAD_II_COLORS.amber, fontSize: 18, letterSpacing: "0.2em" }}>{"// SELECT MODE //"}</div>
         <h2 style={{ color: LEAD_II_COLORS.phosphor, margin: "6px 0 0", fontFamily: LEAD_II_FONT, fontSize: 40, letterSpacing: "0.06em" }}>
           HELLO, {playerName.toUpperCase()}
         </h2>
@@ -272,34 +260,25 @@ function TimedScreen({ level, playerName, onExit }: { level: LevelId; playerName
 
   function drawFromBag(): RhythmId {
     if (bagRef.current.length === 0) {
-      const fresh = [...pool];
-      for (let i = fresh.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [fresh[i], fresh[j]] = [fresh[j], fresh[i]];
-      }
-      if (lastShownRef.current && fresh.length > 1 && fresh[0] === lastShownRef.current) {
-        [fresh[0], fresh[1]] = [fresh[1], fresh[0]];
-      }
-      bagRef.current = fresh;
+      bagRef.current = shuffleRhythms(pool, lastShownRef.current);
     }
     const next = bagRef.current.shift()!;
     lastShownRef.current = next;
     return next;
   }
 
-  const subject = RHYTHM_BY_ID.get(current);
   const bpm = useMemo(() => defaultBpmFor(current), [current]);
   const canvasWidth = useResponsiveWidth();
   const canvasHeight = 220;
 
-  function nextQuestion(_prev: RhythmId) {
+  function nextQuestion() {
     const next = drawFromBag();
     setCurrent(next);
     setChoices(buildChoices(next));
     setWrongAttempts(0);
     setLockedOut(new Set());
     setCorrectRevealed(false);
-    startRef.current = performance.now();
+    startRef.current = monotonicNow();
   }
 
   // Countdown
@@ -347,7 +326,7 @@ function TimedScreen({ level, playerName, onExit }: { level: LevelId; playerName
     const next = drawFromBag();
     setCurrent(next);
     setChoices(buildChoices(next));
-    startRef.current = performance.now();
+    startRef.current = monotonicNow();
     setPhase("playing");
   }
 
@@ -357,7 +336,7 @@ function TimedScreen({ level, playerName, onExit }: { level: LevelId; playerName
     if (isCorrect) {
       ding();
       setCorrectRevealed(true);
-      const secs = (performance.now() - startRef.current) / 1000;
+      const secs = (monotonicNow() - startRef.current) / 1000;
       const result = scoreCorrect(current, {
         timeToAnswerSec: secs,
         currentStreak: streak,
@@ -369,7 +348,7 @@ function TimedScreen({ level, playerName, onExit }: { level: LevelId; playerName
         setStats((st) => ({ ...st, correct: st.correct + 1, bestStreak: Math.max(st.bestStreak, next) }));
         return next;
       });
-      setTimeout(() => nextQuestion(current), 800);
+      setTimeout(nextQuestion, 800);
     } else {
       buzzer();
       const penalty = scoreWrong(wrongAttempts);
@@ -380,7 +359,7 @@ function TimedScreen({ level, playerName, onExit }: { level: LevelId; playerName
       setWrongAttempts(nextWrong);
       setLockedOut((s) => new Set(s).add(picked));
       if (nextWrong >= MAX_WRONGS_PER_QUESTION) {
-        setTimeout(() => nextQuestion(current), 900);
+        setTimeout(nextQuestion, 900);
       }
     }
   }
@@ -647,6 +626,20 @@ function LearnScreen({ level, onExit }: { level: LevelId; onExit: () => void }) 
 function pickRhythm(pool: readonly RhythmId[], avoid?: RhythmId): RhythmId {
   const candidates = avoid ? pool.filter((id) => id !== avoid) : pool;
   return candidates[Math.floor(Math.random() * candidates.length)] ?? pool[0];
+}
+function shuffleRhythms(pool: readonly RhythmId[], avoidFirst: RhythmId | null): RhythmId[] {
+  const shuffled = [...pool];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+  if (avoidFirst && shuffled.length > 1 && shuffled[0] === avoidFirst) {
+    [shuffled[0], shuffled[1]] = [shuffled[1], shuffled[0]];
+  }
+  return shuffled;
+}
+function monotonicNow() {
+  return typeof performance === "undefined" ? Date.now() : performance.now();
 }
 function buildChoices(correct: RhythmId) {
   const tier = tierForRhythm(correct) ?? "beginner";

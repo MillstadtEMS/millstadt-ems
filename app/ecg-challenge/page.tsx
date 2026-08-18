@@ -5,9 +5,9 @@ import { PublicMetric, PublicPageHero } from "@/components/site/PublicChrome";
 import SiteIcon from "@/components/site/SiteIcon";
 
 export const metadata: Metadata = {
-  title: "Public ECG Challenge",
+  title: "ECG Challenge",
   description:
-    "A public educational rhythm-pattern challenge for medically knowledgeable Millstadt EMS website visitors.",
+    "Synthetic ECG pattern practice for EMS students and clinicians.",
 };
 
 export default function PublicEcgChallengePage() {
@@ -17,7 +17,7 @@ export default function PublicEcgChallengePage() {
         eyebrow="Clinical Education"
         title="ECG"
         accent="Challenge"
-        description="A separate public pattern-recognition challenge for clinicians, students, and medically curious visitors. It is not part of Kids Club."
+        description="Synthetic rhythm-pattern practice for EMS students and clinicians. It is separate from Kids Club and does not provide patient-care guidance."
       >
         <PublicMetric label="Teaching strips" value="4" tone="cyan" />
         <PublicMetric label="Patient data" value="None" tone="green" />

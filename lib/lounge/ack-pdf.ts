@@ -6,8 +6,10 @@
  */
 
 import { jsPDF } from "jspdf";
+import { drawContainedImage, loadLogo } from "@/lib/reports/pdf-system";
 
 export interface AckPdfInput {
+  noticeId?: string;
   noticeTitle: string;
   noticeBody: string;
   noticeCreatedAt: string | null;
@@ -49,6 +51,10 @@ export async function buildAckMemorandumPdf(input: AckPdfInput): Promise<Buffer>
   let y = margin;
 
   // ── Letterhead ─────────────────────────────────────────────────────
+  const logo = await loadLogo();
+  if (logo) {
+    drawContainedImage(doc, logo.dataUri, "PNG", margin, y - 22, 42, 42);
+  }
   doc.setFont("times", "bold");
   doc.setFontSize(16);
   doc.setTextColor(20, 30, 60);
@@ -112,8 +118,7 @@ export async function buildAckMemorandumPdf(input: AckPdfInput): Promise<Buffer>
 
   const lineHeight = 16;
   for (const line of bodyLines) {
-    if (y > H - margin - 200) {
-      // leave room for signature block; new page if we run out
+    if (y > H - margin - 36) {
       doc.addPage();
       y = margin;
     }
@@ -159,10 +164,8 @@ export async function buildAckMemorandumPdf(input: AckPdfInput): Promise<Buffer>
   const sigBoxH = 70;
 
   if (input.signatureDataUrl && input.signatureDataUrl.startsWith("data:image/")) {
-    try {
-      const format = input.signatureDataUrl.includes("image/jpeg") ? "JPEG" : "PNG";
-      doc.addImage(input.signatureDataUrl, format, sigBoxX, y, sigBoxW, sigBoxH, undefined, "FAST");
-    } catch {
+    const format = input.signatureDataUrl.includes("image/jpeg") ? "JPEG" : "PNG";
+    if (!drawContainedImage(doc, input.signatureDataUrl, format, sigBoxX, y, sigBoxW, sigBoxH)) {
       doc.setFont("times", "italic");
       doc.text("(signature on file)", sigBoxX, y + sigBoxH / 2);
     }
@@ -205,20 +208,27 @@ export async function buildAckMemorandumPdf(input: AckPdfInput): Promise<Buffer>
   y += sigBoxH + 30;
 
   // ── Footer ─────────────────────────────────────────────────────────
+  const pageCount = doc.getNumberOfPages();
   const footerY = H - 40;
-  doc.setDrawColor(180);
-  doc.setLineWidth(0.4);
-  doc.line(margin, footerY - 12, W - margin, footerY - 12);
-  doc.setFont("times", "italic");
-  doc.setFontSize(8);
-  doc.setTextColor(120);
-  doc.text(
-    "This memorandum was issued and acknowledged through the Millstadt EMS Employee Lounge. " +
-    "An electronic copy is retained in the employee's personnel file.",
-    W / 2,
-    footerY,
-    { align: "center", maxWidth: W - margin * 2 },
-  );
+  for (let page = 1; page <= pageCount; page += 1) {
+    doc.setPage(page);
+    if (page > 1) {
+      if (logo) drawContainedImage(doc, logo.dataUri, "PNG", margin, 12, 30, 30);
+      doc.setFont("times", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(20, 30, 60);
+      doc.text("MILLSTADT AMBULANCE SERVICE - MEMORANDUM", margin + 42, 31);
+    }
+    doc.setDrawColor(180);
+    doc.setLineWidth(0.4);
+    doc.line(margin, footerY - 12, W - margin, footerY - 12);
+    doc.setFont("times", "italic");
+    doc.setFontSize(7.5);
+    doc.setTextColor(120);
+    doc.text("Electronic acknowledgment retained in the employee personnel file.", margin, footerY);
+    const pageLabel = `${input.noticeId ? `Notice ${input.noticeId.slice(0, 8)} | ` : ""}Page ${page} of ${pageCount}`;
+    doc.text(pageLabel, W - margin, footerY, { align: "right" });
+  }
 
   const bytes = doc.output("arraybuffer");
   return Buffer.from(bytes);

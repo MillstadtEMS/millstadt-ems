@@ -159,6 +159,17 @@ export async function revokeTrustedDevice(employeeId: string, id: string): Promi
   await db`DELETE FROM lounge_trusted_devices WHERE id = ${id} AND employee_id = ${employeeId}`;
 }
 
+export async function revokeAllTrustedDevices(employeeId: string): Promise<number> {
+  await ensureSchema();
+  const db = sql();
+  const rows = (await db`
+    DELETE FROM lounge_trusted_devices
+    WHERE employee_id = ${employeeId}
+    RETURNING id
+  `) as unknown as { id: string }[];
+  return rows.length;
+}
+
 export function trustCookieOptions(token: string) {
   return {
     name: TRUST_COOKIE_NAME,

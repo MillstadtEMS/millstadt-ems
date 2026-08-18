@@ -75,6 +75,12 @@ ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS phone_verified_at     TIME
 ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS phone_verify_code_hash TEXT;
 ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS phone_verify_expires_at TIMESTAMPTZ;
 ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS phone_verify_attempts INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS setup_token_hash TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS setup_token_expires_at TIMESTAMPTZ;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS setup_token_used_at TIMESTAMPTZ;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS sms_login_code_hash TEXT;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS sms_login_code_expires_at TIMESTAMPTZ;
+ALTER TABLE lounge_employees ADD COLUMN IF NOT EXISTS sms_login_code_attempts INTEGER NOT NULL DEFAULT 0;
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- PERSONNEL RECORDS (admin-only personnel file)
@@ -215,6 +221,38 @@ CREATE TABLE IF NOT EXISTS lounge_login_log (
 );
 CREATE INDEX IF NOT EXISTS lounge_login_log_employee_idx
     ON lounge_login_log (employee_id, at DESC);
+
+-- Purpose-bound password-preauthentication challenges. Raw nonces are never
+-- stored; a challenge can authorize exactly one MFA endpoint and one success.
+CREATE TABLE IF NOT EXISTS lounge_preauth_challenges (
+    nonce_hash                   TEXT PRIMARY KEY,
+    employee_id                  TEXT NOT NULL REFERENCES lounge_employees(id) ON DELETE CASCADE,
+    purpose                      TEXT NOT NULL CHECK (purpose IN ('verify_totp', 'verify_sms', 'enroll_totp')),
+    issued_at                    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at                   TIMESTAMPTZ NOT NULL,
+    uses_setup_token             BOOLEAN NOT NULL DEFAULT FALSE,
+    enrollment_secret_encrypted TEXT,
+    attempt_count                INTEGER NOT NULL DEFAULT 0,
+    used_at                      TIMESTAMPTZ,
+    revoked_at                   TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS lounge_preauth_challenges_employee_idx
+    ON lounge_preauth_challenges (employee_id, issued_at DESC);
+CREATE INDEX IF NOT EXISTS lounge_preauth_challenges_active_idx
+    ON lounge_preauth_challenges (expires_at)
+    WHERE used_at IS NULL AND revoked_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS lounge_trusted_devices (
+    id           TEXT PRIMARY KEY,
+    employee_id  TEXT NOT NULL REFERENCES lounge_employees(id) ON DELETE CASCADE,
+    token_hash   TEXT NOT NULL UNIQUE,
+    device_label TEXT,
+    last_used_at TIMESTAMPTZ,
+    expires_at   TIMESTAMPTZ NOT NULL,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS lounge_trusted_devices_employee_idx
+    ON lounge_trusted_devices (employee_id);
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- FEED (wall / shift-to-shift messages)
@@ -455,10 +493,16 @@ ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS attendant2_name TEXT;
 ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS odometer INTEGER;
 ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS notes TEXT;
 ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS pdf_url TEXT;
+ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS idempotency_key TEXT;
+ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS request_hash TEXT;
+ALTER TABLE lounge_truck_checks ADD COLUMN IF NOT EXISTS submission_result JSONB;
 CREATE INDEX IF NOT EXISTS lounge_truck_checks_flag_idx
     ON lounge_truck_checks (pencil_whip_flag, submitted_at DESC) WHERE pencil_whip_flag IS NOT NULL;
 CREATE INDEX IF NOT EXISTS lounge_truck_checks_employee_idx
     ON lounge_truck_checks (submitted_by_id, submitted_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS lounge_truck_checks_idempotency_idx
+    ON lounge_truck_checks (submitted_by_id, idempotency_key)
+    WHERE idempotency_key IS NOT NULL;
 
 -- Per-item rows so we can compute trends, abnormal histories, leak detection.
 CREATE TABLE IF NOT EXISTS lounge_truck_check_items (
@@ -503,6 +547,28 @@ CREATE TABLE IF NOT EXISTS lounge_truck_check_photos (
 );
 CREATE INDEX IF NOT EXISTS lounge_tcp_check_idx
     ON lounge_truck_check_photos (truck_check_id, uploaded_at DESC);
+
+-- Durable secondary work. The authoritative check and these jobs are committed
+-- together; legacy reporting, PDF generation, Blob upload, and email may retry
+-- without changing whether the TruckCheck itself is saved.
+CREATE TABLE IF NOT EXISTS lounge_truck_check_outbox (
+    id              TEXT PRIMARY KEY,
+    truck_check_id  TEXT NOT NULL REFERENCES lounge_truck_checks(id) ON DELETE CASCADE,
+    job_type        TEXT NOT NULL CHECK (job_type IN ('legacy_copy', 'pdf_email')),
+    status          TEXT NOT NULL DEFAULT 'pending'
+                    CHECK (status IN ('pending', 'processing', 'failed', 'completed')),
+    attempt_count   INTEGER NOT NULL DEFAULT 0,
+    available_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    claimed_at      TIMESTAMPTZ,
+    completed_at    TIMESTAMPTZ,
+    last_error      TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (truck_check_id, job_type)
+);
+CREATE INDEX IF NOT EXISTS lounge_truck_check_outbox_pending_idx
+    ON lounge_truck_check_outbox (available_at, created_at)
+    WHERE status IN ('pending', 'failed', 'processing');
 
 CREATE TABLE IF NOT EXISTS lounge_truck_washes (
     id                   TEXT PRIMARY KEY,

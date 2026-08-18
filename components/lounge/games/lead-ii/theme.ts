@@ -13,5 +13,5 @@ export const LEAD_II_COLORS = {
   creamPaper: "#fff6f1",
 } as const;
 
-/** Font stack identical to VT323 in feel, with web fallbacks. */
-export const LEAD_II_FONT = `"VT323", "Courier New", ui-monospace, monospace`;
+/** Uses the bundled Lounge mono face so gameplay never depends on a font CDN. */
+export const LEAD_II_FONT = `var(--font-mas-mono), "Courier New", ui-monospace, monospace`;

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { google } from "googleapis";
 import {
   getOrCreateApplicantWorkflow,
   updateApplicantStatus,
@@ -11,6 +10,7 @@ import {
 } from "@/lib/db";
 import { APPLICANT_STATUSES, type ApplicantStatus } from "@/lib/applicant-workflow";
 import { requireAdmin } from "@/lib/admin/auth";
+import { sendGmailMessage } from "@/lib/reports/gmail-message";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -166,26 +166,30 @@ async function sendInterviewEmail(submissionId: string, workflow: Awaited<Return
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
-  const auth = new google.auth.OAuth2(process.env.GMAIL_CLIENT_ID, process.env.GMAIL_CLIENT_SECRET);
-  auth.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
-  const gmail = google.gmail({ version: "v1", auth });
-  const from = process.env.GMAIL_USER ?? "millstadtcad@gmail.com";
-
   const recipients = [
     "millstadtems@gmail.com",
     "kenneth.james@millstadtems.org",
     "jennifer.goetz@millstadtems.org",
   ];
 
-  const raw = Buffer.from(
-    `From: Millstadt EMS Hiring <${from}>\r\n` +
-    `To: ${recipients.join(", ")}\r\n` +
-    `Subject: ${subject}\r\n` +
-    `MIME-Version: 1.0\r\n` +
-    `Content-Type: text/html; charset=utf-8\r\n` +
-    `\r\n` +
-    html
-  ).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-
-  await gmail.users.messages.send({ userId: "me", requestBody: { raw } });
+  const text = [
+    "Interview Scheduled",
+    `Applicant: ${fullName}`,
+    `Position: ${position}`,
+    `Date / Time: ${scheduledFmt}`,
+    `Location / Link: ${location}`,
+    `Interviewers: ${interviewers}`,
+    `Phone: ${phone || "Not provided"}`,
+    `Email: ${email || "Not provided"}`,
+    notes ? `Notes: ${notes}` : "",
+    `Submission ID: ${submissionId}`,
+    `Review: https://www.millstadtems.org/admin/submissions/${submissionId}`,
+  ].filter(Boolean).join("\n");
+  await sendGmailMessage({
+    fromName: "Millstadt EMS Hiring",
+    to: recipients,
+    subject,
+    text,
+    html,
+  });
 }

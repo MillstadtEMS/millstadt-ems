@@ -173,13 +173,13 @@ export default function EmergencyDecisionLab() {
               scenarios. The goal is calm recognition, not medical training.
             </p>
             <div className="mt-8 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <div className="rounded-lg border border-white/10 bg-white/5 p-5">
                 <strong className="block text-3xl font-black text-[#f0b429]">{score}</strong>
                 <span className="mt-1 block text-xs font-black uppercase tracking-[0.16em] text-slate-400">
                   Right choices
                 </span>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <div className="rounded-lg border border-white/10 bg-white/5 p-5">
                 <strong className="block text-3xl font-black text-cyan-200">{completeCount}/{scenarios.length}</strong>
                 <span className="mt-1 block text-xs font-black uppercase tracking-[0.16em] text-slate-400">
                   Completed
@@ -188,7 +188,7 @@ export default function EmergencyDecisionLab() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/12 bg-[#0b1728] p-5 shadow-2xl shadow-black/35 md:p-7">
+          <div className="rounded-lg border border-white/12 bg-[#0b1728] p-5 shadow-2xl shadow-black/35 md:p-7">
             <div className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="text-xs font-black uppercase tracking-[0.18em] text-cyan-200">
@@ -196,13 +196,13 @@ export default function EmergencyDecisionLab() {
                 </div>
                 <h3 className="mt-3 text-3xl font-black leading-tight">{scenario.title}</h3>
               </div>
-              <span className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#f0b429]/30 bg-[#f0b429]/10 px-4 text-xs font-black uppercase tracking-[0.14em] text-[#f8d980]">
+              <span className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[#f0b429]/30 bg-[#f0b429]/10 px-4 text-xs font-black uppercase tracking-[0.14em] text-[#f8d980]">
                 <PhoneCall className="h-4 w-4" aria-hidden />
                 Think first
               </span>
             </div>
 
-            <p className="mt-6 rounded-2xl border border-white/10 bg-white/6 p-5 text-lg font-bold leading-8 text-slate-100">
+            <p className="mt-6 rounded-lg border border-white/10 bg-white/6 p-5 text-lg font-bold leading-8 text-slate-100">
               {scenario.situation}
             </p>
 
@@ -228,7 +228,7 @@ export default function EmergencyDecisionLab() {
                     aria-pressed={chosen}
                     aria-describedby={showResult ? feedbackId : undefined}
                     onClick={() => choose(choice)}
-                    className={`min-h-14 rounded-xl border px-5 py-4 text-left text-base font-black leading-6 transition focus:outline-none focus:ring-2 focus:ring-[#f0b429] focus:ring-offset-2 focus:ring-offset-[#0b1728] ${showResult ? "cursor-default" : ""} ${stateClass}`}
+                    className={`min-h-14 rounded-lg border px-5 py-4 text-left text-base font-black leading-6 transition focus:outline-none focus:ring-2 focus:ring-[#f0b429] focus:ring-offset-2 focus:ring-offset-[#0b1728] ${showResult ? "cursor-default" : ""} ${stateClass}`}
                   >
                     {choice.label}
                   </button>
@@ -237,7 +237,7 @@ export default function EmergencyDecisionLab() {
             </div>
 
             {selectedChoice && (
-              <div id={`${scenario.id}-feedback`} role="status" aria-live="polite" className="mt-5 rounded-2xl border border-white/12 bg-white/6 p-5">
+              <div id={`${scenario.id}-feedback`} role="status" aria-live="polite" className="mt-5 rounded-lg border border-white/12 bg-white/6 p-5">
                 <div className="flex items-start gap-3">
                   <ShieldCheck className={`mt-1 h-6 w-6 shrink-0 ${selectedChoice.correct ? "text-emerald-300" : "text-[#f0b429]"}`} aria-hidden />
                   <div>
@@ -256,21 +256,21 @@ export default function EmergencyDecisionLab() {
                 type="button"
                 onClick={goNext}
                 disabled={!selectedId || activeIndex === scenarios.length - 1}
-                className="inline-flex min-h-13 flex-1 items-center justify-center rounded-xl bg-[#f0b429] px-6 text-sm font-black uppercase tracking-[0.14em] text-[#061121] transition hover:bg-[#ffd45c] disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+                className="inline-flex min-h-13 flex-1 items-center justify-center rounded-lg bg-[#f0b429] px-6 text-sm font-black uppercase tracking-[0.14em] text-[#061121] transition hover:bg-[#ffd45c] disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
               >
                 Next scenario
               </button>
               <button
                 type="button"
                 onClick={reset}
-                className="inline-flex min-h-13 flex-1 items-center justify-center rounded-xl border border-white/25 px-6 text-sm font-black uppercase tracking-[0.14em] text-white transition hover:border-[#f0b429] hover:bg-[#f0b429]/10"
+                className="inline-flex min-h-13 flex-1 items-center justify-center rounded-lg border border-white/25 px-6 text-sm font-black uppercase tracking-[0.14em] text-white transition hover:border-[#f0b429] hover:bg-[#f0b429]/10"
               >
                 Start over
               </button>
             </div>
 
             {isComplete && (
-              <div className="mt-6 rounded-2xl border border-[#f0b429]/30 bg-[#f0b429]/12 p-5 text-[#f8d980]">
+              <div className="mt-6 rounded-lg border border-[#f0b429]/30 bg-[#f0b429]/12 p-5 text-[#f8d980]">
                 <div className="text-xs font-black uppercase tracking-[0.2em]">Mission complete</div>
                 <p className="mt-2 text-lg font-black leading-7">
                   You finished the lab with {score} out of {scenarios.length} right choices.

@@ -9,7 +9,12 @@
 import { randomUUID } from "crypto";
 import { sql } from "./db";
 import { privateBlobDeleteTarget, privateLoungeBlobUrl } from "./private-blobs";
-import { hashPassword } from "./auth";
+import {
+  generateSetupToken,
+  hashPassword,
+  setupTokenExpiresAt,
+  setupTokenHash,
+} from "./auth";
 import { encrypt, decrypt, ssnLast4 } from "./encryption";
 
 // ── Public types ────────────────────────────────────────────────────────
@@ -296,18 +301,15 @@ export function defaultUsername(firstName: string, lastName: string): string {
   return (firstName.trim()[0] + lastName.trim()).toLowerCase().replace(/[^a-z]/g, "");
 }
 
-export function defaultInitialPassword(username: string): string {
-  return username.trim().toLowerCase();
-}
-
 export async function createEmployee(
   input: CreateEmployeeInput,
-): Promise<AdminEmployeeRow> {
+): Promise<{ employee: AdminEmployeeRow; setupToken: string; setupTokenExpiresAt: string }> {
   const id = randomUUID();
   const cleanUsername = (input.username ?? "").trim().toLowerCase().replace(/[^a-z0-9_.-]/g, "");
   const username = cleanUsername || defaultUsername(input.firstName, input.lastName);
-  const pw = defaultInitialPassword(username);
-  const passwordHash = hashPassword(pw);
+  const setupToken = generateSetupToken();
+  const expiresAt = setupTokenExpiresAt();
+  const passwordHash = hashPassword(setupToken);
   const ssnEnc = input.ssn ? encrypt(input.ssn) : null;
 
   const db = sql();
@@ -315,19 +317,21 @@ export async function createEmployee(
     INSERT INTO lounge_employees
       (id, username, first_name, last_name, certification, position,
        email, phone, dob, ssn_encrypted, hire_date, notes,
-       password_hash, must_change_password, is_admin, is_active)
+       password_hash, must_change_password, setup_token_hash,
+       setup_token_expires_at, setup_token_used_at, is_admin, is_active)
     VALUES
       (${id}, ${username}, ${input.firstName}, ${input.lastName},
        ${input.certification ?? null}, ${input.position ?? null},
        ${input.email ?? null}, ${input.phone ?? null},
        ${input.dob ?? null}, ${ssnEnc},
        ${input.hireDate ?? null}, ${input.notes ?? null},
-       ${passwordHash}, TRUE, ${input.isAdmin ?? false}, TRUE)
+       ${passwordHash}, TRUE, ${setupTokenHash(setupToken)},
+       ${expiresAt}, NULL, ${input.isAdmin ?? false}, TRUE)
   `;
 
   const created = await getEmployee(id);
   if (!created) throw new Error("Failed to create employee");
-  return created;
+  return { employee: created, setupToken, setupTokenExpiresAt: expiresAt };
 }
 
 export interface UpdateEmployeeInput {
@@ -486,20 +490,60 @@ export async function updateEmployee(
   return getEmployee(id);
 }
 
-/** Reset password back to a known string and force change on next login. */
+/** Issue a random one-use setup credential and revoke every existing bypass. */
 export async function resetEmployeePassword(
   id: string,
-  newPassword: string,
-): Promise<void> {
-  const hash = hashPassword(newPassword);
+): Promise<{
+  setupToken: string;
+  setupTokenExpiresAt: string;
+  revokedTrustedDevices: number;
+  revokedPreauthChallenges: number;
+} | null> {
+  const setupToken = generateSetupToken();
+  const expiresAt = setupTokenExpiresAt();
+  const hash = hashPassword(setupToken);
+  const tokenHash = setupTokenHash(setupToken);
   const db = sql();
-  await db`
-    UPDATE lounge_employees
-    SET password_hash = ${hash},
-        must_change_password = TRUE,
-        updated_at = NOW()
-    WHERE id = ${id}
-  `;
+  const rows = (await db`
+    WITH updated AS (
+      UPDATE lounge_employees
+      SET password_hash = ${hash},
+          must_change_password = TRUE,
+          setup_token_hash = ${tokenHash},
+          setup_token_expires_at = ${expiresAt},
+          setup_token_used_at = NULL,
+          sms_login_code_hash = NULL,
+          sms_login_code_expires_at = NULL,
+          sms_login_code_attempts = 0,
+          updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING id
+    ), revoked_challenges AS (
+      UPDATE lounge_preauth_challenges challenge
+      SET revoked_at = COALESCE(challenge.revoked_at, NOW())
+      FROM updated
+      WHERE challenge.employee_id = updated.id
+        AND challenge.used_at IS NULL
+        AND challenge.revoked_at IS NULL
+      RETURNING challenge.nonce_hash
+    ), deleted_devices AS (
+      DELETE FROM lounge_trusted_devices device
+      USING updated
+      WHERE device.employee_id = updated.id
+      RETURNING device.id
+    )
+    SELECT updated.id,
+           (SELECT COUNT(*)::int FROM revoked_challenges) AS revoked_challenges,
+           (SELECT COUNT(*)::int FROM deleted_devices) AS deleted_devices
+    FROM updated
+  `) as unknown as Array<{ id: string; revoked_challenges: number; deleted_devices: number }>;
+  if (!rows.length) return null;
+  return {
+    setupToken,
+    setupTokenExpiresAt: expiresAt,
+    revokedTrustedDevices: Number(rows[0].deleted_devices),
+    revokedPreauthChallenges: Number(rows[0].revoked_challenges),
+  };
 }
 
 export async function deactivateEmployee(id: string): Promise<void> {

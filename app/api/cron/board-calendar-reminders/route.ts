@@ -5,8 +5,7 @@
  * passes because each item records send counts and the last sent day.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { google } from "googleapis";
-import { encodeMimeSubject } from "@/lib/reports/subject";
+import { sendGmailMessage } from "@/lib/reports/gmail-message";
 import {
   getDueCalendarEmailReminders,
   markCalendarReminderError,
@@ -17,15 +16,6 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
-
-function getAuth() {
-  const auth = new google.auth.OAuth2(
-    process.env.GMAIL_CLIENT_ID,
-    process.env.GMAIL_CLIENT_SECRET,
-  );
-  auth.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
-  return auth;
-}
 
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (c) =>
@@ -73,44 +63,36 @@ function buildEmail(item: DueCalendarReminder): { subject: string; html: string;
 }
 
 async function sendReminder(item: DueCalendarReminder) {
-  const from = process.env.GMAIL_USER ?? "millstadtcad@gmail.com";
   const { subject, html, text } = buildEmail(item);
-  const boundary = `mems_board_${Date.now()}_${item.id}`;
-  const mime =
-    `From: Millstadt EMS Board Portal <${from}>\r\n` +
-    `To: ${item.recipientEmails.join(", ")}\r\n` +
-    `Subject: ${encodeMimeSubject(subject)}\r\n` +
-    `MIME-Version: 1.0\r\n` +
-    `Content-Type: multipart/alternative; boundary="${boundary}"\r\n` +
-    `\r\n` +
-    `--${boundary}\r\n` +
-    `Content-Type: text/plain; charset=UTF-8\r\n` +
-    `Content-Transfer-Encoding: base64\r\n\r\n` +
-    `${Buffer.from(text, "utf8").toString("base64").replace(/(.{76})/g, "$1\r\n")}\r\n` +
-    `--${boundary}\r\n` +
-    `Content-Type: text/html; charset=UTF-8\r\n` +
-    `Content-Transfer-Encoding: base64\r\n\r\n` +
-    `${Buffer.from(html, "utf8").toString("base64").replace(/(.{76})/g, "$1\r\n")}\r\n` +
-    `--${boundary}--`;
-  const gmail = google.gmail({ version: "v1", auth: getAuth() });
-  await gmail.users.messages.send({
-    userId: from,
-    requestBody: { raw: Buffer.from(mime, "utf8").toString("base64url") },
+  return sendGmailMessage({
+    fromName: "Millstadt EMS Board Portal",
+    to: item.recipientEmails,
+    subject,
+    text,
+    html,
   });
 }
 
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!secret) {
+    return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 });
+  }
+  if (req.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const due = await getDueCalendarEmailReminders();
   let sent = 0;
   let failed = 0;
+  let skipped = 0;
   for (const item of due) {
     try {
-      await sendReminder(item);
+      const result = await sendReminder(item);
+      if (!result.sent) {
+        skipped += 1;
+        continue;
+      }
       await markCalendarReminderSent(item.id);
       sent += 1;
     } catch (error) {
@@ -121,5 +103,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, checked: due.length, sent, failed });
+  return NextResponse.json({ ok: true, checked: due.length, sent, failed, skipped });
 }

@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   cookieOptions,
   findEmployeeByUsername,
-  verifyPassword,
+  verifyEmployeeLoginCredential,
   logLogin,
   getTotpEnrollment,
-  makePreauthToken,
+  issuePreauthChallenge,
+  LOUNGE_PREAUTH_COOKIE_NAME,
   makeSessionToken,
   preauthCookieOptions,
+  revokePreauthChallenge,
 } from "@/lib/lounge/auth";
 import { sql } from "@/lib/lounge/db";
 import { sendLoginCode } from "@/lib/lounge/sms-login";
@@ -25,6 +27,7 @@ import {
 } from "@/lib/security/http";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { recordSecurityAudit } from "@/lib/security/audit";
+import { generateSecret } from "@/lib/lounge/totp";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +83,8 @@ export async function POST(req: NextRequest) {
   }
 
   const emp = await findEmployeeByUsername(username);
-  if (!emp || !emp.isActive || !verifyPassword(password, emp.passwordHash)) {
+  const credential = emp ? verifyEmployeeLoginCredential(emp, password) : null;
+  if (!emp || !emp.isActive || !credential?.ok) {
     await logLogin(emp?.id ?? null, username, false, ip, ua);
     return noStoreJson({ error: "Invalid username or password" }, { status: 401 });
   }
@@ -90,7 +94,7 @@ export async function POST(req: NextRequest) {
   // Rotate the opaque trust token on every successful use so a previously
   // observed cookie cannot be replayed for the rest of the trust window.
   const trustCookie = req.cookies.get(TRUST_COOKIE_NAME)?.value;
-  if (trustCookie) {
+  if (trustCookie && !credential.usesSetupToken) {
     const trusted = await verifyTrustedDevice(emp.id, trustCookie);
     if (trusted) {
       await logLogin(emp.id, emp.username, true, ip, ua);
@@ -125,7 +129,6 @@ export async function POST(req: NextRequest) {
 
   const { secret, enrolledAt } = await getTotpEnrollment(emp.id);
   const totpEnrolled = !!secret && !!enrolledAt;
-  const preauth = makePreauthToken(emp.id);
 
   // SMS-via-Twilio is only used when:
   //   1. Twilio env vars are configured (so we're not paying for fallback
@@ -160,6 +163,27 @@ export async function POST(req: NextRequest) {
   } else {
     step = "setup_2fa";
   }
+
+  const previousPreauth = req.cookies.get(LOUNGE_PREAUTH_COOKIE_NAME)?.value;
+  if (previousPreauth) await revokePreauthChallenge(previousPreauth);
+  const purpose = step === "verify_sms"
+    ? "verify_sms"
+    : step === "verify_2fa"
+      ? "verify_totp"
+      : "enroll_totp";
+  const preauth = await issuePreauthChallenge(emp.id, purpose, {
+    usesSetupToken: credential.usesSetupToken,
+    enrollmentSecret: purpose === "enroll_totp" ? generateSecret() : null,
+  });
+  await recordSecurityAudit({
+    actorType: "employee",
+    actorId: emp.id,
+    action: "lounge_preauth_issued",
+    resourceType: "authentication",
+    outcome: "completed",
+    req,
+    detail: { purpose, usesSetupToken: credential.usesSetupToken },
+  });
 
   const res = NextResponse.json({
     ok: true,

@@ -5,7 +5,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 const PORT = 3031;
-const ORIGIN = `http://localhost:${PORT}`;
+const ORIGIN = `http://127.0.0.1:${PORT}`;
 const ADMIN_HEADERS = {
   "x-mems-dev-admin-code": "TEST-ADMIN",
 };
@@ -23,7 +23,7 @@ const documentLibraryPath = path.join(
 );
 const server = spawn(
   process.execPath,
-  ["node_modules/next/dist/bin/next", "dev", "-p", String(PORT)],
+  ["node_modules/next/dist/bin/next", "dev", "-H", "127.0.0.1", "-p", String(PORT)],
   {
     cwd,
     env: {
@@ -297,7 +297,7 @@ try {
   assert.match(hubPage.headers.get("content-security-policy") ?? "", /frame-ancestors 'none'/);
   assert.equal(hubPage.headers.get("x-frame-options"), "DENY");
   assert.equal(hubPage.headers.get("x-content-type-options"), "nosniff");
-  assert.match(await hubPage.text(), /Financial Information/);
+  assert.match(await hubPage.text(), /Financial &amp; Information Transparency/);
   pass("development hub is available with scoped security headers");
 
   const requestTermsSource = await readFile(
@@ -325,11 +325,11 @@ try {
     path.join(cwd, "app/financials-information-hub/page.tsx"),
     "utf8",
   );
-  assert.match(productionHubSource, /Financial and Other Public Requests/);
+  assert.match(productionHubSource, /Financial &amp; Information Transparency/);
   assert.match(productionHubSource, /Coming Soon/);
   assert.match(
     productionHubSource,
-    /The Millstadt EMS Financial and Other Public Requests hub is being prepared/,
+    /The Millstadt EMS Financial &amp; Information Transparency hub is being prepared/,
   );
   assert.match(
     productionHubSource,
@@ -361,9 +361,19 @@ try {
   const manifest = JSON.parse(await readFile(path.join(cwd, "public/financial-information.webmanifest"), "utf8"));
   assert.equal(manifest.start_url, "/financials-information-hub");
   const worker = await readFile(path.join(cwd, "public/sw.js"), "utf8");
-  assert.doesNotMatch(worker, /addEventListener\(["']fetch["']/);
-  assert.doesNotMatch(worker, /\bcaches\.(open|match|keys|delete)\b/);
-  pass("PWA metadata exists without confidential offline caching");
+  assert.match(worker, /addEventListener\("fetch"/);
+  for (const protectedPrefix of [
+    "\/api",
+    "\/admin",
+    "\/lounge",
+    "\/board",
+    "\/inventory",
+    "\/financials-information-hub",
+  ]) {
+    assert.match(worker, new RegExp(`"${protectedPrefix}"`));
+  }
+  assert.doesNotMatch(worker.match(/const PUBLIC_ROUTES = new Set\(\[([\s\S]*?)\]\);/)?.[1] ?? "", /financials-information-hub/);
+  pass("public offline caching keeps financial, API, and authenticated paths network-only");
 
   const privacySource = await readFile(
     path.join(cwd, "app/financials-information-hub/FinancialsPrivacyShield.tsx"),

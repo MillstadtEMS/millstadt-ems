@@ -5,14 +5,14 @@
  * matches. Logged.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { currentBoardUser, hashPassword, setSession, validateBoardPassword } from "@/lib/board/auth";
+import { currentBoardUserForPasswordChange, hashPassword, setSession, validateBoardPassword } from "@/lib/board/auth";
 import { sql, audit } from "@/lib/board/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const user = await currentBoardUser();
+  const user = await currentBoardUserForPasswordChange();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
@@ -24,9 +24,23 @@ export async function POST(req: NextRequest) {
 
   const hash = hashPassword(newPassword);
   const db = sql();
-  await db`UPDATE board_users SET password_hash = ${hash}, must_change_password = FALSE WHERE id = ${user.id}`;
+  await db`
+    UPDATE board_users
+    SET password_hash = ${hash},
+        must_change_password = FALSE,
+        setup_token_hash = NULL,
+        setup_token_expires_at = NULL,
+        setup_token_used_at = NULL
+    WHERE id = ${user.id}
+  `;
   await setSession(user.id, hash);
-  await audit({ userId: user.id, username: user.username, role: user.role, action: "password_changed" });
+  await audit({
+    userId: user.id,
+    username: user.username,
+    role: user.role,
+    action: "password_changed",
+    detail: user.mustChangePassword ? "setup_completed" : "voluntary_change",
+  });
 
   return NextResponse.json({ ok: true });
 }

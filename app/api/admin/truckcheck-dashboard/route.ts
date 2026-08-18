@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentEmployee } from "@/lib/lounge/auth";
 import { sql } from "@/lib/lounge/db";
+import { privateLoungeBlobUrl } from "@/lib/lounge/private-blobs";
 
 export const dynamic = "force-dynamic";
 
@@ -100,7 +101,10 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     days,
-    checks,
+    checks: checks.map((check) => ({
+      ...check,
+      pdf_url: privateLoungeBlobUrl(check.pdf_url),
+    })),
     trends,
     fastSubmitters,
   });

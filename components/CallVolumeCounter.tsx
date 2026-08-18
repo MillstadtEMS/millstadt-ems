@@ -1,24 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { PLATFORM_ORIGIN_DISCLAIMER } from "@/lib/cad/disclaimers";
 
 function ScoreboardDigit({ digit }: { digit: string }) {
-  const [current, setCurrent] = useState(digit);
-  const [prev, setPrev] = useState(digit);
-  const [rolling, setRolling] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => {
-    if (digit !== current) {
-      setPrev(current);
-      setCurrent(digit);
-      setRolling(true);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => setRolling(false), 500);
-    }
-  }, [digit, current]);
-
   return (
     <div
       className="relative overflow-hidden inline-flex items-center justify-center bg-[#111] border border-white/10 rounded-md mx-[2px] md:mx-1"
@@ -31,32 +16,17 @@ function ScoreboardDigit({ digit }: { digit: string }) {
       {/* Split line across the middle */}
       <div className="absolute left-0 right-0 top-1/2 h-px bg-black/40 z-20" />
 
-      {/* Previous digit — rolls up and out */}
+      {/* Re-key the digit so a changed value replays the short roll-in. */}
       <div
-        className={`absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-in-out ${rolling ? "-translate-y-full" : "translate-y-0"}`}
-        style={{ opacity: rolling ? 1 : 0 }}
+        key={digit}
+        className="absolute inset-0 flex items-center justify-center"
+        style={{ animation: "roll-in 0.5s ease-out" }}
       >
         <span
           className="font-black text-white tabular-nums"
           style={{ fontSize: "clamp(2rem, 6vw, 4.5rem)", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
         >
-          {prev}
-        </span>
-      </div>
-
-      {/* Current digit — rolls in from below */}
-      <div
-        className={`absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-in-out ${rolling ? "translate-y-0" : "translate-y-0"}`}
-        style={{
-          transform: rolling ? "translateY(0)" : "translateY(0)",
-          animation: rolling ? "roll-in 0.5s ease-out" : "none",
-        }}
-      >
-        <span
-          className="font-black text-white tabular-nums"
-          style={{ fontSize: "clamp(2rem, 6vw, 4.5rem)", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
-        >
-          {current}
+          {digit}
         </span>
       </div>
     </div>
@@ -64,20 +34,21 @@ function ScoreboardDigit({ digit }: { digit: string }) {
 }
 
 export default function CallVolumeCounter() {
-  const [apiCount, setApiCount] = useState<number>(0);
-  const [loaded, setLoaded] = useState(false);
+  const [apiCount, setApiCount] = useState<number | null>(null);
+  const [dataState, setDataState] = useState<"loading" | "ready" | "stale" | "unavailable">("loading");
   const [showDisc, setShowDisc] = useState(false);
 
   useEffect(() => {
     async function fetchCount() {
       try {
         const res = await fetch("/api/cad/log", { cache: "no-store" });
-        if (res.ok) {
-          const calls = await res.json();
-          setApiCount(calls.length);
-        }
-      } catch { /* silent */ }
-      setLoaded(true);
+        if (!res.ok) throw new Error(`CAD log returned ${res.status}`);
+        const calls = await res.json();
+        setApiCount(calls.length);
+        setDataState("ready");
+      } catch {
+        setDataState((current) => current === "ready" || current === "stale" ? "stale" : "unavailable");
+      }
     }
     fetchCount();
     const id = setInterval(fetchCount, 60_000);
@@ -86,7 +57,7 @@ export default function CallVolumeCounter() {
 
   const total = apiCount;
   const year = new Date().getFullYear();
-  const digits = loaded ? String(total).split("") : ["—"];
+  const digits = total === null ? ["—"] : String(total).split("");
 
   return (
     <div className="flex flex-col items-center justify-center">
@@ -102,6 +73,11 @@ export default function CallVolumeCounter() {
       >
         Calls &middot; {year}
       </div>
+      {(dataState === "stale" || dataState === "unavailable") && (
+        <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55">
+          {dataState === "stale" ? "Last verified total" : "Call total unavailable"}
+        </div>
+      )}
       {/* Disclaimer collapsed behind a small toggle so it no longer dumps a
           wall of legal text over the section background. */}
       <button

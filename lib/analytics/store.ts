@@ -835,6 +835,8 @@ export async function pruneExpiredAnalytics() {
   const now = Date.now();
   if (shouldUseMemoryStore()) {
     const store = memoryStore();
+    const geographyCutoffMs = config.retention.geographyDays * 86_400_000;
+    store.events = redactExpiredGeography(store.events, now, geographyCutoffMs);
     store.events = store.events.filter(
       (event) => now - Date.parse(event.occurredAt) <= config.retention.eventDays * 86_400_000,
     );
@@ -873,6 +875,12 @@ export async function pruneExpiredAnalytics() {
   if (!databaseConfigured()) return;
   await ensureAnalyticsSchema();
   const db = sql();
+  await db`
+    UPDATE site_analytics_events
+    SET country = NULL, region = NULL, city = NULL
+    WHERE occurred_at < NOW() - (${config.retention.geographyDays} * INTERVAL '1 day')
+      AND (country IS NOT NULL OR region IS NOT NULL OR city IS NOT NULL)
+  `;
   await db`DELETE FROM site_analytics_events WHERE occurred_at < NOW() - (${config.retention.eventDays} * INTERVAL '1 day')`;
   await db`
     DELETE FROM site_security_events AS event
@@ -893,6 +901,18 @@ export async function pruneExpiredAnalytics() {
     DELETE FROM site_analytics_preservation_holds
     WHERE COALESCE(released_at, expires_at) < NOW() - (${config.retention.administratorActionDays} * INTERVAL '1 day')
   `;
+}
+
+export function redactExpiredGeography(
+  events: AnalyticsEventRecord[],
+  now: number,
+  geographyCutoffMs: number,
+): AnalyticsEventRecord[] {
+  return events.map((event) =>
+    now - Date.parse(event.occurredAt) > geographyCutoffMs
+      ? { ...event, country: null, region: null, city: null }
+      : event,
+  );
 }
 
 export function resetDevelopmentAnalyticsStore() {

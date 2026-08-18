@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { buildApplicationFlags } from "@/lib/application-flags";
 import ApplicantWorkflowPanel from "@/components/admin/ApplicantWorkflow";
 import type { ApplicantWorkflow } from "@/lib/applicant-workflow";
@@ -10,7 +10,7 @@ import type { ApplicantWorkflow } from "@/lib/applicant-workflow";
 interface Submission { id: string; formType: string; fields: Record<string, string | string[]>; submittedAt: string; readAt: string | null; }
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" }) + " CT";
+  return new Date(iso).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Chicago" }) + " CT";
 }
 
 function formatKey(key: string) {
@@ -19,6 +19,7 @@ function formatKey(key: string) {
 
 export default function SubmissionDetail() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [sub, setSub] = useState<Submission | null>(null);
   const [workflow, setWorkflow] = useState<ApplicantWorkflow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +50,7 @@ export default function SubmissionDetail() {
     if (!confirm("Delete this submission permanently?")) return;
     setDeleting(true);
     await fetch("/api/admin/submissions", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
-    window.location.href = `/admin/submissions?type=${encodeURIComponent(sub?.formType ?? "")}`;
+    router.push(`/admin/submissions?type=${encodeURIComponent(sub?.formType ?? "")}`);
   }
 
   // Open a clean printable window formatted like a proper paper employment
@@ -158,11 +159,6 @@ export default function SubmissionDetail() {
           ${fld("NREMT Number", get("nremt_number"))}
           ${fld("Expiration", get("nremt_expiry"))}
         </div>
-        ${get("dea_number") ? `<div class="row">
-          ${fld("DEA Number", get("dea_number"))}
-          ${fld("DEA Expiration", get("dea_expiry"))}
-        </div>` : ""}
-
         ${sectionTitle("6", "Certifications")}
         <div class="row">${fld("Certifications", get("additional_certs"), { wide: true, tall: true })}</div>
 

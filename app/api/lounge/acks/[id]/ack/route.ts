@@ -6,6 +6,8 @@ import { createAttachment, createRecord } from "@/lib/lounge/personnel";
 import { getEmployee } from "@/lib/lounge/employees";
 import { buildAckMemorandumPdf } from "@/lib/lounge/ack-pdf";
 import { privateBlobReference } from "@/lib/lounge/private-blobs";
+import { contentLengthWithin, hasContentType, readBoundedJson } from "@/lib/security/http";
+import { MAX_SIGNATURE_REQUEST_BYTES, validateSignatureImageDataUrl } from "@/lib/security/signature-image";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,16 +18,38 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id: ackId } = await ctx.params;
+  if (!hasContentType(req, "application/json")) {
+    return NextResponse.json({ error: "Acknowledgment requests must use JSON." }, { status: 415 });
+  }
+  if (!contentLengthWithin(req, MAX_SIGNATURE_REQUEST_BYTES)) {
+    return NextResponse.json({ error: "Acknowledgment request is too large." }, { status: 413 });
+  }
 
-  const body = await req.json().catch(() => ({}));
-  const signature: string | null = typeof body.signature === "string" ? body.signature : null;
+  const parsedBody = await readBoundedJson(req, MAX_SIGNATURE_REQUEST_BYTES);
+  if (!parsedBody.ok) {
+    return NextResponse.json(
+      { error: parsedBody.reason === "too_large" ? "Acknowledgment request is too large." : "Invalid acknowledgment request." },
+      { status: parsedBody.reason === "too_large" ? 413 : 400 },
+    );
+  }
+  if (!parsedBody.value || typeof parsedBody.value !== "object" || Array.isArray(parsedBody.value)) {
+    return NextResponse.json({ error: "Invalid acknowledgment request." }, { status: 400 });
+  }
+  const body = parsedBody.value as Record<string, unknown>;
 
   // Look up the ack metadata for the personnel record title.
   const ack = await getAckForUser(ackId, me.id);
   if (!ack) return NextResponse.json({ error: "Notice not found" }, { status: 404 });
 
+  let signature: string | null = null;
+  if (body.signature != null) {
+    const validated = validateSignatureImageDataUrl(body.signature);
+    if (!validated.ok) return NextResponse.json({ error: validated.error }, { status: 400 });
+    signature = validated.image.dataUrl;
+  }
+
   // Require a signature on acks flagged requires_acknowledgment.
-  if (ack.requiresAcknowledgment && (!signature || !signature.startsWith("data:image/"))) {
+  if (ack.requiresAcknowledgment && !signature) {
     return NextResponse.json({ error: "Signature required to acknowledge this notice." }, { status: 400 });
   }
 
@@ -33,13 +57,14 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const ua = req.headers.get("user-agent") ?? null;
   const acknowledgedAt = new Date().toISOString();
 
-  await markAcknowledged({
+  const acknowledged = await markAcknowledged({
     ackId,
     userId: me.id,
     signatureDataUrl: signature,
     ip,
     userAgent: ua,
   });
+  if (!acknowledged) return NextResponse.json({ error: "Notice not found" }, { status: 404 });
 
   // Drop a "Notice acknowledged" entry into the employee's personnel file
   // so admins see it in the Filing Cabinet timeline.
@@ -64,6 +89,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     try {
       const emp = await getEmployee(me.id);
       const pdfBytes = await buildAckMemorandumPdf({
+        noticeId: ack.id,
         noticeTitle: ack.title,
         noticeBody: ack.body,
         noticeCreatedAt: ack.createdAt,

@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { put, list } from "@vercel/blob";
+import { hasValidBearerSecret } from "@/lib/security/operational";
 
 export const runtime = "nodejs";
 
@@ -17,8 +17,11 @@ const CHAMBER_NEWSLETTERS = `${CHAMBER_BASE}/monthly-newsletters`;
 
 export async function GET(req: NextRequest) {
   // Verify this is called by Vercel Cron (or a trusted caller)
-  const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret?.trim()) {
+    return NextResponse.json({ error: "Cron authentication is not configured" }, { status: 503 });
+  }
+  if (!hasValidBearerSecret(req.headers.get("authorization"), secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -27,6 +30,7 @@ export async function GET(req: NextRequest) {
   const month = now.toLocaleString("en-US", { month: "long", timeZone: "America/Chicago" }).toLowerCase();
   const year  = String(now.getFullYear());
   const blobPath = `commercial-club/${year}/${month}_newsletter.pdf`;
+  const { put, list } = await import("@vercel/blob");
 
   // Skip if we already have this month's file
   try {

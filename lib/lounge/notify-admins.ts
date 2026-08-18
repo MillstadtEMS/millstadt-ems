@@ -14,10 +14,9 @@
  * vars or transports are introduced.
  */
 
-import { google } from "googleapis";
 import { sql } from "./db";
 import { createNotifications, type NotificationKind } from "./notifications";
-import { encodeMimeSubject } from "@/lib/reports/subject";
+import { plainTextFromHtml, sendGmailMessage } from "@/lib/reports/gmail-message";
 
 const ADMIN_INBOX = "millstadtems@gmail.com";
 
@@ -89,13 +88,6 @@ interface AdminEmailOpts {
  * the underlying submit.
  */
 export async function emailAdmins(opts: AdminEmailOpts): Promise<void> {
-  const from = process.env.GMAIL_USER ?? "millstadtcad@gmail.com";
-  const auth = new google.auth.OAuth2(
-    process.env.GMAIL_CLIENT_ID,
-    process.env.GMAIL_CLIENT_SECRET,
-  );
-  auth.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
-
   const bodyHtml = opts.bodyText
     ? `<p style="color:#cbd5e1;font-size:13.5px;line-height:1.6;margin:0;white-space:pre-wrap;">${escapeHtml(opts.bodyText)}</p>`
     : (opts.bodyHtml ?? "");
@@ -115,19 +107,16 @@ export async function emailAdmins(opts: AdminEmailOpts): Promise<void> {
     </div>
   `;
 
-  const raw = Buffer.from(
-    `From: Millstadt EMS Website <${from}>\r\n` +
-    `To: ${ADMIN_INBOX}\r\n` +
-    `Subject: ${encodeMimeSubject(opts.subject)}\r\n` +
-    `MIME-Version: 1.0\r\n` +
-    `Content-Type: text/html; charset=utf-8\r\n` +
-    `Content-Transfer-Encoding: base64\r\n` +
-    `\r\n` +
-    Buffer.from(html, "utf8").toString("base64").replace(/(.{76})/g, "$1\r\n")
-  ).toString("base64url");
-
-  const gmail = google.gmail({ version: "v1", auth });
-  await gmail.users.messages.send({ userId: from, requestBody: { raw } });
+  const textBody = opts.bodyText?.trim() || plainTextFromHtml(opts.bodyHtml ?? "") || opts.headline;
+  await sendGmailMessage({
+    fromName: "Millstadt EMS Website",
+    to: [ADMIN_INBOX],
+    subject: opts.subject,
+    text: [opts.kicker, opts.headline, opts.meta, textBody, opts.link?.url]
+      .filter(Boolean)
+      .join("\n\n"),
+    html,
+  });
 }
 
 function escapeHtml(s: string): string {

@@ -50,7 +50,7 @@ const MENU_GROUPS = [
       { href: "/traffic",  label: "Traffic" },
       { href: "/donate",   label: "Donate" },
       { href: "/billing",  label: "Pay My Bill" },
-      { href: "/financials-information-hub", label: "Financial Information" },
+      { href: "/financials-information-hub", label: "Financial & Information Transparency" },
       { href: "/forms",    label: "Forms" },
       { href: "/links",    label: "Important Links" },
       { href: "/movies",   label: "EMS in Crisis" },
@@ -218,9 +218,8 @@ export default function Nav() {
               aria-expanded={open}
               aria-controls="site-navigation-panel"
             >
-              {/* Lights animate while the menu is open or a dispatch flashes.
-                  Desktop hover glow is CSS-only (.ambo-menu-btn:hover under
-                  @media hover:hover) so they can't stick on after a touch. */}
+              {/* A single restrained lift marks menu open/new dispatch states.
+                  Touch devices never retain a hover treatment. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/images/millstadt-ems/cartoon-ambo.png"
@@ -659,14 +658,14 @@ function WeatherTicker() {
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, overflow: "hidden", padding: "0 28px", minWidth: 0, cursor: canExpand ? "pointer" : "default" }}>
         {compact ? (
           // Mobile/tablet: single compact chip (unchanged).
-          <span key={current.level} className="text-[10px]" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 32, height: 32, padding: "0 7px", border: `1px solid ${color}70`, borderRadius: 6, background: `${color}16`, color, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: "100%", animation: `weather-pulse-${current.level} 2.5s ease-in-out infinite` }}>
+          <span key={current.level} className="weather-status-chip text-[10px]" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 32, height: 32, padding: "0 7px", border: `1px solid ${color}70`, borderRadius: 6, background: `${color}16`, color, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: "100%", animation: `weather-pulse-${current.level} 2.5s ease-in-out infinite` }}>
             {displayText}
           </span>
         ) : canExpand ? (
           // Desktop rotates one warning at a time. Hover reveals the complete list.
           <span
             key={current.text}
-            className={`text-[13px] ${realAlerts.length > 1 ? "weather-alert-swap" : ""}`}
+            className={`weather-status-chip text-[13px] ${realAlerts.length > 1 ? "weather-alert-swap" : ""}`}
             style={{ display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0, color, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap", padding: "3px 12px", border: `1px solid ${color}59`, borderRadius: 999, background: `${color}14`, boxShadow: `0 0 0 1px ${color}1a` }}
           >
             <span style={{ fontSize: "0.95em", flexShrink: 0, lineHeight: 1 }}>⚠</span>
@@ -674,8 +673,7 @@ function WeatherTicker() {
           </span>
         ) : (
           // Desktop, all-clear: subtle green "no alerts" pill.
-          <span key="clear" className="text-[13px]" style={{ display: "inline-flex", alignItems: "center", gap: 6, color, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", maxWidth: "100%", animation: `weather-pulse-${current.level} 2.5s ease-in-out infinite` }}>
-            <span style={{ fontSize: "0.95em", flexShrink: 0, lineHeight: 1 }}>✓</span>
+          <span key="clear" className="text-[13px]" style={{ display: "inline-flex", alignItems: "center", gap: 6, color, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", maxWidth: "100%" }}>
             {eventLabel}
           </span>
         )}

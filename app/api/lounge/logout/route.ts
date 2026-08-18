@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  currentEmployee,
+  currentEmployeeForPasswordChange,
   LOUNGE_COOKIE_NAME,
   LOUNGE_PREAUTH_COOKIE_NAME,
 } from "@/lib/lounge/auth";
 
 export async function POST(req: NextRequest) {
-  const employee = await currentEmployee();
+  const employee = await currentEmployeeForPasswordChange();
   const url = new URL("/lounge/goodbye", req.url);
   if (employee?.firstName) url.searchParams.set("name", employee.firstName);
 

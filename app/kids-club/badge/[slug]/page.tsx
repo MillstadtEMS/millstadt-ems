@@ -64,10 +64,10 @@ export default async function PrintableBadgePage({ params }: { params: Promise<{
         />
 
         <header style={{ textAlign: "center", marginTop: 16 }}>
-          <div style={{ color: "#1b58c9", fontSize: 13, fontWeight: 900, letterSpacing: "0.32em", textTransform: "uppercase" }}>
+          <div style={{ color: "#1b58c9", fontSize: 13, fontWeight: 900, letterSpacing: 0, textTransform: "uppercase" }}>
             Millstadt EMS Kids Club
           </div>
-          <h1 style={{ margin: "12px 0 4px", fontSize: 36, fontWeight: 900, letterSpacing: "-0.01em" }}>
+          <h1 style={{ margin: "12px 0 4px", fontSize: 36, fontWeight: 900, letterSpacing: 0 }}>
             Certificate of Achievement
           </h1>
           <p style={{ color: "#475569", fontSize: 14, margin: 0 }}>This certifies that</p>
@@ -82,7 +82,7 @@ export default async function PrintableBadgePage({ params }: { params: Promise<{
             textAlign: "center",
           }}
         >
-          <div style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase" }}>
+          <div style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, letterSpacing: 0, textTransform: "uppercase" }}>
             (Print name here)
           </div>
         </div>
@@ -111,11 +111,11 @@ export default async function PrintableBadgePage({ params }: { params: Promise<{
         <footer style={{ marginTop: "auto", display: "flex", justifyContent: "space-between", width: "100%", paddingTop: 28, borderTop: "1px solid #cbd5e1" }}>
           <div style={{ flex: 1, textAlign: "center" }}>
             <div style={{ borderTop: "1px solid #061121", margin: "0 18px 6px", paddingTop: 4 }} />
-            <span style={{ fontSize: 11, color: "#475569", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 700 }}>Grown-up signature</span>
+            <span style={{ fontSize: 11, color: "#475569", letterSpacing: 0, textTransform: "uppercase", fontWeight: 700 }}>Grown-up signature</span>
           </div>
           <div style={{ flex: 1, textAlign: "center" }}>
             <div style={{ borderTop: "1px solid #061121", margin: "0 18px 6px", paddingTop: 4 }} />
-            <span style={{ fontSize: 11, color: "#475569", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 700 }}>Date</span>
+            <span style={{ fontSize: 11, color: "#475569", letterSpacing: 0, textTransform: "uppercase", fontWeight: 700 }}>Date</span>
           </div>
         </footer>
       </article>

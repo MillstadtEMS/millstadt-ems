@@ -56,6 +56,11 @@ const blank = (): ItemValue => ({
 
 export default function TruckCheckForm() {
   const router = useRouter();
+  const submissionAttempt = useRef<{
+    draftFingerprint: string;
+    requestBody: string;
+    idempotencyKey: string;
+  } | null>(null);
 
   // Timer
   const [startedAt] = useState<string>(() => new Date().toISOString());
@@ -224,41 +229,65 @@ export default function TruckCheckForm() {
       }
     }
 
-    setSubmitting(true);
-    const res = await fetch("/api/truckcheck/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        truckNumber,
-        unitNumber: truckNumber,
-        attendant1Signature: attendantSignature,
-        // Legacy fields — first additional attendant is also reported as
-        // attendant2 to keep the form_submissions schema happy.
-        attendant2Name: attendants[0]?.name ?? "",
-        attendant2Signature: attendants[0]?.signature ?? "",
-        // New: full attendant list (each gets a signature line on the PDF).
-        attendants: attendants
-          .filter((a) => a.name.trim().length > 0)
-          .map((a) => ({ id: a.id, name: a.name.trim(), signature: a.signature })),
-        startedAt,
-        submittedAt: new Date().toISOString(),
-        durationSeconds: elapsed,
-        notes: generalNotes,
-        categoryComments,
-        refillRequest: refillRequest.trim() || null,
-        items: payloadItems.map(({ requireComment, requireAmount, requireNumeric, ...rest }) => {
-          void requireComment; void requireAmount; void requireNumeric;
-          return rest;
-        }),
-        photos,
+    const submissionDraft = {
+      truckNumber,
+      unitNumber: truckNumber,
+      attendant1Signature: attendantSignature,
+      // Legacy fields — first additional attendant is also reported as
+      // attendant2 to keep the form_submissions schema happy.
+      attendant2Name: attendants[0]?.name ?? "",
+      attendant2Signature: attendants[0]?.signature ?? "",
+      // New: full attendant list (each gets a signature line on the PDF).
+      attendants: attendants
+        .filter((a) => a.name.trim().length > 0)
+        .map((a) => ({ id: a.id, name: a.name.trim(), signature: a.signature })),
+      startedAt,
+      notes: generalNotes,
+      categoryComments,
+      refillRequest: refillRequest.trim() || null,
+      items: payloadItems.map(({ requireComment, requireAmount, requireNumeric, ...rest }) => {
+        void requireComment; void requireAmount; void requireNumeric;
+        return rest;
       }),
-    });
+      photos,
+    };
+    const draftFingerprint = JSON.stringify(submissionDraft);
+    if (!submissionAttempt.current || submissionAttempt.current.draftFingerprint !== draftFingerprint) {
+      submissionAttempt.current = {
+        draftFingerprint,
+        requestBody: JSON.stringify({
+          ...submissionDraft,
+          submittedAt: new Date().toISOString(),
+          durationSeconds: elapsed,
+        }),
+        idempotencyKey: crypto.randomUUID(),
+      };
+    }
+
+    setSubmitting(true);
+    let res: Response;
+    try {
+      res = await fetch("/api/truckcheck/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": submissionAttempt.current.idempotencyKey,
+        },
+        body: submissionAttempt.current.requestBody,
+      });
+    } catch {
+      setSubmitting(false);
+      setError("Submission could not be confirmed. Please retry.");
+      return;
+    }
     setSubmitting(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
+      if (res.status === 409) submissionAttempt.current = null;
       setError(j.error || "Submission failed.");
       return;
     }
+    submissionAttempt.current = null;
     router.push("/truckcheck/submitted");
   }
 

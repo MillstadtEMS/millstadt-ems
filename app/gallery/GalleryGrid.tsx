@@ -165,11 +165,12 @@ export default function GalleryGrid() {
   const [photoList, setPhotoList] = useState(photos);
 
   useEffect(() => {
-    // Try to load custom gallery images from admin image manager
-    fetch("/api/admin/media?collection=gallery")
+    const controller = new AbortController();
+    fetch("/api/public/media?collection=gallery", { signal: controller.signal })
       .then(r => r.ok ? r.json() : [])
       .then((data: { url: string }[]) => { if (Array.isArray(data) && data.length > 0) setPhotoList(data.map(d => d.url)); })
       .catch(() => { /* keep static fallback */ });
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {

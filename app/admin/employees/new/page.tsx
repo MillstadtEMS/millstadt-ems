@@ -39,8 +39,6 @@ export default function NewEmployeePage() {
     return (firstName.trim()[0] + lastName.trim()).toLowerCase().replace(/[^a-z]/g, "");
   }, [firstName, lastName]);
   const username = overrideUsername.trim() || autoUsername;
-  const defaultPassword = username;
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -74,6 +72,10 @@ export default function NewEmployeePage() {
         setSaving(false);
         return;
       }
+      alert(
+        `Employee created.\n\nUsername: ${data.employee.username}\nOne-time setup password: ${data.setupToken}\n\n` +
+        "This password is shown once and expires in 24 hours. They will choose a permanent password at first sign-in.",
+      );
       router.push(`/admin/employees/${data.employee.id}`);
     } catch {
       setError("Connection error");
@@ -95,11 +97,7 @@ export default function NewEmployeePage() {
         <Link href="/admin/employees" style={backLinkStyle}>← All Employees</Link>
         <h1 style={titleStyle}>Add Employee</h1>
         <p style={{ color: "#94a3b8", fontSize: "0.92rem", marginTop: 6 }}>
-          Initial password will be{" "}
-          <code style={{ color: "#f0b429" }}>
-            {defaultPassword || "the assigned username"}
-          </code>
-          . It works once; they&apos;ll be required to choose a permanent password on first login.
+          A random one-time setup password will be shown once after creation. It expires in 24 hours, and they&apos;ll choose a permanent password on first login.
         </p>
 
         <form onSubmit={handleSubmit} style={{ marginTop: 28, display: "grid", gap: 16 }}>

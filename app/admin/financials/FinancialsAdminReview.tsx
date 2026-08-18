@@ -296,7 +296,7 @@ export default function FinancialsAdminReview() {
         <div className="wrap financials-hub-wrap financials-compact-hero__inner">
           <div>
             <p className="financials-kicker">Millstadt EMS Admin</p>
-            <h1>Financial and Other Public Requests</h1>
+            <h1>Financial &amp; Information Transparency</h1>
             <p className="financials-hero-copy">
               Publish PDFs and review document-access requests.
             </p>

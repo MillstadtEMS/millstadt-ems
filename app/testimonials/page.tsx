@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description: "Read what the Millstadt community has to say about Millstadt Ambulance Service.",
 };
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 function QuoteIcon() {
   return (
@@ -20,7 +20,7 @@ function QuoteIcon() {
 }
 
 export default async function TestimonialsPage() {
-  const testimonials = await getApproved();
+  const testimonials = await getApproved().catch(() => []);
 
   return (
     <>

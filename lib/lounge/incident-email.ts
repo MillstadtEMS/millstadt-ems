@@ -7,12 +7,11 @@
  * the rendered HTML and the subject line move.
  */
 
-import { google } from "googleapis";
 import { renderEmailShell } from "@/lib/reports/email-shell";
+import { sendGmailMessage } from "@/lib/reports/gmail-message";
 import {
   asciiSafe,
   buildReportSubject,
-  encodeMimeSubject,
   isoChicagoDate,
 } from "@/lib/reports/subject";
 import { buildReportFilename } from "@/lib/reports/filename";
@@ -20,15 +19,6 @@ import { fallbackText, normalizePunctuation } from "@/lib/reports/sanitize";
 
 const RECIPIENTS = ["millstadtems@gmail.com"];
 const ADMIN_URL_ROOT = "https://millstadtems.org/admin/incidents";
-
-function getAuth() {
-  const auth = new google.auth.OAuth2(
-    process.env.GMAIL_CLIENT_ID,
-    process.env.GMAIL_CLIENT_SECRET,
-  );
-  auth.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
-  return auth;
-}
 
 export interface IncidentEmailInput {
   reportId: string;
@@ -49,7 +39,6 @@ function shortReportId(id: string): string {
 }
 
 export async function sendIncidentReportEmail(input: IncidentEmailInput) {
-  const fromAddress = process.env.GMAIL_USER ?? "millstadtcad@gmail.com";
   const submittedDate = isoChicagoDate(new Date());
   const incidentDateIso = input.incidentDate ? isoChicagoDate(input.incidentDate) : "";
   const reportIdLabel = shortReportId(input.reportId);
@@ -62,8 +51,6 @@ export async function sendIncidentReportEmail(input: IncidentEmailInput) {
     date: incidentDateIso || submittedDate,
     submitter: input.submittedBy.trim(),
   });
-  const subjectHeader = encodeMimeSubject(subjectPlain);
-
   // ── PDF filename ─────────────────────────────────────────────────────
   const pdfName = buildReportFilename({
     type: "Incident Report",
@@ -107,33 +94,27 @@ export async function sendIncidentReportEmail(input: IncidentEmailInput) {
     footerNote: "Millstadt EMS · Official agency report · This message was sent automatically by the lounge incident-reporting system.",
   });
 
-  // ── Multipart MIME (HTML + PDF) ──────────────────────────────────────
-  const boundary = `mems_ir_${Date.now()}`;
-  const pdfBase64 = input.pdfBytes.toString("base64").replace(/(.{76})/g, "$1\r\n");
-
-  const raw =
-    `From: Millstadt EMS Reports <${fromAddress}>\r\n` +
-    `To: ${RECIPIENTS.join(", ")}\r\n` +
-    `Subject: ${subjectHeader}\r\n` +
-    `MIME-Version: 1.0\r\n` +
-    `Content-Type: multipart/mixed; boundary="${boundary}"\r\n` +
-    `\r\n` +
-    `--${boundary}\r\n` +
-    `Content-Type: text/html; charset=UTF-8\r\n` +
-    `Content-Transfer-Encoding: base64\r\n` +
-    `\r\n` +
-    `${Buffer.from(html, "utf8").toString("base64").replace(/(.{76})/g, "$1\r\n")}\r\n` +
-    `--${boundary}\r\n` +
-    `Content-Type: application/pdf; name="${pdfName}"\r\n` +
-    `Content-Transfer-Encoding: base64\r\n` +
-    `Content-Disposition: attachment; filename="${pdfName}"\r\n` +
-    `\r\n` +
-    `${pdfBase64}\r\n` +
-    `--${boundary}--`;
-
-  const gmail = google.gmail({ version: "v1", auth: getAuth() });
-  await gmail.users.messages.send({
-    userId: fromAddress,
-    requestBody: { raw: Buffer.from(raw, "utf8").toString("base64url") },
+  const text = [
+    "Incident Report",
+    `Report ID: ${reportIdLabel}`,
+    `Submitted by: ${input.submittedBy}`,
+    `Incident date: ${input.incidentDate ?? fallbackText(null, "notProvided")}`,
+    `Incident time: ${input.incidentTime ?? fallbackText(null, "notProvided")}`,
+    `Unit: ${input.unit ?? fallbackText(null, "notProvided")}`,
+    `City: ${input.city ?? fallbackText(null, "notProvided")}`,
+    `Crew: ${employeeList}`,
+    "",
+    summaryPreview,
+    "",
+    `Open in admin: ${ADMIN_URL_ROOT}/${encodeURIComponent(input.reportId)}`,
+    `Full report attached: ${pdfName}`,
+  ].join("\n");
+  await sendGmailMessage({
+    fromName: "Millstadt EMS Reports",
+    to: RECIPIENTS,
+    subject: subjectPlain,
+    text,
+    html,
+    attachments: [{ filename: pdfName, contentType: "application/pdf", content: input.pdfBytes }],
   });
 }

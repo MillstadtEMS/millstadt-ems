@@ -13,7 +13,15 @@
     "lounge:initialize-passwords": "node scripts/initialize-lounge-passwords.mjs",
     "test:elite-protected": "node scripts/verify-elite-protected-areas.mjs",
     "test:financials": "node scripts/test-financials-hub.mjs",
-    "test:security": "node scripts/test-security-hardening.mjs"
+    "test:security": "node scripts/test-security-hardening.mjs && node --import tsx scripts/test-truckcheck-boundary.ts && node --import tsx --test scripts/test-truckcheck-persistence.ts",
+    "test:truckcheck": "node --import tsx scripts/test-truckcheck-boundary.ts && node --import tsx --test scripts/test-truckcheck-persistence.ts",
+    "test:analytics-boundary": "node --import tsx scripts/test-analytics-boundary.ts",
+    "test:sports-score-boundary": "node scripts/test-sports-score-boundary.cjs",
+    "test:operational": "node --import tsx scripts/test-operational-correctness.ts",
+    "test:reports": "node --import tsx scripts/test-email-output.ts && node --import tsx scripts/test-pdf-registry.ts",
+    "test:board-private-documents": "node --import tsx --test scripts/test-board-private-documents.ts",
+    "test:lounge-board": "node --import tsx scripts/test-lounge-board-boundary.ts",
+    "test:public-experience": "node --import tsx scripts/test-public-experience.ts"
   },
   "dependencies": {
     "@fontsource-variable/mona-sans": "^5.2.8",
@@ -50,6 +58,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5"
   }
 }

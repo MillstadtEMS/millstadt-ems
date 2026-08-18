@@ -9,7 +9,7 @@ export const revalidate = 0;
 export const metadata: Metadata = {
   title: HUB_TITLE,
   description:
-    "Millstadt EMS financial and other public information request hub.",
+    "Millstadt EMS financial records and public information transparency hub.",
   manifest: "/financial-information.webmanifest",
   robots: { index: false, follow: false, noarchive: true },
 };
@@ -29,7 +29,7 @@ function ProductionComingSoon() {
         <div className="wrap financials-compact-hero__inner">
           <div>
             <p className="financials-kicker">Millstadt Ambulance Service</p>
-            <h1>Financial and Other Public Requests</h1>
+            <h1>Financial &amp; Information Transparency</h1>
           </div>
           <span className="financials-status">Coming Soon</span>
         </div>
@@ -46,7 +46,7 @@ function ProductionComingSoon() {
             </div>
             <div className="financials-status-message">
               <p>
-                The Millstadt EMS Financial and Other Public Requests hub is being prepared.
+                The Millstadt EMS Financial &amp; Information Transparency hub is being prepared.
                 The archive and document-access system are not currently available for
                 public use.
               </p>

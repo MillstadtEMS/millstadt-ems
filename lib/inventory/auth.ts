@@ -156,19 +156,12 @@ export async function isInventoryAuthed(): Promise<boolean> {
 }
 
 /**
- * Additive helper for native clients. Accepts either the existing cookie or
- * an Authorization: Bearer <token> header. Web callers continue to use
- * isInventoryAuthed(), which remains cookie-only and unchanged for them.
- *
- * Call this from route handlers that need to serve both web and native:
- *   if (!(await isInventoryAuthedFromRequest(req))) return 401;
+ * Browser inventory access uses the existing secure cookies only. A native
+ * client must not reuse the shared inventory session as a bearer credential;
+ * the iOS contract requires a separately revocable, employee-bound session.
  */
-export async function isInventoryAuthedFromRequest(req: Request): Promise<boolean> {
-  const auth = req.headers.get("authorization") || req.headers.get("Authorization");
-  if (auth && auth.toLowerCase().startsWith("bearer ")) {
-    const token = auth.slice(7).trim();
-    if (token) return verifyInventorySession(token);
-  }
+export async function isInventoryAuthedFromRequest(_req: Request): Promise<boolean> {
+  void _req;
   return isInventoryAuthed();
 }
 

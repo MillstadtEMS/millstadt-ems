@@ -21,6 +21,8 @@ function resolveBuildRevision(): string {
 
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  outputFileTracingRoot: process.cwd(),
+  turbopack: { root: process.cwd() },
   poweredByHeader: false,
   serverExternalPackages: ["node-ical", "pdfjs-dist"],
   env: {

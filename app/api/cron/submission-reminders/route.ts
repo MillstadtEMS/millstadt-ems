@@ -8,27 +8,19 @@
  * reminded once — the column reminded_at is stamped on first send.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { google } from "googleapis";
 import {
   findOverdueSubmissions,
   markSubmissionsReminded,
   FormSubmission,
 } from "@/lib/db";
+import { sendGmailMessage } from "@/lib/reports/gmail-message";
+import { escapeHtml } from "@/lib/security/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const THRESHOLD_DAYS = 5;
-
-function getAuth() {
-  const auth = new google.auth.OAuth2(
-    process.env.GMAIL_CLIENT_ID,
-    process.env.GMAIL_CLIENT_SECRET,
-  );
-  auth.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
-  return auth;
-}
 
 function nameOf(fields: Record<string, string | string[]>) {
   const first = String(fields.first_name ?? fields.name ?? "");
@@ -76,24 +68,19 @@ export async function GET(req: NextRequest) {
     "(Opening a submission in the admin console clears the reminder for that item.)",
   ].join("\n");
 
-  const from = process.env.GMAIL_USER ?? "millstadtcad@gmail.com";
   const to = "millstadtems@gmail.com";
   const subject = `[EMS Website] ${overdue.length} submission${overdue.length === 1 ? "" : "s"} need a response (${THRESHOLD_DAYS}+ days old)`;
 
-  const raw = Buffer.from(
-    `From: Millstadt EMS Website <${from}>\r\n` +
-    `To: ${to}\r\n` +
-    `Subject: ${subject}\r\n` +
-    `Content-Type: text/plain; charset=utf-8\r\n` +
-    `\r\n` +
-    emailBody
-  ).toString("base64url");
-
   let mailed = false;
   try {
-    const gmail = google.gmail({ version: "v1", auth: getAuth() });
-    await gmail.users.messages.send({ userId: from, requestBody: { raw } });
-    mailed = true;
+    const result = await sendGmailMessage({
+      fromName: "Millstadt EMS Website",
+      to: [to],
+      subject,
+      text: emailBody,
+      html: `<pre style="font-family:system-ui,sans-serif;white-space:pre-wrap;">${escapeHtml(emailBody)}</pre>`,
+    });
+    mailed = result.sent;
   } catch (e) {
     console.error("[cron/submission-reminders] mail send failed:", e);
   }

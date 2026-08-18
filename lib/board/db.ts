@@ -39,6 +39,13 @@ export interface BoardUser {
   createdAt: string;
 }
 
+export type BoardUserWithCredentials = BoardUser & {
+  passwordHash: string;
+  setupTokenHash: string | null;
+  setupTokenExpiresAt: string | null;
+  setupTokenUsedAt: string | null;
+};
+
 let ready = false;
 
 export async function ensureBoardSchema(): Promise<void> {
@@ -57,6 +64,9 @@ export async function ensureBoardSchema(): Promise<void> {
       password_hash       TEXT NOT NULL,
       is_active           BOOLEAN NOT NULL DEFAULT TRUE,
       must_change_password BOOLEAN NOT NULL DEFAULT TRUE,
+      setup_token_hash    TEXT,
+      setup_token_expires_at TIMESTAMPTZ,
+      setup_token_used_at TIMESTAMPTZ,
       simple_view_default BOOLEAN NOT NULL DEFAULT FALSE,
       is_dev_login       BOOLEAN NOT NULL DEFAULT FALSE,
       created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -64,6 +74,9 @@ export async function ensureBoardSchema(): Promise<void> {
   `;
   await db`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS photo_url TEXT`;
   await db`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS is_dev_login BOOLEAN NOT NULL DEFAULT FALSE`;
+  await db`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS setup_token_hash TEXT`;
+  await db`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS setup_token_expires_at TIMESTAMPTZ`;
+  await db`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS setup_token_used_at TIMESTAMPTZ`;
   // Append-only audit trail.
   await db`
     CREATE TABLE IF NOT EXISTS board_audit (
@@ -114,18 +127,33 @@ function rowToUser(r: Record<string, unknown>): BoardUser {
   };
 }
 
-export async function getUserByUsername(username: string): Promise<(BoardUser & { passwordHash: string }) | null> {
+function optionalDateTime(value: unknown): string | null {
+  if (value == null) return null;
+  return value instanceof Date ? value.toISOString() : String(value);
+}
+
+function withCredentials(row: Record<string, unknown>): BoardUserWithCredentials {
+  return {
+    ...rowToUser(row),
+    passwordHash: String(row.password_hash),
+    setupTokenHash: row.setup_token_hash != null ? String(row.setup_token_hash) : null,
+    setupTokenExpiresAt: optionalDateTime(row.setup_token_expires_at),
+    setupTokenUsedAt: optionalDateTime(row.setup_token_used_at),
+  };
+}
+
+export async function getUserByUsername(username: string): Promise<BoardUserWithCredentials | null> {
   await ensureBoardSchema();
   const db = sql();
   const rows = (await db`SELECT * FROM board_users WHERE username = ${username.toLowerCase()} LIMIT 1`) as Record<string, unknown>[];
   if (!rows.length) return null;
-  return { ...rowToUser(rows[0]), passwordHash: String(rows[0].password_hash) };
+  return withCredentials(rows[0]);
 }
 
-export async function getUserById(id: string): Promise<(BoardUser & { passwordHash: string }) | null> {
+export async function getUserById(id: string): Promise<BoardUserWithCredentials | null> {
   await ensureBoardSchema();
   const db = sql();
   const rows = (await db`SELECT * FROM board_users WHERE id = ${id} LIMIT 1`) as Record<string, unknown>[];
   if (!rows.length) return null;
-  return { ...rowToUser(rows[0]), passwordHash: String(rows[0].password_hash) };
+  return withCredentials(rows[0]);
 }

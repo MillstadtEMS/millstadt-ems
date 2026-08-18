@@ -1,17 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import {
+  completeTotpEnrollmentChallenge,
   cookieOptions,
   findEmployeeById,
   getTotpEnrollment,
   LOUNGE_PREAUTH_COOKIE_NAME,
   makeSessionToken,
-  markTotpEnrolled,
-  setTotpSecret,
-  verifyPreauthToken,
+  readPreauthChallenge,
+  recordPreauthFailure,
+  revokePreauthChallenge,
   logLogin,
 } from "@/lib/lounge/auth";
-import { generateSecret, otpauthUrl, verifyCode } from "@/lib/lounge/totp";
+import { otpauthUrl, verifyCode } from "@/lib/lounge/totp";
 import { issueTrustedDevice, trustCookieOptions } from "@/lib/lounge/trusted-devices";
+import { contentLengthWithin, hasContentType, isSameOriginRequest, noStoreJson } from "@/lib/security/http";
+import { checkRateLimit } from "@/lib/security/rate-limit";
+import { recordSecurityAudit } from "@/lib/security/audit";
 
 function uaToDeviceLabel(ua: string | null): string | null {
   if (!ua) return null;
@@ -26,24 +30,63 @@ function uaToDeviceLabel(ua: string | null): string | null {
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-// GET — issue (or reuse) a TOTP secret for a preauth-authenticated user.
+// GET — reveal only the pending secret bound to a fresh enrollment challenge.
 // The client generates the QR from the returned otpauth:// URL — that
 // avoids any server-side QR library failure leaving the user stuck.
 export async function GET(req: NextRequest) {
   try {
     const cookie = req.cookies.get(LOUNGE_PREAUTH_COOKIE_NAME)?.value;
-    const session = cookie ? verifyPreauthToken(cookie) : null;
-    if (!session) return NextResponse.json({ error: "Preauth expired — go back and sign in again." }, { status: 401 });
+    const limit = await checkRateLimit(req, "lounge-totp-enrollment-read", {
+      limit: 10,
+      windowMs: 10 * 60_000,
+      blockMs: 30 * 60_000,
+      discriminator: cookie ?? "missing",
+    });
+    if (!limit.allowed) {
+      await recordSecurityAudit({
+        actorType: "employee",
+        action: "lounge_totp_enrollment_read",
+        resourceType: "authentication",
+        outcome: "denied",
+        req,
+        detail: { reason: "rate_limited" },
+      });
+      return noStoreJson({ error: "Too many attempts. Sign in again." }, { status: 429 });
+    }
+    const session = cookie ? await readPreauthChallenge(cookie, "enroll_totp") : null;
+    if (!session) {
+      await recordSecurityAudit({
+        actorType: "employee",
+        action: "lounge_totp_enrollment_read",
+        resourceType: "authentication",
+        outcome: "denied",
+        req,
+        detail: { reason: "invalid_challenge" },
+      });
+      return noStoreJson({ error: "Preauth expired — go back and sign in again." }, { status: 401 });
+    }
 
     const emp = await findEmployeeById(session.employeeId);
-    if (!emp) return NextResponse.json({ error: "Employee not found" }, { status: 404 });
+    if (!emp || !emp.isActive) {
+      await revokePreauthChallenge(cookie!);
+      return noStoreJson({ error: "Employee not found" }, { status: 404 });
+    }
 
     const existing = await getTotpEnrollment(emp.id);
-    let secret = existing.secret;
-    if (!secret) {
-      secret = generateSecret();
-      await setTotpSecret(emp.id, secret);
+    if (existing.secret || existing.enrolledAt || !session.enrollmentSecret) {
+      await revokePreauthChallenge(cookie!);
+      await recordSecurityAudit({
+        actorType: "employee",
+        actorId: emp.id,
+        action: "lounge_totp_enrollment_read",
+        resourceType: "authentication",
+        outcome: "denied",
+        req,
+        detail: { reason: existing.enrolledAt ? "factor_already_enrolled" : "invalid_challenge" },
+      });
+      return noStoreJson({ error: "Authenticator setup is not available. Sign in normally or contact management." }, { status: 409 });
     }
+    const secret = session.enrollmentSecret;
 
     const issuer = "Millstadt EMS Employee Lounge";
     const account = emp.username;
@@ -52,42 +95,106 @@ export async function GET(req: NextRequest) {
       account,
       secret,
     });
-    return NextResponse.json({ otpauth: otp, secret, issuer, account, authenticator: "microsoft" });
+    await recordSecurityAudit({
+      actorType: "employee",
+      actorId: emp.id,
+      action: "lounge_totp_enrollment_read",
+      resourceType: "authentication",
+      outcome: "allowed",
+      req,
+    });
+    return noStoreJson({ otpauth: otp, secret, issuer, account, authenticator: "microsoft" });
   } catch (e) {
     console.error("[setup-2fa GET] failed:", e);
-    return NextResponse.json({ error: "Could not start two-factor setup. Please try again." }, { status: 500 });
+    return noStoreJson({ error: "Could not start two-factor setup. Please try again." }, { status: 500 });
   }
 }
 
 // POST { code } — verify the code, mark enrolled, issue the real session cookie.
 export async function POST(req: NextRequest) {
+  if (
+    !isSameOriginRequest(req) ||
+    !hasContentType(req, "application/json") ||
+    !contentLengthWithin(req, 4 * 1024)
+  ) {
+    return noStoreJson({ error: "Invalid request" }, { status: 403 });
+  }
   const cookie = req.cookies.get(LOUNGE_PREAUTH_COOKIE_NAME)?.value;
-  const session = cookie ? verifyPreauthToken(cookie) : null;
-  if (!session) return NextResponse.json({ error: "Preauth expired" }, { status: 401 });
+  const limit = await checkRateLimit(req, "lounge-totp-enrollment-verify", {
+    limit: 8,
+    windowMs: 15 * 60_000,
+    blockMs: 30 * 60_000,
+    discriminator: cookie ?? "missing",
+  });
+  if (!limit.allowed) {
+    return noStoreJson({ error: "Too many attempts. Sign in again." }, { status: 429 });
+  }
+  const session = cookie ? await readPreauthChallenge(cookie, "enroll_totp") : null;
+  if (!session) {
+    await recordSecurityAudit({
+      actorType: "employee",
+      action: "lounge_totp_enrollment_verify",
+      resourceType: "authentication",
+      outcome: "denied",
+      req,
+      detail: { reason: "invalid_challenge" },
+    });
+    return noStoreJson({ error: "Preauth expired" }, { status: 401 });
+  }
 
   const body = await req.json().catch(() => ({}));
   const code = typeof body.code === "string" ? body.code.trim() : "";
-  // Implicit trust-this-device on first enrollment — same reasoning as
-  // verify-2fa. Default opt-in unless the client explicitly sends false.
-  const trustDevice = body.trustDevice !== false;
-  if (!/^\d{6}$/.test(code)) return NextResponse.json({ error: "6-digit code required" }, { status: 400 });
-
-  const emp = await findEmployeeById(session.employeeId);
-  if (!emp) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  const { secret } = await getTotpEnrollment(emp.id);
-  if (!secret) return NextResponse.json({ error: "Secret missing — refresh page" }, { status: 400 });
-
-  if (!verifyCode(secret, code)) {
-    return NextResponse.json({ error: "Wrong code. Try again." }, { status: 401 });
+  const trustDevice = body.trustDevice === true;
+  if (!/^\d{6}$/.test(code)) {
+    await recordPreauthFailure(cookie!);
+    return noStoreJson({ error: "6-digit code required" }, { status: 400 });
   }
 
-  await markTotpEnrolled(emp.id);
+  const emp = await findEmployeeById(session.employeeId);
+  if (!emp || !emp.isActive) {
+    await revokePreauthChallenge(cookie!);
+    return noStoreJson({ error: "Not found" }, { status: 404 });
+  }
+
+  const existing = await getTotpEnrollment(emp.id);
+  const secret = session.enrollmentSecret;
+  if (existing.secret || existing.enrolledAt || !secret) {
+    await revokePreauthChallenge(cookie!);
+    return noStoreJson({ error: "Authenticator setup is not available. Restart login." }, { status: 409 });
+  }
+
+  if (!verifyCode(secret, code)) {
+    await recordPreauthFailure(cookie!);
+    await recordSecurityAudit({
+      actorType: "employee",
+      actorId: emp.id,
+      action: "lounge_totp_enrollment_verify",
+      resourceType: "authentication",
+      outcome: "denied",
+      req,
+      detail: { reason: "wrong_code" },
+    });
+    return noStoreJson({ error: "Wrong code. Try again." }, { status: 401 });
+  }
+
+  const completed = await completeTotpEnrollmentChallenge(cookie!);
+  if (!completed) {
+    return noStoreJson({ error: "That setup was already used or expired. Sign in again." }, { status: 409 });
+  }
   await logLogin(emp.id, emp.username, true, req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null, req.headers.get("user-agent") ?? null);
+  await recordSecurityAudit({
+    actorType: "employee",
+    actorId: emp.id,
+    action: "lounge_totp_enrollment_verify",
+    resourceType: "authentication",
+    outcome: "completed",
+    req,
+    detail: { setupTokenConsumed: completed.usesSetupToken },
+  });
 
   const token = makeSessionToken(emp);
   const opts = cookieOptions(token);
-  const res = NextResponse.json({ ok: true, employee: { id: emp.id, firstName: emp.firstName, lastName: emp.lastName, isAdmin: emp.isAdmin } });
+  const res = noStoreJson({ ok: true, employee: { id: emp.id, firstName: emp.firstName, lastName: emp.lastName, isAdmin: emp.isAdmin } });
   res.cookies.set(opts.name, opts.value, {
     httpOnly: opts.httpOnly,
     secure: opts.secure,

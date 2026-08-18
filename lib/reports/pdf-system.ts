@@ -25,6 +25,7 @@ export const PAGE_W = 612;
 export const PAGE_H = 792;
 export const M = 54;
 export const CONTENT_W = PAGE_W - M * 2;
+const CONTENT_BOTTOM = PAGE_H - M - 28;
 
 export const COLORS = {
   navy: [12, 35, 64] as [number, number, number],
@@ -86,9 +87,81 @@ export function newDoc(): jsPDF {
  * margin. If not, push a fresh page and reset the cursor.
  */
 export function ensureSpace(c: Cursor, needed: number): void {
-  if (c.y + needed > PAGE_H - M - 28) {  // 28 pt reserved for footer
+  if (c.y + needed > CONTENT_BOTTOM) {
     c.doc.addPage();
     c.y = M;
+  }
+}
+
+export interface WrappedTextOpts {
+  x?: number;
+  width?: number;
+  lineHeight?: number;
+  topOffset?: number;
+  bottomGap?: number;
+}
+
+/** Draw arbitrarily long text without allowing a single prose block to clip. */
+export function drawWrappedText(c: Cursor, text: string, opts: WrappedTextOpts = {}): void {
+  const doc = c.doc;
+  const x = opts.x ?? M;
+  const width = opts.width ?? CONTENT_W;
+  const lineHeight = opts.lineHeight ?? 14;
+  const topOffset = opts.topOffset ?? 9;
+  const bottomGap = opts.bottomGap ?? 8;
+  const split = doc.splitTextToSize(text, width);
+  const lines = (Array.isArray(split) ? split : [split]).map(String);
+  let index = 0;
+
+  while (index < lines.length) {
+    if (c.y + topOffset > CONTENT_BOTTOM) {
+      doc.addPage();
+      c.y = M;
+    }
+    const available = CONTENT_BOTTOM - (c.y + topOffset);
+    const count = Math.max(1, Math.floor(available / lineHeight) + 1);
+    const chunk = lines.slice(index, index + count);
+    doc.text(chunk, x, c.y + topOffset);
+    c.y += chunk.length * lineHeight + bottomGap;
+    index += chunk.length;
+    if (index < lines.length) {
+      doc.addPage();
+      c.y = M;
+    }
+  }
+}
+
+/** Add a raster image centered inside a box while preserving its aspect ratio. */
+export function drawContainedImage(
+  doc: jsPDF,
+  dataUri: string,
+  format: "JPEG" | "PNG",
+  x: number,
+  y: number,
+  maxW: number,
+  maxH: number,
+): boolean {
+  try {
+    const props = doc.getImageProperties(dataUri);
+    const width = Number(props.width);
+    const height = Number(props.height);
+    if (!(width > 0) || !(height > 0)) return false;
+    const scale = Math.min(maxW / width, maxH / height);
+    const drawW = width * scale;
+    const drawH = height * scale;
+    doc.addImage(
+      dataUri,
+      format,
+      x + (maxW - drawW) / 2,
+      y + (maxH - drawH) / 2,
+      drawW,
+      drawH,
+      undefined,
+      "FAST",
+    );
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -207,13 +280,11 @@ export function drawMetadataGrid(c: Cursor, rows: MetaRow[]): void {
   const valueX = M + 142;
   const valueWidth = CONTENT_W - 142;
 
-  // Pre-measure each row so we can ensureSpace for the WHOLE grid run.
   const heights = rows.map((r) => {
     const lines = doc.splitTextToSize(r.value, valueWidth);
     return Math.max(padY * 2 + 12, padY * 2 + lines.length * 12.5);
   });
-  const totalH = heights.reduce((a, b) => a + b, 0) + 8;
-  ensureSpace(c, totalH);
+  ensureSpace(c, Math.min(heights[0] + 8, 120));
 
   // Top rule.
   doc.setDrawColor(...COLORS.rule);
@@ -223,6 +294,12 @@ export function drawMetadataGrid(c: Cursor, rows: MetaRow[]): void {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     const h = heights[i];
+    if (c.y + h > CONTENT_BOTTOM) {
+      c.doc.addPage();
+      c.y = M;
+      doc.setDrawColor(...COLORS.rule);
+      doc.line(M, c.y, M + CONTENT_W, c.y);
+    }
     const rowY = c.y + padY;
 
     // Label.
@@ -246,9 +323,9 @@ export function drawMetadataGrid(c: Cursor, rows: MetaRow[]): void {
 }
 
 // ── Section heading ────────────────────────────────────────────────────
-export function drawSectionHeading(c: Cursor, label: string): void {
+export function drawSectionHeading(c: Cursor, label: string, minimumFollowing = 28): void {
   const doc = c.doc;
-  ensureSpace(c, 30);
+  ensureSpace(c, 30 + minimumFollowing);
   c.y += 6;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
@@ -270,21 +347,32 @@ export function drawCallout(c: Cursor, text: string): void {
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
-  const lines = doc.splitTextToSize(text, innerWidth);
-  const bodyH = lines.length * 14;
-  const blockH = bodyH + padY * 2;
+  const split = doc.splitTextToSize(text, innerWidth);
+  const lines = (Array.isArray(split) ? split : [split]).map(String);
+  let index = 0;
+  while (index < lines.length) {
+    if (c.y + padY * 2 + 14 > CONTENT_BOTTOM) {
+      doc.addPage();
+      c.y = M;
+    }
+    const available = CONTENT_BOTTOM - c.y - padY * 2 - 9;
+    const count = Math.max(1, Math.floor(available / 14));
+    const chunk = lines.slice(index, index + count);
+    const blockH = chunk.length * 14 + padY * 2;
 
-  ensureSpace(c, blockH + 8);
-
-  // Soft panel background with gold left edge.
-  doc.setFillColor(...COLORS.panelBg);
-  doc.roundedRect(M, c.y, CONTENT_W, blockH, 8, 8, "F");
-  doc.setFillColor(...COLORS.gold);
-  doc.rect(M, c.y, 3, blockH, "F");
-
-  doc.setTextColor(...COLORS.ink);
-  doc.text(lines, M + padX, c.y + padY + 9);
-  c.y += blockH + 10;
+    doc.setFillColor(...COLORS.panelBg);
+    doc.roundedRect(M, c.y, CONTENT_W, blockH, 8, 8, "F");
+    doc.setFillColor(...COLORS.gold);
+    doc.rect(M, c.y, 3, blockH, "F");
+    doc.setTextColor(...COLORS.ink);
+    doc.text(chunk, M + padX, c.y + padY + 9);
+    c.y += blockH + 10;
+    index += chunk.length;
+    if (index < lines.length) {
+      doc.addPage();
+      c.y = M;
+    }
+  }
 }
 
 // ── Plain body text block ──────────────────────────────────────────────
@@ -293,10 +381,7 @@ export function drawBodyText(c: Cursor, text: string): void {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.setTextColor(...COLORS.ink);
-  const lines = doc.splitTextToSize(text, CONTENT_W);
-  ensureSpace(c, lines.length * 14 + 4);
-  doc.text(lines, M, c.y + 9);
-  c.y += lines.length * 14 + 8;
+  drawWrappedText(c, text);
 }
 
 // ── Bulleted list ──────────────────────────────────────────────────────
@@ -307,11 +392,17 @@ export function drawBulletList(c: Cursor, items: string[]): void {
   doc.setFontSize(11);
   doc.setTextColor(...COLORS.ink);
   for (const item of items) {
-    const lines = doc.splitTextToSize(item, CONTENT_W - 16);
-    ensureSpace(c, lines.length * 14 + 2);
+    const split = doc.splitTextToSize(item, CONTENT_W - 16);
+    const lines = (Array.isArray(split) ? split : [split]).map(String);
+    ensureSpace(c, Math.min(lines.length * 14 + 2, 44));
     doc.text("•", M, c.y + 9);
-    doc.text(lines, M + 12, c.y + 9);
-    c.y += lines.length * 14 + 2;
+    drawWrappedText(c, lines.join("\n"), {
+      x: M + 12,
+      width: CONTENT_W - 16,
+      lineHeight: 14,
+      topOffset: 9,
+      bottomGap: 2,
+    });
   }
   c.y += 4;
 }
@@ -400,14 +491,11 @@ export function drawImagePage(c: Cursor, img: AttachmentImage): void {
   const drawH = img.pxH * scale;
   const drawX = M + (maxW - drawW) / 2;
   const drawY = cursorY;
-  try {
-    doc.addImage(img.dataUri, img.format, drawX, drawY, drawW, drawH, undefined, "FAST");
-  } catch (err) {
+  if (!drawContainedImage(doc, img.dataUri, img.format, drawX, drawY, drawW, drawH)) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.setTextColor(...COLORS.inkSoft);
     doc.text("Unable to render this attachment in the PDF.", M, drawY + 12);
-    void err;
   }
 
   c.y = drawY + drawH + 12;

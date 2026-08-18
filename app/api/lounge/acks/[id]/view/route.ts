@@ -11,6 +11,7 @@ export async function POST(
   const me = await currentEmployee();
   if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await ctx.params;
-  await markViewed(id, me.id);
+  const viewed = await markViewed(id, me.id);
+  if (!viewed) return NextResponse.json({ error: "Notice not found" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

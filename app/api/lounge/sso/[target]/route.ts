@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentEmployee } from "@/lib/lounge/auth";
+import { cookies } from "next/headers";
+import { currentEmployee, LOUNGE_COOKIE_NAME } from "@/lib/lounge/auth";
 import {
   makeSessionToken as makeTruckCheckToken,
   sessionCookieOptions as truckCheckCookieOptions,
@@ -41,7 +42,11 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ target: str
   const res = NextResponse.redirect(new URL(destination, req.url));
 
   if (target === "truckcheck") {
-    const token = makeTruckCheckToken();
+    const loungeSessionToken = (await cookies()).get(LOUNGE_COOKIE_NAME)?.value;
+    if (!loungeSessionToken) {
+      return NextResponse.redirect(new URL("/lounge/login", req.url));
+    }
+    const token = makeTruckCheckToken(emp.id, loungeSessionToken);
     const opts = truckCheckCookieOptions(token);
     res.cookies.set(opts.name, opts.value, {
       httpOnly: opts.httpOnly,

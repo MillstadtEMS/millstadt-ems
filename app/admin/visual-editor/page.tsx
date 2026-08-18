@@ -279,6 +279,16 @@ const PAGES: EditablePage[] = [
 
 interface ContentRow { key: string; liveValue: string; draftValue: string | null; }
 
+const SEASON_PREVIEWS = [
+  ["normal", "Normal"],
+  ["halloween", "Halloween"],
+  ["thanksgiving", "Thanksgiving"],
+  ["winter", "Winter"],
+  ["veterans-day", "Veterans Day"],
+  ["memorial-day", "Memorial Day"],
+  ["independence-day", "Independence Day"],
+] as const;
+
 // ── Component ─────────────────────────────────────────────────────────────
 
 export default function VisualEditorPage() {
@@ -294,6 +304,7 @@ export default function VisualEditorPage() {
   const [saving, setSaving]         = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [saveMsg, setSaveMsg]       = useState("");
+  const [seasonPreview, setSeasonPreview] = useState("normal");
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Check session on mount
@@ -336,6 +347,12 @@ export default function VisualEditorPage() {
   const anyEdits = Object.keys(edits).length > 0;
   const anyDrafts = content.some(c => c.draftValue !== null) || anyEdits;
 
+  function previewUrl(cacheBust = false) {
+    const params = new URLSearchParams({ preview: "ve", "season-preview": seasonPreview });
+    if (cacheBust) params.set("t", Date.now().toString());
+    return `${selectedPage.path}?${params.toString()}`;
+  }
+
   async function saveDrafts() {
     if (!anyEdits) return;
     setSaving(true);
@@ -362,7 +379,7 @@ export default function VisualEditorPage() {
     setPublishing(false);
     setSaveMsg("Published — site updated"); setTimeout(() => setSaveMsg(""), 5000);
     // Refresh preview iframe
-    if (iframeRef.current) iframeRef.current.src = `${selectedPage.path}?preview=ve&t=${Date.now()}`;
+    if (iframeRef.current) iframeRef.current.src = previewUrl(true);
   }
 
   const inp  = "w-full bg-[#040d1a] border border-white/15 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#f0b429]/50 placeholder:text-slate-600 transition-colors";
@@ -443,13 +460,23 @@ export default function VisualEditorPage() {
         <div className="h-10 border-b border-white/8 flex items-center px-4 gap-3 shrink-0">
           <span className="text-slate-500 text-xs font-mono">{selectedPage.path}</span>
           <span className="text-[#f0b429]/60 text-xs">— Draft preview</span>
-          <button onClick={() => { if (iframeRef.current) iframeRef.current.src = `${selectedPage.path}?preview=ve&t=${Date.now()}`; }} className="ml-auto text-slate-600 hover:text-slate-300 transition-colors" title="Refresh preview">
+          <label className="ml-auto flex items-center gap-2 text-xs text-slate-500">
+            Season
+            <select
+              value={seasonPreview}
+              onChange={(event) => setSeasonPreview(event.target.value)}
+              className="h-8 border border-white/10 bg-[#020f24] px-2 text-xs text-slate-200 focus:outline-none focus:border-[#f0b429]"
+            >
+              {SEASON_PREVIEWS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+          </label>
+          <button onClick={() => { if (iframeRef.current) iframeRef.current.src = previewUrl(true); }} className="text-slate-600 hover:text-slate-300 transition-colors" title="Refresh preview">
             <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
           </button>
         </div>
         <iframe
           ref={iframeRef}
-          src={`${selectedPage.path}?preview=ve`}
+          src={previewUrl()}
           className="flex-1 w-full border-none"
           title="Page preview"
         />

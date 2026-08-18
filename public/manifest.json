@@ -2,11 +2,15 @@
   "name": "Millstadt Ambulance Service",
   "short_name": "Millstadt EMS",
   "description": "24/7 Advanced Life Support — Millstadt, Illinois",
+  "id": "/",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#040d1a",
   "theme_color": "#040d1a",
   "orientation": "portrait-primary",
+  "categories": ["medical", "public-safety", "community"],
   "icons": [
     {
       "src": "/images/millstadt-ems/pwa-icon-192.png",

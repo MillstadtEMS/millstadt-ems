@@ -3,8 +3,23 @@ import "server-only";
 import { Observer, SearchLocalSolarEclipse } from "astronomy-engine";
 import * as ical from "node-ical";
 import { z } from "zod";
+import {
+  adjacentDateKey,
+  calendarDateKey,
+  CHICAGO_TIME_ZONE as CENTRAL_TIME_ZONE,
+  chicagoClock as centralClock,
+  chicagoLocalTimeToUtc as centralLocalTimeToUtc,
+  normalizeCalendarInterval,
+  pruneExpiredAlerts,
+  scheduledDisplayEndsAt as gameDisplayEndsAt,
+  sportsDisplayWindow,
+} from "@/lib/community/reliability";
+import {
+  normalizeMlbSchedule,
+  normalizeNhlScore,
+  type NormalizedGameState,
+} from "@/lib/community/sports";
 
-const CENTRAL_TIME_ZONE = "America/Chicago";
 const CARDINALS_TEAM_ID = 138;
 const BLUES_ABBREVIATION = "STL";
 const REQUEST_TIMEOUT_MS = 8_000;
@@ -55,60 +70,18 @@ export type CommunityAlert = {
   sourceName: string;
   sourceUrl: string;
   checkedAt: string;
+  gameStatus?: string;
+  homeScore?: number;
+  awayScore?: number;
+  inning?: number;
+  half?: "top" | "middle" | "bottom" | "end";
+  period?: number;
+  clock?: string;
+  matchHalf?: string;
+  matchTime?: string;
+  lastUpdatedAt?: string;
+  final?: boolean;
 };
-
-const mlbSchema = z.object({
-  dates: z.array(
-    z.object({
-      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-      games: z.array(
-        z.object({
-          gamePk: z.number(),
-          gameDate: z.string(),
-          gameType: z.string().optional(),
-          status: z.object({
-            abstractGameState: z.string(),
-            detailedState: z.string(),
-          }),
-          teams: z.object({
-            away: z.object({
-              score: z.number().optional(),
-              team: z.object({ id: z.number(), name: z.string() }),
-            }),
-            home: z.object({
-              score: z.number().optional(),
-              team: z.object({ id: z.number(), name: z.string() }),
-            }),
-          }),
-          venue: z.object({ name: z.string() }).optional(),
-        }),
-      ),
-    }),
-  ),
-});
-
-const nhlSchema = z.object({
-  games: z.array(
-    z.object({
-      id: z.number(),
-      gameDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-      startTimeUTC: z.string(),
-      gameState: z.string(),
-      gameScheduleState: z.string().optional(),
-      venue: z.object({ default: z.string() }).optional(),
-      awayTeam: z.object({
-        abbrev: z.string(),
-        score: z.number().optional(),
-        name: z.object({ default: z.string() }),
-      }),
-      homeTeam: z.object({
-        abbrev: z.string(),
-        score: z.number().optional(),
-        name: z.object({ default: z.string() }),
-      }),
-    }),
-  ),
-});
 
 const thrillshareScheduleSchema = z.object({
   scores_schedules: z.array(
@@ -169,78 +142,7 @@ const manualAlertSchema = z.object({
   priority: z.number().int().min(2).max(5).optional(),
 });
 
-type CentralClock = {
-  dateKey: string;
-  hour: number;
-};
-
-function centralClock(date: Date): CentralClock {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: CENTRAL_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(date);
-  const get = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((part) => part.type === type)?.value ?? "";
-
-  return {
-    dateKey: `${get("year")}-${get("month")}-${get("day")}`,
-    hour: Number(get("hour")),
-  };
-}
-
-function previousDateKey(dateKey: string) {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  const previous = new Date(Date.UTC(year, month - 1, day - 1, 12));
-  return previous.toISOString().slice(0, 10);
-}
-
-function nextDateKey(dateKey: string) {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  const next = new Date(Date.UTC(year, month - 1, day + 1, 12));
-  return next.toISOString().slice(0, 10);
-}
-
-function centralLocalTimeToUtc(dateKey: string, hour: number, minute = 0) {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  const targetWallClock = Date.UTC(year, month - 1, day, hour, minute);
-  let guess = targetWallClock;
-
-  for (let iteration = 0; iteration < 3; iteration += 1) {
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: CENTRAL_TIME_ZONE,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hourCycle: "h23",
-    }).formatToParts(new Date(guess));
-    const get = (type: Intl.DateTimeFormatPartTypes) =>
-      Number(parts.find((part) => part.type === type)?.value ?? 0);
-    const representedWallClock = Date.UTC(
-      get("year"),
-      get("month") - 1,
-      get("day"),
-      get("hour"),
-      get("minute"),
-      get("second"),
-    );
-    guess += targetWallClock - representedWallClock;
-  }
-
-  return new Date(guess);
-}
-
-function gameDisplayEndsAt(start: Date, gameDateKey = centralClock(start).dateKey) {
-  const localMidnight = centralLocalTimeToUtc(nextDateKey(gameDateKey), 0);
-  const twoHoursAfterStart = new Date(start.getTime() + 2 * 60 * 60 * 1000);
-  return localMidnight > twoHoursAfterStart ? localMidnight : twoHoursAfterStart;
-}
+const previousDateKey = (dateKey: string) => adjacentDateKey(dateKey, -1);
 
 function formatCentralTime(value: string | Date) {
   const date = typeof value === "string" ? new Date(value) : value;
@@ -282,7 +184,7 @@ async function fetchJson(
       "User-Agent": "Millstadt EMS website (millstadtems.org)",
       ...init.headers,
     },
-    next: { revalidate: 300 },
+    cache: "no-store",
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`Source returned ${response.status}`);
@@ -326,143 +228,180 @@ async function fetchText(url: string) {
       Accept: "text/calendar",
       "User-Agent": "Millstadt EMS website (millstadtems.org)",
     },
-    next: { revalidate: 300 },
+    cache: "no-store",
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`Source returned ${response.status}`);
   return response.text();
 }
 
+const observedFinals = new Map<string, Date>();
+
+function completionTime(
+  id: string,
+  state: NormalizedGameState,
+  providerCompletion: Date | undefined,
+  gameStart: Date,
+  observedAt: Date,
+) {
+  if (state !== "final") {
+    observedFinals.delete(id);
+    return undefined;
+  }
+  if (providerCompletion && !Number.isNaN(providerCompletion.getTime())) return providerCompletion;
+  const conservativeFallback = new Date(gameStart.getTime() + 4 * 60 * 60 * 1000);
+  const firstObservation = observedFinals.get(id)
+    ?? (observedAt < conservativeFallback ? observedAt : conservativeFallback);
+  observedFinals.set(id, firstObservation);
+  return firstObservation;
+}
+
+function mlbProgress(state: NormalizedGameState, inning?: number, half?: CommunityAlert["half"]) {
+  if (!inning) return undefined;
+  if (state === "final") return inning > 9 ? `Final/${inning}` : "Final";
+  const label = half === "top" ? "Top" : half === "bottom" ? "Bottom" : half === "middle" ? "Mid" : half === "end" ? "End" : undefined;
+  return label ? `${label} ${inning}` : `Inning ${inning}`;
+}
+
+function nhlProgress(state: NormalizedGameState, period?: number, clock?: string, periodType?: string) {
+  if (state === "final") return periodType && periodType !== "REG" ? `Final/${periodType}` : "Final";
+  if (!period) return undefined;
+  return [periodType && periodType !== "REG" ? periodType : `P${period}`, clock].filter(Boolean).join(" ");
+}
+
 async function getCardinalsAlerts(now: Date): Promise<CommunityAlert[]> {
   const clock = centralClock(now);
-  const dates = clock.hour < 5 ? [previousDateKey(clock.dateKey), clock.dateKey] : [clock.dateKey];
+  const dates = [previousDateKey(clock.dateKey), clock.dateKey];
   const checkedAt = now.toISOString();
   const responses = await Promise.all(
     dates.map((date) =>
       fetchJson(
-        `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${CARDINALS_TEAM_ID}&date=${date}&hydrate=team,linescore`,
+        `https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=${CARDINALS_TEAM_ID}&date=${date}&hydrate=team,linescore,gameInfo`,
       ),
     ),
   );
 
-  return responses.flatMap((raw) => {
-    const parsed = mlbSchema.safeParse(raw);
-    if (!parsed.success) throw new Error("MLB schedule response did not match the expected shape");
+  return responses.flatMap((raw) => normalizeMlbSchedule(raw, checkedAt).flatMap((game) => {
+    const completedAt = completionTime(`mlb-${game.id}`, game.state, game.completedAt, game.start, now);
+    const window = sportsDisplayWindow({
+      now,
+      start: game.start,
+      gameDateKey: game.gameDateKey,
+      state: game.state,
+      completedAt,
+    });
+    if (!window.visible) return [];
 
-    return parsed.data.dates.flatMap((scheduleDate) => scheduleDate.games.flatMap((game) => {
-      const gameStart = new Date(game.gameDate);
-      const gameDateKey = scheduleDate.date;
-      const displayEndsAt = gameDisplayEndsAt(gameStart, gameDateKey);
-      const abstractState = game.status.abstractGameState.toLowerCase();
-      const detailedState = game.status.detailedState;
-      const detailedLower = detailedState.toLowerCase();
-      const isLive = abstractState === "live";
-      const isFinal = abstractState === "final";
-      const isChanged = ["postponed", "cancelled", "canceled", "delayed", "suspended"].some((word) =>
-        detailedLower.includes(word),
-      );
-      const isGameDay = gameDateKey === clock.dateKey;
-      const isLateCarryover = gameDateKey !== clock.dateKey && gameStart < now && now < displayEndsAt;
-      if (!isGameDay && !isLateCarryover) return [];
-      if (isGameDay && clock.hour < 7) return [];
-      if (now >= displayEndsAt) return [];
+    const cardinalsAreHome = game.homeTeam.id === CARDINALS_TEAM_ID;
+    const opponent = cardinalsAreHome ? game.awayTeam.name : game.homeTeam.name;
+    const matchup = cardinalsAreHome ? `vs. ${opponent}` : `at ${opponent}`;
+    const cardinalsScore = cardinalsAreHome ? game.homeTeam.score : game.awayTeam.score;
+    const opponentScore = cardinalsAreHome ? game.awayTeam.score : game.homeTeam.score;
+    const progress = mlbProgress(game.state, game.inning, game.half);
+    const title = game.state === "live"
+      ? "Cardinals Live"
+      : game.state === "final"
+        ? "Cardinals Final"
+        : game.isChanged
+          ? `Cardinals ${game.gameStatus}`
+          : "Cardinals Game Day";
+    const summary =
+      game.state !== "upcoming" && cardinalsScore !== undefined && opponentScore !== undefined
+        ? `${matchup} | STL ${cardinalsScore}, ${opponent} ${opponentScore}${progress ? ` | ${progress}` : ""}`
+        : `${matchup} | First pitch ${formatCentralTime(game.start)}`;
+    const detail = [seriesLabel(game.gameType), game.venue ? `at ${game.venue}` : undefined, game.gameStatus]
+      .filter(Boolean)
+      .join(" | ");
 
-      const cardinalsAreHome = game.teams.home.team.id === CARDINALS_TEAM_ID;
-      const opponent = cardinalsAreHome ? game.teams.away.team.name : game.teams.home.team.name;
-      const matchup = cardinalsAreHome ? `vs. ${opponent}` : `at ${opponent}`;
-      const cardinalsScore = cardinalsAreHome ? game.teams.home.score : game.teams.away.score;
-      const opponentScore = cardinalsAreHome ? game.teams.away.score : game.teams.home.score;
-      const state: CommunityAlertState = isLive ? "live" : isFinal ? "final" : "upcoming";
-      const title = isLive
-        ? "Cardinals Live"
-        : isFinal
-          ? "Cardinals Final"
-          : isChanged
-            ? `Cardinals ${detailedState}`
-            : "Cardinals Game Day";
-      const summary =
-        (isLive || isFinal) && cardinalsScore !== undefined && opponentScore !== undefined
-          ? `${matchup} | STL ${cardinalsScore}, ${opponent} ${opponentScore}`
-          : `${matchup} | First pitch ${formatCentralTime(game.gameDate)}`;
-
-      return [{
-        id: `mlb-${game.gamePk}`,
-        kind: "sports" as const,
-        brand: "cardinals" as const,
-        state,
-        priority: isLive ? 3 : 4,
-        title,
-        summary,
-        detail: `${seriesLabel(game.gameType)}${game.venue?.name ? ` at ${game.venue.name}` : ""}`,
-        startsAt: gameStart.toISOString(),
-        endsAt: displayEndsAt.toISOString(),
-        sourceName: "Major League Baseball",
-        sourceUrl: CARDINALS_SCHEDULE_URL,
-        checkedAt,
-      }];
-    }));
-  });
+    return [{
+      id: `mlb-${game.id}`,
+      kind: "sports" as const,
+      brand: "cardinals" as const,
+      state: game.state,
+      priority: game.state === "live" ? 3 : 4,
+      title,
+      summary,
+      detail,
+      startsAt: game.start.toISOString(),
+      endsAt: window.endsAt?.toISOString(),
+      sourceName: "Major League Baseball",
+      sourceUrl: CARDINALS_SCHEDULE_URL,
+      checkedAt,
+      gameStatus: game.gameStatus,
+      homeScore: game.homeTeam.score,
+      awayScore: game.awayTeam.score,
+      inning: game.inning,
+      half: game.half,
+      lastUpdatedAt: game.lastUpdatedAt,
+      final: game.final,
+    }];
+  }));
 }
 
 async function getBluesAlerts(now: Date): Promise<CommunityAlert[]> {
   const clock = centralClock(now);
-  const dates = clock.hour < 5 ? [previousDateKey(clock.dateKey), clock.dateKey] : [clock.dateKey];
+  const dates = [previousDateKey(clock.dateKey), clock.dateKey];
   const checkedAt = now.toISOString();
   const responses = await Promise.all(
     dates.map((date) => fetchJson(`https://api-web.nhle.com/v1/score/${date}`)),
   );
 
-  return responses.flatMap((raw) => {
-    const parsed = nhlSchema.safeParse(raw);
-    if (!parsed.success) throw new Error("NHL schedule response did not match the expected shape");
+  return responses.flatMap((raw) => normalizeNhlScore(raw, checkedAt).flatMap((game) => {
+    const bluesAreAway = game.awayTeam.abbreviation === BLUES_ABBREVIATION;
+    const bluesAreHome = game.homeTeam.abbreviation === BLUES_ABBREVIATION;
+    if (!bluesAreAway && !bluesAreHome) return [];
 
-    return parsed.data.games.flatMap((game) => {
-      const gameStart = new Date(game.startTimeUTC);
-      const gameDateKey = game.gameDate;
-      const displayEndsAt = gameDisplayEndsAt(gameStart, gameDateKey);
-      const bluesAreAway = game.awayTeam.abbrev === BLUES_ABBREVIATION;
-      const bluesAreHome = game.homeTeam.abbrev === BLUES_ABBREVIATION;
-      if (!bluesAreAway && !bluesAreHome) return [];
-
-      const stateCode = game.gameState.toUpperCase();
-      const isLive = stateCode === "LIVE" || stateCode === "CRIT";
-      const isFinal = stateCode === "OFF" || stateCode === "FINAL";
-      const scheduleState = game.gameScheduleState?.toLowerCase() ?? "";
-      const isChanged = scheduleState !== "" && scheduleState !== "ok";
-      const isGameDay = gameDateKey === clock.dateKey;
-      const isLateCarryover = gameDateKey !== clock.dateKey && gameStart < now && now < displayEndsAt;
-      if (!isGameDay && !isLateCarryover) return [];
-      if (isGameDay && clock.hour < 7) return [];
-      if (now >= displayEndsAt) return [];
-
-      const opponent = bluesAreHome ? game.awayTeam.name.default : game.homeTeam.name.default;
-      const matchup = bluesAreHome ? `vs. ${opponent}` : `at ${opponent}`;
-      const bluesScore = bluesAreHome ? game.homeTeam.score : game.awayTeam.score;
-      const opponentScore = bluesAreHome ? game.awayTeam.score : game.homeTeam.score;
-      const state: CommunityAlertState = isLive ? "live" : isFinal ? "final" : "upcoming";
-      const title = isLive ? "Blues Live" : isFinal ? "Blues Final" : isChanged ? "Blues Schedule Update" : "Blues Game Day";
-      const summary =
-        (isLive || isFinal) && bluesScore !== undefined && opponentScore !== undefined
-          ? `${matchup} | STL ${bluesScore}, ${opponent} ${opponentScore}`
-          : `${matchup} | Puck drop ${formatCentralTime(game.startTimeUTC)}`;
-
-      return [{
-        id: `nhl-${game.id}`,
-        kind: "sports" as const,
-        brand: "blues" as const,
-        state,
-        priority: isLive ? 3 : 4,
-        title,
-        summary,
-        detail: game.venue?.default,
-        startsAt: gameStart.toISOString(),
-        endsAt: displayEndsAt.toISOString(),
-        sourceName: "National Hockey League",
-        sourceUrl: BLUES_SCHEDULE_URL,
-        checkedAt,
-      }];
+    const completedAt = completionTime(`nhl-${game.id}`, game.state, game.completedAt, game.start, now);
+    const window = sportsDisplayWindow({
+      now,
+      start: game.start,
+      gameDateKey: game.gameDateKey,
+      state: game.state,
+      completedAt,
     });
-  });
+    if (!window.visible) return [];
+
+    const opponent = bluesAreHome ? game.awayTeam.name : game.homeTeam.name;
+    const matchup = bluesAreHome ? `vs. ${opponent}` : `at ${opponent}`;
+    const bluesScore = bluesAreHome ? game.homeTeam.score : game.awayTeam.score;
+    const opponentScore = bluesAreHome ? game.awayTeam.score : game.homeTeam.score;
+    const progress = nhlProgress(game.state, game.period, game.clock, game.periodType);
+    const title = game.state === "live"
+      ? "Blues Live"
+      : game.state === "final"
+        ? "Blues Final"
+        : game.isChanged
+          ? "Blues Schedule Update"
+          : "Blues Game Day";
+    const summary =
+      game.state !== "upcoming" && bluesScore !== undefined && opponentScore !== undefined
+        ? `${matchup} | STL ${bluesScore}, ${opponent} ${opponentScore}${progress ? ` | ${progress}` : ""}`
+        : `${matchup} | Puck drop ${formatCentralTime(game.start)}`;
+    const detail = [game.venue, game.gameStatus].filter(Boolean).join(" | ") || undefined;
+
+    return [{
+      id: `nhl-${game.id}`,
+      kind: "sports" as const,
+      brand: "blues" as const,
+      state: game.state,
+      priority: game.state === "live" ? 3 : 4,
+      title,
+      summary,
+      detail,
+      startsAt: game.start.toISOString(),
+      endsAt: window.endsAt?.toISOString(),
+      sourceName: "National Hockey League",
+      sourceUrl: BLUES_SCHEDULE_URL,
+      checkedAt,
+      gameStatus: game.gameStatus,
+      homeScore: game.homeTeam.score,
+      awayScore: game.awayTeam.score,
+      period: game.period,
+      clock: game.clock,
+      lastUpdatedAt: game.lastUpdatedAt,
+      final: game.final,
+    }];
+  }));
 }
 
 async function getMillstadtSchoolAlerts(now: Date): Promise<CommunityAlert[]> {
@@ -674,9 +613,10 @@ async function getCalendarAlerts(
         }];
 
     for (const instance of instances) {
-      const start = new Date(instance.start);
-      const end = new Date(instance.end);
-      const startDateKey = centralClock(start).dateKey;
+      const interval = normalizeCalendarInterval(instance.start, instance.end, instance.isFullDay);
+      const start = interval.start;
+      const end = interval.end;
+      const startDateKey = calendarDateKey(instance.start, instance.isFullDay);
       const displayEndsAt = options.kind === "sports" || options.gameDay ? gameDisplayEndsAt(start) : end;
       const isCurrentDate = startDateKey === clock.dateKey;
       const isLateCarryover = startDateKey !== clock.dateKey && start < now && now < displayEndsAt;
@@ -694,7 +634,7 @@ async function getCalendarAlerts(
         id: `${options.kind}-${calendarText(instance.event.uid) || start.getTime()}-${start.getTime()}`,
         kind: options.kind,
         brand: options.brand,
-        state: start.getTime() <= now.getTime() ? "active" : "upcoming",
+        state: options.kind === "sports" ? "upcoming" : start.getTime() <= now.getTime() ? "active" : "upcoming",
         priority: 4,
         title: options.title(summary),
         summary: `${summary} | ${timeLabel}`,
@@ -704,6 +644,11 @@ async function getCalendarAlerts(
         sourceName: options.sourceName,
         sourceUrl: options.sourceUrl,
         checkedAt,
+        ...(options.kind === "sports" ? {
+          gameStatus: "scheduled",
+          lastUpdatedAt: checkedAt,
+          final: false,
+        } : {}),
       });
     }
   }
@@ -815,7 +760,7 @@ export async function getActiveCommunityAlerts(now = new Date()): Promise<Commun
   ];
   const unique = new Map(alerts.map((alert) => [alert.id, alert]));
 
-  return [...unique.values()]
+  return pruneExpiredAlerts([...unique.values()], now)
     .sort((left, right) => {
       if (left.priority !== right.priority) return left.priority - right.priority;
       return (left.startsAt ?? "").localeCompare(right.startsAt ?? "");

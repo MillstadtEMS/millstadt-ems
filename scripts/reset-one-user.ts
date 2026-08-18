@@ -1,9 +1,8 @@
 /**
  * One-shot: reset a single user's lounge credentials.
- * Resets the one-time password to the assigned username and flips
- * must_change_password = TRUE so the new first-login gate sends them
- * straight to /lounge/change-password. Existing passkeys and TOTP
- * enrollment are preserved.
+ * Issues a random, expiring one-time setup password and forces a permanent
+ * password change. Existing passkeys and TOTP enrollment are preserved;
+ * sessions, trusted devices, SMS codes, and pre-auth challenges are revoked.
  *
  * Run: npx tsx scripts/reset-one-user.ts <username>
  */
@@ -24,8 +23,7 @@ import path from "node:path";
 })();
 
 import { sql } from "../lib/neon";
-import { hashPassword } from "../lib/lounge/auth";
-import { defaultInitialPassword } from "../lib/lounge/employees";
+import { resetEmployeePassword } from "../lib/lounge/employees";
 
 async function main() {
   const username = (process.argv[2] ?? "").trim().toLowerCase();
@@ -47,24 +45,18 @@ async function main() {
     process.exit(1);
   }
   const u = rows[0];
-  const newPassword = defaultInitialPassword(u.username);
-  const newHash = hashPassword(newPassword);
-
   console.log(`Resetting ${u.username} (${u.first_name} ${u.last_name})${u.is_admin ? " [admin]" : ""}…`);
-
-  await db`
-    UPDATE lounge_employees SET
-      password_hash         = ${newHash},
-      must_change_password  = TRUE,
-      updated_at            = NOW()
-    WHERE id = ${u.id}
-  `;
+  const reset = await resetEmployeePassword(u.id);
+  if (!reset) throw new Error("Employee disappeared during reset");
 
   console.log("Done.");
   console.log(`  username: ${u.username}`);
-  console.log(`  password: ${newPassword}`);
+  console.log(`  one-time setup password: ${reset.setupToken}`);
+  console.log(`  expires: ${reset.setupTokenExpiresAt}`);
+  console.log(`  revoked trusted devices: ${reset.revokedTrustedDevices}`);
+  console.log(`  revoked pre-auth challenges: ${reset.revokedPreauthChallenges}`);
   console.log("  Next password sign-in will force a permanent password change.");
-  console.log("  Existing authenticator and passkey enrollment was preserved.");
+  console.log("  Existing authenticator and passkey enrollment were preserved.");
 }
 
 main().catch((err) => {

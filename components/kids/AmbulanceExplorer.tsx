@@ -113,10 +113,10 @@ export default function AmbulanceExplorer() {
             id="ambulance-explorer-detail"
             role="status"
             aria-live="polite"
-            className="rounded-2xl border border-[#061121]/10 bg-white p-5 shadow-xl shadow-slate-200/70"
+            className="rounded-lg border border-[#061121]/10 bg-white p-5 shadow-xl shadow-slate-200/70"
           >
             <div className="flex items-start gap-4">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#1b58c9] text-white">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#1b58c9] text-white">
                 <ActiveIcon className="h-6 w-6" aria-hidden />
               </span>
               <div>
@@ -125,7 +125,7 @@ export default function AmbulanceExplorer() {
                 </div>
                 <h3 className="mt-2 text-2xl font-black leading-tight">{active.title}</h3>
                 <p className="mt-3 text-base font-semibold leading-7 text-slate-700">{active.detail}</p>
-                <p className="mt-4 rounded-xl bg-[#f0b429]/18 p-4 text-sm font-bold leading-6 text-[#5f4207]">
+                <p className="mt-4 rounded-lg bg-[#f0b429]/18 p-4 text-sm font-bold leading-6 text-[#5f4207]">
                   {active.kidLine}
                 </p>
               </div>
@@ -134,7 +134,7 @@ export default function AmbulanceExplorer() {
         </div>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-          <div className="relative min-h-[360px] overflow-hidden rounded-2xl border border-[#061121]/10 bg-[#061121] shadow-2xl shadow-slate-300/70 sm:min-h-[460px]">
+          <div className="relative min-h-[360px] overflow-hidden rounded-lg border border-[#061121]/10 bg-[#061121] shadow-2xl shadow-slate-300/70 sm:min-h-[460px]">
             <Image
               src="/images/millstadt-ems/ambulance-explorer.jpg"
               alt="Millstadt EMS ambulance ready for a community visit"
@@ -178,7 +178,7 @@ export default function AmbulanceExplorer() {
                   aria-pressed={isActive}
                   aria-controls="ambulance-explorer-detail"
                   onClick={() => setActiveId(spot.id)}
-                  className={`flex min-h-16 items-center gap-4 rounded-xl border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-[#1b58c9] focus:ring-offset-2 ${
+                  className={`flex min-h-16 items-center gap-4 rounded-lg border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-[#1b58c9] focus:ring-offset-2 ${
                     isActive
                       ? "border-[#1b58c9] bg-[#1b58c9] text-white"
                       : "border-slate-200 bg-white text-[#061121] hover:border-[#1b58c9]/45"
@@ -199,7 +199,7 @@ export default function AmbulanceExplorer() {
           </div>
         </div>
 
-        <div className="mt-8 flex items-start gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-5 text-emerald-950">
+        <div className="mt-8 flex items-start gap-4 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-5 text-emerald-950">
           <ShieldCheck className="mt-1 h-6 w-6 shrink-0" aria-hidden />
           <p className="text-sm font-bold leading-6 text-emerald-950">
             This explorer is for family learning only. In a real emergency,

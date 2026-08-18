@@ -17,6 +17,8 @@ const PRIVATE_NAMESPACES = [
   "lounge/ack-memorandums/",
   "lounge/profile-change-requests/",
   "personnel/",
+  "truckcheck/pdf/",
+  "inventory-reports/",
 ];
 
 async function employeeCanRead(reference: string, pathname: string, employeeId: string) {
@@ -55,7 +57,15 @@ async function employeeCanRead(reference: string, pathname: string, employeeId: 
       AND status = 'finalized'
     LIMIT 1
   `) as unknown as { "?column?": number }[];
-  return writeups.length > 0;
+  if (writeups.length) return true;
+
+  const truckChecks = (await db`
+    SELECT 1 FROM lounge_truck_checks
+    WHERE pdf_url = ${reference}
+      AND submitted_by_id = ${employeeId}
+    LIMIT 1
+  `) as unknown as { "?column?": number }[];
+  return truckChecks.length > 0;
 }
 
 export async function GET(req: NextRequest) {

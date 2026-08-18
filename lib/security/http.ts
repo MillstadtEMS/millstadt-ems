@@ -61,6 +61,49 @@ export function contentLengthWithin(req: NextRequest, maximumBytes: number) {
   return Number.isFinite(size) && size >= 0 && size <= maximumBytes;
 }
 
+export type BoundedJsonResult =
+  | { ok: true; value: unknown }
+  | { ok: false; reason: "invalid_json" | "too_large" };
+
+export async function readBoundedJson(req: Request, maximumBytes: number): Promise<BoundedJsonResult> {
+  const declaredLength = req.headers.get("content-length");
+  if (declaredLength) {
+    const size = Number(declaredLength);
+    if (!Number.isFinite(size) || size < 0 || size > maximumBytes) {
+      return { ok: false, reason: "too_large" };
+    }
+  }
+  if (!req.body) return { ok: false, reason: "invalid_json" };
+
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maximumBytes) {
+        await reader.cancel();
+        return { ok: false, reason: "too_large" };
+      }
+      chunks.push(value);
+    }
+  } catch {
+    return { ok: false, reason: "invalid_json" };
+  } finally {
+    reader.releaseLock();
+  }
+
+  try {
+    const bytes = Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)), total);
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return { ok: true, value: JSON.parse(text) as unknown };
+  } catch {
+    return { ok: false, reason: "invalid_json" };
+  }
+}
+
 export function requestIp(req: NextRequest) {
   return (
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||

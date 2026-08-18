@@ -12,8 +12,10 @@ import {
   PAGE_W,
   drawMetadataGrid,
   drawOfficialHeader,
+  drawContainedImage,
   drawSectionHeading,
   drawTitleBlock,
+  drawWrappedText,
   ensureSpace,
   newDoc,
   stampFooter,
@@ -59,10 +61,7 @@ function drawProse(c: Cursor, label: string, value: string) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.setTextColor(...COLORS.ink);
-  const lines = doc.splitTextToSize(value || "—", CONTENT_W);
-  ensureSpace(c, lines.length * 14 + 4);
-  doc.text(lines, M, c.y + 9);
-  c.y += lines.length * 14 + 10;
+  drawWrappedText(c, value || "—", { bottomGap: 10 });
 }
 
 function drawSignatureBlock(c: Cursor, label: string, sig: FormSignature) {
@@ -80,9 +79,7 @@ function drawSignatureBlock(c: Cursor, label: string, sig: FormSignature) {
   const sigBoxY = c.y + 24;
   const sigBoxW = CONTENT_W * 0.55;
   const sigBoxH = 48;
-  try {
-    doc.addImage(sig.signatureDataUrl, "PNG", sigBoxX, sigBoxY, sigBoxW, sigBoxH, undefined, "FAST");
-  } catch {
+  if (!drawContainedImage(doc, sig.signatureDataUrl, "PNG", sigBoxX, sigBoxY, sigBoxW, sigBoxH)) {
     doc.setFont("helvetica", "italic");
     doc.setFontSize(13);
     doc.setTextColor(...COLORS.ink);
@@ -95,15 +92,16 @@ function drawSignatureBlock(c: Cursor, label: string, sig: FormSignature) {
   doc.setTextColor(...COLORS.inkSoft);
   doc.text("Signature", sigBoxX, sigBoxY + sigBoxH + 14);
   const rcX = M + 14 + sigBoxW + 22;
+  const rcW = PAGE_W - M - rcX;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10.5);
   doc.setTextColor(...COLORS.ink);
-  doc.text(sig.printedName || "—", rcX, sigBoxY + 14);
+  doc.text(doc.splitTextToSize(sig.printedName || "—", rcW), rcX, sigBoxY + 14);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
+  doc.setFontSize(8.5);
   doc.setTextColor(...COLORS.inkSoft);
-  doc.text(sig.role || "—", rcX, sigBoxY + 30);
-  doc.text(fmtDateTime(sig.signedAt), rcX, sigBoxY + 46);
+  doc.text(doc.splitTextToSize(sig.role || "—", rcW), rcX, sigBoxY + 42);
+  doc.text(doc.splitTextToSize(fmtDateTime(sig.signedAt), rcW), rcX, sigBoxY + 58);
   c.y += blockH + 12;
 }
 
@@ -174,13 +172,10 @@ function drawRefusalBlock(c: Cursor, who: SignerRole, label: string) {
 
 function drawAcknowledgmentNote(c: Cursor, text: string) {
   const doc = c.doc;
-  const lines = doc.splitTextToSize(text, CONTENT_W);
-  ensureSpace(c, lines.length * 12 + 6);
   doc.setFont("helvetica", "italic");
   doc.setFontSize(9.5);
   doc.setTextColor(...COLORS.inkMuted);
-  doc.text(lines, M, c.y + 8);
-  c.y += lines.length * 12 + 10;
+  drawWrappedText(c, text, { lineHeight: 12, topOffset: 8, bottomGap: 10 });
 }
 
 function drawRescindedStamp(doc: ReturnType<typeof newDoc>) {
@@ -302,7 +297,7 @@ export async function buildFormPdf({ spec, form, employee }: BuildFormPdfInput):
   const left = form.status === "finalized"
     ? `Finalized ${fmtDateTime(form.finalizedAt)} · Generated ${fmtDateTime(generatedAt)}`
     : form.status === "rescinded"
-      ? `Rescinded ${fmtDateTime(form.rescindedAt)} — ${form.rescindedReason ?? ""}`
+      ? `Rescinded ${fmtDateTime(form.rescindedAt)}`
       : `Draft preview · Generated ${fmtDateTime(generatedAt)}`;
   c.doc.text(left, M, c.y);
   const right = `Doc ID: ${form.id.slice(0, 8)}`;

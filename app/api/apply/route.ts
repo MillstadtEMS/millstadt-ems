@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { google } from "googleapis";
 import { createFormSubmission } from "@/lib/db";
 import { buildApplicationFlags } from "@/lib/application-flags";
 import { notifyAdminsInLounge } from "@/lib/lounge/notify-admins";
+import { sendGmailMessage } from "@/lib/reports/gmail-message";
 import {
   contentLengthWithin,
   escapeHtml,
@@ -10,7 +10,6 @@ import {
   hasValidCsrfToken,
   issueCsrfToken,
   noStoreJson,
-  safeHeaderValue,
 } from "@/lib/security/http";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { parseEmploymentApplication } from "@/lib/security/employment-application-schema";
@@ -22,42 +21,24 @@ export const dynamic = "force-dynamic";
 const CSRF_SCOPE = "employment";
 const MAX_BODY_BYTES = 1_200_000;
 
-function getGmailClient() {
-  const { GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN, GMAIL_USER } = process.env;
-  if (!GMAIL_CLIENT_ID || !GMAIL_CLIENT_SECRET || !GMAIL_REFRESH_TOKEN) {
-    throw new Error("Gmail OAuth credentials are not configured.");
-  }
-  const auth = new google.auth.OAuth2(GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET);
-  auth.setCredentials({ refresh_token: GMAIL_REFRESH_TOKEN });
-  return {
-    gmail: google.gmail({ version: "v1", auth }),
-    sender: safeHeaderValue(GMAIL_USER || "millstadtcad@gmail.com", 254),
-  };
-}
-
 function buildNotificationEmail(options: {
-  sender: string;
   reviewUrl: string;
   submissionId: string;
 }) {
-  const subject = safeHeaderValue("[EMS Website] New employment application");
+  const subject = "[EMS Website] New employment application";
+  const text = [
+    "A new employment application was received.",
+    `Open the protected administrator record: ${options.reviewUrl}`,
+    `Submission ID: ${options.submissionId}`,
+    "Applicant details are intentionally omitted from email.",
+  ].join("\n\n");
   const html = [
     "<p>A new employment application was received.</p>",
     `<p><a href="${escapeHtml(options.reviewUrl)}">Open the protected administrator record</a>.</p>`,
     `<p>Submission ID: ${escapeHtml(options.submissionId)}</p>`,
     "<p>Applicant details are intentionally omitted from email.</p>",
   ].join("");
-  const message = [
-    "MIME-Version: 1.0",
-    `From: Millstadt EMS Careers <${options.sender}>`,
-    "To: millstadtems@gmail.com",
-    `Subject: =?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`,
-    "Content-Type: text/html; charset=UTF-8",
-    "Content-Transfer-Encoding: base64",
-    "",
-    Buffer.from(html, "utf8").toString("base64"),
-  ].join("\r\n");
-  return Buffer.from(message, "utf8").toString("base64url");
+  return { subject, text, html };
 }
 
 export async function GET() {
@@ -150,14 +131,16 @@ export async function POST(req: NextRequest) {
     });
 
     try {
-      const { gmail, sender } = getGmailClient();
       const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.millstadtems.org").replace(/\/$/, "");
-      const raw = buildNotificationEmail({
-        sender,
+      const message = buildNotificationEmail({
         reviewUrl: `${site}/admin/submissions/${submissionId}`,
         submissionId,
       });
-      await gmail.users.messages.send({ userId: "me", requestBody: { raw } });
+      await sendGmailMessage({
+        fromName: "Millstadt EMS Careers",
+        to: ["millstadtems@gmail.com"],
+        ...message,
+      });
     } catch (error) {
       console.error("[apply] notification email failed", {
         name: error instanceof Error ? error.name : "UnknownError",

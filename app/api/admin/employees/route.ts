@@ -11,6 +11,7 @@ import {
   createEmployee,
   type CreateEmployeeInput,
 } from "@/lib/lounge/employees";
+import { recordSecurityAudit } from "@/lib/security/audit";
 
 export const runtime = "nodejs";
 
@@ -48,7 +49,17 @@ export async function POST(req: NextRequest) {
   }
   try {
     const created = await createEmployee(body);
-    return NextResponse.json({ employee: created });
+    await recordSecurityAudit({
+      actorType: "administrator",
+      actorId: guard.id,
+      action: "employee_setup_token_created",
+      resourceType: "employee",
+      resourceId: created.employee.id,
+      outcome: "completed",
+      req,
+      detail: { setupTokenExpiresAt: created.setupTokenExpiresAt },
+    });
+    return NextResponse.json(created);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Create failed";
     // Most common cause: duplicate username (unique constraint)

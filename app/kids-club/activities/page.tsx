@@ -98,7 +98,7 @@ export default function KidsClubActivitiesPage() {
       <section className="kc-spotlight-section" id="featured">
         <div className="kc-wrap">
           <div className="kc-section-heading">
-            <span>This Month's Mission</span>
+            <span>This Month&apos;s Mission</span>
             <h2>{MONTH_NAMES[currentMonth]} safety spotlight</h2>
             <p>
               One highlighted mission gives families a simple place to start.
@@ -299,7 +299,7 @@ export default function KidsClubActivitiesPage() {
                   <Link key={badge} href={`/kids-club/badge/${slug}`} title={`Print ${badge} certificate`}>
                     <StarIcon />
                     <strong>{badge}</strong>
-                    <span style={{ display: "block", color: "#1b58c9", fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginTop: 6 }}>
+                    <span style={{ display: "block", color: "#1b58c9", fontSize: 11, fontWeight: 900, letterSpacing: 0, textTransform: "uppercase", marginTop: 6 }}>
                       Print certificate ↗
                     </span>
                   </Link>
@@ -424,10 +424,7 @@ function StarIcon() {
 const KIDS_ACTIVITY_CSS = `
 .kids-activities-page {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 12% 18%, rgba(34, 211, 238, 0.18), transparent 28rem),
-    radial-gradient(circle at 88% 8%, rgba(240, 180, 41, 0.18), transparent 24rem),
-    linear-gradient(180deg, #eef7ff 0%, #f7fbff 100%);
+  background: #f7fbff;
   color: #061121;
   overflow: hidden;
 }
@@ -454,11 +451,7 @@ const KIDS_ACTIVITY_CSS = `
   z-index: 1;
 }
 .kc-hero-wash {
-  background:
-    radial-gradient(circle at 22% 20%, rgba(34, 211, 238, 0.34), transparent 23rem),
-    radial-gradient(circle at 78% 22%, rgba(240, 180, 41, 0.3), transparent 22rem),
-    linear-gradient(90deg, rgba(3,9,20,0.98) 0%, rgba(3,9,20,0.86) 42%, rgba(3,9,20,0.72) 100%),
-    linear-gradient(180deg, rgba(3,9,20,0.04) 0%, #041326 100%);
+  background: linear-gradient(90deg, rgba(3,9,20,0.98) 0%, rgba(3,9,20,0.86) 42%, rgba(3,9,20,0.72) 100%);
 }
 .kc-hero-grid {
   opacity: 0.24;
@@ -485,7 +478,7 @@ const KIDS_ACTIVITY_CSS = `
   color: #f0b429;
   text-decoration: none;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
+  letter-spacing: 0;
   font-weight: 900;
   font-size: 0.78rem;
 }
@@ -507,23 +500,22 @@ const KIDS_ACTIVITY_CSS = `
   display: inline-flex;
   color: #f0b429;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
+  letter-spacing: 0;
   font-size: 0.72rem;
   font-weight: 950;
 }
 .kc-hero h1 {
   margin: 18px 0 0;
-  font-size: clamp(4rem, 12vw, 9rem);
-  line-height: 0.82;
-  letter-spacing: -0.045em;
+  font-size: 7rem;
+  line-height: 0.9;
+  letter-spacing: 0;
   text-transform: uppercase;
-  text-shadow: 0 0 34px rgba(34, 211, 238, 0.2);
 }
 .kc-hero-copy p {
   max-width: 720px;
   margin: 28px 0 0;
   color: #dbeafe;
-  font-size: clamp(1.15rem, 2vw, 1.65rem);
+  font-size: 1.4rem;
   line-height: 1.55;
   font-weight: 720;
 }
@@ -540,11 +532,11 @@ const KIDS_ACTIVITY_CSS = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
+  border-radius: 8px;
   padding: 0 22px;
   text-decoration: none;
   text-transform: uppercase;
-  letter-spacing: 0.13em;
+  letter-spacing: 0;
   font-size: 0.78rem;
   font-weight: 950;
   transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
@@ -572,13 +564,10 @@ const KIDS_ACTIVITY_CSS = `
 }
 .kc-hero-console {
   border: 1px solid rgba(255,255,255,0.16);
-  border-radius: 28px;
+  border-radius: 8px;
   padding: 22px;
-  background:
-    linear-gradient(145deg, rgba(7,20,40,0.94), rgba(4,13,26,0.82)),
-    radial-gradient(circle at top right, rgba(34,211,238,0.18), transparent 14rem);
-  box-shadow: 0 24px 70px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08);
-  backdrop-filter: blur(16px);
+  background: rgba(7,20,40,0.94);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.3);
 }
 .kc-console-top {
   display: flex;
@@ -586,14 +575,14 @@ const KIDS_ACTIVITY_CSS = `
   align-items: center;
 }
 .kc-console-top img {
-  filter: drop-shadow(0 0 18px rgba(34,211,238,0.55));
+  filter: drop-shadow(0 5px 10px rgba(0,0,0,0.32));
 }
 .kc-console-top span,
 .kc-console-callout span {
   display: block;
   color: #7dd3fc;
   text-transform: uppercase;
-  letter-spacing: 0.18em;
+  letter-spacing: 0;
   font-size: 0.68rem;
   font-weight: 950;
 }
@@ -612,7 +601,7 @@ const KIDS_ACTIVITY_CSS = `
 }
 .kc-console-stats div {
   min-height: 92px;
-  border-radius: 18px;
+  border-radius: 8px;
   padding: 14px;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.09);
@@ -630,13 +619,13 @@ const KIDS_ACTIVITY_CSS = `
   font-size: 0.74rem;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
 }
 .kc-console-callout {
   margin-top: 14px;
   padding: 16px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(240,180,41,0.16), rgba(34,211,238,0.1));
+  border-radius: 8px;
+  background: rgba(240,180,41,0.14);
   border: 1px solid rgba(240,180,41,0.24);
 }
 .kc-spotlight-section,
@@ -653,24 +642,19 @@ const KIDS_ACTIVITY_CSS = `
   scroll-margin-top: 160px;
 }
 .kc-spotlight-section {
-  background:
-    radial-gradient(circle at 82% 8%, rgba(240,180,41,0.16), transparent 20rem),
-    linear-gradient(180deg, #eef7ff 0%, #f8fbff 100%);
+  background: #eef7ff;
   border-top: 1px solid rgba(255,255,255,0.68);
 }
 .kc-browse-section {
-  background:
-    radial-gradient(circle at 8% 12%, rgba(34,211,238,0.14), transparent 24rem),
-    #f8fbff;
+  background: #f8fbff;
 }
 .kc-section-heading {
   max-width: 760px;
   padding: 22px;
-  border-radius: 28px;
-  background: rgba(255,255,255,0.78);
+  border-radius: 8px;
+  background: white;
   border: 1px solid rgba(6,17,33,0.08);
-  box-shadow: 0 18px 50px rgba(15,23,42,0.08);
-  backdrop-filter: blur(10px);
+  box-shadow: none;
 }
 .kc-section-heading h2,
 .kc-track-heading h2,
@@ -679,9 +663,9 @@ const KIDS_ACTIVITY_CSS = `
 .kc-parent-grid h2 {
   margin: 12px 0 0;
   color: #061121;
-  font-size: clamp(2rem, 4vw, 4.3rem);
-  line-height: 0.95;
-  letter-spacing: -0.04em;
+  font-size: 3.5rem;
+  line-height: 1;
+  letter-spacing: 0;
   font-weight: 950;
 }
 .kc-section-heading p,
@@ -701,17 +685,15 @@ const KIDS_ACTIVITY_CSS = `
   grid-template-columns: 0.82fr 1.18fr;
   gap: 0;
   overflow: hidden;
-  border-radius: 34px;
+  border-radius: 8px;
   border: 1px solid rgba(6,17,33,0.12);
   background: white;
-  box-shadow: 0 24px 70px rgba(15,23,42,0.16);
+  box-shadow: none;
 }
 .kc-spotlight-art {
   position: relative;
   min-height: 520px;
-  background:
-    radial-gradient(circle at 40% 28%, rgba(34,211,238,0.2), transparent 14rem),
-    #061121;
+  background: #061121;
 }
 .kc-spotlight-img {
   object-fit: contain;
@@ -727,7 +709,7 @@ const KIDS_ACTIVITY_CSS = `
   background: #f0b429;
   color: #061121;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   font-size: 0.72rem;
   font-weight: 950;
 }
@@ -750,15 +732,15 @@ const KIDS_ACTIVITY_CSS = `
   font-size: 0.72rem;
   line-height: 1;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   font-weight: 950;
 }
 .kc-spotlight h3 {
   margin: 24px 0 0;
   color: #061121;
-  font-size: clamp(2.2rem, 5vw, 5rem);
-  line-height: 0.9;
-  letter-spacing: -0.05em;
+  font-size: 4rem;
+  line-height: 1;
+  letter-spacing: 0;
   font-weight: 950;
 }
 .kc-spotlight-copy > p,
@@ -773,9 +755,9 @@ const KIDS_ACTIVITY_CSS = `
 .kc-learn-card,
 .kc-note {
   margin-top: 22px;
-  border-radius: 20px;
+  border-radius: 8px;
   padding: 18px;
-  background: linear-gradient(135deg, rgba(34,211,238,0.12), rgba(240,180,41,0.1));
+  background: rgba(34,211,238,0.09);
   border: 1px solid rgba(27,88,201,0.16);
 }
 .kc-learn-panel span,
@@ -788,7 +770,7 @@ const KIDS_ACTIVITY_CSS = `
   display: block;
   color: #1b58c9;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
+  letter-spacing: 0;
   font-size: 0.68rem;
   font-weight: 950;
 }
@@ -809,7 +791,7 @@ const KIDS_ACTIVITY_CSS = `
   margin-top: 14px;
 }
 .kc-info-tile {
-  border-radius: 18px;
+  border-radius: 8px;
   padding: 16px;
   background: #f8fbff;
   border: 1px solid rgba(6,17,33,0.1);
@@ -843,12 +825,10 @@ const KIDS_ACTIVITY_CSS = `
   gap: 20px;
   align-items: start;
   padding: 22px;
-  border-radius: 28px;
-  background:
-    linear-gradient(135deg, rgba(255,255,255,0.92), rgba(255,255,255,0.76)),
-    radial-gradient(circle at top left, rgba(34,211,238,0.2), transparent 18rem);
+  border-radius: 8px;
+  background: white;
   border: 1px solid rgba(6,17,33,0.1);
-  box-shadow: 0 18px 50px rgba(15,23,42,0.1);
+  box-shadow: none;
 }
 .kc-filter-row,
 .kc-theme-row {
@@ -907,10 +887,10 @@ const KIDS_ACTIVITY_CSS = `
   min-height: 100%;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 28px;
+  border-radius: 8px;
   background: white;
   border: 1px solid rgba(6,17,33,0.1);
-  box-shadow: 0 20px 52px rgba(15,23,42,0.12);
+  box-shadow: none;
 }
 .kc-mission-card header {
   display: grid;
@@ -919,9 +899,7 @@ const KIDS_ACTIVITY_CSS = `
   align-items: center;
   padding: 22px;
   border-top: 7px solid var(--accent);
-  background:
-    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 18rem),
-    #fff;
+  background: #fff;
 }
 .kc-mission-card[data-accent="cyan"] { --accent: #22d3ee; }
 .kc-mission-card[data-accent="gold"] { --accent: #f0b429; }
@@ -933,19 +911,18 @@ const KIDS_ACTIVITY_CSS = `
   height: 58px;
   display: grid;
   place-items: center;
-  border-radius: 18px;
+  border-radius: 6px;
   background: var(--accent);
   color: #061121;
   font-size: 1.5rem;
   font-weight: 950;
-  box-shadow: 0 12px 26px color-mix(in srgb, var(--accent) 28%, transparent);
 }
 .kc-mission-card h3 {
   margin: 6px 0 0;
   color: #061121;
-  font-size: clamp(1.55rem, 3vw, 2.25rem);
-  line-height: 1;
-  letter-spacing: -0.035em;
+  font-size: 2rem;
+  line-height: 1.1;
+  letter-spacing: 0;
   font-weight: 950;
 }
 .kc-card-body {
@@ -973,7 +950,7 @@ const KIDS_ACTIVITY_CSS = `
   position: relative;
   min-height: 44px;
   padding: 10px 12px 10px 54px;
-  border-radius: 16px;
+  border-radius: 8px;
   background: #f5f9fd;
   color: #1e293b;
   font-weight: 650;
@@ -989,7 +966,7 @@ const KIDS_ACTIVITY_CSS = `
   height: 30px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
+  border-radius: 6px;
   background: #061121;
   color: #f0b429;
   font-weight: 950;
@@ -1021,7 +998,7 @@ const KIDS_ACTIVITY_CSS = `
   padding: 0 13px;
   text-decoration: none;
   font-size: 0.72rem;
-  letter-spacing: 0.1em;
+  letter-spacing: 0;
   text-transform: uppercase;
   font-weight: 950;
 }
@@ -1038,9 +1015,7 @@ const KIDS_ACTIVITY_CSS = `
   background: linear-gradient(180deg, transparent, rgba(4,13,26,0.05));
 }
 .kc-coloring-section {
-  background:
-    linear-gradient(180deg, #f8fbff 0%, #eef6fb 100%),
-    radial-gradient(circle at 12% 12%, rgba(27,88,201,0.1), transparent 18rem);
+  background: #eef6fb;
 }
 .kc-coloring-header {
   display: flex;
@@ -1048,19 +1023,19 @@ const KIDS_ACTIVITY_CSS = `
   align-items: end;
   justify-content: space-between;
   padding: 28px;
-  border-radius: 30px;
+  border-radius: 8px;
   background: #061121;
   color: white;
   border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 0 22px 60px rgba(15,23,42,0.2);
+  box-shadow: none;
 }
 .kc-coloring-header h2 {
   max-width: 760px;
   margin: 12px 0 0;
   color: white;
-  font-size: clamp(2rem, 4vw, 4rem);
-  line-height: 0.96;
-  letter-spacing: -0.04em;
+  font-size: 3.5rem;
+  line-height: 1;
+  letter-spacing: 0;
   font-weight: 950;
 }
 .kc-coloring-header p {
@@ -1080,20 +1055,18 @@ const KIDS_ACTIVITY_CSS = `
 .kc-coloring-card {
   min-width: 0;
   padding: 12px;
-  border-radius: 22px;
+  border-radius: 8px;
   background: white;
   border: 1px solid rgba(6,17,33,0.1);
-  box-shadow: 0 16px 40px rgba(15,23,42,0.1);
+  box-shadow: none;
 }
 .kc-coloring-thumb {
   position: relative;
   display: block;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  border-radius: 16px;
-  background:
-    linear-gradient(135deg, rgba(34,211,238,0.1), rgba(240,180,41,0.1)),
-    white;
+  border-radius: 8px;
+  background: white;
   border: 1px solid rgba(6,17,33,0.1);
 }
 .kc-coloring-thumb.is-portrait {
@@ -1137,10 +1110,10 @@ const KIDS_ACTIVITY_CSS = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 8px;
   text-decoration: none;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0;
   font-size: 0.68rem;
   font-weight: 950;
 }
@@ -1162,11 +1135,11 @@ const KIDS_ACTIVITY_CSS = `
 .kc-printable-callout,
 .kc-badge-tracker,
 .kc-parent-grid {
-  border-radius: 32px;
+  border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.12);
   background: #061121;
   color: white;
-  box-shadow: 0 22px 70px rgba(15,23,42,0.18);
+  box-shadow: none;
 }
 .kc-printable-callout {
   display: grid;
@@ -1192,7 +1165,7 @@ const KIDS_ACTIVITY_CSS = `
   position: absolute;
   width: min(88%, 340px);
   height: auto;
-  border-radius: 18px;
+  border-radius: 8px;
   background: white;
   padding: 10px;
   box-shadow: 0 24px 52px rgba(0,0,0,0.32);
@@ -1221,7 +1194,7 @@ const KIDS_ACTIVITY_CSS = `
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 18px;
+  border-radius: 8px;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.08);
   color: inherit;
@@ -1250,9 +1223,7 @@ const KIDS_ACTIVITY_CSS = `
   grid-template-columns: 0.7fr 1.3fr;
   gap: 28px;
   padding: 34px;
-  background:
-    radial-gradient(circle at 10% 10%, rgba(34,211,238,0.16), transparent 22rem),
-    #071428;
+  background: #071428;
 }
 .kc-parent-notes {
   display: grid;
@@ -1261,7 +1232,7 @@ const KIDS_ACTIVITY_CSS = `
 .kc-parent-notes p {
   margin: 0;
   padding: 16px;
-  border-radius: 18px;
+  border-radius: 8px;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.08);
   color: #dbeafe;
@@ -1292,6 +1263,9 @@ const KIDS_ACTIVITY_CSS = `
   .kc-spotlight-art {
     min-height: 390px;
   }
+  .kc-hero h1 {
+    font-size: 5.5rem;
+  }
 }
 @media (max-width: 680px) {
   .kc-wrap {
@@ -1306,7 +1280,7 @@ const KIDS_ACTIVITY_CSS = `
     gap: 30px;
   }
   .kc-hero h1 {
-    font-size: clamp(3.5rem, 17vw, 5.2rem);
+    font-size: 4rem;
   }
   .kc-console-stats,
   .kc-mini-grid,

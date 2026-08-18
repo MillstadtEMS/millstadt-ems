@@ -259,10 +259,17 @@ export interface ConversationReadInfo {
  * compute "Seen by X" receipts. Skips the gate-check — caller already
  * fetched messages, which gates participation.
  */
-export async function getConversationReadInfo(conversationId: string): Promise<ConversationReadInfo | null> {
+export async function getConversationReadInfo(
+  conversationId: string,
+  viewerId: string,
+): Promise<ConversationReadInfo | null> {
   const db = sql();
   const rows = (await db`
-    SELECT participant_ids, read_by FROM lounge_conversations WHERE id = ${conversationId} LIMIT 1
+    SELECT participant_ids, read_by
+    FROM lounge_conversations
+    WHERE id = ${conversationId}
+      AND ${viewerId} = ANY(participant_ids)
+    LIMIT 1
   `) as unknown as { participant_ids: string[]; read_by: Record<string, string> | null }[];
   if (!rows[0]) return null;
   return {
@@ -404,6 +411,16 @@ export async function sendMessage(input: {
     SELECT participant_ids FROM lounge_conversations WHERE id = ${input.conversationId} LIMIT 1
   `) as unknown as { participant_ids: string[] }[];
   if (!conv[0] || !conv[0].participant_ids.includes(input.authorId)) return null;
+  if (input.replyToId) {
+    const reply = (await db`
+      SELECT id
+      FROM lounge_messages
+      WHERE id = ${input.replyToId}
+        AND conversation_id = ${input.conversationId}
+      LIMIT 1
+    `) as unknown as { id: string }[];
+    if (!reply[0]) return null;
+  }
   const cleanedMedia = Array.isArray(input.media) ? input.media.filter((m) => m && typeof m.url === "string" && m.url.length > 0) : [];
   if (!input.body.trim() && cleanedMedia.length === 0) return null;
 

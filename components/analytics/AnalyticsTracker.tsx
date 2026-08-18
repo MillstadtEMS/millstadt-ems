@@ -25,11 +25,18 @@ export default function AnalyticsTracker() {
   const pathRef = useRef(pathname);
   const startedAt = useRef(0);
   const performanceSent = useRef(false);
+  const aggregateEnabledRef = useRef(false);
   const trackingExcluded = isExcluded(pathname);
 
   useEffect(() => {
-    startedAt.current = Date.now();
+    const aggregateEnabled = categories.includes("aggregate");
+    const newlyEnabled = aggregateEnabled && !aggregateEnabledRef.current;
     categoriesRef.current = categories;
+    aggregateEnabledRef.current = aggregateEnabled;
+    if (newlyEnabled) {
+      startedAt.current = Date.now();
+      if (!isExcluded(pathRef.current)) void send("page_view", pathRef.current);
+    }
   }, [categories]);
 
   useEffect(() => {
@@ -61,9 +68,19 @@ export default function AnalyticsTracker() {
   }, [trackingExcluded]);
 
   useEffect(() => {
+    const previousPath = pathRef.current;
+    if (
+      previousPath !== pathname &&
+      aggregateEnabledRef.current &&
+      !isExcluded(previousPath) &&
+      document.visibilityState !== "hidden"
+    ) {
+      const durationMs = boundedDuration(startedAt.current);
+      if (durationMs >= 1_000) void send("engagement", previousPath, { durationMs });
+    }
     pathRef.current = pathname;
     startedAt.current = Date.now();
-    if (!categories.includes("aggregate") || isExcluded(pathname)) return;
+    if (!aggregateEnabledRef.current || isExcluded(pathname)) return;
     void send("page_view", pathname);
     const timer = window.setTimeout(() => {
       const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
@@ -73,12 +90,12 @@ export default function AnalyticsTracker() {
       }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [categories, pathname]);
+  }, [pathname]);
 
   useEffect(() => {
     const recordEngagement = () => {
       if (!categoriesRef.current.includes("aggregate") || isExcluded(pathRef.current)) return;
-      const durationMs = Math.min(24 * 60 * 60 * 1000, Math.max(0, Date.now() - startedAt.current));
+      const durationMs = boundedDuration(startedAt.current);
       if (durationMs >= 1_000) void send("engagement", pathRef.current, { durationMs });
       startedAt.current = Date.now();
     };
@@ -125,6 +142,10 @@ export default function AnalyticsTracker() {
 
 function isExcluded(path: string) {
   return EXCLUDED.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+}
+
+function boundedDuration(startedAt: number) {
+  return Math.min(24 * 60 * 60 * 1000, Math.max(0, Date.now() - startedAt));
 }
 
 async function send(eventName: EventName, path: string, details: Record<string, unknown> = {}) {

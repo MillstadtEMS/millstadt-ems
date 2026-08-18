@@ -3,6 +3,8 @@ import { currentBoardUser } from "@/lib/board/auth";
 import { audit } from "@/lib/board/db";
 import { hasDisallowedMinutesLanguage, hasUnresolvedMinutesPlaceholders, prepareOfficialMinutesText } from "@/lib/board/minutes-draft";
 import { finalizeMeetingMinutes, getMeeting, isSecretary } from "@/lib/board/governance";
+import { contentLengthWithin, hasContentType, readBoundedJson } from "@/lib/security/http";
+import { MAX_SIGNATURE_REQUEST_BYTES, validateSignatureImageDataUrl } from "@/lib/security/signature-image";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,20 +15,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Secretary signature is required to finalize minutes." }, { status: 403 });
   }
 
-  const body = await req.json().catch(() => ({}));
+  if (!hasContentType(req, "application/json")) {
+    return NextResponse.json({ error: "Minutes requests must use JSON." }, { status: 415 });
+  }
+  if (!contentLengthWithin(req, MAX_SIGNATURE_REQUEST_BYTES)) {
+    return NextResponse.json({ error: "Minutes request is too large." }, { status: 413 });
+  }
+  const parsedBody = await readBoundedJson(req, MAX_SIGNATURE_REQUEST_BYTES);
+  if (!parsedBody.ok) {
+    return NextResponse.json(
+      { error: parsedBody.reason === "too_large" ? "Minutes request is too large." : "Invalid minutes request." },
+      { status: parsedBody.reason === "too_large" ? 413 : 400 },
+    );
+  }
+  if (!parsedBody.value || typeof parsedBody.value !== "object" || Array.isArray(parsedBody.value)) {
+    return NextResponse.json({ error: "Invalid minutes request." }, { status: 400 });
+  }
+  const body = parsedBody.value as Record<string, unknown>;
   const meetingId = Number(body.meetingId);
   const minutesText = prepareOfficialMinutesText(String(body.minutesText ?? ""));
   const minutesPublic = body.minutesPublic === true;
-  const signatureDataUrl = String(body.signatureDataUrl ?? "");
   if (!Number.isInteger(meetingId) || meetingId <= 0) {
     return NextResponse.json({ error: "Meeting is required." }, { status: 400 });
   }
   if (minutesText.length < 40) {
     return NextResponse.json({ error: "Minutes are required before finalizing." }, { status: 400 });
   }
-  if (!signatureDataUrl.startsWith("data:image/")) {
-    return NextResponse.json({ error: "Secretary signature is required to finalize minutes." }, { status: 400 });
-  }
+  const validatedSignature = validateSignatureImageDataUrl(body.signatureDataUrl);
+  if (!validatedSignature.ok) return NextResponse.json({ error: validatedSignature.error }, { status: 400 });
   if (hasDisallowedMinutesLanguage(minutesText)) {
     return NextResponse.json({ error: "Final minutes still contain language or banter that cannot be included in official minutes." }, { status: 400 });
   }
@@ -47,7 +63,7 @@ export async function POST(req: NextRequest) {
     minutesPublic,
     signedBy,
     signedTitle,
-    signatureDataUrl,
+    signatureDataUrl: validatedSignature.image.dataUrl,
     signatureIp: req.headers.get("x-forwarded-for"),
     signatureUserAgent: req.headers.get("user-agent"),
   });

@@ -3,7 +3,6 @@ import SectionDivider from "@/components/SectionDivider";
 import {
   PublicActionCard,
   PublicCallout,
-  PublicMetric,
   PublicPageHero,
 } from "@/components/site/PublicChrome";
 import type { SiteIconName } from "@/components/site/SiteIcon";
@@ -78,11 +77,8 @@ export default function FormsPage() {
       <PublicPageHero
         eyebrow="Requests and Applications"
         title="Forms"
-        description="Submit requests directly to Millstadt Ambulance Service. Pick the right form, send the details, and our team can route it to the right person."
-      >
-        <PublicMetric label="Request paths" value={forms.length} tone="gold" />
-        <PublicMetric label="EMS routed" value="Direct" tone="cyan" />
-      </PublicPageHero>
+        description="Choose the request you need. Submitted forms go directly to Millstadt Ambulance Service."
+      />
 
       <section className="bg-[#040d1a]" style={{ paddingTop: 28, paddingBottom: 28 }}>
         <div className="wrap">

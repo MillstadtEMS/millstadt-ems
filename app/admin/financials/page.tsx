@@ -7,7 +7,7 @@ import FinancialsAdminReview from "./FinancialsAdminReview";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Financial and Other Public Requests",
+  title: "Financial & Information Transparency",
   description: "Protected document publishing and public request review.",
   robots: { index: false, follow: false, noarchive: true },
 };

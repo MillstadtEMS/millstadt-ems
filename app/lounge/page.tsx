@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
-import { currentEmployee } from "@/lib/lounge/auth";
+import { currentEmployeeForPasswordChange } from "@/lib/lounge/auth";
 import { getEmployee } from "@/lib/lounge/employees";
 import { expiringCertsForEmployee, type EmployeeCert } from "@/lib/lounge/certs";
 import { listAcksForViewer, type Ack } from "@/lib/lounge/acks";
@@ -29,7 +29,7 @@ function welcomeOverrideFor(username: string): string | null {
 export const dynamic = "force-dynamic";
 
 export default async function LoungeHome() {
-  const session = await currentEmployee();
+  const session = await currentEmployeeForPasswordChange();
   if (!session) redirect("/lounge/login");
   if (session.mustChangePassword) redirect("/lounge/change-password");
 

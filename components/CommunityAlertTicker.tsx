@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { CalendarDays, ExternalLink, Flag, GraduationCap, Telescope, X } from "lucide-react";
+import { CalendarDays, Ellipsis, ExternalLink, Flag, GraduationCap, Telescope, X } from "lucide-react";
 import {
   createContext,
   type ReactNode,
@@ -16,6 +16,10 @@ import type {
   CommunityAlertBrand,
   CommunityAlertKind,
 } from "@/lib/community/alerts";
+import {
+  communityVisibleGroupLimit,
+  pruneExpiredAlerts,
+} from "@/lib/community/reliability";
 
 const DISMISSED_KEY = "mems-dismissed-community-alerts";
 
@@ -149,34 +153,48 @@ export function CommunityAlertProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
+    let refreshTimer: number | undefined;
 
     async function refresh() {
+      let refreshInMs = 5 * 60 * 1000;
       try {
         const response = await fetch("/api/public/community-alerts", { cache: "no-store" });
-        if (!response.ok) return;
-        const body = await response.json() as { alerts?: CommunityAlert[] };
-        if (active && Array.isArray(body.alerts)) setAlerts(body.alerts);
+        if (response.ok) {
+          const body = await response.json() as { alerts?: CommunityAlert[] };
+          if (active && Array.isArray(body.alerts)) {
+            const currentAlerts = pruneExpiredAlerts(body.alerts);
+            setAlerts(currentAlerts);
+            if (currentAlerts.some((alert) => alert.state === "live")) refreshInMs = 30 * 1000;
+          }
+        }
       } catch {
         // A failed source stays silent and never becomes a made-up public alert.
+      } finally {
+        if (active) refreshTimer = window.setTimeout(refresh, refreshInMs);
       }
     }
 
     void refresh();
-    const timer = window.setInterval(refresh, 5 * 60 * 1000);
+    const pruneTimer = window.setInterval(() => {
+      setAlerts((current) => pruneExpiredAlerts(current));
+    }, 15 * 1000);
     return () => {
       active = false;
-      window.clearInterval(timer);
+      if (refreshTimer !== undefined) window.clearTimeout(refreshTimer);
+      window.clearInterval(pruneTimer);
     };
   }, []);
 
   function dismiss(id: string) {
-    const next = [...new Set([...dismissed, id])];
-    setDismissed(next);
-    try {
-      window.sessionStorage.setItem(DISMISSED_KEY, JSON.stringify(next));
-    } catch {
-      // Session storage can be unavailable in strict privacy modes.
-    }
+    setDismissed((current) => {
+      const next = [...new Set([...current, id])];
+      try {
+        window.sessionStorage.setItem(DISMISSED_KEY, JSON.stringify(next));
+      } catch {
+        // Session storage can be unavailable in strict privacy modes.
+      }
+      return next;
+    });
   }
 
   return (
@@ -189,10 +207,21 @@ export function CommunityAlertProvider({ children }: { children: ReactNode }) {
 export default function CommunityAlertTicker({ placement }: { placement: "left" | "right" }) {
   const context = useContext(CommunityAlertContext);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const [visibleLimit, setVisibleLimit] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const alerts = context?.alerts ?? EMPTY_ALERTS;
   const dismissed = context?.dismissed ?? EMPTY_DISMISSED;
   const dismiss = context?.dismiss ?? NOOP_DISMISS;
+
+  useEffect(() => {
+    function updateVisibleLimit() {
+      setVisibleLimit(communityVisibleGroupLimit(window.innerWidth));
+    }
+
+    updateVisibleLimit();
+    window.addEventListener("resize", updateVisibleLimit);
+    return () => window.removeEventListener("resize", updateVisibleLimit);
+  }, []);
 
   useEffect(() => {
     if (!openGroup) return;
@@ -223,17 +252,20 @@ export default function CommunityAlertTicker({ placement }: { placement: "left" 
     return [...grouped.entries()].map(([key, items]) => ({ key, items }));
   }, [alerts, dismissed]);
   const placedGroups = groups.filter((_, index) => index % 2 === (placement === "left" ? 0 : 1));
+  const visibleGroups = placedGroups.slice(0, visibleLimit);
+  const overflowGroups = placedGroups.slice(visibleLimit);
+  const overflowOpen = openGroup === "overflow" && overflowGroups.length > 0;
 
-  if (placedGroups.length === 0) return null;
+  if (placedGroups.length === 0 || visibleLimit === 0) return null;
 
   return (
     <div
       ref={rootRef}
-      className="community-team-alerts flex min-w-0 items-center overflow-visible"
+      className="community-team-alerts hidden min-w-0 items-center overflow-visible md:flex"
       aria-label="Active community alerts"
       data-placement={placement}
     >
-      {placedGroups.map(({ key, items }) => {
+      {visibleGroups.map(({ key, items }) => {
         const first = items[0];
         const style = first.brand === "generic" ? genericStyle(first.kind) : TEAM_STYLES[first.brand];
         const isOpen = openGroup === key;
@@ -347,6 +379,111 @@ export default function CommunityAlertTicker({ placement }: { placement: "left" 
           </div>
         );
       })}
+
+      {overflowGroups.length > 0 ? (
+        <div
+          className="community-team-alert-root relative shrink-0"
+          onFocusCapture={() => setOpenGroup("overflow")}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpenGroup(null);
+          }}
+        >
+          <button
+            type="button"
+            className="community-team-alert-overflow relative flex h-12 w-10 items-center justify-center rounded-md border border-white/15 bg-white/5 text-slate-200 outline-none transition hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#020912]"
+            aria-label={`Show ${overflowGroups.length} more community alert ${overflowGroups.length === 1 ? "group" : "groups"}`}
+            aria-expanded={overflowOpen}
+            aria-haspopup="dialog"
+            title="More community alerts"
+            onClick={() => setOpenGroup("overflow")}
+          >
+            <Ellipsis className="h-5 w-5" aria-hidden="true" />
+            <span className="absolute right-0.5 top-0.5 min-w-3 text-center text-[8px] font-black leading-3" aria-hidden="true">
+              {overflowGroups.length}
+            </span>
+          </button>
+
+          {overflowOpen ? (
+            <div
+              role="dialog"
+              aria-label="More community alert details"
+              className={`fixed left-3 right-3 top-[124px] z-[90] max-h-[70vh] overflow-y-auto rounded-lg border border-white/12 border-t-2 border-t-slate-300 bg-[#06101f]/[0.98] text-left shadow-2xl shadow-black/65 backdrop-blur-xl sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+9px)] sm:w-[420px] ${placement === "left" ? "sm:left-0 sm:right-auto" : ""}`}
+            >
+              <div className="border-b border-white/10 px-4 py-3">
+                <h2 className="text-sm font-black text-white">More community alerts</h2>
+                <p className="mt-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+                  {overflowGroups.length} additional {overflowGroups.length === 1 ? "source" : "sources"}
+                </p>
+              </div>
+
+              {overflowGroups.map(({ key, items }) => {
+                const first = items[0];
+                const style = first.brand === "generic" ? genericStyle(first.kind) : TEAM_STYLES[first.brand];
+                return (
+                  <section key={key} aria-label={style.label} className="border-b border-white/10 last:border-b-0">
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      {style.logo ? (
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden">
+                          <Image
+                            src={style.logo}
+                            alt=""
+                            width={36}
+                            height={36}
+                            className="h-9 w-9 object-contain"
+                            style={style.logoScale ? { transform: `scale(${style.logoScale})` } : undefined}
+                          />
+                        </span>
+                      ) : (
+                        <GenericIcon kind={first.kind} />
+                      )}
+                      <div className="min-w-0">
+                        <h3 className="truncate text-sm font-black" style={{ color: style.primary }}>{style.label}</h3>
+                        <p className="mt-0.5 text-[9px] font-black uppercase tracking-[0.1em]" style={{ color: style.secondary }}>
+                          {items.length === 1 ? stateLabel(first) : groupCountLabel(first, items.length)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {items.map((alert, itemIndex) => {
+                      const external = alert.sourceUrl.startsWith("http");
+                      return (
+                        <article key={alert.id} className="grid grid-cols-[1fr_32px] gap-3 border-t border-white/8 px-4 py-4">
+                          <div className="min-w-0">
+                            <span className="text-[9px] font-black uppercase tracking-[0.1em]" style={{ color: style.primary }}>
+                              {items.length > 1 ? groupItemLabel(alert.kind, itemIndex) : stateLabel(alert)}
+                            </span>
+                            <p className="mt-1 text-sm font-black leading-5 text-white">{alert.summary}</p>
+                            {alert.detail ? <p className="mt-1 text-[11px] leading-5 text-slate-400">{alert.detail}</p> : null}
+                            <a
+                              href={alert.sourceUrl}
+                              target={external ? "_blank" : undefined}
+                              rel={external ? "noreferrer" : undefined}
+                              className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.08em] underline decoration-white/25 underline-offset-4 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                              style={{ color: style.secondary }}
+                            >
+                              {alert.sourceName}
+                              {external ? <ExternalLink className="h-3 w-3" aria-hidden="true" /> : null}
+                            </a>
+                          </div>
+                          <button
+                            type="button"
+                            className="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                            onClick={() => dismiss(alert.id)}
+                            title="Dismiss for this session"
+                            aria-label={`Dismiss ${alert.summary} for this session`}
+                          >
+                            <X className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                        </article>
+                      );
+                    })}
+                  </section>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

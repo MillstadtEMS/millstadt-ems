@@ -1,18 +1,19 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 interface ScanItem {
   id: string;
   name: string;
-  location: string | null;
+  location?: string | null;
   categoryName: string;
-  par: number;
-  currentStock: number;
-  expiredQty: number;
-  qtyToOrder: number;
-  version: number;
+  par?: number;
+  currentStock?: number;
+  expiredQty?: number;
+  qtyToOrder?: number;
+  version?: number;
+  requiresAuthentication: boolean;
 }
 
 interface QueuedUpdate {
@@ -20,10 +21,12 @@ interface QueuedUpdate {
   item: ScanItem;
   recommendedQty: number;
   notes: string;
+  idempotencyKey: string;
 }
 
 export default function QrScanPage() {
   const params = useParams();
+  const router = useRouter();
   const token = params.token as string;
 
   const [item, setItem] = useState<ScanItem | null>(null);
@@ -46,7 +49,7 @@ export default function QrScanPage() {
       }
       const data = await res.json();
       setItem(data);
-      setQty(String(data.currentStock));
+      if (typeof data.currentStock === "number") setQty(String(data.currentStock));
     } catch {
       setError("Connection error");
     } finally {
@@ -59,15 +62,16 @@ export default function QrScanPage() {
   }, [fetchItem]);
 
   function addToQueue() {
-    if (!item) return;
+    if (!item || item.requiresAuthentication || typeof item.version !== "number") return;
     const recQty = parseInt(qty);
-    if (isNaN(recQty)) return;
+    if (!Number.isInteger(recQty) || recQty < 0 || recQty > 100_000) return;
 
     setQueue(q => [...q, {
       token,
       item,
       recommendedQty: recQty,
       notes,
+      idempotencyKey: crypto.randomUUID(),
     }]);
     setQty("");
     setNotes("");
@@ -76,24 +80,34 @@ export default function QrScanPage() {
   }
 
   async function saveDirectly() {
-    if (!item) return;
+    if (!item || item.requiresAuthentication || typeof item.version !== "number") return;
     const recQty = parseInt(qty);
-    if (isNaN(recQty)) return;
+    if (!Number.isInteger(recQty) || recQty < 0 || recQty > 100_000) {
+      setError("Enter a whole number from 0 to 100000.");
+      return;
+    }
     setSaving(true);
 
     try {
       const res = await fetch(`/api/inventory/scan/${token}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": crypto.randomUUID(),
+        },
         body: JSON.stringify({
           currentStock: recQty,
           notes: notes || undefined,
           version: item.version,
         }),
       });
+      if (res.status === 401) {
+        router.push(`/lounge/login?next=${encodeURIComponent(`/inventory/scan/${token}`)}`);
+        return;
+      }
       if (res.status === 409) {
         const data = await res.json();
-        setItem(data.item);
+        if (data.item) setItem(data.item);
         setError("Item was updated by someone else. Please review and try again.");
         return;
       }
@@ -101,6 +115,9 @@ export default function QrScanPage() {
         const data = await res.json();
         setItem(data.item);
         setSubmitted(true);
+      } else {
+        const data = await res.json().catch(() => null) as { error?: string } | null;
+        setError(data?.error || "Inventory update failed.");
       }
     } catch {
       setError("Save failed — check connection");
@@ -113,24 +130,38 @@ export default function QrScanPage() {
     setSubmitting(true);
     try {
       for (const entry of queue) {
-        await fetch(`/api/inventory/scan/${entry.token}`, {
+        const response = await fetch(`/api/inventory/scan/${entry.token}`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": entry.idempotencyKey,
+          },
           body: JSON.stringify({
             currentStock: entry.recommendedQty,
             notes: entry.notes || undefined,
             version: entry.item.version,
           }),
         });
+        if (response.status === 401) {
+          router.push(`/lounge/login?next=${encodeURIComponent(`/inventory/scan/${entry.token}`)}`);
+          return;
+        }
+        if (!response.ok) {
+          const data = await response.json().catch(() => null) as { error?: string } | null;
+          throw new Error(data?.error || `Could not update ${entry.item.name}.`);
+        }
       }
 
       // Send email notification for QR submission
       try {
         await fetch("/api/inventory/submit", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": crypto.randomUUID(),
+          },
           body: JSON.stringify({
-            submittedBy: "QR Scanner",
+            purpose: "qr-batch",
             itemsUpdated: queue.length,
             notes: `QR scan batch: ${queue.map(q => q.item.name).join(", ")}`,
           }),
@@ -139,8 +170,8 @@ export default function QrScanPage() {
 
       setSubmitted(true);
       setQueue([]);
-    } catch {
-      setError("Submit failed");
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Submit failed");
     } finally {
       setSubmitting(false);
     }
@@ -197,6 +228,28 @@ export default function QrScanPage() {
               </button>
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (item?.requiresAuthentication) {
+    const nextPath = `/inventory/scan/${token}`;
+    return (
+      <div className="min-h-screen bg-[#040d1a] px-4 py-8">
+        <div className="mx-auto max-w-md border border-white/10 bg-[#071428] p-6">
+          <div className="text-[#f0b429] text-xs font-bold uppercase tracking-wider">QR Scan</div>
+          <h1 className="mt-2 text-2xl font-black text-white">{item.name}</h1>
+          <p className="mt-1 text-sm text-slate-400">{item.categoryName}</p>
+          <p className="mt-6 text-sm leading-relaxed text-slate-300">
+            Sign in with your Employee Lounge account to view quantities or update this item.
+          </p>
+          <a
+            href={`/lounge/login?next=${encodeURIComponent(nextPath)}`}
+            className="mt-6 block bg-[#f0b429] px-4 py-3 text-center text-sm font-black text-[#040d1a]"
+          >
+            Employee Sign In
+          </a>
         </div>
       </div>
     );
@@ -263,6 +316,9 @@ export default function QrScanPage() {
             <input
               type="number"
               inputMode="numeric"
+              min={0}
+              max={100000}
+              step={1}
               value={qty}
               onChange={e => setQty(e.target.value)}
               className="w-full px-4 py-3 bg-[#040d1a] border border-white/10 rounded-xl text-white text-lg font-bold text-center focus:outline-none focus:border-[#f0b429]/50"
@@ -273,6 +329,7 @@ export default function QrScanPage() {
             <label className="text-slate-500 text-xs uppercase tracking-wider mb-1 block">Notes (optional)</label>
             <input
               type="text"
+              maxLength={500}
               value={notes}
               onChange={e => setNotes(e.target.value)}
               placeholder="Add a note..."

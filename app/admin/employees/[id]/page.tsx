@@ -219,8 +219,8 @@ export default function EmployeeDetailPage() {
   async function resetPassword() {
     if (!emp) return;
     if (!confirm(
-      `Reset ${emp.firstName}'s password to their username (${emp.username})?\n\n` +
-      "They must choose a permanent password at the next sign-in. Existing Face ID, fingerprint, and authenticator enrollment will be preserved.",
+      `Issue a new one-time setup password for ${emp.firstName} (${emp.username})?\n\n` +
+      "They must choose a permanent password at the next sign-in. Existing sessions and trusted devices will be revoked; passkeys and authenticator enrollment will be preserved.",
     )) return;
     const res = await fetch(`/api/admin/employees/${id}/reset-password`, {
       method: "POST",
@@ -228,7 +228,7 @@ export default function EmployeeDetailPage() {
     const data = await res.json();
     if (res.ok) {
       alert(
-        `Password reset.\n\nUsername: ${emp.username}\nOne-time password: ${data.initialPassword}\n\nThey'll be asked to choose a permanent password at the next sign-in.`,
+        `Password reset.\n\nUsername: ${emp.username}\nOne-time setup password: ${data.setupToken}\n\nThis password is shown once and expires in 24 hours. They'll choose a permanent password at the next sign-in.`,
       );
       reload();
     } else {

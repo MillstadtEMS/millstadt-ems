@@ -284,7 +284,7 @@ function resolveDocument(documentId: string) {
   if (documentId === "PAGE-FINANCIAL-INFORMATION") {
     return {
       id: documentId,
-      title: "Financial Information page",
+      title: "Financial & Information Transparency page",
       version: ACCURACY_REPORT_VERSION,
       sourceUrl: "/financials-information-hub",
     };

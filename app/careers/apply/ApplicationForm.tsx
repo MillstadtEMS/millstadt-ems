@@ -531,15 +531,6 @@ export default function ApplicationForm() {
               </div>
             </div>
 
-            <Divider />
-
-            <div>
-              <Label>DEA Registration (if applicable)</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <Input name="dea_number" placeholder="DEA #" />
-                <Input name="dea_expiry" type="date" placeholder="Expiration" />
-              </div>
-            </div>
           </Section>
 
           {/* ── SECTION 6: Certifications ── */}

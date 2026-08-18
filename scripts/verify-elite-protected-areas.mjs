@@ -13,10 +13,10 @@ const expectedFileHashes = {
 };
 
 const expectedFinancialHashes = [
-  "3d94ea2a14dfcc6e243321d2c9a7a5ea1b9287fc6890262ea3a4aebb198c3dcf",
+  "c15289197f67515f61120ff6981c7ca61ce358ba8ba526efb41f4df0665c7e85",
 ];
 const expectedNavHash =
-  "312b9cb33439630cec0851b960c2f9329975278835d50356464138ff332c7249";
+  "9ea8eeda7eca6c5a3aa03bf2f201d5db0b440b1209bbad2d87b0ed17db1c138c";
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
@@ -49,24 +49,24 @@ const financialBlocks = [
 
 if (financialBlocks.length !== expectedFinancialHashes.length) {
   fail(
-    `Expected ${expectedFinancialHashes.length} homepage Financial Information entries; found ${financialBlocks.length}.`,
+    `Expected ${expectedFinancialHashes.length} homepage Financial & Information Transparency entries; found ${financialBlocks.length}.`,
   );
 } else {
   financialBlocks.forEach((block, index) => {
     const actualHash = sha256(block);
     if (actualHash !== expectedFinancialHashes[index]) {
-      fail(`Homepage Financial Information entry ${index + 1} changed.`);
+      fail(`Homepage Financial & Information Transparency entry ${index + 1} changed.`);
     }
   });
 }
 
 const nav = await readFile(resolve(root, "components/Nav.tsx"), "utf8");
 const navEntry = nav.match(
-  /\{ href: "\/financials-information-hub", label: "Financial Information" \}/,
+  /\{ href: "\/financials-information-hub", label: "Financial & Information Transparency" \}/,
 )?.[0];
 
 if (!navEntry || sha256(navEntry) !== expectedNavHash) {
-  fail("Navigation Financial Information entry changed.");
+  fail("Navigation Financial & Information Transparency entry changed.");
 }
 
 if (!process.exitCode) {

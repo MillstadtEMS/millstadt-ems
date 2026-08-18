@@ -23,7 +23,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
 
   // After (possibly) marking read, snapshot the read_by map so the
   // client can compute per-message "Seen by X" receipts.
-  const readInfo = await getConversationReadInfo(id);
+  const readInfo = await getConversationReadInfo(id, me.id);
   return NextResponse.json({
     messages,
     readBy: readInfo?.readBy ?? {},

@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { drawContainedImage } from "@/lib/reports/pdf-system";
 import {
   ACCEPTED_CHECKBOX_TEXT,
   FINAL_SUBMISSION_CONFIRMATION_TEXT,
@@ -32,7 +33,7 @@ export function signedAgreementPdf(
     title: `Millstadt EMS restricted-document access request ${request.id}`,
     subject: `Administrative request record ${request.termsVersion}`,
     author: ORGANIZATION_NAME,
-    creator: "Millstadt EMS Financial Information Hub",
+    creator: "Millstadt EMS Financial & Information Transparency",
   });
   let y = 0;
 
@@ -177,9 +178,7 @@ export function signedAgreementPdf(
   doc.setFillColor(255, 255, 255);
   doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 96, 5, 5, "FD");
   if (signature.method === "drawn") {
-    try {
-      doc.addImage(signature.dataUrl, "PNG", MARGIN + 14, y + 10, 220, 54);
-    } catch {
+    if (!drawContainedImage(doc, signature.dataUrl, "PNG", MARGIN + 14, y + 10, 220, 54)) {
       doc.setFont("helvetica", "italic");
       doc.setFontSize(10);
       doc.setTextColor(127, 29, 29);

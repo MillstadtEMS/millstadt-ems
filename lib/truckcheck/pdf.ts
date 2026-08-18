@@ -3,8 +3,20 @@
  * Uses jspdf + jspdf-autotable. Returns a Buffer of the PDF bytes.
  */
 
-import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import {
+  M,
+  drawBulletList,
+  drawCallout,
+  drawContainedImage,
+  drawMetadataGrid,
+  drawOfficialHeader,
+  drawTitleBlock,
+  drawWrappedText,
+  newDoc,
+  stampFooter,
+  type Cursor,
+} from "@/lib/reports/pdf-system";
 
 export interface PdfInput {
   truckCheckId: string;
@@ -48,32 +60,35 @@ function fmtClock(iso: string): string {
   return new Date(iso).toLocaleString("en-US", {
     timeZone: "America/Chicago",
     month: "short", day: "numeric", year: "numeric",
-    hour: "numeric", minute: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
   });
 }
 
 export async function buildTruckCheckPdf(input: PdfInput): Promise<Buffer> {
-  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const doc = newDoc();
   const W = doc.internal.pageSize.getWidth();
-  let y = 48;
-
-  // Header
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor(20, 30, 60);
-  doc.text("Millstadt EMS — Truck Check Report", 48, y);
-  y += 22;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(80);
-  doc.text(`Report ID: ${input.truckCheckId}`, 48, y); y += 14;
-  doc.text(`Unit: ${input.unit} — ${input.unitDescription}`, 48, y); y += 14;
+  const c: Cursor = { doc, y: M };
+  await drawOfficialHeader(c, {
+    reportType: "Truck Check Report",
+    reportSubtitle: "Completed inspection",
+    reportId: input.truckCheckId.slice(0, 8),
+    submittedAt: input.submittedAt,
+  });
+  drawTitleBlock(c, {
+    title: `Unit ${input.unit} Truck Check`,
+    subtitle: input.unitDescription,
+  });
   const otherNames = input.additionalAttendants.map((a) => a.name).join(", ");
-  doc.text(`Submitted by: ${input.submittedBy}${otherNames ? ` · With: ${otherNames}` : ""}`, 48, y); y += 14;
-  doc.text(`Started: ${input.startedAt ? fmtClock(input.startedAt) : "?"}`, 48, y); y += 14;
-  doc.text(`Submitted: ${fmtClock(input.submittedAt)}`, 48, y); y += 14;
-  doc.text(`Duration: ${fmtTime(input.durationSeconds)}`, 48, y); y += 18;
+  drawMetadataGrid(c, [
+    { label: "Report ID", value: input.truckCheckId },
+    { label: "Unit", value: `${input.unit} - ${input.unitDescription}` },
+    { label: "Submitted by", value: input.submittedBy },
+    ...(otherNames ? [{ label: "Additional crew", value: otherNames }] : []),
+    { label: "Started", value: input.startedAt ? fmtClock(input.startedAt) : "Not provided" },
+    { label: "Submitted", value: fmtClock(input.submittedAt) },
+    { label: "Duration", value: fmtTime(input.durationSeconds) },
+  ]);
+  let y = c.y;
 
   // Flag banner
   const flagColor: [number, number, number] =
@@ -94,9 +109,9 @@ export async function buildTruckCheckPdf(input: PdfInput): Promise<Buffer> {
     doc.setTextColor(60);
     doc.setFontSize(9);
     for (const r of input.pencilWhipReasons) {
-      const lines = doc.splitTextToSize(`• ${r.message}`, W - 110);
-      doc.text(lines, 56, y);
-      y += 12 * lines.length;
+      c.y = y;
+      drawBulletList(c, [r.message]);
+      y = c.y;
     }
     y += 6;
   }
@@ -121,10 +136,10 @@ export async function buildTruckCheckPdf(input: PdfInput): Promise<Buffer> {
       startY: y,
       head: [["Item", "Status / Value", "Amount", "Comment"]],
       body: list.map((it) => [
-        it.label + (it.isAbnormal ? "  ⚠" : ""),
+        it.label + (it.isAbnormal ? "  [!]" : ""),
         it.numericValue !== null
           ? `${it.numericValue} ${it.unitOfMeasure ?? ""}${it.status ? ` (${it.status})` : ""}`
-          : (it.status ?? "—"),
+          : (it.status ?? "-"),
         it.amountAdded !== null ? `${it.amountAdded} ${it.amountUnit ?? ""}` : "",
         it.comment || "",
       ]),
@@ -132,6 +147,8 @@ export async function buildTruckCheckPdf(input: PdfInput): Promise<Buffer> {
       headStyles: { fillColor: [240, 180, 41], textColor: 20, fontStyle: "bold" },
       bodyStyles: { textColor: 30 },
       alternateRowStyles: { fillColor: [248, 250, 252] },
+      margin: { left: 48, right: 48, bottom: 64 },
+      pageBreak: "auto",
       columnStyles: {
         0: { cellWidth: 200 },
         1: { cellWidth: 110 },
@@ -158,9 +175,9 @@ export async function buildTruckCheckPdf(input: PdfInput): Promise<Buffer> {
       doc.text("Section comments:", 48, y); y += 12;
       doc.setFont("helvetica", "normal");
       doc.setTextColor(60);
-      const lines = doc.splitTextToSize(sectionComment, W - 96);
-      doc.text(lines, 48, y);
-      y += 11 * lines.length + 6;
+      c.y = y;
+      drawWrappedText(c, sectionComment, { x: 48, width: W - 96, lineHeight: 11, topOffset: 0, bottomGap: 6 });
+      y = c.y;
     }
 
     // Management-notify flag for the fridge specifically
@@ -173,7 +190,7 @@ export async function buildTruckCheckPdf(input: PdfInput): Promise<Buffer> {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
       doc.text(
-        `NOTIFY MANAGEMENT — Refrigerator out of range (${fridge.numericValue}°F). Acceptable 36–46°F.`,
+        `NOTIFY MANAGEMENT - Refrigerator out of range (${fridge.numericValue} deg F). Acceptable 36-46 deg F.`,
         58,
         y + 15,
       );
@@ -190,15 +207,9 @@ export async function buildTruckCheckPdf(input: PdfInput): Promise<Buffer> {
     doc.setFontSize(12);
     doc.setTextColor(20, 30, 60);
     doc.text("Vehicle Equipment / Maintenance Refill Request", 48, y); y += 14;
-    doc.setFillColor(254, 243, 199);
-    const refillLines = doc.splitTextToSize(input.refillRequest, W - 116);
-    const boxH = 18 + 12 * refillLines.length;
-    doc.roundedRect(48, y, W - 96, boxH, 6, 6, "F");
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(75, 41, 12);
-    doc.text(refillLines, 58, y + 16);
-    y += boxH + 18;
+    c.y = y;
+    drawCallout(c, input.refillRequest);
+    y = c.y;
   }
 
   // Notes
@@ -211,9 +222,9 @@ export async function buildTruckCheckPdf(input: PdfInput): Promise<Buffer> {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.setTextColor(40);
-    const lines = doc.splitTextToSize(input.notes, W - 96);
-    doc.text(lines, 48, y);
-    y += 14 * lines.length + 8;
+    c.y = y;
+    drawWrappedText(c, input.notes, { x: 48, width: W - 96 });
+    y = c.y;
   }
 
   // Photos
@@ -227,10 +238,10 @@ export async function buildTruckCheckPdf(input: PdfInput): Promise<Buffer> {
     doc.setFontSize(9);
     doc.setTextColor(40);
     for (const p of input.photos) {
-      const line = `• ${p.caption || "(no caption)"} — ${p.url}`;
-      const lines = doc.splitTextToSize(line, W - 96);
-      doc.text(lines, 48, y);
-      y += 12 * lines.length;
+      const line = `${p.caption || "Photo"} - protected attachment retained with the electronic record`;
+      c.y = y;
+      drawBulletList(c, [line]);
+      y = c.y;
       if (y > 740) { doc.addPage(); y = 48; }
     }
   }
@@ -272,17 +283,18 @@ export async function buildTruckCheckPdf(input: PdfInput): Promise<Buffer> {
     const x = col === 0 ? 48 : 320;
     const a = all[i];
     if (a.sig) {
-      try { doc.addImage(a.sig, "PNG", x, y, 220, 60); } catch { /* ignore */ }
+      drawContainedImage(doc, a.sig, "PNG", x, y, 220, 60);
     }
     doc.line(x, y + 64, x + 220, y + 64);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(60);
     const role = i === 0 ? "Attendant" : `Attendant ${i + 1}`;
-    doc.text(`${role} — ${a.name}`, x, y + 76);
+    doc.text(`${role} - ${a.name}`, x, y + 76);
     doc.text(`Signed ${fmtClock(input.submittedAt)}`, x, y + 88);
   }
 
+  stampFooter(doc, { reportId: input.truckCheckId.slice(0, 8), generatedAt: new Date().toISOString() });
   const buf = doc.output("arraybuffer");
   return Buffer.from(buf);
 }

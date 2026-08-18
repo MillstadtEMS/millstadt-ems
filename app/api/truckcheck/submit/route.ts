@@ -1,23 +1,26 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest } from "next/server";
 import { randomUUID } from "crypto";
-import { put } from "@vercel/blob";
-import { isTruckCheckAuthed } from "@/lib/truckcheck/auth";
-import { neon } from "@neondatabase/serverless";
-import { currentEmployee } from "@/lib/lounge/auth";
+import { currentTruckCheckEmployee } from "@/lib/truckcheck/auth";
 import { sql as loungeSql } from "@/lib/lounge/db";
 import { unitOrFallback } from "@/lib/truckcheck/units";
 import { detectPencilWhip, type ItemForFlag } from "@/lib/truckcheck/pencil-whip";
-import { buildTruckCheckPdf } from "@/lib/truckcheck/pdf";
-import { sendTruckCheckEmail } from "@/lib/truckcheck/email";
+import { contentLengthWithin, hasContentType, isSameOriginRequest, noStoreJson } from "@/lib/security/http";
+import { truckCheckSubmissionSchema, type TruckCheckSubmission } from "@/lib/truckcheck/submission-schema";
+import { isPrivateTruckPhotoUrl } from "@/lib/truckcheck/photo-reference";
+import {
+  formatChicagoDate,
+  formatChicagoMilitaryTime,
+  persistAuthoritativeTruckCheck,
+  requeueTruckCheckOutbox,
+  truckCheckIdempotencyKey,
+  TruckCheckIdempotencyConflictError,
+  truckCheckRequestHash,
+  type PersistedTruckCheckPayload,
+} from "@/lib/truckcheck/db";
+import { processTruckCheckOutbox } from "@/lib/truckcheck/outbox";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-function legacySql() {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL not set");
-  return neon(url);
-}
 
 interface SubmittedItem {
   itemKey: string;
@@ -30,7 +33,7 @@ interface SubmittedItem {
   amountAdded: number | null;
   amountUnit: string | null;
   comment: string;
-  photos?: string[];
+  photos: string[];
   isAbnormal: boolean;
   requiresFollowUp: boolean;
   trendGroup: string | null;
@@ -38,19 +41,33 @@ interface SubmittedItem {
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await isTruckCheckAuthed())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const me = await currentTruckCheckEmployee();
+  if (!me) {
+    return noStoreJson({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!isSameOriginRequest(req)) {
+    return noStoreJson({ error: "Cross-origin request denied" }, { status: 403 });
+  }
+  if (!hasContentType(req, "application/json") || !contentLengthWithin(req, 4 * 1024 * 1024)) {
+    return noStoreJson({ error: "Invalid request" }, { status: 400 });
+  }
+  const idempotencyKey = truckCheckIdempotencyKey(req.headers.get("idempotency-key"));
+  if (!idempotencyKey) {
+    return noStoreJson({ error: "A valid Idempotency-Key header is required" }, { status: 400 });
   }
 
-  const body = await req.json();
-  const me = await currentEmployee();
+  const parsed = truckCheckSubmissionSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return noStoreJson({ error: "Invalid truck check submission" }, { status: 400 });
+  }
+  const body = parsed.data;
 
   const unitNumber = String(body.unitNumber || body.truckNumber || "").trim();
-  if (!unitNumber) return NextResponse.json({ error: "Unit number required" }, { status: 400 });
+  if (!unitNumber) return noStoreJson({ error: "Unit number required" }, { status: 400 });
   const unit = unitOrFallback(unitNumber);
 
-  const submitterName = me ? `${me.firstName} ${me.lastName}` : String(body.attendant1Name || "").trim();
-  if (!submitterName) return NextResponse.json({ error: "Attendant name required" }, { status: 400 });
+  const submitterName = `${me.firstName} ${me.lastName}`.trim();
+  if (!submitterName) return noStoreJson({ error: "Attendant identity is incomplete" }, { status: 403 });
 
   const startedAt = body.startedAt ? new Date(body.startedAt).toISOString() : new Date().toISOString();
   const submittedAt = body.submittedAt ? new Date(body.submittedAt).toISOString() : new Date().toISOString();
@@ -58,10 +75,8 @@ export async function POST(req: NextRequest) {
     ? Number(body.durationSeconds)
     : Math.max(0, Math.round((new Date(submittedAt).getTime() - new Date(startedAt).getTime()) / 1000));
 
-  const itemsIn: SubmittedItem[] = Array.isArray(body.items) ? body.items : [];
-  const photos: { url: string; caption: string | null; itemKey?: string }[] = Array.isArray(body.photos)
-    ? body.photos.filter((p: { url?: string }) => typeof p?.url === "string")
-    : [];
+  const itemsIn: SubmittedItem[] = body.items;
+  const photos: { url: string; caption: string | null; itemKey?: string }[] = [...body.photos];
 
   // Roll per-item photo URLs in alongside global photos so the dashboard
   // and PDF still see them all.
@@ -75,27 +90,26 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const categoryComments: Record<string, string> =
-    body.categoryComments && typeof body.categoryComments === "object" && !Array.isArray(body.categoryComments)
-      ? Object.fromEntries(
-          Object.entries(body.categoryComments as Record<string, unknown>)
-            .filter(([, v]) => typeof v === "string" && (v as string).trim().length > 0)
-            .map(([k, v]) => [k, (v as string).trim()]),
-        )
-      : {};
-  const refillRequest: string | null = typeof body.refillRequest === "string" && body.refillRequest.trim().length > 0
-    ? body.refillRequest.trim()
-    : null;
-  interface AttendantIn { id?: string | null; name?: string; signature?: string }
-  const additionalAttendants: { id: string | null; name: string; signatureDataUrl: string | null }[] = Array.isArray(body.attendants)
-    ? (body.attendants as AttendantIn[])
-        .filter((a) => typeof a?.name === "string" && a.name.trim().length > 0)
-        .map((a) => ({
-          id: a.id ?? null,
-          name: String(a.name).trim(),
-          signatureDataUrl: typeof a.signature === "string" ? a.signature : null,
-        }))
-    : [];
+  const allPhotoUrls = [
+    ...photos.map((photo) => photo.url),
+    ...itemsIn.flatMap((item) => item.photos ?? []),
+  ];
+  const photoUrlsArePrivate = allPhotoUrls.every((value) =>
+    isPrivateTruckPhotoUrl(value, req.nextUrl.origin),
+  );
+  if (!photoUrlsArePrivate) {
+    return noStoreJson({ error: "Invalid truck check photo reference" }, { status: 400 });
+  }
+
+  const categoryComments = Object.fromEntries(
+    Object.entries(body.categoryComments).filter(([, value]) => value.length > 0),
+  );
+  const refillRequest = body.refillRequest || null;
+  const additionalAttendants = body.attendants.map((attendant) => ({
+    id: attendant.id,
+    name: attendant.name,
+    signatureDataUrl: attendant.signature || null,
+  }));
 
   // Detect pencil-whipping.
   const flagInput: ItemForFlag[] = itemsIn.map((it) => ({
@@ -140,159 +154,79 @@ export async function POST(req: NextRequest) {
   const overallStatus = failCount > 0 ? "failed" : abnormalCount > 0 ? "issues" : "pass";
 
   const id = randomUUID();
+  const authoritativeForm: TruckCheckSubmission = {
+    ...body,
+    unitNumber,
+    truckNumber: body.truckNumber || unitNumber,
+    attendant1Name: submitterName,
+    startedAt,
+    submittedAt,
+    durationSeconds,
+    items: itemsIn,
+    photos,
+    categoryComments,
+    refillRequest: body.refillRequest || "",
+  };
+  const payload: PersistedTruckCheckPayload = {
+    formVersion: 5,
+    form: authoritativeForm,
+    submitter: { id: me.id, name: submitterName },
+    unit: { number: unitNumber, description: unit.description },
+    photos,
+    categoryComments,
+    refillRequest,
+    pencilWhip: { flag: flag.flag, reasons: flag.reasons },
+    overallStatus,
+    abnormalCount,
+    failCount,
+  };
 
-  // Persist to lounge_truck_checks (requires a lounge user; if there's no
-  // lounge session this is a legacy/shared-password submission, so we fall
-  // back to the original form_submissions path further down).
-  if (me?.id) {
-    try {
-      const db = loungeSql();
-      const dateIso = submittedAt.slice(0, 10);
-      const timeHhmm = new Date(submittedAt).toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", timeZone: "America/Chicago" });
-
-      await db`
-        INSERT INTO lounge_truck_checks (
-          id, unit, kind, date_iso, time_hhmm, submitted_by_id, submitted_at, payload,
-          started_at, duration_seconds, overall_status, pencil_whip_flag, pencil_whip_reasons,
-          attendant2_id, attendant2_name, odometer, notes
-        ) VALUES (
-          ${id}, ${unitNumber}, 'truck_check', ${dateIso}, ${timeHhmm}, ${me.id}, ${submittedAt}::timestamptz,
-          ${JSON.stringify({
-            flag,
-            photoUrls: photos.map((p) => p.url),
-            additionalAttendants: additionalAttendants.map((a) => ({ id: a.id, name: a.name })),
-            categoryComments,
-            refillRequest,
-            formVersion: 4,
-          })}::jsonb,
-          ${startedAt}::timestamptz, ${durationSeconds}, ${overallStatus}, ${flag.flag}, ${JSON.stringify(flag.reasons)}::jsonb,
-          ${additionalAttendants[0]?.id ?? null}, ${additionalAttendants[0]?.name ?? null}, ${null}, ${String(body.notes || "").trim() || null}
-        )
-      `;
-
-      for (const it of itemsIn) {
-        await db`
-          INSERT INTO lounge_truck_check_items (
-            id, truck_check_id, unit, category, item_key, label, response_type,
-            status, numeric_value, unit_of_measure, amount_added, amount_unit,
-            comment, is_abnormal, requires_follow_up, trend_group, checked_at, checked_by_id
-          ) VALUES (
-            ${randomUUID()}, ${id}, ${unitNumber}, ${it.category}, ${it.itemKey}, ${it.label}, ${it.responseType},
-            ${it.status}, ${it.numericValue}, ${it.unitOfMeasure}, ${it.amountAdded}, ${it.amountUnit},
-            ${it.comment || null}, ${!!it.isAbnormal}, ${!!it.requiresFollowUp}, ${it.trendGroup},
-            ${it.checkedAt}::timestamptz, ${me.id}
-          )
-        `;
-      }
-
-      for (const p of photos) {
-        await db`
-          INSERT INTO lounge_truck_check_photos (id, truck_check_id, file_url, caption, item_key, uploaded_by_id)
-          VALUES (${randomUUID()}, ${id}, ${p.url}, ${p.caption ?? null}, ${p.itemKey ?? null}, ${me.id})
-        `;
-      }
-    } catch (dbErr) {
-      console.error("truck check persist error:", dbErr);
-      // Don't fail the request — we still need to keep legacy form_submissions writes working.
-    }
-  }
-
-  // Legacy form_submissions path (keeps the existing report views working).
+  let result;
   try {
-    const legacy = legacySql();
-    await legacy`
-      INSERT INTO form_submissions (id, form_type, fields, submitted_at)
-      VALUES (${id}, 'truck_check',
-              ${JSON.stringify({
-                truckNumber: unitNumber,
-                attendant1Name: submitterName,
-                attendant1UserId: me?.id ?? null,
-                attendant2Name: String(body.attendant2Name || ""),
-                attendant1Signature: String(body.attendant1Signature || ""),
-                attendant2Signature: String(body.attendant2Signature || ""),
-                startedAt,
-                finishedAt: submittedAt,
-                durationSeconds,
-                items: itemsIn,
-                photos,
-                pencilWhipFlag: flag.flag,
-                pencilWhipReasons: flag.reasons,
-                overallStatus,
-                notes: String(body.notes || ""),
-              })}::jsonb,
-              NOW())
-    `;
-  } catch (e) {
-    console.error("legacy form_submissions write failed:", e);
-  }
-
-  // Build the PDF + upload to Blob + email it.
-  let pdfUrl: string | null = null;
-  try {
-    const pdfBuf = await buildTruckCheckPdf({
-      truckCheckId: id,
-      unit: unitNumber,
-      unitDescription: unit.description,
-      submittedBy: submitterName,
-      startedAt,
+    result = await persistAuthoritativeTruckCheck({
+      id,
+      actorId: me.id,
+      idempotencyKey,
+      requestHash: truckCheckRequestHash({ employeeId: me.id, submission: body }),
+      unitNumber,
+      dateIso: formatChicagoDate(submittedAt),
+      timeHhmm: formatChicagoMilitaryTime(submittedAt),
       submittedAt,
+      startedAt,
       durationSeconds,
+      overallStatus,
       pencilWhipFlag: flag.flag,
       pencilWhipReasons: flag.reasons,
-      overallStatus,
-      notes: String(body.notes || ""),
-      categoryComments,
-      refillRequest,
-      items: itemsIn,
-      photos,
-      signatureDataUrl: String(body.attendant1Signature || "") || null,
-      additionalAttendants: additionalAttendants.map((a) => ({ name: a.name, signatureDataUrl: a.signatureDataUrl })),
+      attendant2Id: additionalAttendants[0]?.id ?? null,
+      attendant2Name: additionalAttendants[0]?.name ?? null,
+      notes: body.notes.trim() || null,
+      payload,
     });
-
-    try {
-      const blob = await put(`truckcheck/pdf/${id}.pdf`, pdfBuf, {
-        access: "public",
-        addRandomSuffix: false,
-        contentType: "application/pdf",
-      });
-      pdfUrl = blob.url;
-      if (me?.id) {
-        try {
-          const db = loungeSql();
-          await db`UPDATE lounge_truck_checks SET pdf_url = ${pdfUrl} WHERE id = ${id}`;
-        } catch { /* ignore */ }
-      }
-    } catch (blobErr) {
-      console.error("PDF blob upload failed:", blobErr);
+  } catch (error) {
+    if (error instanceof TruckCheckIdempotencyConflictError) {
+      return noStoreJson(
+        { error: "Idempotency key was already used for another submission" },
+        { status: 409 },
+      );
     }
-
-    try {
-      await sendTruckCheckEmail({
-        truckCheckId: id,
-        unit: unitNumber,
-        submittedBy: submitterName,
-        partnerName: additionalAttendants.map((a) => a.name).join(", ") || null,
-        durationSeconds,
-        pencilWhipFlag: flag.flag,
-        pencilWhipReasons: flag.reasons,
-        abnormalCount,
-        failCount,
-        notes: String(body.notes || ""),
-        pdfBytes: pdfBuf,
-        photos,
-      });
-    } catch (mailErr) {
-      console.error("truck check email failed (non-fatal):", mailErr);
-    }
-  } catch (pdfErr) {
-    console.error("PDF build failed (non-fatal):", pdfErr);
+    console.error("TruckCheck authoritative persistence failed", error);
+    const response = noStoreJson(
+      { error: "Truck check could not be saved. Please retry.", retryable: true },
+      { status: 503 },
+    );
+    response.headers.set("Retry-After", "1");
+    return response;
   }
 
-  return NextResponse.json({
-    ok: true,
-    id,
-    flag: flag.flag,
-    durationSeconds,
-    pdfUrl,
+  after(async () => {
+    try {
+      if (result.replayed) await requeueTruckCheckOutbox(result.id);
+      await processTruckCheckOutbox(result.id);
+      await processTruckCheckOutbox(undefined, undefined, 2);
+    } catch (error) {
+      console.error("TruckCheck outbox scheduling failed", error);
+    }
   });
+
+  return noStoreJson(result);
 }

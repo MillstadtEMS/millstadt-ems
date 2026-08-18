@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import {
-  currentEmployee,
+  currentEmployeeForPasswordChange,
   verifyPassword,
   updatePassword,
   permanentPasswordError,
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   ) {
     return noStoreJson({ error: "Invalid request" }, { status: 403 });
   }
-  const emp = await currentEmployee();
+  const emp = await currentEmployeeForPasswordChange();
   if (!emp) {
     return noStoreJson({ error: "Not signed in" }, { status: 401 });
   }

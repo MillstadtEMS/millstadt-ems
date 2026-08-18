@@ -28,11 +28,13 @@ const hash = (password) => {
   const salt = randomBytes(16).toString("hex");
   return `${salt}:${scryptSync(password, salt, 64).toString("hex")}`;
 };
-const sharedDevPassword = process.env.BOARD_DEV_SHARED_PASSWORD;
-const passwordFor = (index) => sharedDevPassword || `MemsBoard!Dev${index}-2026`;
+const randomPassword = () => randomBytes(24).toString("base64url");
 
 await sql`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS photo_url TEXT`;
 await sql`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS is_dev_login BOOLEAN NOT NULL DEFAULT FALSE`;
+await sql`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS setup_token_hash TEXT`;
+await sql`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS setup_token_expires_at TIMESTAMPTZ`;
+await sql`ALTER TABLE board_users ADD COLUMN IF NOT EXISTS setup_token_used_at TIMESTAMPTZ`;
 
 if (command === "delete" || command === "remove") {
   const removed = await sql`DELETE FROM board_users WHERE is_dev_login = TRUE OR username ~ '^dev[0-9]+$' RETURNING username`;
@@ -47,9 +49,7 @@ if (command === "list") {
     WHERE is_dev_login = TRUE OR username ~ '^dev[0-9]+$'
     ORDER BY username`;
   for (const row of rows) {
-    const n = Number(String(row.username).replace(/^dev/, ""));
-    const password = Number.isFinite(n) ? passwordFor(n) : "(generated)";
-    console.log(`${row.username} / ${password} — ${row.first_name} ${row.last_name} (${row.role}${row.officer_title ? `, ${row.officer_title}` : ""})`);
+    console.log(`${row.username} — ${row.first_name} ${row.last_name} (${row.role}${row.officer_title ? `, ${row.officer_title}` : ""})`);
   }
   console.log(`${rows.length} dev login(s).`);
   process.exit(0);
@@ -84,28 +84,39 @@ let index = 0;
 for (const person of realUsers) {
   index += 1;
   const username = `dev${index}`;
-  const password = passwordFor(index);
+  const password = randomPassword();
   await sql`
-    INSERT INTO board_users (
-      username, first_name, last_name, role, officer_title, photo_url,
-      password_hash, is_active, must_change_password, simple_view_default, is_dev_login
+    WITH upserted AS (
+      INSERT INTO board_users (
+        username, first_name, last_name, role, officer_title, photo_url,
+        password_hash, is_active, must_change_password, setup_token_hash,
+        setup_token_expires_at, setup_token_used_at, simple_view_default, is_dev_login
+      )
+      VALUES (
+        ${username}, ${person.first_name}, ${person.last_name}, ${person.role},
+        ${person.officer_title ?? null}, ${person.photo_url ?? null},
+        ${hash(password)}, TRUE, FALSE, NULL, NULL, NULL,
+        ${person.simple_view_default === true}, TRUE
+      )
+      ON CONFLICT (username) DO UPDATE SET
+        first_name = EXCLUDED.first_name,
+        last_name = EXCLUDED.last_name,
+        role = EXCLUDED.role,
+        officer_title = EXCLUDED.officer_title,
+        photo_url = EXCLUDED.photo_url,
+        password_hash = EXCLUDED.password_hash,
+        is_active = TRUE,
+        must_change_password = FALSE,
+        setup_token_hash = NULL,
+        setup_token_expires_at = NULL,
+        setup_token_used_at = NULL,
+        simple_view_default = EXCLUDED.simple_view_default,
+        is_dev_login = TRUE
+      RETURNING id, username, role
     )
-    VALUES (
-      ${username}, ${person.first_name}, ${person.last_name}, ${person.role},
-      ${person.officer_title ?? null}, ${person.photo_url ?? null},
-      ${hash(password)}, TRUE, FALSE, ${person.simple_view_default === true}, TRUE
-    )
-    ON CONFLICT (username) DO UPDATE SET
-      first_name = EXCLUDED.first_name,
-      last_name = EXCLUDED.last_name,
-      role = EXCLUDED.role,
-      officer_title = EXCLUDED.officer_title,
-      photo_url = EXCLUDED.photo_url,
-      password_hash = EXCLUDED.password_hash,
-      is_active = TRUE,
-      must_change_password = FALSE,
-      simple_view_default = EXCLUDED.simple_view_default,
-      is_dev_login = TRUE`;
+    INSERT INTO board_audit (user_id, username, role, action, detail)
+    SELECT id, username, role, 'dev_credential_rotated', 'board-dev-logins create'
+    FROM upserted`;
   console.log(`${username} / ${password} — ${person.first_name} ${person.last_name} (${person.role}${person.officer_title ? `, ${person.officer_title}` : ""})`);
 }
 

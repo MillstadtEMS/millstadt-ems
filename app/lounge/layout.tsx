@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { loungeDisplay, loungeMono } from "../fonts";
 
 /**
  * Lounge sub-layout.
@@ -14,20 +14,6 @@ import { Geist, Geist_Mono } from "next/font/google";
  *
  * Anything outside the lounge keeps its current Inter-only typography.
  */
-
-const display = Geist({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-mas-display",
-  weight: ["400", "500", "600", "700", "800", "900"],
-});
-
-const mono = Geist_Mono({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-mas-mono",
-  weight: ["400", "500", "600", "700"],
-});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -56,7 +42,7 @@ export const metadata: Metadata = {
 
 export default function LoungeLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`lounge-root ${display.variable} ${mono.variable}`}>
+    <div className={`lounge-root ${loungeDisplay.variable} ${loungeMono.variable}`}>
       <style>{LOUNGE_TOKENS}</style>
       {children}
     </div>

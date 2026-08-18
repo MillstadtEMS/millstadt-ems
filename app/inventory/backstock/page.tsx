@@ -96,7 +96,11 @@ export default function InventoryDashboard() {
     setSaving(s => ({ ...s, [item.id]: true }));
     try {
       const r = await fetch(`/api/inventory/items/${item.id}`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": crypto.randomUUID(),
+        },
         body: JSON.stringify({ version: item.version, ...updates }),
       });
       if (r.status === 409) { const d = await r.json(); if (d.item) setItems(p => p.map(i => i.id === item.id ? d.item : i)); msg("Conflict — refreshed"); return; }
@@ -204,8 +208,15 @@ export default function InventoryDashboard() {
     if (!signature) { msg("Signature required"); return; }
     setSubmitting(true);
     try {
-      await fetch("/api/inventory/submit", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ categorySlug: activeCat, itemsUpdated: editedCount.current, notes: submitNotes || null, submittedBy: "Inventory User", signature, purpose: "inventory_backstock" }) });
+      const response = await fetch("/api/inventory/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": crypto.randomUUID(),
+        },
+        body: JSON.stringify({ categorySlug: activeCat, itemsUpdated: editedCount.current, notes: submitNotes || undefined, signature, purpose: "inventory_backstock" }),
+      });
+      if (!response.ok) throw new Error("Submission failed");
       msg("Submitted!"); setShowSubmit(false); setSubmitNotes(""); setSignature(null); editedCount.current = 0;
     } catch { msg("Failed"); } finally { setSubmitting(false); }
   }
@@ -307,7 +318,7 @@ export default function InventoryDashboard() {
                 <div className="space-y-px">
                   {g.items.map((item, idx) => {
                     const thisIdx = gIdx++;
-                    return <ItemRow key={item.id} item={item} isSaving={!!saving[item.id]} onSave={u => saveItem(item, u)} even={idx % 2 === 0} focused={listening && thisIdx === focusedIdx} />;
+                    return <ItemRow key={`${item.id}:${item.version}`} item={item} isSaving={!!saving[item.id]} onSave={u => saveItem(item, u)} even={idx % 2 === 0} focused={listening && thisIdx === focusedIdx} />;
                   })}
                 </div>
               </div>
@@ -382,12 +393,6 @@ function ItemRow({ item, isSaving, onSave, even, focused }: {
   const [expired, setExpired] = useState(item.expiredQty === 0 ? "" : String(item.expiredQty));
   const [showNotes, setShowNotes] = useState(false);
   const [notes, setNotes] = useState(item.notes ?? "");
-
-  useEffect(() => {
-    setStock(item.currentStock === 0 ? "" : String(item.currentStock));
-    setExpired(item.expiredQty === 0 ? "" : String(item.expiredQty));
-    setNotes(item.notes ?? "");
-  }, [item.currentStock, item.expiredQty, item.notes]);
 
   function commitStock() { const v = stock === "" ? 0 : parseInt(stock); if (!isNaN(v) && v !== item.currentStock) onSave({ currentStock: v }); }
   function commitExpired() { const v = expired === "" ? 0 : parseInt(expired); if (!isNaN(v) && v !== item.expiredQty) onSave({ expiredQty: v }); }

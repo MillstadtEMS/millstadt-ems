@@ -9,6 +9,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/neon";
 import { ensureCadStructuredSchema } from "@/lib/cad/structured";
+import { monthlyPeaks } from "@/lib/cad/stats";
 
 export const runtime = "nodejs";
 export const revalidate = 0;
@@ -24,31 +25,6 @@ interface Row {
 
 function currentChicagoYear(): number {
   return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })).getFullYear();
-}
-
-const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-// Time windows: 0=0500–1300, 1=1301–2100, 2=2101–0459
-function blockOfHour(h: number): number {
-  return h >= 5 && h <= 12 ? 0 : h >= 13 && h <= 20 ? 1 : 2;
-}
-/** Per-month 7×3 grid (day-of-week × time-window) of call counts. */
-export function monthlyPeaks(rows: { dispatch_date: string; dispatch_time: string }[]) {
-  const map = new Map<string, { key: string; label: string; year: number; grid: number[][]; total: number }>();
-  for (const r of rows) {
-    const dm = String(r.dispatch_date || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-    if (!dm) continue;
-    const mm = parseInt(dm[1], 10), dd = parseInt(dm[2], 10), yyyy = parseInt(dm[3], 10);
-    const dt = new Date(yyyy, mm - 1, dd);
-    if (Number.isNaN(dt.getTime())) continue;
-    const tm = String(r.dispatch_time || "").match(/^(\d{1,2}):/);
-    const h = tm ? parseInt(tm[1], 10) : -1;
-    const key = `${yyyy}-${String(mm).padStart(2, "0")}`;
-    if (!map.has(key)) map.set(key, { key, label: MONTH_LABELS[mm - 1], year: yyyy, grid: Array.from({ length: 7 }, () => [0, 0, 0]), total: 0 });
-    const m = map.get(key)!;
-    m.total++;
-    if (h >= 0 && h <= 23) m.grid[dt.getDay()][blockOfHour(h)]++;
-  }
-  return Array.from(map.values()).sort((a, b) => (a.key < b.key ? -1 : 1));
 }
 
 export async function GET() {

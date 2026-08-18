@@ -9,13 +9,19 @@
  *   - rotating to a new authenticator app
  */
 import { NextRequest, NextResponse } from "next/server";
-import { currentEmployee } from "@/lib/lounge/auth";
+import { currentEmployee, revokeAllPreauthChallenges } from "@/lib/lounge/auth";
 import { sql } from "@/lib/lounge/db";
+import { revokeAllTrustedDevices } from "@/lib/lounge/trusted-devices";
+import { isSameOriginRequest, noStoreJson } from "@/lib/security/http";
+import { recordSecurityAudit } from "@/lib/security/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  if (!isSameOriginRequest(req)) {
+    return noStoreJson({ error: "Invalid request" }, { status: 403 });
+  }
   const me = await currentEmployee();
   if (!me || !me.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await ctx.params;
@@ -38,6 +44,20 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     WHERE id = ${id}
   `.catch(() => {});
   await db`DELETE FROM lounge_webauthn_credentials WHERE employee_id = ${id}`.catch(() => {});
+  const [revokedPreauthChallenges, revokedTrustedDevices] = await Promise.all([
+    revokeAllPreauthChallenges(id),
+    revokeAllTrustedDevices(id),
+  ]);
+  await recordSecurityAudit({
+    actorType: "administrator",
+    actorId: me.id,
+    action: "employee_second_factors_reset",
+    resourceType: "employee",
+    resourceId: id,
+    outcome: "completed",
+    req,
+    detail: { revokedPreauthChallenges, revokedTrustedDevices },
+  });
 
-  return NextResponse.json({ ok: true });
+  return noStoreJson({ ok: true });
 }

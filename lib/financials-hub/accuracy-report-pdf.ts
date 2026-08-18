@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { drawContainedImage } from "@/lib/reports/pdf-system";
 import type { AgreementSignature } from "./agreement-pdf";
 import {
   ACCURACY_CERTIFICATION,
@@ -21,7 +22,7 @@ export function signedAccuracyReportPdf(
     title: `Signed accuracy report ${report.id}`,
     subject: `Millstadt EMS accuracy or document-integrity report ${report.acknowledgmentVersion}`,
     author: "Millstadt Ambulance Service",
-    creator: "Millstadt EMS Financial Information Hub",
+    creator: "Millstadt EMS Financial & Information Transparency",
   });
   let y = 0;
 
@@ -127,9 +128,7 @@ export function signedAccuracyReportPdf(
   doc.setDrawColor(203, 213, 225);
   doc.roundedRect(MARGIN, y, CONTENT_WIDTH, 96, 5, 5);
   if (signature.method === "drawn") {
-    try {
-      doc.addImage(signature.dataUrl, "PNG", MARGIN + 14, y + 10, 220, 54);
-    } catch {
+    if (!drawContainedImage(doc, signature.dataUrl, "PNG", MARGIN + 14, y + 10, 220, 54)) {
       doc.setFont("helvetica", "italic");
       doc.setFontSize(10);
       doc.setTextColor(127, 29, 29);

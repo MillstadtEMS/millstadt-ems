@@ -1,12 +1,18 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
+import { currentAdmin } from "@/lib/admin/auth";
 import { getItems, getCategories, getQrTokens, createQrToken } from "@/lib/inventory/db";
 import { generateQrSheetPdf } from "@/lib/inventory/qr-pdf";
+import { isSameOriginRequest } from "@/lib/security/http";
+import { inventoryActor } from "@/lib/inventory/mutation-security";
 
 export async function POST(req: NextRequest) {
-  const denied = await requireAdmin(); if (denied) return denied;
+  const admin = await currentAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isSameOriginRequest(req)) {
+    return NextResponse.json({ error: "Cross-origin request denied" }, { status: 403 });
+  }
 
   try {
     const { categorySlug } = await req.json();
@@ -25,7 +31,7 @@ export async function POST(req: NextRequest) {
     for (const item of items) {
       let token = tokenMap.get(item.id);
       if (!token) {
-        const created = await createQrToken(item.id, item.name);
+        const created = await createQrToken(item.id, item.name, inventoryActor(admin));
         token = created.token;
       }
       qrItems.push({
