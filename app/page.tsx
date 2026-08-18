@@ -9,11 +9,8 @@ import DistrictMapStat from "@/components/DistrictMapStat";
 import PublicStatsSummary from "@/components/PublicStatsSummary";
 import SectionDivider from "@/components/SectionDivider";
 import SerenityPrayer from "@/components/SerenityPrayer";
-import CommunityStatusToolbar from "@/components/CommunityStatusToolbar";
-import SiteIcon from "@/components/site/SiteIcon";
 import { getContent } from "@/lib/db";
 import { isFinancialsHubDevelopmentEnabled } from "@/lib/financials-hub/config";
-import { PUBLIC_FINANCIALS_PAGE_TITLE } from "@/lib/financials-hub/types";
 
 // Always SSR so ?preview=ve shows fresh draft content
 export const dynamic = "force-dynamic";
@@ -73,8 +70,6 @@ export default async function Home({
 
         {/* ── Hero — single flex parent, 3 sections ── */}
         <div className="hero-content relative z-10 w-full" style={{ paddingTop: "96px" }}>
-          <CommunityStatusToolbar />
-
           {/* ── hero-top: headline, subtext, buttons ── */}
           <div className="hero-top w-full flex flex-col items-center text-center px-6 pt-8 md:pt-16">
             <div className="flex items-center justify-center gap-3 mb-6 sm:mb-10">
@@ -177,28 +172,6 @@ export default async function Home({
       ════════════════════════════════ */}
       <section className="bg-[#040d1a]" style={{ paddingBottom: 16 }}>
         <div className="wrap flex flex-col items-center gap-10">
-          <Link
-            href="/financials-information-hub"
-            className="group grid w-full max-w-5xl gap-6 rounded-2xl border border-[#f0b429]/30 bg-[#071428] p-6 shadow-xl shadow-black/25 transition hover:-translate-y-0.5 hover:border-[#f0b429]/60 hover:bg-[#0c1e3d] focus:outline-none focus:ring-2 focus:ring-[#f0b429] focus:ring-offset-2 focus:ring-offset-[#040d1a] md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:p-8"
-          >
-            <span className="text-center md:text-left">
-              <span className="inline-flex rounded-full border border-[#f0b429]/35 bg-[#f0b429]/10 px-3 py-1 text-xs font-black uppercase text-[#f8d980]">
-                {financialsBadge}
-              </span>
-              <span className="mt-3 block text-2xl font-black leading-tight text-white transition-colors group-hover:text-[#f0b429] md:text-3xl">
-                {PUBLIC_FINANCIALS_PAGE_TITLE}
-              </span>
-              <span className="mt-2 block text-base leading-7 text-slate-400">
-                {financialsReadyForTesting
-                  ? "Open the complete local financial document workflow."
-                  : "Financial filings and document-access information."}
-              </span>
-            </span>
-            <span className="inline-flex min-h-12 items-center justify-center gap-3 rounded-2xl bg-[#f0b429] px-6 py-4 text-sm font-black uppercase text-[#040d1a] transition group-hover:bg-[#ffd45c] md:justify-self-end">
-              Open page
-              <SiteIcon name="external" className="h-4 w-4 transition group-hover:translate-x-1" />
-            </span>
-          </Link>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 w-full max-w-4xl">
             {[
               {
@@ -283,13 +256,14 @@ export default async function Home({
             className="group grid rounded-2xl border border-white/8 bg-[#071428] shadow-xl shadow-black/20 transition hover:-translate-y-0.5 hover:border-[#f0b429]/50 hover:bg-[#0c1e3d] focus:outline-none focus:ring-2 focus:ring-[#f0b429] focus:ring-offset-2 focus:ring-offset-[#040d1a] md:grid-cols-[auto_1fr_auto] md:items-center"
           >
             {/* Millstadt EMS Kids Club logo — the service's own artwork. */}
-            <div className="relative mx-auto h-24 w-24 min-w-[6rem] shrink-0 self-center overflow-hidden rounded-2xl border border-[#f0b429]/40 bg-white transition-all duration-200 group-hover:border-[#f0b429]/70 md:mx-0 md:h-28 md:w-28 md:min-w-[7rem]">
+            <div className="mx-auto h-24 w-24 min-w-[6rem] shrink-0 self-center overflow-hidden rounded-2xl border border-[#f0b429]/40 bg-white transition-all duration-200 group-hover:border-[#f0b429]/70 md:mx-0 md:h-28 md:w-28 md:min-w-[7rem]">
               <Image
-                src="/kids-club/coloring/kids-club-logo.png"
+                src="/kids-club/kids-club-home.png"
                 alt="Millstadt EMS Kids Club"
-                fill
+                width={112}
+                height={112}
                 sizes="112px"
-                className="object-contain p-1.5"
+                className="h-full w-full object-contain p-1.5"
               />
             </div>
             <div className="text-center md:text-left">

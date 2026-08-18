@@ -285,6 +285,7 @@ export default function WeatherTestPage() {
               { id: "tornado_warning",      label: "Tornado Warning ⚠",     color: "bg-red-950 hover:bg-red-900 border-red-500/70 text-red-200" },
               { id: "tornado_pds_watch",  label: "PDS Tornado Watch",     color: "bg-purple-950 hover:bg-purple-900 border-purple-500/60 text-purple-200" },
               { id: "tornado_emergency",  label: "🔴 Tornado Emergency",  color: "bg-red-950 hover:bg-red-800 border-red-400 text-red-100 font-black ring-1 ring-red-500/50" },
+              { id: "multi",              label: "Multiple Alerts",       color: "bg-red-950 hover:bg-red-900 border-red-500/70 text-red-200" },
               { id: "clear",              label: "Dismiss / All Clear",   color: "bg-emerald-950 hover:bg-emerald-900 border-emerald-700/50 text-emerald-300" },
             ].map((btn) => (
               <button
