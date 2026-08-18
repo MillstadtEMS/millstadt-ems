@@ -1,5 +1,3 @@
-import { readFile, stat } from "node:fs/promises";
-import path from "node:path";
 import { ensureBoardSchema, sql } from "./db";
 
 export const BOARD_WORKBOOK_DOWNLOAD_PATH = "/api/board/workbook/file";
@@ -64,14 +62,6 @@ export type StoredBoardDocument =
       contentType: string;
       size: number;
       uploadedAt: string;
-    }
-  | {
-      storage: "legacy-local";
-      absolutePath: string;
-      sourceName: string;
-      contentType: string;
-      size: number;
-      uploadedAt: string;
     };
 
 export interface OpenedBoardDocument {
@@ -79,25 +69,6 @@ export interface OpenedBoardDocument {
   size: number;
   contentType: string;
 }
-
-const LEGACY_LOCAL_DOCUMENT_PATHS = {
-  "board/referendum/current.xlsx": path.join(
-    process.cwd(),
-    "public",
-    "board",
-    "referendum",
-    "current.xlsx",
-  ),
-  "board/referendum/current.json": path.join(
-    process.cwd(),
-    "public",
-    "board",
-    "referendum",
-    "current.json",
-  ),
-} as const;
-
-type LegacyLocalDocumentPath = keyof typeof LEGACY_LOCAL_DOCUMENT_PATHS;
 
 let manifestReady = false;
 
@@ -251,25 +222,25 @@ async function legacyPublicSource(
   }
 }
 
-async function legacyLocalSource(
-  relativePath: LegacyLocalDocumentPath,
+function deployedPublicSource(
+  relativePath: "board/referendum/current.xlsx" | "board/referendum/current.json",
   sourceName: string,
   contentType: string,
-): Promise<StoredBoardDocument | null> {
-  try {
-    const absolutePath = LEGACY_LOCAL_DOCUMENT_PATHS[relativePath];
-    const details = await stat(absolutePath);
-    return {
-      storage: "legacy-local",
-      absolutePath,
-      sourceName,
-      contentType,
-      size: details.size,
-      uploadedAt: details.mtime.toISOString(),
-    };
-  } catch {
-    return null;
-  }
+): StoredBoardDocument {
+  const configuredHost = process.env.VERCEL_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  const origin = configuredHost
+    ? configuredHost.startsWith("http")
+      ? configuredHost
+      : `https://${configuredHost}`
+    : `http://localhost:${process.env.PORT || "3000"}`;
+  return {
+    storage: "legacy-public",
+    url: new URL(`/${relativePath}`, origin).toString(),
+    sourceName,
+    contentType,
+    size: 0,
+    uploadedAt: new Date(0).toISOString(),
+  };
 }
 
 export async function resolveLegacyBoardWorkbookSource(): Promise<StoredBoardDocument | null> {
@@ -280,11 +251,11 @@ export async function resolveLegacyBoardWorkbookSource(): Promise<StoredBoardDoc
       "current.xlsx",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )) ??
-    (await legacyLocalSource(
+    deployedPublicSource(
       "board/referendum/current.xlsx",
       "current.xlsx",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    ))
+    )
   );
 }
 
@@ -303,11 +274,11 @@ export async function resolveLegacyBoardWorkbookViewSource(): Promise<StoredBoar
       "current.json",
       "application/json",
     )) ??
-    (await legacyLocalSource(
+    deployedPublicSource(
       "board/referendum/current.json",
       "current.json",
       "application/json",
-    ))
+    )
   );
 }
 
@@ -350,25 +321,15 @@ export async function openStoredBoardDocument(
     };
   }
 
-  if (document.storage === "legacy-public") {
-    const response = await fetch(document.url, { cache: "no-store" });
-    if (!response.ok || !response.body) return null;
-    const contentLength = Number(response.headers.get("content-length"));
-    return {
-      stream: response.body,
-      size: Number.isSafeInteger(contentLength) && contentLength >= 0
-        ? contentLength
-        : document.size,
-      contentType: response.headers.get("content-type") || document.contentType,
-    };
-  }
-
-  const buffer = await readFile(document.absolutePath);
-  const bytes = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  const response = await fetch(document.url, { cache: "no-store" });
+  if (!response.ok || !response.body) return null;
+  const contentLength = Number(response.headers.get("content-length"));
   return {
-    stream: new Blob([bytes]).stream(),
-    size: bytes.byteLength,
-    contentType: document.contentType,
+    stream: response.body,
+    size: Number.isSafeInteger(contentLength) && contentLength >= 0
+      ? contentLength
+      : document.size,
+    contentType: response.headers.get("content-type") || document.contentType,
   };
 }
 
