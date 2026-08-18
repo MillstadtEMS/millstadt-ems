@@ -62,6 +62,14 @@ export type StoredBoardDocument =
       contentType: string;
       size: number;
       uploadedAt: string;
+    }
+  | {
+      storage: "legacy-local";
+      absolutePath: string;
+      sourceName: string;
+      contentType: string;
+      size: number;
+      uploadedAt: string;
     };
 
 export interface OpenedBoardDocument {
@@ -222,25 +230,30 @@ async function legacyPublicSource(
   }
 }
 
-function deployedPublicSource(
+async function legacyLocalSource(
   relativePath: "board/referendum/current.xlsx" | "board/referendum/current.json",
   sourceName: string,
   contentType: string,
-): StoredBoardDocument {
-  const configuredHost = process.env.VERCEL_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  const origin = configuredHost
-    ? configuredHost.startsWith("http")
-      ? configuredHost
-      : `https://${configuredHost}`
-    : `http://localhost:${process.env.PORT || "3000"}`;
-  return {
-    storage: "legacy-public",
-    url: new URL(`/${relativePath}`, origin).toString(),
-    sourceName,
-    contentType,
-    size: 0,
-    uploadedAt: new Date(0).toISOString(),
-  };
+): Promise<StoredBoardDocument | null> {
+  if (process.env.NODE_ENV === "production") return null;
+  try {
+    const [{ stat }, path] = await Promise.all([
+      import("node:fs/promises"),
+      import("node:path"),
+    ]);
+    const absolutePath = path.join(process.cwd(), "public", relativePath);
+    const details = await stat(/* turbopackIgnore: true */ absolutePath);
+    return {
+      storage: "legacy-local",
+      absolutePath,
+      sourceName,
+      contentType,
+      size: details.size,
+      uploadedAt: details.mtime.toISOString(),
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function resolveLegacyBoardWorkbookSource(): Promise<StoredBoardDocument | null> {
@@ -251,11 +264,11 @@ export async function resolveLegacyBoardWorkbookSource(): Promise<StoredBoardDoc
       "current.xlsx",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )) ??
-    deployedPublicSource(
+    (await legacyLocalSource(
       "board/referendum/current.xlsx",
       "current.xlsx",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
+    ))
   );
 }
 
@@ -274,11 +287,11 @@ export async function resolveLegacyBoardWorkbookViewSource(): Promise<StoredBoar
       "current.json",
       "application/json",
     )) ??
-    deployedPublicSource(
+    (await legacyLocalSource(
       "board/referendum/current.json",
       "current.json",
       "application/json",
-    )
+    ))
   );
 }
 
@@ -321,15 +334,27 @@ export async function openStoredBoardDocument(
     };
   }
 
-  const response = await fetch(document.url, { cache: "no-store" });
-  if (!response.ok || !response.body) return null;
-  const contentLength = Number(response.headers.get("content-length"));
+  if (document.storage === "legacy-public") {
+    const response = await fetch(document.url, { cache: "no-store" });
+    if (!response.ok || !response.body) return null;
+    const contentLength = Number(response.headers.get("content-length"));
+    return {
+      stream: response.body,
+      size: Number.isSafeInteger(contentLength) && contentLength >= 0
+        ? contentLength
+        : document.size,
+      contentType: response.headers.get("content-type") || document.contentType,
+    };
+  }
+
+  if (process.env.NODE_ENV === "production") return null;
+  const { readFile } = await import("node:fs/promises");
+  const buffer = await readFile(/* turbopackIgnore: true */ document.absolutePath);
+  const bytes = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
   return {
-    stream: response.body,
-    size: Number.isSafeInteger(contentLength) && contentLength >= 0
-      ? contentLength
-      : document.size,
-    contentType: response.headers.get("content-type") || document.contentType,
+    stream: new Blob([bytes]).stream(),
+    size: bytes.byteLength,
+    contentType: document.contentType,
   };
 }
 
