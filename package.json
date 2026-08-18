@@ -21,7 +21,9 @@
     "test:reports": "node --import tsx scripts/test-email-output.ts && node --import tsx scripts/test-pdf-registry.ts",
     "test:board-private-documents": "node --import tsx --test scripts/test-board-private-documents.ts",
     "test:lounge-board": "node --import tsx scripts/test-lounge-board-boundary.ts",
-    "test:public-experience": "node --import tsx scripts/test-public-experience.ts"
+    "test:public-experience": "node --import tsx scripts/test-public-experience.ts",
+    "test:ai-monitor": "node --import tsx --test scripts/test-ai-monitor.ts",
+    "typecheck:ai-monitor": "tsc -p tsconfig.ai-monitor.json --pretty false"
   },
   "dependencies": {
     "@fontsource-variable/mona-sans": "^5.2.8",
