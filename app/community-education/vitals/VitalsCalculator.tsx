@@ -272,7 +272,7 @@ function ConsentScreen({ onAgree }: { onAgree: () => void }) {
               Anyone experiencing symptoms such as chest pain, shortness of breath, back pain, numbness, weakness, vision changes, or difficulty speaking should <strong className="text-red-400">call 911 immediately</strong> and be evaluated by a licensed physician.
             </p>
             <p className="text-slate-500 text-sm leading-relaxed border-t border-white/8 pt-6">
-              By clicking "I AGREE," you confirm that you understand and accept these terms and release <strong className="text-slate-400">Millstadt Ambulance Service</strong> and all associated parties from any and all liability related to the use of this educational tool.
+              By clicking &ldquo;I AGREE,&rdquo; you confirm that you understand and accept these terms and release <strong className="text-slate-400">Millstadt Ambulance Service</strong> and all associated parties from any and all liability related to the use of this educational tool.
             </p>
           </div>
 

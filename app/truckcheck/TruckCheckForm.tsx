@@ -1225,7 +1225,7 @@ function flattenForSubmit(template: CategoryDef[], unit: UnitSpec, items: ItemSt
       let requireComment = false;
       let requireAmount = false;
       let requireNumeric = false;
-      let numericVal: number | null = v.numericValue;
+      const numericVal: number | null = v.numericValue;
       let unitOfMeasure: string | null = null;
       let amountUnit: string | null = null;
 

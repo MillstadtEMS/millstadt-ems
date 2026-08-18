@@ -194,6 +194,7 @@ export default function DistrictMapStat({ num, label }: { num: string; label: st
 function ZoomModal({ onClose }: { onClose: () => void }) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
   const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
 
   const setZoomClamped = useCallback((next: number | ((cur: number) => number)) => {
@@ -218,6 +219,7 @@ function ZoomModal({ onClose }: { onClose: () => void }) {
     if (zoom <= 1) return;
     (e.target as Element).setPointerCapture?.(e.pointerId);
     dragRef.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
+    setDragging(true);
   }
   function onPointerMove(e: React.PointerEvent) {
     if (!dragRef.current) return;
@@ -227,6 +229,7 @@ function ZoomModal({ onClose }: { onClose: () => void }) {
   }
   function onPointerUp() {
     dragRef.current = null;
+    setDragging(false);
   }
 
   return (
@@ -285,7 +288,7 @@ function ZoomModal({ onClose }: { onClose: () => void }) {
           width: "100%", height: "100%",
           display: "flex", alignItems: "center", justifyContent: "center",
           overflow: "hidden",
-          cursor: zoom > 1 ? (dragRef.current ? "grabbing" : "grab") : "default",
+          cursor: zoom > 1 ? (dragging ? "grabbing" : "grab") : "default",
           touchAction: "pinch-zoom",
         }}
       >
@@ -300,7 +303,7 @@ function ZoomModal({ onClose }: { onClose: () => void }) {
             objectFit: "contain",
             transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
             transformOrigin: "center center",
-            transition: dragRef.current ? "none" : "transform 0.12s ease-out",
+            transition: dragging ? "none" : "transform 0.12s ease-out",
             userSelect: "none",
             pointerEvents: "auto",
             borderRadius: 8,

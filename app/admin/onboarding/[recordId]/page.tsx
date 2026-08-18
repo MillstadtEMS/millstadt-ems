@@ -390,7 +390,7 @@ export default function OnboardingDetailPage() {
         <section style={card}>
           <Card title="Rescind">
             <p style={{ color: "#fca5a5", fontSize: 13, lineHeight: 1.55, marginTop: 0 }}>
-              Rescinding removes the document from the employee's personnel file inside the lounge and clearly marks it as rescinded. Emails already sent to the employee cannot be recalled.
+              Rescinding removes the document from the employee&apos;s personnel file inside the lounge and clearly marks it as rescinded. Emails already sent to the employee cannot be recalled.
             </p>
             <button onClick={rescind} style={dangerBtn}>Rescind this record</button>
           </Card>
@@ -531,14 +531,23 @@ function ChecklistRow({
 }
 
 function ExpirationBadge({ date }: { date: string }) {
+  const [referenceTime, setReferenceTime] = useState<number | null>(null);
+  useEffect(() => setReferenceTime(Date.now()), []);
   const d = new Date(date + "T00:00:00");
-  const days = Math.round((d.getTime() - Date.now()) / 86_400_000);
-  let bg = "rgba(16,185,129,0.16)";
-  let fg = "#34d399";
-  let label = "Current";
-  if (days < 0)      { bg = "rgba(248,113,113,0.18)"; fg = "#fca5a5"; label = `Expired ${-days}d ago`; }
-  else if (days < 30){ bg = "rgba(245,158,11,0.18)";  fg = "#fcd34d"; label = `Expires in ${days}d`; }
-  else if (days < 90){ bg = "rgba(125,211,252,0.16)"; fg = "#7dd3fc"; label = `Expires in ${days}d`; }
+  const days = referenceTime === null
+    ? null
+    : Math.round((d.getTime() - referenceTime) / 86_400_000);
+  let bg = "rgba(148,163,184,0.16)";
+  let fg = "#cbd5e1";
+  let label = "Checking";
+  if (days !== null) {
+    bg = "rgba(16,185,129,0.16)";
+    fg = "#34d399";
+    label = "Current";
+    if (days < 0)      { bg = "rgba(248,113,113,0.18)"; fg = "#fca5a5"; label = `Expired ${-days}d ago`; }
+    else if (days < 30){ bg = "rgba(245,158,11,0.18)";  fg = "#fcd34d"; label = `Expires in ${days}d`; }
+    else if (days < 90){ bg = "rgba(125,211,252,0.16)"; fg = "#7dd3fc"; label = `Expires in ${days}d`; }
+  }
   return (
     <span style={{ display: "inline-block", marginTop: 6, background: bg, color: fg, padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase" }}>
       {label}

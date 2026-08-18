@@ -136,7 +136,7 @@ export default function LoginAnalyticsPage() {
           Login activity
         </h1>
         <p style={{ color: "#94a3b8", fontSize: "0.92rem", marginTop: 4 }}>
-          Who's actually using the lounge. Crew who never signed in get flagged so you can follow up.
+          Who&apos;s actually using the lounge. Crew who never signed in get flagged so you can follow up.
         </p>
       </header>
 

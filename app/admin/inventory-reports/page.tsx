@@ -45,10 +45,6 @@ export default function InventoryReportsPage() {
   const [generating, setGenerating] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    loadReports();
-  }, []);
-
   async function loadReports() {
     setLoading(true);
     try {
@@ -57,6 +53,10 @@ export default function InventoryReportsPage() {
     } catch { /* ignore */ }
     setLoading(false);
   }
+
+  useEffect(() => {
+    loadReports();
+  }, []);
 
   async function loadAudit() {
     setLoading(true);
@@ -240,7 +240,7 @@ export default function InventoryReportsPage() {
               </div>
               <div className="flex items-center gap-4 text-xs">
                 <span className="text-slate-400">{s.itemsUpdated} items updated</span>
-                {s.notes && <span className="text-slate-500 truncate">"{s.notes}"</span>}
+                {s.notes && <span className="text-slate-500 truncate">&ldquo;{s.notes}&rdquo;</span>}
               </div>
             </div>
           ))}

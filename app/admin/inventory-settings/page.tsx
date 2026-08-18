@@ -358,7 +358,7 @@ export default function InventorySettingsPage() {
           <div className="bg-[#071428] border border-white/10 rounded-2xl p-6">
             <h3 className="text-white font-bold mb-3">Print QR Code Sheet (PDF)</h3>
             <p className="text-slate-500 text-xs mb-3">
-              Generate a printable PDF with QR codes for all items in a category. Creates QR tokens for any items that don't have them yet.
+              Generate a printable PDF with QR codes for all items in a category. Creates QR tokens for any items that don&apos;t have them yet.
             </p>
             <div className="flex gap-3 mb-3">
               <select
@@ -414,7 +414,7 @@ export default function InventorySettingsPage() {
           <div className="bg-[#071428] border border-white/10 rounded-2xl p-6">
             <h3 className="text-white font-bold mb-1">Seed from Excel</h3>
             <p className="text-slate-500 text-xs mb-4">
-              Import inventory from "2026 Millstadt EMS Order _ Inv Form.xlsx".
+              Import inventory from &ldquo;2026 Millstadt EMS Order _ Inv Form.xlsx&rdquo;.
               This will clear existing inventory data.
             </p>
 

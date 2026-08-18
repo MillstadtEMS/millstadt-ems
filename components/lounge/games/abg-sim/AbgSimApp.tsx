@@ -151,7 +151,7 @@ function LevelSelect({ playerName, onPlay }: { playerName: string; onPlay: (leve
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "12px 14px 60px", fontFamily: "VT323, ui-monospace, monospace" }}>
       <div style={{ textAlign: "center", marginTop: 24 }}>
-        <div style={{ color: "#f2b84b", fontSize: 18, letterSpacing: "0.2em" }}>// SELECT MODE //</div>
+        <div style={{ color: "#f2b84b", fontSize: 18, letterSpacing: "0.2em" }}>{"// SELECT MODE //"}</div>
         <h2 style={{ color: "#2ff587", margin: "6px 0 0", fontSize: 40, letterSpacing: "0.06em" }}>
           HELLO, {playerName.toUpperCase()}
         </h2>

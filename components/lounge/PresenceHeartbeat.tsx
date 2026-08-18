@@ -12,10 +12,11 @@ const PULSE_INTERVAL_MS = 30 * 1000;
  * Pulses immediately on mount so freshly-loaded sessions register fast.
  */
 export default function PresenceHeartbeat() {
-  const lastActivity = useRef(Date.now());
+  const lastActivity = useRef(0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    lastActivity.current = Date.now();
     const markActive = () => { lastActivity.current = Date.now(); };
     window.addEventListener("mousemove", markActive, { passive: true });
     window.addEventListener("keydown", markActive, { passive: true });

@@ -176,7 +176,7 @@ export function TickerControlLogin() {
         {error && <div className="ticker-error">{error}</div>}
         <a className="ticker-primary-link" href="/lounge/login?next=/lounge/ticker-control">Use full Lounge login</a>
         <p className="ticker-fineprint">
-          Face ID uses whichever passkey this device has registered. Don't have one yet? Sign in via the full Lounge login first and add a passkey under <strong>Sign-in &amp; Devices</strong>.
+          Face ID uses whichever passkey this device has registered. Don&apos;t have one yet? Sign in via the full Lounge login first and add a passkey under <strong>Sign-in &amp; Devices</strong>.
         </p>
         <InstallHint />
       </section>
@@ -191,7 +191,7 @@ export function TickerControlDenied() {
       <section className="ticker-login-card">
         <BrandMark />
         <span className="ticker-kicker">Restricted</span>
-        <h1>This account doesn't have ticker access.</h1>
+        <h1>This account doesn&apos;t have ticker access.</h1>
         <p>Ticker editing is granted per-employee by an administrator. Ask leadership to flip the <code>can_edit_ticker</code> flag on your account.</p>
         <a className="ticker-primary-link" href="/lounge">Back to Lounge</a>
       </section>

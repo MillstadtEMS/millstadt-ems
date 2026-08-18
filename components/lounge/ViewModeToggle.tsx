@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from "react";
 
+function applyView(next: "auto" | "desktop") {
+  if (typeof document === "undefined") return;
+  if (next === "desktop") document.documentElement.setAttribute("data-lounge-view", "desktop");
+  else document.documentElement.removeAttribute("data-lounge-view");
+}
+
 /**
  * "View desktop site" toggle for the lounge.
  *
@@ -21,12 +27,6 @@ export default function ViewModeToggle() {
     setView(stored);
     applyView(stored);
   }, []);
-
-  function applyView(next: "auto" | "desktop") {
-    if (typeof document === "undefined") return;
-    if (next === "desktop") document.documentElement.setAttribute("data-lounge-view", "desktop");
-    else document.documentElement.removeAttribute("data-lounge-view");
-  }
 
   function pick(next: "auto" | "desktop") {
     setView(next);

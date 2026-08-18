@@ -65,7 +65,7 @@ interface Props {
 
 export default function EcgLiveCanvas({ rhythmId, heartRate, paused, width, height, hideStandardsTag }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const startedAtRef = useRef<number>(performance.now());
+  const startedAtRef = useRef<number>(0);
   const lastBeepedTRef = useRef<number>(-Infinity);
 
   // Reset run when the rhythm changes.

@@ -13,7 +13,8 @@
  *   GMAIL_USER          (millstadtcad@gmail.com)
  */
 
-import { google } from "googleapis";
+import { gmail_v1, google } from "googleapis";
+import { stripHtml } from "./parser";
 
 // ── OAuth2 client ──────────────────────────────────────────────────────────
 
@@ -123,8 +124,7 @@ export async function markAsRead(messageId: string): Promise<void> {
 
 // ── Body extraction helpers ────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractPlainText(payload: any): string {
+function extractPlainText(payload: gmail_v1.Schema$MessagePart | null | undefined): string {
   if (!payload) return "";
 
   // Direct text/plain part
@@ -134,7 +134,6 @@ function extractPlainText(payload: any): string {
 
   // HTML fallback
   if (payload.mimeType === "text/html" && payload.body?.data) {
-    const { stripHtml } = require("../cad/parser");
     return stripHtml(decodeBase64(payload.body.data));
   }
 
@@ -149,7 +148,6 @@ function extractPlainText(payload: any): string {
     // Fall back to HTML
     for (const part of payload.parts) {
       if (part.mimeType === "text/html" && part.body?.data) {
-        const { stripHtml } = require("../cad/parser");
         return stripHtml(decodeBase64(part.body.data));
       }
       // Recurse into nested multipart
@@ -167,12 +165,15 @@ function decodeBase64(data: string): string {
   return Buffer.from(data.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf-8");
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractAudioAttachment(payload: any): { data: Buffer; mimeType: string; filename: string } | null {
+function extractAudioAttachment(
+  payload: gmail_v1.Schema$MessagePart | null | undefined,
+): { data: Buffer; mimeType: string; filename: string } | null {
   if (!payload) return null;
   const AUDIO_TYPES = ["audio/", "application/octet-stream"];
 
-  function searchParts(p: any): { data: Buffer; mimeType: string; filename: string } | null {
+  function searchParts(
+    p: gmail_v1.Schema$MessagePart | null | undefined,
+  ): { data: Buffer; mimeType: string; filename: string } | null {
     if (!p) return null;
     const mime = (p.mimeType ?? "").toLowerCase();
     const filename = p.filename ?? "";
