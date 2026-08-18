@@ -459,10 +459,10 @@ export async function getAnalyticsSummary(from: Date, to: Date): Promise<Analyti
   `) as unknown as Array<{ path: string; views: number }>;
   const browserClassRows = (await db`
     SELECT
-      COUNT(*) FILTER (WHERE returning)::int AS returning_browsers,
-      COUNT(*) FILTER (WHERE NOT returning)::int AS first_browsers
+      COUNT(*) FILTER (WHERE is_returning)::int AS returning_browsers,
+      COUNT(*) FILTER (WHERE NOT is_returning)::int AS first_browsers
     FROM (
-      SELECT browser_hash, BOOL_OR(returning_browser) AS returning
+      SELECT browser_hash, BOOL_OR(returning_browser) AS is_returning
       FROM site_analytics_events
       WHERE occurred_at >= ${fromIso} AND occurred_at <= ${toIso}
         AND browser_hash IS NOT NULL
