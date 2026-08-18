@@ -214,7 +214,8 @@ export async function proxy(req: NextRequest) {
     !pathname.startsWith("/truckcheck/manifest")
   ) {
     const token = req.cookies.get("mas_truckcheck")?.value;
-    if (!token || !verifyTruckCheckToken(token)) {
+    const loungeToken = req.cookies.get("mas_lounge")?.value;
+    if (!token || !loungeToken || !verifyTruckCheckToken(token, loungeToken)) {
       const url = req.nextUrl.clone();
       url.pathname = "/truckcheck/login";
       return withSecurityHeaders(NextResponse.redirect(url), pathname);
