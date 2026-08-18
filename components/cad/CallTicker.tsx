@@ -594,7 +594,7 @@ export default function CallTicker() {
         </div>
       </div>
 
-      {/* ── Hover info box ── */}
+      {/* ── Hover / tap info box ── */}
       {popup && (() => {
         const margin = 12;
         const r = popup.rect;

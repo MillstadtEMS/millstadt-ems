@@ -38,6 +38,7 @@ export function validateCsrfToken(
 export function validateSameOriginRequest(req: NextRequest, noun: string) {
   const origin = req.headers.get("origin");
   const fetchSite = req.headers.get("sec-fetch-site");
+  const requestHost = req.headers.get("host")?.trim() || req.nextUrl.host;
   let originHost = "";
   if (origin) {
     try {
@@ -48,7 +49,7 @@ export function validateSameOriginRequest(req: NextRequest, noun: string) {
   }
   if (
     (!origin && fetchSite !== "same-origin") ||
-    (originHost && originHost !== req.nextUrl.host) ||
+    (originHost && originHost !== requestHost) ||
     (fetchSite && fetchSite !== "same-origin")
   ) {
     throw new FinancialsHubError(`Cross-site ${noun} was blocked.`, 403);

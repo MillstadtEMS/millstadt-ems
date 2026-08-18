@@ -34,7 +34,10 @@ export function isSameOriginRequest(req: NextRequest) {
   if (!origin) return fetchSite === "same-origin";
   try {
     const parsed = new URL(origin);
-    return parsed.protocol === req.nextUrl.protocol && parsed.host === req.nextUrl.host;
+    const forwardedProtocol = req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+    const requestProtocol = forwardedProtocol ? `${forwardedProtocol}:` : req.nextUrl.protocol;
+    const requestHost = req.headers.get("host")?.trim() || req.nextUrl.host;
+    return parsed.protocol === requestProtocol && parsed.host === requestHost;
   } catch {
     return false;
   }

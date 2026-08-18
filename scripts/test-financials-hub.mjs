@@ -352,7 +352,7 @@ try {
 
   const legacyDevLogin = await fetch(`${ORIGIN}/api/lounge/dev-login`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...SAME_ORIGIN_HEADERS },
     body: JSON.stringify({ pin: "95723935", role: "admin" }),
   });
   assert.equal(legacyDevLogin.status, 404);

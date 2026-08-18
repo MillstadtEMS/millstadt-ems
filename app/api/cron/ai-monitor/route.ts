@@ -32,23 +32,13 @@ function json(body: unknown, status = 200) {
 }
 
 export async function GET(req: NextRequest) {
-  const previewSmoke =
-    process.env.VERCEL_ENV === "preview" && req.nextUrl.searchParams.get("smoke") === "1";
-  if (!previewSmoke) {
-    const secret = process.env.CRON_SECRET;
-    if (!secret?.trim()) return json({ error: "Cron authentication is not configured." }, 503);
-    if (!hasValidBearerSecret(req.headers.get("authorization"), secret)) {
-      return json({ error: "Unauthorized" }, 401);
-    }
+  const secret = process.env.CRON_SECRET;
+  if (!secret?.trim()) return json({ error: "Cron authentication is not configured." }, 503);
+  if (!hasValidBearerSecret(req.headers.get("authorization"), secret)) {
+    return json({ error: "Unauthorized" }, 401);
   }
 
   const now = new Date();
-  if (previewSmoke) {
-    const commit = (process.env.VERCEL_GIT_COMMIT_SHA ?? "unknown").slice(0, 12);
-    const nightly = await runAiMonitor("nightly_security", `preview-${commit}`, now);
-    return json({ ok: true, previewSmoke: true, reportOnly: true, nightly });
-  }
-
   const chicago = chicagoClock(now);
   if (chicago.hour !== 23) {
     return json({ ok: true, skipped: true, reason: "outside_chicago_schedule_window" });

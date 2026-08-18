@@ -25,7 +25,8 @@ export function isSameOriginRequest(req: NextRequest) {
   if (fetchSite && fetchSite !== "same-origin") return false;
   if (!origin) return fetchSite === "same-origin";
   try {
-    return new URL(origin).host === req.nextUrl.host;
+    const requestHost = req.headers.get("host")?.trim() || req.nextUrl.host;
+    return new URL(origin).host === requestHost;
   } catch {
     return false;
   }
