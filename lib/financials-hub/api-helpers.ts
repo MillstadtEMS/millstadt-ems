@@ -17,7 +17,7 @@ export function disabledFinancialsResponse() {
   return noStoreJson(
     {
       error:
-        `The ${ORGANIZATION_NAME} Financial & Information Transparency hub is disabled.`,
+        `The ${ORGANIZATION_NAME} Financial Transparency page is disabled.`,
       productionBehavior: "Coming Soon only",
     },
     { status: 404 },

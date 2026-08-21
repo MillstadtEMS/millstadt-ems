@@ -33,7 +33,7 @@ export function signedAgreementPdf(
     title: `Millstadt EMS restricted-document access request ${request.id}`,
     subject: `Administrative request record ${request.termsVersion}`,
     author: ORGANIZATION_NAME,
-    creator: "Millstadt EMS Financial & Information Transparency",
+    creator: "Millstadt EMS Financial Transparency",
   });
   let y = 0;
 

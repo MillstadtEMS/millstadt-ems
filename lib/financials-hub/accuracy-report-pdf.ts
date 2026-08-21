@@ -22,7 +22,7 @@ export function signedAccuracyReportPdf(
     title: `Signed accuracy report ${report.id}`,
     subject: `Millstadt EMS accuracy or document-integrity report ${report.acknowledgmentVersion}`,
     author: "Millstadt Ambulance Service",
-    creator: "Millstadt EMS Financial & Information Transparency",
+    creator: "Millstadt EMS Financial Transparency",
   });
   let y = 0;
 

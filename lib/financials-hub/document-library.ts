@@ -109,7 +109,7 @@ export function createManagedDocument(input: CreateManagedDocumentInput) {
 
   const errors: string[] = [];
   if (!(["public_form_990", "restricted"] as const).includes(access)) {
-    errors.push("Choose whether the document is public or requires approval.");
+    errors.push("Choose a valid public document type.");
   }
   if (title.length < 3) errors.push("Enter a document title.");
   if (!ALLOWED_CATEGORIES.includes(category)) errors.push("Choose a valid category.");
@@ -236,7 +236,6 @@ export function readDocumentPages(document: ManagedDocumentRecord) {
 }
 
 function readIndex(): ManagedDocumentRecord[] {
-  ensureLibrary();
   if (!existsSync(INDEX_PATH)) return [];
   try {
     const parsed = JSON.parse(readFileSync(INDEX_PATH, "utf8"));

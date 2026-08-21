@@ -23,7 +23,15 @@ const documentLibraryPath = path.join(
 );
 const server = spawn(
   process.execPath,
-  ["node_modules/next/dist/bin/next", "dev", "-H", "127.0.0.1", "-p", String(PORT)],
+  [
+    "node_modules/next/dist/bin/next",
+    "dev",
+    "--webpack",
+    "-H",
+    "127.0.0.1",
+    "-p",
+    String(PORT),
+  ],
   {
     cwd,
     env: {
@@ -87,6 +95,7 @@ const server = spawn(
       ANALYTICS_RETENTION_INCIDENT_HOLD_DAYS: "30",
       ANALYTICS_RETENTION_CONSENT_DAYS: "365",
       NEXT_DIST_DIR: ".next-financials-test",
+      WATCHPACK_POLLING: "true",
     },
     stdio: ["ignore", "pipe", "pipe"],
   },
@@ -297,8 +306,14 @@ try {
   assert.match(hubPage.headers.get("content-security-policy") ?? "", /frame-ancestors 'none'/);
   assert.equal(hubPage.headers.get("x-frame-options"), "DENY");
   assert.equal(hubPage.headers.get("x-content-type-options"), "nosniff");
-  assert.match(await hubPage.text(), /Financial &amp; Information Transparency/);
-  pass("development hub is available with scoped security headers");
+  const hubHtml = await hubPage.text();
+  assert.match(hubHtml, /Financial Transparency/);
+  assert.doesNotMatch(hubHtml, /Financial information,|open to everyone|documents currently available|Direct access/);
+  assert.match(hubHtml, /Document Use Notice/);
+  assert.match(hubHtml, /The filed document controls\./);
+  assert.match(hubHtml, /kenneth\.james@millstadtems\.org/);
+  assert.doesNotMatch(hubHtml, /Full legal name|Mailing address|Sign request|Submit signed request/);
+  pass("development hub is a direct public document library with scoped security headers");
 
   const requestTermsSource = await readFile(
     path.join(cwd, "lib/financials-hub/types.ts"),
@@ -325,11 +340,11 @@ try {
     path.join(cwd, "app/financials-information-hub/page.tsx"),
     "utf8",
   );
-  assert.match(productionHubSource, /Financial &amp; Information Transparency/);
+  assert.match(productionHubSource, /Financial Transparency/);
   assert.match(productionHubSource, /Coming Soon/);
   assert.match(
     productionHubSource,
-    /The Millstadt EMS Financial &amp; Information Transparency hub is being prepared/,
+    /The Millstadt EMS Financial Transparency page is being prepared/,
   );
   assert.match(
     productionHubSource,
@@ -460,19 +475,36 @@ try {
       (document) => document.id === uploadedRestrictedId,
     ),
   );
-  pass("admin PDF upload publishes metadata to the restricted catalog");
+  pass("admin PDF upload publishes metadata to the public financial catalog");
 
   const unauthorizedOriginal = await fetch(
     `${ORIGIN}/api/admin/financials/documents/${uploadedRestrictedId}/file`,
   );
   assert.equal(unauthorizedOriginal.status, 401);
+  const publicOriginal = await fetch(
+    `${ORIGIN}/api/financials/documents/${uploadedRestrictedId}/pdf`,
+  );
+  assert.equal(publicOriginal.status, 200);
+  assert.match(publicOriginal.headers.get("content-type") ?? "", /^application\/pdf/);
+  assert.match(publicOriginal.headers.get("content-disposition") ?? "", /^inline;/);
+  assert.equal(publicOriginal.headers.get("x-content-type-options"), "nosniff");
+  assert.ok(Buffer.from(await publicOriginal.arrayBuffer()).equals(samplePdfBuffer));
+  const publicDownload = await fetch(
+    `${ORIGIN}/api/financials/documents/${uploadedRestrictedId}/pdf?download=1`,
+  );
+  assert.equal(publicDownload.status, 200);
+  assert.match(publicDownload.headers.get("content-disposition") ?? "", /^attachment;/);
+  const invalidPublicDocument = await fetch(
+    `${ORIGIN}/api/financials/documents/%2e%2e%2fsecret/pdf`,
+  );
+  assert.equal(invalidPublicDocument.status, 404);
   const authorizedOriginal = await fetch(
     `${ORIGIN}/api/admin/financials/documents/${uploadedRestrictedId}/file`,
     { headers: ADMIN_HEADERS },
   );
   assert.equal(authorizedOriginal.status, 200);
   assert.ok(Buffer.from(await authorizedOriginal.arrayBuffer()).equals(samplePdfBuffer));
-  pass("uploaded originals remain behind administrator authorization");
+  pass("published PDFs are directly viewable and downloadable while admin endpoints stay protected");
 
   const archiveResult = await json(
     await fetch(`${ORIGIN}/api/admin/financials/documents/${uploadedRestrictedId}`, {

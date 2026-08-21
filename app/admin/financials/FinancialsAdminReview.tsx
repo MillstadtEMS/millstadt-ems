@@ -11,7 +11,6 @@ import {
   FileSignature,
   FileText,
   Globe2,
-  LockKeyhole,
   RefreshCw,
   RotateCcw,
   Search,
@@ -296,7 +295,7 @@ export default function FinancialsAdminReview() {
         <div className="wrap financials-hub-wrap financials-compact-hero__inner">
           <div>
             <p className="financials-kicker">Millstadt EMS Admin</p>
-            <h1>Financial &amp; Information Transparency</h1>
+            <h1>Financial Transparency</h1>
             <p className="financials-hero-copy">
               Publish PDFs and review document-access requests.
             </p>
@@ -338,8 +337,8 @@ export default function FinancialsAdminReview() {
                   <div>
                     <h3>Add a document</h3>
                     <p>
-                      Public Form 990s are immediately available. Restricted documents
-                      remain blocked until an administrator approves a signed request.
+                      Active documents are published directly to the public library. No
+                      visitor request, identity information, or approval is required.
                     </p>
                   </div>
                 </div>
@@ -353,7 +352,7 @@ export default function FinancialsAdminReview() {
                         setUploadAccess(event.target.value as ManagedDocumentRecord["access"])
                       }
                     >
-                      <option value="restricted">Request and approval required</option>
+                      <option value="restricted">Public financial document</option>
                       <option value="public_form_990">Public Form 990</option>
                     </select>
                   </label>
@@ -423,7 +422,7 @@ export default function FinancialsAdminReview() {
                 managedDocs.map((document) => (
                   <article className="financials-admin-document" key={document.id}>
                     <div className="financials-admin-document__icon" aria-hidden="true">
-                      {document.access === "public_form_990" ? <Globe2 /> : <LockKeyhole />}
+                      <Globe2 />
                     </div>
                     <div className="financials-admin-document__body">
                       <strong>{document.title}</strong>
@@ -439,7 +438,7 @@ export default function FinancialsAdminReview() {
                         ? "Archived"
                         : document.access === "public_form_990"
                           ? "Public Form 990"
-                          : "Request access"}
+                          : "Public document"}
                     </span>
                     <div className="financials-admin-document__actions">
                       <a

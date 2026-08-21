@@ -130,7 +130,7 @@ export function form990PdfBuffer(doc: PublicForm990) {
     title: doc.title,
     subject: `Public Form 990 inspection copy for tax year ${doc.taxYear}`,
     author: ORGANIZATION_NAME,
-    creator: `${ORGANIZATION_NAME} Financial & Information Transparency`,
+    creator: `${ORGANIZATION_NAME} Financial Transparency`,
   });
 
   doc.pages.forEach((page, index) => {

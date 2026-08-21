@@ -799,7 +799,7 @@ export default function FinancialsArchivePrototype() {
         <div className="wrap financials-hub-wrap">
           <div className={styles.introPanel}>
             <p className={styles.sectionEyebrow}>Millstadt Ambulance Service</p>
-            <h1>Financial &amp; Information Transparency</h1>
+            <h1>Financial Transparency</h1>
           </div>
         </div>
       </header>

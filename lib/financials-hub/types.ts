@@ -1,11 +1,11 @@
 export const ORGANIZATION_NAME = "Millstadt Ambulance Service / Millstadt EMS";
 
-export const HUB_TITLE = "Millstadt EMS Financial & Information Transparency";
+export const HUB_TITLE = "Millstadt EMS Financial Transparency";
 
-export const PUBLIC_FINANCIALS_PAGE_TITLE = "Financial & Information Transparency";
+export const PUBLIC_FINANCIALS_PAGE_TITLE = "Financial Transparency";
 
 export const PUBLIC_FINANCIALS_PAGE_SUBTITLE =
-  "Access published Form 990 filings and request access to additional financial documents.";
+  "View, download, enlarge, and print published financial documents without an account or access request.";
 
 export const DEVELOPMENT_STATUS_BANNER =
   "Development environment — synthetic test data only";

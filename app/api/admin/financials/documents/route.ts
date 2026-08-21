@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
         reason:
           document.access === "public_form_990"
             ? "Administrator published a public Form 990 PDF."
-            : "Administrator published an approval-required PDF.",
+            : "Administrator published a public financial document PDF.",
       },
       auditContextFromHeaders(req.headers),
     );

@@ -283,7 +283,7 @@ export function catalog(): CatalogDocument[] {
   return restrictedDocuments().map(({ pages, ...doc }) => ({
     ...doc,
     pageCount: pages.length,
-    accessStatement: "Access requires administrator approval.",
+    accessStatement: "Public document — no request or approval required.",
   }));
 }
 

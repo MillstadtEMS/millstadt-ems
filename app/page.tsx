@@ -118,7 +118,7 @@ export default async function Home({
                 href="/financials-information-hub"
                 className="flex min-h-[70px] min-w-[220px] flex-col items-center justify-center rounded-2xl border-2 border-white/25 bg-[#040d1a]/70 px-8 py-3 text-center font-black text-white backdrop-blur-sm transition-colors hover:border-[#f0b429] hover:text-[#f0b429]"
               >
-                <span className="text-base">Financial &amp; Information Transparency</span>
+                <span className="text-base">Financial Transparency</span>
                 <span className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[#f0b429]">
                   {financialsBadge}
                 </span>

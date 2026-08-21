@@ -187,7 +187,7 @@ export async function notifyAccuracyReportAdmins(
       await sendEmployeeEmail({
         to: emailRecipients,
         subject: `[Millstadt EMS] Accuracy report ${report.id}`,
-        kicker: "Financial & Information Transparency",
+        kicker: "Financial Transparency",
         headline: "Accuracy or Document-Integrity Report Received",
         meta: `${report.id} | ${report.flags.length ? "Flagged for extra attention" : "Ready for admin review"}`,
         bodyText: buildAccuracyNotificationBody(report),
@@ -321,7 +321,7 @@ function buildRequesterDecisionBody(request: AccessRequestRecord) {
       "Approved document(s):",
       ...approvedDocuments,
       "",
-      "Return to the Financial & Information Transparency page in the same browser and refresh Request status to open the controlled viewer.",
+      "Return to the Financial Transparency page in the same browser and refresh Request status to open the controlled viewer.",
     );
   } else if (request.status === "denied") {
     lines.push("Access was not approved for this request.");

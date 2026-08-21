@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { HUB_TITLE } from "@/lib/financials-hub/types";
 import { isFinancialsHubDevelopmentEnabled } from "@/lib/financials-hub/config";
-import FinancialsArchivePrototype from "./FinancialsArchivePrototype";
+import { publicFinancialDocumentLibrary } from "@/lib/financials-hub/public-library";
+import PublicDocumentLibrary from "./PublicDocumentLibrary";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -9,14 +10,19 @@ export const revalidate = 0;
 export const metadata: Metadata = {
   title: HUB_TITLE,
   description:
-    "Millstadt EMS financial records and public information transparency hub.",
+    "View, download, enlarge, and print Millstadt EMS financial records and public disclosure documents.",
   manifest: "/financial-information.webmanifest",
-  robots: { index: false, follow: false, noarchive: true },
+  robots: { index: true, follow: true },
 };
 
 export default function FinancialsInformationHubPage() {
   if (isFinancialsHubDevelopmentEnabled()) {
-    return <FinancialsArchivePrototype />;
+    return (
+      <PublicDocumentLibrary
+        documents={publicFinancialDocumentLibrary()}
+        isDevelopmentPreview
+      />
+    );
   }
 
   return <ProductionComingSoon />;
@@ -29,7 +35,7 @@ function ProductionComingSoon() {
         <div className="wrap financials-compact-hero__inner">
           <div>
             <p className="financials-kicker">Millstadt Ambulance Service</p>
-            <h1>Financial &amp; Information Transparency</h1>
+            <h1>Financial Transparency</h1>
           </div>
           <span className="financials-status">Coming Soon</span>
         </div>
@@ -46,7 +52,7 @@ function ProductionComingSoon() {
             </div>
             <div className="financials-status-message">
               <p>
-                The Millstadt EMS Financial &amp; Information Transparency hub is being prepared.
+                The Millstadt EMS Financial Transparency page is being prepared.
                 The archive and document-access system are not currently available for
                 public use.
               </p>
