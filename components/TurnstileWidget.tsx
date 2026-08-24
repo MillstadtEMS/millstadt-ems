@@ -119,7 +119,9 @@ export default function TurnstileWidget({ action, onTokenChange, resetKey = 0 }:
             id="cloudflare-turnstile"
             src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
             strategy="afterInteractive"
-            onReady={renderWidget}
+            onReady={() => {
+              renderWidget();
+            }}
             onError={() => setLoadFailed(true)}
           />
           {loadFailed && (
