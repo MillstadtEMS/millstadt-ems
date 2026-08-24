@@ -99,7 +99,7 @@ export default async function Home({
               {subtitle2}
             </p>
 
-            <div className="flex flex-wrap justify-center gap-5">
+            <div className="flex w-full max-w-5xl flex-wrap justify-center gap-5">
               <a
                 href={primaryBtnHref}
                 target="_blank"
@@ -121,6 +121,15 @@ export default async function Home({
                 <span className="text-base">Financial &amp; Information Transparency</span>
                 <span className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[#f0b429]">
                   {financialsBadge}
+                </span>
+              </Link>
+              <Link
+                href="/election-information"
+                className="flex min-h-[70px] min-w-[220px] flex-col items-center justify-center rounded-2xl border-2 border-[#f0b429] bg-[#f0b429] px-8 py-3 text-center font-black text-[#040d1a] transition-colors hover:border-[#ffd45c] hover:bg-[#ffd45c]"
+              >
+                <span className="text-base">Election Information</span>
+                <span className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[#0f2d5c]">
+                  Official voter resources
                 </span>
               </Link>
             </div>
