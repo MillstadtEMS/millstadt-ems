@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import styles from "./ElectionInformation.module.css";
+import ZoomableElectionImage from "./ZoomableElectionImage";
 
 const COUNTY_VOTER_RESOURCES =
   "https://www.co.st-clair.il.us/departments/county-clerk/elections/voter-resources";
@@ -61,53 +61,41 @@ export default function ElectionInformationPage() {
       <section className={[styles.section, styles.screenshotSection].join(" ")} aria-labelledby="screenshots-heading">
         <div className={styles.wrap}>
           <div className={styles.readingWidthNoMargin}>
-            <h2 id="screenshots-heading">What the official website looks like</h2>
+            <h2 id="screenshots-heading">Picture guides you can enlarge</h2>
             <p>
-              These are pictures of the real St. Clair County website. The
-              county may change its page after these pictures are taken.
+              Click or tap any picture to open a larger view. On a computer,
+              the picture will also grow a little when you point to it.
             </p>
           </div>
 
-          <div className={styles.screenshotGrid}>
-            <figure className={styles.screenshotFigure}>
-              <a
-                href="/images/election-information/st-clair-county-voter-resources-current.webp"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Image
-                  src="/images/election-information/st-clair-county-voter-resources-current.webp"
-                  alt="The official St. Clair County Voter Resources page showing the mobile link and Vote-by-Mail request form"
-                  width={1440}
-                  height={1772}
-                  sizes="(max-width: 800px) calc(100vw - 2rem), 720px"
-                />
-              </a>
-              <figcaption>
-                The county page shows a Mobile Friendly Version link and the
-                Vote-by-Mail request form. Tap the picture to make it larger.
-              </figcaption>
-            </figure>
+          <div className={styles.guideGallery}>
+            <ZoomableElectionImage
+              featured
+              src="/images/election-information/st-clair-county-voting-guide.webp"
+              alt="Six-step picture guide for requesting a Vote-by-Mail ballot in St. Clair County"
+              width={2752}
+              height={1536}
+              title="Start here: the full process in six steps"
+              caption="Open the county page, find the request area, enter your name, enter one ID number, submit the request, and watch your mail."
+            />
 
-            <figure className={styles.screenshotFigure}>
-              <a
-                href="/images/election-information/st-clair-county-voter-resources-site.webp"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Image
-                  src="/images/election-information/st-clair-county-voter-resources-site.webp"
-                  alt="The official St. Clair County voter website showing the address lookup and sample ballot tool"
-                  width={3644}
-                  height={2206}
-                  sizes="(max-width: 800px) calc(100vw - 2rem), 720px"
-                />
-              </a>
-              <figcaption>
-                The Address Lookup tab can show your polling place, ballot, and
-                elected officials. Tap the picture to make it larger.
-              </figcaption>
-            </figure>
+            <ZoomableElectionImage
+              src="/images/election-information/st-clair-county-request-ballot-guide.webp"
+              alt="Annotated picture of the St. Clair County Vote-by-Mail request form with numbered directions"
+              width={1122}
+              height={1402}
+              title="Follow the numbered county form"
+              caption="This picture points to the Mobile Friendly Version link, the name and ID boxes, and the Submit Request button."
+            />
+
+            <ZoomableElectionImage
+              src="/images/election-information/st-clair-county-voter-tools-guide.webp"
+              alt="St. Clair County voter resources guide showing registration, Vote-by-Mail, polling place, and elected-official tools"
+              width={1122}
+              height={1402}
+              title="See the other county voter tools"
+              caption="The same official page can check registration, find a polling place, show elected officials, and provide ballot information."
+            />
           </div>
 
           <p className={styles.belowPictures}>
@@ -157,6 +145,11 @@ export default function ElectionInformationPage() {
             <li>
               <strong>Select “Submit Request.”</strong>
               Read the next screen and follow the county&apos;s instructions.
+            </li>
+            <li>
+              <strong>Watch your mail.</strong>
+              If the county approves and processes the request, it will mail
+              the ballot to the address connected to your voter registration.
             </li>
           </ol>
 

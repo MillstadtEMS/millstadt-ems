@@ -148,7 +148,7 @@
   background: #fff;
 }
 
-.screenshotGrid {
+.guideGallery {
   align-items: start;
   display: grid;
   gap: 1.5rem;
@@ -156,29 +156,162 @@
   margin-top: 1.5rem;
 }
 
-.screenshotFigure {
+.guideFigure {
   background: #fff;
   border: 1px solid #c9d1dc;
   margin: 0;
 }
 
-.screenshotFigure > a {
-  background: #e9edf2;
-  display: block;
+.featuredGuide {
+  grid-column: 1 / -1;
 }
 
-.screenshotFigure img {
+.imageButton {
+  background: #e9edf2;
+  border: 0;
+  cursor: zoom-in;
   display: block;
-  height: auto;
+  overflow: hidden;
+  padding: 0;
+  position: relative;
+  text-align: left;
   width: 100%;
 }
 
-.screenshotFigure figcaption {
+.imageButton img {
+  display: block;
+  height: auto;
+  transition: transform 180ms ease;
+  width: 100%;
+}
+
+.imageButton:hover img,
+.imageButton:focus-visible img {
+  transform: scale(1.035);
+}
+
+.imageButton:focus-visible {
+  outline: 4px solid #2563eb;
+  outline-offset: -4px;
+}
+
+.zoomLabel {
+  background: #071428;
+  border-radius: 0.3rem 0 0 0;
+  bottom: 0;
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 850;
+  padding: 0.6rem 0.75rem;
+  position: absolute;
+  right: 0;
+}
+
+.guideFigure figcaption {
   border-top: 1px solid #c9d1dc;
   color: #435066;
   font-size: 0.92rem;
   line-height: 1.55;
   padding: 0.85rem 0.95rem;
+}
+
+.guideFigure figcaption strong,
+.guideFigure figcaption span {
+  display: block;
+}
+
+.guideFigure figcaption strong {
+  color: #172033;
+  font-size: 1.02rem;
+  margin-bottom: 0.25rem;
+}
+
+.imageDialog {
+  background: transparent;
+  border: 0;
+  height: 100dvh;
+  margin: auto;
+  max-height: none;
+  max-width: none;
+  padding: clamp(0.5rem, 2vw, 1.25rem);
+  width: 100vw;
+}
+
+.imageDialog::backdrop {
+  background: rgb(2 9 18 / 92%);
+}
+
+.dialogPanel {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: 100%;
+  justify-content: center;
+}
+
+.dialogActions {
+  align-items: center;
+  align-self: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+.closeButton,
+.fullSizeLink {
+  background: #f0b429;
+  border: 0;
+  border-radius: 0.35rem;
+  box-sizing: border-box;
+  color: #071428 !important;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 900;
+  padding: 0.7rem 0.9rem;
+  text-decoration: none !important;
+}
+
+.closeButton:hover,
+.closeButton:focus-visible,
+.fullSizeLink:hover,
+.fullSizeLink:focus-visible {
+  background: #ffd25a;
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+.fullSizeLink {
+  background: #fff;
+}
+
+.enlargedImage {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  min-height: 0;
+  overflow: auto;
+  width: 100%;
+}
+
+.enlargedImage img {
+  display: block;
+  height: auto;
+  max-height: calc(100dvh - 8.5rem);
+  max-width: 100%;
+  object-fit: contain;
+  width: auto;
+}
+
+.dialogPanel > p {
+  color: #fff;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 60rem;
+  text-align: center;
 }
 
 .belowPictures {
@@ -273,8 +406,12 @@
 }
 
 @media (max-width: 760px) {
-  .screenshotGrid {
+  .guideGallery {
     grid-template-columns: 1fr;
+  }
+
+  .featuredGuide {
+    grid-column: auto;
   }
 
   .readingWidthNoMargin {
@@ -295,10 +432,25 @@
   .steps li {
     padding-left: 2.85rem;
   }
+
+  .dialogActions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .closeButton,
+  .fullSizeLink {
+    text-align: center;
+    width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .page * {
     scroll-behavior: auto !important;
+  }
+
+  .imageButton img {
+    transition: none;
   }
 }
