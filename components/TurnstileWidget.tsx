@@ -62,8 +62,21 @@ export default function TurnstileWidget({ action, onTokenChange, resetKey = 0 }:
   }, [action, siteKey, updateToken]);
 
   useEffect(() => {
-    renderWidget();
+    let retryTimer: number | undefined;
+    let cancelled = false;
+
+    const tryRender = () => {
+      if (cancelled || widgetIdRef.current) return;
+      renderWidget();
+      if (!widgetIdRef.current) {
+        retryTimer = window.setTimeout(tryRender, 100);
+      }
+    };
+
+    tryRender();
     return () => {
+      cancelled = true;
+      if (retryTimer) window.clearTimeout(retryTimer);
       if (widgetIdRef.current && window.turnstile) {
         window.turnstile.remove(widgetIdRef.current);
         widgetIdRef.current = null;
