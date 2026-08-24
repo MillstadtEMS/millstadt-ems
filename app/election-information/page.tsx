@@ -1,18 +1,5 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import {
-  Building2,
-  ExternalLink,
-  FileText,
-  LockKeyhole,
-  Mail,
-  MapPin,
-  Phone,
-  Search,
-  ShieldCheck,
-  Smartphone,
-  UserCheck,
-} from "lucide-react";
 import styles from "./ElectionInformation.module.css";
 
 const COUNTY_VOTER_RESOURCES =
@@ -27,353 +14,214 @@ const ILLINOIS_VOTE_BY_MAIL =
 export const metadata: Metadata = {
   title: "Election Information",
   description:
-    "Plain-language links for St. Clair County voter registration, polling places, sample ballots, and Vote-by-Mail requests.",
+    "Official St. Clair County links for voter registration, polling places, sample ballots, and Vote-by-Mail requests.",
 };
-
-const voterTools = [
-  {
-    title: "Check your registration",
-    description: "Make sure your name and address are correct before you vote.",
-    icon: UserCheck,
-  },
-  {
-    title: "Find your polling place",
-    description: "See where you can vote in person on Election Day.",
-    icon: MapPin,
-  },
-  {
-    title: "View your ballot information",
-    description: "See your sample ballot when the county makes it available.",
-    icon: FileText,
-  },
-  {
-    title: "Request a ballot by mail",
-    description: "Ask the county to send an eligible ballot to you by mail.",
-    icon: Mail,
-  },
-  {
-    title: "Find your elected officials",
-    description: "See which elected offices represent your voting address.",
-    icon: Building2,
-  },
-];
 
 export default function ElectionInformationPage() {
   return (
     <main className={styles.page}>
-      <section className={styles.hero}>
-        <div className={`${styles.wrap} ${styles.heroGrid}`}>
-          <div>
-            <p className={styles.eyebrow}>St. Clair County voter resources</p>
-            <h1 className={styles.title}>Election Information</h1>
-            <p className={styles.intro}>
-              Use the official county website to check your voter registration,
-              find your polling place, view ballot information, or ask for a
-              Vote-by-Mail ballot.
-            </p>
-            <div className={styles.neutralNote}>
-              <ShieldCheck aria-hidden size={23} />
-              <p>
-                This page shares voter information only. It does not support or
-                oppose any candidate, political party, or ballot question.
-              </p>
-            </div>
-          </div>
+      <header className={styles.hero}>
+        <div className={styles.wrap}>
+          <p className={styles.kicker}>St. Clair County voting information</p>
+          <h1>Voting in St. Clair County</h1>
+          <p className={styles.lead}>
+            Use the official St. Clair County Clerk website to check your
+            registration, find your polling place, see ballot information, or
+            request a ballot by mail.
+          </p>
+          <a
+            className={styles.mainLink}
+            href={COUNTY_VOTER_RESOURCES}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Click here: Official County Voter Resources
+          </a>
+          <p className={styles.printedUrl}>{COUNTY_VOTER_RESOURCES}</p>
+          <p className={styles.neutralStatement}>
+            This page provides voting information only. It does not support or
+            oppose any candidate, party, or ballot question.
+          </p>
+        </div>
+      </header>
 
-          <aside className={styles.officialCard} aria-labelledby="official-site-heading">
-            <p className={styles.officialLabel}>Start at the official site</p>
-            <h2 id="official-site-heading">St. Clair County Voter Resources</h2>
-            <p>The County Clerk provides these voter tools.</p>
-            <p className={styles.url}>{COUNTY_VOTER_RESOURCES}</p>
-            <a
-              className={styles.primaryLink}
-              href={COUNTY_VOTER_RESOURCES}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Open official voter resources
-              <ExternalLink aria-hidden size={18} />
-            </a>
-          </aside>
+      <section className={styles.section} aria-labelledby="county-tools-heading">
+        <div className={styles.readingWidth}>
+          <h2 id="county-tools-heading">What you can find on the county website</h2>
+          <ul className={styles.plainList}>
+            <li>Check whether you are registered to vote.</li>
+            <li>Find your Election Day polling place.</li>
+            <li>View a sample ballot when one is available.</li>
+            <li>Request a Vote-by-Mail ballot.</li>
+            <li>Find the elected officials for your address.</li>
+          </ul>
         </div>
       </section>
 
-      <section className={styles.section} aria-labelledby="tools-heading">
+      <section className={[styles.section, styles.screenshotSection].join(" ")} aria-labelledby="screenshots-heading">
         <div className={styles.wrap}>
-          <h2 className={styles.sectionTitle} id="tools-heading">
-            What you can do
-          </h2>
-          <p className={styles.sectionIntro}>
-            The county puts these tools together on one page.
-          </p>
-          <div className={styles.resourceGrid}>
-            {voterTools.map(({ title, description, icon: Icon }) => (
-              <article className={styles.resourceCard} key={title}>
-                <div className={styles.resourceIcon} aria-hidden="true">
-                  <Icon size={24} />
-                </div>
-                <div>
-                  <h3>{title}</h3>
-                  <p>{description}</p>
-                </div>
-              </article>
-            ))}
+          <div className={styles.readingWidthNoMargin}>
+            <h2 id="screenshots-heading">What the official website looks like</h2>
+            <p>
+              These are pictures of the real St. Clair County website. The
+              county may change its page after these pictures are taken.
+            </p>
           </div>
 
-          <div className={styles.sitePreview}>
-            <h2 className={styles.sectionTitle}>What the county page looks like</h2>
-            <p className={styles.sectionIntro}>
-              Look for the St. Clair County name and the voter-tool tabs. The
-              county may update the page after this picture was taken.
-            </p>
-            <figure className={styles.sitePreviewFigure}>
+          <div className={styles.screenshotGrid}>
+            <figure className={styles.screenshotFigure}>
+              <a
+                href="/images/election-information/st-clair-county-voter-resources-current.webp"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Image
+                  src="/images/election-information/st-clair-county-voter-resources-current.webp"
+                  alt="The official St. Clair County Voter Resources page showing the mobile link and Vote-by-Mail request form"
+                  width={1440}
+                  height={1772}
+                  sizes="(max-width: 800px) calc(100vw - 2rem), 720px"
+                />
+              </a>
+              <figcaption>
+                The county page shows a Mobile Friendly Version link and the
+                Vote-by-Mail request form. Tap the picture to make it larger.
+              </figcaption>
+            </figure>
+
+            <figure className={styles.screenshotFigure}>
               <a
                 href="/images/election-information/st-clair-county-voter-resources-site.webp"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Open a larger screenshot of the St. Clair County Voter Resources website"
               >
                 <Image
-                  className={styles.guideImage}
                   src="/images/election-information/st-clair-county-voter-resources-site.webp"
-                  alt="Screenshot of the official St. Clair County Voter Resources website showing the voter information lookup tool"
+                  alt="The official St. Clair County voter website showing the address lookup and sample ballot tool"
                   width={3644}
                   height={2206}
-                  sizes="(max-width: 800px) calc(100vw - 2rem), 1200px"
+                  sizes="(max-width: 800px) calc(100vw - 2rem), 720px"
                 />
               </a>
               <figcaption>
-                Tap the picture to make it larger. To use the voter tools,{" "}
-                <a
-                  href={COUNTY_VOTER_RESOURCES}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  click here to open the official county website
-                </a>
-                .
+                The Address Lookup tab can show your polling place, ballot, and
+                elected officials. Tap the picture to make it larger.
               </figcaption>
             </figure>
           </div>
+
+          <p className={styles.belowPictures}>
+            Pictures are for help only. To enter your information, use the{" "}
+            <a href={COUNTY_VOTER_RESOURCES} target="_blank" rel="noopener noreferrer">
+              official St. Clair County website
+            </a>
+            .
+          </p>
         </div>
       </section>
 
-      <section className={`${styles.section} ${styles.sectionAlt}`} aria-labelledby="mail-heading">
-        <div className={styles.wrap}>
-          <p className={styles.eyebrow}>Simple steps</p>
-          <h2 className={styles.sectionTitle} id="mail-heading">
-            How to request a Vote-by-Mail ballot
-          </h2>
-          <p className={styles.sectionIntro}>
-            The request is made on the county&apos;s voter website, not on the
-            Millstadt EMS website.
+      <section className={styles.section} aria-labelledby="mail-heading">
+        <div className={styles.readingWidth}>
+          <h2 id="mail-heading">How to request a ballot by mail</h2>
+          <p>
+            You make the request on the county website. Millstadt EMS does not
+            collect your voter information.
           </p>
 
           <ol className={styles.steps}>
-            <li className={styles.step}>
-              <div>
-                <h3>Open the county&apos;s Voter Resources page.</h3>
-                <p>This link opens the official St. Clair County website.</p>
-                <a
-                  className={styles.highlightLink}
-                  href={COUNTY_VOTER_RESOURCES}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Click here to open the official page
-                  <ExternalLink aria-hidden size={18} />
-                </a>
-              </div>
+            <li>
+              <strong>Open the official Voter Resources page.</strong>
+              <a href={COUNTY_VOTER_RESOURCES} target="_blank" rel="noopener noreferrer">
+                Click here to open it
+              </a>
+              .
             </li>
-
-            <li className={styles.step}>
-              <div>
-                <h3>On a phone, use the mobile-friendly page if needed.</h3>
-                <p>
-                  The county says its voter tool may work better on the separate
-                  mobile page. The county link opens a site run by its voter-tool provider.
-                </p>
-                <a
-                  className={styles.secondaryLink}
-                  href={COUNTY_MOBILE_RESOURCES}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Smartphone aria-hidden size={18} />
-                  Open the mobile-friendly version
-                </a>
-                <p>The county also says the Voter Resources page works best in Google Chrome.</p>
-              </div>
+            <li>
+              <strong>On a phone, tap “Mobile Friendly Version” if needed.</strong>
+              The county also says the page works best in Google Chrome.{" "}
+              <a href={COUNTY_MOBILE_RESOURCES} target="_blank" rel="noopener noreferrer">
+                Open the mobile version
+              </a>
+              .
             </li>
-
-            <li className={styles.step}>
-              <div>
-                <h3>Enter your name.</h3>
-                <p>
-                  Enter your first and last name as they appear on your voter
-                  information. If you have more than one last name, the county
-                  tool says to enter only your first last name.
-                </p>
-              </div>
+            <li>
+              <strong>Enter your first and last name.</strong>
+              Use the name shown on your voter information. If you have more
+              than one last name, the county says to enter only your first last name.
             </li>
-
-            <li className={styles.step}>
-              <div>
-                <h3>Enter one form of identification.</h3>
-                <p>Use either:</p>
-                <ul>
-                  <li>the last four digits of your Social Security number, or</li>
-                  <li>your driver&apos;s license number.</li>
-                </ul>
-              </div>
+            <li>
+              <strong>Enter one ID number.</strong>
+              Use either the last four digits of your Social Security number or
+              your driver&apos;s license number.
             </li>
-
-            <li className={styles.step}>
-              <div>
-                <h3>Select “Submit Request.”</h3>
-                <p>Read the county&apos;s next screen and follow its instructions.</p>
-              </div>
+            <li>
+              <strong>Select “Submit Request.”</strong>
+              Read the next screen and follow the county&apos;s instructions.
             </li>
           </ol>
 
-          <figure className={styles.guideFigure}>
-            <a
-              href="/images/election-information/st-clair-county-vote-by-mail-guide.webp"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Open a larger copy of the St. Clair County Vote-by-Mail guide"
-            >
-              <Image
-                className={styles.guideImage}
-                src="/images/election-information/st-clair-county-vote-by-mail-guide.webp"
-                alt="A six-step visual guide showing how to request a Vote-by-Mail ballot in St. Clair County"
-                width={2752}
-                height={1536}
-                sizes="(max-width: 800px) calc(100vw - 2rem), 1200px"
-              />
-            </a>
-            <figcaption>
-              Quick visual guide. Tap the image to open a larger copy. Use the
-              written steps above for an easier-to-read phone version.
-            </figcaption>
-          </figure>
-
-          <aside className={styles.helpBox}>
-            <h3>What if the search does not work?</h3>
+          <div className={styles.note}>
+            <h3>If the search does not work</h3>
             <p>
-              The county tool says to remove the last four digits of your Social
-              Security number. Then enter your full driver&apos;s license or state ID
-              number with no dashes and try again.
+              Remove the last four digits of your Social Security number. Enter
+              your full driver&apos;s license or state ID number with no dashes,
+              then try again.
             </p>
-          </aside>
+          </div>
         </div>
       </section>
 
-      <section className={styles.section} aria-labelledby="choices-heading">
-        <div className={styles.wrap}>
-          <h2 className={styles.sectionTitle} id="choices-heading">
-            One election or future elections
-          </h2>
-          <p className={styles.sectionIntro}>
-            St. Clair County has information for both choices.
+      <section className={[styles.section, styles.optionsSection].join(" ")} aria-labelledby="mail-options-heading">
+        <div className={styles.readingWidth}>
+          <h2 id="mail-options-heading">One election or future elections</h2>
+          <h3>One-time request</h3>
+          <p>
+            You can request a ballot by mail for one election using the county
+            Voter Resources page.
           </p>
-          <div className={styles.choiceGrid}>
-            <article className={styles.choiceCard}>
-              <h3>One-time request</h3>
-              <p>
-                You can ask for a Vote-by-Mail ballot for one election. Use the
-                Voter Resources page and follow the request steps above.
-              </p>
-              <a
-                className={styles.secondaryLink}
-                href={COUNTY_VOTER_RESOURCES}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Open the request page
-                <ExternalLink aria-hidden size={18} />
-              </a>
-            </article>
-
-            <article className={styles.choiceCard}>
-              <h3>Permanent Vote by Mail</h3>
-              <p>
-                Illinois voters may apply for permanent Vote-by-Mail status for
-                eligible future elections. Read the county&apos;s instructions and
-                application before you choose this option.
-              </p>
-              <a
-                className={styles.secondaryLink}
-                href={COUNTY_VOTE_BY_MAIL}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Read the county information
-                <ExternalLink aria-hidden size={18} />
-              </a>
-            </article>
-          </div>
+          <h3>Permanent Vote by Mail</h3>
+          <p>
+            Illinois voters may apply to receive eligible future ballots by
+            mail. Read the county&apos;s information before choosing this option.
+          </p>
+          <a
+            className={styles.textLink}
+            href={COUNTY_VOTE_BY_MAIL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Read the county&apos;s Vote-by-Mail information
+          </a>
         </div>
       </section>
 
-      <section className={`${styles.section} ${styles.sectionAlt}`} aria-labelledby="privacy-heading">
-        <div className={styles.wrap}>
-          <div className={styles.bottomGrid}>
-            <article className={styles.privacyCard}>
-              <h2 id="privacy-heading">
-                <LockKeyhole aria-hidden size={25} /> Privacy reminder
-              </h2>
-              <p>The voter tool may ask for private information.</p>
-              <ul>
-                <li>Start on the official St. Clair County website.</li>
-                <li>
-                  The county&apos;s mobile link goes to its provider at
-                  vr.platinumvrms.com.
-                </li>
-                <li>Do not put your ID numbers in comments or messages.</li>
-                <li>Do not send your ID numbers to Millstadt EMS.</li>
-              </ul>
-            </article>
+      <section className={styles.section} aria-labelledby="privacy-heading">
+        <div className={styles.readingWidth}>
+          <h2 id="privacy-heading">Keep your information private</h2>
+          <p>
+            Only enter your Social Security, driver&apos;s license, or state ID
+            information on the official county voter website. Do not put it in
+            comments, send it through social media, or send it to Millstadt EMS.
+          </p>
 
-            <article className={styles.contactCard}>
-              <h2>Need help?</h2>
-              <p>Contact the St. Clair County Election Department.</p>
-              <div className={styles.contactList}>
-                <a className={styles.contactLink} href="tel:+16188252366">
-                  <Phone aria-hidden size={20} />
-                  618-825-2366
-                </a>
-                <a
-                  className={styles.contactLink}
-                  href="mailto:elections@stclaircountyil.gov"
-                >
-                  <Mail aria-hidden size={20} />
-                  elections@stclaircountyil.gov
-                </a>
-                <a
-                  className={styles.contactLink}
-                  href={ILLINOIS_VOTE_BY_MAIL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Search aria-hidden size={20} />
-                  Illinois Vote-by-Mail information
-                  <ExternalLink aria-hidden size={16} />
-                </a>
-              </div>
-            </article>
-          </div>
+          <h2 className={styles.helpHeading}>Need help?</h2>
+          <p>Contact the St. Clair County Election Department:</p>
+          <ul className={styles.contactList}>
+            <li><a href="tel:+16188252366">618-825-2366</a></li>
+            <li><a href="mailto:elections@stclaircountyil.gov">elections@stclaircountyil.gov</a></li>
+            <li>
+              <a href={ILLINOIS_VOTE_BY_MAIL} target="_blank" rel="noopener noreferrer">
+                Illinois Vote-by-Mail information
+              </a>
+            </li>
+          </ul>
 
-          <p className={styles.disclaimer}>
-            Millstadt Ambulance Service is sharing these links as a public
-            service. Election rules, dates, and forms can change. The St. Clair
-            County Clerk and the Illinois State Board of Elections are the
-            official sources. This page does not advocate for or against any
-            candidate, political party, or ballot question.
+          <p className={styles.footerNote}>
+            Voting rules, dates, and forms can change. The St. Clair County
+            Clerk and the Illinois State Board of Elections are the official sources.
           </p>
         </div>
       </section>
     </main>
   );
 }
-
