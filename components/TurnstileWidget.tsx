@@ -31,7 +31,7 @@ type Props = {
 };
 
 export default function TurnstileWidget({ action, onTokenChange, resetKey = 0 }: Props) {
-  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
+  const siteKey = (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "").trim();
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   const onTokenChangeRef = useRef(onTokenChange);
@@ -48,17 +48,25 @@ export default function TurnstileWidget({ action, onTokenChange, resetKey = 0 }:
   }, []);
 
   const renderWidget = useCallback(() => {
-    if (!siteKey || !containerRef.current || !window.turnstile || widgetIdRef.current) return;
-    widgetIdRef.current = window.turnstile.render(containerRef.current, {
-      sitekey: siteKey,
-      action,
-      theme: "dark",
-      size: "flexible",
-      callback: updateToken,
-      "expired-callback": () => updateToken(""),
-      "error-callback": () => updateToken(""),
-      "timeout-callback": () => updateToken(""),
-    });
+    if (!siteKey || !containerRef.current || !window.turnstile || widgetIdRef.current) return false;
+
+    try {
+      widgetIdRef.current = window.turnstile.render(containerRef.current, {
+        sitekey: siteKey,
+        action,
+        theme: "dark",
+        size: "flexible",
+        callback: updateToken,
+        "expired-callback": () => updateToken(""),
+        "error-callback": () => updateToken(""),
+        "timeout-callback": () => updateToken(""),
+      });
+      setLoadFailed(false);
+      return true;
+    } catch {
+      setLoadFailed(true);
+      return false;
+    }
   }, [action, siteKey, updateToken]);
 
   useEffect(() => {
@@ -67,8 +75,8 @@ export default function TurnstileWidget({ action, onTokenChange, resetKey = 0 }:
 
     const tryRender = () => {
       if (cancelled || widgetIdRef.current) return;
-      renderWidget();
-      if (!widgetIdRef.current) {
+      const rendered = renderWidget();
+      if (!rendered && !window.turnstile) {
         retryTimer = window.setTimeout(tryRender, 100);
       }
     };
