@@ -351,6 +351,9 @@ pass("Board session signing no longer falls back to a database URL");
 
 const proxy = await source("proxy.ts");
 assert.match(proxy, /Content-Security-Policy/);
+assert.match(proxy, /script-src[^\n]*challenges\.cloudflare\.com/);
+assert.match(proxy, /connect-src[^\n]*challenges\.cloudflare\.com/);
+assert.match(proxy, /frame-src[^\n]*challenges\.cloudflare\.com/);
 assert.match(proxy, /X-Robots-Tag/);
 assert.match(proxy, /verifySessionToken/);
 assert.match(proxy, /\/api\/admin\/calls/);

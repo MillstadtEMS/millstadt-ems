@@ -60,13 +60,13 @@ function withSecurityHeaders(res: NextResponse, pathname = ""): NextResponse {
       "form-action 'self'",
       "frame-ancestors 'none'",
       "object-src 'none'",
-      "script-src 'self' 'unsafe-inline'" +
+      "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com" +
         (process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"),
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com https://api.weather.gov https://tilecache.rainviewer.com https://*.basemaps.cartocdn.com https://mesonet.agron.iastate.edu",
       "font-src 'self' data:",
-      "connect-src 'self' https://api.weather.gov https://api.open-meteo.com https://api.rainviewer.com https://tilecache.rainviewer.com",
-      "frame-src 'self' https://calendar.google.com https://embed.waze.com https://www.youtube.com",
+      "connect-src 'self' https://challenges.cloudflare.com https://api.weather.gov https://api.open-meteo.com https://api.rainviewer.com https://tilecache.rainviewer.com",
+      "frame-src 'self' https://challenges.cloudflare.com https://calendar.google.com https://embed.waze.com https://www.youtube.com",
       "media-src 'self' blob:",
       "worker-src 'self' blob:",
       `manifest-src 'self'${productionUpgrade}`,
