@@ -45,9 +45,13 @@ export default function ZoomableElectionImage({
             width={width}
             height={height}
             unoptimized
-            sizes={featured ? "(max-width: 800px) calc(100vw - 2rem), 1152px" : "(max-width: 800px) calc(100vw - 2rem), 560px"}
+            sizes={
+              featured
+                ? "(max-width: 800px) calc(100vw - 2rem), 1400px"
+                : "(max-width: 800px) calc(100vw - 2rem), 680px"
+            }
           />
-          <span className={styles.zoomLabel}>Click or tap to enlarge</span>
+          <span className={styles.zoomLabel}>Enlarge</span>
         </button>
         <figcaption>
           <strong>{title}</strong>

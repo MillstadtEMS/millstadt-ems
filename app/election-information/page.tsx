@@ -45,7 +45,10 @@ export default function ElectionInformationPage() {
         </div>
       </header>
 
-      <section className={styles.section} aria-labelledby="county-tools-heading">
+      <section
+        className={[styles.section, styles.toolsSection].join(" ")}
+        aria-labelledby="county-tools-heading"
+      >
         <div className={styles.readingWidth}>
           <h2 id="county-tools-heading">What you can find on the county website</h2>
           <ul className={styles.plainList}>
@@ -58,16 +61,11 @@ export default function ElectionInformationPage() {
         </div>
       </section>
 
-      <section className={[styles.section, styles.screenshotSection].join(" ")} aria-labelledby="screenshots-heading">
+      <section
+        className={[styles.section, styles.screenshotSection].join(" ")}
+        aria-label="Voting picture guides"
+      >
         <div className={styles.wrap}>
-          <div className={styles.readingWidthNoMargin}>
-            <h2 id="screenshots-heading">Picture guides you can enlarge</h2>
-            <p>
-              Click or tap any picture to open a larger view. On a computer,
-              the picture will also grow a little when you point to it.
-            </p>
-          </div>
-
           <div className={styles.guideGallery}>
             <ZoomableElectionImage
               featured
@@ -75,8 +73,8 @@ export default function ElectionInformationPage() {
               alt="Six-step picture guide for requesting a Vote-by-Mail ballot in St. Clair County"
               width={2752}
               height={1536}
-              title="Start here: the full process in six steps"
-              caption="Open the county page, find the request area, enter your name, enter one ID number, submit the request, and watch your mail."
+              title="Vote-by-Mail in six steps"
+              caption="Open the county page. Find the request area. Enter your name and one ID number. Submit the request. Watch the mail."
             />
 
             <ZoomableElectionImage
@@ -84,8 +82,8 @@ export default function ElectionInformationPage() {
               alt="Annotated picture of the St. Clair County Vote-by-Mail request form with numbered directions"
               width={1122}
               height={1402}
-              title="Follow the numbered county form"
-              caption="This picture points to the Mobile Friendly Version link, the name and ID boxes, and the Submit Request button."
+              title="County Vote-by-Mail form"
+              caption="The numbers point to the mobile link, the name and ID boxes, and the Submit Request button."
             />
 
             <ZoomableElectionImage
@@ -93,8 +91,8 @@ export default function ElectionInformationPage() {
               alt="St. Clair County voter resources guide showing registration, Vote-by-Mail, polling place, and elected-official tools"
               width={1122}
               height={1402}
-              title="See the other county voter tools"
-              caption="The same official page can check registration, find a polling place, show elected officials, and provide ballot information."
+              title="County voter resources"
+              caption="Use the official page to check registration, find a polling place, see ballot information, and find elected officials."
             />
           </div>
 
@@ -167,47 +165,61 @@ export default function ElectionInformationPage() {
       <section className={[styles.section, styles.optionsSection].join(" ")} aria-labelledby="mail-options-heading">
         <div className={styles.readingWidth}>
           <h2 id="mail-options-heading">One election or future elections</h2>
-          <h3>One-time request</h3>
-          <p>
-            You can request a ballot by mail for one election using the county
-            Voter Resources page.
-          </p>
-          <h3>Permanent Vote by Mail</h3>
-          <p>
-            Illinois voters may apply to receive eligible future ballots by
-            mail. Read the county&apos;s information before choosing this option.
-          </p>
-          <a
-            className={styles.textLink}
-            href={COUNTY_VOTE_BY_MAIL}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read the county&apos;s Vote-by-Mail information
-          </a>
+          <div className={styles.optionGrid}>
+            <div className={styles.optionItem}>
+              <h3>One-time request</h3>
+              <p>
+                You can request a ballot by mail for one election using the
+                county Voter Resources page.
+              </p>
+            </div>
+            <div className={styles.optionItem}>
+              <h3>Permanent Vote by Mail</h3>
+              <p>
+                Illinois voters may apply to receive eligible future ballots
+                by mail. Read the county&apos;s information before choosing this
+                option.
+              </p>
+              <a
+                className={styles.textLink}
+                href={COUNTY_VOTE_BY_MAIL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Read the county&apos;s Vote-by-Mail information
+              </a>
+            </div>
+          </div>
         </div>
       </section>
 
       <section className={styles.section} aria-labelledby="privacy-heading">
         <div className={styles.readingWidth}>
-          <h2 id="privacy-heading">Keep your information private</h2>
-          <p>
-            Only enter your Social Security, driver&apos;s license, or state ID
-            information on the official county voter website. Do not put it in
-            comments, send it through social media, or send it to Millstadt EMS.
-          </p>
+          <div className={styles.infoGrid}>
+            <div>
+              <h2 id="privacy-heading">Keep your information private</h2>
+              <p>
+                Only enter your Social Security, driver&apos;s license, or state ID
+                information on the official county voter website. Do not put it
+                in comments, send it through social media, or send it to
+                Millstadt EMS.
+              </p>
+            </div>
 
-          <h2 className={styles.helpHeading}>Need help?</h2>
-          <p>Contact the St. Clair County Election Department:</p>
-          <ul className={styles.contactList}>
-            <li><a href="tel:+16188252366">618-825-2366</a></li>
-            <li><a href="mailto:elections@stclaircountyil.gov">elections@stclaircountyil.gov</a></li>
-            <li>
-              <a href={ILLINOIS_VOTE_BY_MAIL} target="_blank" rel="noopener noreferrer">
-                Illinois Vote-by-Mail information
-              </a>
-            </li>
-          </ul>
+            <div className={styles.helpBlock}>
+              <h2>Need help?</h2>
+              <p>Contact the St. Clair County Election Department:</p>
+              <ul className={styles.contactList}>
+                <li><a href="tel:+16188252366">618-825-2366</a></li>
+                <li><a href="mailto:elections@stclaircountyil.gov">elections@stclaircountyil.gov</a></li>
+                <li>
+                  <a href={ILLINOIS_VOTE_BY_MAIL} target="_blank" rel="noopener noreferrer">
+                    Illinois Vote-by-Mail information
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
 
           <p className={styles.footerNote}>
             Voting rules, dates, and forms can change. The St. Clair County

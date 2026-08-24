@@ -7,54 +7,49 @@
 .readingWidth {
   box-sizing: border-box;
   margin-inline: auto;
+  padding-inline: clamp(1rem, 3vw, 3rem);
   width: 100%;
 }
 
 .wrap {
-  max-width: 74rem;
-  padding-inline: clamp(1rem, 4vw, 2rem);
+  max-width: 92rem;
 }
 
 .readingWidth {
-  max-width: 48rem;
-  padding-inline: clamp(1rem, 4vw, 2rem);
-}
-
-.readingWidthNoMargin {
-  max-width: 48rem;
+  max-width: 82rem;
 }
 
 .hero {
   background: #071428;
   border-bottom: 5px solid #f0b429;
   color: #fff;
-  padding: clamp(2.75rem, 7vw, 5rem) 0 clamp(2.5rem, 6vw, 4rem);
+  padding: clamp(3rem, 6vw, 5.5rem) 0 clamp(2.75rem, 5vw, 4.5rem);
 }
 
 .kicker {
   color: #f0b429;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   font-weight: 850;
   letter-spacing: 0.12em;
-  margin: 0 0 0.85rem;
+  margin: 0 0 0.9rem;
   text-transform: uppercase;
 }
 
 .hero h1 {
-  font-size: clamp(2.4rem, 6vw, 4.5rem);
+  font-size: clamp(2.75rem, 5.5vw, 5rem);
   font-weight: 900;
-  letter-spacing: -0.035em;
-  line-height: 1.05;
+  letter-spacing: -0.04em;
+  line-height: 1;
   margin: 0;
-  max-width: 48rem;
+  max-width: 70rem;
 }
 
 .lead {
   color: #d7e0ec;
-  font-size: clamp(1.08rem, 2.3vw, 1.3rem);
-  line-height: 1.65;
-  margin: 1.25rem 0 0;
-  max-width: 45rem;
+  font-size: clamp(1.15rem, 1.6vw, 1.4rem);
+  line-height: 1.6;
+  margin: 1.35rem 0 0;
+  max-width: 64rem;
 }
 
 .mainLink {
@@ -63,10 +58,10 @@
   border-radius: 0.4rem;
   color: #071428;
   display: inline-block;
-  font-size: 1rem;
+  font-size: 1.08rem;
   font-weight: 900;
-  margin-top: 1.5rem;
-  padding: 0.85rem 1.1rem;
+  margin-top: 1.6rem;
+  padding: 0.95rem 1.25rem;
   text-decoration: none;
 }
 
@@ -79,51 +74,52 @@
 .printedUrl {
   color: #b6c4d6;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   line-height: 1.55;
-  margin: 0.8rem 0 0;
-  max-width: 46rem;
+  margin: 0.85rem 0 0;
+  max-width: 64rem;
   overflow-wrap: anywhere;
 }
 
 .neutralStatement {
   border-left: 3px solid #f0b429;
   color: #d7e0ec;
-  font-size: 0.95rem;
+  font-size: 1rem;
   line-height: 1.55;
-  margin: 1.5rem 0 0;
-  max-width: 45rem;
-  padding-left: 0.9rem;
+  margin: 1.6rem 0 0;
+  max-width: 64rem;
+  padding-left: 1rem;
 }
 
 .section {
   border-bottom: 1px solid #d8dee8;
-  padding: clamp(2.75rem, 6vw, 4.5rem) 0;
+  padding: clamp(2.5rem, 4vw, 4rem) 0;
 }
 
 .section h2 {
   color: #10192a;
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-size: clamp(2rem, 3.2vw, 3.25rem);
   font-weight: 900;
-  letter-spacing: -0.025em;
-  line-height: 1.15;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
   margin: 0;
 }
 
 .section h3 {
   color: #172033;
-  font-size: 1.18rem;
-  margin: 1.75rem 0 0;
+  font-size: clamp(1.25rem, 1.5vw, 1.5rem);
+  line-height: 1.2;
+  margin: 0;
 }
 
 .section p,
 .section li {
-  font-size: 1.02rem;
-  line-height: 1.7;
+  font-size: clamp(1.05rem, 1.15vw, 1.2rem);
+  line-height: 1.65;
 }
 
 .section p {
-  margin: 0.85rem 0 0;
+  margin: 0.9rem 0 0;
 }
 
 .section a:not(.mainLink) {
@@ -134,13 +130,20 @@
   text-underline-offset: 0.18em;
 }
 
-.plainList {
-  margin: 1.25rem 0 0;
-  padding-left: 1.3rem;
+.toolsSection {
+  background: #eef2f7;
 }
 
-.plainList li + li {
-  margin-top: 0.45rem;
+.plainList {
+  list-style: none;
+  margin: 1.75rem 0 0;
+  padding: 0;
+}
+
+.plainList li {
+  border-top: 2px solid #c9d1dc;
+  font-weight: 750;
+  padding: 1rem 0;
 }
 
 .screenshotSection,
@@ -151,9 +154,9 @@
 .guideGallery {
   align-items: start;
   display: grid;
-  gap: 1.5rem;
+  gap: 2rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 1.5rem;
+  margin: 0;
 }
 
 .guideFigure {
@@ -187,7 +190,7 @@
 
 .imageButton:hover img,
 .imageButton:focus-visible img {
-  transform: scale(1.035);
+  transform: scale(1.045);
 }
 
 .imageButton:focus-visible {
@@ -200,9 +203,9 @@
   border-radius: 0.3rem 0 0 0;
   bottom: 0;
   color: #fff;
-  font-size: 0.84rem;
+  font-size: 0.9rem;
   font-weight: 850;
-  padding: 0.6rem 0.75rem;
+  padding: 0.65rem 0.85rem;
   position: absolute;
   right: 0;
 }
@@ -210,9 +213,9 @@
 .guideFigure figcaption {
   border-top: 1px solid #c9d1dc;
   color: #435066;
-  font-size: 0.92rem;
+  font-size: 1.05rem;
   line-height: 1.55;
-  padding: 0.85rem 0.95rem;
+  padding: 1rem 1.1rem 1.15rem;
 }
 
 .guideFigure figcaption strong,
@@ -222,8 +225,8 @@
 
 .guideFigure figcaption strong {
   color: #172033;
-  font-size: 1.02rem;
-  margin-bottom: 0.25rem;
+  font-size: 1.2rem;
+  margin-bottom: 0.3rem;
 }
 
 .imageDialog {
@@ -316,24 +319,21 @@
 
 .belowPictures {
   color: #435066;
-  max-width: 48rem;
+  max-width: 64rem;
 }
 
 .steps {
   counter-reset: vote-step;
   list-style: none;
-  margin: 1.5rem 0 0;
+  margin: 1.75rem 0 0;
   padding: 0;
 }
 
 .steps li {
+  border-top: 1px solid #cfd6e0;
   counter-increment: vote-step;
-  padding: 1.1rem 0 1.1rem 3.25rem;
+  padding: 1.25rem 0 1.25rem 3.5rem;
   position: relative;
-}
-
-.steps li + li {
-  border-top: 1px solid #d8dee8;
 }
 
 .steps li::before {
@@ -344,24 +344,24 @@
   content: counter(vote-step);
   display: flex;
   font-weight: 900;
-  height: 2.2rem;
+  height: 2.35rem;
   justify-content: center;
   left: 0;
   position: absolute;
-  top: 1.05rem;
-  width: 2.2rem;
+  top: 1.2rem;
+  width: 2.35rem;
 }
 
 .steps strong {
   display: block;
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.2rem;
 }
 
 .note {
   background: #fff8df;
-  border-left: 4px solid #d79a00;
-  margin-top: 1.5rem;
-  padding: 1rem 1.15rem;
+  border-left: 5px solid #d79a00;
+  margin-top: 1.75rem;
+  padding: 1.2rem 1.35rem;
 }
 
 .note h3 {
@@ -369,33 +369,44 @@
 }
 
 .note p {
-  margin-top: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+.optionGrid,
+.infoGrid {
+  display: grid;
+  gap: 2rem;
+  margin-top: 1.75rem;
+}
+
+.optionItem {
+  border-top: 4px solid #071428;
+  padding-top: 1.2rem;
 }
 
 .textLink {
   display: inline-block;
-  margin-top: 0.75rem;
+  margin-top: 0.8rem;
 }
 
-.helpHeading {
-  border-top: 1px solid #d8dee8;
-  margin-top: 2.25rem !important;
-  padding-top: 2.25rem;
+.helpBlock {
+  border-top: 1px solid #cfd6e0;
+  padding-top: 2rem;
 }
 
 .contactList {
-  margin: 0.75rem 0 0;
-  padding-left: 1.25rem;
+  margin: 0.85rem 0 0;
+  padding-left: 1.35rem;
 }
 
 .contactList li + li {
-  margin-top: 0.35rem;
+  margin-top: 0.45rem;
 }
 
 .footerNote {
-  border-top: 1px solid #d8dee8;
+  border-top: 1px solid #cfd6e0;
   color: #59657a;
-  font-size: 0.9rem !important;
+  font-size: 0.95rem !important;
   margin-top: 2rem !important;
   padding-top: 1.25rem;
 }
@@ -405,8 +416,66 @@
   outline-offset: 3px;
 }
 
+@media (min-width: 800px) {
+  .plainList {
+    display: grid;
+    gap: 0 3.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .plainList li:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .steps {
+    column-gap: 4rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .optionGrid,
+  .infoGrid {
+    gap: 4rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .helpBlock {
+    border-left: 1px solid #cfd6e0;
+    border-top: 0;
+    padding-left: 4rem;
+    padding-top: 0;
+  }
+}
+
 @media (max-width: 760px) {
+  .wrap,
+  .readingWidth {
+    padding-inline: 1rem;
+  }
+
+  .hero {
+    padding-block: 2.75rem;
+  }
+
+  .hero h1 {
+    font-size: 2.55rem;
+  }
+
+  .section {
+    padding: 2.5rem 0;
+  }
+
+  .section h2 {
+    font-size: 2rem;
+  }
+
+  .section p,
+  .section li {
+    font-size: 1rem;
+  }
+
   .guideGallery {
+    gap: 1.5rem;
     grid-template-columns: 1fr;
   }
 
@@ -414,23 +483,28 @@
     grid-column: auto;
   }
 
-  .readingWidthNoMargin {
-    padding-inline: 0;
+  .guideFigure figcaption {
+    font-size: 0.98rem;
+  }
+
+  .guideFigure figcaption strong {
+    font-size: 1.08rem;
+  }
+
+  .helpBlock {
+    margin-top: 0.5rem;
   }
 }
 
 @media (max-width: 480px) {
   .mainLink {
+    box-sizing: border-box;
     text-align: center;
     width: 100%;
   }
 
-  .hero h1 {
-    font-size: 2.5rem;
-  }
-
   .steps li {
-    padding-left: 2.85rem;
+    padding-left: 3rem;
   }
 
   .dialogActions {
