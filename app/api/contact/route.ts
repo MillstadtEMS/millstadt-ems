@@ -15,9 +15,11 @@ import {
   hasValidCsrfToken,
   issueCsrfToken,
   noStoreJson,
+  requestIp,
 } from "@/lib/security/http";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { parsePublicFormSubmission } from "@/lib/security/public-form-schemas";
+import { verifyTurnstileToken } from "@/lib/security/turnstile";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -37,23 +39,51 @@ export async function POST(req: NextRequest) {
   if (!hasValidCsrfToken(req, CSRF_SCOPE)) {
     return noStoreJson({ error: "Refresh the form and try again." }, { status: 403 });
   }
-  const limit = await checkRateLimit(req, "public-contact", {
-    limit: 5,
-    windowMs: 15 * 60_000,
-    blockMs: 30 * 60_000,
-  });
-  if (!limit.allowed) {
-    const response = noStoreJson({ error: "Too many submissions. Please wait and try again." }, { status: 429 });
-    response.headers.set("Retry-After", String(limit.retryAfterSeconds));
-    return response;
-  }
 
   try {
     const rawBody = await req.text();
     if (Buffer.byteLength(rawBody, "utf8") > MAX_BODY_BYTES) {
       return noStoreJson({ error: "Submission is too large." }, { status: 413 });
     }
-    const parsed = parsePublicFormSubmission(JSON.parse(rawBody));
+    const body = JSON.parse(rawBody) as unknown;
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return noStoreJson({ error: "Invalid request." }, { status: 400 });
+    }
+
+    const submitted = body as Record<string, unknown>;
+    if (typeof submitted.website === "string" && submitted.website.trim()) {
+      return noStoreJson({ ok: true });
+    }
+
+    const verification = await verifyTurnstileToken(submitted.turnstileToken, {
+      action: "contact_form",
+      remoteIp: requestIp(req),
+    });
+    if (!verification.ok) {
+      return noStoreJson(
+        { error: "Please complete the security check and try again." },
+        { status: 403 },
+      );
+    }
+
+    const limit = await checkRateLimit(req, "public-contact", {
+      limit: 5,
+      windowMs: 15 * 60_000,
+      blockMs: 30 * 60_000,
+    });
+    if (!limit.allowed) {
+      const response = noStoreJson(
+        { error: "Too many submissions. Please wait and try again." },
+        { status: 429 },
+      );
+      response.headers.set("Retry-After", String(limit.retryAfterSeconds));
+      return response;
+    }
+
+    const { turnstileToken: _turnstileToken, website: _website, ...submissionBody } = submitted;
+    void _turnstileToken;
+    void _website;
+    const parsed = parsePublicFormSubmission(submissionBody);
     if (!parsed.ok) return noStoreJson({ error: parsed.error }, { status: 400 });
     const { formType, fields } = parsed;
 

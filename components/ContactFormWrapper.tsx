@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import TurnstileWidget from "@/components/TurnstileWidget";
 /* Link is used in the success state below */
 
 interface Props {
@@ -19,6 +20,9 @@ export default function ContactFormWrapper({
 }: Props) {
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [csrfToken, setCsrfToken] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -36,6 +40,12 @@ export default function ContactFormWrapper({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!turnstileToken) {
+      setErrorMessage("Please complete the security check before submitting.");
+      setStatus("error");
+      return;
+    }
+    setErrorMessage("");
     setStatus("sending");
 
     const fd = new FormData(e.currentTarget);
@@ -54,9 +64,12 @@ export default function ContactFormWrapper({
         },
         body: JSON.stringify({ formType, ...fields }),
       });
-      if (!res.ok) throw new Error("Server error");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "The form could not be submitted.");
       setStatus("done");
-    } catch {
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "The form could not be submitted.");
+      setTurnstileResetKey((value) => value + 1);
       setStatus("error");
     }
   }
@@ -94,6 +107,16 @@ export default function ContactFormWrapper({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
+      <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden">
+        <label htmlFor={`website-${formType.replace(/\s+/g, "-").toLowerCase()}`}>Website</label>
+        <input
+          id={`website-${formType.replace(/\s+/g, "-").toLowerCase()}`}
+          name="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+        />
+      </div>
       {children}
 
       {disclaimer && (
@@ -108,9 +131,15 @@ export default function ContactFormWrapper({
         </div>
       )}
 
+      <TurnstileWidget
+        action="contact_form"
+        onTokenChange={setTurnstileToken}
+        resetKey={turnstileResetKey}
+      />
+
       <button
         type="submit"
-        disabled={status === "sending" || !csrfToken}
+        disabled={status === "sending" || !csrfToken || !turnstileToken}
         className="block w-full rounded-2xl py-5 mt-10 bg-[#f0b429] hover:bg-[#d9a320] disabled:opacity-60 text-[#040d1a] font-black text-base uppercase tracking-widest transition-all"
         style={{
           boxShadow: "0 22px 54px rgba(240,180,41,0.22), inset 0 1px 0 rgba(255,255,255,0.36)",
@@ -121,7 +150,7 @@ export default function ContactFormWrapper({
 
       {status === "error" && (
         <p className="text-red-300 text-sm pt-4 leading-relaxed">
-          Something went wrong. Please try again or email us directly at millstadtems@gmail.com.
+          {errorMessage || "Something went wrong. Please try again or email us directly at millstadtems@gmail.com."}
         </p>
       )}
     </form>

@@ -10,9 +10,11 @@ import {
   hasValidCsrfToken,
   issueCsrfToken,
   noStoreJson,
+  requestIp,
 } from "@/lib/security/http";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { parseEmploymentApplication } from "@/lib/security/employment-application-schema";
+import { verifyTurnstileToken } from "@/lib/security/turnstile";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -70,6 +72,8 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const rawFields: Record<string, string> = {};
+    let turnstileToken = "";
+    let website = "";
     for (const [key, value] of formData.entries()) {
       if (value instanceof File) {
         if (value.size > 0) {
@@ -79,8 +83,31 @@ export async function POST(req: NextRequest) {
           );
         }
       } else {
+        if (key === "turnstileToken") {
+          turnstileToken = value;
+          continue;
+        }
+        if (key === "website") {
+          website = value;
+          continue;
+        }
         rawFields[key] = rawFields[key] ? `${rawFields[key]}, ${value}` : value;
       }
+    }
+
+    if (website.trim()) {
+      return noStoreJson({ success: true });
+    }
+
+    const verification = await verifyTurnstileToken(turnstileToken, {
+      action: "employment_application",
+      remoteIp: requestIp(req),
+    });
+    if (!verification.ok) {
+      return noStoreJson(
+        { success: false, error: "Please complete the security check and try again." },
+        { status: 403 },
+      );
     }
 
     const parsed = parseEmploymentApplication(rawFields);

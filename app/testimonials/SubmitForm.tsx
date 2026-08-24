@@ -1,13 +1,22 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { submitTestimonial } from "./actions";
 import { Section, SectionHeader, Label, Input, Textarea } from "@/components/forms/VillaStyle";
+import TurnstileWidget from "@/components/TurnstileWidget";
 
 export default function SubmitForm() {
   const [state, action, pending] = useActionState(submitTestimonial, null);
   const [anonymous, setAnonymous] = useState(false);
   const [chars, setChars] = useState(0);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+
+  useEffect(() => {
+    if (state && "error" in state) {
+      setTurnstileResetKey((value) => value + 1);
+    }
+  }, [state]);
 
   if (state && "success" in state) {
     return (
@@ -84,9 +93,15 @@ export default function SubmitForm() {
         </div>
       </Section>
 
+      <TurnstileWidget
+        action="testimonial"
+        onTokenChange={setTurnstileToken}
+        resetKey={turnstileResetKey}
+      />
+
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || !turnstileToken}
         className="w-full py-4 bg-[#f0b429] hover:bg-[#d9a320] disabled:opacity-60 disabled:cursor-not-allowed text-[#040d1a] font-black text-sm uppercase tracking-widest transition-colors"
       >
         {pending ? "Submitting…" : "Submit Testimonial"}

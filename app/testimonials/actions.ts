@@ -5,7 +5,9 @@ import { headers } from "next/headers";
 import { addTestimonial } from "@/lib/testimonials";
 import { sendApprovalEmail } from "@/lib/email";
 import { notifyAdminsInLounge } from "@/lib/lounge/notify-admins";
+import { requestIp } from "@/lib/security/http";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { verifyTurnstileToken } from "@/lib/security/turnstile";
 
 export type FormState = { success: true } | { error: string } | null;
 
@@ -16,6 +18,7 @@ export async function submitTestimonial(
   const messageValue = formData.get("message");
   const nameValue = formData.get("name");
   const websiteValue = formData.get("website");
+  const turnstileToken = formData.get("turnstileToken");
   const message = typeof messageValue === "string" ? messageValue.trim() : "";
   const rawName = typeof nameValue === "string" ? nameValue.trim() : "";
   const anonymous = formData.get("anonymous") === "on";
@@ -28,6 +31,14 @@ export async function submitTestimonial(
   const request = new NextRequest("https://www.millstadtems.org/testimonials", {
     headers: requestHeaders,
   });
+  const verification = await verifyTurnstileToken(turnstileToken, {
+    action: "testimonial",
+    remoteIp: requestIp(request),
+  });
+  if (!verification.ok) {
+    return { error: "Please complete the security check and try again." };
+  }
+
   const limit = await checkRateLimit(request, "public-testimonial", {
     limit: 8,
     windowMs: 15 * 60_000,

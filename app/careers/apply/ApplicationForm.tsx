@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import SignaturePad from "@/components/lounge/SignaturePad";
+import TurnstileWidget from "@/components/TurnstileWidget";
 
 /* ── Reusable field components — Villa Hills pattern, EMS gold ─────── */
 
@@ -186,6 +187,8 @@ export default function ApplicationForm() {
   const [errorMsg, setErrorMsg] = useState("");
   const [signature, setSignature] = useState<string | null>(null);
   const [csrfToken, setCsrfToken] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -221,6 +224,13 @@ export default function ApplicationForm() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMsg("");
+
+    if (!turnstileToken) {
+      setErrorMsg("Please complete the security check before submitting.");
+      setStatus("error");
+      return;
+    }
+
     setStatus("sending");
 
     const fd = new FormData(e.currentTarget);
@@ -282,9 +292,11 @@ export default function ApplicationForm() {
       } else {
         setErrorMsg(data?.error || `Submission failed (${res.status}). Please try again or email millstadtems@gmail.com.`);
       }
+      setTurnstileResetKey((value) => value + 1);
       setStatus("error");
     } catch {
       setErrorMsg("Network error — could not reach the server. Try again or email millstadtems@gmail.com.");
+      setTurnstileResetKey((value) => value + 1);
       setStatus("error");
     }
   }
@@ -312,6 +324,16 @@ export default function ApplicationForm() {
     <div className="bg-[#0A0A0A] py-12 sm:py-16">
       <div className="wrap" style={{ maxWidth: "920px" }}>
         <form ref={formRef} onSubmit={handleSubmit} encType="multipart/form-data" noValidate>
+          <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden">
+            <label htmlFor="application-website">Website</label>
+            <input
+              id="application-website"
+              name="website"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+            />
+          </div>
 
           {/* ── SECTION 1: Position Applied For ── */}
           <Section>
@@ -793,10 +815,16 @@ export default function ApplicationForm() {
           </Section>
 
           {/* ── SUBMIT ── */}
+          <TurnstileWidget
+            action="employment_application"
+            onTokenChange={setTurnstileToken}
+            resetKey={turnstileResetKey}
+          />
+
           <div className="mt-8 flex flex-col sm:flex-row gap-3">
             <button
               type="submit"
-              disabled={status === "sending" || !signature || !csrfToken}
+              disabled={status === "sending" || !signature || !csrfToken || !turnstileToken}
               title={!signature ? "Add your signature above before submitting." : undefined}
               className="bg-[#f0b429] text-[#040d1a] font-black uppercase tracking-wider px-8 py-4 hover:bg-[#f7c847] transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm sm:text-base"
             >
