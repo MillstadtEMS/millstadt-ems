@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/mcs-schedule",
-      "schedule": "17 * * * *"
+      "schedule": "30 16 * * *"
     },
     {
       "path": "/api/cron/fetch-newsletters",
