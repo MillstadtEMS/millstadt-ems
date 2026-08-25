@@ -94,44 +94,45 @@ export default async function Home({
               {subtitle2}
             </p>
 
-            <div className="flex w-full max-w-5xl flex-wrap justify-center gap-5">
+            <div className="grid w-full max-w-4xl grid-cols-3 gap-3 sm:gap-5">
               <a
                 href={primaryBtnHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-10 py-5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-black text-lg rounded-2xl transition-colors min-w-[200px]"
+                className="flex min-h-[76px] w-full items-center justify-center rounded-2xl bg-[#2563eb] px-3 py-4 text-center text-sm font-black text-white transition-colors hover:bg-[#1d4ed8] sm:px-8 sm:text-lg"
               >
                 {primaryBtnText}
               </a>
               <Link
                 href={secondaryBtnHref}
-                className="px-10 py-5 border-2 border-[#f0b429]/60 hover:border-[#f0b429] text-[#f0b429] hover:bg-[#f0b429]/10 font-black text-lg rounded-2xl transition-colors min-w-[200px] text-center"
+                className="flex min-h-[76px] w-full items-center justify-center rounded-2xl border-2 border-[#f0b429]/60 px-3 py-4 text-center text-sm font-black text-[#f0b429] transition-colors hover:border-[#f0b429] hover:bg-[#f0b429]/10 sm:px-8 sm:text-lg"
               >
                 {secondaryBtnText}
               </Link>
               <Link
-                href="/financials-information-hub"
-                className="group flex min-h-[70px] min-w-[220px] items-center justify-center rounded-2xl px-2 py-1 transition-transform hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0b429]"
-                aria-label="Open Financial Transparency"
-              >
-                <Image
-                  src="/images/financial-transparency/millstadt-ems-financial-transparency.png"
-                  alt="Millstadt EMS Financial Transparency"
-                  width={255}
-                  height={170}
-                  className="h-auto w-[230px] drop-shadow-[0_8px_18px_rgba(0,0,0,0.55)] transition group-hover:drop-shadow-[0_8px_22px_rgba(240,180,41,0.3)]"
-                />
-              </Link>
-              <Link
                 href="/election-information"
-                className="flex min-h-[70px] min-w-[220px] flex-col items-center justify-center rounded-2xl border-2 border-[#f0b429] bg-[#f0b429] px-8 py-3 text-center font-black text-[#040d1a] transition-colors hover:border-[#ffd45c] hover:bg-[#ffd45c]"
+                className="flex min-h-[76px] w-full flex-col items-center justify-center rounded-2xl border-2 border-[#f0b429] bg-[#f0b429] px-2 py-3 text-center font-black text-[#040d1a] transition-colors hover:border-[#ffd45c] hover:bg-[#ffd45c] sm:px-6"
               >
-                <span className="text-base">Election Information</span>
-                <span className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[#0f2d5c]">
+                <span className="text-xs sm:text-base">Election Information</span>
+                <span className="mt-1 hidden text-[10px] uppercase tracking-[0.16em] text-[#0f2d5c] sm:block">
                   Official voter resources
                 </span>
               </Link>
             </div>
+
+            <Link
+              href="/financials-information-hub"
+              className="group mt-5 flex items-center justify-center rounded-2xl px-2 py-1 transition-transform hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0b429]"
+              aria-label="Open Financial Transparency"
+            >
+              <Image
+                src="/images/financial-transparency/millstadt-ems-financial-transparency.png"
+                alt="Millstadt EMS Financial Transparency"
+                width={255}
+                height={170}
+                className="h-auto w-[230px] drop-shadow-[0_8px_18px_rgba(0,0,0,0.55)] transition group-hover:drop-shadow-[0_8px_22px_rgba(240,180,41,0.3)]"
+              />
+            </Link>
           </div>
 
           {/* Breathing room between CTAs and the (now-larger) call counter — inline style because Tailwind v4 spacing utilities resolve to 0 here */}
