@@ -10,7 +10,7 @@ type TurnstileOptions = {
   size: "flexible";
   callback: (token: string) => void;
   "expired-callback": () => void;
-  "error-callback": () => void;
+  "error-callback": (errorCode?: string) => void;
   "timeout-callback": () => void;
 };
 
@@ -58,7 +58,10 @@ export default function TurnstileWidget({ action, onTokenChange, resetKey = 0 }:
         size: "flexible",
         callback: updateToken,
         "expired-callback": () => updateToken(""),
-        "error-callback": () => updateToken(""),
+        "error-callback": () => {
+          setLoadFailed(true);
+          updateToken("");
+        },
         "timeout-callback": () => updateToken(""),
       });
       setLoadFailed(false);
@@ -126,7 +129,7 @@ export default function TurnstileWidget({ action, onTokenChange, resetKey = 0 }:
           />
           {loadFailed && (
             <p className="mt-2 text-sm text-red-300">
-              The security check did not load. Refresh the page and try again.
+              The security check is temporarily unavailable. Refresh the page and try again.
             </p>
           )}
         </>

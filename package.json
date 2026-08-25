@@ -18,6 +18,7 @@
     "test:truckcheck": "node --import tsx scripts/test-truckcheck-boundary.ts && node --import tsx --test scripts/test-truckcheck-persistence.ts",
     "test:analytics-boundary": "node --import tsx scripts/test-analytics-boundary.ts",
     "test:sports-score-boundary": "node scripts/test-sports-score-boundary.cjs",
+    "test:mcs-schedule": "node --import tsx --test scripts/test-mcs-schedule.ts",
     "test:operational": "node --import tsx scripts/test-operational-correctness.ts",
     "test:reports": "node --import tsx scripts/test-email-output.ts && node --import tsx scripts/test-pdf-registry.ts",
     "test:board-private-documents": "node --import tsx --test scripts/test-board-private-documents.ts",

@@ -19,6 +19,7 @@ import {
   normalizeNhlScore,
   type NormalizedGameState,
 } from "@/lib/community/sports";
+import { getMcsScheduleSnapshot } from "@/lib/community/mcs-schedule";
 
 const CARDINALS_TEAM_ID = 138;
 const BLUES_ABBREVIATION = "STL";
@@ -34,9 +35,6 @@ const EMS_CALENDAR_URL =
 const ST_JAMES_CALENDAR_URL =
   "https://calendar.google.com/calendar/ical/stjamesmillstadt.com_eisminfqo0hm62h6i592hj54ik%40group.calendar.google.com/public/basic.ics";
 const ST_JAMES_SCHOOL_URL = "https://www.stjmillstadt.org/st-james-school/";
-const MCS_SPORTS_URL = "https://www.mccsd160.com/athletics";
-const MCS_SPORTS_FEED_URL =
-  "https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/1744/cms/scores_schedules?section_ids=35716&page_size=200";
 const BELLEVILLE_WEST_SPORTS_URL = "https://www.bwestathletics.org/";
 const BELLEVILLE_WEST_FEED_URL = "https://manage-api.snap.app/";
 const ASTRONOMY_ENGINE_URL = "https://github.com/cosinekitty/astronomy";
@@ -82,21 +80,6 @@ export type CommunityAlert = {
   lastUpdatedAt?: string;
   final?: boolean;
 };
-
-const thrillshareScheduleSchema = z.object({
-  scores_schedules: z.array(
-    z.object({
-      id: z.number(),
-      formatted_date: z.string(),
-      away_team: z.string().nullish(),
-      home_team: z.string().nullish(),
-      title: z.string().nullish(),
-      place: z.string().nullish(),
-      address: z.string().nullish(),
-      filter_name: z.string().nullish(),
-    }),
-  ),
-});
 
 const snapScheduleSchema = z.object({
   data: z.object({
@@ -405,27 +388,14 @@ async function getBluesAlerts(now: Date): Promise<CommunityAlert[]> {
 }
 
 async function getMillstadtSchoolAlerts(now: Date): Promise<CommunityAlert[]> {
-  const parsed = thrillshareScheduleSchema.safeParse(await fetchJson(MCS_SPORTS_FEED_URL));
-  if (!parsed.success) throw new Error("Millstadt CCSD schedule response did not match the expected shape");
-
+  const snapshot = await getMcsScheduleSnapshot();
   const checkedAt = now.toISOString();
-  return parsed.data.scores_schedules.flatMap((event) => {
-    const gameStart = new Date(event.formatted_date);
+  return snapshot.events.flatMap((event) => {
+    const gameStart = new Date(event.startsAt);
     if (Number.isNaN(gameStart.getTime())) return [];
 
-    const { displayEndsAt, visible } = gameIsVisibleToday(now, gameStart);
+    const { displayEndsAt, visible } = gameIsVisibleToday(now, gameStart, event.dateKey);
     if (!visible) return [];
-
-    const away = event.away_team?.trim() ?? "";
-    const home = event.home_team?.trim() ?? "";
-    const sport = event.filter_name?.trim() || "School athletics";
-    const millstadtIsHome = /\bMCS\b/i.test(home);
-    const millstadtIsAway = /\bMCS\b/i.test(away);
-    const matchup = millstadtIsHome && away
-      ? `vs. ${away}`
-      : millstadtIsAway && home
-        ? `at ${home}`
-        : event.title?.trim() || [away, home].filter(Boolean).join(" vs. ") || "School event";
 
     return [{
       id: `mcs-${event.id}`,
@@ -433,13 +403,13 @@ async function getMillstadtSchoolAlerts(now: Date): Promise<CommunityAlert[]> {
       brand: "millstadt-ccsd" as const,
       state: gameStart <= now ? "active" as const : "upcoming" as const,
       priority: 4,
-      title: "Millstadt School Game Day",
-      summary: `${sport} ${matchup} | ${formatCentralTime(gameStart)}`,
-      detail: event.address?.trim() || event.place?.trim() || undefined,
+      title: "MCS Game Day",
+      summary: `${event.label} | ${event.timeLabel ? formatCentralTime(gameStart) : "Time TBA"}`,
+      detail: `Schedule from ${snapshot.sourceTitle}`,
       startsAt: gameStart.toISOString(),
       endsAt: displayEndsAt.toISOString(),
-      sourceName: "Millstadt CCSD Athletics",
-      sourceUrl: MCS_SPORTS_URL,
+      sourceName: "Millstadt CCSD Student Announcements",
+      sourceUrl: snapshot.sourceUrl,
       checkedAt,
     }];
   });
