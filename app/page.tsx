@@ -10,7 +10,6 @@ import PublicStatsSummary from "@/components/PublicStatsSummary";
 import SectionDivider from "@/components/SectionDivider";
 import SerenityPrayer from "@/components/SerenityPrayer";
 import { getContent } from "@/lib/db";
-import { isFinancialsHubDevelopmentEnabled } from "@/lib/financials-hub/config";
 
 // Always SSR so ?preview=ve shows fresh draft content
 export const dynamic = "force-dynamic";
@@ -22,10 +21,6 @@ export default async function Home({
 }) {
   const params = await searchParams;
   const isPreview = params?.preview === "ve";
-  const financialsReadyForTesting = isFinancialsHubDevelopmentEnabled();
-  const financialsBadge = financialsReadyForTesting
-    ? "Ready for testing"
-    : "Under construction";
 
   const [
     eyebrow,
@@ -116,12 +111,16 @@ export default async function Home({
               </Link>
               <Link
                 href="/financials-information-hub"
-                className="flex min-h-[70px] min-w-[220px] flex-col items-center justify-center rounded-2xl border-2 border-white/25 bg-[#040d1a]/70 px-8 py-3 text-center font-black text-white backdrop-blur-sm transition-colors hover:border-[#f0b429] hover:text-[#f0b429]"
+                className="group flex min-h-[70px] min-w-[220px] items-center justify-center rounded-2xl px-2 py-1 transition-transform hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0b429]"
+                aria-label="Open Financial Transparency"
               >
-                <span className="text-base">Financial &amp; Information Transparency</span>
-                <span className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[#f0b429]">
-                  {financialsBadge}
-                </span>
+                <Image
+                  src="/images/financial-transparency/millstadt-ems-financial-transparency.png"
+                  alt="Millstadt EMS Financial Transparency"
+                  width={255}
+                  height={170}
+                  className="h-auto w-[230px] drop-shadow-[0_8px_18px_rgba(0,0,0,0.55)] transition group-hover:drop-shadow-[0_8px_22px_rgba(240,180,41,0.3)]"
+                />
               </Link>
               <Link
                 href="/election-information"
