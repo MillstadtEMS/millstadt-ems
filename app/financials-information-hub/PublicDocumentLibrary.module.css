@@ -99,36 +99,6 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.45rem;
-}
-
-.movedSquare {
-  display: flex;
-  width: 7.4rem;
-  height: 7.4rem;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid rgba(240, 180, 41, 0.76);
-  border-radius: 1.15rem;
-  background: rgba(4, 13, 26, 0.75);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
-  color: white;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-.movedSquare span {
-  color: var(--gold);
-  font-size: 0.66rem;
-  font-weight: 900;
-  letter-spacing: 0.18em;
-}
-
-.movedSquare strong {
-  margin-top: 0.26rem;
-  font-size: 1.05rem;
-  letter-spacing: 0.04em;
 }
 
 .heroLogo {
@@ -718,11 +688,6 @@
 
   .heroBrand {
     gap: 0;
-  }
-
-  .movedSquare {
-    width: 6.4rem;
-    height: 6.4rem;
   }
 
   .heroLogo {

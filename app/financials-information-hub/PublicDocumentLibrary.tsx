@@ -70,10 +70,6 @@ export default function PublicDocumentLibrary({
             <p className={styles.heroLead}>Direct public access to annual IRS filings and operational records.</p>
           </div>
           <div className={styles.heroBrand} aria-hidden="true">
-            <div className={styles.movedSquare}>
-              <span>Public</span>
-              <strong>Records</strong>
-            </div>
             <Image
               src="/images/financial-transparency/millstadt-ems-financial-transparency.png"
               alt=""
