@@ -3,6 +3,7 @@
 import {
   Bug,
   CheckCircle2,
+  ChevronDown,
   Download,
   FileSearch,
   FileText,
@@ -48,9 +49,9 @@ export default function PublicDocumentLibrary({
     );
   }, [category, documents, query]);
 
-  const form990s = filteredDocuments.filter((document) => document.kind === "form_990");
+  const form990s = filteredDocuments.filter((document) => document.category === "990");
   const operationalDocuments = filteredDocuments.filter(
-    (document) => document.kind !== "form_990",
+    (document) => document.category !== "990",
   );
   const filtersActive = Boolean(query.trim()) || category !== ALL_CATEGORIES;
 
@@ -129,11 +130,7 @@ export default function PublicDocumentLibrary({
           ) : (
             <div className={styles.libraryGroups}>
               {form990s.length > 0 && (
-                <DocumentGroup
-                  title="IRS Form 990 filings"
-                  description="Annual federal information returns, organized by tax year."
-                  documents={form990s}
-                />
+                <AnnualDocumentGroup documents={form990s} />
               )}
               {operationalDocuments.length > 0 && (
                 <DocumentGroup
@@ -149,6 +146,122 @@ export default function PublicDocumentLibrary({
         </div>
       </section>
     </main>
+  );
+}
+
+function AnnualDocumentGroup({
+  documents,
+}: {
+  documents: PublicLibraryDocument[];
+}) {
+  const documentsByYear = documents.reduce<Record<string, PublicLibraryDocument[]>>(
+    (groups, document) => {
+      const year = String(document.filingYear ?? "Other");
+      groups[year] = [...(groups[year] ?? []), document];
+      return groups;
+    },
+    {},
+  );
+
+  const yearGroups = Object.entries(documentsByYear).sort(([yearA], [yearB]) =>
+    yearB.localeCompare(yearA, undefined, { numeric: true }),
+  );
+
+  return (
+    <section className={styles.documentGroup} aria-labelledby="annual-filings-heading">
+      <div className={styles.groupHeading}>
+        <div>
+          <h3 id="annual-filings-heading">IRS Form 990 filings</h3>
+          <p>Expand a tax year to view every document associated with that year.</p>
+        </div>
+      </div>
+      <div className={styles.yearList}>
+        {yearGroups.map(([year, yearDocuments]) => (
+          <details className={styles.yearRow} key={year}>
+            <summary>
+              <span className={styles.yearIdentity}>
+                <span>Tax year</span>
+                <strong>{year}</strong>
+              </span>
+              <span className={styles.yearFileCount}>
+                {yearDocuments.length} {yearDocuments.length === 1 ? "file" : "files"}
+              </span>
+              <span className={styles.yearToggle}>
+                View files <ChevronDown aria-hidden="true" />
+              </span>
+            </summary>
+            <div className={styles.attachmentList}>
+              {yearDocuments.map((document) => (
+                <AnnualAttachmentRow key={document.id} document={document} />
+              ))}
+            </div>
+          </details>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function AnnualAttachmentRow({ document }: { document: PublicLibraryDocument }) {
+  return (
+    <article className={styles.attachmentRow}>
+      <div className={styles.fileIcon} aria-hidden="true">
+        <FileText />
+        <span>PDF</span>
+      </div>
+      <div className={styles.attachmentInfo}>
+        <span className={styles.category}>{document.category}</span>
+        <h4>{document.title}</h4>
+        <p>
+          {document.dateLabel}
+          {document.pageCount ? ` · ${document.pageCount} pages` : ""}
+        </p>
+        <a
+          className={styles.attachmentReportLink}
+          href={documentReportHref(document)}
+          aria-label={`Report a problem with ${document.title}`}
+        >
+          <Bug aria-hidden="true" /> Report a problem
+        </a>
+      </div>
+      <span className={styles.status}>
+        <CheckCircle2 aria-hidden="true" /> {document.statusLabel}
+      </span>
+      <div className={styles.attachmentActions}>
+        <a
+          className={styles.primaryAction}
+          href={document.viewUrl}
+          target="_blank"
+          rel="noreferrer"
+          data-analytics-event="document_view"
+          data-analytics-document-kind="public_form_990"
+          data-analytics-document-id={document.id}
+        >
+          <ZoomIn aria-hidden="true" /> View
+        </a>
+        <a
+          className={styles.secondaryAction}
+          href={document.downloadUrl}
+          download
+          data-analytics-event="document_download"
+          data-analytics-document-kind="public_form_990"
+          data-analytics-document-id={document.id}
+        >
+          <Download aria-hidden="true" /> Download
+        </a>
+        <a
+          className={styles.secondaryAction}
+          href={document.printUrl}
+          target="_blank"
+          rel="noreferrer"
+          data-analytics-event="print_selection"
+          data-analytics-document-kind="public_form_990"
+          data-analytics-document-id={document.id}
+        >
+          <Printer aria-hidden="true" /> Print
+        </a>
+      </div>
+    </article>
   );
 }
 
