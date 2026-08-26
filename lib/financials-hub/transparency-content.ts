@@ -154,6 +154,50 @@ export const PAY_RATE_GROUPS = [
 ] as const;
 export const TRANSFER_CALL_STIPEND = "$10.00 per call";
 export const NURSING_REGULAR_RATE = "$20.00/hour";
+
+// Only the five visible loan rows are transcribed. The supplied correction
+// overrides Zoll's worksheet rate and includes its balance despite its OFF toggle.
+export const DEBT_LOANS = [
+  { id: "mortgage", obligation: "First National Bank — mortgage", balance: 143348, interestRate: 6, frequency: "Monthly", scheduledPayment: 2141.30, paymentsPerYear: 12 },
+  { id: "ambulance-3935", obligation: "Ambulance loan — Unit 3935", balance: 175842, interestRate: 6, frequency: "Monthly", scheduledPayment: 3000, paymentsPerYear: 12 },
+  { id: "stryker-1", obligation: "Stryker Loan 1", balance: 8486, interestRate: 0, frequency: "Monthly", scheduledPayment: 446.65, paymentsPerYear: 12 },
+  { id: "stryker-2", obligation: "Stryker Loan 2", balance: 122347, interestRate: 0, frequency: "Monthly", scheduledPayment: 1773.14, paymentsPerYear: 12 },
+  { id: "zoll-monitor", obligation: "Zoll monitor loan", balance: 35558, interestRate: 7.99, frequency: "Annual", scheduledPayment: 17779.03, paymentsPerYear: 1 },
+] as const;
+export const DEBT_CREDIT_CARD = { obligation: "Credit card", balance: 0, status: "Paid off" } as const;
+export const PAST_DUE_BILLS = [
+  { obligation: "Accounting arrears", balance: 28000, planningYears: 2 },
+  { obligation: "EMSMC account catch-up", balance: 28331, planningYears: 2 },
+  { obligation: "Mediclaims unpaid invoice", balance: 10000, planningYears: 2 },
+] as const;
+export const PAST_DUE_EXPLANATION = "To meet payroll obligations, Millstadt Ambulance Service prioritized payroll payments, resulting in past-due balances on certain vendor accounts.";
+export const PAST_DUE_PLANNING_NOTE = "The worksheet lists a two-year catch-up period for each account. This is presented as a planning assumption, not an approved payment schedule.";
+export function annualizedLoanPaymentCents(loan: { scheduledPayment: number; paymentsPerYear: number }) {
+  return Math.round(loan.scheduledPayment * 100) * loan.paymentsPerYear;
+}
+export function formatDebtRate(rate: number) { return `${rate.toFixed(2)}%`; }
+const listedLoanBalance = DEBT_LOANS.reduce((total, loan) => total + loan.balance, 0);
+const listedPastDueBalance = PAST_DUE_BILLS.reduce((total, bill) => total + bill.balance, 0);
+export const DEBT_TOTALS = {
+  loans: listedLoanBalance,
+  pastDue: listedPastDueBalance,
+  creditCard: DEBT_CREDIT_CARD.balance,
+  combined: listedLoanBalance + listedPastDueBalance + DEBT_CREDIT_CARD.balance,
+  annualizedLoanPaymentCents: DEBT_LOANS.reduce((total, loan) => total + annualizedLoanPaymentCents(loan), 0),
+};
+export function debtLoanSearchText(loan: typeof DEBT_LOANS[number]) {
+  return `${loan.obligation} ${formatBillingMoney(loan.balance, false)} ${formatDebtRate(loan.interestRate)} ${loan.frequency} ${formatBillingMoney(loan.scheduledPayment)} ${loan.paymentsPerYear} payments per year Annualized scheduled payments ${formatBillingMoney(annualizedLoanPaymentCents(loan) / 100)}`;
+}
+export const DEBT_LIABILITIES_SECTION = {
+  id: "debt-liabilities", title: "Debt/Liabilities",
+  text: [
+    ...DEBT_LOANS.map(debtLoanSearchText),
+    `${DEBT_CREDIT_CARD.obligation} ${DEBT_CREDIT_CARD.status} ${formatBillingMoney(DEBT_CREDIT_CARD.balance, false)}`,
+    `Past-due bills ${PAST_DUE_EXPLANATION} ${PAST_DUE_PLANNING_NOTE}`,
+    ...PAST_DUE_BILLS.map(bill => `${bill.obligation} ${formatBillingMoney(bill.balance, false)} ${bill.planningYears} years`),
+    `Total listed loan balance ${formatBillingMoney(DEBT_TOTALS.loans, false)} Total past-due bills ${formatBillingMoney(DEBT_TOTALS.pastDue, false)} Total listed liabilities ${formatBillingMoney(DEBT_TOTALS.combined, false)} Annualized listed loan payments ${formatBillingMoney(DEBT_TOTALS.annualizedLoanPaymentCents / 100)}`,
+  ].join(" · "),
+};
 export const SECTION_SEARCH = [
   { id: "personnel", title: "Number of personnel", text: "18 EMTs 9 Paramedics 1 Pre-Hospital Registered Nurse 2 Advanced Practice Prehospital Registered Nurse Practitioners Total personnel 30" },
   { id: "district-support", title: "Current EMS Tax Amount", text: "$238,525.85" },
@@ -163,6 +207,7 @@ export const SECTION_SEARCH = [
   MEDICLAIMS_CLOSE_SECTION,
   ...BILLING_REPORT_SECTIONS,
   COLLECTIONS_SNAPSHOT_SECTION,
+  DEBT_LIABILITIES_SECTION,
   { id: "voter-resources", title: "Ready to Vote?", text: "Access official St. Clair County voter-registration, polling-place, election, and voter-information resources. View Official Voter Resources" },
 ];
 
