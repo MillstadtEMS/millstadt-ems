@@ -198,6 +198,41 @@ export const DEBT_LIABILITIES_SECTION = {
     `Total listed loan balance ${formatBillingMoney(DEBT_TOTALS.loans, false)} Total past-due bills ${formatBillingMoney(DEBT_TOTALS.pastDue, false)} Total listed liabilities ${formatBillingMoney(DEBT_TOTALS.combined, false)} Annualized listed loan payments ${formatBillingMoney(DEBT_TOTALS.annualizedLoanPaymentCents / 100)}`,
   ].join(" · "),
 };
+// Actual repair entries only; blank months and budget figures are excluded.
+// Totals use the individual unit rows, not the incomplete worksheet subtotal.
+export const TRUCK_REPAIRS = [
+  { unit: "3925", months: [
+    { month: "2026-05", label: "May 2026", amountCents: 153888 },
+    { month: "2026-06", label: "June 2026", amountCents: 405690 },
+    { month: "2026-07", label: "July 2026", amountCents: 0 },
+    { month: "2026-08", label: "August 2026", amountCents: 434799 },
+  ] },
+  { unit: "3926", months: [
+    { month: "2026-05", label: "May 2026", amountCents: 0 },
+    { month: "2026-06", label: "June 2026", amountCents: 134476 },
+    { month: "2026-07", label: "July 2026", amountCents: 0 },
+    { month: "2026-08", label: "August 2026", amountCents: 4100 },
+  ] },
+  { unit: "3935", months: [
+    { month: "2026-05", label: "May 2026", amountCents: 0 },
+    { month: "2026-06", label: "June 2026", amountCents: 171807 },
+    { month: "2026-07", label: "July 2026", amountCents: 167707 },
+  ] },
+] as const;
+export const TRUCK_REPAIRS_PERIOD = "FY 2026–2027 · Recorded entries since May 1, 2026";
+export const TRUCK_REPAIRS_CONTEXT = "Since the start of this fiscal year, Units 3925 and 3926 have both required transmission replacements. Unit 3926 has since experienced another transmission failure; the additional transmission repair is covered under warranty.";
+export const TRUCK_REPAIRS_NOTE = "These are recorded truck-repair costs, not an itemized breakdown of transmission work. Totals include only entered amounts from May–August 2026; August is partial. Blank months are omitted, and no additional warranty-related cost is assumed.";
+export function truckRepairTotalCents(truck: typeof TRUCK_REPAIRS[number]) {
+  return truck.months.reduce((total, month) => total + month.amountCents, 0);
+}
+export const TRUCK_REPAIRS_TOTAL_CENTS = TRUCK_REPAIRS.reduce((total, truck) => total + truckRepairTotalCents(truck), 0);
+export function truckRepairSearchText(truck: typeof TRUCK_REPAIRS[number]) {
+  return `Unit ${truck.unit} Truck repairs ${formatBillingMoney(truckRepairTotalCents(truck) / 100)} ${truck.months.map(month => `${month.label} ${month.month} ${formatBillingMoney(month.amountCents / 100)}`).join(" · ")}`;
+}
+export const TRUCK_REPAIRS_SECTION = {
+  id: "truck-repair-costs", title: "Truck repairs — FY 2026–2027",
+  text: `Truck repair costs ${TRUCK_REPAIRS_PERIOD} ${TRUCK_REPAIRS_CONTEXT} ${TRUCK_REPAIRS_NOTE} Total recorded repair costs ${formatBillingMoney(TRUCK_REPAIRS_TOTAL_CENTS / 100)} ${TRUCK_REPAIRS.map(truckRepairSearchText).join(" · ")}`,
+};
 export const SECTION_SEARCH = [
   { id: "personnel", title: "Number of personnel", text: "18 EMTs 9 Paramedics 1 Pre-Hospital Registered Nurse 2 Advanced Practice Prehospital Registered Nurse Practitioners Total personnel 30" },
   { id: "district-support", title: "Current EMS Tax Amount", text: "$238,525.85" },
@@ -208,6 +243,7 @@ export const SECTION_SEARCH = [
   ...BILLING_REPORT_SECTIONS,
   COLLECTIONS_SNAPSHOT_SECTION,
   DEBT_LIABILITIES_SECTION,
+  TRUCK_REPAIRS_SECTION,
   { id: "voter-resources", title: "Ready to Vote?", text: "Access official St. Clair County voter-registration, polling-place, election, and voter-information resources. View Official Voter Resources" },
 ];
 
