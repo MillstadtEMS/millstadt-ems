@@ -1,4 +1,5 @@
-import { BILLING_ROWS, BILLING_EXPLANATION, PAY_RATE_GROUPS, TRANSFER_CALL_STIPEND, NURSING_REGULAR_RATE } from "@/lib/financials-hub/transparency-content";
+import { BILLING_ROWS, BILLING_EXPLANATION, MEDICLAIMS_CLOSE, MEDICLAIMS_CLOSE_SECTION, matchesSearch, normalizeSearch, PAY_RATE_GROUPS, TRANSFER_CALL_STIPEND, NURSING_REGULAR_RATE } from "@/lib/financials-hub/transparency-content";
+import { Disclosure, Highlight } from "./DocumentRows";
 import styles from "./PublicDocumentLibrary.module.css";
 
 export function PersonnelAndPay() {
@@ -41,13 +42,29 @@ export function PersonnelAndPay() {
   </>;
 }
 
-export function BillingActivity() {
+export function BillingActivity({ query = "" }: { query?: string }) {
+  const needle = normalizeSearch(query);
+  const closeMatches = Boolean(needle) && matchesSearch(`${MEDICLAIMS_CLOSE_SECTION.title} ${MEDICLAIMS_CLOSE_SECTION.text}`, query);
   return <section id="billing-activity" aria-labelledby="billing-title" className={styles.billingSection}>
     <div className={styles.shell}><p className={styles.eyebrow}>Fiscal-year reporting</p><h2 id="billing-title">Fiscal-Year Billing Activity</h2><p className={styles.sectionExplanation}>{BILLING_EXPLANATION}</p>
       <table className={styles.billingTable}><caption className={styles.srOnly}>Billing revenue and billable runs by fiscal year</caption>
         <thead><tr><th scope="col">Fiscal year</th><th scope="col">Billing revenue</th><th scope="col">Total billable runs</th><th scope="col">Interfacility transfers</th><th scope="col">Calculated non-transfer billable runs</th></tr></thead>
         <tbody>{BILLING_ROWS.map(r=><tr key={r.year}><th scope="row">FY {r.year}</th><td data-label="Billing revenue">{r.revenue}</td><td data-label="Total billable runs">{r.runs}</td><td data-label="Interfacility transfers">{r.transfers}</td><td data-label="Calculated non-transfer billable runs">{r.nonTransfer}</td></tr>)}</tbody>
       </table>
+      <div id={MEDICLAIMS_CLOSE_SECTION.id} className={styles.mediclaimsClose}>
+        <Disclosure key={`mediclaims-${needle}`} title={MEDICLAIMS_CLOSE.title} meta={<Highlight text={MEDICLAIMS_CLOSE.period} query={query}/>} initiallyOpen={closeMatches} query={query}>
+          <table className={styles.mediclaimsTable}>
+            <caption className={styles.srOnly}>Mediclaims close reported for {MEDICLAIMS_CLOSE.period}</caption>
+            <thead><tr><th scope="col">Item</th><th scope="col">Amount</th></tr></thead>
+            <tbody>{MEDICLAIMS_CLOSE.rows.map(row => (
+              <tr key={row.item}>
+                <th scope="row"><Highlight text={row.item} query={query}/></th>
+                <td><Highlight text={row.amount} query={query}/></td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </Disclosure>
+      </div>
     </div>
   </section>;
 }

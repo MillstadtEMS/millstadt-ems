@@ -13,6 +13,28 @@ export const BILLING_ROWS = [
   { year: "2024–2025", revenue: "$598,688.61", runs: "1,264", transfers: "745", nonTransfer: "519" },
 ] as const;
 export const BILLING_EXPLANATION = "Calculated non-transfer billable runs equal total billable runs minus interfacility transfers.";
+export const MEDICLAIMS_CLOSE = {
+  title: "Mediclaims Close — FY 2024–2025",
+  period: "May 1, 2024 through April 30, 2025",
+  rows: [
+    { item: "Charges", amount: "$1,717,157.16" },
+    { item: "Receipts", amount: "$605,031.67" },
+    { item: "Adjustments", amount: "$1,003,290.49" },
+    { item: "Net accounts receivable", amount: "$108,835.00" },
+    { item: "Total accounts receivable", amount: "$440,106.33" },
+    { item: "Medicare adjustments", amount: "$814,149.35" },
+    { item: "Medicaid write-offs", amount: "$72,974.64" },
+    { item: "Uncollectible accounts", amount: "$10,945.76" },
+    { item: "Write-offs due to death", amount: "$3,372.85" },
+    { item: "VA adjustments", amount: "$5,450.66" },
+    { item: "Hardship/bankruptcy", amount: "$0.00" },
+  ],
+} as const;
+export const MEDICLAIMS_CLOSE_SECTION = {
+  id: "mediclaims-close",
+  title: MEDICLAIMS_CLOSE.title,
+  text: `${MEDICLAIMS_CLOSE.period} · ${MEDICLAIMS_CLOSE.rows.map(row => `${row.item} ${row.amount}`).join(" · ")}`,
+};
 export const CALENDAR_EXPLANATION = "911 call volumes are reported by calendar year, January 1 through December 31.";
 export const PAY_RATE_GROUPS = [
   { position: "EMT", rates: [
@@ -34,6 +56,7 @@ export const SECTION_SEARCH = [
   { id: "pay-transparency", title: "Pay Transparency", text: `${PAY_RATE_GROUPS.flatMap(group => group.rates.map(rate => `${group.position} ${rate.type} ${rate.amount}/hour`)).join(" · ")} · Transfer-call stipend ${TRANSFER_CALL_STIPEND} · PHRN / APHRN regular ${NURSING_REGULAR_RATE}` },
   { id: "annual-call-volume", title: "Annual 911 call volume", text: `${CALENDAR_EXPLANATION} 2022 618 2023 734 2024 748 2025 880 2026 through current Live` },
   { id: "billing-activity", title: "Fiscal-Year Billing Activity", text: `${BILLING_EXPLANATION} ${BILLING_ROWS.map(r=>Object.values(r).join(" ")).join(" ")}` },
+  MEDICLAIMS_CLOSE_SECTION,
   { id: "voter-resources", title: "Ready to Vote?", text: "Access official St. Clair County voter-registration, polling-place, election, and voter-information resources. View Official Voter Resources" },
 ];
 

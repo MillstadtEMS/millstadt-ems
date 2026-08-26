@@ -83,6 +83,13 @@
 .disclosureHeading { margin:0; }
 .disclosureButton { display:flex; justify-content:space-between; align-items:center; width:100%; min-height:64px; gap:1rem; padding:1rem 1.15rem; text-align:left; border:0; color:var(--ink); background:transparent; font:inherit; font-size:1rem; font-weight:750; cursor:pointer; transition:background .15s ease; }
 .categoryDisclosure > .disclosureHeading > .disclosureButton { background:#edf3fb; font-size:1.1rem; }
+.mediclaimsClose { margin-top:1.5rem; scroll-margin-top:11rem; }
+.mediclaimsTable { width:100%; border-collapse:collapse; font-size:.9rem; line-height:1.5; }
+.mediclaimsTable th,.mediclaimsTable td { padding:.75rem 1.15rem; border-top:1px solid #e0e6ee; text-align:left; }
+.mediclaimsTable thead th { background:#f7f9fc; color:var(--muted); font-size:.75rem; font-weight:700; }
+.mediclaimsTable tbody th { font-weight:500; }
+.mediclaimsTable td,.mediclaimsTable thead th:last-child { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.mediclaimsTable td { font-weight:700; color:#173d77; }
 .disclosureButton:hover,.taxSummary button:hover { background:#e3edfb; }
 .disclosureButton:focus-visible { outline-offset:-4px; }
 .disclosureButton svg,.taxSummary svg { transition:transform .18s ease; }
@@ -178,6 +185,8 @@
   .billingTable td { display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:.85rem 1rem; font-size:.88rem; }
   .billingTable td::before { content:attr(data-label); max-width:65%; text-align:left; color:var(--muted); font-size:.8rem; font-weight:500; line-height:1.5; }
   .billingTable td:last-child { border:0; }
+  .mediclaimsTable { font-size:.82rem; }
+  .mediclaimsTable th,.mediclaimsTable td { padding:.7rem .85rem; }
   .toolbar { grid-template-columns:1fr auto; }
   .searchField { grid-column:1/-1; }
   .disclosurePanel > .disclosure { margin-left:.45rem; margin-right:.45rem; }

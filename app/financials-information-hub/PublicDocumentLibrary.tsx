@@ -43,7 +43,7 @@ export default function PublicDocumentLibrary({documents}:{documents:PublicLibra
     </section>
     <PersonnelAndPay/>
     <AnnualCallSummary onCurrentCalls={setLiveCalls}/>
-    <BillingActivity/>
+    <BillingActivity query={query}/>
     <section id="document-library" aria-labelledby="library-heading" className={styles.library}>
       <div className={styles.shell}>
         <div className={styles.libraryHeading}><p className={styles.eyebrow}>Open access</p><h2 id="library-heading">Document library</h2><p>Explore filings, official records, and approved public reports.</p></div>
