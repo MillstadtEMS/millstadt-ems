@@ -149,7 +149,8 @@
   .heroLead { margin:1.1rem auto 0; }
   .heroLogo { width:min(17rem,85%); }
   .heroActions { justify-content:center; }
-  .overviewHeading { align-items:flex-start; flex-direction:column; gap:1.5rem; }
+  .overviewHeading { align-items:flex-start; flex-direction:column-reverse; gap:1.5rem; }
+  .overviewHeading .eyebrow { display:none; }
   .personnelGrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .personnelTotal { grid-column:1/-1; }
   .payBand { align-items:flex-start; flex-direction:column; gap:.85rem; }
