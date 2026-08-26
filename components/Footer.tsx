@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ChevronDown, Mail, MapPin } from "lucide-react";
@@ -42,17 +43,14 @@ export default function Footer() {
         <div className="grid items-center gap-3 py-3 md:grid-cols-[minmax(0,1fr)_auto]">
           <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="relative flex h-9 w-9 shrink-0 items-center justify-center">
-                <div className="absolute inset-0 rounded-md border border-[#2563eb]/40 bg-[#1a3a6e]" />
-                <svg viewBox="0 0 32 32" className="relative h-5 w-5" fill="none" aria-hidden="true">
-                  <rect x="14" y="2" width="4" height="28" rx="2" fill="white" opacity="0.95" />
-                  <rect x="14" y="2" width="4" height="28" rx="2" fill="white" opacity="0.95" transform="rotate(60 16 16)" />
-                  <rect x="14" y="2" width="4" height="28" rx="2" fill="white" opacity="0.95" transform="rotate(120 16 16)" />
-                  <line x1="16" y1="8" x2="16" y2="24" stroke="#f0b429" strokeWidth="1.5" strokeLinecap="round" />
-                  <path d="M18 9.5 C20 11 18 13 16 13.5 C14 14 12 15.5 13.5 17.5 C15 19.5 18 20 17 23" stroke="#f0b429" strokeWidth="1.1" fill="none" strokeLinecap="round" />
-                  <circle cx="17" cy="23.2" r="1.1" fill="#f0b429" />
-                </svg>
-              </div>
+              <Image
+                src="/images/millstadt-ems-footer-logo.png"
+                alt=""
+                width={64}
+                height={64}
+                sizes="64px"
+                className="h-16 w-16 shrink-0 object-contain"
+              />
               <div className="min-w-0">
                 <div className="text-sm font-black uppercase tracking-wider text-white">
                   Millstadt Ambulance Service

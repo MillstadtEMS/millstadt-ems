@@ -1,6 +1,8 @@
+import { TAX_COMPUTATION_DATA, type TaxComputationData } from "./tax-computation-data";
+
 export type PublicLibraryDocument = {
   id: string;
-  kind: "form_990" | "irs_record" | "tax_computation";
+  kind: "form_990" | "irs_record" | "tax_computation" | "management_pay" | "official_record";
   title: string;
   category: string;
   periodLabel: string;
@@ -9,7 +11,10 @@ export type PublicLibraryDocument = {
   sourceLabel?: string;
   sortOrder: number;
   filingYear?: number;
-  statusLabel: "Filed" | "Official record" | "County record";
+  statusLabel: "Filed" | "Official record" | "County record" | "Approved public report";
+  employee?: "Kenneth James" | "Jennifer Goetz";
+  attachmentOf?: string;
+  taxData?: TaxComputationData;
   searchText: string;
   viewUrl: string;
   downloadUrl: string;
@@ -22,6 +27,7 @@ type Form990Source = {
 };
 
 const FORM_990_SOURCES: Form990Source[] = [
+  { fiscalYearEnding: 2025, pageCount: 30 },
   { fiscalYearEnding: 2024, pageCount: 31 },
   { fiscalYearEnding: 2023, pageCount: 33 },
   { fiscalYearEnding: 2022, pageCount: 34 },
@@ -87,12 +93,12 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
       title,
       category: "990",
       periodLabel: `Fiscal year ending April 30, ${fiscalYearEnding}`,
-      dateLabel: "Original filed return",
+      dateLabel: fiscalYearEnding === 2025 ? "Public copy · Form 990 and schedules" : "Original filed return",
       pageCount,
       sortOrder: fiscalYearEnding * 10_000 + 430,
       filingYear: fiscalYearEnding,
-      statusLabel: "Filed" as const,
-      searchText: `${title} Form 990 990 ${fiscalYearEnding} Fiscal year ending April 30 Original filed return`.toLowerCase(),
+      statusLabel: fiscalYearEnding === 2025 ? "Official record" as const : "Filed" as const,
+      searchText: `${title} IRS Form 990 Filings ${fiscalYearEnding - 1}-${fiscalYearEnding} Fiscal year ending April 30 ${fiscalYearEnding === 2025 ? "Public copy Form 990 and schedules" : "Original filed return"}`.toLowerCase(),
       viewUrl: url,
       downloadUrl: url,
       printUrl: url,
@@ -112,7 +118,7 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
       sortOrder: 20260420,
       filingYear: 2025,
       statusLabel: "Official record",
-      searchText: "IRS reinstatement Operational official record 501(c)(3) exemption September 15 2025 April 20 2026",
+      searchText: "IRS reinstatement Operational Official IRS Record 501(c)(3) exemption September 15 2025 April 20 2026",
       viewUrl: reinstatementUrl,
       downloadUrl: reinstatementUrl,
       printUrl: reinstatementUrl,
@@ -121,6 +127,7 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
 
   const taxComputationReports: PublicLibraryDocument[] = TAX_COMPUTATION_SOURCES.map(
     ({ taxYear, millstadtPage, url }) => {
+      const taxData = TAX_COMPUTATION_DATA.find((record) => record.year === taxYear);
       const title = `Tax Computation Report - ${taxYear}`;
       const pageUrl = `${url}#page=${millstadtPage}`;
       return {
@@ -131,10 +138,12 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
         periodLabel: `Tax year ${taxYear}`,
         dateLabel: `Millstadt page ${millstadtPage}`,
         sourceLabel: "St. Clair County PDF",
+        pageCount: taxData?.pageCount,
+        taxData,
         sortOrder: taxYear * 10_000 + 1231,
         filingYear: taxYear,
         statusLabel: "County record",
-        searchText: `${title} Operational Tax year ${taxYear} Millstadt page ${millstadtPage} St. Clair County`.toLowerCase(),
+        searchText: `${title} Operational Tax year ${taxYear} Millstadt page ${millstadtPage} St. Clair County Tax Computation Reports Rate Setting EAV Certified Ambulance Rate Ambulance Extension After TIF & EZ ${taxData ? Object.values(taxData).join(" ") : "Verification pending"}`.toLowerCase(),
         viewUrl: pageUrl,
         downloadUrl: url,
         printUrl: pageUrl,
@@ -142,5 +151,24 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
     },
   );
 
-  return [...irsRecords, ...taxComputationReports, ...form990s];
+  const managementReports: PublicLibraryDocument[] = [
+    { employee: "Kenneth James" as const, slug: "kenneth-james", ending: 2026, pageCount: 3 },
+    { employee: "Kenneth James" as const, slug: "kenneth-james", ending: 2025, pageCount: 2 },
+    { employee: "Jennifer Goetz" as const, slug: "jennifer-goetz", ending: 2026, pageCount: 3 },
+    { employee: "Jennifer Goetz" as const, slug: "jennifer-goetz", ending: 2025, pageCount: 3 },
+  ].map(({ employee, slug, ending, pageCount }) => {
+    const fiscalYear = `${ending - 1}–${ending}`;
+    const id = `${slug}-fy-${ending - 1}-${ending}`;
+    const url = `/financial-transparency/management/${id}.pdf`;
+    const title = `${employee} FY ${ending - 1}-${ending} Hours and Compensation Report`;
+    return {
+      id, kind: "management_pay", employee, title, category: "Operational",
+      periodLabel: `Fiscal Year ${fiscalYear}`, dateLabel: `May 1, ${ending - 1} through April 30, ${ending}`,
+      pageCount, filingYear: ending, sortOrder: ending * 10000 + 430,
+      statusLabel: "Approved public report", sourceLabel: "Employee Hours and Compensation Report",
+      searchText: `${title} ${fiscalYear} Management Pay Transparency Employee Hours and Compensation Report Operational`,
+      viewUrl: url, downloadUrl: url, printUrl: url,
+    };
+  });
+  return [...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
 }

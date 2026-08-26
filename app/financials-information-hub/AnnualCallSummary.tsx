@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CALENDAR_EXPLANATION } from "@/lib/financials-hub/transparency-content";
 
 import styles from "./PublicDocumentLibrary.module.css";
 
@@ -11,9 +12,10 @@ const COMPLETED_YEARS = [
   { year: "2025", calls: 880 },
 ];
 
-export default function AnnualCallSummary() {
+export default function AnnualCallSummary({onCurrentCalls}:{onCurrentCalls?:(calls:number|null)=>void}={}) {
   const [currentCalls, setCurrentCalls] = useState<number | null>(null);
   const [unavailable, setUnavailable] = useState(false);
+  useEffect(()=>{onCurrentCalls?.(currentCalls);},[currentCalls,onCurrentCalls]);
 
   useEffect(() => {
     let active = true;
@@ -51,14 +53,14 @@ export default function AnnualCallSummary() {
   );
 
   return (
-    <section className={styles.callsSection} aria-labelledby="annual-call-volume-title">
+    <section id="annual-call-volume" className={styles.callsSection} aria-labelledby="annual-call-volume-title">
       <div className={styles.shell}>
         <div className={styles.callsHeading}>
           <div>
             <p className={styles.eyebrow}>Service activity</p>
             <h2 id="annual-call-volume-title">Annual 911 call volume</h2>
           </div>
-          <p>Yearly totals only. The 2026 total uses the same live count as the homepage.</p>
+          <div className={styles.callExplanation}><p>{CALENDAR_EXPLANATION}</p><p>The 2026 total uses the same live count as the homepage.</p></div>
         </div>
 
         <div className={styles.callChart}>
@@ -76,23 +78,14 @@ export default function AnnualCallSummary() {
           ))}
         </div>
 
+        {currentCalls === null && !unavailable && <p className={styles.callStatus} role="status">Loading the live 2026 total…</p>}
         {unavailable && currentCalls === null && (
           <p className={styles.callStatus}>The live 2026 total is temporarily unavailable.</p>
         )}
+        {unavailable && currentCalls !== null && (
+          <p className={styles.callStatus} role="status">Showing the last verified 2026 total. Live updates are temporarily unavailable.</p>
+        )}
 
-        <div className={styles.personnelSummary} aria-labelledby="personnel-summary-title">
-          <div className={styles.personnelHeading}>
-            <p className={styles.eyebrow}>Our team</p>
-            <h2 id="personnel-summary-title">Number of personnel</h2>
-          </div>
-          <dl className={styles.personnelGrid}>
-            <div><dt>EMTs</dt><dd>18</dd></div>
-            <div><dt>Paramedics</dt><dd>9</dd></div>
-            <div><dt>Pre-Hospital Registered Nurse</dt><dd>1</dd></div>
-            <div><dt>Advanced Practice Prehospital Registered Nurse Practitioners</dt><dd>2</dd></div>
-            <div className={styles.personnelTotal}><dt>Total personnel</dt><dd>30</dd></div>
-          </dl>
-        </div>
       </div>
     </section>
   );
