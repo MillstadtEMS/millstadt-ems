@@ -88,7 +88,10 @@ test("historical billing, new reports, and Mediclaims all sit within the collaps
   const reports = readFileSync(new URL("../app/financials-information-hub/BillingReports.tsx", import.meta.url), "utf8");
   assert.match(overview, /return <BillingReports query=\{query\}\/>/);
   assert.doesNotMatch(overview, /<table/);
+  assert.match(reports, /return <div id="billing-activity" className=\{styles\.billingReport\}>/);
+  assert.doesNotMatch(reports, /<section|<h2|styles\.billingSection|styles\.shell|styles\.eyebrow|styles\.sectionExplanation/);
   assert.match(reports, /title="Billing & Mediclaims reports"/);
+  assert.match(reports, /title="Billing & Mediclaims reports"[^>]*level=\{3\}/);
   assert.match(reports, /initiallyOpen=\{isOpen\(BILLING_HISTORY_SECTION\)\}/);
   assert.match(reports, /initiallyOpen=\{isOpen\(MEDICLAIMS_CLOSE_SECTION\)\}/);
   assert.match(reports, /useSyncExternalStore\(subscribeToAnchor, readAnchor, serverAnchor\)/);

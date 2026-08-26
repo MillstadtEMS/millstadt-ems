@@ -24,12 +24,8 @@ export default function BillingReports({ query = "" }: { query?: string }) {
   const anchor = useSyncExternalStore(subscribeToAnchor, readAnchor, serverAnchor);
   const isOpen = (section: { id: string; title: string; text: string }) => anchor === section.id || (Boolean(needle) && matchesSearch(`${section.title} ${section.text}`, query));
   const groupOpen = anchor === "billing-activity" || reportSections.some(isOpen);
-  return <section id="billing-activity" aria-labelledby="billing-title" className={styles.billingSection}>
-    <div className={styles.shell}>
-      <p className={styles.eyebrow}>Fiscal-year reporting</p>
-      <h2 id="billing-title">Billing &amp; Mediclaims</h2>
-      <p className={styles.sectionExplanation}>Billing activity, close reports, and collections summaries, organized by reporting period.</p>
-      <Disclosure key={`billing-group-${needle}-${anchor}`} title="Billing & Mediclaims reports" meta="5 summaries" initiallyOpen={groupOpen} query={query}>
+  return <div id="billing-activity" className={styles.billingReport}>
+      <Disclosure key={`billing-group-${needle}-${anchor}`} title="Billing & Mediclaims reports" meta="5 summaries" level={3} initiallyOpen={groupOpen} query={query}>
         <p className={styles.categoryNote}>Each report retains its own dates and reporting basis. Billing trips and collections are separate from the calendar-year 911 call count.</p>
         {[...BILLING_REPORTS].reverse().map(report => <div id={report.id} className={styles.billingReport} key={report.id}>
           <Disclosure title={report.title} meta={<Highlight text={report.period} query={query}/>} level={4} initiallyOpen={isOpen({ id: report.id, title: report.title, text: billingReportSearchText(report) })} query={query}>
@@ -57,8 +53,7 @@ export default function BillingReports({ query = "" }: { query?: string }) {
           </Disclosure>
         </div>
       </Disclosure>
-    </div>
-  </section>;
+  </div>;
 }
 
 function AmountTable({ caption, rows, query }: { caption: string; rows: readonly { item: string; amount: string }[]; query: string }) {

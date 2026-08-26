@@ -62,13 +62,17 @@ test("new obligations, balances and corrected interest rate are included in page
   }
 });
 
-test("debts are typed, accessible disclosures separate from billing reports and public files", () => {
+test("debts retain a compact accessible disclosure group, anchors, and typed data", () => {
   const page = readFileSync(new URL("../app/financials-information-hub/PublicDocumentLibrary.tsx", import.meta.url), "utf8");
   const debt = readFileSync(new URL("../app/financials-information-hub/DebtLiabilities.tsx", import.meta.url), "utf8");
-  assert.match(page, /<BillingActivity query=\{query\}\/>\s*<DebtLiabilities query=\{query\}\/>/);
+  assert.match(page, /<DebtLiabilities\s+query=\{query\}\s*\/>/);
+  assert.equal((page.match(/<DebtLiabilities\b/g) ?? []).length, 1);
   assert.match(debt, /<Disclosure[^>]+title=\{section.title\}/);
   assert.match(debt, /<Disclosure title="Past-due bills"/);
-  assert.match(debt, /aria-labelledby="debt-title"/);
+  assert.match(debt, /<div id=\{section.id\} className=\{styles.billingReport\}>/);
+  assert.match(debt, /<Disclosure[^>]+title=\{section.title\}[^>]+level=\{3\}/);
+  assert.doesNotMatch(debt, /<section|<h2|styles\.(?:shell|debtSection|sectionExplanation)/);
+  assert.match(debt, /<Highlight text=\{STRYKER_EQUIPMENT_CONTEXT\}/);
   assert.match(debt, /useSyncExternalStore\(subscribeToAnchor, readAnchor, serverAnchor\)/);
   assert.match(debt, /<caption className=\{styles.srOnly\}>/);
   assert.match(debt, /<th scope="row">/);

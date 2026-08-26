@@ -154,6 +154,7 @@ export const PAY_RATE_GROUPS = [
 ] as const;
 export const TRANSFER_CALL_STIPEND = "$10.00 per call";
 export const NURSING_REGULAR_RATE = "$20.00/hour";
+export const STRYKER_EQUIPMENT_CONTEXT = "Stryker Loans 1 and 2 finance patient-care equipment, including stretchers, LUCAS devices, and self-loading systems. The service reports that nearly all of its Stryker equipment is at the manufacturer-recommended replacement age of seven years.";
 
 // Only the five visible loan rows are transcribed. Supplied corrections set both
 // Stryker loans and Zoll to 7.99% and include Zoll's balance despite its OFF toggle.
@@ -186,7 +187,7 @@ export const DEBT_TOTALS = {
   annualizedLoanPaymentCents: DEBT_LOANS.reduce((total, loan) => total + annualizedLoanPaymentCents(loan), 0),
 };
 export function debtLoanSearchText(loan: typeof DEBT_LOANS[number]) {
-  return `${loan.obligation} ${formatBillingMoney(loan.balance, false)} ${formatDebtRate(loan.interestRate)} ${loan.frequency} ${formatBillingMoney(loan.scheduledPayment)} ${loan.paymentsPerYear} payments per year Annualized scheduled payments ${formatBillingMoney(annualizedLoanPaymentCents(loan) / 100)}`;
+  return `${loan.obligation} ${formatBillingMoney(loan.balance, false)} ${formatDebtRate(loan.interestRate)} ${loan.frequency} ${formatBillingMoney(loan.scheduledPayment)} ${loan.paymentsPerYear} payments per year Annualized scheduled payments ${formatBillingMoney(annualizedLoanPaymentCents(loan) / 100)} ${loan.id.startsWith("stryker-") ? STRYKER_EQUIPMENT_CONTEXT : ""}`;
 }
 export const DEBT_LIABILITIES_SECTION = {
   id: "debt-liabilities", title: "Debt/Liabilities",
@@ -313,6 +314,117 @@ export const UNIFORM_SHIRT_SECTION = {
   id: "uniform-shirt-expense", title: UNIFORM_SHIRT_EXPENSE.title,
   text: `Expenses Uniforms ${UNIFORM_SHIRT_EXPENSE.vendor} ${formatBillingMoney(UNIFORM_SHIRT_EXPENSE.amountCents / 100)} ${UNIFORM_SHIRT_EXPENSE.periodLabel}`,
 };
+
+export type FiscalExpenseRow = {
+  id: string;
+  label: string;
+  description: string;
+  monthlyCents: readonly (number | null)[];
+  reportedYtdCents: number | null;
+};
+export type FiscalExpenseReport = {
+  id: string;
+  title: string;
+  period: string;
+  notes: readonly string[];
+  rows: readonly FiscalExpenseRow[];
+  reportedYtdTotalCents?: number;
+};
+export const EXPENSE_MONTHS_2025_2026 = [
+  { id: "2025-05", label: "May 2025" }, { id: "2025-06", label: "June 2025" },
+  { id: "2025-07", label: "July 2025" }, { id: "2025-08", label: "August 2025" },
+  { id: "2025-09", label: "September 2025" }, { id: "2025-10", label: "October 2025" },
+  { id: "2025-11", label: "November 2025" }, { id: "2025-12", label: "December 2025" },
+  { id: "2026-01", label: "January 2026" }, { id: "2026-02", label: "February 2026" },
+  { id: "2026-03", label: "March 2026" }, { id: "2026-04", label: "April 2026" },
+] as const;
+const expensePeriod2526 = "FY 2025–2026 · May 1, 2025 through April 30, 2026";
+// Supplied worksheets: actual monthly entries and separately reported YTD values.
+// null preserves a blank source cell. Budgets and remaining-budget columns are not imported.
+export const FISCAL_EXPENSE_REPORTS: readonly FiscalExpenseReport[] = [
+  {
+    id: "adp-payroll-2025-2026", title: "ADP payroll — FY 2025–2026", period: expensePeriod2526,
+    notes: [],
+    reportedYtdTotalCents: 61279779,
+    rows: [
+      { id: "wages", label: "Wages", description: "Wages recorded through ADP.", monthlyCents: [2957169,3520400,5308345,3100389,3085306,3372426,3274785,5558738,3689891,3559023,3235985,3242775], reportedYtdCents: 43905232 },
+      { id: "taxes", label: "Taxes", description: "Payroll-related taxes.", monthlyCents: [997210,1222753,1867346,1133233,1203693,1363322,1273390,2081044,1214391,781931,1059511,1012334], reportedYtdCents: 15210158 },
+      { id: "processing-fees", label: "ADP processing fees", description: "Payroll processing fees.", monthlyCents: [103102,76912,77568,49762,55960,99161,8395,60649,105277,97483,94455,109503], reportedYtdCents: 938227 },
+      { id: "401k", label: "401(k)", description: "401(k) amounts recorded through ADP.", monthlyCents: [112122,132798,144770,68552,111928,108784,80120,98815,112241,80107,90778,85147], reportedYtdCents: 1226162 },
+    ],
+  },
+  {
+    id: "operations-expenses-2025-2026", title: "Operations — FY 2025–2026", period: expensePeriod2526,
+    notes: [STRYKER_EQUIPMENT_CONTEXT],
+    reportedYtdTotalCents: 15543830,
+    rows: [
+      { id: "insurance", label: "Insurance — General / Auto", description: "General and vehicle insurance.", monthlyCents: [241100,1190300,732300,47300,779600,0,0,2110000,0,1190100,0,0], reportedYtdCents: 6290700 },
+      { id: "office-building-supplies", label: "Office / building supplies", description: "Office and building support, including upkeep such as parking-lot sealing.", monthlyCents: [3446,0,85474,0,0,0,0,0,24591,0,0,44544], reportedYtdCents: 158055 },
+      { id: "stericycle", label: "Stericycle", description: "Disposal of used sharps.", monthlyCents: [8080,8080,8080,8042,8042,8042,8042,8042,8645,8693,16630,8645], reportedYtdCents: 107063 },
+      { id: "stryker-1-payments", label: "Stryker 1 payments", description: "Historical payments on the Stryker equipment loan. Current loan balances and rates are listed separately under Debt/Liabilities.", monthlyCents: [44665,44665,44665,44665,44665,44665,44665,44665,44665,44665,44665,44665], reportedYtdCents: 535980 },
+      { id: "stryker-2-payments", label: "Stryker 2 payments", description: "Historical payments on the Stryker equipment loan. Current loan balances and rates are listed separately under Debt/Liabilities.", monthlyCents: [0,230659,461318,230659,230659,230659,230659,230659,230659,230659,230659,230659], reportedYtdCents: 2767900 },
+      { id: "wex", label: "WEX", description: "Fuel purchased through the gas-card account.", monthlyCents: [132265,112027,214196,231608,310296,221946,130860,216058,272339,161371,30000,179806], reportedYtdCents: 2212722 },
+      { id: "wireless-usa", label: "Wireless USA", description: "Portable-radio-related expenses.", monthlyCents: [4500,4500,4500,4500,4500,4500,4500,4500,4500,4500,4500,4500], reportedYtdCents: 54000 },
+      { id: "medical-supplies", label: "Medical supplies", description: "Restocking medical supplies that are not supplied by Belleville Memorial.", monthlyCents: [null,null,null,null,null,null,null,null,null,null,null,null], reportedYtdCents: 0 },
+      { id: "credit-card-payments", label: "Credit-card payments", description: "Payments recorded during FY 2025–2026. These are historical payments, not a current credit-card balance.", monthlyCents: [499356,18110,54243,58700,59400,400000,63129,62400,68751,66500,493700,75300], reportedYtdCents: 1919589 },
+      { id: "community-outreach", label: "Community outreach", description: "Community support, including schools and school events.", monthlyCents: [null,null,null,128845,null,null,null,null,20000,null,null,null], reportedYtdCents: 148845 },
+      { id: "education", label: "Education", description: "Training and related educational expenses.", monthlyCents: [5500,0,0,5500,null,null,null,null,2400,null,null,null], reportedYtdCents: 13400 },
+      { id: "patient-refunds", label: "Patient refunds", description: "Mandatory patient refunds required by insurance-company determinations; these are not discretionary payments.", monthlyCents: [null,null,null,null,null,null,null,null,5000,44000,null,107754], reportedYtdCents: 156754 },
+      { id: "oxygen", label: "Air Gas O2 — patient oxygen", description: "Oxygen used for patient care.", monthlyCents: [0,0,179328,98732,4721,129090,129681,202424,202441,89482,0,142923], reportedYtdCents: 1178822 },
+    ],
+  },
+  {
+    id: "building-expenses-2025-2026", title: "Building & communications — FY 2025–2026", period: expensePeriod2526,
+    notes: [],
+    reportedYtdTotalCents: 7520699,
+    rows: [
+      { id: "mortgage-fnb", label: "Mortgage / FNB payments", description: "First National Bank mortgage payments recorded during this fiscal year.", monthlyCents: [214130,214130,214130,214130,214130,214130,214130,214130,214130,214130,214130,214130], reportedYtdCents: 2569560 },
+      { id: "unit-3935-payments", label: "Unit 3935 truck payments", description: "Ambulance loan payments recorded during this fiscal year.", monthlyCents: [0,300000,300000,300000,300000,300000,300000,300000,300000,300000,300000,300000], reportedYtdCents: 3300000 },
+      { id: "building-repairs", label: "Building repairs / maintenance", description: "Building repairs and maintenance.", monthlyCents: [30000,202000,9000,9432,0,6000,0,0,42500,0,33500,0], reportedYtdCents: 332432 },
+      { id: "barcom", label: "Barcom", description: "Building security and key-fob access locks.", monthlyCents: [0,22500,0,0,37500,0,0,22500,0,0,22500,0], reportedYtdCents: 105000 },
+      { id: "verizon", label: "Verizon", description: "Truck internet, one office cell phone, and one phone and one tablet for each truck.", monthlyCents: [18227,18227,103226,24843,24843,24843,24843,35997,35997,35997,35999,18227], reportedYtdCents: 401269 },
+      { id: "village-utilities", label: "Village utilities", description: "Water, sewer, and trash service.", monthlyCents: [6828,6828,6828,6828,6828,6828,6971,6971,6971,6971,7062,6828], reportedYtdCents: 82742 },
+      { id: "spectrum", label: "Charter / Spectrum", description: "Internet service.", monthlyCents: [11998,11998,11998,11998,11998,11998,11998,14998,14998,14998,15331,11998], reportedYtdCents: 156309 },
+      { id: "ameren", label: "Ameren", description: "Power service.", monthlyCents: [31371,30504,33329,50937,67383,70829,50752,40743,36561,44887,54070,57400], reportedYtdCents: 542737 },
+      { id: "culligan", label: "Culligan Water", description: "Drinking water.", monthlyCents: [3530,1200,300,1200,1200,1200,7200,1200,1200,5430,1200,5790], reportedYtdCents: 30650 },
+    ],
+  },
+  {
+    id: "professional-fees-2025-2026", title: "Professional fees — FY 2025–2026", period: expensePeriod2526,
+    notes: [],
+    rows: [
+      { id: "dues", label: "Dues and subscriptions", description: "Dues and subscription expenses as reported in the annual summary.", monthlyCents: [null,null,null,null,null,null,null,null,null,null,null,null], reportedYtdCents: 0 },
+      { id: "accounting", label: "Accounting", description: "Accounting payments recorded during this fiscal year.", monthlyCents: [0,0,0,0,0,0,0,0,0,0,0,0], reportedYtdCents: null },
+      { id: "mediclaims", label: "Medical billing — Mediclaims", description: "Payments for medical-billing services; these are not patient receipts or service revenue.", monthlyCents: [564904,0,453070,2458195,184975,126138,0,140199,89054,0,0,0], reportedYtdCents: 4016535 },
+      { id: "emsmc", label: "Medical billing — EMSMC", description: "Payments for medical-billing services; these are not patient receipts or service revenue.", monthlyCents: [0,0,85740,0,152039,212402,342328,0,414587,0,0,409927], reportedYtdCents: 1617023 },
+      { id: "cencom", label: "Cencom dispatching", description: "Dispatching services.", monthlyCents: [0,0,0,0,1015000,0,0,0,0,0,0,0], reportedYtdCents: 1015000 },
+      { id: "frawley", label: "Fire inspection — Frawley", description: "The recorded April fire-inspection payment.", monthlyCents: [null,null,null,null,null,null,null,null,null,null,null,40900], reportedYtdCents: null },
+      { id: "paya", label: "Paya — credit-card processing", description: "Processing customer credit-card payments.", monthlyCents: [4765,14310,9847,28040,16834,10629,21037,9851,9777,12587,10008,10103], reportedYtdCents: 157788 },
+    ],
+  },
+];
+export function expenseRowTotalCents(row: FiscalExpenseRow): number | null {
+  if (row.monthlyCents.every(amount => amount === null)) return null;
+  return row.monthlyCents.reduce<number>((total, amount) => total + (amount ?? 0), 0);
+}
+export function expenseReportTotalCents(report: FiscalExpenseReport) {
+  return report.rows.reduce((total, row) => total + (expenseRowTotalCents(row) ?? 0), 0);
+}
+export function expenseRowDifference(row: FiscalExpenseRow) {
+  const calculated = expenseRowTotalCents(row);
+  return calculated !== null && row.reportedYtdCents !== null && calculated !== row.reportedYtdCents
+    ? `${row.label}: monthly entries total ${formatBillingMoney(calculated / 100)}; the worksheet annual summary lists ${formatBillingMoney(row.reportedYtdCents / 100)}, a difference of ${formatBillingMoney(Math.abs(calculated - row.reportedYtdCents) / 100)}.`
+    : "";
+}
+export function expenseRowSearchText(row: FiscalExpenseRow) {
+  const calculated = expenseRowTotalCents(row);
+  const displayed = calculated ?? row.reportedYtdCents;
+  return [row.label, row.description, displayed === null ? "" : formatBillingMoney(displayed / 100), ...row.monthlyCents.map((amount, index) => amount === null ? "" : `${EXPENSE_MONTHS_2025_2026[index].label} ${EXPENSE_MONTHS_2025_2026[index].id} ${formatBillingMoney(amount / 100)}`)].join(" · ");
+}
+export function fiscalExpenseSection(report: FiscalExpenseReport) {
+  return { id: report.id, title: report.title, text: `Expenses ${report.period} ${report.notes.join(" ")} Total of recorded entries ${formatBillingMoney(expenseReportTotalCents(report) / 100)} ${report.rows.map(expenseRowSearchText).join(" · ")}` };
+}
+export const FISCAL_EXPENSE_SECTIONS = FISCAL_EXPENSE_REPORTS.map(fiscalExpenseSection);
 export const SECTION_SEARCH = [
   { id: "personnel", title: "Number of personnel", text: "18 EMTs 9 Paramedics 1 Pre-Hospital Registered Nurse 2 Advanced Practice Prehospital Registered Nurse Practitioners Total personnel 30" },
   { id: "district-support", title: "Current EMS Tax Amount", text: "$238,525.85" },
@@ -326,6 +438,7 @@ export const SECTION_SEARCH = [
   TRUCK_REPAIRS_SECTION,
   TRUCK_REPAIRS_2025_2026_SECTION,
   UNIFORM_SHIRT_SECTION,
+  ...FISCAL_EXPENSE_SECTIONS,
   { id: "voter-resources", title: "Ready to Vote?", text: "Access official St. Clair County voter-registration, polling-place, election, and voter-information resources. View Official Voter Resources" },
 ];
 

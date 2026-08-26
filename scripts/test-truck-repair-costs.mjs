@@ -79,7 +79,7 @@ test("reports use typed, accessible collapsibles under Expenses and share search
   const repair = readFileSync(new URL("../app/financials-information-hub/TruckRepairCosts.tsx", import.meta.url), "utf8");
   assert.match(expenses, /TRUCK_REPAIR_REPORTS\.map\(report => report\.section\)/);
   assert.match(expenses, /expenseSections\.some\(isOpen\)/);
-  assert.match(expenses, /TRUCK_REPAIR_REPORTS\.map\(report => <TruckRepairCosts/);
+  assert.match(expenses, /TRUCK_REPAIR_REPORTS\.map\(report => \(\{ title: "Truck repairs", content: <TruckRepairCosts/);
   assert.match(expenses, /report=\{report\} query=\{query\} anchor=\{anchor\}/);
   assert.match(repair, /report: TruckRepairReport/);
   assert.match(repair, /anchor === section\.id \|\| queryMatches/);

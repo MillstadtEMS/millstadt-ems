@@ -45,9 +45,6 @@ export default function PublicDocumentLibrary({documents}:{documents:PublicLibra
     </section>
     <PersonnelAndPay/>
     <AnnualCallSummary onCurrentCalls={setLiveCalls}/>
-    <BillingActivity query={query}/>
-    <DebtLiabilities query={query}/>
-    <ExpenseRecords query={query}/>
     <section id="document-library" aria-labelledby="library-heading" className={styles.library}>
       <div className={styles.shell}>
         <div className={styles.libraryHeading}><p className={styles.eyebrow}>Open access</p><h2 id="library-heading">Document library</h2><p>Explore filings, official records, and approved public reports.</p></div>
@@ -59,7 +56,9 @@ export default function PublicDocumentLibrary({documents}:{documents:PublicLibra
         <p className={styles.resultCount} role="status" aria-live="polite">{needle||category!=="All documents" ? `${resultCount} ${resultCount===1?"result":"results"}` : `${documents.length} public documents`}</p>
         {sectionMatches.length>0 ? <nav className={styles.sectionResults} aria-label="Matching page sections"><h3>On this page</h3>{sectionMatches.map(s=><a href={`#${s.id}`} key={s.id}><Highlight text={s.title} query={query}/><span><Highlight text={s.text} query={query}/></span></a>)}</nav> : null}
         <div className={styles.libraryGroups}>
-          {irs.map(d=><Disclosure key={`${d.id}-${needle}`} title={d.title} meta={`Official IRS Record · ${d.pageCount} pages`} initiallyOpen={Boolean(needle)} query={query}><DocumentRow document={d} query={query} level={4}/></Disclosure>)}
+          <BillingActivity query={query}/>
+          <DebtLiabilities query={query}/>
+          <ExpenseRecords query={query}/>
           {yearGroups.length>0||showPending ? <Disclosure key={`forms-${needle}`} title="IRS Form 990 Filings" initiallyOpen={Boolean(needle)} query={query}>
             {showPending ? <Disclosure key={`pending-${needle}`} title={PENDING_TITLE} meta={<><span className={styles.pendingBadge}>Pending from CPA</span><span>Currently Unavailable</span></>} level={4} initiallyOpen={Boolean(needle)} query={query}>
               <div className={styles.pendingContent}><h5>Form 990 — Pending from CPA</h5><p><Highlight text={PENDING_COPY} query={query}/></p></div>
@@ -76,11 +75,12 @@ export default function PublicDocumentLibrary({documents}:{documents:PublicLibra
               </Disclosure>;
             })}
           </Disclosure> : null}
-          {taxes.length>0 ? <Disclosure key={`taxes-${needle}`} title="St. Clair County Tax Computation Reports" meta={`${taxes.length} source ${taxes.length===1?"report":"reports"}`} initiallyOpen={Boolean(needle)} query={query}><p className={styles.categoryNote}>County PDFs open on the official source website. Use the PDF viewer’s save or print controls.</p>{taxes.map(d=><TaxRow key={`${d.id}-${needle}`} document={d} query={query}/>)}</Disclosure> : null}
+          {irs.map(d=><Disclosure key={`${d.id}-${needle}`} title={d.title} meta={`Official IRS Record · ${d.pageCount} pages`} initiallyOpen={Boolean(needle)} query={query}><DocumentRow document={d} query={query} level={4}/></Disclosure>)}
           {management.length>0 ? <Disclosure key={`management-${needle}`} title="Management Pay Transparency" meta={`${management.length} approved public ${management.length===1?"report":"reports"}`} initiallyOpen={Boolean(needle)} query={query}>
-            {(["Kenneth James","Jennifer Goetz"] as const).map(employee=>{const reports=management.filter(d=>d.employee===employee);return reports.length ? <Disclosure key={`${employee}-${needle}`} title={employee} level={4} meta={`${reports.length} ${reports.length===1?"report":"reports"}`} initiallyOpen={Boolean(needle)} query={query}>{reports.map(d=><DocumentRow key={d.id} document={d} query={query} level={5}/>)}</Disclosure> : null;})}
+            {(["Jennifer Goetz","Kenneth James"] as const).map(employee=>{const reports=management.filter(d=>d.employee===employee);return reports.length ? <Disclosure key={`${employee}-${needle}`} title={employee} level={4} meta={`${reports.length} ${reports.length===1?"report":"reports"}`} initiallyOpen={Boolean(needle)} query={query}>{reports.map(d=><DocumentRow key={d.id} document={d} query={query} level={5}/>)}</Disclosure> : null;})}
           </Disclosure> : null}
           {others.length>0 ? <Disclosure title="Other official records" key={`others-${needle}`} initiallyOpen={Boolean(needle)}>{others.map(d=><DocumentRow key={d.id} document={d} query={query}/>)}</Disclosure> : null}
+          {taxes.length>0 ? <Disclosure key={`taxes-${needle}`} title="St. Clair County Tax Computation Reports" meta={`${taxes.length} source ${taxes.length===1?"report":"reports"}`} initiallyOpen={Boolean(needle)} query={query}><p className={styles.categoryNote}>County PDFs open on the official source website. Use the PDF viewer’s save or print controls.</p>{taxes.map(d=><TaxRow key={`${d.id}-${needle}`} document={d} query={query}/>)}</Disclosure> : null}
           {resultCount===0 ? <div className={styles.emptyState}><h3>No results found.</h3><p>Try another name, year, or document title.</p><button type="button" onClick={reset}>Reset search</button></div> : null}
         </div>
         <DocumentUseNotice/>
