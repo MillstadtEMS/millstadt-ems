@@ -200,6 +200,18 @@ export const DEBT_LIABILITIES_SECTION = {
 };
 // Actual repair entries only; blank months and budget figures are excluded.
 // Totals use the individual unit rows, not the incomplete worksheet subtotal.
+export type TruckRepairUnit = {
+  unit: string;
+  months: readonly { month: string; label: string; amountCents: number }[];
+};
+export type TruckRepairReport = {
+  section: { id: string; title: string; text: string };
+  period: string;
+  context?: string;
+  note: string;
+  trucks: readonly TruckRepairUnit[];
+  totalCents: number;
+};
 export const TRUCK_REPAIRS = [
   { unit: "3925", months: [
     { month: "2026-05", label: "May 2026", amountCents: 153888 },
@@ -222,17 +234,74 @@ export const TRUCK_REPAIRS = [
 export const TRUCK_REPAIRS_PERIOD = "FY 2026–2027 · Recorded entries since May 1, 2026";
 export const TRUCK_REPAIRS_CONTEXT = "Since the start of this fiscal year, Units 3925 and 3926 have both required transmission replacements. Unit 3926 has since experienced another transmission failure; the additional transmission repair is covered under warranty.";
 export const TRUCK_REPAIRS_NOTE = "These are recorded truck-repair costs, not an itemized breakdown of transmission work. Totals include only entered amounts from May–August 2026; August is partial. Blank months are omitted, and no additional warranty-related cost is assumed.";
-export function truckRepairTotalCents(truck: typeof TRUCK_REPAIRS[number]) {
+export function truckRepairTotalCents(truck: TruckRepairUnit) {
   return truck.months.reduce((total, month) => total + month.amountCents, 0);
 }
 export const TRUCK_REPAIRS_TOTAL_CENTS = TRUCK_REPAIRS.reduce((total, truck) => total + truckRepairTotalCents(truck), 0);
-export function truckRepairSearchText(truck: typeof TRUCK_REPAIRS[number]) {
+export function truckRepairSearchText(truck: TruckRepairUnit) {
   return `Unit ${truck.unit} Truck repairs ${formatBillingMoney(truckRepairTotalCents(truck) / 100)} ${truck.months.map(month => `${month.label} ${month.month} ${formatBillingMoney(month.amountCents / 100)}`).join(" · ")}`;
 }
 export const TRUCK_REPAIRS_SECTION = {
   id: "truck-repair-costs", title: "Truck repairs — FY 2026–2027",
   text: `Expenses Truck repair costs ${TRUCK_REPAIRS_PERIOD} ${TRUCK_REPAIRS_CONTEXT} ${TRUCK_REPAIRS_NOTE} Total recorded repair costs ${formatBillingMoney(TRUCK_REPAIRS_TOTAL_CENTS / 100)} ${TRUCK_REPAIRS.map(truckRepairSearchText).join(" · ")}`,
 };
+// FY 2025–2026: all twelve months are entered, including explicit zeroes.
+// Use Unit 3935 from the actual monthly row; the lower summary mislabels it 3535.
+export const TRUCK_REPAIRS_2025_2026 = [
+  { unit: "3925", months: [
+    { month: "2025-05", label: "May 2025", amountCents: 0 },
+    { month: "2025-06", label: "June 2025", amountCents: 0 },
+    { month: "2025-07", label: "July 2025", amountCents: 0 },
+    { month: "2025-08", label: "August 2025", amountCents: 73422 },
+    { month: "2025-09", label: "September 2025", amountCents: 0 },
+    { month: "2025-10", label: "October 2025", amountCents: 0 },
+    { month: "2025-11", label: "November 2025", amountCents: 12855 },
+    { month: "2025-12", label: "December 2025", amountCents: 0 },
+    { month: "2026-01", label: "January 2026", amountCents: 0 },
+    { month: "2026-02", label: "February 2026", amountCents: 4100 },
+    { month: "2026-03", label: "March 2026", amountCents: 0 },
+    { month: "2026-04", label: "April 2026", amountCents: 140421 },
+  ] },
+  { unit: "3926", months: [
+    { month: "2025-05", label: "May 2025", amountCents: 110980 },
+    { month: "2025-06", label: "June 2025", amountCents: 110980 },
+    { month: "2025-07", label: "July 2025", amountCents: 0 },
+    { month: "2025-08", label: "August 2025", amountCents: 665071 },
+    { month: "2025-09", label: "September 2025", amountCents: 6387 },
+    { month: "2025-10", label: "October 2025", amountCents: 0 },
+    { month: "2025-11", label: "November 2025", amountCents: 0 },
+    { month: "2025-12", label: "December 2025", amountCents: 0 },
+    { month: "2026-01", label: "January 2026", amountCents: 1374114 },
+    { month: "2026-02", label: "February 2026", amountCents: 143043 },
+    { month: "2026-03", label: "March 2026", amountCents: 0 },
+    { month: "2026-04", label: "April 2026", amountCents: 0 },
+  ] },
+  { unit: "3935", months: [
+    { month: "2025-05", label: "May 2025", amountCents: 703125 },
+    { month: "2025-06", label: "June 2025", amountCents: 644625 },
+    { month: "2025-07", label: "July 2025", amountCents: 0 },
+    { month: "2025-08", label: "August 2025", amountCents: 0 },
+    { month: "2025-09", label: "September 2025", amountCents: 829502 },
+    { month: "2025-10", label: "October 2025", amountCents: 432653 },
+    { month: "2025-11", label: "November 2025", amountCents: 20055 },
+    { month: "2025-12", label: "December 2025", amountCents: 0 },
+    { month: "2026-01", label: "January 2026", amountCents: 4100 },
+    { month: "2026-02", label: "February 2026", amountCents: 0 },
+    { month: "2026-03", label: "March 2026", amountCents: 0 },
+    { month: "2026-04", label: "April 2026", amountCents: 0 },
+  ] },
+] as const satisfies readonly TruckRepairUnit[];
+export const TRUCK_REPAIRS_2025_2026_PERIOD = "FY 2025–2026 · May 1, 2025 through April 30, 2026";
+export const TRUCK_REPAIRS_2025_2026_NOTE = "Actual recorded truck-repair costs for May 2025–April 2026. Unit totals are calculated from the monthly entries and match the reported fiscal-year totals.";
+export const TRUCK_REPAIRS_2025_2026_TOTAL_CENTS = TRUCK_REPAIRS_2025_2026.reduce((total, truck) => total + truckRepairTotalCents(truck), 0);
+export const TRUCK_REPAIRS_2025_2026_SECTION = {
+  id: "truck-repair-costs-2025-2026", title: "Truck repairs — FY 2025–2026",
+  text: `Expenses Truck repair costs ${TRUCK_REPAIRS_2025_2026_PERIOD} ${TRUCK_REPAIRS_2025_2026_NOTE} Total recorded repair costs ${formatBillingMoney(TRUCK_REPAIRS_2025_2026_TOTAL_CENTS / 100)} ${TRUCK_REPAIRS_2025_2026.map(truckRepairSearchText).join(" · ")}`,
+};
+export const TRUCK_REPAIR_REPORTS = [
+  { section: TRUCK_REPAIRS_SECTION, period: TRUCK_REPAIRS_PERIOD, context: TRUCK_REPAIRS_CONTEXT, note: TRUCK_REPAIRS_NOTE, trucks: TRUCK_REPAIRS, totalCents: TRUCK_REPAIRS_TOTAL_CENTS },
+  { section: TRUCK_REPAIRS_2025_2026_SECTION, period: TRUCK_REPAIRS_2025_2026_PERIOD, note: TRUCK_REPAIRS_2025_2026_NOTE, trucks: TRUCK_REPAIRS_2025_2026, totalCents: TRUCK_REPAIRS_2025_2026_TOTAL_CENTS },
+] as const satisfies readonly TruckRepairReport[];
 export const UNIFORM_SHIRT_EXPENSE = {
   title: "Employee uniform shirts",
   vendor: "Custom Screenprinting",
@@ -255,6 +324,7 @@ export const SECTION_SEARCH = [
   COLLECTIONS_SNAPSHOT_SECTION,
   DEBT_LIABILITIES_SECTION,
   TRUCK_REPAIRS_SECTION,
+  TRUCK_REPAIRS_2025_2026_SECTION,
   UNIFORM_SHIRT_SECTION,
   { id: "voter-resources", title: "Ready to Vote?", text: "Access official St. Clair County voter-registration, polling-place, election, and voter-information resources. View Official Voter Resources" },
 ];
