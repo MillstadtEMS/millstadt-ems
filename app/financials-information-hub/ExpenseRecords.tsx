@@ -20,7 +20,7 @@ function serverAnchor() { return ""; }
 export default function ExpenseRecords({ query = "" }: { query?: string }) {
   const needle = normalizeSearch(query);
   const anchor = useSyncExternalStore(subscribeToAnchor, readAnchor, serverAnchor);
-  const isOpen = (section: typeof UNIFORM_SHIRT_SECTION) => anchor === section.id || (Boolean(needle) && matchesSearch(`${section.title} ${section.text}`, query));
+  const isOpen = (section: { id: string; title: string; text: string }) => anchor === section.id || (Boolean(needle) && matchesSearch(`${section.title} ${section.text}`, query));
   const uniform = UNIFORM_SHIRT_EXPENSE;
   return <section id="expenses" aria-labelledby="expenses-title" className={styles.repairsSection}>
     <div className={styles.shell}>
