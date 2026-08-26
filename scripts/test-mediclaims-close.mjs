@@ -35,10 +35,10 @@ test("existing billing revenue remains separate from Mediclaims receipts", () =>
 });
 
 test("summary uses the existing disclosure, closed by default and opened by matching search", () => {
-  const overview = readFileSync(new URL("../app/financials-information-hub/FinancialOverview.tsx", import.meta.url), "utf8");
+  const overview = readFileSync(new URL("../app/financials-information-hub/BillingReports.tsx", import.meta.url), "utf8");
   const library = readFileSync(new URL("../app/financials-information-hub/PublicDocumentLibrary.tsx", import.meta.url), "utf8");
-  assert.match(overview, /const closeMatches = Boolean\(needle\) && matchesSearch/);
-  assert.match(overview, /<Disclosure key=\{`mediclaims-\$\{needle\}`\}[^\n]*initiallyOpen=\{closeMatches\}/);
+  assert.match(overview, /Boolean\(needle\) && matchesSearch/);
+  assert.match(overview, /<Disclosure title=\{MEDICLAIMS_CLOSE.title\}[^\n]*initiallyOpen=\{isOpen\(MEDICLAIMS_CLOSE_SECTION\)\}/);
   assert.match(overview, /<th scope="row"><Highlight text=\{row.item\}/);
   assert.match(library, /<BillingActivity query=\{query\}\/>/);
 });

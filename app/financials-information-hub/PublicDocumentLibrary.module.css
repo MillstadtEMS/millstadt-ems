@@ -83,7 +83,18 @@
 .disclosureHeading { margin:0; }
 .disclosureButton { display:flex; justify-content:space-between; align-items:center; width:100%; min-height:64px; gap:1rem; padding:1rem 1.15rem; text-align:left; border:0; color:var(--ink); background:transparent; font:inherit; font-size:1rem; font-weight:750; cursor:pointer; transition:background .15s ease; }
 .categoryDisclosure > .disclosureHeading > .disclosureButton { background:#edf3fb; font-size:1.1rem; }
-.mediclaimsClose { margin-top:1.5rem; scroll-margin-top:11rem; }
+.billingReport { min-width:0; }
+.tripTable { width:100%; border-collapse:collapse; font-size:.88rem; line-height:1.5; }
+.tripTable th,.tripTable td { padding:.8rem 1.15rem; border-top:1px solid #e0e6ee; }
+.tripTable th { text-align:left; font-weight:500; }
+.tripTable thead th { background:#f7f9fc; color:var(--muted); font-size:.75rem; font-weight:700; }
+.tripTable th:not(:first-child),.tripTable td { text-align:right; }
+.tripTable td { white-space:nowrap; font-variant-numeric:tabular-nums; font-weight:700; color:#173d77; }
+.tripTable tfoot { background:#edf3fb; }
+.tripTable tfoot th { font-weight:750; }
+.nonBillableLine { display:flex; justify-content:space-between; align-items:baseline; gap:1rem; margin:0; padding:.9rem 1.15rem; border-top:1px solid #d7e1ed; font-size:.82rem; color:var(--muted); }
+.nonBillableLine strong { flex-shrink:0; color:#173d77; font-variant-numeric:tabular-nums; }
+.monthlyLabel { margin:0; padding:1rem 1.15rem .65rem; font-size:.78rem; font-weight:750; color:var(--muted); }
 .mediclaimsTable { width:100%; border-collapse:collapse; font-size:.9rem; line-height:1.5; }
 .mediclaimsTable th,.mediclaimsTable td { padding:.75rem 1.15rem; border-top:1px solid #e0e6ee; text-align:left; }
 .mediclaimsTable thead th { background:#f7f9fc; color:var(--muted); font-size:.75rem; font-weight:700; }
@@ -187,6 +198,11 @@
   .billingTable td:last-child { border:0; }
   .mediclaimsTable { font-size:.82rem; }
   .mediclaimsTable th,.mediclaimsTable td { padding:.7rem .85rem; }
+  .tripTable { font-size:.8rem; }
+  .tripTable th,.tripTable td { padding:.7rem .6rem; }
+  .tripTable thead th { font-size:.7rem; }
+  .nonBillableLine { padding:.8rem .85rem; }
+  .monthlyLabel { padding:1rem .85rem .6rem; }
   .toolbar { grid-template-columns:1fr auto; }
   .searchField { grid-column:1/-1; }
   .disclosurePanel > .disclosure { margin-left:.45rem; margin-right:.45rem; }
