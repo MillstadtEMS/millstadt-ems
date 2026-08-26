@@ -26,7 +26,7 @@ const OPERATIONS_ID = "operations-expenses-2025-2026";
 const BUILDING_ID = "building-expenses-2025-2026";
 const PROFESSIONAL_ID = "professional-fees-2025-2026";
 
-// Independent transcription of the supplied Operations screenshot. Values are
+// Independent transcription of approved Operations rows. Values are
 // integer cents, ordered May 2025 through April 2026; null is a blank source cell.
 const OPERATIONS_SOURCE = [
   ["insurance", [241100,1190300,732300,47300,779600,0,0,2110000,0,1190100,0,0], 6290700],
@@ -36,9 +36,7 @@ const OPERATIONS_SOURCE = [
   ["stryker-2-payments", [0,230659,461318,230659,230659,230659,230659,230659,230659,230659,230659,230659], 2767900],
   ["wex", [132265,112027,214196,231608,310296,221946,130860,216058,272339,161371,30000,179806], 2212722],
   ["wireless-usa", [4500,4500,4500,4500,4500,4500,4500,4500,4500,4500,4500,4500], 54000],
-  ["medical-supplies", [null,null,null,null,null,null,null,null,null,null,null,null], 0],
   ["credit-card-payments", [499356,18110,54243,58700,59400,400000,63129,62400,68751,66500,493700,75300], 1919589],
-  ["community-outreach", [null,null,null,128845,null,null,null,null,20000,null,null,null], 148845],
   ["education", [5500,0,0,5500,null,null,null,null,2400,null,null,null], 13400],
   ["patient-refunds", [null,null,null,null,null,null,null,null,5000,44000,null,107754], 156754],
   ["oxygen", [0,0,179328,98732,4721,129090,129681,202424,202441,89482,0,142923], 1178822],
@@ -65,11 +63,11 @@ test("all four expense reports use exact cents and the May 2025–April 2026 fis
   }
 });
 
-test("Operations preserves all 13 independently verified monthly vectors and original annual figures", () => {
+test("Operations preserves the 11 approved monthly vectors and original annual figures", () => {
   assert.deepEqual(report(OPERATIONS_ID).rows.map(entry => [entry.id, entry.monthlyCents, entry.reportedYtdCents]), OPERATIONS_SOURCE);
   const values = report(OPERATIONS_ID).rows.flatMap(entry => entry.monthlyCents);
-  assert.equal(values.length, 156);
-  assert.equal(values.filter(amount => amount === null).length, 38);
+  assert.equal(values.length, 132);
+  assert.equal(values.filter(amount => amount === null).length, 16);
   assert.equal(values.filter(amount => amount === 0).length, 19);
 });
 
@@ -77,12 +75,12 @@ test("Operations monthly subtotals and row totals are calculated from entered am
   const operations = report(OPERATIONS_ID);
   assert.deepEqual(operations.rows.map(expenseRowTotalCents), [
     6290700, 158055, 107063, 535980, 2767908, 2212772, 54000,
-    null, 1919589, 148845, 13400, 156754, 1178822,
+    1919589, 13400, 156754, 1178822,
   ]);
   const monthlyTotals = EXPENSE_MONTHS_2025_2026.map((_, index) => operations.rows.reduce((sum, entry) => sum + (entry.monthlyCents[index] ?? 0), 0));
   assert.deepEqual(monthlyTotals, [
-    938912,1608341,1784104,858551,1441883,1038902,
-    611536,2878748,883991,1839970,820154,838796,
+    938912,1608341,1784104,729706,1441883,1038902,
+    611536,2878748,863991,1839970,820154,838796,
   ]);
   assert.equal(monthlyTotals.reduce((sum, amount) => sum + amount, 0), expenseReportTotalCents(operations));
 });
@@ -90,7 +88,7 @@ test("Operations monthly subtotals and row totals are calculated from entered am
 test("each report has its own correct actual-entry total without combining reporting categories", () => {
   const expected = {
     "adp-payroll-2025-2026": 61279779,
-    "operations-expenses-2025-2026": 15543888,
+    "operations-expenses-2025-2026": 15395043,
     "building-expenses-2025-2026": 7546728,
     "professional-fees-2025-2026": 6847246,
   };
@@ -101,9 +99,8 @@ test("each report has its own correct actual-entry total without combining repor
 });
 
 test("blank source cells stay distinct from explicit zero entries and absent annual summaries", () => {
-  const medical = row(OPERATIONS_ID, "medical-supplies");
   const dues = row(PROFESSIONAL_ID, "dues");
-  for (const entry of [medical, dues]) {
+  for (const entry of [dues]) {
     assert.deepEqual(entry.monthlyCents, Array(12).fill(null));
     assert.equal(entry.reportedYtdCents, 0);
     assert.equal(expenseRowTotalCents(entry), null);
@@ -131,7 +128,7 @@ test("internal source differences cannot replace totals calculated from actual e
   assert.equal(expenseRowTotalCents(ameren), 568766);
   assert.equal(ameren.reportedYtdCents, 542737);
   assert.equal(expenseRowTotalCents(ameren) - ameren.reportedYtdCents, 26029);
-  assert.equal(expenseReportTotalCents(report(OPERATIONS_ID)) - report(OPERATIONS_ID).reportedYtdTotalCents, 58);
+  assert.equal(report(OPERATIONS_ID).reportedYtdTotalCents, undefined);
   assert.equal(expenseReportTotalCents(report(BUILDING_ID)) - report(BUILDING_ID).reportedYtdTotalCents, 26029);
 });
 
@@ -143,13 +140,19 @@ test("public search exposes corrected actual totals without reconciliation notes
     assert.ok(matchesSearch(sections[0].text, formatBillingMoney(expenseReportTotalCents(value) / 100)));
     assert.equal(SECTION_SEARCH.filter(section => section.id === value.id).length, 1);
   }
-  for (const amount of ["$27,679.08", "$22,127.72", "$155,438.88", "$5,687.66", "$75,467.28"]) {
+  for (const amount of ["$27,679.08", "$22,127.72", "$153,950.43", "$5,687.66", "$75,467.28"]) {
     assert.ok(publicText.includes(amount), amount);
   }
-  for (const amount of ["$27,679.00", "$22,127.22", "$155,438.30", "$5,427.37", "$75,206.99"]) {
+  for (const amount of ["$27,679.00", "$22,127.22", "$155,438.30", "$155,438.88", "$5,427.37", "$75,206.99"]) {
     assert.ok(!publicText.includes(amount), `Incorrect reported total must not be public: ${amount}`);
   }
   assert.doesNotMatch(publicText, /reconcil|\bdifference\b|reported worksheet annual total|worksheet annual summary lists/i);
+});
+
+test("removed outreach and zero-dollar medical supplies are absent from expense data and public search", () => {
+  assert.doesNotMatch(JSON.stringify(FISCAL_EXPENSE_REPORTS), /community.outreach|Community support|148845|128845|medical.supplies|Belleville Memorial/i);
+  assert.doesNotMatch(JSON.stringify(SECTION_SEARCH), /community.outreach|Community support|1,488\.45|1,288\.45|medical.supplies|Belleville Memorial/i);
+  assert.equal(expenseReportTotalCents(report(OPERATIONS_ID)), 15395043);
 });
 
 test("only approved professional-fee categories are included, without budgets or screenshot assets", () => {

@@ -361,7 +361,6 @@ export const FISCAL_EXPENSE_REPORTS: readonly FiscalExpenseReport[] = [
   {
     id: "operations-expenses-2025-2026", title: "Operations — FY 2025–2026", period: expensePeriod2526,
     notes: [STRYKER_EQUIPMENT_CONTEXT],
-    reportedYtdTotalCents: 15543830,
     rows: [
       { id: "insurance", label: "Insurance — General / Auto", description: "General and vehicle insurance.", monthlyCents: [241100,1190300,732300,47300,779600,0,0,2110000,0,1190100,0,0], reportedYtdCents: 6290700 },
       { id: "office-building-supplies", label: "Office / building supplies", description: "Office and building support, including upkeep such as parking-lot sealing.", monthlyCents: [3446,0,85474,0,0,0,0,0,24591,0,0,44544], reportedYtdCents: 158055 },
@@ -370,9 +369,7 @@ export const FISCAL_EXPENSE_REPORTS: readonly FiscalExpenseReport[] = [
       { id: "stryker-2-payments", label: "Stryker 2 payments", description: "Historical payments on the Stryker equipment loan. Current loan balances and rates are listed separately under Debt/Liabilities.", monthlyCents: [0,230659,461318,230659,230659,230659,230659,230659,230659,230659,230659,230659], reportedYtdCents: 2767900 },
       { id: "wex", label: "WEX", description: "Fuel purchased through the gas-card account.", monthlyCents: [132265,112027,214196,231608,310296,221946,130860,216058,272339,161371,30000,179806], reportedYtdCents: 2212722 },
       { id: "wireless-usa", label: "Wireless USA", description: "Portable-radio-related expenses.", monthlyCents: [4500,4500,4500,4500,4500,4500,4500,4500,4500,4500,4500,4500], reportedYtdCents: 54000 },
-      { id: "medical-supplies", label: "Medical supplies", description: "Restocking medical supplies that are not supplied by Belleville Memorial.", monthlyCents: [null,null,null,null,null,null,null,null,null,null,null,null], reportedYtdCents: 0 },
       { id: "credit-card-payments", label: "Credit-card payments", description: "Payments recorded during FY 2025–2026. These are historical payments, not a current credit-card balance.", monthlyCents: [499356,18110,54243,58700,59400,400000,63129,62400,68751,66500,493700,75300], reportedYtdCents: 1919589 },
-      { id: "community-outreach", label: "Community outreach", description: "Community support, including schools and school events.", monthlyCents: [null,null,null,128845,null,null,null,null,20000,null,null,null], reportedYtdCents: 148845 },
       { id: "education", label: "Education", description: "Training and related educational expenses.", monthlyCents: [5500,0,0,5500,null,null,null,null,2400,null,null,null], reportedYtdCents: 13400 },
       { id: "patient-refunds", label: "Patient refunds", description: "Mandatory patient refunds required by insurance-company determinations; these are not discretionary payments.", monthlyCents: [null,null,null,null,null,null,null,null,5000,44000,null,107754], reportedYtdCents: 156754 },
       { id: "oxygen", label: "Air Gas O2 — patient oxygen", description: "Oxygen used for patient care.", monthlyCents: [0,0,179328,98732,4721,129090,129681,202424,202441,89482,0,142923], reportedYtdCents: 1178822 },
