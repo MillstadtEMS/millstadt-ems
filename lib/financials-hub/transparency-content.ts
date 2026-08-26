@@ -155,13 +155,13 @@ export const PAY_RATE_GROUPS = [
 export const TRANSFER_CALL_STIPEND = "$10.00 per call";
 export const NURSING_REGULAR_RATE = "$20.00/hour";
 
-// Only the five visible loan rows are transcribed. The supplied correction
-// overrides Zoll's worksheet rate and includes its balance despite its OFF toggle.
+// Only the five visible loan rows are transcribed. Supplied corrections set both
+// Stryker loans and Zoll to 7.99% and include Zoll's balance despite its OFF toggle.
 export const DEBT_LOANS = [
   { id: "mortgage", obligation: "First National Bank — mortgage", balance: 143348, interestRate: 6, frequency: "Monthly", scheduledPayment: 2141.30, paymentsPerYear: 12 },
   { id: "ambulance-3935", obligation: "Ambulance loan — Unit 3935", balance: 175842, interestRate: 6, frequency: "Monthly", scheduledPayment: 3000, paymentsPerYear: 12 },
-  { id: "stryker-1", obligation: "Stryker Loan 1", balance: 8486, interestRate: 0, frequency: "Monthly", scheduledPayment: 446.65, paymentsPerYear: 12 },
-  { id: "stryker-2", obligation: "Stryker Loan 2", balance: 122347, interestRate: 0, frequency: "Monthly", scheduledPayment: 1773.14, paymentsPerYear: 12 },
+  { id: "stryker-1", obligation: "Stryker Loan 1", balance: 8486, interestRate: 7.99, frequency: "Monthly", scheduledPayment: 446.65, paymentsPerYear: 12 },
+  { id: "stryker-2", obligation: "Stryker Loan 2", balance: 122347, interestRate: 7.99, frequency: "Monthly", scheduledPayment: 1773.14, paymentsPerYear: 12 },
   { id: "zoll-monitor", obligation: "Zoll monitor loan", balance: 35558, interestRate: 7.99, frequency: "Annual", scheduledPayment: 17779.03, paymentsPerYear: 1 },
 ] as const;
 export const DEBT_CREDIT_CARD = { obligation: "Credit card", balance: 0, status: "Paid off" } as const;

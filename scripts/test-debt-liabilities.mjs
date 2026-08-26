@@ -8,15 +8,20 @@ import {
   SECTION_SEARCH, matchesSearch, formatBillingMoney,
 } from "../lib/financials-hub/transparency-content.ts";
 
-test("all five visible loan rows are preserved, with Zoll corrected to 7.99%", () => {
+test("all five visible loan rows are preserved, with both Stryker loans and Zoll corrected to 7.99%", () => {
   assert.deepEqual(DEBT_LOANS.map(loan => [loan.obligation, loan.balance, loan.interestRate, loan.frequency, loan.scheduledPayment, loan.paymentsPerYear]), [
     ["First National Bank — mortgage", 143348, 6, "Monthly", 2141.30, 12],
     ["Ambulance loan — Unit 3935", 175842, 6, "Monthly", 3000, 12],
-    ["Stryker Loan 1", 8486, 0, "Monthly", 446.65, 12],
-    ["Stryker Loan 2", 122347, 0, "Monthly", 1773.14, 12],
+    ["Stryker Loan 1", 8486, 7.99, "Monthly", 446.65, 12],
+    ["Stryker Loan 2", 122347, 7.99, "Monthly", 1773.14, 12],
     ["Zoll monitor loan", 35558, 7.99, "Annual", 17779.03, 1],
   ]);
-  assert.equal(formatDebtRate(DEBT_LOANS.at(-1).interestRate), "7.99%");
+  for (const id of ["stryker-1", "stryker-2", "zoll-monitor"]) {
+    const loan = DEBT_LOANS.find(loan => loan.id === id);
+    assert.equal(formatDebtRate(loan.interestRate), "7.99%");
+    assert.ok(matchesSearch(debtLoanSearchText(loan), "7.99%"));
+    assert.ok(!matchesSearch(debtLoanSearchText(loan), "0.00%"));
+  }
 });
 
 test("credit card is paid off without inventing an interest rate or repayment terms", () => {
