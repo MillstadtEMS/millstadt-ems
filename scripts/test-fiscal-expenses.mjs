@@ -186,11 +186,11 @@ test("all top-level disclosure groups are inside Document Library in alphabetica
   const groupEnd = page.indexOf('<DocumentUseNotice/>');
   assert.ok(libraryStart >= 0 && groupStart > libraryStart && groupEnd > groupStart);
   const group = page.slice(groupStart, groupEnd);
-  const markers = ['<BillingActivity', '<DebtLiabilities', '<ExpenseRecords', 'title="IRS Form 990 Filings"', '{irs.map(', 'title="Management Pay Transparency"', 'title="Other official records"', 'title="St. Clair County Tax Computation Reports"'];
+  const markers = ['<AnnualAudits', '<BillingActivity', '<DebtLiabilities', '<ExpenseRecords', 'title="IRS Form 990 Filings"', '{irs.map(', 'title="Management Pay Transparency"', 'title="Other official records"', 'title="St. Clair County Tax Computation Reports"'];
   const positions = markers.map(marker => group.indexOf(marker));
   assert.ok(positions.every(position => position >= 0));
   assert.deepEqual(positions, [...positions].sort((a, b) => a - b));
-  assert.doesNotMatch(page.slice(0, libraryStart), /<BillingActivity|<DebtLiabilities|<ExpenseRecords/);
+  assert.doesNotMatch(page.slice(0, libraryStart), /<AnnualAudits|<BillingActivity|<DebtLiabilities|<ExpenseRecords/);
 });
 
 test("expense disclosures retain supplied descriptions, sorted groups, and no reconciliation notes", () => {

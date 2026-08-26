@@ -2,7 +2,7 @@ import { TAX_COMPUTATION_DATA, type TaxComputationData } from "./tax-computation
 
 export type PublicLibraryDocument = {
   id: string;
-  kind: "form_990" | "irs_record" | "tax_computation" | "management_pay" | "official_record";
+  kind: "form_990" | "irs_record" | "tax_computation" | "management_pay" | "official_record" | "annual_audit";
   title: string;
   category: string;
   periodLabel: string;
@@ -84,6 +84,25 @@ const TAX_COMPUTATION_SOURCES: TaxComputationSource[] = [
 ];
 
 export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
+  const annualAudits: PublicLibraryDocument[] = [
+    { ending: 2024, pageCount: 21, reportDate: "April 4, 2026" },
+    { ending: 2023, pageCount: 20, reportDate: "March 31, 2026" },
+  ].map(({ ending, pageCount, reportDate }) => {
+    const id = `annual-audit-fy-${ending - 1}-${ending}`;
+    const title = `Annual Audit — FY ${ending - 1}–${ending}`;
+    const url = `/financial-transparency/audits/${id}.pdf`;
+    return {
+      id, kind: "annual_audit", title, category: "Operational",
+      periodLabel: `May 1, ${ending - 1} through April 30, ${ending}`,
+      dateLabel: `Auditor’s report dated ${reportDate}`, pageCount,
+      sourceLabel: "Scheffel Boyle · Independent auditor’s report",
+      filingYear: ending, sortOrder: ending * 10000 + 430,
+      statusLabel: "Approved public report",
+      searchText: `${title} Annual Audits FY ${ending - 1}-${ending} FY ${String(ending - 1).slice(-2)}-${String(ending).slice(-2)} Financial report financial statements Independent auditor Scheffel Boyle prior-year comparative figures Operational`,
+      viewUrl: url, downloadUrl: url, printUrl: url,
+    };
+  });
+
   const form990s = FORM_990_SOURCES.map(({ fiscalYearEnding, pageCount }) => {
     const url = `/financial-transparency/form-990/form-990-fy-ending-${fiscalYearEnding}.pdf`;
     const title = `Form 990 - FY ending April ${fiscalYearEnding}`;
@@ -170,5 +189,5 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
       viewUrl: url, downloadUrl: url, printUrl: url,
     };
   });
-  return [...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
+  return [...annualAudits, ...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
 }

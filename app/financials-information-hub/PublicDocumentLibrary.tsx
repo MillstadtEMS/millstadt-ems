@@ -4,9 +4,11 @@ import { CheckSquare, ExternalLink, FileText, Filter, Search, X } from "lucide-r
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import type { PublicLibraryDocument } from "@/lib/financials-hub/public-library";
+import { PENDING_ANNUAL_AUDITS } from "@/lib/financials-hub/annual-audits";
 import { filingYearGroups, matchesLibraryCategory, payReportsForYear } from "@/lib/financials-hub/fiscal-year-documents";
 import { documentSearchText, matchesSearch, normalizeSearch, PENDING_COPY, PENDING_SEARCH, PENDING_TITLE, SECTION_SEARCH, VOTER_RESOURCES_URL, FACEBOOK_URL } from "@/lib/financials-hub/transparency-content";
 import AnnualCallSummary from "./AnnualCallSummary";
+import AnnualAudits from "./AnnualAudits";
 import DebtLiabilities from "./DebtLiabilities";
 import ExpenseRecords from "./ExpenseRecords";
 import { BillingActivity, PersonnelAndPay } from "./FinancialOverview";
@@ -20,6 +22,8 @@ export default function PublicDocumentLibrary({documents}:{documents:PublicLibra
   const [liveCalls,setLiveCalls]=useState<number|null>(null);
   const needle=normalizeSearch(query);
   const matching=useMemo(()=>documents.filter(d=>matchesLibraryCategory(d,category)&&matchesSearch(documentSearchText(d),query)),[documents,category,query]);
+  const audits=matching.filter(d=>d.kind==="annual_audit");
+  const pendingAudits=category==="990" ? [] : PENDING_ANNUAL_AUDITS.filter(report=>matchesSearch(report.searchText,query));
   const taxes=matching.filter(d=>d.kind==="tax_computation");
   const management=category==="990" ? [] : matching.filter(d=>d.kind==="management_pay");
   const irs=matching.filter(d=>d.kind==="irs_record");
@@ -28,7 +32,7 @@ export default function PublicDocumentLibrary({documents}:{documents:PublicLibra
   const pendingMatches=!hasCurrentFiling && category!=="Operational" && matchesSearch(PENDING_SEARCH,query);
   const showPending=pendingMatches || (!hasCurrentFiling && category!=="Operational" && matching.some(d=>d.kind==="management_pay"&&d.filingYear===2026));
   const sectionMatches=needle ? SECTION_SEARCH.filter(s=>matchesSearch(`${s.title} ${s.text}${s.id==="annual-call-volume" && liveCalls!==null ? ` ${liveCalls} ${liveCalls.toLocaleString()}` : ""}`,query)) : [];
-  const resultCount=matching.length+Number(pendingMatches)+sectionMatches.length;
+  const resultCount=matching.length+pendingAudits.length+Number(pendingMatches)+sectionMatches.length;
   const yearGroups=filingYearGroups(documents,matching,category,hasCurrentFiling?undefined:2026);
   const reset=()=>{setQuery("");setCategory("All documents");};
   return <div className={styles.page}>
@@ -56,6 +60,7 @@ export default function PublicDocumentLibrary({documents}:{documents:PublicLibra
         <p className={styles.resultCount} role="status" aria-live="polite">{needle||category!=="All documents" ? `${resultCount} ${resultCount===1?"result":"results"}` : `${documents.length} public documents`}</p>
         {sectionMatches.length>0 ? <nav className={styles.sectionResults} aria-label="Matching page sections"><h3>On this page</h3>{sectionMatches.map(s=><a href={`#${s.id}`} key={s.id}><Highlight text={s.title} query={query}/><span><Highlight text={s.text} query={query}/></span></a>)}</nav> : null}
         <div className={styles.libraryGroups}>
+          <AnnualAudits documents={audits} pending={pendingAudits} query={query}/>
           <BillingActivity query={query}/>
           <DebtLiabilities query={query}/>
           <ExpenseRecords query={query}/>

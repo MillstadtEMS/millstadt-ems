@@ -20,7 +20,7 @@ test("pending FY 2025–2026 reuses the same report objects as Management Pay Tr
   assert.equal(reports.length,2);
   for(const report of reports)assert.equal(report,documents.find(d=>d.id===report.id));
   assert.equal(documents.filter(d=>d.kind==="management_pay").length,4);
-  assert.equal(new Set(documents.map(d=>d.downloadUrl)).size,50);
+  assert.equal(new Set(documents.map(d=>d.downloadUrl)).size,52);
 });
 test("990 search reveals related pay reports under their correct fiscal year",()=>{
   const matches=documents.filter(d=>matchesLibraryCategory(d,"990")&&matchesSearch(documentSearchText(d),"2024-2025"));
