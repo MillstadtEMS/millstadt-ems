@@ -99,7 +99,8 @@ test("each report has its own correct actual-entry total without combining repor
 });
 
 test("blank source cells stay distinct from explicit zero entries and absent annual summaries", () => {
-  const inspection = row(PROFESSIONAL_ID, "frawley");
+  const inspection = row(PROFESSIONAL_ID, "fire-inspection");
+  assert.equal(inspection.label, "Fire inspection");
   assert.deepEqual(inspection.monthlyCents, [...Array(11).fill(null), 40900]);
   assert.equal(inspection.reportedYtdCents, null);
   assert.equal(expenseRowTotalCents(inspection), 40900);
@@ -143,15 +144,15 @@ test("public search exposes corrected actual totals without reconciliation notes
 });
 
 test("removed expense categories are absent from expense data and public search", () => {
-  assert.doesNotMatch(JSON.stringify(FISCAL_EXPENSE_REPORTS), /community.outreach|Community support|148845|128845|medical.supplies|Belleville Memorial|\baccounting\b|\bdues\b|subscriptions/i);
-  assert.doesNotMatch(JSON.stringify(FISCAL_EXPENSE_SECTIONS), /\baccounting\b|\bdues\b|subscriptions/i);
+  assert.doesNotMatch(JSON.stringify(FISCAL_EXPENSE_REPORTS), /community.outreach|Community support|148845|128845|medical.supplies|Belleville Memorial|\baccounting\b|\bdues\b|subscriptions|frawley/i);
+  assert.doesNotMatch(JSON.stringify(FISCAL_EXPENSE_SECTIONS), /\baccounting\b|\bdues\b|subscriptions|frawley/i);
   assert.doesNotMatch(JSON.stringify(SECTION_SEARCH), /community.outreach|Community support|1,488\.45|1,288\.45|medical.supplies|Belleville Memorial/i);
   assert.equal(expenseReportTotalCents(report(OPERATIONS_ID)), 15395043);
 });
 
 test("only approved professional-fee categories are included, without budgets or screenshot assets", () => {
   assert.deepEqual(report(PROFESSIONAL_ID).rows.map(entry => entry.id), [
-    "mediclaims", "emsmc", "cencom", "frawley", "paya",
+    "mediclaims", "emsmc", "cencom", "fire-inspection", "paya",
   ]);
   const publicData = JSON.stringify(FISCAL_EXPENSE_REPORTS);
   assert.doesNotMatch(publicData, /\blegal\b|non[ -]?profit|\bbudget(?:ed)?\b|remaining[ -]?budget|codex-clipboard|\/var\/folders|\.png|\.jpe?g/i);

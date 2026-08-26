@@ -398,7 +398,7 @@ export const FISCAL_EXPENSE_REPORTS: readonly FiscalExpenseReport[] = [
       { id: "mediclaims", label: "Medical billing — Mediclaims", description: "Payments for medical-billing services; these are not patient receipts or service revenue.", monthlyCents: [564904,0,453070,2458195,184975,126138,0,140199,89054,0,0,0], reportedYtdCents: 4016535 },
       { id: "emsmc", label: "Medical billing — EMSMC", description: "Payments for medical-billing services; these are not patient receipts or service revenue.", monthlyCents: [0,0,85740,0,152039,212402,342328,0,414587,0,0,409927], reportedYtdCents: 1617023 },
       { id: "cencom", label: "Cencom dispatching", description: "Dispatching services.", monthlyCents: [0,0,0,0,1015000,0,0,0,0,0,0,0], reportedYtdCents: 1015000 },
-      { id: "frawley", label: "Fire inspection — Frawley", description: "The recorded April fire-inspection payment.", monthlyCents: [null,null,null,null,null,null,null,null,null,null,null,40900], reportedYtdCents: null },
+      { id: "fire-inspection", label: "Fire inspection", description: "The recorded April fire-inspection payment.", monthlyCents: [null,null,null,null,null,null,null,null,null,null,null,40900], reportedYtdCents: null },
       { id: "paya", label: "Paya — credit-card processing", description: "Processing customer credit-card payments.", monthlyCents: [4765,14310,9847,28040,16834,10629,21037,9851,9777,12587,10008,10103], reportedYtdCents: 157788 },
     ],
   },
