@@ -8,7 +8,7 @@ import { filingYearGroups, matchesLibraryCategory, payReportsForYear } from "@/l
 import { documentSearchText, matchesSearch, normalizeSearch, PENDING_COPY, PENDING_SEARCH, PENDING_TITLE, SECTION_SEARCH, VOTER_RESOURCES_URL, FACEBOOK_URL } from "@/lib/financials-hub/transparency-content";
 import AnnualCallSummary from "./AnnualCallSummary";
 import DebtLiabilities from "./DebtLiabilities";
-import TruckRepairCosts from "./TruckRepairCosts";
+import ExpenseRecords from "./ExpenseRecords";
 import { BillingActivity, PersonnelAndPay } from "./FinancialOverview";
 import { Disclosure, DocumentRow, Highlight, TaxRow } from "./DocumentRows";
 import ReportProblem from "./ReportProblem";
@@ -47,7 +47,7 @@ export default function PublicDocumentLibrary({documents}:{documents:PublicLibra
     <AnnualCallSummary onCurrentCalls={setLiveCalls}/>
     <BillingActivity query={query}/>
     <DebtLiabilities query={query}/>
-    <TruckRepairCosts query={query}/>
+    <ExpenseRecords query={query}/>
     <section id="document-library" aria-labelledby="library-heading" className={styles.library}>
       <div className={styles.shell}>
         <div className={styles.libraryHeading}><p className={styles.eyebrow}>Open access</p><h2 id="library-heading">Document library</h2><p>Explore filings, official records, and approved public reports.</p></div>

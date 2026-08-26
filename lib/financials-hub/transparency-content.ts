@@ -231,7 +231,18 @@ export function truckRepairSearchText(truck: typeof TRUCK_REPAIRS[number]) {
 }
 export const TRUCK_REPAIRS_SECTION = {
   id: "truck-repair-costs", title: "Truck repairs — FY 2026–2027",
-  text: `Truck repair costs ${TRUCK_REPAIRS_PERIOD} ${TRUCK_REPAIRS_CONTEXT} ${TRUCK_REPAIRS_NOTE} Total recorded repair costs ${formatBillingMoney(TRUCK_REPAIRS_TOTAL_CENTS / 100)} ${TRUCK_REPAIRS.map(truckRepairSearchText).join(" · ")}`,
+  text: `Expenses Truck repair costs ${TRUCK_REPAIRS_PERIOD} ${TRUCK_REPAIRS_CONTEXT} ${TRUCK_REPAIRS_NOTE} Total recorded repair costs ${formatBillingMoney(TRUCK_REPAIRS_TOTAL_CENTS / 100)} ${TRUCK_REPAIRS.map(truckRepairSearchText).join(" · ")}`,
+};
+export const UNIFORM_SHIRT_EXPENSE = {
+  title: "Employee uniform shirts",
+  vendor: "Custom Screenprinting",
+  amountCents: 399552,
+  // The user said "last year" without specifying a fiscal or calendar year.
+  periodLabel: "Prior-year purchase (as reported)",
+} as const;
+export const UNIFORM_SHIRT_SECTION = {
+  id: "uniform-shirt-expense", title: UNIFORM_SHIRT_EXPENSE.title,
+  text: `Expenses Uniforms ${UNIFORM_SHIRT_EXPENSE.vendor} ${formatBillingMoney(UNIFORM_SHIRT_EXPENSE.amountCents / 100)} ${UNIFORM_SHIRT_EXPENSE.periodLabel}`,
 };
 export const SECTION_SEARCH = [
   { id: "personnel", title: "Number of personnel", text: "18 EMTs 9 Paramedics 1 Pre-Hospital Registered Nurse 2 Advanced Practice Prehospital Registered Nurse Practitioners Total personnel 30" },
@@ -244,6 +255,7 @@ export const SECTION_SEARCH = [
   COLLECTIONS_SNAPSHOT_SECTION,
   DEBT_LIABILITIES_SECTION,
   TRUCK_REPAIRS_SECTION,
+  UNIFORM_SHIRT_SECTION,
   { id: "voter-resources", title: "Ready to Vote?", text: "Access official St. Clair County voter-registration, polling-place, election, and voter-information resources. View Official Voter Resources" },
 ];
 

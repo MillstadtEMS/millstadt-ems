@@ -1,0 +1,47 @@
+"use client";
+
+import { useSyncExternalStore } from "react";
+import {
+  TRUCK_REPAIRS_SECTION, UNIFORM_SHIRT_EXPENSE, UNIFORM_SHIRT_SECTION,
+  formatBillingMoney, matchesSearch, normalizeSearch,
+} from "@/lib/financials-hub/transparency-content";
+import { Disclosure, Highlight } from "./DocumentRows";
+import TruckRepairCosts from "./TruckRepairCosts";
+import styles from "./PublicDocumentLibrary.module.css";
+
+const expenseSections = [TRUCK_REPAIRS_SECTION, UNIFORM_SHIRT_SECTION];
+function subscribeToAnchor(onChange: () => void) {
+  window.addEventListener("hashchange", onChange);
+  return () => window.removeEventListener("hashchange", onChange);
+}
+function readAnchor() { return window.location.hash.slice(1); }
+function serverAnchor() { return ""; }
+
+export default function ExpenseRecords({ query = "" }: { query?: string }) {
+  const needle = normalizeSearch(query);
+  const anchor = useSyncExternalStore(subscribeToAnchor, readAnchor, serverAnchor);
+  const isOpen = (section: typeof UNIFORM_SHIRT_SECTION) => anchor === section.id || (Boolean(needle) && matchesSearch(`${section.title} ${section.text}`, query));
+  const uniform = UNIFORM_SHIRT_EXPENSE;
+  return <section id="expenses" aria-labelledby="expenses-title" className={styles.repairsSection}>
+    <div className={styles.shell}>
+      <h2 id="expenses-title">Expenses</h2>
+      <p className={styles.sectionExplanation}>Selected operating expenses, organized by category and reporting period.</p>
+      <Disclosure key={`expenses-${needle}-${anchor}`} title="Expenses" meta="2 categories" initiallyOpen={anchor === "expenses" || expenseSections.some(isOpen)} query={query}>
+        <div id={UNIFORM_SHIRT_SECTION.id} className={styles.billingReport}>
+          <Disclosure title={uniform.title} meta={<Highlight text={`${formatBillingMoney(uniform.amountCents / 100)} · ${uniform.periodLabel}`} query={query}/>} level={4} initiallyOpen={isOpen(UNIFORM_SHIRT_SECTION)} query={query}>
+            <table className={styles.mediclaimsTable}>
+              <caption className={styles.srOnly}>Employee uniform-shirt expense</caption>
+              <thead><tr><th scope="col">Item</th><th scope="col">Amount / detail</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Vendor</th><td><Highlight text={uniform.vendor} query={query}/></td></tr>
+                <tr><th scope="row">Recorded expense</th><td><Highlight text={formatBillingMoney(uniform.amountCents / 100)} query={query}/></td></tr>
+              </tbody>
+            </table>
+            <p className={styles.categoryNote}>This prior-year purchase is reported separately from the current fiscal year’s truck-repair costs.</p>
+          </Disclosure>
+        </div>
+        <TruckRepairCosts query={query} anchor={anchor}/>
+      </Disclosure>
+    </div>
+  </section>;
+}
