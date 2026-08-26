@@ -14,10 +14,24 @@ export const BILLING_ROWS = [
 ] as const;
 export const BILLING_EXPLANATION = "Calculated non-transfer billable runs equal total billable runs minus interfacility transfers.";
 export const CALENDAR_EXPLANATION = "911 call volumes are reported by calendar year, January 1 through December 31.";
+export const PAY_RATE_GROUPS = [
+  { position: "EMT", rates: [
+    { type: "Regular", amount: "$16.00" },
+    { type: "Overtime", amount: "$24.00" },
+    { type: "Holiday", amount: "$32.00" },
+  ] },
+  { position: "Paramedic", rates: [
+    { type: "Regular", amount: "$20.00" },
+    { type: "Overtime", amount: "$30.00" },
+    { type: "Holiday", amount: "$40.00" },
+  ] },
+] as const;
+export const TRANSFER_CALL_STIPEND = "$10.00 per call";
+export const NURSING_REGULAR_RATE = "$20.00/hour";
 export const SECTION_SEARCH = [
   { id: "personnel", title: "Number of personnel", text: "18 EMTs 9 Paramedics 1 Pre-Hospital Registered Nurse 2 Advanced Practice Prehospital Registered Nurse Practitioners Total personnel 30" },
   { id: "district-support", title: "Current EMS Tax Amount", text: "$238,525.85" },
-  { id: "pay-transparency", title: "Pay Transparency", text: "EMT $16.00/hr Paramedic / PHRN / APHRN $20.00/hr" },
+  { id: "pay-transparency", title: "Pay Transparency", text: `${PAY_RATE_GROUPS.flatMap(group => group.rates.map(rate => `${group.position} ${rate.type} ${rate.amount}/hour`)).join(" · ")} · Transfer-call stipend ${TRANSFER_CALL_STIPEND} · PHRN / APHRN regular ${NURSING_REGULAR_RATE}` },
   { id: "annual-call-volume", title: "Annual 911 call volume", text: `${CALENDAR_EXPLANATION} 2022 618 2023 734 2024 748 2025 880 2026 through current Live` },
   { id: "billing-activity", title: "Fiscal-Year Billing Activity", text: `${BILLING_EXPLANATION} ${BILLING_ROWS.map(r=>Object.values(r).join(" ")).join(" ")}` },
   { id: "voter-resources", title: "Ready to Vote?", text: "Access official St. Clair County voter-registration, polling-place, election, and voter-information resources. View Official Voter Resources" },

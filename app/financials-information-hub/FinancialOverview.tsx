@@ -1,4 +1,4 @@
-import { BILLING_ROWS, BILLING_EXPLANATION } from "@/lib/financials-hub/transparency-content";
+import { BILLING_ROWS, BILLING_EXPLANATION, PAY_RATE_GROUPS, TRANSFER_CALL_STIPEND, NURSING_REGULAR_RATE } from "@/lib/financials-hub/transparency-content";
 import styles from "./PublicDocumentLibrary.module.css";
 
 export function PersonnelAndPay() {
@@ -14,7 +14,30 @@ export function PersonnelAndPay() {
         </dl>
       </div>
     </section>
-    <section id="pay-transparency" aria-labelledby="pay-title" className={styles.paySection}><div className={`${styles.shell} ${styles.payBand}`}><h2 id="pay-title">Pay Transparency</h2><p>EMT: <strong>$16.00/hr</strong></p><p>Paramedic / PHRN / APHRN: <strong>$20.00/hr</strong></p></div></section>
+    <section id="pay-transparency" aria-labelledby="pay-title" className={styles.paySection}>
+      <div className={`${styles.shell} ${styles.payBand}`}>
+        <h2 id="pay-title">Pay Transparency</h2>
+        <div className={styles.payRateGroups}>
+          {PAY_RATE_GROUPS.map(group => (
+            <div className={styles.payRateGroup} key={group.position}>
+              <h3 id={`pay-${group.position.toLowerCase()}`}>{group.position}</h3>
+              <dl className={styles.payRates} aria-labelledby={`pay-${group.position.toLowerCase()}`}>
+                {group.rates.map(rate => (
+                  <div key={rate.type}>
+                    <dt>{rate.type}</dt>
+                    <dd><strong>{rate.amount}</strong><span>/hour</span></dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ))}
+        </div>
+        <div className={styles.payExtras}>
+          <p className={styles.transferStipend}><span>Transfer-call stipend</span><strong>{TRANSFER_CALL_STIPEND}</strong></p>
+          <p className={styles.nursingRate}>PHRN / APHRN regular rate: <strong>{NURSING_REGULAR_RATE}</strong></p>
+        </div>
+      </div>
+    </section>
   </>;
 }
 

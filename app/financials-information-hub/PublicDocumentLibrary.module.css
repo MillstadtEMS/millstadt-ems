@@ -32,10 +32,22 @@
 .personnelGrid .personnelTotal { border-color:#b77800; }
 .personnelTotal dd { color:#805300; }
 .paySection { padding:1.4rem 0; border-bottom:1px solid #c8d5e8; background:#edf3fc; }
-.payBand { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem 2rem; }
+.payBand { display:grid; gap:1.2rem; }
 .payBand h2 { font-size:1.25rem; }
 .payBand p { margin:0; font-size:.9rem; }
 .payBand strong { color:var(--blue-dark); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.payRateGroups { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:2rem; }
+.payRateGroup { min-width:0; }
+.payRateGroup h3 { margin:0 0 .8rem; padding-bottom:.6rem; border-bottom:1px solid #bdcde3; color:#173d77; font-size:.95rem; font-weight:750; }
+.payRates { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.6rem; margin:0; }
+.payRates dt { color:var(--muted); font-size:.78rem; }
+.payRates dd { margin:.35rem 0 0; }
+.payRates strong { font-size:clamp(1.15rem,2.2vw,1.5rem); }
+.payRates dd span { display:block; margin-top:.1rem; color:var(--muted); font-size:.73rem; }
+.payExtras { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.8rem 2rem; padding-top:1rem; border-top:1px solid #bdcde3; }
+.transferStipend { display:flex; flex-wrap:wrap; align-items:baseline; gap:.5rem 1rem; }
+.transferStipend span { font-weight:650; }
+.payBand .nursingRate { color:var(--muted); font-size:.78rem; }
 .callExplanation { max-width:32rem; font-size:.83rem; line-height:1.6; color:var(--muted); }
 .callExplanation p { margin:.4rem 0 0; }
 .callChart { display:grid; gap:.8rem; max-width:960px; }
@@ -153,7 +165,8 @@
   .overviewHeading .eyebrow { display:none; }
   .personnelGrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .personnelTotal { grid-column:1/-1; }
-  .payBand { align-items:flex-start; flex-direction:column; gap:.85rem; }
+  .payRateGroups { grid-template-columns:1fr; gap:1.25rem; }
+  .payExtras { align-items:flex-start; flex-direction:column; }
   .callsHeading { display:block; }
   .callExplanation { margin-top:1rem; }
   .callRow { grid-template-columns:8.3rem minmax(0,1fr) 3rem; gap:.6rem; }
