@@ -1,8 +1,11 @@
 import { chicagoLocalTimeToUtc } from "@/lib/community/reliability";
 
-const SPORTS_PATTERN = /\b(baseball|softball|basketball|volleyball|soccer|cross\s*country|track|golf|wrestling|cheer(?:leading)?)\b/i;
+// Only split an explicit shared sport heading, never a mention of another sport
+// elsewhere in an event (for example a fundraiser or an opponent's name).
+const COMBINED_SPORTS_PATTERN = /^(baseball|softball)\s*(?:\/|&|\+|and\b|\s)\s*(baseball|softball)\b(.*)$/i;
 const DATE_PATTERN = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/;
-const TIME_PATTERN = /^(\d{1,2}):(\d{2})\s*([ap])\.?m\.?$/i;
+const TIME_PATTERN = /^(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?(?=$|\s|[-–—])/i;
+const TIME_RANGE_PATTERN = /^(\d{1,2})(?::(\d{2}))?\s*[-–—]\s*\d{1,2}(?::\d{2})?\s*([ap])\.?m\.?$/i;
 
 export type McsScheduleArticle = {
   id: string;
@@ -87,21 +90,27 @@ function eventDateKey(value: string, article: McsScheduleArticle) {
 }
 
 function eventTime(dateKey: string, value: string) {
-  const match = TIME_PATTERN.exec(value.trim());
+  const text = value.trim();
+  const timeLabel = !text || /^(?:t\.?b\.?a\.?|n\/?a)$/i.test(text) ? null : text;
+  // Keep the source's full time range or instructions ("See flyer", "All day")
+  // in the hover entry. A fallback timestamp is only for sorting, not display.
+  const fallback = { startsAt: chicagoLocalTimeToUtc(dateKey, 7).toISOString(), timeLabel };
+  const match = TIME_PATTERN.exec(text) ?? TIME_RANGE_PATTERN.exec(text);
   if (!match) {
-    return { startsAt: chicagoLocalTimeToUtc(dateKey, 7).toISOString(), timeLabel: null };
+    return fallback;
   }
 
+  const sourceHour = Number(match[1]);
   let hour = Number(match[1]) % 12;
   if (match[3].toLowerCase() === "p") hour += 12;
-  const minute = Number(match[2]);
-  if (minute > 59) {
-    return { startsAt: chicagoLocalTimeToUtc(dateKey, 7).toISOString(), timeLabel: null };
+  const minute = Number(match[2] ?? 0);
+  if (sourceHour < 1 || sourceHour > 12 || minute > 59) {
+    return fallback;
   }
 
   return {
     startsAt: chicagoLocalTimeToUtc(dateKey, hour, minute).toISOString(),
-    timeLabel: value.trim(),
+    timeLabel,
   };
 }
 
@@ -109,8 +118,29 @@ function eventSlug(value: string) {
   return value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 80);
+    .replace(/^-|-$/g, "");
+}
+
+function eventId(dateKey: string, label: string, startsAt: string, timeLabel: string | null) {
+  // Sport, full event description, and start time all participate in identity:
+  // simultaneous games and multiple performances must not overwrite each other.
+  return `${dateKey}-${eventSlug(label)}-${startsAt}-${eventSlug(timeLabel?.replace(/\s+/g, "") ?? "tba")}`;
+}
+
+export function expandMcsScheduleEvents(events: McsScheduleEvent[]): McsScheduleEvent[] {
+  const expanded = events.flatMap((event) => {
+    const combined = COMBINED_SPORTS_PATTERN.exec(event.label);
+    if (!combined || combined[1].toLowerCase() === combined[2].toLowerCase()) return [event];
+
+    return [combined[1], combined[2]].map((sport) => {
+      const name = sport.toLowerCase() === "baseball" ? "Baseball" : "Softball";
+      const label = `${name}${combined[3]}`;
+      return { ...event, label, id: eventId(event.dateKey, label, event.startsAt, event.timeLabel) };
+    });
+  });
+
+  return [...new Map(expanded.map((event) => [eventId(event.dateKey, event.label, event.startsAt, event.timeLabel), event])).values()]
+    .sort((left, right) => left.startsAt.localeCompare(right.startsAt));
 }
 
 export function parseMcsScheduleArticle(article: McsScheduleArticle): McsScheduleEvent[] {
@@ -127,12 +157,12 @@ export function parseMcsScheduleArticle(article: McsScheduleArticle): McsSchedul
 
       if (cells[0]) currentDateKey = eventDateKey(cells[0], article);
       const label = cells[1]?.trim() ?? "";
-      if (!currentDateKey || !label || !SPORTS_PATTERN.test(label)) continue;
+      // The dated schedule is authoritative for all school activities, not just
+      // athletics: concerts, plays, meetings, assemblies, and school notices.
+      if (!currentDateKey || !label) continue;
 
       const time = eventTime(currentDateKey, cells[2] ?? "");
-      const id = [currentDateKey, eventSlug(label), time.timeLabel?.toLowerCase().replace(/\s+/g, "-") ?? "tba"]
-        .filter(Boolean)
-        .join("-");
+      const id = eventId(currentDateKey, label, time.startsAt, time.timeLabel);
 
       events.push({
         id,
@@ -144,6 +174,5 @@ export function parseMcsScheduleArticle(article: McsScheduleArticle): McsSchedul
     }
   }
 
-  return [...new Map(events.map((event) => [event.id, event])).values()]
-    .sort((left, right) => left.startsAt.localeCompare(right.startsAt));
+  return expandMcsScheduleEvents(events);
 }

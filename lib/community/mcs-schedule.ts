@@ -3,6 +3,7 @@ import "server-only";
 import { z } from "zod";
 import { sql } from "@/lib/neon";
 import {
+  expandMcsScheduleEvents,
   parseMcsScheduleArticle,
   type McsScheduleArticle,
   type McsScheduleEvent,
@@ -158,7 +159,7 @@ function scheduleSnapshot(articles: Awaited<ReturnType<typeof fetchArticles>>): 
     };
   }
 
-  throw new Error("No current MCS announcement contained a usable athletics schedule");
+  throw new Error("No current MCS announcement contained a usable school event schedule");
 }
 
 export async function refreshMcsSchedule(): Promise<McsScheduleSnapshot> {
@@ -179,8 +180,14 @@ export async function getMcsScheduleSnapshot(): Promise<McsScheduleSnapshot> {
     console.warn("MCS saved schedule could not be read", error instanceof Error ? error.message : error);
   }
 
+  // Refresh snapshots with old combined listings immediately on rollout. If the
+  // source is temporarily unavailable, even the saved games stay split.
+  const savedEvents = saved?.events ?? [];
+  const expandedEvents = expandMcsScheduleEvents(savedEvents);
+  const needsExpansion = expandedEvents.some((event, index) => event.id !== savedEvents[index]?.id);
+  if (saved) saved = { ...saved, events: expandedEvents };
   const fetchedAt = saved ? Date.parse(saved.fetchedAt) : Number.NaN;
-  if (saved && Number.isFinite(fetchedAt) && Date.now() - fetchedAt < REFRESH_AFTER_MS) return saved;
+  if (saved && !needsExpansion && Number.isFinite(fetchedAt) && Date.now() - fetchedAt < REFRESH_AFTER_MS) return saved;
 
   try {
     return await refreshMcsSchedule();
