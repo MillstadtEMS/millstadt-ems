@@ -99,20 +99,13 @@ test("each report has its own correct actual-entry total without combining repor
 });
 
 test("blank source cells stay distinct from explicit zero entries and absent annual summaries", () => {
-  const dues = row(PROFESSIONAL_ID, "dues");
-  for (const entry of [dues]) {
-    assert.deepEqual(entry.monthlyCents, Array(12).fill(null));
-    assert.equal(entry.reportedYtdCents, 0);
-    assert.equal(expenseRowTotalCents(entry), null);
-    for (const month of EXPENSE_MONTHS_2025_2026) {
-      assert.ok(!expenseRowSearchText(entry).includes(month.id), `${entry.id}: blank month must not become a zero entry`);
-    }
+  const inspection = row(PROFESSIONAL_ID, "frawley");
+  assert.deepEqual(inspection.monthlyCents, [...Array(11).fill(null), 40900]);
+  assert.equal(inspection.reportedYtdCents, null);
+  assert.equal(expenseRowTotalCents(inspection), 40900);
+  for (const month of EXPENSE_MONTHS_2025_2026.slice(0, 11)) {
+    assert.ok(!expenseRowSearchText(inspection).includes(month.id));
   }
-  const accounting = row(PROFESSIONAL_ID, "accounting");
-  assert.deepEqual(accounting.monthlyCents, Array(12).fill(0));
-  assert.equal(accounting.reportedYtdCents, null);
-  assert.equal(expenseRowTotalCents(accounting), 0);
-  assert.deepEqual(row(PROFESSIONAL_ID, "frawley").monthlyCents, [...Array(11).fill(null), 40900]);
   const education = expenseRowSearchText(row(OPERATIONS_ID, "education"));
   assert.ok(education.includes("2025-06"));
   assert.ok(education.includes("$0.00"));
@@ -149,15 +142,16 @@ test("public search exposes corrected actual totals without reconciliation notes
   assert.doesNotMatch(publicText, /reconcil|\bdifference\b|reported worksheet annual total|worksheet annual summary lists/i);
 });
 
-test("removed outreach and zero-dollar medical supplies are absent from expense data and public search", () => {
-  assert.doesNotMatch(JSON.stringify(FISCAL_EXPENSE_REPORTS), /community.outreach|Community support|148845|128845|medical.supplies|Belleville Memorial/i);
+test("removed expense categories are absent from expense data and public search", () => {
+  assert.doesNotMatch(JSON.stringify(FISCAL_EXPENSE_REPORTS), /community.outreach|Community support|148845|128845|medical.supplies|Belleville Memorial|\baccounting\b|\bdues\b|subscriptions/i);
+  assert.doesNotMatch(JSON.stringify(FISCAL_EXPENSE_SECTIONS), /\baccounting\b|\bdues\b|subscriptions/i);
   assert.doesNotMatch(JSON.stringify(SECTION_SEARCH), /community.outreach|Community support|1,488\.45|1,288\.45|medical.supplies|Belleville Memorial/i);
   assert.equal(expenseReportTotalCents(report(OPERATIONS_ID)), 15395043);
 });
 
 test("only approved professional-fee categories are included, without budgets or screenshot assets", () => {
   assert.deepEqual(report(PROFESSIONAL_ID).rows.map(entry => entry.id), [
-    "dues", "accounting", "mediclaims", "emsmc", "cencom", "frawley", "paya",
+    "mediclaims", "emsmc", "cencom", "frawley", "paya",
   ]);
   const publicData = JSON.stringify(FISCAL_EXPENSE_REPORTS);
   assert.doesNotMatch(publicData, /\blegal\b|non[ -]?profit|\bbudget(?:ed)?\b|remaining[ -]?budget|codex-clipboard|\/var\/folders|\.png|\.jpe?g/i);

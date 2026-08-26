@@ -395,8 +395,6 @@ export const FISCAL_EXPENSE_REPORTS: readonly FiscalExpenseReport[] = [
     id: "professional-fees-2025-2026", title: "Professional fees — FY 2025–2026", period: expensePeriod2526,
     notes: [],
     rows: [
-      { id: "dues", label: "Dues and subscriptions", description: "Dues and subscription expenses as reported in the annual summary.", monthlyCents: [null,null,null,null,null,null,null,null,null,null,null,null], reportedYtdCents: 0 },
-      { id: "accounting", label: "Accounting", description: "Accounting payments recorded during this fiscal year.", monthlyCents: [0,0,0,0,0,0,0,0,0,0,0,0], reportedYtdCents: null },
       { id: "mediclaims", label: "Medical billing — Mediclaims", description: "Payments for medical-billing services; these are not patient receipts or service revenue.", monthlyCents: [564904,0,453070,2458195,184975,126138,0,140199,89054,0,0,0], reportedYtdCents: 4016535 },
       { id: "emsmc", label: "Medical billing — EMSMC", description: "Payments for medical-billing services; these are not patient receipts or service revenue.", monthlyCents: [0,0,85740,0,152039,212402,342328,0,414587,0,0,409927], reportedYtdCents: 1617023 },
       { id: "cencom", label: "Cencom dispatching", description: "Dispatching services.", monthlyCents: [0,0,0,0,1015000,0,0,0,0,0,0,0], reportedYtdCents: 1015000 },
