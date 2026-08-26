@@ -97,7 +97,7 @@ export const BILLING_REPORTS: BillingReport[] = [
 export const COLLECTIONS_SNAPSHOT = {
   id: "collections-snapshot-2026",
   title: "EMS|MC Collections — 2026 Snapshot",
-  period: "January–August 2026 posting months · Report dated August 13, 2026",
+  period: "January–August 2026 posting months · August partial · Report dated August 13, 2026",
   reportedTotals: { actual: 441847, target: 295230, variance: 146617 },
   months: [
     { month: "2026-01", label: "January 2026", actual: 74070, target: 35117, variance: 38953 },
@@ -109,8 +109,13 @@ export const COLLECTIONS_SNAPSHOT = {
     { month: "2026-07", label: "July 2026", actual: 64781, target: 61987, variance: 2794 },
     { month: "2026-08", label: "August 2026 (partial)", actual: 24799, target: 22541, variance: 2259 },
   ],
-  note: "This is a dated posting-month collections snapshot, not a full-year result or additional trip revenue. August is partial. The source shows whole dollars: displayed monthly actuals add to $1 more than its reported total, and monthly variances add to $2 more. Reported figures are retained.",
 } as const;
+
+export const COLLECTIONS_TOTALS = COLLECTIONS_SNAPSHOT.months.reduce((totals, month) => ({
+  actual: totals.actual + month.actual,
+  target: totals.target + month.target,
+  variance: totals.variance + month.actual - month.target,
+}), { actual: 0, target: 0, variance: 0 });
 
 const billingDollarsAndCents = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const billingWholeDollars = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
@@ -134,10 +139,10 @@ export function billingReportSearchText(report: BillingReport) {
   ].join(" · ");
 }
 export const BILLING_REPORT_SECTIONS = BILLING_REPORTS.map(report => ({ id: report.id, title: report.title, text: billingReportSearchText(report) }));
-export const COLLECTIONS_ABOVE_TARGET = `${(COLLECTIONS_SNAPSHOT.reportedTotals.variance / COLLECTIONS_SNAPSHOT.reportedTotals.target * 100).toFixed(1)}%`;
+export const COLLECTIONS_ABOVE_TARGET = `${(COLLECTIONS_TOTALS.variance / COLLECTIONS_TOTALS.target * 100).toFixed(1)}%`;
 export const COLLECTIONS_SNAPSHOT_SECTION = {
   id: COLLECTIONS_SNAPSHOT.id, title: COLLECTIONS_SNAPSHOT.title,
-  text: `${COLLECTIONS_SNAPSHOT.period} Actual collections Prorated collection target Reported variance Above target ${COLLECTIONS_ABOVE_TARGET} ${[COLLECTIONS_SNAPSHOT.reportedTotals, ...COLLECTIONS_SNAPSHOT.months].map(row => [formatBillingMoney(row.actual, false), formatBillingMoney(row.target, false), formatBillingMoney(row.variance, false)].join(" ")).join(" · ")} ${COLLECTIONS_SNAPSHOT.months.map(row => `${row.label} ${row.month}`).join(" · ")}`,
+  text: `${COLLECTIONS_SNAPSHOT.period} Actual collections Prorated collection target Amount above target ${COLLECTIONS_ABOVE_TARGET} ${[COLLECTIONS_TOTALS, ...COLLECTIONS_SNAPSHOT.months].map(row => [formatBillingMoney(row.actual, false), formatBillingMoney(row.target, false), formatBillingMoney(row.actual - row.target, false)].join(" ")).join(" · ")} ${COLLECTIONS_SNAPSHOT.months.map(row => `${row.label} ${row.month}`).join(" · ")}`,
 };
 export const CALENDAR_EXPLANATION = "911 call volumes are reported by calendar year, January 1 through December 31.";
 export const PAY_RATE_GROUPS = [

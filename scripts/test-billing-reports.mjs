@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   BILLING_REPORTS, BILLING_HISTORY_SECTION, BILLING_ROWS, MEDICLAIMS_CLOSE,
-  TRIP_CATEGORIES, COLLECTIONS_SNAPSHOT, COLLECTIONS_ABOVE_TARGET,
+  TRIP_CATEGORIES, COLLECTIONS_SNAPSHOT, COLLECTIONS_TOTALS, COLLECTIONS_ABOVE_TARGET,
   BILLING_REPORT_SECTIONS, COLLECTIONS_SNAPSHOT_SECTION, SECTION_SEARCH,
   billingMonthSearchText, matchesSearch, formatBillingMoney,
 } from "../lib/financials-hub/transparency-content.ts";
@@ -49,21 +49,26 @@ test("missing source cells remain distinct from actual reported zeros", () => {
   assert.match(billingMonthSearchText(months[0]), /Non-billable trips by import month Not listed/);
 });
 
-test("collections preserve reported totals and expose, rather than fix, source discrepancies", () => {
-  const { reportedTotals: totals, months, period, note } = COLLECTIONS_SNAPSHOT;
-  assert.deepEqual(totals, { actual: 441847, target: 295230, variance: 146617 });
+test("collections display calculated monthly totals and differences without reconciliation notes", () => {
+  const { months, period } = COLLECTIONS_SNAPSHOT;
+  const totals = COLLECTIONS_TOTALS;
+  assert.deepEqual(totals, { actual: 441848, target: 295230, variance: 146618 });
   assert.equal(totals.actual - totals.target, totals.variance);
   assert.equal(COLLECTIONS_ABOVE_TARGET, "49.7%");
-  assert.equal(sum(months.map(month => month.actual)) - totals.actual, 1);
-  assert.equal(sum(months.map(month => month.variance)) - totals.variance, 2);
+  assert.equal(sum(months.map(month => month.actual)), totals.actual);
+  assert.equal(sum(months.map(month => month.actual - month.target)), totals.variance);
   assert.equal(sum(months.map(month => month.target)), totals.target);
   const august = months.at(-1);
-  assert.equal(august.variance - (august.actual - august.target), 1);
+  assert.equal(august.actual - august.target, 2258);
   assert.match(period, /Report dated August 13, 2026/);
-  assert.match(note, /August is partial/);
-  assert.match(note, /\$1 more/);
-  assert.match(note, /\$2 more/);
-  assert.doesNotMatch(COLLECTIONS_SNAPSHOT_SECTION.text, /64\.1/);
+  assert.match(period, /August partial/);
+  assert.match(COLLECTIONS_SNAPSHOT_SECTION.text, /\$441,848/);
+  assert.match(COLLECTIONS_SNAPSHOT_SECTION.text, /\$146,618/);
+  assert.match(COLLECTIONS_SNAPSHOT_SECTION.text, /\$2,258/);
+  assert.doesNotMatch(COLLECTIONS_SNAPSHOT_SECTION.text, /64\.1|441,847|146,617|2,259/);
+  const reports = readFileSync(new URL("../app/financials-information-hub/BillingReports.tsx", import.meta.url), "utf8");
+  assert.match(reports, /const totals = COLLECTIONS_TOTALS/);
+  assert.doesNotMatch(reports, /COLLECTIONS_SNAPSHOT\.note|reportedTotals|month\.variance|The source reports|reported value is retained/);
 });
 
 test("new summaries and figures are searchable without adding document duplicates", () => {

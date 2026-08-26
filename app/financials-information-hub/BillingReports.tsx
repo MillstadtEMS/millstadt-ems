@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 import {
   BILLING_ROWS, BILLING_EXPLANATION, BILLING_HISTORY_SECTION,
   MEDICLAIMS_CLOSE, MEDICLAIMS_CLOSE_SECTION, BILLING_REPORTS, BILLING_REPORT_SECTIONS,
-  COLLECTIONS_SNAPSHOT, COLLECTIONS_SNAPSHOT_SECTION, COLLECTIONS_ABOVE_TARGET, TRIP_CATEGORIES,
+  COLLECTIONS_SNAPSHOT, COLLECTIONS_TOTALS, COLLECTIONS_SNAPSHOT_SECTION, COLLECTIONS_ABOVE_TARGET, TRIP_CATEGORIES,
   billingReportSearchText, billingMonthSearchText, formatBillingMoney, formatBillingCount, matchesSearch, normalizeSearch,
   type BillingReport,
 } from "@/lib/financials-hub/transparency-content";
@@ -97,26 +97,24 @@ function TripReport({ report, query }: { report: BillingReport; query: string })
 }
 
 function CollectionsReport({ query }: { query: string }) {
-  const totals = COLLECTIONS_SNAPSHOT.reportedTotals;
+  const totals = COLLECTIONS_TOTALS;
   const needle = normalizeSearch(query);
   return <>
-    <p className={styles.categoryNote}><Highlight text={COLLECTIONS_SNAPSHOT.note} query={query}/></p>
-    <AmountTable caption="Reported collections snapshot totals" query={query} rows={[
-      { item: "Reported actual collections", amount: formatBillingMoney(totals.actual, false) },
+    <AmountTable caption="Collections snapshot — totals of monthly entries" query={query} rows={[
+      { item: "Actual collections", amount: formatBillingMoney(totals.actual, false) },
       { item: "Prorated collection target", amount: formatBillingMoney(totals.target, false) },
-      { item: "Reported amount above target", amount: formatBillingMoney(totals.variance, false) },
-      { item: "Above target (calculated from reported totals)", amount: COLLECTIONS_ABOVE_TARGET },
+      { item: "Amount above target", amount: formatBillingMoney(totals.variance, false) },
+      { item: "Above target", amount: COLLECTIONS_ABOVE_TARGET },
     ]}/>
     <p className={styles.monthlyLabel}>Monthly detail · Posting month</p>
     {COLLECTIONS_SNAPSHOT.months.map(month => {
       const rows = [
-        { item: "Reported actual collections", amount: formatBillingMoney(month.actual, false) },
+        { item: "Actual collections", amount: formatBillingMoney(month.actual, false) },
         { item: "Prorated collection target", amount: formatBillingMoney(month.target, false) },
-        { item: "Reported variance", amount: formatBillingMoney(month.variance, false) },
+        { item: "Amount above target", amount: formatBillingMoney(month.actual - month.target, false) },
       ];
       return <Disclosure key={`${month.month}-${needle}`} title={month.label} meta={`${formatBillingMoney(month.actual, false)} reported actual`} level={5} initiallyOpen={Boolean(needle) && matchesSearch(`${month.label} ${month.month} ${rows.map(row => `${row.item} ${row.amount}`).join(" ")}`, query)} query={query}>
         <AmountTable caption={`${month.label} — collections snapshot`} rows={rows} query={query}/>
-        {month.month === "2026-08" ? <p className={styles.categoryNote}>The source reports a $2,259 variance; subtracting its displayed whole-dollar figures gives $2,258. The reported value is retained.</p> : null}
       </Disclosure>;
     })}
   </>;
