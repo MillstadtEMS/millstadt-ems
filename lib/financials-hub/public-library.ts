@@ -85,6 +85,7 @@ const TAX_COMPUTATION_SOURCES: TaxComputationSource[] = [
 
 export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
   const annualAudits: PublicLibraryDocument[] = [
+    { ending: 2025, pageCount: 22, reportDate: "August 24, 2026" },
     { ending: 2024, pageCount: 21, reportDate: "April 4, 2026" },
     { ending: 2023, pageCount: 20, reportDate: "March 31, 2026" },
   ].map(({ ending, pageCount, reportDate }) => {
