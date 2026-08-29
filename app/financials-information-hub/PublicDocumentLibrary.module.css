@@ -25,6 +25,7 @@
 .supportMetric { border-left:3px solid var(--gold); padding-left:1.2rem; }
 .supportMetric h3 { margin:0 0 .45rem; font-size:.8rem; font-weight:650; color:var(--muted); }
 .supportMetric p { margin:0; font-size:clamp(1.5rem,3vw,2rem); font-weight:800; font-variant-numeric:tabular-nums; color:#153e96; }
+.supportMetric .supportCorrection { max-width:42rem; margin-top:.65rem; color:var(--muted); font-size:.68rem; font-weight:500; line-height:1.55; font-variant-numeric:normal; }
 .personnelGrid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:1rem; margin:0; }
 .personnelGrid div { display:flex; flex-direction:column-reverse; justify-content:space-between; padding:1rem 0 0; border-top:2px solid #dbe3ec; }
 .personnelGrid dt { color:var(--muted); font-size:.8rem; line-height:1.4; }
@@ -122,6 +123,7 @@
 .documentInfo p { margin:.3rem 0; line-height:1.45; font-size:.8rem; color:var(--muted); }
 .documentInfo .recordType { font-size:.68rem; color:#153e96; font-weight:850; letter-spacing:.07em; text-transform:uppercase; }
 .documentInfo .metadata { font-size:.75rem; }
+.documentInfo .documentNote { max-width:52rem; margin-top:.55rem; padding-left:.65rem; border-left:2px solid #b77800; color:#4b5b70; font-size:.75rem; line-height:1.55; }
 .actionArea { max-width:100%; flex:0 1 auto; }
 .documentActions { display:flex; flex-wrap:wrap; gap:.3rem; align-items:center; }
 .documentActions a,.actionStatus button { display:inline-flex; min-height:44px; align-items:center; justify-content:center; gap:.4rem; padding:.5rem .6rem; border:1px solid #c2d0e1; border-radius:5px; color:#173d77; background:#f5f8fc; font-size:.74rem; font-weight:700; white-space:nowrap; }

@@ -88,10 +88,10 @@ test("pending audits preserve distinct annual statuses without inventing downloa
 });
 
 test("only real files contribute to the public-document count", () => {
-  assert.equal(documents.length, 53);
-  assert.equal(new Set(documents.map(document => document.id)).size, 53);
-  assert.equal(new Set(documents.map(document => document.downloadUrl)).size, 53);
-  assert.equal(documents.filter(document => document.kind !== "annual_audit").length, 50);
+  assert.equal(documents.length, 54);
+  assert.equal(new Set(documents.map(document => document.id)).size, 54);
+  assert.equal(new Set(documents.map(document => document.downloadUrl)).size, 54);
+  assert.equal(documents.filter(document => document.kind !== "annual_audit").length, 51);
 });
 
 test("annual audits are searchable operational records and do not enter the 990 filter", () => {

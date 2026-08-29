@@ -27,7 +27,8 @@ export default function PublicDocumentLibrary({documents}:{documents:PublicLibra
   const taxes=matching.filter(d=>d.kind==="tax_computation");
   const management=category==="990" ? [] : matching.filter(d=>d.kind==="management_pay");
   const irs=matching.filter(d=>d.kind==="irs_record");
-  const others=matching.filter(d=>d.kind==="official_record");
+  const settlements=matching.filter(d=>d.id==="fdmi-settlement-sheet-tax-year-2025");
+  const others=matching.filter(d=>d.kind==="official_record"&&d.id!=="fdmi-settlement-sheet-tax-year-2025");
   const hasCurrentFiling=documents.some(d=>d.kind==="form_990"&&d.filingYear===2026&&!d.attachmentOf);
   const pendingMatches=!hasCurrentFiling && category!=="Operational" && matchesSearch(PENDING_SEARCH,query);
   const showPending=pendingMatches || (!hasCurrentFiling && category!=="Operational" && matching.some(d=>d.kind==="management_pay"&&d.filingYear===2026));
@@ -60,6 +61,7 @@ export default function PublicDocumentLibrary({documents}:{documents:PublicLibra
         <p className={styles.resultCount} role="status" aria-live="polite">{needle||category!=="All documents" ? `${resultCount} ${resultCount===1?"result":"results"}` : `${documents.length} public documents`}</p>
         {sectionMatches.length>0 ? <nav className={styles.sectionResults} aria-label="Matching page sections"><h3>On this page</h3>{sectionMatches.map(s=><a href={`#${s.id}`} key={s.id}><Highlight text={s.title} query={query}/><span><Highlight text={s.text} query={query}/></span></a>)}</nav> : null}
         <div className={styles.libraryGroups}>
+          {settlements.map(d=><DocumentRow key={`${d.id}-${needle}`} document={d} query={query}/>)}
           <AnnualAudits documents={audits} pending={pendingAudits} query={query}/>
           <BillingActivity query={query}/>
           <DebtLiabilities query={query}/>

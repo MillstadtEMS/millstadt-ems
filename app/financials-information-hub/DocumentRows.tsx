@@ -69,6 +69,7 @@ export function DocumentRow({ document, query = "", level = 3, idPrefix = "docum
       <Heading><Highlight text={document.title} query={query}/></Heading>
       <p><Highlight text={document.periodLabel} query={query}/></p>
       <p className={styles.metadata}><Highlight text={`${document.dateLabel} · PDF${document.pageCount ? ` · ${document.pageCount} pages` : ""}`} query={query}/></p>
+      {document.note ? <p className={styles.documentNote}><Highlight text={document.note} query={query}/></p> : null}
     </div>
     <DocumentActions document={document}/>
   </article>;

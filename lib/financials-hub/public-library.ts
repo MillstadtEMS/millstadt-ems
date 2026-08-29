@@ -9,6 +9,7 @@ export type PublicLibraryDocument = {
   dateLabel: string;
   pageCount?: number;
   sourceLabel?: string;
+  note?: string;
   sortOrder: number;
   filingYear?: number;
   statusLabel: "Filed" | "Official record" | "County record" | "Approved public report";
@@ -145,6 +146,28 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
     },
   ];
 
+  const settlementSheetUrl = "/financial-transparency/settlement-sheets/fdmi-settlement-sheet-tax-year-2025.pdf";
+  const settlementSheets: PublicLibraryDocument[] = [
+    {
+      id: "fdmi-settlement-sheet-tax-year-2025",
+      kind: "official_record",
+      title: "2025 FDMI Settlement Sheet - Millstadt Fire Protection District",
+      category: "Operational",
+      periodLabel: "Tax year 2025",
+      dateLabel: "Settlement sheet generated August 4, 2026 at 10:55",
+      pageCount: 1,
+      sourceLabel: "St. Clair County · FDMI settlement sheet",
+      note: "To see why the previous website figure appeared, see Distribution Summary (3 distributions totaling $238,525.85) and Fund Summary - rows 001 CORPORATE and 064 AMBULANCE. The distribution total combines both funds and is not the certified annual ambulance tax extension. The annual extension appears in the existing 2025 Tax Computation Report on page 57.",
+      sortOrder: 20260804,
+      filingYear: 2025,
+      statusLabel: "County record",
+      searchText: "2025 FDMI Settlement Sheet Millstadt Fire Protection District Distribution Summary 3 distributions $238,525.85 Fund Summary 001 Corporate 064 Ambulance combined funds county record tax year 2025".toLowerCase(),
+      viewUrl: settlementSheetUrl,
+      downloadUrl: settlementSheetUrl,
+      printUrl: settlementSheetUrl,
+    },
+  ];
+
   const taxComputationReports: PublicLibraryDocument[] = TAX_COMPUTATION_SOURCES.map(
     ({ taxYear, millstadtPage, url }) => {
       const taxData = TAX_COMPUTATION_DATA.find((record) => record.year === taxYear);
@@ -190,5 +213,5 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
       viewUrl: url, downloadUrl: url, printUrl: url,
     };
   });
-  return [...annualAudits, ...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
+  return [...annualAudits, ...settlementSheets, ...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
 }

@@ -8,15 +8,18 @@ import { TAX_COMPUTATION_DATA } from "../lib/financials-hub/tax-computation-data
 import { notifyCrash, parseCrashInput, CRASH_SUMMARY, type CrashNotice } from "../lib/financials-hub/crash-reporting";
 
 const documents=publicFinancialDocumentLibrary();
-test("latest approved EMS tax label and amount are used",()=>{
+test("certified 2025 ambulance extension and correction disclosure are used",()=>{
   const overview=readFileSync("app/financials-information-hub/FinancialOverview.tsx","utf8");
-  assert.ok(overview.includes("Current EMS Tax Amount"));
-  assert.ok(overview.includes("$238,525.85"));
+  assert.ok(overview.includes("2025 Certified Ambulance Tax Extension"));
+  assert.ok(overview.includes("$278,363.25"));
+  assert.ok(overview.includes("Corrected August 29, 2026 at 4:04 PM CDT"));
+  assert.ok(overview.includes("combined total of three distributions"));
+  assert.ok(overview.includes("page 57"));
   assert.ok(!overview.includes("Fire District Support"));
 });
-test("canonical library has 50 unique documents including the verified FY 2024–2025 return",()=>{
-  assert.equal(documents.length,50);
-  assert.equal(new Set(documents.map(d=>d.downloadUrl)).size,50);
+test("canonical library has 54 unique documents including the verified FY 2024–2025 return and FDMI sheet",()=>{
+  assert.equal(documents.length,54);
+  assert.equal(new Set(documents.map(d=>d.downloadUrl)).size,54);
   assert.equal(documents.filter(d=>d.kind==="form_990").length,23);
   assert.equal(documents.filter(d=>d.kind==="irs_record").length,1);
   assert.ok(!documents.some(d=>d.kind==="form_990"&&[2018,2026].includes(d.filingYear!)));
@@ -37,7 +40,7 @@ test("tax years, certified rates and EAV are searchable independently",()=>{
   }
 });
 test("file metadata and genuine attachment titles are indexed",()=>{
-  assert.equal(documents.filter(d=>matchesSearch(documentSearchText(d),'PDF')).length,50);
+  assert.equal(documents.filter(d=>matchesSearch(documentSearchText(d),'PDF')).length,54);
   const attachment={...documents[0],title:'Approved annual attachment',attachmentOf:'source-parent'};
   assert.ok(matchesSearch(documentSearchText(attachment),'Approved annual attachment'));
   assert.ok(matchesSearch(documentSearchText(attachment),'Attachments'));
