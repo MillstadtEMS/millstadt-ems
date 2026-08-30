@@ -6,13 +6,19 @@
 import { sql } from "@/lib/neon";
 import { decrypt, encrypt } from "@/lib/lounge/encryption";
 
+let siteSchemaPromise: Promise<void> | null = null;
+
+function publicContentDatabaseDisabled() {
+  return process.env.PUBLIC_CONTENT_DATABASE_DISABLED === "true";
+}
+
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
 // ── Schema ─────────────────────────────────────────────────────────────────
 
-export async function ensureSiteSchema() {
+async function createSiteSchema() {
   const db = sql();
   // Note: the testimonials table is owned by lib/testimonials.ts (which
   // ensures its own schema). This module does not touch it.
@@ -91,6 +97,16 @@ export async function ensureSiteSchema() {
       sent_at     TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+}
+
+export function ensureSiteSchema() {
+  if (!siteSchemaPromise) {
+    siteSchemaPromise = createSiteSchema().catch((error) => {
+      siteSchemaPromise = null;
+      throw error;
+    });
+  }
+  return siteSchemaPromise;
 }
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -389,14 +405,21 @@ export async function getChangeLog(limit = 100): Promise<ChangeLogEntry[]> {
 
 /** Get a content value — returns draft if previewMode=true, else live. Falls back to fallback string. */
 export async function getContent(key: string, fallback: string, previewMode = false): Promise<string> {
-  await ensureSiteSchema();
-  const db = sql();
-  const rows = await db`SELECT live_value, draft_value FROM site_content WHERE key = ${key}`;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const row = (rows as any[])[0];
-  if (!row) return fallback;
-  if (previewMode && row.draft_value !== null) return row.draft_value;
-  return row.live_value || fallback;
+  if (publicContentDatabaseDisabled()) return fallback;
+
+  try {
+    await ensureSiteSchema();
+    const db = sql();
+    const rows = await db`SELECT live_value, draft_value FROM site_content WHERE key = ${key}`;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const row = (rows as any[])[0];
+    if (!row) return fallback;
+    if (previewMode && row.draft_value !== null) return row.draft_value;
+    return row.live_value || fallback;
+  } catch (error) {
+    console.error("Public site content unavailable; using the built-in fallback.", { key, error });
+    return fallback;
+  }
 }
 
 export async function getAllContent(): Promise<{ key: string; liveValue: string; draftValue: string | null }[]> {
