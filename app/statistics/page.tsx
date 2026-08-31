@@ -3,8 +3,8 @@
 /**
  * Public year-to-date call statistics. Aggregate counts/percentages, with
  * each category expandable on hover/tap to list its individual ticker
- * calls (the same calls already public on the live ticker). Live —
- * re-polls every 45s. No patient detail beyond the dispatch line, no age
+ * calls (the same calls already public on the live ticker). Refreshes when
+ * opened and then once daily. No patient detail beyond the dispatch line, no age
  * bands. Reads /api/cad/stats which mirrors the internal report grouping.
  */
 
@@ -39,7 +39,7 @@ export default function StatisticsPage() {
         .catch(() => {})
         .finally(() => { if (alive) setLoading(false); });
     load();
-    const id = setInterval(load, 45_000);
+    const id = setInterval(load, 86_400_000);
     return () => { alive = false; clearInterval(id); };
   }, []);
 
@@ -50,14 +50,14 @@ export default function StatisticsPage() {
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
         <span style={{ height: 1, width: 34, background: "rgba(240,180,41,0.7)" }} />
         <span style={{ color: "#f0b429", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-          {data?.year ?? new Date().getFullYear()} Year to Date · Live
+          {data?.year ?? new Date().getFullYear()} Year to Date · Updated Daily
         </span>
       </div>
       <h1 style={{ fontSize: "clamp(1.8rem, 5vw, 2.6rem)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 6px", color: "white" }}>
         Call Statistics
       </h1>
       <p style={{ color: "#94a3b8", fontSize: 14, lineHeight: 1.55, maxWidth: 680, margin: "0 0 22px" }}>
-        Millstadt EMS call volume by classification. Hover or tap any category to see its calls. Figures update live as the call log is maintained.
+        Millstadt EMS call volume by classification. Hover or tap any category to see its calls. Figures refresh when this page opens and then once daily; the live CAD ticker is unaffected.
       </p>
 
       {loading && !data ? (
