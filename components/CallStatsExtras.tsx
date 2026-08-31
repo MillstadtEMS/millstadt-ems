@@ -36,14 +36,10 @@ import {
   percentChange,
 } from "@/lib/baseline/calls-2025";
 
-interface Call {
-  id: string;
-  dispatchDate: string;
-  dispatchTime: string;
-  dispatchNature: string;
-  dispatchDatetime: string;
-  sourceYear: number;
-  completedAt: string | null;
+interface CallSummary {
+  year: number;
+  total: number;
+  months: { month: number; count: number }[];
 }
 
 const MONTH_NAMES = [
@@ -63,7 +59,7 @@ function channelIdFor(tip: Exclude<OpenTip, null>): PopoverId {
 
 export default function CallStatsExtras() {
   const [mounted, setMounted] = useState(false);
-  const [calls, setCalls] = useState<Call[]>([]);
+  const [summary, setSummary] = useState<CallSummary | null>(null);
   const [now, setNow] = useState<Date | null>(null);
   const [openTip, setOpenTip] = useState<OpenTip>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -76,10 +72,10 @@ export default function CallStatsExtras() {
     setNow(new Date());
     async function load() {
       try {
-        const r = await fetch("/api/cad/log", { cache: "no-store" });
+        const r = await fetch("/api/cad/summary");
         if (r.ok) {
-          const data: Call[] = await r.json();
-          setCalls(data);
+          const data: CallSummary = await r.json();
+          setSummary(data);
         }
       } catch { /* silent */ }
     }
@@ -105,11 +101,9 @@ export default function CallStatsExtras() {
   const stats = useMemo(() => {
     if (!now) return null;
     const monthCounts = new Map<string, number>();
-    for (const c of calls) {
-      const m = c.dispatchDate.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-      if (!m) continue;
-      const key = `${m[3]}-${m[1]}`; // YYYY-MM
-      monthCounts.set(key, (monthCounts.get(key) ?? 0) + 1);
+    for (const month of summary?.months ?? []) {
+      const key = `${summary?.year}-${String(month.month).padStart(2, "0")}`;
+      monthCounts.set(key, month.count);
     }
     const y = now.getFullYear();
     const monthIdx = now.getMonth();
@@ -240,7 +234,7 @@ export default function CallStatsExtras() {
       daysInCurrentMonth,
       dayOfMonth,
     };
-  }, [calls, now]);
+  }, [summary, now]);
 
   // Close immediately when a sibling hero popover (Top Categories,
   // District map) takes the focus — keeps only one open at a time so

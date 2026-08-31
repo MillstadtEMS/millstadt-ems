@@ -41,10 +41,11 @@ export default function CallVolumeCounter() {
   useEffect(() => {
     async function fetchCount() {
       try {
-        const res = await fetch("/api/cad/log", { cache: "no-store" });
-        if (!res.ok) throw new Error(`CAD log returned ${res.status}`);
-        const calls = await res.json();
-        setApiCount(calls.length);
+        const res = await fetch("/api/cad/summary");
+        if (!res.ok) throw new Error(`CAD summary returned ${res.status}`);
+        const summary: { total?: unknown } = await res.json();
+        if (typeof summary.total !== "number") throw new Error("CAD summary total was invalid");
+        setApiCount(summary.total);
         setDataState("ready");
       } catch {
         setDataState((current) => current === "ready" || current === "stale" ? "stale" : "unavailable");

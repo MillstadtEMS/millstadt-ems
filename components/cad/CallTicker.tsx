@@ -402,6 +402,16 @@ export default function CallTicker() {
     } catch { /* silent */ }
   }, []);
 
+  const fetchCount = useCallback(async () => {
+    try {
+      const res = await fetch("/api/cad/summary");
+      if (res.ok) {
+        const summary: { total?: unknown } = await res.json();
+        if (typeof summary.total === "number") setCallCount(summary.total);
+      }
+    } catch { /* silent */ }
+  }, []);
+
   useEffect(() => {
     // Re-read the admin hover-box visibility config on every poll so toggling
     // a field off in /admin (e.g. disposition) goes live within POLL_INTERVAL
@@ -412,11 +422,11 @@ export default function CallTicker() {
         .then(s => { if (s) setHoverCfg({ ...DEFAULT_HOVER_SETTINGS, ...s }); })
         .catch(() => { /* keep defaults */ });
     fetchLatest();
-    fetchAll();
+    fetchCount();
     loadHoverCfg();
-    const pollId = setInterval(() => { fetchLatest(); loadHoverCfg(); }, POLL_INTERVAL);
+    const pollId = setInterval(() => { fetchLatest(); fetchCount(); loadHoverCfg(); }, POLL_INTERVAL);
     return () => clearInterval(pollId);
-  }, [fetchLatest, fetchAll]);
+  }, [fetchLatest, fetchCount]);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
