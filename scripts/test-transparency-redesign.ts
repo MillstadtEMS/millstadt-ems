@@ -8,22 +8,37 @@ import { TAX_COMPUTATION_DATA } from "../lib/financials-hub/tax-computation-data
 import { notifyCrash, parseCrashInput, CRASH_SUMMARY, type CrashNotice } from "../lib/financials-hub/crash-reporting";
 
 const documents=publicFinancialDocumentLibrary();
-test("certified 2025 ambulance extension and correction disclosure are used",()=>{
+test("certified 2025 ambulance extension is shown while its correction disclosure stays in the FDMI tab",()=>{
   const overview=readFileSync("app/financials-information-hub/FinancialOverview.tsx","utf8");
+  const library=readFileSync("lib/financials-hub/public-library.ts","utf8");
   assert.ok(overview.includes("2025 Certified Ambulance Tax Extension"));
   assert.ok(overview.includes("$278,363.25"));
-  assert.ok(overview.includes("Corrected August 29, 2026 at 4:04 PM CDT"));
-  assert.ok(overview.includes("combined total of three distributions"));
-  assert.ok(overview.includes("page 57"));
+  assert.ok(!overview.includes("August 29, 2026 at 4:04 PM CDT"));
+  assert.ok(!overview.includes("three distributions"));
+  assert.ok(library.includes("Correction note (August 29, 2026 at 4:04 PM CDT)"));
+  assert.ok(library.includes("three distributions"));
+  assert.ok(library.includes("page 57"));
   assert.ok(!overview.includes("Fire District Support"));
 });
-test("canonical library has 54 unique documents including the verified FY 2024–2025 return and FDMI sheet",()=>{
-  assert.equal(documents.length,54);
-  assert.equal(new Set(documents.map(d=>d.downloadUrl)).size,54);
+test("canonical library has 55 unique documents including the verified FY 2024–2025 return, FDMI sheet, and 2026 Illinois annual report",()=>{
+  assert.equal(documents.length,55);
+  assert.equal(new Set(documents.map(d=>d.downloadUrl)).size,55);
   assert.equal(documents.filter(d=>d.kind==="form_990").length,23);
   assert.equal(documents.filter(d=>d.kind==="irs_record").length,1);
   assert.ok(!documents.some(d=>d.kind==="form_990"&&[2018,2026].includes(d.filingYear!)));
   assert.ok(documents.every(d=>!d.attachmentOf));
+});
+test("2026 Illinois annual report is published unchanged and FDMI-specific copy stays inside its disclosure",()=>{
+  const report=documents.find(d=>d.id==="state-of-illinois-domestic-corporation-annual-report-2026");
+  assert.ok(report);
+  assert.equal(report.title,"2026 State of Illinois Domestic Corporation Annual Report");
+  assert.equal(report.pageCount,2);
+  assert.equal(report.dateLabel,"Filed June 17, 2026");
+  assert.equal(createHash("sha256").update(readFileSync(`public${report.downloadUrl}`)).digest("hex"),"23fc1ae5ff8b3ddb19de871fefa2fba86ea363f58e06c88c8c019415ec50841a");
+  const page=readFileSync("app/financials-information-hub/PublicDocumentLibrary.tsx","utf8");
+  assert.match(page,/settlements\.map\(d=><Disclosure/);
+  assert.match(page,/corporateAnnualReports\.map\(d=><Disclosure/);
+  assert.doesNotMatch(page,/settlements\.map\(d=><DocumentRow/);
 });
 test("both fiscal-year dash variants match pending and both 2025–2026 reports",()=>{
   for(const query of ["2025-2026","2025–2026"]){
@@ -40,7 +55,7 @@ test("tax years, certified rates and EAV are searchable independently",()=>{
   }
 });
 test("file metadata and genuine attachment titles are indexed",()=>{
-  assert.equal(documents.filter(d=>matchesSearch(documentSearchText(d),'PDF')).length,54);
+  assert.equal(documents.filter(d=>matchesSearch(documentSearchText(d),'PDF')).length,55);
   const attachment={...documents[0],title:'Approved annual attachment',attachmentOf:'source-parent'};
   assert.ok(matchesSearch(documentSearchText(attachment),'Approved annual attachment'));
   assert.ok(matchesSearch(documentSearchText(attachment),'Attachments'));

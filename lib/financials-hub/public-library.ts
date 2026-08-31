@@ -157,7 +157,7 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
       dateLabel: "Settlement sheet generated August 4, 2026 at 10:55",
       pageCount: 1,
       sourceLabel: "St. Clair County · FDMI settlement sheet",
-      note: "To see why the previous website figure appeared, see Distribution Summary (3 distributions totaling $238,525.85) and Fund Summary - rows 001 CORPORATE and 064 AMBULANCE. The distribution total combines both funds and is not the certified annual ambulance tax extension. The annual extension appears in the existing 2025 Tax Computation Report on page 57.",
+      note: "Correction note (August 29, 2026 at 4:04 PM CDT): The amount previously displayed, $238,525.85, came from this settlement sheet's Distribution Summary. That figure combines three distributions across the Millstadt Fire Protection District's Corporate and Ambulance funds; it is not the certified annual ambulance tax extension. The corrected $278,363.25 amount is the 2025 ambulance line's Total Extension After TIF & EZ in the Tax Computation Report on page 57 at the certified rate of 0.0900.",
       sortOrder: 20260804,
       filingYear: 2025,
       statusLabel: "County record",
@@ -165,6 +165,27 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
       viewUrl: settlementSheetUrl,
       downloadUrl: settlementSheetUrl,
       printUrl: settlementSheetUrl,
+    },
+  ];
+
+  const corporateAnnualReportUrl = "/financial-transparency/records/2026-state-of-illinois-domestic-corporation-annual-report.pdf";
+  const corporateAnnualReports: PublicLibraryDocument[] = [
+    {
+      id: "state-of-illinois-domestic-corporation-annual-report-2026",
+      kind: "official_record",
+      title: "2026 State of Illinois Domestic Corporation Annual Report",
+      category: "Operational",
+      periodLabel: "Annual report year 2026",
+      dateLabel: "Filed June 17, 2026",
+      pageCount: 2,
+      sourceLabel: "Illinois Secretary of State · General Not for Profit Corporation Act",
+      sortOrder: 20260617,
+      filingYear: 2026,
+      statusLabel: "Official record",
+      searchText: "2026 State of Illinois Domestic Corporation Annual Report General Not for Profit Corporation Act Millstadt Ambulance Service Illinois Secretary of State filed June 17 2026 official record operational".toLowerCase(),
+      viewUrl: corporateAnnualReportUrl,
+      downloadUrl: corporateAnnualReportUrl,
+      printUrl: corporateAnnualReportUrl,
     },
   ];
 
@@ -213,5 +234,5 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
       viewUrl: url, downloadUrl: url, printUrl: url,
     };
   });
-  return [...annualAudits, ...settlementSheets, ...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
+  return [...annualAudits, ...settlementSheets, ...corporateAnnualReports, ...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
 }

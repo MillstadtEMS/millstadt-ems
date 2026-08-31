@@ -25,7 +25,6 @@
 .supportMetric { border-left:3px solid var(--gold); padding-left:1.2rem; }
 .supportMetric h3 { margin:0 0 .45rem; font-size:.8rem; font-weight:650; color:var(--muted); }
 .supportMetric p { margin:0; font-size:clamp(1.5rem,3vw,2rem); font-weight:800; font-variant-numeric:tabular-nums; color:#153e96; }
-.supportMetric .supportCorrection { max-width:42rem; margin-top:.65rem; color:var(--muted); font-size:.68rem; font-weight:500; line-height:1.55; font-variant-numeric:normal; }
 .personnelGrid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:1rem; margin:0; }
 .personnelGrid div { display:flex; flex-direction:column-reverse; justify-content:space-between; padding:1rem 0 0; border-top:2px solid #dbe3ec; }
 .personnelGrid dt { color:var(--muted); font-size:.8rem; line-height:1.4; }

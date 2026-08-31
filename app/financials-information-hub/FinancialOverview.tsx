@@ -6,7 +6,7 @@ export function PersonnelAndPay() {
   return <>
     <section className={styles.overviewSection} id="personnel" aria-labelledby="personnel-title">
       <div className={styles.shell}>
-        <div className={styles.overviewHeading}><div><p className={styles.eyebrow}>Our team</p><h2 id="personnel-title">Number of personnel</h2></div><div className={styles.supportMetric} id="district-support"><h3>2025 Certified Ambulance Tax Extension</h3><p>$278,363.25</p><p className={styles.supportCorrection}><time dateTime="2026-08-29T16:04:00-05:00">Corrected August 29, 2026 at 4:04 PM CDT</time>. The amount previously displayed, $238,525.85, came from the 2025 FDMI Settlement Sheet&apos;s Distribution Summary. That figure is the combined total of three distributions to the Millstadt Fire Protection District across its Corporate and Ambulance funds, not the certified annual ambulance tax extension. The corrected amount is the 2025 ambulance line&apos;s Total Extension After TIF &amp; EZ shown on page 57 of the St. Clair County Tax Computation Report at the certified rate of 0.0900.</p></div></div>
+        <div className={styles.overviewHeading}><div><p className={styles.eyebrow}>Our team</p><h2 id="personnel-title">Number of personnel</h2></div><div className={styles.supportMetric} id="district-support"><h3>2025 Certified Ambulance Tax Extension</h3><p>$278,363.25</p></div></div>
         <dl className={styles.personnelGrid}>
           <div><dt>EMTs</dt><dd>18</dd></div><div><dt>Paramedics</dt><dd>9</dd></div>
           <div><dt>Pre-Hospital Registered Nurse</dt><dd>1</dd></div>

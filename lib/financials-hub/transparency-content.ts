@@ -427,7 +427,7 @@ export function fiscalExpenseSection(report: FiscalExpenseReport) {
 export const FISCAL_EXPENSE_SECTIONS = FISCAL_EXPENSE_REPORTS.map(fiscalExpenseSection);
 export const SECTION_SEARCH = [
   { id: "personnel", title: "Number of personnel", text: "18 EMTs 9 Paramedics 1 Pre-Hospital Registered Nurse 2 Advanced Practice Prehospital Registered Nurse Practitioners Total personnel 30" },
-  { id: "district-support", title: "2025 Certified Ambulance Tax Extension", text: "$278,363.25 · Corrected August 29, 2026 at 4:04 PM CDT · Previous $238,525.85 figure was the combined FDMI Distribution Summary total across Corporate and Ambulance funds · Tax Computation Report page 57 · certified rate 0.0900" },
+  { id: "district-support", title: "2025 Certified Ambulance Tax Extension", text: "$278,363.25" },
   { id: "pay-transparency", title: "Pay Transparency", text: `${PAY_RATE_GROUPS.flatMap(group => group.rates.map(rate => `${group.position} ${rate.type} ${rate.amount}/hour`)).join(" · ")} · Transfer-call stipend ${TRANSFER_CALL_STIPEND} · PHRN / APHRN regular ${NURSING_REGULAR_RATE}` },
   { id: "annual-call-volume", title: "Annual 911 call volume", text: `${CALENDAR_EXPLANATION} 2022 618 2023 734 2024 748 2025 880 2026 through current Live` },
   BILLING_HISTORY_SECTION,
