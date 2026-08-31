@@ -189,6 +189,27 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
     },
   ];
 
+  const goodStandingCertificateUrl = "/financial-transparency/records/illinois-certificate-of-good-standing-2026-08-31.pdf";
+  const goodStandingCertificates: PublicLibraryDocument[] = [
+    {
+      id: "illinois-certificate-of-good-standing-2026-08-31",
+      kind: "official_record",
+      title: "Illinois Certificate of Good Standing",
+      category: "Operational",
+      periodLabel: "As of August 31, 2026",
+      dateLabel: "Certificate dated August 31, 2026",
+      pageCount: 1,
+      sourceLabel: "Illinois Secretary of State · Department of Business Services",
+      sortOrder: 20260831,
+      filingYear: 2026,
+      statusLabel: "Official record",
+      searchText: "Illinois Certificate of Good Standing Millstadt Ambulance Service domestic not for profit nonprofit corporation Secretary of State Department of Business Services as of August 31 2026 official record operational".toLowerCase(),
+      viewUrl: goodStandingCertificateUrl,
+      downloadUrl: goodStandingCertificateUrl,
+      printUrl: goodStandingCertificateUrl,
+    },
+  ];
+
   const taxComputationReports: PublicLibraryDocument[] = TAX_COMPUTATION_SOURCES.map(
     ({ taxYear, millstadtPage, url }) => {
       const taxData = TAX_COMPUTATION_DATA.find((record) => record.year === taxYear);
@@ -234,5 +255,5 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
       viewUrl: url, downloadUrl: url, printUrl: url,
     };
   });
-  return [...annualAudits, ...settlementSheets, ...corporateAnnualReports, ...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
+  return [...annualAudits, ...settlementSheets, ...corporateAnnualReports, ...goodStandingCertificates, ...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
 }
