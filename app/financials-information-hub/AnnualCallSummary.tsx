@@ -22,12 +22,12 @@ export default function AnnualCallSummary({onCurrentCalls}:{onCurrentCalls?:(cal
 
     async function loadCurrentCalls() {
       try {
-        const response = await fetch("/api/cad/summary");
-        if (!response.ok) throw new Error(`CAD summary returned ${response.status}`);
-        const summary: { total?: unknown } = await response.json();
-        if (typeof summary.total !== "number") throw new Error("CAD summary total was invalid");
+        const response = await fetch("/api/cad/log", { cache: "no-store" });
+        if (!response.ok) throw new Error(`CAD log returned ${response.status}`);
+        const calls: unknown = await response.json();
+        if (!Array.isArray(calls)) throw new Error("CAD log was not an array");
         if (active) {
-          setCurrentCalls(summary.total);
+          setCurrentCalls(calls.length);
           setUnavailable(false);
         }
       } catch {

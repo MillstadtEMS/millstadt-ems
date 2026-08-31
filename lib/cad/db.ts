@@ -290,34 +290,6 @@ export async function getCallsForCurrentYear(): Promise<Call[]> {
   return (rows as Record<string, unknown>[]).map(rowToCall);
 }
 
-export async function getCurrentYearCallSummary(): Promise<{
-  year: number;
-  total: number;
-  months: { month: number; count: number }[];
-}> {
-  await ensureSchema();
-  const db = sql();
-  const year = currentChicagoYear();
-  const rows = (await db`
-    SELECT
-      EXTRACT(MONTH FROM dispatch_datetime)::int AS month,
-      COUNT(*)::int AS count
-    FROM cad_calls
-    WHERE source_year = ${year}
-    GROUP BY 1
-    ORDER BY 1
-  `) as unknown as { month: number | string; count: number | string }[];
-  const months = rows.map((row) => ({
-    month: Number(row.month),
-    count: Number(row.count),
-  }));
-  return {
-    year,
-    total: months.reduce((sum, month) => sum + month.count, 0),
-    months,
-  };
-}
-
 export async function updateCallNature(callId: string, newNature: string): Promise<void> {
   await ensureSchema();
   const db = sql();
