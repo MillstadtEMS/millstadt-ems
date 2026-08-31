@@ -1,0 +1,40 @@
+name: Publish Illinois good-standing certificate dated 2026-08-31
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/publish-good-standing-certificate-2026-08-31.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish-certificate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out current main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Import and verify the original certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          destination='public/financial-transparency/records/illinois-certificate-of-good-standing-2026-08-31.pdf'
+          expected='41ba593f1fdc9bf6ecf8350ddfe9fd24038d18d9300f32b170935859b7c3ce86'
+          mkdir -p "$(dirname "$destination")"
+          curl --fail --location --retry 3 --connect-timeout 15 --max-time 90 \
+            'https://at.adobe.com/dDPDEp9aTyYBnSJh' --output "$destination"
+          printf '%s  %s\n' "$expected" "$destination" | sha256sum --check
+          git add -- "$destination"
+          if git diff --cached --quiet; then
+            echo 'The original certificate is already present and verified.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Add original Illinois Certificate of Good Standing dated August 31, 2026'
+          git push origin HEAD:main
