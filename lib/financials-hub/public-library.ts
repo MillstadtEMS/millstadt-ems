@@ -210,6 +210,28 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
     },
   ];
 
+  const moneyMarketStatementUrl = "/financial-transparency/bank-statements/money-market-account-2023-01-31-to-2026-08-31.pdf";
+  const moneyMarketStatements: PublicLibraryDocument[] = [
+    {
+      id: "money-market-account-2023-01-31-to-2026-08-31",
+      kind: "official_record",
+      title: "Money Market Account 01/31/2023 - 08/31/2026",
+      category: "Operational",
+      periodLabel: "January 31, 2023 through August 31, 2026",
+      dateLabel: "Statement pages dated January 31, 2023 and August 31, 2026",
+      pageCount: 2,
+      sourceLabel: "First National Bank of Waterloo · Business Money Market",
+      note: "Account numbers are redacted. The PDF contains the two statement pages supplied for public posting, arranged chronologically.",
+      sortOrder: 20260831,
+      filingYear: 2026,
+      statusLabel: "Approved public report",
+      searchText: "Money Market Account 01/31/2023 08/31/2026 January 31 2023 August 31 2026 First National Bank of Waterloo Business MM bank statements account balances redacted approved public report operational".toLowerCase(),
+      viewUrl: moneyMarketStatementUrl,
+      downloadUrl: moneyMarketStatementUrl,
+      printUrl: moneyMarketStatementUrl,
+    },
+  ];
+
   const taxComputationReports: PublicLibraryDocument[] = TAX_COMPUTATION_SOURCES.map(
     ({ taxYear, millstadtPage, url }) => {
       const taxData = TAX_COMPUTATION_DATA.find((record) => record.year === taxYear);
@@ -255,5 +277,5 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
       viewUrl: url, downloadUrl: url, printUrl: url,
     };
   });
-  return [...annualAudits, ...settlementSheets, ...corporateAnnualReports, ...goodStandingCertificates, ...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
+  return [...annualAudits, ...settlementSheets, ...corporateAnnualReports, ...goodStandingCertificates, ...moneyMarketStatements, ...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
 }

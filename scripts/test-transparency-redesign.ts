@@ -20,9 +20,9 @@ test("certified 2025 ambulance extension is shown while its correction disclosur
   assert.ok(library.includes("page 57"));
   assert.ok(!overview.includes("Fire District Support"));
 });
-test("canonical library has 55 unique documents including the verified FY 2024–2025 return, FDMI sheet, and 2026 Illinois annual report",()=>{
-  assert.equal(documents.length,55);
-  assert.equal(new Set(documents.map(d=>d.downloadUrl)).size,55);
+test("canonical library has 57 unique documents including the verified FY 2024–2025 return, FDMI sheet, Illinois records, and money-market statements",()=>{
+  assert.equal(documents.length,57);
+  assert.equal(new Set(documents.map(d=>d.downloadUrl)).size,57);
   assert.equal(documents.filter(d=>d.kind==="form_990").length,23);
   assert.equal(documents.filter(d=>d.kind==="irs_record").length,1);
   assert.ok(!documents.some(d=>d.kind==="form_990"&&[2018,2026].includes(d.filingYear!)));
@@ -40,6 +40,18 @@ test("2026 Illinois annual report is published unchanged and FDMI-specific copy 
   assert.match(page,/corporateAnnualReports\.map\(d=><Disclosure/);
   assert.doesNotMatch(page,/settlements\.map\(d=><DocumentRow/);
 });
+test("redacted money-market statement pages are published in their own collapsible disclosure",()=>{
+  const statement=documents.find(d=>d.id==="money-market-account-2023-01-31-to-2026-08-31");
+  assert.ok(statement);
+  assert.equal(statement.title,"Money Market Account 01/31/2023 - 08/31/2026");
+  assert.equal(statement.periodLabel,"January 31, 2023 through August 31, 2026");
+  assert.equal(statement.pageCount,2);
+  assert.equal(statement.statusLabel,"Approved public report");
+  assert.match(statement.note ?? "",/Account numbers are redacted/);
+  assert.equal(createHash("sha256").update(readFileSync(`public${statement.downloadUrl}`)).digest("hex"),"a808833942efe4cc8620017c9c42431dc7e9e5581b8489950b09153d79889920");
+  const page=readFileSync("app/financials-information-hub/PublicDocumentLibrary.tsx","utf8");
+  assert.match(page,/moneyMarketStatements\.map\(d=><Disclosure/);
+});
 test("both fiscal-year dash variants match pending and both 2025–2026 reports",()=>{
   for(const query of ["2025-2026","2025–2026"]){
     assert.ok(matchesSearch(PENDING_SEARCH,query));
@@ -55,7 +67,7 @@ test("tax years, certified rates and EAV are searchable independently",()=>{
   }
 });
 test("file metadata and genuine attachment titles are indexed",()=>{
-  assert.equal(documents.filter(d=>matchesSearch(documentSearchText(d),'PDF')).length,55);
+  assert.equal(documents.filter(d=>matchesSearch(documentSearchText(d),'PDF')).length,57);
   const attachment={...documents[0],title:'Approved annual attachment',attachmentOf:'source-parent'};
   assert.ok(matchesSearch(documentSearchText(attachment),'Approved annual attachment'));
   assert.ok(matchesSearch(documentSearchText(attachment),'Attachments'));
