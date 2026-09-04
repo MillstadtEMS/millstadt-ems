@@ -1,31 +1,16 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { registerHooks } from "node:module";
-import { extname } from "node:path";
 import { test } from "node:test";
 
-// The application uses bundler-resolved extensionless TS imports. Resolve those
-// read-only for Node 24's native type stripping, without installing dependencies
-// or changing the production import paths.
-const hook = registerHooks({
-  resolve(specifier, context, nextResolve) {
-    return nextResolve(specifier.startsWith(".") && !extname(specifier)
-      ? `${specifier}.ts`
-      : specifier, context);
-  },
-});
-let library, audits, fiscal, transparency;
-try {
-  [library, audits, fiscal, transparency] = await Promise.all([
-    import("../lib/financials-hub/public-library.ts"),
-    import("../lib/financials-hub/annual-audits.ts"),
-    import("../lib/financials-hub/fiscal-year-documents.ts"),
-    import("../lib/financials-hub/transparency-content.ts"),
-  ]);
-} finally {
-  hook.deregister();
-}
+// This test is run through the repository's tsx loader so the application's
+// bundler-resolved TypeScript imports work consistently on Node 20 and newer.
+const [library, audits, fiscal, transparency] = await Promise.all([
+  import("../lib/financials-hub/public-library.ts"),
+  import("../lib/financials-hub/annual-audits.ts"),
+  import("../lib/financials-hub/fiscal-year-documents.ts"),
+  import("../lib/financials-hub/transparency-content.ts"),
+]);
 
 const documents = library.publicFinancialDocumentLibrary();
 const posted = documents.filter(document => document.kind === "annual_audit");
