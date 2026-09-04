@@ -41,5 +41,5 @@ export const ANNUAL_AUDIT_SOURCES: readonly AnnualAuditSource[] = [
   { ending: 1987, pageCount: 10, reportDate: "July 6, 1987", auditor: "Allison Knapp & Siekmann" },
   { ending: 1986, pageCount: 12, reportDate: "May 20, 1986", auditor: "Bert H. Allison and Company" },
   { ending: 1984, pageCount: 12, reportDate: "May 24, 1984", auditor: "Bert H. Allison and Company" },
-  { ending: 1982, pageCount: 9, reportDate: "June 1, 1982", auditor: "Bert H. Allison and Company" },
+  { ending: 1982, pageCount: 7, reportDate: "June 1, 1982", auditor: "Bert H. Allison and Company" },
 ];

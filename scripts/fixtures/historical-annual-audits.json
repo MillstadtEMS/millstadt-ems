@@ -207,7 +207,8 @@
     "sources": [
       "Audit 1991-92 front.pdf",
       "Audit 1981-82 back.pdf"
-    ]
+    ],
+    "assemblyNote": "The supplied back-scan filenames were swapped: Audit 1981-82 back.pdf contains the FY 1991-1992 reverse-side pages."
   },
   "annual-audit-fy-1990-1991": {
     "pages": 26,
@@ -275,13 +276,14 @@
     ]
   },
   "annual-audit-fy-1981-1982": {
-    "pages": 9,
+    "pages": 7,
     "reportDate": "June 1, 1982",
     "auditor": "Bert H. Allison and Company",
-    "sha256": "b94955e0c426b4873e1ecb58330630d3ae7e33dcef7b624daabe676dba16d9ef",
+    "sha256": "dae791ac0233f6cc14990ea2cb38fe694cfd8d075b6675f409b4a6d784100add",
     "sources": [
       "Audit 1981-82 front.pdf",
       "Audit 1991-92 back.pdf"
-    ]
+    ],
+    "assemblyNote": "The supplied back-scan filenames were swapped: Audit 1991-92 back.pdf contains the FY 1981-1982 reverse-side pages. The complete FY 1981-1982 substantive report, printed pages 1-7, is retained; a stray FY 1980-1981 table of contents and its blank reverse were excluded as unrelated front matter."
   }
 }
