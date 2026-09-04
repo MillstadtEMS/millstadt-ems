@@ -11,6 +11,7 @@ export type PublicLibraryDocument = {
   pageCount?: number;
   sourceLabel?: string;
   note?: string;
+  disclaimer?: string;
   sortOrder: number;
   filingYear?: number;
   statusLabel: "Filed" | "Official record" | "County record" | "Approved public report";
@@ -215,14 +216,15 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
       title: "Money Market Account 01/31/2023 - 08/31/2026",
       category: "Operational",
       periodLabel: "January 31, 2023 through August 31, 2026",
-      dateLabel: "Statement pages dated January 31, 2023 and August 31, 2026",
-      pageCount: 2,
+      dateLabel: "Combined statement package dated January 31, 2023 through August 31, 2026",
+      pageCount: 47,
       sourceLabel: "First National Bank of Waterloo · Business Money Market",
-      note: "Account numbers are redacted. The PDF contains the two statement pages supplied for public posting, arranged chronologically.",
+      note: "Account numbers are redacted. This combined PDF contains the two previously posted statement pages followed by the 45-page itemized statement packet.",
+      disclaimer: "Since 2023, Millstadt Ambulance Service has used money-market savings to keep sufficient funds available for payroll. Two differently noted transfers were temporary: $30,000 withdrawn February 12, 2024 as “transfer funds” was returned October 9, 2024 as “deposit return,” and $18,000 withdrawn July 31, 2025 as “Mediclaims” was returned August 5, 2025. A $25,000 truck down payment on May 15, 2025 came from savings so the required payment would not leave insufficient funds for payroll.",
       sortOrder: 20260831,
       filingYear: 2026,
       statusLabel: "Approved public report",
-      searchText: "Money Market Account 01/31/2023 08/31/2026 January 31 2023 August 31 2026 First National Bank of Waterloo Business MM bank statements account balances redacted approved public report operational".toLowerCase(),
+      searchText: "Money Market Account Itemized Statements 01/31/2023 08/31/2026 January 2023 through August 2026 First National Bank of Waterloo Business MM monthly statements account activity savings payroll transfer funds deposit return Mediclaims truck down payment redacted combined PDF approved public report operational".toLowerCase(),
       viewUrl: moneyMarketStatementUrl,
       downloadUrl: moneyMarketStatementUrl,
       printUrl: moneyMarketStatementUrl,

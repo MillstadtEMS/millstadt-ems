@@ -14,8 +14,9 @@ test("only technical descriptions and known document IDs are accepted, without i
 });
 
 test("every report sends only to webdev with canonical context and escaped description", async () => {
+  const documents = publicFinancialDocumentLibrary();
   const captured: GmailMessageInput[] = [];
-  for (const document of [...publicFinancialDocumentLibrary(), undefined]) {
+  for (const document of [...documents, undefined]) {
     const input = parseProblemReport({ description: '<script>alert("bug")</script> & broken link', ...(document ? { documentId: document.id } : {}) });
     assert.ok(input);
     const result = await deliverProblemReport(input, async message => { captured.push(message); return { sent: true }; });
@@ -28,7 +29,7 @@ test("every report sends only to webdev with canonical context and escaped descr
     assert.ok(message.html.includes("&lt;script&gt;"));
     if (document) assert.ok(message.text.includes(document.title));
   }
-  assert.equal(captured.length, 51);
+  assert.equal(captured.length, documents.length + 1);
 });
 
 test("delivery is never marked sent when the mail transport is disabled or fails", async () => {

@@ -4,7 +4,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const PORT = 3031;
+const PORT = Number(process.env.MILLSTADT_FINANCIALS_TEST_PORT ?? 31031);
 const ORIGIN = `http://127.0.0.1:${PORT}`;
 const ADMIN_HEADERS = {
   "x-mems-dev-admin-code": "TEST-ADMIN",
@@ -325,17 +325,16 @@ try {
     path.join(cwd, "app/financials-information-hub/page.tsx"),
     "utf8",
   );
-  assert.match(productionHubSource, /Financial &amp; Information Transparency/);
-  assert.match(productionHubSource, /Coming Soon/);
-  assert.match(
-    productionHubSource,
-    /The Millstadt EMS Financial &amp; Information Transparency hub is being prepared/,
+  const publicLibrarySource = await readFile(
+    path.join(cwd, "app/financials-information-hub/PublicDocumentLibrary.tsx"),
+    "utf8",
   );
-  assert.match(
-    productionHubSource,
-    /This page does not accept document requests, information requests/,
-  );
-  pass("production source preserves the required Coming Soon page");
+  assert.match(productionHubSource, /publicFinancialDocumentLibrary/);
+  assert.match(productionHubSource, /<PublicDocumentLibrary/);
+  assert.doesNotMatch(productionHubSource, /Coming Soon/);
+  assert.match(publicLibrarySource, /documents\.length\} public documents/);
+  assert.match(publicLibrarySource, /moneyMarketStatements/);
+  pass("production source renders the public financial document library");
 
   const adminPageSource = await readFile(
     path.join(cwd, "app/admin/financials/page.tsx"),

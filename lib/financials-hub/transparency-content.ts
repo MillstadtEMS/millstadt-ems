@@ -449,7 +449,7 @@ export function matchesSearch(text: string, query: string) {
   return normalizeSearch(text).includes(normalizeSearch(query));
 }
 export function documentSearchText(document: PublicLibraryDocument) {
-  return [document.title,document.periodLabel,document.dateLabel,document.sourceLabel,document.note,document.searchText,document.employee,document.statusLabel,"PDF",document.pageCount ? `${document.pageCount} pages` : "",document.attachmentOf ? "Attachments" : ""].filter(Boolean).join(" ");
+  return [document.title,document.periodLabel,document.dateLabel,document.sourceLabel,document.note,document.disclaimer,document.searchText,document.employee,document.statusLabel,"PDF",document.pageCount ? `${document.pageCount} pages` : "",document.attachmentOf ? "Attachments" : ""].filter(Boolean).join(" ");
 }
 export function reportDraft(document?: PublicLibraryDocument, description = "") {
   const subject = document ? `Document problem: ${document.title}` : "Millstadt EMS technical problem";

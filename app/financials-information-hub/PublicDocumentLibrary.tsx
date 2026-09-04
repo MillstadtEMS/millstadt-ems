@@ -66,7 +66,7 @@ export default function PublicDocumentLibrary({documents}:{documents:PublicLibra
         <div className={styles.libraryGroups}>
           {settlements.map(d=><Disclosure key={`${d.id}-${needle}`} title={d.title} meta={`County record · PDF · ${d.pageCount} page`} initiallyOpen={Boolean(needle)} query={query}><DocumentRow document={d} query={query} level={4}/></Disclosure>)}
           {corporateAnnualReports.map(d=><Disclosure key={`${d.id}-${needle}`} title={d.title} meta={`Official record · PDF · ${d.pageCount} pages`} initiallyOpen={Boolean(needle)} query={query}><DocumentRow document={d} query={query} level={4}/></Disclosure>)}
-          {moneyMarketStatements.map(d=><Disclosure key={`${d.id}-${needle}`} title={d.title} meta={`Approved public report · PDF · ${d.pageCount} pages`} initiallyOpen={Boolean(needle)} query={query}><DocumentRow document={d} query={query} level={4}/></Disclosure>)}
+          {moneyMarketStatements.map(d=><Disclosure key={`${d.id}-${needle}`} title={d.title} meta={`Approved public report · Combined PDF · 3 source documents · ${d.pageCount} pages`} initiallyOpen={Boolean(needle)} query={query}><DocumentRow document={d} query={query} level={4}/>{d.disclaimer ? <p className={styles.categoryNote}><Highlight text={d.disclaimer} query={query}/></p> : null}</Disclosure>)}
           <AnnualAudits documents={audits} pending={pendingAudits} query={query}/>
           <BillingActivity query={query}/>
           <DebtLiabilities query={query}/>

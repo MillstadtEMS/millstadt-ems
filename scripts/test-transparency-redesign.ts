@@ -40,17 +40,23 @@ test("2026 Illinois annual report is published unchanged and FDMI-specific copy 
   assert.match(page,/corporateAnnualReports\.map\(d=><Disclosure/);
   assert.doesNotMatch(page,/settlements\.map\(d=><DocumentRow/);
 });
-test("redacted money-market statement pages are published in their own collapsible disclosure",()=>{
+test("three money-market source documents open through one combined PDF and one collapsible disclosure",()=>{
   const statement=documents.find(d=>d.id==="money-market-account-2023-01-31-to-2026-08-31");
   assert.ok(statement);
+  assert.equal(documents.filter(d=>d.id.startsWith("money-market-")).length,1);
   assert.equal(statement.title,"Money Market Account 01/31/2023 - 08/31/2026");
   assert.equal(statement.periodLabel,"January 31, 2023 through August 31, 2026");
-  assert.equal(statement.pageCount,2);
+  assert.equal(statement.pageCount,47);
   assert.equal(statement.statusLabel,"Approved public report");
   assert.match(statement.note ?? "",/Account numbers are redacted/);
-  assert.equal(createHash("sha256").update(readFileSync(`public${statement.downloadUrl}`)).digest("hex"),"a808833942efe4cc8620017c9c42431dc7e9e5581b8489950b09153d79889920");
+  assert.match(statement.note ?? "",/two previously posted statement pages followed by the 45-page itemized statement packet/);
+  assert.equal(statement.disclaimer,"Since 2023, Millstadt Ambulance Service has used money-market savings to keep sufficient funds available for payroll. Two differently noted transfers were temporary: $30,000 withdrawn February 12, 2024 as “transfer funds” was returned October 9, 2024 as “deposit return,” and $18,000 withdrawn July 31, 2025 as “Mediclaims” was returned August 5, 2025. A $25,000 truck down payment on May 15, 2025 came from savings so the required payment would not leave insufficient funds for payroll.");
+  assert.equal(createHash("sha256").update(readFileSync(`public${statement.downloadUrl}`)).digest("hex"),"f29e958f4b6ee74b60d75d59ee2ffc502f2e6f8e6796f459606afacd7c037917");
   const page=readFileSync("app/financials-information-hub/PublicDocumentLibrary.tsx","utf8");
   assert.match(page,/moneyMarketStatements\.map\(d=><Disclosure/);
+  assert.match(page,/Combined PDF · 3 source documents/);
+  assert.match(page,/d\.disclaimer \? <p className=\{styles\.categoryNote\}>/);
+  assert.ok(page.indexOf("<DocumentRow document={d}")<page.indexOf("d.disclaimer ? <p"));
 });
 test("both fiscal-year dash variants match pending and both 2025–2026 reports",()=>{
   for(const query of ["2025-2026","2025–2026"]){
