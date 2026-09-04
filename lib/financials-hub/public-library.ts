@@ -1,3 +1,4 @@
+import { ANNUAL_AUDIT_SOURCES } from "./annual-audit-sources";
 import { TAX_COMPUTATION_DATA, type TaxComputationData } from "./tax-computation-data";
 
 export type PublicLibraryDocument = {
@@ -85,11 +86,7 @@ const TAX_COMPUTATION_SOURCES: TaxComputationSource[] = [
 ];
 
 export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
-  const annualAudits: PublicLibraryDocument[] = [
-    { ending: 2025, pageCount: 22, reportDate: "August 24, 2026" },
-    { ending: 2024, pageCount: 21, reportDate: "April 4, 2026" },
-    { ending: 2023, pageCount: 20, reportDate: "March 31, 2026" },
-  ].map(({ ending, pageCount, reportDate }) => {
+  const annualAudits: PublicLibraryDocument[] = ANNUAL_AUDIT_SOURCES.map(({ ending, pageCount, reportDate, auditor }) => {
     const id = `annual-audit-fy-${ending - 1}-${ending}`;
     const title = `Annual Audit — FY ${ending - 1}–${ending}`;
     const url = `/financial-transparency/audits/${id}.pdf`;
@@ -97,10 +94,10 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
       id, kind: "annual_audit", title, category: "Operational",
       periodLabel: `May 1, ${ending - 1} through April 30, ${ending}`,
       dateLabel: `Auditor’s report dated ${reportDate}`, pageCount,
-      sourceLabel: "Scheffel Boyle · Independent auditor’s report",
+      sourceLabel: `${auditor} · Independent auditor’s report`,
       filingYear: ending, sortOrder: ending * 10000 + 430,
       statusLabel: "Approved public report",
-      searchText: `${title} Annual Audits FY ${ending - 1}-${ending} FY ${String(ending - 1).slice(-2)}-${String(ending).slice(-2)} Financial report financial statements Independent auditor Scheffel Boyle prior-year comparative figures Operational`,
+      searchText: `${title} Annual Audits FY ${ending - 1}-${ending} FY ${String(ending - 1).slice(-2)}-${String(ending).slice(-2)} Financial report financial statements Independent auditor ${auditor} prior-year comparative figures Operational`,
       viewUrl: url, downloadUrl: url, printUrl: url,
     };
   });

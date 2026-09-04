@@ -8,7 +8,7 @@ export type PendingAnnualAudit = {
   searchText: string;
 };
 
-export const ANNUAL_AUDIT_NOTE = "Reports are provided in full as issued and include prior-year comparative figures.";
+export const ANNUAL_AUDIT_NOTE = "Reports are provided in full as issued, including any prior-year comparative figures.";
 
 export const PENDING_ANNUAL_AUDITS: readonly PendingAnnualAudit[] = [
   {

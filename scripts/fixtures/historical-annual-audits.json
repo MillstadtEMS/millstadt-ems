@@ -1,0 +1,287 @@
+{
+  "annual-audit-fy-2018-2019": {
+    "pages": 38,
+    "reportDate": "October 2, 2019",
+    "auditor": "Scheffel Boyle",
+    "sha256": "38af297b91367c7ac7cbdcaedf27b0060321cfc08e1cfc5512a3d2029aa3a7b1",
+    "sources": [
+      "Audit 2018 - 19.pdf"
+    ]
+  },
+  "annual-audit-fy-2017-2018": {
+    "pages": 38,
+    "reportDate": "September 13, 2018",
+    "auditor": "Scheffel Boyle",
+    "sha256": "a2971f0d9c99f482cd9f287e5f2dbfb2957e88603a95715c64275f75739a1918",
+    "sources": [
+      "Audit 2017 - 18.pdf"
+    ]
+  },
+  "annual-audit-fy-2015-2016": {
+    "pages": 42,
+    "reportDate": "September 23, 2016",
+    "auditor": "Scheffel Boyle",
+    "sha256": "60959eb84161682882908c392f98b894a5f061fb1e322e7fb4f56884312d0f85",
+    "sources": [
+      "Audit 2015 - 16.pdf"
+    ]
+  },
+  "annual-audit-fy-2014-2015": {
+    "pages": 24,
+    "reportDate": "September 1, 2015",
+    "auditor": "Scheffel Boyle",
+    "sha256": "4bcdb7f562cef6b6257cb80bc98c8ef85cafccbc745fd75fbd6487efc95c9494",
+    "sources": [
+      "Audit 2014 - 15.pdf"
+    ]
+  },
+  "annual-audit-fy-2013-2014": {
+    "pages": 22,
+    "reportDate": "September 11, 2014",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "3b12712f280faf0483dc2bc4884993ae2f5efae32fa37392784da404e54ae108",
+    "sources": [
+      "Audit 2013-14 front.pdf",
+      "Audit 2013-14 back.pdf"
+    ]
+  },
+  "annual-audit-fy-2012-2013": {
+    "pages": 22,
+    "reportDate": "April 9, 2014",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "da6234d4d89bbe557257f44ceebd3a625d7d4887313d21665e732cb74ee4b8e5",
+    "sources": [
+      "Audit 2012 - 13.pdf"
+    ]
+  },
+  "annual-audit-fy-2011-2012": {
+    "pages": 26,
+    "reportDate": "April 30, 2013",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "f7df787d0a988a51129f4c590bf0eec66a003b8c32a0723a53003c832efa17aa",
+    "sources": [
+      "Audit 2011 - 12.pdf"
+    ]
+  },
+  "annual-audit-fy-2010-2011": {
+    "pages": 28,
+    "reportDate": "January 11, 2012",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "7f1eb270b12f6759a3bbb32054e652be9e257914437197833b99c605b1135836",
+    "sources": [
+      "Audit 2010 - 11.pdf"
+    ]
+  },
+  "annual-audit-fy-2008-2009": {
+    "pages": 26,
+    "reportDate": "January 20, 2010",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "af2d89c07d6a1ca3f12ac8812059e2fedc7c69badb66e6667684b365feff6838",
+    "sources": [
+      "Audit 2008 - 09.pdf"
+    ]
+  },
+  "annual-audit-fy-2007-2008": {
+    "pages": 28,
+    "reportDate": "December 4, 2008",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "2818527c023f7f6dad3f7971bbf6516a09e1d430cb74c8d75df55bee382dde48",
+    "sources": [
+      "Audit 2007 - 08.pdf"
+    ]
+  },
+  "annual-audit-fy-2006-2007": {
+    "pages": 26,
+    "reportDate": "November 27, 2007",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "01909ce4d99fe90721993ea893f4d313baa7acc13c64af96899915e0fc9c3c31",
+    "sources": [
+      "Audit 2006 - 07.pdf"
+    ]
+  },
+  "annual-audit-fy-2005-2006": {
+    "pages": 26,
+    "reportDate": "August 16, 2006",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "9f9c972e0caa51784b8f198958d47d278ccae5c817e10a4c6046d0d17a9b4a51",
+    "sources": [
+      "Audit 2005 - 06.pdf"
+    ]
+  },
+  "annual-audit-fy-2001-2002": {
+    "pages": 28,
+    "reportDate": "July 3, 2002",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "49d137f80b4a973ec0c123ad0a7ee820a8ed29961c8393e5f6bdfaff91012310",
+    "sources": [
+      "Audit 2001-02.pdf"
+    ]
+  },
+  "annual-audit-fy-2000-2001": {
+    "pages": 26,
+    "reportDate": "June 7, 2001",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "cf41e7a49af54fda6e2f91b4bae10c111b5edbc43c3893f8c33729134585d506",
+    "sources": [
+      "Audit 2000 - 01.pdf"
+    ]
+  },
+  "annual-audit-fy-1999-2000": {
+    "pages": 26,
+    "reportDate": "July 6, 2000",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "ddb95693831a11df2333ea0fde93c8e9bd202a2fa32346ab333488bd2987b440",
+    "sources": [
+      "Audit 1999 - 00.pdf"
+    ]
+  },
+  "annual-audit-fy-1998-1999": {
+    "pages": 27,
+    "reportDate": "July 22, 1999",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "80331a312dab258a9ae83ad499af820c832b043014e519aefb71ed29dcbd79ff",
+    "sources": [
+      "Audit 1998-99 back.pdf",
+      "Audit 1998-99 front.pdf"
+    ]
+  },
+  "annual-audit-fy-1997-1998": {
+    "pages": 22,
+    "reportDate": "June 9, 1998",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "8db81b1dab3801c04ef19ece5c885afc8a54d75430a9a3f5231017c75ea1df92",
+    "sources": [
+      "Audit 1997 - 98.pdf"
+    ]
+  },
+  "annual-audit-fy-1996-1997": {
+    "pages": 22,
+    "reportDate": "June 5, 1997",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "ecd4243889ba882d5a8753fb9550b4e5258915b0d730f361ca865e19ce2510bb",
+    "sources": [
+      "Audit 1996 -97.pdf"
+    ]
+  },
+  "annual-audit-fy-1995-1996": {
+    "pages": 22,
+    "reportDate": "June 18, 1996",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "2677cb59eb8d0603451ab068d456a342a9a516bff98d249d37b90b932ba19cf2",
+    "sources": [
+      "Audit 1995 -96.pdf"
+    ]
+  },
+  "annual-audit-fy-1994-1995": {
+    "pages": 22,
+    "reportDate": "June 1, 1995",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "bcbf3486961722931b231acc0916fbcfdfc71d65563cf4aed68a0a2e24506d33",
+    "sources": [
+      "Audit 1994 - 95.pdf"
+    ]
+  },
+  "annual-audit-fy-1993-1994": {
+    "pages": 22,
+    "reportDate": "August 25, 1994",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "6c19fd9f3a9f6a2b7899f717c0c55fb868faeabd8a1e98c2b656aa34f6424ff9",
+    "sources": [
+      "Audit 1993 - 94.pdf"
+    ]
+  },
+  "annual-audit-fy-1992-1993": {
+    "pages": 20,
+    "reportDate": "August 30, 1993",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "bf512520ae89eb9f368fcb6d1f0e3e3b4e119d57cb909abe03554560590c7dd9",
+    "sources": [
+      "Audit 1992 - 93.pdf"
+    ]
+  },
+  "annual-audit-fy-1991-1992": {
+    "pages": 22,
+    "reportDate": "June 24, 1992",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "dd9e4d00471256e8a38a6b2f59b5ea317b3126b8d6afb5b742e17b4c5465914c",
+    "sources": [
+      "Audit 1991-92 front.pdf",
+      "Audit 1981-82 back.pdf"
+    ]
+  },
+  "annual-audit-fy-1990-1991": {
+    "pages": 26,
+    "reportDate": "May 22, 1991",
+    "auditor": "Allison Knapp & Siekmann, Ltd.",
+    "sha256": "75eaf0a3a4ff369d19a53a7c48918e50ec1c3283f03b52f211bb5797002f248e",
+    "sources": [
+      "Audit 1990 - 91.pdf"
+    ]
+  },
+  "annual-audit-fy-1989-1990": {
+    "pages": 24,
+    "reportDate": "May 23, 1990",
+    "auditor": "Allison Knapp & Siekmann",
+    "sha256": "4281f3ae09787411272f9854e3b35dc1bfbfda57af73a40e5cfbaebf6f76cb6b",
+    "sources": [
+      "Audit 1989 - 90.pdf"
+    ]
+  },
+  "annual-audit-fy-1988-1989": {
+    "pages": 18,
+    "reportDate": "July 26, 1989",
+    "auditor": "Allison Knapp & Siekmann",
+    "sha256": "81fc3859f2a75e82a67fb91a02991cad5793c0d76b72978c98735edec15e3c61",
+    "sources": [
+      "Audit 1988-89 front.pdf",
+      "Audit 1988-89 back.pdf"
+    ]
+  },
+  "annual-audit-fy-1987-1988": {
+    "pages": 10,
+    "reportDate": "May 19, 1988",
+    "auditor": "Allison Knapp & Siekmann",
+    "sha256": "b4558f1da52c7952b0d7576981f9804b156bec072e0990a9b00608030555b2db",
+    "sources": [
+      "Audit 1987 - 88.pdf"
+    ]
+  },
+  "annual-audit-fy-1986-1987": {
+    "pages": 10,
+    "reportDate": "July 6, 1987",
+    "auditor": "Allison Knapp & Siekmann",
+    "sha256": "9e90ccb3bef6815f191e712f2e58cbf71cb78c98d5c8c426692ed59a4706b48c",
+    "sources": [
+      "Audit 1986-87.pdf",
+      "Audit1986-87 back.pdf"
+    ]
+  },
+  "annual-audit-fy-1985-1986": {
+    "pages": 12,
+    "reportDate": "May 20, 1986",
+    "auditor": "Bert H. Allison and Company",
+    "sha256": "a2db8e45fbbed87ffbb1f37fe33a3b1f6be5dea48f1ebf94ed9449da6eea0007",
+    "sources": [
+      "Audit 1985 - 86.pdf"
+    ]
+  },
+  "annual-audit-fy-1983-1984": {
+    "pages": 12,
+    "reportDate": "May 24, 1984",
+    "auditor": "Bert H. Allison and Company",
+    "sha256": "3c7624c124c453befc7b3e433eb976de10d74f5b88dde1a88c26c2f1c0c43433",
+    "sources": [
+      "Audit 1983 - 84.pdf"
+    ]
+  },
+  "annual-audit-fy-1981-1982": {
+    "pages": 9,
+    "reportDate": "June 1, 1982",
+    "auditor": "Bert H. Allison and Company",
+    "sha256": "b94955e0c426b4873e1ecb58330630d3ae7e33dcef7b624daabe676dba16d9ef",
+    "sources": [
+      "Audit 1981-82 front.pdf",
+      "Audit 1991-92 back.pdf"
+    ]
+  }
+}
