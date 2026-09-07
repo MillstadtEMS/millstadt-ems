@@ -4,6 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import SignaturePad from "@/components/lounge/SignaturePad";
 import TurnstileWidget from "@/components/TurnstileWidget";
+import SubmissionFailureFallback, {
+  printableFieldsFromFormData,
+  type PrintableSubmissionFields,
+} from "@/components/forms/SubmissionFailureFallback";
+import { formFieldLabel } from "@/lib/security/form-validation-messages";
 
 /* ── Reusable field components — Villa Hills pattern, EMS gold ─────── */
 
@@ -176,6 +181,58 @@ const hours = [
   "Any / All shifts",
 ];
 
+const REQUIRED_APPLICATION_FIELDS = [
+  "position",
+  "employment_type",
+  "first_name",
+  "last_name",
+  "dob",
+  "phone",
+  "email",
+  "authorized_us",
+  "felony",
+  "excluded_medicare",
+  "license_suspended",
+  "valid_dl",
+  "certified",
+];
+
+type FormControl = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+
+function applicationValidationError(form: HTMLFormElement, formData: FormData) {
+  const controls = Array.from(form.elements).filter((element): element is FormControl =>
+    element instanceof HTMLInputElement
+    || element instanceof HTMLSelectElement
+    || element instanceof HTMLTextAreaElement);
+  const missingNames = new Set(
+    controls
+      .filter((control) => control.name !== "website" && control.validity.valueMissing)
+      .map((control) => control.name),
+  );
+
+  for (const name of REQUIRED_APPLICATION_FIELDS) {
+    const hasValue = formData.getAll(name).some((value) => typeof value === "string" && value.trim());
+    if (!hasValue) missingNames.add(name);
+  }
+
+  if (missingNames.size > 0) {
+    const names = [...missingNames];
+    return {
+      control: controls.find((control) => control.name === names[0]),
+      message: `Please complete: ${names.map(formFieldLabel).join(", ")}.`,
+    };
+  }
+
+  const invalidControl = controls.find((control) => control.name !== "website" && !control.validity.valid);
+  if (!invalidControl) return null;
+  return {
+    control: invalidControl,
+    message: invalidControl.validity.typeMismatch && invalidControl.type === "email"
+      ? "Enter a valid email address."
+      : `Please check “${formFieldLabel(invalidControl.name)}” and try again.`,
+  };
+}
+
 /* ── Main component ─────────────────────────────────────────────────── */
 
 export default function ApplicationForm() {
@@ -189,6 +246,7 @@ export default function ApplicationForm() {
   const [csrfToken, setCsrfToken] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [fallbackFields, setFallbackFields] = useState<PrintableSubmissionFields | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -223,6 +281,7 @@ export default function ApplicationForm() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setFallbackFields(null);
     setErrorMsg("");
 
     if (!turnstileToken) {
@@ -234,6 +293,13 @@ export default function ApplicationForm() {
     setStatus("sending");
 
     const fd = new FormData(e.currentTarget);
+    const validationError = applicationValidationError(e.currentTarget, fd);
+    if (validationError) {
+      setErrorMsg(validationError.message);
+      setStatus("error");
+      validationError.control?.focus();
+      return;
+    }
 
     // Pre-flight file size check
     let totalBytes = 0;
@@ -242,6 +308,7 @@ export default function ApplicationForm() {
     }
     if (totalBytes > 4 * 1024 * 1024) {
       setErrorMsg(`__TOO_LARGE__:${(totalBytes / 1024 / 1024).toFixed(1)}`);
+      setFallbackFields(printableFieldsFromFormData(fd));
       setStatus("error");
       return;
     }
@@ -274,6 +341,7 @@ export default function ApplicationForm() {
     }
     fd.set("signature_data_url", signature);
     fd.set("applicant_signed_at", new Date().toLocaleString("en-US", { timeZone: "America/Chicago" }) + " CDT");
+    const fallbackSnapshot = printableFieldsFromFormData(fd);
 
     try {
       const res = await fetch("/api/apply", {
@@ -283,6 +351,7 @@ export default function ApplicationForm() {
       });
       const data = await res.json().catch(() => null);
       if (res.ok && data?.success) {
+        setFallbackFields(null);
         setStatus("sent");
         return;
       }
@@ -292,10 +361,12 @@ export default function ApplicationForm() {
       } else {
         setErrorMsg(data?.error || `Submission failed (${res.status}). Please try again or email millstadtems@gmail.com.`);
       }
+      setFallbackFields(fallbackSnapshot);
       setTurnstileResetKey((value) => value + 1);
       setStatus("error");
     } catch {
       setErrorMsg("Network error — could not reach the server. Try again or email millstadtems@gmail.com.");
+      setFallbackFields(fallbackSnapshot);
       setTurnstileResetKey((value) => value + 1);
       setStatus("error");
     }
@@ -865,10 +936,14 @@ export default function ApplicationForm() {
           )}
 
           {errorMsg && !errorMsg.startsWith("__TOO_LARGE__") && (
-            <div className="mt-6 p-5 bg-red-900/20 border-l-4 border-red-500">
+            <div className="mt-6 p-5 bg-red-900/20 border-l-4 border-red-500" role="alert" aria-live="assertive">
               <div className="text-red-300 font-bold text-sm mb-1">Submission Failed</div>
               <p className="text-red-200/80 text-sm leading-relaxed">{errorMsg}</p>
             </div>
+          )}
+
+          {fallbackFields && (
+            <SubmissionFailureFallback formType="Employment Application" fields={fallbackFields} />
           )}
 
         </form>

@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import TurnstileWidget from "@/components/TurnstileWidget";
+import SubmissionFailureFallback, {
+  type PrintableSubmissionFields,
+} from "@/components/forms/SubmissionFailureFallback";
+import { buildPublicFormPayload } from "@/lib/public-form-submission";
+import { formFieldLabel } from "@/lib/security/form-validation-messages";
 /* Link is used in the success state below */
 
 interface Props {
@@ -23,6 +28,7 @@ export default function ContactFormWrapper({
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
+  const [fallbackFields, setFallbackFields] = useState<PrintableSubmissionFields | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,15 +46,41 @@ export default function ContactFormWrapper({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
+    const invalidControls = Array.from(form.elements)
+      .filter((element): element is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement =>
+        element instanceof HTMLInputElement
+        || element instanceof HTMLSelectElement
+        || element instanceof HTMLTextAreaElement)
+      .filter((element) => element.name !== "website" && !element.validity.valid);
+
+    if (invalidControls.length > 0) {
+      const missingFields = [...new Set(
+        invalidControls.filter((control) => control.validity.valueMissing).map((control) => formFieldLabel(control.name)),
+      )];
+      const firstInvalid = invalidControls[0];
+      const message = missingFields.length > 0
+        ? `Please complete: ${missingFields.join(", ")}.`
+        : firstInvalid.validity.typeMismatch && firstInvalid.type === "email"
+          ? "Enter a valid email address."
+          : `Please check “${formFieldLabel(firstInvalid.name)}” and try again.`;
+      setFallbackFields(null);
+      setErrorMessage(message);
+      setStatus("error");
+      firstInvalid.focus();
+      return;
+    }
     if (!turnstileToken) {
+      setFallbackFields(null);
       setErrorMessage("Please complete the security check before submitting.");
       setStatus("error");
       return;
     }
+    setFallbackFields(null);
     setErrorMessage("");
     setStatus("sending");
 
-    const fd = new FormData(e.currentTarget);
+    const fd = new FormData(form);
     const fields: Record<string, string | string[]> = {};
     for (const key of new Set(fd.keys())) {
       const vals = fd.getAll(key);
@@ -62,13 +94,14 @@ export default function ContactFormWrapper({
           "Content-Type": "application/json",
           "X-CSRF-Token": csrfToken,
         },
-        body: JSON.stringify({ formType, ...fields }),
+        body: JSON.stringify(buildPublicFormPayload(formType, fields, turnstileToken)),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "The form could not be submitted.");
       setStatus("done");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "The form could not be submitted.");
+      setFallbackFields(fields);
       setTurnstileResetKey((value) => value + 1);
       setStatus("error");
     }
@@ -106,7 +139,7 @@ export default function ContactFormWrapper({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2">
+    <form onSubmit={handleSubmit} className="space-y-2" noValidate>
       <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden">
         <label htmlFor={`website-${formType.replace(/\s+/g, "-").toLowerCase()}`}>Website</label>
         <input
@@ -149,9 +182,12 @@ export default function ContactFormWrapper({
       </button>
 
       {status === "error" && (
-        <p className="text-red-300 text-sm pt-4 leading-relaxed">
-          {errorMessage || "Something went wrong. Please try again or email us directly at millstadtems@gmail.com."}
-        </p>
+        <div role="alert" aria-live="assertive" className="pt-4">
+          <p className="text-red-300 text-sm leading-relaxed">
+            {errorMessage || "Something went wrong. Please try again or email us directly at millstadtems@gmail.com."}
+          </p>
+          {fallbackFields && <SubmissionFailureFallback formType={formType} fields={fallbackFields} />}
+        </div>
       )}
     </form>
   );

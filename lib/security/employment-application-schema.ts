@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formValidationMessage } from "./form-validation-messages";
 
 const text = (maximum = 240) => z.string().trim().max(maximum).optional().default("");
 const required = (maximum = 240) => z.string().trim().min(1).max(maximum);
@@ -67,7 +68,7 @@ export type EmploymentApplicationFields = z.infer<typeof schema>;
 export function parseEmploymentApplication(input: Record<string, string>) {
   const result = schema.safeParse(input);
   if (!result.success) {
-    return { ok: false as const, error: "Check the required application fields and try again." };
+    return { ok: false as const, error: formValidationMessage(result.error) };
   }
   const signature = validatePngDataUrl(result.data.signature_data_url);
   if (!signature) return { ok: false as const, error: "Please provide a valid signature." };

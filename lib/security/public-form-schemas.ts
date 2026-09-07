@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formValidationMessage } from "./form-validation-messages";
 
 const requiredText = (maximum = 160) => z.string().trim().min(1).max(maximum);
 const optionalText = (maximum = 500) => z.string().trim().max(maximum).optional().default("");
@@ -117,7 +118,7 @@ export function parsePublicFormSubmission(input: unknown): PublicFormParseResult
   const { formType: _discard, ...rawFields } = body;
   void _discard;
   const result = schemas[formType as keyof typeof schemas].safeParse(rawFields);
-  if (!result.success) return { ok: false, error: "Check the required fields and try again." };
+  if (!result.success) return { ok: false, error: formValidationMessage(result.error) };
 
   const fields = Object.fromEntries(
     Object.entries(result.data as Record<string, unknown>).filter(([, value]) => value !== undefined),

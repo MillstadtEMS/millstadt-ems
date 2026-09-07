@@ -60,9 +60,14 @@ export async function POST(req: NextRequest) {
       remoteIp: requestIp(req),
     });
     if (!verification.ok) {
+      const serviceUnavailable = verification.reason === "misconfigured" || verification.reason === "unavailable";
       return noStoreJson(
-        { error: "Please complete the security check and try again." },
-        { status: 403 },
+        {
+          error: serviceUnavailable
+            ? "The online security check is temporarily unavailable. Please use the backup delivery options below."
+            : "Please complete the security check and try again.",
+        },
+        { status: serviceUnavailable ? 503 : 403 },
       );
     }
 
