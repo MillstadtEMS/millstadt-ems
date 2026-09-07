@@ -5,7 +5,7 @@ import { formFieldLabel } from "@/lib/security/form-validation-messages";
 
 export type PrintableSubmissionFields = Record<string, string | string[]>;
 
-const OMITTED_FIELDS = new Set(["website", "turnstileToken", "signature_data_url"]);
+const OMITTED_FIELDS = new Set(["website", "securityCheckToken", "turnstileToken", "signature_data_url"]);
 
 function escapeMarkup(value: string) {
   return value

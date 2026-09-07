@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import TurnstileWidget from "@/components/TurnstileWidget";
+import PublicFormSecurityCheck from "@/components/PublicFormSecurityCheck";
 import SubmissionFailureFallback, {
   type PrintableSubmissionFields,
 } from "@/components/forms/SubmissionFailureFallback";
@@ -25,8 +25,8 @@ export default function ContactFormWrapper({
 }: Props) {
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [csrfToken, setCsrfToken] = useState("");
-  const [turnstileToken, setTurnstileToken] = useState("");
-  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [securityCheckToken, setSecurityCheckToken] = useState("");
+  const [securityCheckResetKey, setSecurityCheckResetKey] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
   const [fallbackFields, setFallbackFields] = useState<PrintableSubmissionFields | null>(null);
 
@@ -70,9 +70,15 @@ export default function ContactFormWrapper({
       firstInvalid.focus();
       return;
     }
-    if (!turnstileToken) {
+    if (!securityCheckToken) {
       setFallbackFields(null);
-      setErrorMessage("Please complete the security check before submitting.");
+      setErrorMessage("Please select “I’m not a robot” before submitting.");
+      setStatus("error");
+      return;
+    }
+    if (!csrfToken) {
+      setFallbackFields(null);
+      setErrorMessage("The form is still preparing. Wait a moment, then try again.");
       setStatus("error");
       return;
     }
@@ -94,7 +100,7 @@ export default function ContactFormWrapper({
           "Content-Type": "application/json",
           "X-CSRF-Token": csrfToken,
         },
-        body: JSON.stringify(buildPublicFormPayload(formType, fields, turnstileToken)),
+        body: JSON.stringify(buildPublicFormPayload(formType, fields, securityCheckToken)),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "The form could not be submitted.");
@@ -102,7 +108,7 @@ export default function ContactFormWrapper({
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "The form could not be submitted.");
       setFallbackFields(fields);
-      setTurnstileResetKey((value) => value + 1);
+      setSecurityCheckResetKey((value) => value + 1);
       setStatus("error");
     }
   }
@@ -164,15 +170,15 @@ export default function ContactFormWrapper({
         </div>
       )}
 
-      <TurnstileWidget
+      <PublicFormSecurityCheck
         action="contact_form"
-        onTokenChange={setTurnstileToken}
-        resetKey={turnstileResetKey}
+        onTokenChange={setSecurityCheckToken}
+        resetKey={securityCheckResetKey}
       />
 
       <button
         type="submit"
-        disabled={status === "sending" || !csrfToken || !turnstileToken}
+        disabled={status === "sending"}
         className="block w-full rounded-2xl py-5 mt-10 bg-[#f0b429] hover:bg-[#d9a320] disabled:opacity-60 text-[#040d1a] font-black text-base uppercase tracking-widest transition-all"
         style={{
           boxShadow: "0 22px 54px rgba(240,180,41,0.22), inset 0 1px 0 rgba(255,255,255,0.36)",

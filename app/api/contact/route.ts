@@ -13,13 +13,12 @@ import {
   escapeHtml,
   hasContentType,
   hasValidCsrfToken,
+  hasValidFormSecurityToken,
   issueCsrfToken,
   noStoreJson,
-  requestIp,
 } from "@/lib/security/http";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { parsePublicFormSubmission } from "@/lib/security/public-form-schemas";
-import { verifyTurnstileToken } from "@/lib/security/turnstile";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -55,19 +54,11 @@ export async function POST(req: NextRequest) {
       return noStoreJson({ ok: true });
     }
 
-    const verification = await verifyTurnstileToken(submitted.turnstileToken, {
-      action: "contact_form",
-      remoteIp: requestIp(req),
-    });
-    if (!verification.ok) {
-      const serviceUnavailable = verification.reason === "misconfigured" || verification.reason === "unavailable";
+    const securityCheckToken = submitted.securityCheckToken ?? submitted.turnstileToken;
+    if (!hasValidFormSecurityToken(req, "contact_form", securityCheckToken)) {
       return noStoreJson(
-        {
-          error: serviceUnavailable
-            ? "The online security check is temporarily unavailable. Please use the backup delivery options below."
-            : "Please complete the security check and try again.",
-        },
-        { status: serviceUnavailable ? 503 : 403 },
+        { error: "Please select “I’m not a robot” and try again." },
+        { status: 403 },
       );
     }
 
@@ -85,8 +76,14 @@ export async function POST(req: NextRequest) {
       return response;
     }
 
-    const { turnstileToken: _turnstileToken, website: _website, ...submissionBody } = submitted;
-    void _turnstileToken;
+    const {
+      securityCheckToken: _securityCheckToken,
+      turnstileToken: _legacyTurnstileToken,
+      website: _website,
+      ...submissionBody
+    } = submitted;
+    void _securityCheckToken;
+    void _legacyTurnstileToken;
     void _website;
     const parsed = parsePublicFormSubmission(submissionBody);
     if (!parsed.ok) return noStoreJson({ error: parsed.error }, { status: 400 });

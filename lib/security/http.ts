@@ -14,10 +14,27 @@ export function csrfCookieName(scope: string) {
   return `mas_csrf_${scope.replace(/[^a-z0-9_-]/gi, "").slice(0, 24)}`;
 }
 
+export function formSecurityCookieName(action: string) {
+  return `mas_form_check_${action.replace(/[^a-z0-9_-]/gi, "").slice(0, 24)}`;
+}
+
 export function issueCsrfToken(scope: string) {
   const token = randomBytes(32).toString("base64url");
   const response = noStoreJson({ csrfToken: token });
   response.cookies.set(csrfCookieName(scope), token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 60 * 60,
+    path: "/",
+  });
+  return response;
+}
+
+export function issueFormSecurityToken(action: string) {
+  const token = randomBytes(32).toString("base64url");
+  const response = noStoreJson({ securityCheckToken: token });
+  response.cookies.set(formSecurityCookieName(action), token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
@@ -51,6 +68,15 @@ export function hasValidCsrfToken(req: NextRequest, scope: string) {
   const cookieBytes = Buffer.from(cookieToken);
   const headerBytes = Buffer.from(headerToken);
   return cookieBytes.length === headerBytes.length && timingSafeEqual(cookieBytes, headerBytes);
+}
+
+export function hasValidFormSecurityToken(req: NextRequest, action: string, submittedToken: unknown) {
+  if (!isSameOriginRequest(req) || typeof submittedToken !== "string") return false;
+  const cookieToken = req.cookies.get(formSecurityCookieName(action))?.value ?? "";
+  if (!cookieToken || !submittedToken) return false;
+  const cookieBytes = Buffer.from(cookieToken);
+  const submittedBytes = Buffer.from(submittedToken);
+  return cookieBytes.length === submittedBytes.length && timingSafeEqual(cookieBytes, submittedBytes);
 }
 
 export function hasContentType(req: NextRequest, expected: string) {

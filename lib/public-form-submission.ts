@@ -3,11 +3,11 @@ export type PublicFormClientFields = Record<string, string | string[]>;
 export function buildPublicFormPayload(
   formType: string,
   fields: PublicFormClientFields,
-  turnstileToken: string,
+  securityCheckToken: string,
 ) {
   return {
     formType,
     ...fields,
-    turnstileToken,
+    securityCheckToken,
   };
 }

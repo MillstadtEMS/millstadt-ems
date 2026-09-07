@@ -8,13 +8,12 @@ import {
   escapeHtml,
   hasContentType,
   hasValidCsrfToken,
+  hasValidFormSecurityToken,
   issueCsrfToken,
   noStoreJson,
-  requestIp,
 } from "@/lib/security/http";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { parseEmploymentApplication } from "@/lib/security/employment-application-schema";
-import { verifyTurnstileToken } from "@/lib/security/turnstile";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -72,7 +71,7 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const rawFields: Record<string, string> = {};
-    let turnstileToken = "";
+    let securityCheckToken = "";
     let website = "";
     for (const [key, value] of formData.entries()) {
       if (value instanceof File) {
@@ -83,8 +82,8 @@ export async function POST(req: NextRequest) {
           );
         }
       } else {
-        if (key === "turnstileToken") {
-          turnstileToken = value;
+        if (key === "securityCheckToken" || key === "turnstileToken") {
+          securityCheckToken = value;
           continue;
         }
         if (key === "website") {
@@ -99,20 +98,10 @@ export async function POST(req: NextRequest) {
       return noStoreJson({ success: true });
     }
 
-    const verification = await verifyTurnstileToken(turnstileToken, {
-      action: "employment_application",
-      remoteIp: requestIp(req),
-    });
-    if (!verification.ok) {
-      const serviceUnavailable = verification.reason === "misconfigured" || verification.reason === "unavailable";
+    if (!hasValidFormSecurityToken(req, "employment_application", securityCheckToken)) {
       return noStoreJson(
-        {
-          success: false,
-          error: serviceUnavailable
-            ? "The online security check is temporarily unavailable. Please use the backup delivery options below."
-            : "Please complete the security check and try again.",
-        },
-        { status: serviceUnavailable ? 503 : 403 },
+        { success: false, error: "Please select “I’m not a robot” and try again." },
+        { status: 403 },
       );
     }
 

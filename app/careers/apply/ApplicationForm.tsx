@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import SignaturePad from "@/components/lounge/SignaturePad";
-import TurnstileWidget from "@/components/TurnstileWidget";
+import PublicFormSecurityCheck from "@/components/PublicFormSecurityCheck";
 import SubmissionFailureFallback, {
   printableFieldsFromFormData,
   type PrintableSubmissionFields,
@@ -244,8 +244,8 @@ export default function ApplicationForm() {
   const [errorMsg, setErrorMsg] = useState("");
   const [signature, setSignature] = useState<string | null>(null);
   const [csrfToken, setCsrfToken] = useState("");
-  const [turnstileToken, setTurnstileToken] = useState("");
-  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [securityCheckToken, setSecurityCheckToken] = useState("");
+  const [securityCheckResetKey, setSecurityCheckResetKey] = useState(0);
   const [fallbackFields, setFallbackFields] = useState<PrintableSubmissionFields | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -284,14 +284,6 @@ export default function ApplicationForm() {
     setFallbackFields(null);
     setErrorMsg("");
 
-    if (!turnstileToken) {
-      setErrorMsg("Please complete the security check before submitting.");
-      setStatus("error");
-      return;
-    }
-
-    setStatus("sending");
-
     const fd = new FormData(e.currentTarget);
     const validationError = applicationValidationError(e.currentTarget, fd);
     if (validationError) {
@@ -300,6 +292,19 @@ export default function ApplicationForm() {
       validationError.control?.focus();
       return;
     }
+
+    if (!securityCheckToken) {
+      setErrorMsg("Please select “I’m not a robot” before submitting.");
+      setStatus("error");
+      return;
+    }
+    if (!csrfToken) {
+      setErrorMsg("The application is still preparing. Wait a moment, then try again.");
+      setStatus("error");
+      return;
+    }
+
+    setStatus("sending");
 
     // Pre-flight file size check
     let totalBytes = 0;
@@ -362,12 +367,12 @@ export default function ApplicationForm() {
         setErrorMsg(data?.error || `Submission failed (${res.status}). Please try again or email millstadtems@gmail.com.`);
       }
       setFallbackFields(fallbackSnapshot);
-      setTurnstileResetKey((value) => value + 1);
+      setSecurityCheckResetKey((value) => value + 1);
       setStatus("error");
     } catch {
       setErrorMsg("Network error — could not reach the server. Try again or email millstadtems@gmail.com.");
       setFallbackFields(fallbackSnapshot);
-      setTurnstileResetKey((value) => value + 1);
+      setSecurityCheckResetKey((value) => value + 1);
       setStatus("error");
     }
   }
@@ -886,16 +891,16 @@ export default function ApplicationForm() {
           </Section>
 
           {/* ── SUBMIT ── */}
-          <TurnstileWidget
+          <PublicFormSecurityCheck
             action="employment_application"
-            onTokenChange={setTurnstileToken}
-            resetKey={turnstileResetKey}
+            onTokenChange={setSecurityCheckToken}
+            resetKey={securityCheckResetKey}
           />
 
           <div className="mt-8 flex flex-col sm:flex-row gap-3">
             <button
               type="submit"
-              disabled={status === "sending" || !signature || !csrfToken || !turnstileToken}
+              disabled={status === "sending"}
               title={!signature ? "Add your signature above before submitting." : undefined}
               className="bg-[#f0b429] text-[#040d1a] font-black uppercase tracking-wider px-8 py-4 hover:bg-[#f7c847] transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm sm:text-base"
             >
