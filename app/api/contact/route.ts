@@ -62,6 +62,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const {
+      securityCheckToken: _securityCheckToken,
+      turnstileToken: _legacyTurnstileToken,
+      website: _website,
+      ...submissionBody
+    } = submitted;
+    void _securityCheckToken;
+    void _legacyTurnstileToken;
+    void _website;
+    const parsed = parsePublicFormSubmission(submissionBody);
+    if (!parsed.ok) return noStoreJson({ error: parsed.error }, { status: 400 });
+    const { formType, fields } = parsed;
+
     const limit = await checkRateLimit(req, "public-contact", {
       limit: 5,
       windowMs: 15 * 60_000,
@@ -75,19 +88,6 @@ export async function POST(req: NextRequest) {
       response.headers.set("Retry-After", String(limit.retryAfterSeconds));
       return response;
     }
-
-    const {
-      securityCheckToken: _securityCheckToken,
-      turnstileToken: _legacyTurnstileToken,
-      website: _website,
-      ...submissionBody
-    } = submitted;
-    void _securityCheckToken;
-    void _legacyTurnstileToken;
-    void _website;
-    const parsed = parsePublicFormSubmission(submissionBody);
-    if (!parsed.ok) return noStoreJson({ error: parsed.error }, { status: 400 });
-    const { formType, fields } = parsed;
 
     // Durable protected storage is the success boundary. Notification side
     // effects only run after the submission has a stable record ID.

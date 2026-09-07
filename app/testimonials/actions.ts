@@ -34,15 +34,6 @@ export async function submitTestimonial(
     return { error: "Please select “I’m not a robot” and try again." };
   }
 
-  const limit = await checkRateLimit(request, "public-testimonial", {
-    limit: 8,
-    windowMs: 15 * 60_000,
-    blockMs: 60 * 60_000,
-  });
-  if (!limit.allowed) {
-    return { error: "Too many submissions. Please wait before trying again." };
-  }
-
   if (!message || message.length < 15) {
     return { error: "Please write at least a sentence about your experience." };
   }
@@ -54,6 +45,15 @@ export async function submitTestimonial(
   }
   if (rawName.length > 80 || rawName.includes("\0")) {
     return { error: "Please keep your name under 80 characters." };
+  }
+
+  const limit = await checkRateLimit(request, "public-testimonial", {
+    limit: 8,
+    windowMs: 15 * 60_000,
+    blockMs: 60 * 60_000,
+  });
+  if (!limit.allowed) {
+    return { error: "Too many submissions. Please wait before trying again." };
   }
 
   const name = anonymous ? null : (rawName || null);

@@ -54,20 +54,6 @@ export async function POST(req: NextRequest) {
     return noStoreJson({ success: false, error: "Refresh the application and try again." }, { status: 403 });
   }
 
-  const ipLimit = await checkRateLimit(req, "employment-application", {
-    limit: 3,
-    windowMs: 24 * 60 * 60_000,
-    blockMs: 24 * 60 * 60_000,
-  });
-  if (!ipLimit.allowed) {
-    const response = noStoreJson(
-      { success: false, error: "Too many applications. Please try again later." },
-      { status: 429 },
-    );
-    response.headers.set("Retry-After", String(ipLimit.retryAfterSeconds));
-    return response;
-  }
-
   try {
     const formData = await req.formData();
     const rawFields: Record<string, string> = {};
@@ -108,6 +94,20 @@ export async function POST(req: NextRequest) {
     const parsed = parseEmploymentApplication(rawFields);
     if (!parsed.ok) return noStoreJson({ success: false, error: parsed.error }, { status: 400 });
     const fields = parsed.fields;
+
+    const ipLimit = await checkRateLimit(req, "employment-application-v2", {
+      limit: 10,
+      windowMs: 24 * 60 * 60_000,
+      blockMs: 24 * 60 * 60_000,
+    });
+    if (!ipLimit.allowed) {
+      const response = noStoreJson(
+        { success: false, error: "Too many applications. Please try again later." },
+        { status: 429 },
+      );
+      response.headers.set("Retry-After", String(ipLimit.retryAfterSeconds));
+      return response;
+    }
 
     const identityLimit = await checkRateLimit(req, "employment-application-identity", {
       limit: 2,
