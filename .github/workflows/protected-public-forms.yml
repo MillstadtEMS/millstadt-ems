@@ -1,0 +1,47 @@
+name: Protected public forms
+
+on:
+  pull_request:
+    paths:
+      - "app/api/apply/route.ts"
+      - "app/api/contact/route.ts"
+      - "app/api/form-security/route.ts"
+      - "app/careers/apply/ApplicationForm.tsx"
+      - "app/globals.css"
+      - "app/testimonials/actions.ts"
+      - "app/testimonials/SubmitForm.tsx"
+      - "components/ContactFormWrapper.tsx"
+      - "components/PublicFormSecurityCheck.tsx"
+      - "components/forms/SubmissionFailureFallback.tsx"
+      - "scripts/protect-public-form-contract.mjs"
+      - "package.json"
+      - ".github/workflows/protected-public-forms.yml"
+  push:
+    branches: [main]
+    paths:
+      - "app/api/apply/route.ts"
+      - "app/api/contact/route.ts"
+      - "app/api/form-security/route.ts"
+      - "app/careers/apply/ApplicationForm.tsx"
+      - "app/globals.css"
+      - "app/testimonials/actions.ts"
+      - "app/testimonials/SubmitForm.tsx"
+      - "components/ContactFormWrapper.tsx"
+      - "components/PublicFormSecurityCheck.tsx"
+      - "components/forms/SubmissionFailureFallback.tsx"
+      - "scripts/protect-public-form-contract.mjs"
+      - "package.json"
+      - ".github/workflows/protected-public-forms.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify protected public-form behavior
+        run: node scripts/protect-public-form-contract.mjs

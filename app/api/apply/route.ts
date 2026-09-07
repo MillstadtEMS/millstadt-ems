@@ -12,7 +12,6 @@ import {
   issueCsrfToken,
   noStoreJson,
 } from "@/lib/security/http";
-import { checkRateLimit } from "@/lib/security/rate-limit";
 import { parseEmploymentApplication } from "@/lib/security/employment-application-schema";
 
 export const runtime = "nodejs";
@@ -94,35 +93,6 @@ export async function POST(req: NextRequest) {
     const parsed = parseEmploymentApplication(rawFields);
     if (!parsed.ok) return noStoreJson({ success: false, error: parsed.error }, { status: 400 });
     const fields = parsed.fields;
-
-    const ipLimit = await checkRateLimit(req, "employment-application-v2", {
-      limit: 10,
-      windowMs: 24 * 60 * 60_000,
-      blockMs: 24 * 60 * 60_000,
-    });
-    if (!ipLimit.allowed) {
-      const response = noStoreJson(
-        { success: false, error: "Too many applications. Please try again later." },
-        { status: 429 },
-      );
-      response.headers.set("Retry-After", String(ipLimit.retryAfterSeconds));
-      return response;
-    }
-
-    const identityLimit = await checkRateLimit(req, "employment-application-identity", {
-      limit: 2,
-      windowMs: 24 * 60 * 60_000,
-      blockMs: 24 * 60 * 60_000,
-      discriminator: fields.email,
-    });
-    if (!identityLimit.allowed) {
-      const response = noStoreJson(
-        { success: false, error: "An application was already received recently." },
-        { status: 429 },
-      );
-      response.headers.set("Retry-After", String(identityLimit.retryAfterSeconds));
-      return response;
-    }
 
     let submissionId: string;
     try {
