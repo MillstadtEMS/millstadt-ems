@@ -110,6 +110,7 @@ requireText(contactRoute, "hasValidFormSecurityToken", "general public forms mus
 requireOrder(contactRoute, "hasValidFormSecurityToken", "parsePublicFormSubmission(submissionBody)", "server security verification must happen before form validation");
 requireOrder(contactRoute, "parsePublicFormSubmission(submissionBody)", "checkRateLimit(req", "missing-field validation must happen before rate limiting");
 requireOrder(contactRoute, "parsePublicFormSubmission(submissionBody)", "createFormSubmission(formType, fields)", "invalid public forms must never reach durable storage");
+requireText(contactRoute, 'if (formType !== "Employment Application")', "the short employment form must never inherit the general contact rate limit");
 
 const applicationRoute = "app/api/apply/route.ts";
 requireText(applicationRoute, "hasValidFormSecurityToken", "employment applications must keep server-side security verification");

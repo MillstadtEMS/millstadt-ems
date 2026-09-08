@@ -61,6 +61,12 @@ const mutations = [
     to: "export async function POST(req: NextRequest) {\n  void checkRateLimit;",
   },
   {
+    name: "restored short employment rate limiting",
+    path: "app/api/contact/route.ts",
+    from: 'if (formType !== "Employment Application") {',
+    to: "if (true) {",
+  },
+  {
     name: "removed first-party checkbox",
     path: "components/PublicFormSecurityCheck.tsx",
     from: 'type="checkbox"',

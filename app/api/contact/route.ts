@@ -75,18 +75,23 @@ export async function POST(req: NextRequest) {
     if (!parsed.ok) return noStoreJson({ error: parsed.error }, { status: 400 });
     const { formType, fields } = parsed;
 
-    const limit = await checkRateLimit(req, "public-contact", {
-      limit: 5,
-      windowMs: 15 * 60_000,
-      blockMs: 30 * 60_000,
-    });
-    if (!limit.allowed) {
-      const response = noStoreJson(
-        { error: "Too many submissions. Please wait and try again." },
-        { status: 429 },
-      );
-      response.headers.set("Retry-After", String(limit.retryAfterSeconds));
-      return response;
+    // Employment applications must never be locked out. The full application
+    // uses /api/apply; the shorter /forms/employment path reaches this shared
+    // handler and therefore needs the same no-rate-limit guarantee.
+    if (formType !== "Employment Application") {
+      const limit = await checkRateLimit(req, "public-contact", {
+        limit: 5,
+        windowMs: 15 * 60_000,
+        blockMs: 30 * 60_000,
+      });
+      if (!limit.allowed) {
+        const response = noStoreJson(
+          { error: "Too many submissions. Please wait and try again." },
+          { status: 429 },
+        );
+        response.headers.set("Retry-After", String(limit.retryAfterSeconds));
+        return response;
+      }
     }
 
     // Durable protected storage is the success boundary. Notification side
