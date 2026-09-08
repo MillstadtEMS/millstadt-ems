@@ -12,14 +12,11 @@ function chicagoClock(now: Date) {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-    hour: "2-digit",
-    hourCycle: "h23",
   }).formatToParts(now);
   const part = (type: Intl.DateTimeFormatPartTypes) =>
     parts.find((item) => item.type === type)?.value ?? "";
   return {
     date: part("year") + "-" + part("month") + "-" + part("day"),
-    hour: Number(part("hour")),
     weekday: part("weekday"),
   };
 }
@@ -40,10 +37,10 @@ export async function GET(req: NextRequest) {
 
   const now = new Date();
   const chicago = chicagoClock(now);
-  if (chicago.hour !== 23) {
-    return json({ ok: true, skipped: true, reason: "outside_chicago_schedule_window" });
-  }
 
+  // GitHub Actions may start scheduled work hours late. The database-backed
+  // run key makes this safe to invoke at any time and keeps it to one report
+  // per Chicago calendar date.
   const nightly = await runAiMonitor("nightly_security", chicago.date, now);
   const weekly = chicago.weekday === "Sun"
     ? await runAiMonitor("weekly_analytics", chicago.date, now)

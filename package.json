@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "npm run protect:public-forms",
+    "prebuild": "npm run protect:public-forms && npm run protect:ai-monitor",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -27,7 +27,8 @@
     "test:board-private-documents": "node --import tsx --test scripts/test-board-private-documents.ts",
     "test:lounge-board": "node --import tsx scripts/test-lounge-board-boundary.ts",
     "test:public-experience": "node --import tsx scripts/test-public-experience.ts",
-    "test:ai-monitor": "node --import tsx --test scripts/test-ai-monitor.ts",
+    "test:ai-monitor": "npm run protect:ai-monitor && node --import tsx --test scripts/test-ai-monitor.ts",
+    "protect:ai-monitor": "node scripts/protect-ai-monitor-schedule.mjs",
     "typecheck:ai-monitor": "tsc -p tsconfig.ai-monitor.json --pretty false"
   },
   "dependencies": {
