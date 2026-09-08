@@ -6,11 +6,13 @@ declare global {
   var __millstadtAiMonitorSchemaPromise: Promise<void> | undefined;
 }
 
+export type AiMonitorRunStatus = "running" | "completed" | "failed" | "budget_blocked";
+
 export type StoredAiMonitorRun = {
   id: string;
   runKey: string;
   reportType: AiMonitorReportType;
-  status: "running" | "completed" | "failed" | "budget_blocked";
+  status: AiMonitorRunStatus;
   startedAt: string;
   completedAt: string | null;
   report: AiMonitorReport | null;
@@ -65,7 +67,21 @@ export async function reserveAiMonitorRun(
     ON CONFLICT (run_key) DO NOTHING
     RETURNING id
   `) as unknown as Array<{ id: string }>;
-  return rows[0]?.id ?? null;
+  if (rows[0]?.id) return { reserved: true as const, id: rows[0].id };
+
+  // A duplicate is only a successful no-op when the original scan actually
+  // completed. Return its durable status so callers cannot mistake a stuck,
+  // failed, or budget-blocked row for a successful nightly scan.
+  const existingRows = (await sql()`
+    SELECT id, status
+    FROM ai_monitor_runs
+    WHERE run_key = ${runKey}
+    LIMIT 1
+  `) as unknown as Array<{ id: string; status: AiMonitorRunStatus }>;
+  const existing = existingRows[0];
+  return existing
+    ? { reserved: false as const, id: existing.id, status: existing.status }
+    : null;
 }
 
 export async function completeAiMonitorRun(input: {

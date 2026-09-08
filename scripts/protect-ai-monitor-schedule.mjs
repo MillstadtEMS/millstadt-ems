@@ -48,10 +48,13 @@ requireText(routePath, "hasValidBearerSecret", "the monitor endpoint must remain
 const runnerPath = "lib/ai-monitor/runner.ts";
 requireText(runnerPath, 'const runKey = reportType + ":" + localDate', "each report must remain limited to one run per local date");
 requireText(runnerPath, "reserveAiMonitorRun(runKey", "each daily run must be reserved before scanning");
+requireText(runnerPath, 'existingStatus === "completed"', "only a completed prior scan may count as an already-processed success");
+requireText(runnerPath, "existing_run_", "stuck or unsuccessful prior scans must remain visible failures");
 
 const storePath = "lib/ai-monitor/store.ts";
 requireText(storePath, "run_key TEXT NOT NULL UNIQUE", "the database must enforce one run per daily key");
 requireText(storePath, "ON CONFLICT (run_key) DO NOTHING", "duplicate scheduler calls must remain harmless");
+requireText(storePath, "SELECT id, status", "duplicate handling must read the durable result of the original scan");
 
 if (failures.length > 0) {
   console.error("Protected AI-monitor schedule failed:\n");

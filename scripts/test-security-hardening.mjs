@@ -383,7 +383,10 @@ pass("site shell preserves the ticker, clears transient call details, and allows
 const dependencies = JSON.parse(await source("package.json"));
 assert.equal(dependencies.dependencies["pdfjs-dist"], "5.5.207");
 assert.ok(dependencies.dependencies.zod);
-assert.match(dependencies.scripts["test:security"], /^node scripts\/test-security-hardening\.mjs/);
+assert.match(
+  dependencies.scripts["test:security"],
+  /^npm run protect:public-forms && node scripts\/test-security-hardening\.mjs/,
+);
 assert.match(dependencies.scripts["test:security"], /test-truckcheck-boundary\.ts/);
 assert.match(dependencies.scripts["test:security"], /test-truckcheck-persistence\.ts/);
 assert.ok(dependencies.devDependencies.tsx);

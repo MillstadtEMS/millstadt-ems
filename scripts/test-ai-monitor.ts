@@ -3,6 +3,7 @@ import test from "node:test";
 import { getAiMonitorConfig } from "../lib/ai-monitor/config";
 import { dollarsToMicros, estimateAiMonitorCostMicros } from "../lib/ai-monitor/cost";
 import { isSafePublicPath } from "../lib/ai-monitor/privacy";
+import { duplicateAiMonitorRunResult } from "../lib/ai-monitor/runner";
 import { AiMonitorReportSchema } from "../lib/ai-monitor/schemas";
 
 test("AI monitor rejects private and parameterized analytics paths", () => {
@@ -53,4 +54,26 @@ test("AI monitor report schema rejects extra executable fields", () => {
     shellCommand: "deploy now",
   });
   assert.equal(invalid.success, false);
+});
+
+test("only a completed duplicate scan is treated as successfully processed", () => {
+  assert.deepEqual(
+    duplicateAiMonitorRunResult("nightly_security:2026-09-07", "completed"),
+    {
+      status: "skipped",
+      reason: "already_processed",
+      runKey: "nightly_security:2026-09-07",
+    },
+  );
+
+  for (const status of ["running", "failed", "budget_blocked"] as const) {
+    assert.deepEqual(
+      duplicateAiMonitorRunResult("nightly_security:2026-09-07", status),
+      {
+        status: "failed",
+        reason: `existing_run_${status}`,
+        runKey: "nightly_security:2026-09-07",
+      },
+    );
+  }
 });

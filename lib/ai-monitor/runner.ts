@@ -9,12 +9,23 @@ import {
   failAiMonitorRun,
   pruneAiMonitorRuns,
   reserveAiMonitorRun,
+  type AiMonitorRunStatus,
 } from "./store";
 
 export type AiMonitorRunResult =
   | { status: "completed"; runKey: string; verdict: string; estimatedCostMicros: number }
   | { status: "skipped"; reason: string; runKey?: string }
   | { status: "failed"; reason: string; runKey: string };
+
+export function duplicateAiMonitorRunResult(
+  runKey: string,
+  existingStatus: AiMonitorRunStatus,
+): AiMonitorRunResult {
+  if (existingStatus === "completed") {
+    return { status: "skipped", reason: "already_processed", runKey };
+  }
+  return { status: "failed", reason: `existing_run_${existingStatus}`, runKey };
+}
 
 export async function runAiMonitor(
   reportType: AiMonitorReportType,
@@ -30,8 +41,10 @@ export async function runAiMonitor(
   }
 
   await pruneAiMonitorRuns(config.reportRetentionDays);
-  const id = await reserveAiMonitorRun(runKey, reportType, MAX_RESERVED_RUN_COST_MICROS);
-  if (!id) return { status: "skipped", reason: "already_processed", runKey };
+  const reservation = await reserveAiMonitorRun(runKey, reportType, MAX_RESERVED_RUN_COST_MICROS);
+  if (!reservation) return { status: "failed", reason: "reservation_status_unavailable", runKey };
+  if (!reservation.reserved) return duplicateAiMonitorRunResult(runKey, reservation.status);
+  const id = reservation.id;
 
   const budgetMicros = dollarsToMicros(config.monthlyBudgetUsd);
   const spentMicros = await currentMonthAiMonitorSpendMicros(now);

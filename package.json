@@ -16,7 +16,7 @@
     "test:financials": "node scripts/test-financials-hub.mjs",
     "test:annual-audits": "node --import tsx --test scripts/test-annual-audits.mjs",
     "test:security": "npm run protect:public-forms && node scripts/test-security-hardening.mjs && node --import tsx --test scripts/test-webauthn-config.ts && node --import tsx scripts/test-truckcheck-boundary.ts && node --import tsx --test scripts/test-truckcheck-persistence.ts && npm run test:turnstile && node --import tsx --test scripts/test-public-form-delivery.ts",
-    "protect:public-forms": "node scripts/protect-public-form-contract.mjs",
+    "protect:public-forms": "node scripts/protect-public-form-contract.mjs && node scripts/test-public-form-guard.mjs",
     "test:turnstile": "node --import tsx --test scripts/test-turnstile.ts",
     "test:truckcheck": "node --import tsx scripts/test-truckcheck-boundary.ts && node --import tsx --test scripts/test-truckcheck-persistence.ts",
     "test:analytics-boundary": "node --import tsx scripts/test-analytics-boundary.ts",

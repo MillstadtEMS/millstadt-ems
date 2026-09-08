@@ -24,6 +24,12 @@ function forbidText(path, text, reason) {
   if (source(path).includes(text)) failures.push(`${path}: ${reason}`);
 }
 
+function requireCount(path, text, expected, reason) {
+  checks += 1;
+  const count = source(path).split(text).length - 1;
+  if (count !== expected) failures.push(`${path}: ${reason} (expected ${expected}, found ${count})`);
+}
+
 function requireOrder(path, first, second, reason) {
   checks += 1;
   const contents = source(path);
@@ -45,21 +51,51 @@ for (const action of ["contact_form", "employment_application", "testimonial"]) 
   requireText(securityRoute, `"${action}"`, `the ${action} security action must remain enabled`);
 }
 
+const securityHelpers = "lib/security/http.ts";
+requireText(securityHelpers, "randomBytes(32)", "form security tokens must remain unpredictable");
+requireText(securityHelpers, "formSecurityCookieName(action)", "form security tokens must remain bound to a same-action cookie");
+requireText(securityHelpers, "httpOnly: true", "form security cookies must remain inaccessible to browser scripts");
+requireText(securityHelpers, 'sameSite: "strict"', "form security cookies must remain same-site only");
+requireText(securityHelpers, "isSameOriginRequest(req)", "server verification must reject cross-origin form submissions");
+requireText(securityHelpers, "timingSafeEqual(cookieBytes, submittedBytes)", "server verification must compare the submitted token safely");
+
 const contactForm = "components/ContactFormWrapper.tsx";
 requireText(contactForm, "PublicFormSecurityCheck", "all general public forms must keep the security checkbox");
 requireText(contactForm, "SubmissionFailureFallback", "all general public forms must keep download/print fallback options");
 requireText(contactForm, "noValidate", "custom missing-field explanations must remain enabled");
 requireText(contactForm, 'disabled={status === "sending"}', "the submit button may only lock while a request is sending");
+requireCount(contactForm, 'fetch("/api/contact",', 2, "both contact initialization and submission must remain connected to the handler");
+requireText(contactForm, 'method: "POST"', "general public forms must submit with POST");
+
+const sharedForms = [
+  ["app/forms/education-request/page.tsx", "Education Request"],
+  ["app/forms/equipment-request/page.tsx", "Equipment Request"],
+  ["app/forms/event-request/page.tsx", "Event Appearance Request"],
+  ["app/forms/ride-along/page.tsx", "Ride Along Request"],
+  ["app/forms/birthday/BirthdayClient.tsx", "Birthday Party Appearance Request"],
+  ["app/forms/birthday-station/BirthdayStationClient.tsx", "Birthday Party at Station Request"],
+  ["app/forms/employment/page.tsx", "Employment Application"],
+];
+const sharedSchema = "lib/security/public-form-schemas.ts";
+for (const [path, formType] of sharedForms) {
+  requireText(path, "ContactFormWrapper", `${formType} must keep the shared submission client`);
+  requireText(path, `formType="${formType}"`, `${formType} must keep its exact handler contract`);
+  requireText(sharedSchema, `"${formType}"`, `${formType} must remain accepted by the server schema`);
+}
 
 const applicationForm = "app/careers/apply/ApplicationForm.tsx";
 requireText(applicationForm, "PublicFormSecurityCheck", "the employment application must keep the security checkbox");
 requireText(applicationForm, "SubmissionFailureFallback", "the employment application must keep download/print fallback options");
 requireText(applicationForm, "noValidate", "the application must keep its custom missing-field explanations");
 requireText(applicationForm, 'disabled={status === "sending"}', "the application button may only lock while it is sending");
+requireCount(applicationForm, 'fetch("/api/apply",', 2, "both application initialization and submission must remain connected to the handler");
+requireText(applicationForm, 'method: "POST"', "the employment application must submit with POST");
 
 const testimonialForm = "app/testimonials/SubmitForm.tsx";
 requireText(testimonialForm, "PublicFormSecurityCheck", "the testimonial form must keep the security checkbox");
 requireText(testimonialForm, "disabled={pending}", "the testimonial button may only lock while it is sending");
+requireText(testimonialForm, "useActionState(submitTestimonial", "the testimonial form must remain connected to its server action");
+requireText(testimonialForm, "<form action={action}>", "the testimonial form must submit through its server action");
 
 const fallback = "components/forms/SubmissionFailureFallback.tsx";
 requireText(fallback, "new Blob", "failed submissions must remain downloadable");
@@ -71,18 +107,27 @@ requireText(fallback, "Online form submission failed", "failed-submission email 
 
 const contactRoute = "app/api/contact/route.ts";
 requireText(contactRoute, "hasValidFormSecurityToken", "general public forms must keep server-side security verification");
+requireOrder(contactRoute, "hasValidFormSecurityToken", "parsePublicFormSubmission(submissionBody)", "server security verification must happen before form validation");
 requireOrder(contactRoute, "parsePublicFormSubmission(submissionBody)", "checkRateLimit(req", "missing-field validation must happen before rate limiting");
+requireOrder(contactRoute, "parsePublicFormSubmission(submissionBody)", "createFormSubmission(formType, fields)", "invalid public forms must never reach durable storage");
 
 const applicationRoute = "app/api/apply/route.ts";
 requireText(applicationRoute, "hasValidFormSecurityToken", "employment applications must keep server-side security verification");
 requireText(applicationRoute, "parseEmploymentApplication(rawFields)", "employment applications must keep exact missing-field validation");
+requireOrder(applicationRoute, "hasValidFormSecurityToken", "parseEmploymentApplication(rawFields)", "application security verification must happen before field validation");
+requireOrder(applicationRoute, "parseEmploymentApplication(rawFields)", 'createFormSubmission("Employment Application", fields)', "invalid applications must never reach durable storage");
 forbidText(applicationRoute, "checkRateLimit", "employment applications must never be blocked by an application rate limit");
 forbidText(applicationRoute, "Too many applications", "the application lockout message must not return");
 forbidText(applicationRoute, "An application was already received recently", "repeat applicants must not be locked out");
 
 const testimonialAction = "app/testimonials/actions.ts";
 requireText(testimonialAction, "hasValidFormSecurityToken", "testimonials must keep server-side security verification");
+requireOrder(testimonialAction, "hasValidFormSecurityToken", "if (!message || message.length < 15)", "testimonial security verification must happen before field validation");
 requireOrder(testimonialAction, "if (!message || message.length < 15)", "checkRateLimit(request", "testimonial field validation must happen before rate limiting");
+
+const validationMessages = "lib/security/form-validation-messages.ts";
+requireText(validationMessages, 'return `Please complete “${label}”.`', "missing fields must remain specifically identified");
+requireText(validationMessages, 'return "Enter a valid email address."', "invalid email fields must keep a clear message");
 
 const globalStyles = "app/globals.css";
 forbidText(globalStyles, ".lounge-hover-expand:hover", "the Employee Lounge button must not grow on hover");
