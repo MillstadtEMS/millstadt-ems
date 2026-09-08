@@ -8,6 +8,12 @@ import SubmissionFailureFallback, {
   printableFieldsFromFormData,
   type PrintableSubmissionFields,
 } from "@/components/forms/SubmissionFailureFallback";
+import {
+  EMPLOYMENT_CONSENT_OPTIONS,
+  EMPLOYMENT_DAYS_AVAILABLE_OPTIONS,
+  EMPLOYMENT_HOURS_AVAILABLE_OPTIONS,
+  EMPLOYMENT_TYPE_OPTIONS,
+} from "@/lib/employment-application-options";
 import { formFieldLabel } from "@/lib/security/form-validation-messages";
 
 /* ── Reusable field components — Villa Hills pattern, EMS gold ─────── */
@@ -76,7 +82,7 @@ function RadioGroup({ name, options }: {
 
 function CheckGroup({ name, options, columns = 2 }: {
   name: string;
-  options: string[];
+  options: readonly string[];
   columns?: 1 | 2 | 3 | 4;
 }) {
   const colClass = columns === 1 ? "grid-cols-1" : columns === 2 ? "grid-cols-1 sm:grid-cols-2" : columns === 3 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-2 sm:grid-cols-4";
@@ -167,18 +173,6 @@ const positions = [
   "Advanced Practice Prehospital RN (APHRN)",
   "Prehospital Physician Assistant (PHPA)",
   "Prehospital Medical Doctor (PHMD)",
-];
-
-const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-const hours = [
-  "Days (911) 0600 – 1800",
-  "Nights (911) 1800 – 0600",
-  "24-Hour (911) 0600 – 0600",
-  "Transfer Truck (variable hours)",
-  "Standby / Event Coverage",
-  "On-Call",
-  "Any / All shifts",
 ];
 
 const REQUIRED_APPLICATION_FIELDS = [
@@ -424,21 +418,21 @@ export default function ApplicationForm() {
 
             <div className="mb-7">
               <Label required>Employment Type — Select all that apply</Label>
-              <CheckGroup name="employment_type" options={["Full-Time", "Part-Time", "PRN", "Volunteer"]} columns={4} />
+              <CheckGroup name="employment_type" options={EMPLOYMENT_TYPE_OPTIONS} columns={4} />
             </div>
 
             <Divider />
 
             <div className="mb-7">
               <Label>Days Available — Select all that apply</Label>
-              <CheckGroup name="days_available" options={days} columns={4} />
+              <CheckGroup name="days_available" options={EMPLOYMENT_DAYS_AVAILABLE_OPTIONS} columns={4} />
             </div>
 
             <Divider />
 
             <div className="mb-7">
               <Label>Hours Available — Select all that apply</Label>
-              <CheckGroup name="hours_available" options={hours} columns={2} />
+              <CheckGroup name="hours_available" options={EMPLOYMENT_HOURS_AVAILABLE_OPTIONS} columns={2} />
             </div>
 
             <Divider />
@@ -530,7 +524,7 @@ export default function ApplicationForm() {
 
             <div>
               <Label>I consent to the following checks</Label>
-              <CheckGroup name="consents" options={["Background Check", "Drug Screening", "Driving Record Check"]} columns={3} />
+              <CheckGroup name="consents" options={EMPLOYMENT_CONSENT_OPTIONS} columns={3} />
             </div>
           </Section>
 

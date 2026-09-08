@@ -1,4 +1,11 @@
 import { z } from "zod";
+import {
+  EMPLOYMENT_CONSENT_OPTIONS,
+  EMPLOYMENT_DAYS_AVAILABLE_OPTIONS,
+  EMPLOYMENT_HOURS_AVAILABLE_OPTIONS,
+  EMPLOYMENT_TYPE_OPTIONS,
+  joinedCheckboxValueMaximum,
+} from "../employment-application-options";
 import { formValidationMessage } from "./form-validation-messages";
 
 const text = (maximum = 240) => z.string().trim().max(maximum).optional().default("");
@@ -9,9 +16,9 @@ const phone = z.string().trim().min(7).max(24).regex(/^[0-9+().\-\s]+$/);
 
 const schema = z.object({
   position: required(160),
-  employment_type: required(80),
-  days_available: text(200),
-  hours_available: text(120),
+  employment_type: required(joinedCheckboxValueMaximum(EMPLOYMENT_TYPE_OPTIONS)),
+  days_available: text(joinedCheckboxValueMaximum(EMPLOYMENT_DAYS_AVAILABLE_OPTIONS)),
+  hours_available: text(joinedCheckboxValueMaximum(EMPLOYMENT_HOURS_AVAILABLE_OPTIONS)),
   preferred_shift: text(120),
   first_name: required(80),
   middle_name: text(80),
@@ -28,7 +35,7 @@ const schema = z.object({
   excluded_medicare: required(40),
   license_suspended: required(40),
   background_explain: text(4_000),
-  consents: text(1_000),
+  consents: text(joinedCheckboxValueMaximum(EMPLOYMENT_CONSENT_OPTIONS)),
   hs_name: text(160),
   hs_grad: z.string().trim().regex(/^$|^\d{4}$/).optional().default(""),
   college_education: text(8_000),

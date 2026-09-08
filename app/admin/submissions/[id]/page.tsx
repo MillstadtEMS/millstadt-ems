@@ -17,6 +17,11 @@ function formatKey(key: string) {
   return key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
+function printablePngDataUrl(value: string) {
+  if (value.length > 750_000) return "";
+  return /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(value) ? value : "";
+}
+
 export default function SubmissionDetail() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -66,6 +71,7 @@ export default function SubmissionDetail() {
 
     const fullName = [get("first_name"), get("middle_name"), get("last_name")].filter(Boolean).join(" ").trim();
     const isApp = sub.formType === "Employment Application";
+    const signatureDataUrl = printablePngDataUrl(get("signature_data_url"));
 
     // Field renderer — looks like a fill-in box
     const fld = (label: string, value: string, opts: { wide?: boolean; tall?: boolean } = {}) => {
@@ -203,7 +209,9 @@ export default function SubmissionDetail() {
         <div class="signature-row">
           <div class="signature-line">
             <div class="signature-label">Applicant Signature</div>
-            <div class="signature-value">${esc(fullName)}</div>
+            ${signatureDataUrl
+              ? `<img class="signature-image" src="${signatureDataUrl}" alt="Applicant signature">`
+              : `<div class="signature-value">${esc(fullName)}</div>`}
           </div>
           <div class="signature-line short">
             <div class="signature-label">Date Submitted</div>
@@ -369,6 +377,14 @@ export default function SubmissionDetail() {
     color: #1a3a6b;
     padding-bottom: 4px;
   }
+  .signature-image {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: 58px;
+    object-fit: contain;
+    object-position: left bottom;
+  }
 
   /* Footer */
   .doc-footer {
@@ -429,7 +445,8 @@ export default function SubmissionDetail() {
   if (loading) return <div className="text-slate-500 text-sm py-12">Loading…</div>;
   if (!sub) return <div className="text-slate-500 text-sm py-12">Submission not found.</div>;
 
-  const fieldEntries = Object.entries(sub.fields).filter(([k]) => k !== "formType" && k !== "review_flags");
+  const fieldEntries = Object.entries(sub.fields).filter(([k]) =>
+    k !== "formType" && k !== "review_flags" && k !== "signature_data_url");
   // Only run flag detection on Employment Application submissions
   const flags = sub.formType === "Employment Application" ? buildApplicationFlags(sub.fields) : [];
 

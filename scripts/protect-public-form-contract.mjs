@@ -90,6 +90,18 @@ requireText(applicationForm, "noValidate", "the application must keep its custom
 requireText(applicationForm, 'disabled={status === "sending"}', "the application button may only lock while it is sending");
 requireCount(applicationForm, 'fetch("/api/apply",', 2, "both application initialization and submission must remain connected to the handler");
 requireText(applicationForm, 'method: "POST"', "the employment application must submit with POST");
+requireText(applicationForm, "EMPLOYMENT_HOURS_AVAILABLE_OPTIONS", "the application hours checkboxes must share their limits with the server schema");
+
+const employmentSchema = "lib/security/employment-application-schema.ts";
+requireText(employmentSchema, "joinedCheckboxValueMaximum(EMPLOYMENT_TYPE_OPTIONS)", "all employment types must fit when checked together");
+requireText(employmentSchema, "joinedCheckboxValueMaximum(EMPLOYMENT_DAYS_AVAILABLE_OPTIONS)", "all available days must fit when checked together");
+requireText(employmentSchema, "joinedCheckboxValueMaximum(EMPLOYMENT_HOURS_AVAILABLE_OPTIONS)", "all available hours must fit when checked together");
+requireText(employmentSchema, "joinedCheckboxValueMaximum(EMPLOYMENT_CONSENT_OPTIONS)", "all consent choices must fit when checked together");
+
+const submissionDetail = "app/admin/submissions/[id]/page.tsx";
+requireText(submissionDetail, 'printablePngDataUrl(get("signature_data_url"))', "employment PDFs must load the validated drawn signature");
+requireText(submissionDetail, '<img class="signature-image"', "employment PDFs must render the drawn signature image");
+requireText(submissionDetail, 'k !== "signature_data_url"', "the raw signature data URL must not be printed as text");
 
 const testimonialForm = "app/testimonials/SubmitForm.tsx";
 requireText(testimonialForm, "PublicFormSecurityCheck", "the testimonial form must keep the security checkbox");
