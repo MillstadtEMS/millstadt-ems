@@ -20,13 +20,21 @@ test("certified 2025 ambulance extension is shown while its correction disclosur
   assert.ok(library.includes("page 57"));
   assert.ok(!overview.includes("Fire District Support"));
 });
-test("canonical library has 88 unique documents including historical audits, the verified FY 2024–2025 return, FDMI sheet, Illinois records, and money-market statements",()=>{
-  assert.equal(documents.length,88);
-  assert.equal(new Set(documents.map(d=>d.downloadUrl)).size,88);
+test("canonical library has 89 unique documents including historical audits, the verified FY 2024–2025 return, FDMI sheet, Illinois records, and money-market statements",()=>{
+  assert.equal(documents.length,89);
+  assert.equal(new Set(documents.map(d=>d.downloadUrl)).size,89);
   assert.equal(documents.filter(d=>d.kind==="form_990").length,23);
   assert.equal(documents.filter(d=>d.kind==="irs_record").length,1);
   assert.ok(!documents.some(d=>d.kind==="form_990"&&[2018,2026].includes(d.filingYear!)));
   assert.ok(documents.every(d=>!d.attachmentOf));
+});
+test("ILAG letter of good standing is published under the requested label",()=>{
+  const letter=documents.find(d=>d.id==="ilag-letter-of-good-standing-2026-09-24");
+  assert.ok(letter);
+  assert.equal(letter.title,"ILAG Letter of Good Standing");
+  assert.equal(letter.pageCount,1);
+  assert.equal(letter.dateLabel,"Letter dated September 24, 2026");
+  assert.equal(createHash("sha256").update(readFileSync(`public${letter.downloadUrl}`)).digest("hex"),"afdd24c6d88283fb23a3172aae5cbcc226e977b7a2c1da4368de0b8ea68a8812");
 });
 test("2026 Illinois annual report is published unchanged and FDMI-specific copy stays inside its disclosure",()=>{
   const report=documents.find(d=>d.id==="state-of-illinois-domestic-corporation-annual-report-2026");
@@ -73,7 +81,7 @@ test("tax years, certified rates and EAV are searchable independently",()=>{
   }
 });
 test("file metadata and genuine attachment titles are indexed",()=>{
-  assert.equal(documents.filter(d=>matchesSearch(documentSearchText(d),'PDF')).length,88);
+  assert.equal(documents.filter(d=>matchesSearch(documentSearchText(d),'PDF')).length,89);
   const attachment={...documents[0],title:'Approved annual attachment',attachmentOf:'source-parent'};
   assert.ok(matchesSearch(documentSearchText(attachment),'Approved annual attachment'));
   assert.ok(matchesSearch(documentSearchText(attachment),'Attachments'));

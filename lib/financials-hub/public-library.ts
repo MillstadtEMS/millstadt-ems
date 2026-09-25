@@ -208,6 +208,27 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
     },
   ];
 
+  const ilagLetterUrl = "/financial-transparency/records/ilag-letter-of-good-standing-2026-09-24.pdf";
+  const ilagLetters: PublicLibraryDocument[] = [
+    {
+      id: "ilag-letter-of-good-standing-2026-09-24",
+      kind: "official_record",
+      title: "ILAG Letter of Good Standing",
+      category: "Operational",
+      periodLabel: "As of September 24, 2026",
+      dateLabel: "Letter dated September 24, 2026",
+      pageCount: 1,
+      sourceLabel: "Illinois Attorney General · Charitable Trust Bureau",
+      sortOrder: 20260924,
+      filingYear: 2026,
+      statusLabel: "Official record",
+      searchText: "ILAG Letter of Good Standing Illinois Attorney General Charitable Trust Bureau Millstadt Ambulance Service charitable organization current financial reports September 24 2026 official record operational".toLowerCase(),
+      viewUrl: ilagLetterUrl,
+      downloadUrl: ilagLetterUrl,
+      printUrl: ilagLetterUrl,
+    },
+  ];
+
   const moneyMarketStatementUrl = "/financial-transparency/bank-statements/money-market-account-2023-01-31-to-2026-08-31.pdf";
   const moneyMarketStatements: PublicLibraryDocument[] = [
     {
@@ -276,5 +297,5 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
       viewUrl: url, downloadUrl: url, printUrl: url,
     };
   });
-  return [...annualAudits, ...settlementSheets, ...corporateAnnualReports, ...goodStandingCertificates, ...moneyMarketStatements, ...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
+  return [...annualAudits, ...settlementSheets, ...corporateAnnualReports, ...ilagLetters, ...goodStandingCertificates, ...moneyMarketStatements, ...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
 }
