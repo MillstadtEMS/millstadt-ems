@@ -32,8 +32,13 @@ assert.match(contact, /contentLengthWithin/);
 pass("public form API enforces CSRF, durable throttling, schema validation, and bounded JSON");
 
 const contactClient = await source("components/ContactFormWrapper.tsx");
-assert.match(contactClient, /X-CSRF-Token/);
-assert.match(contactClient, /fetch\("\/api\/contact", \{ cache: "no-store" \}\)/);
+const sharedFormClient = await source("lib/public-form-client.ts");
+assert.match(contactClient, /await submitPublicForm\(/);
+assert.match(contactClient, /endpoint: "\/api\/contact"/);
+assert.match(sharedFormClient, /"X-CSRF-Token": csrf\.data\.csrfToken/);
+assert.match(sharedFormClient, /fetchFormJson\(options\.endpoint/);
+assert.match(sharedFormClient, /cache: "no-store"/);
+assert.match(sharedFormClient, /credentials: "same-origin"/);
 pass("public form client obtains and returns same-origin CSRF state");
 
 const application = await source("app/api/apply/route.ts");
@@ -49,7 +54,8 @@ pass("employment submissions are strict, encrypted, CSRF-protected, and exclude 
 const applicationClient = await source("app/careers/apply/ApplicationForm.tsx");
 assert.doesNotMatch(applicationClient, /name="(?:ssn|driverLicenseNumber|immunization)/i);
 assert.doesNotMatch(applicationClient, /name="dea_(?:number|expiry)"|DEA Registration/i);
-assert.match(applicationClient, /X-CSRF-Token/);
+assert.match(applicationClient, /await submitPublicForm\(/);
+assert.match(applicationClient, /endpoint: "\/api\/apply"/);
 assert.doesNotMatch(await source("lib/security/employment-application-schema.ts"), /dea_(?:number|expiry)/i);
 assert.doesNotMatch(await source("lib/application-flags.ts"), /dea_(?:number|expiry)|DEA registration/i);
 assert.doesNotMatch(await source("app/admin/submissions/[id]/page.tsx"), /dea_(?:number|expiry)|DEA (?:Number|Expiration)/i);
