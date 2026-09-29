@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import PublicFormSecurityCheck from "@/components/PublicFormSecurityCheck";
 import SubmissionFailureFallback, {
   type PrintableSubmissionFields,
 } from "@/components/forms/SubmissionFailureFallback";
+import { submitPublicForm } from "@/lib/public-form-client";
 import { buildPublicFormPayload } from "@/lib/public-form-submission";
 import { formFieldLabel } from "@/lib/security/form-validation-messages";
 /* Link is used in the success state below */
@@ -24,25 +25,10 @@ export default function ContactFormWrapper({
   children,
 }: Props) {
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
-  const [csrfToken, setCsrfToken] = useState("");
   const [securityCheckToken, setSecurityCheckToken] = useState("");
   const [securityCheckResetKey, setSecurityCheckResetKey] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
   const [fallbackFields, setFallbackFields] = useState<PrintableSubmissionFields | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/contact", { cache: "no-store" })
-      .then(async (response) => {
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok || typeof data.csrfToken !== "string") throw new Error("CSRF token unavailable");
-        if (!cancelled) setCsrfToken(data.csrfToken);
-      })
-      .catch(() => {
-        if (!cancelled) setStatus("error");
-      });
-    return () => { cancelled = true; };
-  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -76,12 +62,6 @@ export default function ContactFormWrapper({
       setStatus("error");
       return;
     }
-    if (!csrfToken) {
-      setFallbackFields(null);
-      setErrorMessage("The form is still preparing. Wait a moment, then try again.");
-      setStatus("error");
-      return;
-    }
     setFallbackFields(null);
     setErrorMessage("");
     setStatus("sending");
@@ -94,16 +74,12 @@ export default function ContactFormWrapper({
     }
 
     try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken,
-        },
-        body: JSON.stringify(buildPublicFormPayload(formType, fields, securityCheckToken)),
+      await submitPublicForm({
+        endpoint: "/api/contact",
+        securityCheckToken,
+        contentType: "application/json",
+        body: (freshToken) => JSON.stringify(buildPublicFormPayload(formType, fields, freshToken)),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "The form could not be submitted.");
       setStatus("done");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "The form could not be submitted.");

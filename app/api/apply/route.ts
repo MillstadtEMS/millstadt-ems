@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { after, NextRequest } from "next/server";
 import { createFormSubmission } from "@/lib/db";
 import { buildApplicationFlags } from "@/lib/application-flags";
 import { notifyAdminsInLounge } from "@/lib/lounge/notify-admins";
@@ -41,8 +41,8 @@ function buildNotificationEmail(options: {
   return { subject, text, html };
 }
 
-export async function GET() {
-  return issueCsrfToken(CSRF_SCOPE);
+export async function GET(req: NextRequest) {
+  return issueCsrfToken(CSRF_SCOPE, req);
 }
 
 export async function POST(req: NextRequest) {
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     return noStoreJson({ success: false, error: "Invalid or oversized application." }, { status: 413 });
   }
   if (!hasValidCsrfToken(req, CSRF_SCOPE)) {
-    return noStoreJson({ success: false, error: "Refresh the application and try again." }, { status: 403 });
+    return noStoreJson({ success: false, code: "FORM_SESSION_EXPIRED", error: "The application session expired. Please try again; your answers are still here." }, { status: 403 });
   }
 
   try {
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     if (!hasValidFormSecurityToken(req, "employment_application", securityCheckToken)) {
       return noStoreJson(
-        { success: false, error: "Please select “I’m not a robot” and try again." },
+        { success: false, code: "FORM_SESSION_EXPIRED", error: "Please select “I’m not a robot” and try again." },
         { status: 403 },
       );
     }
@@ -108,38 +108,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const flagCount = buildApplicationFlags(fields).length;
-    const flagText = flagCount > 0 ? ` · ${flagCount} flag${flagCount === 1 ? "" : "s"}` : "";
-    await notifyAdminsInLounge({
-      kind: "post",
-      title: "New Employment Application",
-      bodyPreview: `Open the protected application record${flagText}.`,
-      linkUrl: `/admin/submissions/${submissionId}`,
-      sourceId: submissionId,
-    }).catch((error) => {
-      console.error("[apply] administrator notification failed", {
-        name: error instanceof Error ? error.name : "UnknownError",
+    // Keep notification latency outside the durable submission response.
+    after(async () => {
+      const flagCount = buildApplicationFlags(fields).length;
+      const flagText = flagCount > 0 ? ` · ${flagCount} flag${flagCount === 1 ? "" : "s"}` : "";
+      await notifyAdminsInLounge({
+        kind: "post",
+        title: "New Employment Application",
+        bodyPreview: `Open the protected application record${flagText}.`,
+        linkUrl: `/admin/submissions/${submissionId}`,
+        sourceId: submissionId,
+      }).catch((error) => {
+        console.error("[apply] administrator notification failed", {
+          name: error instanceof Error ? error.name : "UnknownError",
+        });
       });
+
+      try {
+        const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.millstadtems.org").replace(/\/$/, "");
+        const message = buildNotificationEmail({
+          reviewUrl: `${site}/admin/submissions/${submissionId}`,
+          submissionId,
+        });
+        await sendGmailMessage({
+          fromName: "Millstadt EMS Careers",
+          to: ["millstadtems@gmail.com"],
+          ...message,
+        });
+      } catch (error) {
+        console.error("[apply] notification email failed", {
+          name: error instanceof Error ? error.name : "UnknownError",
+        });
+      }
     });
 
-    try {
-      const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.millstadtems.org").replace(/\/$/, "");
-      const message = buildNotificationEmail({
-        reviewUrl: `${site}/admin/submissions/${submissionId}`,
-        submissionId,
-      });
-      await sendGmailMessage({
-        fromName: "Millstadt EMS Careers",
-        to: ["millstadtems@gmail.com"],
-        ...message,
-      });
-    } catch (error) {
-      console.error("[apply] notification email failed", {
-        name: error instanceof Error ? error.name : "UnknownError",
-      });
-    }
-
-    return noStoreJson({ success: true });
+    return noStoreJson({ success: true, submissionId });
   } catch (error) {
     console.error("[apply] application submission failed", {
       name: error instanceof Error ? error.name : "UnknownError",

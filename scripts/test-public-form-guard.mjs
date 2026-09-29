@@ -26,6 +26,7 @@ const protectedFiles = [
   "components/PublicFormSecurityCheck.tsx",
   "components/forms/SubmissionFailureFallback.tsx",
   "lib/security/http.ts",
+  "lib/public-form-client.ts",
   "lib/employment-application-options.ts",
   "lib/security/public-form-schemas.ts",
   "lib/security/employment-application-schema.ts",
@@ -53,8 +54,8 @@ const mutations = [
   {
     name: "broken contact handler path",
     path: "components/ContactFormWrapper.tsx",
-    from: 'fetch("/api/contact"',
-    to: 'fetch("/api/contact-broken"',
+    from: 'endpoint: "/api/contact"',
+    to: 'endpoint: "/api/contact-broken"',
   },
   {
     name: "removed employment no-lockout protection",
@@ -134,6 +135,20 @@ try {
   }
 
   console.log(`Protected public-form guard rejected ${mutations.length} representative regressions.`);
+
+  // Prove the ticker-style fingerprints catch edits outside text sentinels.
+  const manifest = JSON.parse(readFileSync(join(root, "scripts/public-form-protected-files.json"), "utf8"));
+  for (const path of [...Object.keys(manifest.files), "scripts/public-form-protected-files.json"]) {
+    mkdirSync(dirname(join(fixture, path)), { recursive: true });
+    cpSync(join(root, path), join(fixture, path));
+  }
+  const fingerprintStatus = () => spawnSync(process.execPath,
+    [join(fixture, "scripts/protect-public-form-files.mjs"), fixture], { encoding: "utf8" });
+  if (fingerprintStatus().status !== 0) throw new Error("Fingerprint baseline did not pass");
+  const client = join(fixture, "lib/public-form-client.ts");
+  writeFileSync(client, readFileSync(client, "utf8") + "\n// Unreviewed form change\n");
+  if (fingerprintStatus().status === 0) throw new Error("Fingerprints allowed an unreviewed form change");
+  console.log("Public-form fingerprints rejected an unreviewed change.");
 } finally {
   rmSync(fixture, { recursive: true, force: true });
 }

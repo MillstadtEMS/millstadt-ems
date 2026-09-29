@@ -18,8 +18,17 @@ export function formSecurityCookieName(action: string) {
   return `mas_form_check_${action.replace(/[^a-z0-9_-]/gi, "").slice(0, 24)}`;
 }
 
-export function issueCsrfToken(scope: string) {
-  const token = randomBytes(32).toString("base64url");
+// Keep a valid browser token stable across tabs, remounts and retries. Rotating
+// this cookie on every GET invalidates every form that is already open.
+function reusableBrowserToken(req: NextRequest | undefined, cookieName: string) {
+  const existing = req?.cookies.get(cookieName)?.value;
+  return existing && /^[A-Za-z0-9_-]{43}$/.test(existing)
+    ? existing
+    : randomBytes(32).toString("base64url");
+}
+
+export function issueCsrfToken(scope: string, req?: NextRequest) {
+  const token = reusableBrowserToken(req, csrfCookieName(scope));
   const response = noStoreJson({ csrfToken: token });
   response.cookies.set(csrfCookieName(scope), token, {
     httpOnly: true,
@@ -31,8 +40,8 @@ export function issueCsrfToken(scope: string) {
   return response;
 }
 
-export function issueFormSecurityToken(action: string) {
-  const token = randomBytes(32).toString("base64url");
+export function issueFormSecurityToken(action: string, req?: NextRequest) {
+  const token = reusableBrowserToken(req, formSecurityCookieName(action));
   const response = noStoreJson({ securityCheckToken: token });
   response.cookies.set(formSecurityCookieName(action), token, {
     httpOnly: true,

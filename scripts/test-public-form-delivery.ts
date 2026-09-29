@@ -24,7 +24,7 @@ test("public request payload includes the completed built-in security-check toke
 
 test("the shared public form uses the built-in check and offers a printable fallback", async () => {
   const source = await readFile(new URL("../components/ContactFormWrapper.tsx", import.meta.url), "utf8");
-  assert.match(source, /buildPublicFormPayload\(formType, fields, securityCheckToken\)/);
+  assert.match(source, /buildPublicFormPayload\(formType, fields, freshToken\)/);
   assert.match(source, /PublicFormSecurityCheck/);
   assert.match(source, /SubmissionFailureFallback/);
   assert.match(source, /noValidate/);

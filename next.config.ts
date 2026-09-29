@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import { execFileSync } from "node:child_process";
 import packageMetadata from "./package.json";
 
@@ -52,4 +53,12 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default function config(phase: string): NextConfig {
+  if (phase === PHASE_PRODUCTION_BUILD) {
+    // Also enforce protection when a deploy invokes next build directly.
+    for (const script of ["protect-public-form-contract.mjs", "protect-public-form-files.mjs"]) {
+      execFileSync(process.execPath, [`scripts/${script}`], { stdio: "inherit" });
+    }
+  }
+  return nextConfig;
+}

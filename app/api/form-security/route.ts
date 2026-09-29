@@ -15,5 +15,5 @@ export async function GET(req: NextRequest) {
   if (!ALLOWED_ACTIONS.has(action)) {
     return noStoreJson({ error: "Unknown form security check." }, { status: 400 });
   }
-  return issueFormSecurityToken(action);
+  return issueFormSecurityToken(action, req);
 }

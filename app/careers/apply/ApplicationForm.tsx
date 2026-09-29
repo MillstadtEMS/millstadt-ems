@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import SignaturePad from "@/components/lounge/SignaturePad";
 import PublicFormSecurityCheck from "@/components/PublicFormSecurityCheck";
@@ -14,6 +14,7 @@ import {
   EMPLOYMENT_HOURS_AVAILABLE_OPTIONS,
   EMPLOYMENT_TYPE_OPTIONS,
 } from "@/lib/employment-application-options";
+import { PublicFormSubmissionError, submitPublicForm } from "@/lib/public-form-client";
 import { formFieldLabel } from "@/lib/security/form-validation-messages";
 
 /* ── Reusable field components — Villa Hills pattern, EMS gold ─────── */
@@ -237,28 +238,10 @@ export default function ApplicationForm() {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [signature, setSignature] = useState<string | null>(null);
-  const [csrfToken, setCsrfToken] = useState("");
   const [securityCheckToken, setSecurityCheckToken] = useState("");
   const [securityCheckResetKey, setSecurityCheckResetKey] = useState(0);
   const [fallbackFields, setFallbackFields] = useState<PrintableSubmissionFields | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/apply", { cache: "no-store" })
-      .then(async (response) => {
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok || typeof data.csrfToken !== "string") throw new Error("CSRF token unavailable");
-        if (!cancelled) setCsrfToken(data.csrfToken);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setErrorMsg("The secure application form could not be initialized. Refresh and try again.");
-          setStatus("error");
-        }
-      });
-    return () => { cancelled = true; };
-  }, []);
 
   function updateCert(i: number, field: keyof Cert, val: string | boolean) {
     setCerts((prev) => prev.map((c, idx) => idx === i ? { ...c, [field]: val } : c));
@@ -289,11 +272,6 @@ export default function ApplicationForm() {
 
     if (!securityCheckToken) {
       setErrorMsg("Please select “I’m not a robot” before submitting.");
-      setStatus("error");
-      return;
-    }
-    if (!csrfToken) {
-      setErrorMsg("The application is still preparing. Wait a moment, then try again.");
       setStatus("error");
       return;
     }
@@ -343,28 +321,20 @@ export default function ApplicationForm() {
     const fallbackSnapshot = printableFieldsFromFormData(fd);
 
     try {
-      const res = await fetch("/api/apply", {
-        method: "POST",
-        headers: { "X-CSRF-Token": csrfToken },
-        body: fd,
+      await submitPublicForm({
+        endpoint: "/api/apply",
+        securityCheckToken,
+        body: (freshToken) => {
+          fd.set("securityCheckToken", freshToken);
+          return fd;
+        },
       });
-      const data = await res.json().catch(() => null);
-      if (res.ok && data?.success) {
-        setFallbackFields(null);
-        setStatus("sent");
-        return;
-      }
-      // Server rejected for size — show the friendly "email us" panel
-      if (res.status === 413 || /too large|payload/i.test(data?.error || "")) {
-        setErrorMsg(`__TOO_LARGE__:${(totalBytes / 1024 / 1024).toFixed(1)}`);
-      } else {
-        setErrorMsg(data?.error || `Submission failed (${res.status}). Please try again or email millstadtems@gmail.com.`);
-      }
-      setFallbackFields(fallbackSnapshot);
-      setSecurityCheckResetKey((value) => value + 1);
-      setStatus("error");
-    } catch {
-      setErrorMsg("Network error — could not reach the server. Try again or email millstadtems@gmail.com.");
+      setFallbackFields(null);
+      setStatus("sent");
+    } catch (error) {
+      setErrorMsg(error instanceof PublicFormSubmissionError && error.status === 413
+        ? `__TOO_LARGE__:${(totalBytes / 1024 / 1024).toFixed(1)}`
+        : error instanceof Error ? error.message : "The application could not be submitted. Your answers are still here. Please try again.");
       setFallbackFields(fallbackSnapshot);
       setSecurityCheckResetKey((value) => value + 1);
       setStatus("error");
@@ -379,7 +349,7 @@ export default function ApplicationForm() {
           <h1 className="text-white uppercase mb-4 font-black text-3xl sm:text-4xl tracking-wide">Application Received</h1>
           <p className="text-slate-400 mb-8 leading-relaxed">
             Thank you for your interest in serving with Millstadt Ambulance Service.
-            Your application has been submitted and a copy has been emailed to our department.
+            Your application has been securely received by our department.
             We will be in touch with you shortly.
           </p>
           <Link href="/careers" className="inline-block bg-[#f0b429] text-[#040d1a] font-black uppercase tracking-wider px-8 py-3 hover:bg-[#f7c847] transition-colors">

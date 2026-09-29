@@ -4,7 +4,7 @@
  * via the existing Gmail OAuth credentials (sending from millstadtcad@gmail.com).
  */
 
-import { NextRequest } from "next/server";
+import { after, NextRequest } from "next/server";
 import { createFormSubmission } from "@/lib/db";
 import { sendGmailMessage } from "@/lib/reports/gmail-message";
 import { notifyAdminsInLounge } from "@/lib/lounge/notify-admins";
@@ -27,8 +27,8 @@ export const dynamic = "force-dynamic";
 const CSRF_SCOPE = "contact";
 const MAX_BODY_BYTES = 64 * 1024;
 
-export async function GET() {
-  return issueCsrfToken(CSRF_SCOPE);
+export async function GET(req: NextRequest) {
+  return issueCsrfToken(CSRF_SCOPE, req);
 }
 
 export async function POST(req: NextRequest) {
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     return noStoreJson({ error: "Invalid request." }, { status: 415 });
   }
   if (!hasValidCsrfToken(req, CSRF_SCOPE)) {
-    return noStoreJson({ error: "Refresh the form and try again." }, { status: 403 });
+    return noStoreJson({ code: "FORM_SESSION_EXPIRED", error: "The form session expired. Please try again; your answers are still here." }, { status: 403 });
   }
 
   try {
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     const securityCheckToken = submitted.securityCheckToken ?? submitted.turnstileToken;
     if (!hasValidFormSecurityToken(req, "contact_form", securityCheckToken)) {
       return noStoreJson(
-        { error: "Please select “I’m not a robot” and try again." },
+        { code: "FORM_SESSION_EXPIRED", error: "Please select “I’m not a robot” and try again." },
         { status: 403 },
       );
     }
@@ -110,52 +110,52 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Light the admin bell + sidebar badge — best-effort, never blocks the
-    // submission. Do not copy requester PII into notification surfaces.
-    try {
-      await notifyAdminsInLounge({
-        kind: "post",
-        title: `New ${formType}`,
-        bodyPreview: "Open the protected submission record to review it.",
-        linkUrl: `/admin/submissions/${submissionId}`,
-        sourceId: submissionId,
-      });
-    } catch (e) {
-      console.error("[contact] notify admins failed:", e);
-    }
+    // A saved request is acknowledged before notification providers can stall.
+    after(async () => {
+      // Light the admin bell + sidebar badge — best-effort, never blocks the
+      // submission. Do not copy requester PII into notification surfaces.
+      try {
+        await notifyAdminsInLounge({
+          kind: "post",
+          title: `New ${formType}`,
+          bodyPreview: "Open the protected submission record to review it.",
+          linkUrl: `/admin/submissions/${submissionId}`,
+          sourceId: submissionId,
+        });
+      } catch (e) {
+        console.error("[contact] notify admins failed:", e);
+      }
 
-    // Email is notification-only. Personal fields stay in the protected
-    // submission record instead of being copied into an ordinary mailbox.
-    const emailBody = [
-      `New ${formType} submission from millstadtems.org`,
-      `Submitted: ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })} CDT`,
-      "",
-      `Submission ID: ${submissionId}`,
-      `Review: ${(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.millstadtems.org").replace(/\/$/, "")}/admin/submissions/${submissionId}`,
-      "",
-      "Requester details are intentionally omitted from email.",
-    ].join("\n");
+      // Email is notification-only. Personal fields stay in the protected
+      // submission record instead of being copied into an ordinary mailbox.
+      const emailBody = [
+        `New ${formType} submission from millstadtems.org`,
+        `Submitted: ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })} CDT`,
+        "",
+        `Submission ID: ${submissionId}`,
+        `Review: ${(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.millstadtems.org").replace(/\/$/, "")}/admin/submissions/${submissionId}`,
+        "",
+        "Requester details are intentionally omitted from email.",
+      ].join("\n");
 
-    const to   = "millstadtems@gmail.com";
-    const subject = `[EMS Website] ${formType}`;
+      const to   = "millstadtems@gmail.com";
+      const subject = `[EMS Website] ${formType}`;
 
-    try {
-      await sendGmailMessage({
-        fromName: "Millstadt EMS Website",
-        to: [to],
-        subject,
-        text: emailBody,
-        html: `<pre style="font-family:system-ui,sans-serif;white-space:pre-wrap;">${escapeHtml(emailBody)}</pre>`,
-      });
-      return noStoreJson({ ok: true });
-    } catch (mailErr) {
-      const msg = mailErr instanceof Error ? mailErr.message : String(mailErr);
-      console.error("[contact] mail send failed:", msg);
-      return noStoreJson({
-        ok: true,
-        warning: "Submission received (email notification delayed)",
-      });
-    }
+      try {
+        await sendGmailMessage({
+          fromName: "Millstadt EMS Website",
+          to: [to],
+          subject,
+          text: emailBody,
+          html: `<pre style="font-family:system-ui,sans-serif;white-space:pre-wrap;">${escapeHtml(emailBody)}</pre>`,
+        });
+      } catch (mailErr) {
+        const msg = mailErr instanceof Error ? mailErr.message : String(mailErr);
+        console.error("[contact] mail send failed:", msg);
+      }
+    });
+    return noStoreJson({ ok: true, submissionId });
+
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[contact] send error:", msg);

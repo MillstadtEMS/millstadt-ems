@@ -24,12 +24,6 @@ function forbidText(path, text, reason) {
   if (source(path).includes(text)) failures.push(`${path}: ${reason}`);
 }
 
-function requireCount(path, text, expected, reason) {
-  checks += 1;
-  const count = source(path).split(text).length - 1;
-  if (count !== expected) failures.push(`${path}: ${reason} (expected ${expected}, found ${count})`);
-}
-
 function requireOrder(path, first, second, reason) {
   checks += 1;
   const contents = source(path);
@@ -64,8 +58,9 @@ requireText(contactForm, "PublicFormSecurityCheck", "all general public forms mu
 requireText(contactForm, "SubmissionFailureFallback", "all general public forms must keep download/print fallback options");
 requireText(contactForm, "noValidate", "custom missing-field explanations must remain enabled");
 requireText(contactForm, 'disabled={status === "sending"}', "the submit button may only lock while a request is sending");
-requireCount(contactForm, 'fetch("/api/contact",', 2, "both contact initialization and submission must remain connected to the handler");
-requireText(contactForm, 'method: "POST"', "general public forms must submit with POST");
+requireText(contactForm, 'endpoint: "/api/contact"', "general forms must use the protected submission client");
+requireText(contactForm, "await submitPublicForm(", "general forms must refresh their session before submitting");
+
 
 const sharedForms = [
   ["app/forms/education-request/page.tsx", "Education Request"],
@@ -88,8 +83,9 @@ requireText(applicationForm, "PublicFormSecurityCheck", "the employment applicat
 requireText(applicationForm, "SubmissionFailureFallback", "the employment application must keep download/print fallback options");
 requireText(applicationForm, "noValidate", "the application must keep its custom missing-field explanations");
 requireText(applicationForm, 'disabled={status === "sending"}', "the application button may only lock while it is sending");
-requireCount(applicationForm, 'fetch("/api/apply",', 2, "both application initialization and submission must remain connected to the handler");
-requireText(applicationForm, 'method: "POST"', "the employment application must submit with POST");
+requireText(applicationForm, 'endpoint: "/api/apply"', "applications must use the protected submission client");
+requireText(applicationForm, "await submitPublicForm(", "applications must refresh their session before submitting");
+
 requireText(applicationForm, "EMPLOYMENT_HOURS_AVAILABLE_OPTIONS", "the application hours checkboxes must share their limits with the server schema");
 
 const employmentSchema = "lib/security/employment-application-schema.ts";
@@ -141,6 +137,19 @@ requireOrder(testimonialAction, "if (!message || message.length < 15)", "checkRa
 const validationMessages = "lib/security/form-validation-messages.ts";
 requireText(validationMessages, 'return `Please complete “${label}”.`', "missing fields must remain specifically identified");
 requireText(validationMessages, 'return "Enter a valid email address."', "invalid email fields must keep a clear message");
+
+const submissionClient = "lib/public-form-client.ts";
+requireText(submissionClient, 'method: "POST"', "public submissions must use POST");
+requireText(submissionClient, 'result.data[contract.successKey] !== true', "success requires an explicit server receipt");
+requireText(submissionClient, 'result.data.code === "FORM_SESSION_EXPIRED"', "only a pre-storage security rejection may be retried");
+requireText(submissionClient, "controller.abort()", "stalled requests must release the submit button");
+requireText(securityHelpers, "reusableBrowserToken(req, csrfCookieName(scope))", "opening another form must not invalidate CSRF tokens");
+requireText(securityHelpers, "reusableBrowserToken(req, formSecurityCookieName(action))", "opening another form must not invalidate security checks");
+for (const path of [contactRoute, applicationRoute]) {
+  requireText(path, "issueCsrfToken(CSRF_SCOPE, req)", "session initialization must reuse browser tokens");
+  requireText(path, "after(async () => {", "notifications must not block submission receipts");
+  requireText(path, 'code: "FORM_SESSION_EXPIRED"', "expired sessions must be recoverable");
+}
 
 const globalStyles = "app/globals.css";
 forbidText(globalStyles, ".lounge-hover-expand:hover", "the Employee Lounge button must not grow on hover");

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { fetchFormJson } from "@/lib/public-form-client";
+
 type Props = {
   action: string;
   onTokenChange: (token: string) => void;
@@ -30,12 +32,8 @@ export default function PublicFormSecurityCheck({ action, onTokenChange, resetKe
     setLoadFailed(false);
     updateToken("");
 
-    fetch(`/api/form-security?action=${encodeURIComponent(action)}`, {
-      cache: "no-store",
-      credentials: "same-origin",
-    })
-      .then(async (response) => {
-        const data = await response.json().catch(() => ({}));
+    fetchFormJson(`/api/form-security?action=${encodeURIComponent(action)}`)
+      .then(({ response, data }) => {
         if (!response.ok || typeof data.securityCheckToken !== "string") {
           throw new Error("Security check unavailable");
         }

@@ -2,64 +2,8 @@ name: Protected public forms
 
 on:
   pull_request:
-    paths:
-      - "app/api/apply/route.ts"
-      - "app/api/contact/route.ts"
-      - "app/api/form-security/route.ts"
-      - "app/careers/apply/ApplicationForm.tsx"
-      - "app/admin/submissions/[id]/page.tsx"
-      - "app/forms/education-request/page.tsx"
-      - "app/forms/equipment-request/page.tsx"
-      - "app/forms/event-request/page.tsx"
-      - "app/forms/ride-along/page.tsx"
-      - "app/forms/birthday/BirthdayClient.tsx"
-      - "app/forms/birthday-station/BirthdayStationClient.tsx"
-      - "app/forms/employment/page.tsx"
-      - "app/globals.css"
-      - "app/testimonials/actions.ts"
-      - "app/testimonials/SubmitForm.tsx"
-      - "components/ContactFormWrapper.tsx"
-      - "components/PublicFormSecurityCheck.tsx"
-      - "components/forms/SubmissionFailureFallback.tsx"
-      - "lib/security/http.ts"
-      - "lib/employment-application-options.ts"
-      - "lib/security/public-form-schemas.ts"
-      - "lib/security/employment-application-schema.ts"
-      - "lib/security/form-validation-messages.ts"
-      - "scripts/protect-public-form-contract.mjs"
-      - "scripts/test-public-form-guard.mjs"
-      - "package.json"
-      - ".github/workflows/protected-public-forms.yml"
   push:
     branches: [main]
-    paths:
-      - "app/api/apply/route.ts"
-      - "app/api/contact/route.ts"
-      - "app/api/form-security/route.ts"
-      - "app/careers/apply/ApplicationForm.tsx"
-      - "app/admin/submissions/[id]/page.tsx"
-      - "app/forms/education-request/page.tsx"
-      - "app/forms/equipment-request/page.tsx"
-      - "app/forms/event-request/page.tsx"
-      - "app/forms/ride-along/page.tsx"
-      - "app/forms/birthday/BirthdayClient.tsx"
-      - "app/forms/birthday-station/BirthdayStationClient.tsx"
-      - "app/forms/employment/page.tsx"
-      - "app/globals.css"
-      - "app/testimonials/actions.ts"
-      - "app/testimonials/SubmitForm.tsx"
-      - "components/ContactFormWrapper.tsx"
-      - "components/PublicFormSecurityCheck.tsx"
-      - "components/forms/SubmissionFailureFallback.tsx"
-      - "lib/security/http.ts"
-      - "lib/employment-application-options.ts"
-      - "lib/security/public-form-schemas.ts"
-      - "lib/security/employment-application-schema.ts"
-      - "lib/security/form-validation-messages.ts"
-      - "scripts/protect-public-form-contract.mjs"
-      - "scripts/test-public-form-guard.mjs"
-      - "package.json"
-      - ".github/workflows/protected-public-forms.yml"
   workflow_dispatch:
 
 permissions:
@@ -68,8 +12,15 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - name: Verify protected public-form behavior
+        run: npm run test:public-forms
+      - name: Verify contract, mutation checks and protected fingerprints
         run: npm run protect:public-forms
