@@ -39,8 +39,15 @@ jobs:
             const nightlyReason = body.nightly?.reason;
             const nightlySucceeded = nightlyStatus === "completed"
               || (nightlyStatus === "skipped" && nightlyReason === "already_processed");
-            if (body.error || body.ok !== true || body.reportOnly !== true || !nightlySucceeded) {
-              console.error("The daily read-only security scan did not complete.", JSON.stringify(body));
+            const weeklyStatus = body.weekly?.status;
+            const weeklyReason = body.weekly?.reason;
+            const weeklySucceeded = weeklyStatus === "completed"
+              || (weeklyStatus === "skipped" && weeklyReason === "already_processed");
+            const weeklyNotDue = weeklyStatus === "skipped"
+              && ["not_weekly_window", "weekly_analytics_disabled"].includes(weeklyReason);
+            if (body.error || body.ok !== true || body.reportOnly !== true
+              || !nightlySucceeded || (!weeklySucceeded && !weeklyNotDue)) {
+              console.error("A daily or weekly read-only monitor report did not complete.", JSON.stringify(body));
               process.exit(1);
             }
             console.log(JSON.stringify({
@@ -48,6 +55,9 @@ jobs:
               reportOnly: true,
               nightly: nightlyStatus,
               nightlyReason,
-              weekly: body.weekly?.status ?? "skipped",
+              weekly: weeklyStatus,
+              weeklyReason,
+              email: body.email?.status ?? "not_available",
+              emailsSent: body.email?.sent,
             }));
           ' "$body"

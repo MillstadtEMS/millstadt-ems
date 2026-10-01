@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runAiMonitor } from "@/lib/ai-monitor/runner";
+import { deliverAiMonitorReports } from "@/lib/ai-monitor/notifications";
 import { hasValidBearerSecret } from "@/lib/security/operational";
 
 export const runtime = "nodejs";
@@ -45,5 +46,11 @@ export async function GET(req: NextRequest) {
   const weekly = chicago.weekday === "Sun"
     ? await runAiMonitor("weekly_analytics", chicago.date, now)
     : { status: "skipped" as const, reason: "not_weekly_window" };
-  return json({ ok: true, reportOnly: true, nightly, weekly });
+  const runKeys = [nightly, weekly].flatMap((result) =>
+    "runKey" in result && result.runKey &&
+      (result.status === "completed" || (result.status === "skipped" && result.reason === "already_processed"))
+      ? [result.runKey] : [],
+  );
+  const email = await deliverAiMonitorReports(runKeys);
+  return json({ ok: email.status !== "failed", reportOnly: true, nightly, weekly, email });
 }
