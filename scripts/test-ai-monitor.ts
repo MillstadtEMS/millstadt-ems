@@ -1,10 +1,47 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { getAiMonitorConfig } from "../lib/ai-monitor/config";
 import { dollarsToMicros, estimateAiMonitorCostMicros } from "../lib/ai-monitor/cost";
 import { isSafePublicPath } from "../lib/ai-monitor/privacy";
 import { duplicateAiMonitorRunResult } from "../lib/ai-monitor/runner";
 import { AiMonitorReportSchema } from "../lib/ai-monitor/schemas";
+
+test("the scheduled monitor fails when either required report is unsuccessful", () => {
+  const workflow = readFileSync(new URL("../.github/workflows/ai-site-monitor.yml", import.meta.url), "utf8");
+  const validator = workflow.match(/node -e '([\s\S]*?)' "\$body"/)?.[1];
+  assert.ok(validator, "the actual workflow response validator must be tested");
+
+  const completed = { status: "completed" };
+  const duplicate = { status: "skipped", reason: "already_processed" };
+  const notDue = { status: "skipped", reason: "not_weekly_window" };
+  const run = (nightly: unknown, weekly: unknown, overrides = {}) => spawnSync(
+    process.execPath,
+    ["-e", validator, JSON.stringify({ ok: true, reportOnly: true, nightly, weekly, ...overrides })],
+    { encoding: "utf8" },
+  );
+
+  for (const weekly of [completed, duplicate, notDue,
+    { status: "skipped", reason: "weekly_analytics_disabled" }]) {
+    const result = run(completed, weekly);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).weekly, weekly.status);
+  }
+  assert.equal(run(duplicate, duplicate).status, 0);
+
+  for (const weekly of [undefined, { status: "running" },
+    { status: "failed", reason: "openai_request_failed" },
+    { status: "failed", reason: "existing_run_failed" },
+    { status: "skipped", reason: "monthly_budget_guard" },
+    { status: "skipped", reason: "unknown_reason" }]) {
+    assert.equal(run(completed, weekly).status, 1, JSON.stringify(weekly));
+  }
+  assert.equal(run({ status: "failed" }, completed).status, 1);
+  assert.equal(run({ status: "skipped", reason: "monitor_disabled" }, notDue).status, 1);
+  assert.equal(run(completed, completed, { reportOnly: false }).status, 1);
+  assert.equal(run(completed, completed, { ok: false }).status, 1);
+});
 
 test("AI monitor rejects private and parameterized analytics paths", () => {
   assert.equal(isSafePublicPath("/about"), true);
