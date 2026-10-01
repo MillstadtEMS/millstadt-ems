@@ -14,7 +14,7 @@ export type PublicLibraryDocument = {
   disclaimer?: string;
   sortOrder: number;
   filingYear?: number;
-  statusLabel: "Filed" | "Official record" | "County record" | "Approved public report";
+  statusLabel: "Filed" | "Official record" | "County record" | "Approved public report" | "Budget projection";
   employee?: "Kenneth James" | "Jennifer Goetz";
   attachmentOf?: string;
   taxData?: TaxComputationData;
@@ -87,6 +87,27 @@ const TAX_COMPUTATION_SOURCES: TaxComputationSource[] = [
 ];
 
 export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
+  const proFormaUrl = "/financial-transparency/budgets/millstadt-ems-annual-budget-pro-forma.pdf";
+  const budgetProFormas: PublicLibraryDocument[] = [
+    {
+      id: "millstadt-ems-annual-budget-pro-forma",
+      kind: "official_record",
+      title: "Millstadt EMS Annual Budget Pro Forma",
+      category: "Operational",
+      periodLabel: "Average annual 911 service budget",
+      dateLabel: "Posted September 30, 2026",
+      pageCount: 8,
+      sourceLabel: "Millstadt EMS · Average Annual 911 Budget Pro Forma",
+      note: "Projected annual revenue, staffing and operating costs, debt payments, and seven-year vehicle and equipment savings. See the document for calculation bases and planning assumptions.",
+      sortOrder: 20260930,
+      statusLabel: "Budget projection",
+      searchText: "Millstadt EMS annual average 911 budget pro forma proforma financial projections revenue spending personnel payroll benefits operating costs debt funding gap vehicle equipment replacement savings seven-year plan Operational",
+      viewUrl: proFormaUrl,
+      downloadUrl: proFormaUrl,
+      printUrl: proFormaUrl,
+    },
+  ];
+
   const annualAudits: PublicLibraryDocument[] = ANNUAL_AUDIT_SOURCES.map(({ ending, pageCount, reportDate, auditor }) => {
     const id = `annual-audit-fy-${ending - 1}-${ending}`;
     const title = `Annual Audit — FY ${ending - 1}–${ending}`;
@@ -297,5 +318,5 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
       viewUrl: url, downloadUrl: url, printUrl: url,
     };
   });
-  return [...annualAudits, ...settlementSheets, ...corporateAnnualReports, ...ilagLetters, ...goodStandingCertificates, ...moneyMarketStatements, ...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
+  return [...budgetProFormas, ...annualAudits, ...settlementSheets, ...corporateAnnualReports, ...ilagLetters, ...goodStandingCertificates, ...moneyMarketStatements, ...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
 }

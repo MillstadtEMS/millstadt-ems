@@ -27,11 +27,12 @@ export default function PublicDocumentLibrary({documents}:{documents:PublicLibra
   const taxes=matching.filter(d=>d.kind==="tax_computation");
   const management=category==="990" ? [] : matching.filter(d=>d.kind==="management_pay");
   const irs=matching.filter(d=>d.kind==="irs_record");
+  const budgetProFormas=matching.filter(d=>d.id==="millstadt-ems-annual-budget-pro-forma");
   const settlements=matching.filter(d=>d.id==="fdmi-settlement-sheet-tax-year-2025");
   const corporateAnnualReports=matching.filter(d=>d.id==="state-of-illinois-domestic-corporation-annual-report-2026");
   const ilagLetters=matching.filter(d=>d.id==="ilag-letter-of-good-standing-2026-09-24");
   const moneyMarketStatements=matching.filter(d=>d.id==="money-market-account-2023-01-31-to-2026-08-31");
-  const featuredRecordIds=new Set([...settlements,...corporateAnnualReports,...ilagLetters,...moneyMarketStatements].map(d=>d.id));
+  const featuredRecordIds=new Set([...budgetProFormas,...settlements,...corporateAnnualReports,...ilagLetters,...moneyMarketStatements].map(d=>d.id));
   const others=matching.filter(d=>d.kind==="official_record"&&!featuredRecordIds.has(d.id));
   const hasCurrentFiling=documents.some(d=>d.kind==="form_990"&&d.filingYear===2026&&!d.attachmentOf);
   const pendingMatches=!hasCurrentFiling && category!=="Operational" && matchesSearch(PENDING_SEARCH,query);
@@ -65,6 +66,7 @@ export default function PublicDocumentLibrary({documents}:{documents:PublicLibra
         <p className={styles.resultCount} role="status" aria-live="polite">{needle||category!=="All documents" ? `${resultCount} ${resultCount===1?"result":"results"}` : `${documents.length} public documents`}</p>
         {sectionMatches.length>0 ? <nav className={styles.sectionResults} aria-label="Matching page sections"><h3>On this page</h3>{sectionMatches.map(s=><a href={`#${s.id}`} key={s.id}><Highlight text={s.title} query={query}/><span><Highlight text={s.text} query={query}/></span></a>)}</nav> : null}
         <div className={styles.libraryGroups}>
+          {budgetProFormas.map(d=><Disclosure key={`${d.id}-${needle}`} title={d.title} meta={`Budget projection · PDF · ${d.pageCount} pages`} initiallyOpen={Boolean(needle)} query={query}><DocumentRow document={d} query={query} level={4}/></Disclosure>)}
           {settlements.map(d=><Disclosure key={`${d.id}-${needle}`} title={d.title} meta={`County record · PDF · ${d.pageCount} page`} initiallyOpen={Boolean(needle)} query={query}><DocumentRow document={d} query={query} level={4}/></Disclosure>)}
           {corporateAnnualReports.map(d=><Disclosure key={`${d.id}-${needle}`} title={d.title} meta={`Official record · PDF · ${d.pageCount} pages`} initiallyOpen={Boolean(needle)} query={query}><DocumentRow document={d} query={query} level={4}/></Disclosure>)}
           {ilagLetters.map(d=><Disclosure key={`${d.id}-${needle}`} title={d.title} meta={`Official record · PDF · ${d.pageCount} page`} initiallyOpen={Boolean(needle)} query={query}><DocumentRow document={d} query={query} level={4}/></Disclosure>)}

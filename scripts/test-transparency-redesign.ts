@@ -20,9 +20,9 @@ test("certified 2025 ambulance extension is shown while its correction disclosur
   assert.ok(library.includes("page 57"));
   assert.ok(!overview.includes("Fire District Support"));
 });
-test("canonical library has 89 unique documents including historical audits, the verified FY 2024–2025 return, FDMI sheet, Illinois records, and money-market statements",()=>{
-  assert.equal(documents.length,89);
-  assert.equal(new Set(documents.map(d=>d.downloadUrl)).size,89);
+test("canonical library has 90 unique documents including the annual budget pro forma, historical audits, the verified FY 2024–2025 return, FDMI sheet, Illinois records, and money-market statements",()=>{
+  assert.equal(documents.length,90);
+  assert.equal(new Set(documents.map(d=>d.downloadUrl)).size,90);
   assert.equal(documents.filter(d=>d.kind==="form_990").length,23);
   assert.equal(documents.filter(d=>d.kind==="irs_record").length,1);
   assert.ok(!documents.some(d=>d.kind==="form_990"&&[2018,2026].includes(d.filingYear!)));
@@ -81,7 +81,7 @@ test("tax years, certified rates and EAV are searchable independently",()=>{
   }
 });
 test("file metadata and genuine attachment titles are indexed",()=>{
-  assert.equal(documents.filter(d=>matchesSearch(documentSearchText(d),'PDF')).length,89);
+  assert.equal(documents.filter(d=>matchesSearch(documentSearchText(d),'PDF')).length,90);
   const attachment={...documents[0],title:'Approved annual attachment',attachmentOf:'source-parent'};
   assert.ok(matchesSearch(documentSearchText(attachment),'Approved annual attachment'));
   assert.ok(matchesSearch(documentSearchText(attachment),'Attachments'));
