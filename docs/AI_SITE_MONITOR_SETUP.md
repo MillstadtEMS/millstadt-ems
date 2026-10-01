@@ -7,7 +7,7 @@
 - Optionally reviews consented aggregate public-site analytics once a week.
 - Keeps a short history of sanitized reports so it can identify recurring patterns.
 - Stores reports for authorized administrators at /admin/ai-monitor.
-- Reports are available in the dashboard only. This monitor does not currently send email or other notifications.
+- Optionally emails each completed report, including findings and recommended fixes, through the site's existing Gmail service. Email delivery requires explicit production configuration; the default is dashboard only.
 
 ## What it cannot do
 
@@ -37,6 +37,8 @@ AI_MONITOR_MONTHLY_BUDGET_USD=10
 AI_MONITOR_MAX_OUTPUT_TOKENS=900
 AI_MONITOR_REPORT_RETENTION_DAYS=35
 AI_MONITOR_SITE_URL=https://www.millstadtems.org
+AI_MONITOR_EMAIL_ENABLED=false
+AI_MONITOR_EMAIL_TO=
 CRON_SECRET=
 DATABASE_URL=
 ~~~
@@ -52,6 +54,16 @@ Configure the existing Vercel `CRON_SECRET` value as the GitHub Actions secret `
 ## Reading reports
 
 Sign in to the Employee Lounge, then open `/admin/ai-monitor`. Access requires an active administrator whose employee ID is listed in `ANALYTICS_SUPERVISOR_EMPLOYEE_IDS`; being an administrator alone is not enough. Each saved report includes a summary and recommended actions. Workflow success confirms report generation, not the absence of vulnerabilities, successful email delivery, or completion of recommended fixes.
+
+## Email delivery
+
+After the owner approves the recipient, set `AI_MONITOR_EMAIL_TO` to that one email address and `AI_MONITOR_EMAIL_ENABLED=true` in production, then deploy. The existing `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and `GMAIL_REFRESH_TOKEN` must be configured. Preview/development deployments and `DISABLE_OUTBOUND_EMAIL=true` block this delivery path.
+
+Emails contain the saved sanitized report, its scope, suggested fixes, and a link to the protected dashboard. Security reports are daily; website usage summaries are Sunday only. Email is not a new security scanner and never applies recommendations automatically.
+
+Completed reports are queued durably when the cron endpoint runs. A recorded successful send is not repeated on duplicate invocations. Failed sends remain pending and become retryable after five minutes; another endpoint invocation or the following daily run processes up to three pending deliveries. Reports are not regenerated to retry email. Email configuration, provider, storage, or pending-delivery failures make the scheduled workflow fail visibly. Logs include only delivery status/counts, never report contents, email addresses, or credentials.
+
+Enabling delivery does not automatically email the entire historical archive. Re-running today's completed monitor queues today's report. Delivery uses an atomic 15-minute claim to avoid concurrent sends. Gmail does not provide an idempotency key in the existing sender: if a send succeeds but the process loses the response or cannot record success, a later retry may deliver a duplicate. Pending items expire with their parent report's retention period. Provider acceptance is not proof of inbox arrival; verify the first daily and Sunday emails in the recipient inbox after activation.
 
 ## Rollback
 

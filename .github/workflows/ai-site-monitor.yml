@@ -57,5 +57,7 @@ jobs:
               nightlyReason,
               weekly: weeklyStatus,
               weeklyReason,
+              email: body.email?.status ?? "not_available",
+              emailsSent: body.email?.sent,
             }));
           ' "$body"
