@@ -1,40 +1,47 @@
-.directory { padding-top: 28px; padding-bottom: 70px; color: #f1f5f9; }
-.jumpLinks { display: flex; gap: 24px; margin-bottom: 24px; color: #f0b429; font-weight: 750; }
-.directory h2 { scroll-margin-top: 160px; }
-.directory h2 { font-size: clamp(26px, 3vw, 36px); font-weight: 900; margin: 0 0 22px; }
-.intro { color: #b9c8dc; font-size: 15px; line-height: 1.7; max-width: 920px; margin: 0 0 30px; }
-.searchLabel { display: block; color: #f1f5f9; font-weight: 750; margin-bottom: 8px; }
-.directory .search { display: block; width: 100%; max-width: 560px; padding: 14px 16px; background: #071428; color: #f1f5f9; border: 1px solid #526b89; border-radius: 6px; min-height: 50px; font: inherit; margin-bottom: 26px; box-shadow: none; }
-.streetList { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; align-items: start; }
-.group { border: 1px solid #29405e; border-radius: 6px; overflow: hidden; background: #071428; }
-.expanded { grid-column: 1 / -1; }
-.groupButton { display: flex; justify-content: space-between; align-items: center; gap: 16px; width: 100%; text-align: left; padding: 16px 18px; min-height: 56px; border: 0; background: #071428; color: #f1f5f9; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
-.groupButton:hover, .groupButton[aria-expanded="true"] { background: #0d2a52; color: #f0b429; }
-.groupButton > span:last-child { font-size: 22px; font-weight: 500; }
-.groupContent { padding: 0 18px 14px; }
-.address { border-top: 1px solid #29405e; }
-.addressLink { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 4px; color: #f1f5f9; text-decoration: none; }
-.addressLink strong { font-size: 16px; }
-.addressLink small { display: block; font-size: 12px; color: #aebfd5; margin-top: 3px; }
+.directory { max-width: 880px; padding-top: 28px; padding-bottom: 70px; color: #f1f5f9; }
+.finder { padding: 24px; border: 1px solid #29405e; border-radius: 8px; background: #071428; }
+.methods { display: flex; gap: 4px; width: fit-content; padding: 4px; margin-bottom: 24px; border: 1px solid #29405e; border-radius: 6px; }
+.methods button { padding: 11px 22px; min-height: 44px; border: 0; border-radius: 3px; background: transparent; color: #c4cfdf; font: inherit; font-weight: 750; cursor: pointer; }
+.methods button[aria-pressed="true"] { background: #f0b429; color: #071428; }
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.fields > div { min-width: 0; }
+.fields label { display: block; margin-bottom: 10px; font-size: 15px; font-weight: 750; }
+.fields input, .fields select { box-sizing: border-box; display: block; width: 100%; min-height: 50px; padding: 12px; border: 1px solid #526b89; border-radius: 5px; background: #040d1a; color: #f1f5f9; color-scheme: dark; font: inherit; font-size: 16px; box-shadow: none; }
+.fields input::placeholder { color: #8fa3be; font-size: 14px; }
+.addresses { margin-top: 32px; }
+.addressHeading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
+.addressHeading h2 { font-size: 23px; font-weight: 800; margin: 0; }
+.download { color: #f0b429; font-size: 14px; text-decoration: underline; text-underline-offset: 4px; }
+.address { border-bottom: 1px solid #29405e; }
+.address:first-of-type { border-top: 1px solid #29405e; }
+.addressLink { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 4px; color: #f1f5f9; text-decoration: none; }
+.addressLink strong { font-size: 16px; font-weight: 750; }
+.addressLink small { display: block; font-size: 12px; color: #aebfd5; margin-top: 5px; }
 .addressLink[aria-expanded="true"] strong, .addressLink:hover strong { color: #f0b429; }
 .addressLink > span:last-child { font-size: 23px; color: #f0b429; }
-.addressContent { padding: 0 4px 20px; }
-.amounts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 0; }
-.amounts > div { padding: 20px; background: #0a1e3d; border-radius: 6px; }
-.amounts dt { color: #c4cfdf; font-size: 14px; font-weight: 700; margin-bottom: 10px; }
-.amounts dd { margin: 0; font-size: clamp(24px,3vw,34px); font-weight: 850; font-variant-numeric: tabular-nums; }
-.amounts .increase { background: #f0b429; color: #040d1a; }
-.increase dt { color: #172a43; }
-.parcel + .parcel { margin-top: 24px; }
-.parcelNumber { color: #c4cfdf; font-size: 13px; font-weight: 750; margin: 0 0 10px; }
-.shared, .note { color: #aebfd5; font-size: 13px; line-height: 1.6; }
-.note { margin: 18px 0 0; }
-.note a, .download { color: #f0b429; text-decoration: underline; text-underline-offset: 3px; }
-.subdivisions { margin-top: 64px; border-top: 1px solid #29405e; padding-top: 40px; }
-.subdivisionList { display: grid; gap: 10px; }
-.download { display: inline-block; padding: 16px 0; font-size: 14px; font-weight: 750; }
-.otherAreas { margin-top: 30px; }
-.otherAreas > summary { padding: 14px 0; cursor: pointer; color: #c4cfdf; font-weight: 750; }
-.directory :focus-visible { outline: 3px solid #f0b429; outline-offset: 3px; }
-@media(max-width: 850px) { .streetList { grid-template-columns: repeat(2,minmax(0,1fr)); } }
-@media(max-width: 560px) { .streetList { grid-template-columns: 1fr; } .amounts { grid-template-columns: 1fr; gap: 8px; } .amounts > div { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 14px; } .amounts dt { margin: 0; max-width: 50%; } .amounts dd { font-size: 26px; } .groupContent { padding: 0 12px 12px; } }
+.addressContent { padding: 0 4px 24px; }
+.parcelAmounts { max-width: 540px; }
+.yearly { margin: 0 0 12px; color: #aebfd5; font-size: 13px; }
+.amounts { margin: 0; border: 1px solid #29405e; border-radius: 6px; overflow: hidden; background: #071428; }
+.amounts > div { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 15px 18px; }
+.amounts > div + div { border-top: 1px solid #29405e; }
+.amounts dt { color: #c4cfdf; font-size: 15px; }
+.amounts dd { margin: 0; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.amounts .increase { background: #12233a; border-left: 3px solid #f0b429; padding-left: 15px; }
+.increase dt, .increase dd { color: #f0b429; font-weight: 800; }
+.shared { max-width: 560px; margin: 0 0 16px; color: #c4cfdf; font-size: 15px; line-height: 1.65; }
+.shared strong { color: #f1f5f9; }
+.parcelPrompt { margin: 0 0 12px; font-size: 15px; font-weight: 750; }
+.parcel { max-width: 540px; border-bottom: 1px solid #29405e; }
+.parcelButton { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 48px; padding: 14px 0; border: 0; background: transparent; color: #f0b429; text-align: left; font: inherit; font-size: 15px; font-weight: 750; cursor: pointer; }
+.parcel .parcelAmounts { padding-bottom: 18px; }
+.note { margin: 16px 0 0; max-width: 560px; color: #aebfd5; font-size: 13px; line-height: 1.65; }
+.footer { margin-top: 30px; padding-top: 6px; color: #aebfd5; font-size: 14px; }
+.footer > p { margin: 0 0 12px; }
+.footer a { color: #f0b429; text-decoration: underline; text-underline-offset: 3px; }
+.help { max-width: 650px; margin-top: 18px; color: #aebfd5; font-size: 14px; line-height: 1.65; }
+.help summary { width: fit-content; cursor: pointer; padding: 6px 0; color: #c4cfdf; }
+.help p { margin: 12px 0; }
+.directory :focus-visible { outline: 2px solid #f0b429; outline-offset: 4px; }
+@media(max-width: 640px) { .finder { padding: 18px; } .fields { grid-template-columns: 1fr; gap: 20px; } .methods { width: 100%; } .methods button { flex: 1; padding-inline: 12px; } }
+@media(max-width: 380px) { .amounts > div { padding: 13px 12px; gap: 12px; } .amounts dt { font-size: 14px; } .amounts dd { font-size: 20px; } .amounts .increase { padding-left: 9px; } }

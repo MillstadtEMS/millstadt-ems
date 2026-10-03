@@ -1,90 +1,126 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import type { DirectoryAddress, DirectoryGroup, ElectionDirectory } from "@/lib/election-directory-types";
+import type { DirectoryAddress, DirectoryParcel, ElectionDirectory } from "@/lib/election-directory-types";
 import styles from "./AddressDirectory.module.css";
+
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const normalize = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+function ParcelAmounts({ parcel }: { parcel: DirectoryParcel }) {
+  return <div className={styles.parcelAmounts}>
+    <p className={styles.yearly}>Estimated yearly amounts</p>
+    <dl className={styles.amounts}>
+      <div><dt>EMS tax now</dt><dd>{money.format(parcel.before)}</dd></div>
+      <div><dt>With the ESD (0.30%)</dt><dd>{money.format(parcel.after)}</dd></div>
+      <div className={styles.increase}><dt>Yearly increase</dt><dd>{money.format(parcel.increase)}</dd></div>
+    </dl>
+    {parcel.area !== "millstadt" && <p className={styles.note}>The county’s 2025 report does not list a separate ambulance tax for this fire district. This estimate starts at $0.</p>}
+  </div>;
+}
 
 export default function AddressDirectory({ directory, initialPin }: { directory: ElectionDirectory; initialPin?: string }) {
   const initial = directory.addresses.find(a => a.parcels.some(p => p.pin === initialPin));
+  const [view, setView] = useState<"street" | "subdivision">("street");
   const [query, setQuery] = useState("");
-  const [street, setStreet] = useState<string | null>(initial?.street ?? null);
-  const [subdivision, setSubdivision] = useState<string | null>(null);
-  // One shared selection across street and subdivision views.
-  const [openAddress, setOpenAddress] = useState<string | null>(initial ? `street:${initial.id}` : null);
+  const [street, setStreet] = useState(initial?.street ?? "");
+  const [subdivision, setSubdivision] = useState("");
+  const [openAddress, setOpenAddress] = useState<string | null>(initial?.id ?? null);
+  const [openParcel, setOpenParcel] = useState<string | null>(null);
   const addressMap = useMemo(() => new Map(directory.addresses.map(a => [a.id, a])), [directory]);
-  const normalize = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
   const search = normalize(query);
-  const matches = (a: DirectoryAddress) => !search || normalize(`${a.address} ${a.city}`).includes(search) || a.parcels.some(p => p.pin.includes(search));
+  const matches = (address: DirectoryAddress) => !search || normalize(`${address.address} ${address.city}`).includes(search) || address.parcels.some(p => p.pin.includes(search));
   const matchingStreets = directory.streets.filter(s => normalize(s.name).includes(search) || s.addressIds.some(id => matches(addressMap.get(id)!)));
+  const matchingGroups = directory.groups.filter(g => normalize(g.name).includes(search));
+  const chosenStreet = directory.streets.find(s => s.name === street);
+  const chosenGroup = directory.groups.find(g => g.id === subdivision);
+  const addresses = (view === "street" ? chosenStreet?.addressIds ?? [] : chosenGroup?.addressIds ?? [])
+    .map(id => addressMap.get(id)!).filter(a => view !== "street" || matches(a));
+
   useEffect(() => {
     const restore = () => {
       const pin = new URLSearchParams(window.location.search).get("address");
-      const a = directory.addresses.find(a => a.parcels.some(p => p.pin === pin));
-      setQuery(""); setSubdivision(null); setStreet(a?.street ?? null); setOpenAddress(a ? `street:${a.id}` : null);
+      const address = directory.addresses.find(a => a.parcels.some(p => p.pin === pin));
+      setView("street"); setQuery(""); setSubdivision(""); setStreet(address?.street ?? ""); setOpenAddress(address?.id ?? null); setOpenParcel(null);
     };
     window.addEventListener("popstate", restore);
     return () => window.removeEventListener("popstate", restore);
   }, [directory]);
-  function toggleAddress(a: DirectoryAddress, context: string) {
-    const key = `${context}:${a.id}`;
-    const next = openAddress === key ? null : key;
-    setOpenAddress(next);
-    window.history.pushState(null, "", `/election-information/address-directory${next ? `?address=${a.id}` : ""}`);
+
+  function clearAddress() {
+    setOpenAddress(null); setOpenParcel(null);
+    window.history.replaceState(null, "", "/election-information/address-directory");
   }
-  function addressRows(ids: string[], context: string, filter = true) {
-    return ids.map(id => addressMap.get(id)!).filter(a => !filter || matches(a)).map(a => {
-      const key = `${context}:${a.id}`;
-      const open = openAddress === key;
-      const panel = `address-${context}-${a.id}`;
-      return <div key={key} className={styles.address}>
-        <a href={`?address=${a.id}`} aria-expanded={open} aria-controls={panel} className={styles.addressLink} onClick={event => { if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); toggleAddress(a, context); }}>
-          <span><strong>{a.address}</strong><small>{a.city}</small></span><span aria-hidden="true">{open ? "−" : "+"}</span>
-        </a>
-        {open && <div id={panel} className={styles.addressContent}>
-          {a.parcels.length > 1 && <p className={styles.shared}>This address has more than one county parcel. Match the parcel number on your tax bill.</p>}
-          {a.parcels.map(p => <div key={p.pin} className={styles.parcel}>
-            {a.parcels.length > 1 && <p className={styles.parcelNumber}>Parcel {p.parcel}</p>}
-            <dl className={styles.amounts}>
-              <div><dt>Baseline EMS tax</dt><dd>{money.format(p.before)}</dd></div>
-              <div><dt>EMS tax at 0.30%</dt><dd>{money.format(p.after)}</dd></div>
-              <div className={styles.increase}><dt>Annual increase</dt><dd>{money.format(p.increase)}</dd></div>
-            </dl>
-            {p.area !== "millstadt" && <p className={styles.note}>No separate ambulance levy offset is identified for this fire tax district in the county’s 2025 report.</p>}
-          </div>)}
-        </div>}
-      </div>;
-    });
+  function changeView(next: "street" | "subdivision") {
+    setView(next); setQuery(""); setStreet(""); setSubdivision(""); clearAddress();
   }
-  function groupRows(groups: DirectoryGroup[]) {
-    return groups.map(g => <div key={g.id} className={styles.group}>
-      <button className={styles.groupButton} aria-expanded={subdivision === g.id} aria-controls={`group-${g.id}`} onClick={() => { setSubdivision(subdivision === g.id ? null : g.id); setStreet(null); setOpenAddress(null); }}><span>{g.name}</span><span aria-hidden="true">{subdivision === g.id ? "−" : "+"}</span></button>
-      {subdivision === g.id && <div id={`group-${g.id}`} className={styles.groupContent}>
-        <a className={styles.download} href={`/api/election-directory/download/${g.id}`}>Download Excel sheet</a>
-        {addressRows(g.addressIds, g.id, false)}
-      </div>}
-    </div>);
+  function toggleAddress(address: DirectoryAddress) {
+    const next = openAddress === address.id ? null : address.id;
+    setOpenAddress(next); setOpenParcel(null);
+    window.history.pushState(null, "", `/election-information/address-directory${next ? `?address=${address.id}` : ""}`);
   }
+
   return <div className={`${styles.directory} wrap`}>
-    <nav className={styles.jumpLinks} aria-label="Address browsing"><a href="#street-heading">By street</a><a href="#subdivision-heading">By subdivision</a></nav>
-    <p className={styles.intro}>Annual EMS estimates use the county’s 2025 taxable values and the planned 0.30% rate. The baseline uses the existing 0.09% ambulance levy in the Millstadt Fire Protection District and no separate ambulance levy offset in the other two areas. The comparison assumes the existing ambulance levy ends when the ESD levy begins.</p>
-    <section aria-labelledby="street-heading">
-      <h2 id="street-heading">By street</h2>
-      <label className={styles.searchLabel} htmlFor="address-search">Find a street or address</label>
-      <input className={styles.search} id="address-search" type="search" value={query} onChange={e => { setQuery(e.target.value); setStreet(null); setOpenAddress(null); }} placeholder="Street name or house number" autoComplete="off" />
-      <div className={styles.streetList}>
-        {matchingStreets.map((s, i) => <div key={s.name} className={`${styles.group} ${street === s.name ? styles.expanded : ""}`}>
-          <button className={styles.groupButton} aria-expanded={street === s.name} aria-controls={`street-${i}`} onClick={() => { setStreet(street === s.name ? null : s.name); setSubdivision(null); setOpenAddress(null); }}><span>{s.name}</span><span aria-hidden="true">{street === s.name ? "−" : "+"}</span></button>
-          {street === s.name && <div id={`street-${i}`} className={styles.groupContent}>{addressRows(s.addressIds, "street")}</div>}
-        </div>)}
+    <section className={styles.finder} aria-label="Find your address">
+      <div className={styles.methods} role="group" aria-label="Find an address by">
+        <button type="button" aria-pressed={view === "street"} onClick={() => changeView("street")}>Street</button>
+        <button type="button" aria-pressed={view === "subdivision"} onClick={() => changeView("subdivision")}>Subdivision</button>
       </div>
-      {!matchingStreets.length && <p>No matching address. Try just the street name.</p>}
-      <p className={styles.note}>Address not listed? <a href="/election-information#ems-tax-calculator">Use the EMS tax calculator.</a> Street names follow county records. Estimates may change with future assessments, exemptions or levies.</p>
+      <div className={styles.fields}>
+        <div>
+          <label htmlFor="directory-search">{view === "street" ? "Search by street or house number" : "Search by subdivision name"}</label>
+          <input id="directory-search" type="search" value={query} placeholder={view === "street" ? "For example: Wyndridge or 204" : "For example: Wyndrose"} autoComplete="off" onChange={event => { setQuery(event.target.value); setStreet(""); setSubdivision(""); clearAddress(); }} />
+        </div>
+        <div>
+          <label htmlFor="directory-choice">{view === "street" ? "Choose your street" : "Choose your subdivision"}</label>
+          {view === "street" ? <select id="directory-choice" value={street} onChange={event => { setStreet(event.target.value); clearAddress(); }}>
+            <option value="">Select a street</option>
+            {matchingStreets.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+          </select> : <select id="directory-choice" value={subdivision} onChange={event => { setSubdivision(event.target.value); clearAddress(); }}>
+            <option value="">Select a subdivision</option>
+            <optgroup label="Subdivisions">{matchingGroups.filter(g => g.kind === "subdivision").map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</optgroup>
+            <optgroup label="Other county areas">{matchingGroups.filter(g => g.kind === "area").map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</optgroup>
+          </select>}
+        </div>
+      </div>
+      {search && !(view === "street" ? matchingStreets.length : matchingGroups.length) && <p className={styles.note} role="status">No match. Try fewer words or check the spelling.</p>}
     </section>
-    <section aria-labelledby="subdivision-heading" className={styles.subdivisions}>
-      <h2 id="subdivision-heading">By subdivision</h2>
-      <p className={styles.intro}>Open a subdivision to see its addresses or download its Excel sheet.</p>
-      <div className={styles.subdivisionList}>{groupRows(directory.groups.filter(g => g.kind === "subdivision"))}</div>
-      <details className={styles.otherAreas}><summary>Other county areas</summary><div className={styles.subdivisionList}>{groupRows(directory.groups.filter(g => g.kind === "area"))}</div></details>
-    </section>
+
+    {(view === "street" ? chosenStreet : chosenGroup) && <section className={styles.addresses} aria-labelledby="address-heading">
+      <div className={styles.addressHeading}>
+        <h2 id="address-heading">Choose your address</h2>
+        {view === "subdivision" && chosenGroup && <a className={styles.download} href={`/api/election-directory/download/${chosenGroup.id}`}>Download Excel sheet</a>}
+      </div>
+      {addresses.map(address => {
+        const open = openAddress === address.id;
+        const shared = address.parcels.length > 1;
+        return <div key={address.id} className={styles.address}>
+          <a className={styles.addressLink} href={`?address=${address.id}`} aria-expanded={open} aria-controls={`address-${address.id}`} onClick={event => { if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); toggleAddress(address); }}>
+            <span><strong>{address.address}</strong><small>{address.city}</small></span><span aria-hidden="true">{open ? "−" : "+"}</span>
+          </a>
+          {open && <div id={`address-${address.id}`} className={styles.addressContent}>
+            {shared ? <>
+              <p className={styles.shared}>County records list <strong>{address.parcels.length} parcels</strong> at this address. A parcel is a piece of property with its own tax number.</p>
+              <p className={styles.parcelPrompt}>Choose the number on your tax bill.</p>
+              {address.parcels.map(parcel => <div className={styles.parcel} key={parcel.pin}>
+                <button type="button" className={styles.parcelButton} aria-expanded={openParcel === parcel.pin} aria-controls={`parcel-${parcel.pin}`} onClick={() => setOpenParcel(openParcel === parcel.pin ? null : parcel.pin)}><span>Parcel {parcel.parcel}</span><span aria-hidden="true">{openParcel === parcel.pin ? "−" : "+"}</span></button>
+                {openParcel === parcel.pin && <div id={`parcel-${parcel.pin}`}><ParcelAmounts parcel={parcel} /></div>}
+              </div>)}
+              <details className={styles.help}><summary>More than one parcel on your bills?</summary><p>Add the amounts for the parcels that belong to your property. Each estimate above covers only the parcel number shown.</p></details>
+            </> : <ParcelAmounts parcel={address.parcels[0]} />}
+          </div>}
+        </div>;
+      })}
+    </section>}
+
+    <div className={styles.footer}>
+      <p>Can’t find your address? <a href="/election-information#ems-tax-calculator">Use the tax calculator.</a></p>
+      <details className={styles.help}>
+        <summary>How we figured these amounts</summary>
+        <p>These are yearly estimates using the county’s 2025 tax values. Street names and subdivisions follow the county records.</p>
+        <p>The ESD estimate uses the planned 0.30% rate. In the Millstadt Fire Protection District, the comparison starts with the existing 0.09% ambulance tax. It assumes that tax ends when the ESD tax begins.</p>
+        <p>The county’s 2025 report does not list a separate ambulance tax for the Hecker and Waterloo fire districts, so those estimates start at $0.</p>
+        <p>Your final bill can change if your property’s tax value, tax breaks or tax rates change.</p>
+      </details>
+    </div>
   </div>;
 }
