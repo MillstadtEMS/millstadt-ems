@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { randomBytes, scryptSync } from "node:crypto";
+import { createHmac, randomBytes, scryptSync } from "node:crypto";
 import directory from "../data/election-directory/directory.json";
 import { calculateEmsTax, type TaxArea } from "../lib/esd-tax";
 import { createReviewToken, REVIEW_SECONDS, safeReviewPath, verifyReviewPassword, verifyReviewToken } from "../lib/election-review-auth";
@@ -42,6 +42,10 @@ test("password, signed cookie, expiration, tampering and absent configuration", 
   process.env.ELECTION_REVIEW_SESSION_KEY=randomBytes(32).toString("hex");
   assert(verifyReviewPassword("test-only-password")); assert(!verifyReviewPassword("wrong"));
   const now=1791000000000; const token=createReviewToken(now);
+  const oldPayload=token.split(".").slice(0,2).join(".");
+  const oldToken=oldPayload+"."+createHmac("sha256",process.env.ELECTION_REVIEW_SESSION_KEY).update(oldPayload).digest("base64url");
+  assert(!verifyReviewToken(oldToken,now), "sessions from the previous review release must be locked out");
+  assert.equal(REVIEW_SECONDS,3600);
   assert(verifyReviewToken(token,now)); assert(!verifyReviewToken(token,now+REVIEW_SECONDS*1000));
   assert(!verifyReviewToken(token.slice(0,-1)+(token.endsWith("a")?"b":"a"),now));
   assert(!verifyReviewToken("true",now));
