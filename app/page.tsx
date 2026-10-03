@@ -133,13 +133,6 @@ export default async function Home({
                 className="h-auto w-[230px] drop-shadow-[0_8px_18px_rgba(0,0,0,0.55)] transition group-hover:drop-shadow-[0_8px_22px_rgba(240,180,41,0.3)]"
               />
             </Link>
-            <Link
-              href="/ems-tax-calculator"
-              className="mt-3 flex min-h-[104px] w-full max-w-xl flex-col items-center justify-center rounded-2xl border-2 border-[#f0b429] bg-[#0a1e3d] px-6 py-5 text-center font-black text-[#f0b429] shadow-lg transition-colors hover:bg-[#0d2a52] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0b429]"
-            >
-              <span className="text-2xl leading-tight sm:text-3xl">EMS Tax Calculator</span>
-              <span className="mt-2 text-base font-semibold text-slate-200">Compare 0.09% → 0.30%</span>
-            </Link>
           </div>
 
           {/* Breathing room between CTAs and the (now-larger) call counter — inline style because Tailwind v4 spacing utilities resolve to 0 here */}

@@ -1,10 +1,12 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { DirectoryAddress, DirectoryParcel, ElectionDirectory } from "@/lib/election-directory-types";
 import styles from "./AddressDirectory.module.css";
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
-const normalize = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+const subscribeToHydration = () => () => {};
+const clientReady = () => true;
+const serverReady = () => false;
 
 function ParcelAmounts({ parcel }: { parcel: DirectoryParcel }) {
   return <div className={styles.parcelAmounts}>
@@ -19,28 +21,25 @@ function ParcelAmounts({ parcel }: { parcel: DirectoryParcel }) {
 }
 
 export default function AddressDirectory({ directory, initialPin }: { directory: ElectionDirectory; initialPin?: string }) {
+  const ready = useSyncExternalStore(subscribeToHydration, clientReady, serverReady);
   const initial = directory.addresses.find(a => a.parcels.some(p => p.pin === initialPin));
   const [view, setView] = useState<"street" | "subdivision">("street");
-  const [query, setQuery] = useState("");
   const [street, setStreet] = useState(initial?.street ?? "");
   const [subdivision, setSubdivision] = useState("");
   const [openAddress, setOpenAddress] = useState<string | null>(initial?.id ?? null);
   const [openParcel, setOpenParcel] = useState<string | null>(null);
   const addressMap = useMemo(() => new Map(directory.addresses.map(a => [a.id, a])), [directory]);
-  const search = normalize(query);
-  const matches = (address: DirectoryAddress) => !search || normalize(`${address.address} ${address.city}`).includes(search) || address.parcels.some(p => p.pin.includes(search));
-  const matchingStreets = directory.streets.filter(s => normalize(s.name).includes(search) || s.addressIds.some(id => matches(addressMap.get(id)!)));
-  const matchingGroups = directory.groups.filter(g => normalize(g.name).includes(search));
   const chosenStreet = directory.streets.find(s => s.name === street);
   const chosenGroup = directory.groups.find(g => g.id === subdivision);
-  const addresses = (view === "street" ? chosenStreet?.addressIds ?? [] : chosenGroup?.addressIds ?? [])
-    .map(id => addressMap.get(id)!).filter(a => view !== "street" || matches(a));
+  const addressIds = view === "street" ? chosenStreet?.addressIds ?? [] : chosenGroup?.addressIds ?? [];
+  const addresses = addressIds.map(id => addressMap.get(id)!);
+  const showAddresses = view === "street" ? Boolean(chosenStreet) : Boolean(chosenGroup);
 
   useEffect(() => {
     const restore = () => {
       const pin = new URLSearchParams(window.location.search).get("address");
       const address = directory.addresses.find(a => a.parcels.some(p => p.pin === pin));
-      setView("street"); setQuery(""); setSubdivision(""); setStreet(address?.street ?? ""); setOpenAddress(address?.id ?? null); setOpenParcel(null);
+      setView("street"); setSubdivision(""); setStreet(address?.street ?? ""); setOpenAddress(address?.id ?? null); setOpenParcel(null);
     };
     window.addEventListener("popstate", restore);
     return () => window.removeEventListener("popstate", restore);
@@ -51,7 +50,7 @@ export default function AddressDirectory({ directory, initialPin }: { directory:
     window.history.replaceState(null, "", "/election-information/address-directory");
   }
   function changeView(next: "street" | "subdivision") {
-    setView(next); setQuery(""); setStreet(""); setSubdivision(""); clearAddress();
+    setView(next); setStreet(""); setSubdivision(""); clearAddress();
   }
   function toggleAddress(address: DirectoryAddress) {
     const next = openAddress === address.id ? null : address.id;
@@ -62,30 +61,25 @@ export default function AddressDirectory({ directory, initialPin }: { directory:
   return <div className={`${styles.directory} wrap`}>
     <section className={styles.finder} aria-label="Find your address">
       <div className={styles.methods} role="group" aria-label="Find an address by">
-        <button type="button" aria-pressed={view === "street"} onClick={() => changeView("street")}>Street</button>
-        <button type="button" aria-pressed={view === "subdivision"} onClick={() => changeView("subdivision")}>Subdivision</button>
+        <button type="button" disabled={!ready} aria-pressed={view === "street"} onClick={() => changeView("street")}>Street</button>
+        <button type="button" disabled={!ready} aria-pressed={view === "subdivision"} onClick={() => changeView("subdivision")}>Subdivision</button>
       </div>
       <div className={styles.fields}>
         <div>
-          <label htmlFor="directory-search">{view === "street" ? "Search by street or house number" : "Search by subdivision name"}</label>
-          <input id="directory-search" type="search" value={query} placeholder={view === "street" ? "For example: Wyndridge or 204" : "For example: Wyndrose"} autoComplete="off" onChange={event => { setQuery(event.target.value); setStreet(""); setSubdivision(""); clearAddress(); }} />
-        </div>
-        <div>
           <label htmlFor="directory-choice">{view === "street" ? "Choose your street" : "Choose your subdivision"}</label>
-          {view === "street" ? <select id="directory-choice" value={street} onChange={event => { setStreet(event.target.value); clearAddress(); }}>
+          {view === "street" ? <select id="directory-choice" disabled={!ready} value={street} onChange={event => { setStreet(event.target.value); clearAddress(); }}>
             <option value="">Select a street</option>
-            {matchingStreets.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
-          </select> : <select id="directory-choice" value={subdivision} onChange={event => { setSubdivision(event.target.value); clearAddress(); }}>
+            {directory.streets.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+          </select> : <select id="directory-choice" disabled={!ready} value={subdivision} onChange={event => { setSubdivision(event.target.value); clearAddress(); }}>
             <option value="">Select a subdivision</option>
-            <optgroup label="Subdivisions">{matchingGroups.filter(g => g.kind === "subdivision").map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</optgroup>
-            <optgroup label="Other county areas">{matchingGroups.filter(g => g.kind === "area").map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</optgroup>
+            <optgroup label="Subdivisions">{directory.groups.filter(g => g.kind === "subdivision").map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</optgroup>
+            <optgroup label="Other county areas">{directory.groups.filter(g => g.kind === "area").map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</optgroup>
           </select>}
         </div>
       </div>
-      {search && !(view === "street" ? matchingStreets.length : matchingGroups.length) && <p className={styles.note} role="status">No match. Try fewer words or check the spelling.</p>}
     </section>
 
-    {(view === "street" ? chosenStreet : chosenGroup) && <section className={styles.addresses} aria-labelledby="address-heading">
+    {showAddresses && addresses.length > 0 && <section className={styles.addresses} aria-labelledby="address-heading">
       <div className={styles.addressHeading}>
         <h2 id="address-heading">Choose your address</h2>
         {view === "subdivision" && chosenGroup && <a className={styles.download} href={`/api/election-directory/download/${chosenGroup.id}`}>Download Excel sheet</a>}
@@ -113,7 +107,7 @@ export default function AddressDirectory({ directory, initialPin }: { directory:
     </section>}
 
     <div className={styles.footer}>
-      <p>Can’t find your address? <a href="/election-information#ems-tax-calculator">Use the tax calculator.</a></p>
+      <p>Can’t find your address? <a href="/election-information?review=1#ems-tax-calculator">Use the tax calculator.</a></p>
       <details className={styles.help}>
         <summary>How we figured these amounts</summary>
         <p>These are yearly estimates using the county’s 2025 tax values. Street names and subdivisions follow the county records.</p>

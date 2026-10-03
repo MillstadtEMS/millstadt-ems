@@ -5,6 +5,8 @@ import styles from "./ElectionInformation.module.css";
 import ZoomableElectionImage from "./ZoomableElectionImage";
 import { hasElectionAccess } from "@/lib/election-review";
 import ElectionComingSoon from "@/components/ElectionComingSoon";
+import { electionIsPublic } from "@/lib/election-review-auth";
+import LockElectionReview from "@/components/LockElectionReview";
 
 const COUNTY_VOTER_RESOURCES =
   "https://www.co.st-clair.il.us/departments/county-clerk/elections/voter-resources";
@@ -22,16 +24,18 @@ export const metadata: Metadata = {
     "EMS tax calculator, referendum facts, flyer comparison, and official St. Clair County voter resources.",
 };
 
-export default async function ElectionInformationPage() {
-  if (!await hasElectionAccess()) return <ElectionComingSoon />;
+export default async function ElectionInformationPage({ searchParams }: { searchParams: Promise<{ review?: string }> }) {
+  const query = await searchParams;
+  if (!electionIsPublic() && (query.review !== "1" || !await hasElectionAccess())) return <ElectionComingSoon />;
   return (
     <main className={styles.page}>
+      <LockElectionReview />
       <header className={styles.hero}>
         <div className={styles.wrap}>
           <h1>Election Information</h1>
           <p className={styles.lead}>
-            Estimate the planned 0.30% ESD levy and the change for your fire tax district,
-            read about the referendum, and find county voting resources.
+            Find your address, see the estimated change in your EMS tax,
+            and learn about the referendum and voting.
           </p>
           <nav className={styles.sectionNav} aria-label="Election information sections">
             <a href="/election-information/address-directory">Find your address</a>

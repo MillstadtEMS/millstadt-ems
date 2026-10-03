@@ -22,7 +22,7 @@ for (const host of ["localhost", "127.0.0.1"]) {
     const accepted = await login(password, "https://unrelated.invalid/");
     assert.equal(accepted.status, 303);
     // A relative redirect avoids cross-origin form-action failures on local aliases.
-    assert.equal(accepted.headers.get("location"), "/election-information");
+    assert.equal(accepted.headers.get("location"), "/election-information?review=1");
     assert.match(accepted.headers.get("cache-control"), /no-store/);
     const cookie = accepted.headers.get("set-cookie");
     assert.match(cookie, /HttpOnly/i);
@@ -32,5 +32,15 @@ for (const host of ["localhost", "127.0.0.1"]) {
     });
     assert.equal(page.status, 200);
     assert.ok((await page.text()).includes("Find your address"));
+    const entry = await fetch(`${origin}/election-information`, { headers: { Cookie: cookie.split(";")[0] } });
+    assert.ok((await entry.text()).includes("Coming soon."), "the main election entry must not reuse an unlocked session");
+    const again = await fetch(`${origin}/election-review`, { headers: { Cookie: cookie.split(";")[0] }, redirect: "manual" });
+    assert.equal(again.status, 200);
+    assert.ok((await again.text()).includes('name="password"'), "review entry must ask for the password again");
+    const locked = await fetch(`${origin}/api/election-review/lock`, { method: "POST", redirect: "manual", headers: { Origin: origin, Cookie: cookie.split(";")[0] } });
+    assert.equal(locked.status, 303);
+    assert.match(locked.headers.get("set-cookie"), /Max-Age=0/i);
+    const afterLock = await fetch(`${origin}/election-information/address-directory`, { redirect: "manual", headers: { Cookie: locked.headers.get("set-cookie").split(";")[0] } });
+    assert.equal(afterLock.status, 307);
   });
 }

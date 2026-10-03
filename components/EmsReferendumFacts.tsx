@@ -108,7 +108,7 @@ export default function EmsReferendumFacts() {
           </div>
           <details className={styles.details}>
             <summary>What territory is described?</summary>
-            <div><p>The ballot question names the Millstadt Fire Protection District; the portion of the Hecker Fire Protection District in Millstadt Township, excluding its Prairie du Long Township portion; and the portion of the Waterloo Community Fire Protection District in St. Clair County. The Smithton Fire Protection District is not named in that description.</p><p>A mailing address alone does not establish membership. Use the certified district boundaries and County Clerk records to confirm a parcel. <a href="/election-information#county-voter-resources">View official voter resources →</a></p></div>
+            <div><p>The ballot question names the Millstadt Fire Protection District; the portion of the Hecker Fire Protection District in Millstadt Township, excluding its Prairie du Long Township portion; and the portion of the Waterloo Community Fire Protection District in St. Clair County. The Smithton Fire Protection District is not named in that description.</p><p>A mailing address alone does not establish membership. Use the certified district boundaries and County Clerk records to confirm a parcel. <a href="/election-information?review=1#county-voter-resources">View official voter resources →</a></p></div>
           </details>
         </div>
       </section>

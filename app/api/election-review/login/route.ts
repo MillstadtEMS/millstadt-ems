@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   const form = new URLSearchParams(Buffer.concat(chunks).toString("utf8"));
   const next = safeReviewPath(form.get("next"));
   if (!verifyReviewPassword(form.get("password"))) return reviewRedirect(`/election-review?error=password&next=${encodeURIComponent(next)}`);
-  const response = reviewRedirect(next);
+  const response = reviewRedirect(next === "/election-information" ? "/election-information?review=1" : next);
   response.cookies.set(REVIEW_COOKIE, createReviewToken(), { httpOnly: true, secure: req.nextUrl.protocol === "https:" || req.headers.get("x-forwarded-proto") === "https", sameSite: "lax", path: "/", maxAge: REVIEW_SECONDS });
   response.headers.set("Cache-Control", "no-store, private");
   return response;

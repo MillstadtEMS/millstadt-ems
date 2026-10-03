@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { hasElectionAccess } from "@/lib/election-review";
 import { safeReviewPath } from "@/lib/election-review-auth";
 import { PublicPageHero } from "@/components/site/PublicChrome";
 import styles from "./review.module.css";
@@ -8,7 +6,6 @@ export const metadata: Metadata = { title: "Election page review", robots: { ind
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = await searchParams;
   const next = safeReviewPath(query.next);
-  if (await hasElectionAccess()) redirect(next);
   return <main><PublicPageHero title="Election page" accent="Review" />
     <form className={styles.form} action="/api/election-review/login" method="post">
       <label htmlFor="review-password">Review password</label>

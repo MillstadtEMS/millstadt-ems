@@ -3,11 +3,10 @@
 .methods { display: flex; gap: 4px; width: fit-content; padding: 4px; margin-bottom: 24px; border: 1px solid #29405e; border-radius: 6px; }
 .methods button { padding: 11px 22px; min-height: 44px; border: 0; border-radius: 3px; background: transparent; color: #c4cfdf; font: inherit; font-weight: 750; cursor: pointer; }
 .methods button[aria-pressed="true"] { background: #f0b429; color: #071428; }
-.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.fields { display: grid; grid-template-columns: 1fr; gap: 22px; }
 .fields > div { min-width: 0; }
 .fields label { display: block; margin-bottom: 10px; font-size: 15px; font-weight: 750; }
-.fields input, .fields select { box-sizing: border-box; display: block; width: 100%; min-height: 50px; padding: 12px; border: 1px solid #526b89; border-radius: 5px; background: #040d1a; color: #f1f5f9; color-scheme: dark; font: inherit; font-size: 16px; box-shadow: none; }
-.fields input::placeholder { color: #8fa3be; font-size: 14px; }
+.fields select { box-sizing: border-box; display: block; width: 100%; min-height: 50px; padding: 12px; border: 1px solid #526b89; border-radius: 5px; background: #040d1a; color: #f1f5f9; color-scheme: dark; font: inherit; font-size: 16px; box-shadow: none; }
 .addresses { margin-top: 32px; }
 .addressHeading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
 .addressHeading h2 { font-size: 23px; font-weight: 800; margin: 0; }
