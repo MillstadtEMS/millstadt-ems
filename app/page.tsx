@@ -94,7 +94,7 @@ export default async function Home({
               {subtitle2}
             </p>
 
-            <div className="grid w-full max-w-4xl grid-cols-3 gap-3 sm:gap-5">
+            <div className="grid w-full max-w-4xl grid-cols-2 gap-3 sm:grid-cols-[1fr_1fr_1.5fr] sm:gap-5">
               <a
                 href={primaryBtnHref}
                 target="_blank"
@@ -111,11 +111,11 @@ export default async function Home({
               </Link>
               <Link
                 href="/election-information"
-                className="flex min-h-[76px] w-full flex-col items-center justify-center rounded-2xl border-2 border-[#f0b429] bg-[#f0b429] px-2 py-3 text-center font-black text-[#040d1a] transition-colors hover:border-[#ffd45c] hover:bg-[#ffd45c] sm:px-6"
+                className="col-span-2 flex min-h-[104px] w-full flex-col items-center justify-center rounded-2xl border-2 border-[#f0b429] bg-[#f0b429] px-5 py-5 text-center font-black text-[#040d1a] shadow-lg transition-colors hover:border-[#ffd45c] hover:bg-[#ffd45c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0b429] sm:col-span-1 sm:px-6"
               >
-                <span className="text-xs sm:text-base">Election Information</span>
-                <span className="mt-1 hidden text-[10px] uppercase tracking-[0.16em] text-[#0f2d5c] sm:block">
-                  Official voter resources
+                <span className="text-[22px] leading-tight sm:text-2xl">Election Information</span>
+                <span className="mt-2 text-xs uppercase tracking-[0.12em] text-[#0f2d5c]">
+                  Tax calculator, facts &amp; voter resources
                 </span>
               </Link>
             </div>
@@ -132,6 +132,13 @@ export default async function Home({
                 height={170}
                 className="h-auto w-[230px] drop-shadow-[0_8px_18px_rgba(0,0,0,0.55)] transition group-hover:drop-shadow-[0_8px_22px_rgba(240,180,41,0.3)]"
               />
+            </Link>
+            <Link
+              href="/ems-tax-calculator"
+              className="mt-3 flex min-h-[104px] w-full max-w-xl flex-col items-center justify-center rounded-2xl border-2 border-[#f0b429] bg-[#0a1e3d] px-6 py-5 text-center font-black text-[#f0b429] shadow-lg transition-colors hover:bg-[#0d2a52] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0b429]"
+            >
+              <span className="text-2xl leading-tight sm:text-3xl">EMS Tax Calculator</span>
+              <span className="mt-2 text-base font-semibold text-slate-200">Compare 0.09% → 0.30%</span>
             </Link>
           </div>
 

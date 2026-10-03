@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
+import EmsTaxCalculator from "@/components/EmsTaxCalculator";
+import EmsReferendumFacts from "@/components/EmsReferendumFacts";
 import styles from "./ElectionInformation.module.css";
 import ZoomableElectionImage from "./ZoomableElectionImage";
+import { hasElectionAccess } from "@/lib/election-review";
+import ElectionComingSoon from "@/components/ElectionComingSoon";
 
 const COUNTY_VOTER_RESOURCES =
   "https://www.co.st-clair.il.us/departments/county-clerk/elections/voter-resources";
@@ -13,39 +17,46 @@ const ILLINOIS_VOTE_BY_MAIL =
 
 export const metadata: Metadata = {
   title: "Election Information",
+  robots: { index: false, follow: false },
   description:
-    "Official St. Clair County links for voter registration, polling places, sample ballots, and Vote-by-Mail requests.",
+    "EMS tax calculator, referendum facts, flyer comparison, and official St. Clair County voter resources.",
 };
 
-export default function ElectionInformationPage() {
+export default async function ElectionInformationPage() {
+  if (!await hasElectionAccess()) return <ElectionComingSoon />;
   return (
     <main className={styles.page}>
       <header className={styles.hero}>
         <div className={styles.wrap}>
-          <p className={styles.kicker}>St. Clair County voting information</p>
-          <h1>Voting in St. Clair County</h1>
+          <h1>Election Information</h1>
           <p className={styles.lead}>
-            Use the official St. Clair County Clerk website to check your
-            registration, find your polling place, see ballot information, or
-            request a ballot by mail.
+            Estimate the planned 0.30% ESD levy and the change for your fire tax district,
+            read about the referendum, and find county voting resources.
           </p>
+          <nav className={styles.sectionNav} aria-label="Election information sections">
+            <a href="/election-information/address-directory">Find your address</a>
+            <a href="#ems-tax-calculator">EMS Tax Calculator</a>
+            <a href="#referendum-facts">Referendum facts</a>
+            <a href="#service-continuity">Funding &amp; service</a>
+            <a href="#flyer-review">Flyer comparison</a>
+            <a href="#county-voter-resources">Official voter resources</a>
+          </nav>
           <a
             className={styles.mainLink}
             href={COUNTY_VOTER_RESOURCES}
             target="_blank"
             rel="noopener noreferrer"
           >
-            Click here: Official County Voter Resources
+            St. Clair County Voter Resources
           </a>
-          <p className={styles.printedUrl}>{COUNTY_VOTER_RESOURCES}</p>
-          <p className={styles.neutralStatement}>
-            This page provides voting information only. It does not support or
-            oppose any candidate, party, or ballot question.
-          </p>
         </div>
       </header>
 
+      <EmsTaxCalculator />
+      <EmsReferendumFacts />
+
       <section
+        id="county-voter-resources"
         className={[styles.section, styles.toolsSection].join(" ")}
         aria-labelledby="county-tools-heading"
       >
@@ -110,8 +121,7 @@ export default function ElectionInformationPage() {
         <div className={styles.readingWidth}>
           <h2 id="mail-heading">How to request a ballot by mail</h2>
           <p>
-            You make the request on the county website. Millstadt EMS does not
-            collect your voter information.
+            You make the request on the county website. We do not collect your voter information.
           </p>
 
           <ol className={styles.steps}>

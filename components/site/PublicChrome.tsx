@@ -9,7 +9,7 @@ export function PublicPageHero({
   description,
   children,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   accent?: string;
   description?: ReactNode;
@@ -20,10 +20,10 @@ export function PublicPageHero({
       <div className="wrap">
         <div className={`mems-page-hero__grid${children ? "" : " mems-page-hero__grid--single"}`}>
           <div className="mems-page-hero__copy">
-            <div className="mems-eyebrow">
+            {eyebrow && <div className="mems-eyebrow">
               <span />
               {eyebrow}
-            </div>
+            </div>}
             <h1>
               {title}
               {accent && <span>{accent}</span>}
