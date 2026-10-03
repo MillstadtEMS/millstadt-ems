@@ -1,0 +1,40 @@
+.directory { padding-top: 28px; padding-bottom: 70px; color: #f1f5f9; }
+.jumpLinks { display: flex; gap: 24px; margin-bottom: 24px; color: #f0b429; font-weight: 750; }
+.directory h2 { scroll-margin-top: 160px; }
+.directory h2 { font-size: clamp(26px, 3vw, 36px); font-weight: 900; margin: 0 0 22px; }
+.intro { color: #b9c8dc; font-size: 15px; line-height: 1.7; max-width: 920px; margin: 0 0 30px; }
+.searchLabel { display: block; color: #f1f5f9; font-weight: 750; margin-bottom: 8px; }
+.directory .search { display: block; width: 100%; max-width: 560px; padding: 14px 16px; background: #071428; color: #f1f5f9; border: 1px solid #526b89; border-radius: 6px; min-height: 50px; font: inherit; margin-bottom: 26px; box-shadow: none; }
+.streetList { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; align-items: start; }
+.group { border: 1px solid #29405e; border-radius: 6px; overflow: hidden; background: #071428; }
+.expanded { grid-column: 1 / -1; }
+.groupButton { display: flex; justify-content: space-between; align-items: center; gap: 16px; width: 100%; text-align: left; padding: 16px 18px; min-height: 56px; border: 0; background: #071428; color: #f1f5f9; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
+.groupButton:hover, .groupButton[aria-expanded="true"] { background: #0d2a52; color: #f0b429; }
+.groupButton > span:last-child { font-size: 22px; font-weight: 500; }
+.groupContent { padding: 0 18px 14px; }
+.address { border-top: 1px solid #29405e; }
+.addressLink { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 4px; color: #f1f5f9; text-decoration: none; }
+.addressLink strong { font-size: 16px; }
+.addressLink small { display: block; font-size: 12px; color: #aebfd5; margin-top: 3px; }
+.addressLink[aria-expanded="true"] strong, .addressLink:hover strong { color: #f0b429; }
+.addressLink > span:last-child { font-size: 23px; color: #f0b429; }
+.addressContent { padding: 0 4px 20px; }
+.amounts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 0; }
+.amounts > div { padding: 20px; background: #0a1e3d; border-radius: 6px; }
+.amounts dt { color: #c4cfdf; font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+.amounts dd { margin: 0; font-size: clamp(24px,3vw,34px); font-weight: 850; font-variant-numeric: tabular-nums; }
+.amounts .increase { background: #f0b429; color: #040d1a; }
+.increase dt { color: #172a43; }
+.parcel + .parcel { margin-top: 24px; }
+.parcelNumber { color: #c4cfdf; font-size: 13px; font-weight: 750; margin: 0 0 10px; }
+.shared, .note { color: #aebfd5; font-size: 13px; line-height: 1.6; }
+.note { margin: 18px 0 0; }
+.note a, .download { color: #f0b429; text-decoration: underline; text-underline-offset: 3px; }
+.subdivisions { margin-top: 64px; border-top: 1px solid #29405e; padding-top: 40px; }
+.subdivisionList { display: grid; gap: 10px; }
+.download { display: inline-block; padding: 16px 0; font-size: 14px; font-weight: 750; }
+.otherAreas { margin-top: 30px; }
+.otherAreas > summary { padding: 14px 0; cursor: pointer; color: #c4cfdf; font-weight: 750; }
+.directory :focus-visible { outline: 3px solid #f0b429; outline-offset: 3px; }
+@media(max-width: 850px) { .streetList { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width: 560px) { .streetList { grid-template-columns: 1fr; } .amounts { grid-template-columns: 1fr; gap: 8px; } .amounts > div { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 14px; } .amounts dt { margin: 0; max-width: 50%; } .amounts dd { font-size: 26px; } .groupContent { padding: 0 12px 12px; } }
