@@ -14,7 +14,7 @@ export type PublicLibraryDocument = {
   disclaimer?: string;
   sortOrder: number;
   filingYear?: number;
-  statusLabel: "Filed" | "Official record" | "County record" | "Approved public report" | "Budget projection";
+  statusLabel: "Filed" | "Official record" | "County record" | "Approved public report" | "Budget projection" | "Draft";
   employee?: "Kenneth James" | "Jennifer Goetz";
   attachmentOf?: string;
   taxData?: TaxComputationData;
@@ -105,6 +105,28 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
       viewUrl: proFormaUrl,
       downloadUrl: proFormaUrl,
       printUrl: proFormaUrl,
+    },
+  ];
+
+  const draftAuditUrl = "/financial-transparency/audits/annual-audit-fy-2025-2026-draft.pdf";
+  const draftAnnualAudits: PublicLibraryDocument[] = [
+    {
+      id: "annual-audit-fy-2025-2026",
+      kind: "annual_audit",
+      title: "Annual Audit — FY 2025–2026 (Draft)",
+      category: "Operational",
+      periodLabel: "May 1, 2025 through April 30, 2026",
+      dateLabel: "Draft posted October 31, 2026",
+      pageCount: 23,
+      sourceLabel: "Millstadt Ambulance Service · Draft annual financial report",
+      note: "This report is in draft form and is not final. It is subject to change.",
+      filingYear: 2026,
+      sortOrder: 20260430,
+      statusLabel: "Draft",
+      searchText: "Annual Audits Annual Audit FY 2025-2026 FY 25-26 May 1 2025 April 30 2026 Draft annual financial report financial statements prior-year comparative figures Operational not final subject to change",
+      viewUrl: draftAuditUrl,
+      downloadUrl: draftAuditUrl,
+      printUrl: draftAuditUrl,
     },
   ];
 
@@ -318,5 +340,5 @@ export function publicFinancialDocumentLibrary(): PublicLibraryDocument[] {
       viewUrl: url, downloadUrl: url, printUrl: url,
     };
   });
-  return [...budgetProFormas, ...annualAudits, ...settlementSheets, ...corporateAnnualReports, ...ilagLetters, ...goodStandingCertificates, ...moneyMarketStatements, ...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
+  return [...budgetProFormas, ...draftAnnualAudits, ...annualAudits, ...settlementSheets, ...corporateAnnualReports, ...ilagLetters, ...goodStandingCertificates, ...moneyMarketStatements, ...irsRecords, ...taxComputationReports, ...form990s, ...managementReports];
 }

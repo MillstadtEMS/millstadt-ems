@@ -14,6 +14,7 @@ const [library, audits, fiscal, transparency] = await Promise.all([
 
 const documents = library.publicFinancialDocumentLibrary();
 const posted = documents.filter(document => document.kind === "annual_audit");
+const completed = posted.filter(document => document.statusLabel !== "Draft");
 const pending = audits.PENDING_ANNUAL_AUDITS;
 const verifiedSources = {
   ...JSON.parse(readFileSync(new URL("./fixtures/historical-annual-audits.json", import.meta.url), "utf8")),
@@ -23,12 +24,12 @@ const verifiedSources = {
 };
 
 test("complete annual audits have canonical public PDF actions and correct fiscal years", () => {
-  assert.equal(posted.length, 34);
-  assert.deepEqual(posted.map(document => document.filingYear).sort((a, b) => a - b),
+  assert.equal(completed.length, 34);
+  assert.deepEqual(completed.map(document => document.filingYear).sort((a, b) => a - b),
     [1982, 1984, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2006, 2007, 2008, 2009, 2011, 2012, 2013, 2014, 2015, 2016, 2018, 2019, 2023, 2024, 2025]);
-  assert.deepEqual(new Set(posted.map(document => document.id)), new Set(Object.keys(verifiedSources)));
+  assert.deepEqual(new Set(completed.map(document => document.id)), new Set(Object.keys(verifiedSources)));
   assert.ok(!posted.some(document => [1985, 2017].includes(document.filingYear)), "Incomplete scans must remain unpublished");
-  for (const document of posted) {
+  for (const document of completed) {
     const url = `/financial-transparency/audits/${document.id}.pdf`;
     assert.equal(document.category, "Operational");
     assert.equal(document.viewUrl, url);
@@ -49,15 +50,31 @@ test("every published annual-audit entry has a complete local PDF for deployment
     assert.equal(file.subarray(0, 5).toString("ascii"), "%PDF-", document.id);
     assert.ok(file.length > 1024, `${document.id} must contain the actual report`);
     assert.match(file.subarray(-2048).toString("ascii"), /%%EOF/, `${document.id} must not be a partial download`);
-    assert.equal(createHash("sha256").update(file).digest("hex"), verifiedSources[document.id].sha256, `${document.id} must match the verified complete publication copy`);
+    const expectedHash = document.statusLabel === "Draft"
+      ? "2452a730b7c207b65f15d40057dd7a5819b8116e8a14199fedca5f8296e8d95e"
+      : verifiedSources[document.id].sha256;
+    assert.equal(createHash("sha256").update(file).digest("hex"), expectedHash, `${document.id} must match the supplied publication copy`);
   }
 });
 
-test("pending audits preserve distinct annual statuses without inventing downloadable files", () => {
-  assert.equal(pending.length, 1);
-  assert.deepEqual(pending.map(row => [row.id, row.year, row.statusLabel]), [
-    ["annual-audit-fy-2025-2026", 2026, "Awaiting audit completion"],
-  ]);
+test("the FY 2025–2026 draft replaces its pending placeholder with clearly labeled PDF actions", () => {
+  assert.equal(pending.length, 0);
+  assert.equal(posted.length, 35);
+  const drafts = posted.filter(document => document.statusLabel === "Draft");
+  assert.equal(drafts.length, 1);
+  const draft = drafts[0];
+  assert.equal(draft.id, "annual-audit-fy-2025-2026");
+  assert.equal(draft.filingYear, 2026);
+  assert.equal(draft.pageCount, 23);
+  assert.match(draft.title, /FY 2025–2026 \(Draft\)/);
+  assert.match(draft.note, /draft form.*not final.*subject to change/);
+  assert.equal(draft.viewUrl, "/financial-transparency/audits/annual-audit-fy-2025-2026-draft.pdf");
+  assert.equal(draft.downloadUrl, draft.viewUrl);
+  assert.equal(draft.printUrl, draft.viewUrl);
+  assert.ok(transparency.matchesSearch(transparency.documentSearchText(draft), "draft"));
+});
+
+test("pending audits do not invent downloadable files", () => {
   for (const row of pending) {
     assert.match(row.title, /Annual Audit/i);
     assert.ok(row.title.includes(String(row.year - 1)) && row.title.includes(String(row.year)));
@@ -73,10 +90,10 @@ test("pending audits preserve distinct annual statuses without inventing downloa
 });
 
 test("only real files contribute to the public-document count", () => {
-  assert.equal(documents.length, 88);
-  assert.equal(new Set(documents.map(document => document.id)).size, 88);
-  assert.equal(new Set(documents.map(document => document.downloadUrl)).size, 88);
-  assert.equal(documents.filter(document => document.kind !== "annual_audit").length, 54);
+  assert.equal(documents.length, 91);
+  assert.equal(new Set(documents.map(document => document.id)).size, 91);
+  assert.equal(new Set(documents.map(document => document.downloadUrl)).size, 91);
+  assert.equal(documents.filter(document => document.kind !== "annual_audit").length, 56);
 });
 
 test("annual audits are searchable operational records and do not enter the 990 filter", () => {
