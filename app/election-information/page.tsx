@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import ElectionNightIllustration from "./ElectionNightIllustration";
 import { connection } from "next/server";
 import { ArrowUpRight, CheckCheck, ChevronDown } from "lucide-react";
 import { getElectionReport } from "@/lib/election-results/report";
@@ -70,25 +70,21 @@ export default async function ElectionResultsPage() {
           <h1 id="election-heading">Election results</h1>
           <h2>Millstadt EMS ESD referendum</h2>
           <p className={styles.description}>Voters weighed whether to form an emergency services district and authorize a property tax levy of up to 0.40%.</p>
-          <div className={styles.score}>
-            <div className={styles.scoreHead}>
-              <span className={styles.status}>{report.official ? "Official results" : "Unofficial results"}</span>
-              <span>{format(total)} votes</span>
-            </div>
-            <div className={styles.numbers}>
-              <div><span><i />Yes</span><strong>{format(report.yes)}</strong><small>{percent(report.yes)}</small></div>
-              <div><span><i />No</span><strong>{format(report.no)}</strong><small>{percent(report.no)}</small></div>
-            </div>
-            <div className={styles.bar} aria-hidden="true"><span style={{ width: total ? percent(report.yes) : "0%" }} /></div>
-            <p className={styles.gap}>{gap ? <><strong>{format(gap)}-vote difference</strong> <span>· {report.yes > report.no ? "Yes" : "No"} ahead</span></> : <strong>{total ? "Tied vote" : "Awaiting votes"}</strong>}</p>
-            <p className={styles.reporting}>{report.reporting}</p>
-          </div>
         </div>
-        <figure className={styles.poster}>
-          <Image src="/images/election-results/too-close-to-call.webp" width={1254} height={1254}
-            sizes="(max-width: 780px) 92vw, 460px" loading="eager" alt="Millstadt EMS election-night graphic. A referee crosses his arms above the words “Too close to call.”" />
-          <figcaption><span>Election night</span> <span>Nov. 3, 2026</span></figcaption>
-        </figure>
+        <div className={styles.score}>
+          <div className={styles.scoreHead}>
+            <span className={styles.status}>{report.official ? "Official results" : "Unofficial results"}</span>
+            <span>{format(total)} votes</span>
+          </div>
+          <div className={styles.numbers}>
+            <div><span><i />Yes</span><strong>{format(report.yes)}</strong><small>{percent(report.yes)}</small></div>
+            <div><span><i />No</span><strong>{format(report.no)}</strong><small>{percent(report.no)}</small></div>
+          </div>
+          <div className={styles.bar} aria-hidden="true"><span style={{ width: total ? percent(report.yes) : "0%" }} /></div>
+          <p className={styles.gap}>{gap ? <><strong>{format(gap)}-vote difference</strong> <span>· {report.yes > report.no ? "Yes" : "No"} ahead</span></> : <strong>{total ? "Tied vote" : "Awaiting votes"}</strong>}</p>
+          <p className={styles.reporting}>{report.reporting}</p>
+        </div>
+        <ElectionNightIllustration />
       </section>
       <aside className={styles.cert}>
         <CheckCheck size={24} aria-hidden="true" />
@@ -103,9 +99,8 @@ export default async function ElectionResultsPage() {
           <h2 id="details-heading">Inside the count</h2>
           <p>Explore the votes by precinct, township, or voting type. Each view breaks down the same {format(total)} votes.</p>
           <div className={styles.sourceBlock}>
-            <p><strong>{saved ? "Saved county report" : "County figures checked"}</strong><br />
+            <p><strong>{saved ? "Last verified county figures" : "As of"}</strong><br />
               <time dateTime={report.checkedAt}>{checkedTime.format(new Date(report.checkedAt))}</time></p>
-            <p>{saved ? "Showing the last verified figures. This page checks again every minute while open." : "This page checks for county updates every minute while open."}</p>
             <CountyLink href={countySummary}>St. Clair County results</CountyLink>
           </div>
         </div>
