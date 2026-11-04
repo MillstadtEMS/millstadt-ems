@@ -86,7 +86,7 @@ export default async function ElectionResultsPage() {
           <p className={styles.gap}>{gap ? <><strong>{format(gap)}-vote difference</strong> <span>· {lead === "yes" ? "Yes" : "No"} ahead</span></> : <strong>{total ? "Tied vote" : "Awaiting votes"}</strong>}</p>
           <p className={styles.reporting}>{report.reporting}</p>
         </div>
-        <ElectionNightIllustration />
+        <ElectionNightIllustration passed={report.official && report.yes > report.no} />
       </section>
       <aside className={styles.cert}>
         <CheckCheck size={24} aria-hidden="true" />
