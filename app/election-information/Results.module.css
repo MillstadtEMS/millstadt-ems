@@ -45,6 +45,8 @@
 .reporting { margin: 1px 0 0; font-size: 13px; line-height: 1.5; }
 .illustration { grid-area: art; margin: 0; min-width: 0; display: grid; justify-items: center; align-content: center; }
 .referee { display: block; width: min(100%, 410px); height: auto; }
+.wideReferee { display: block; width: min(100%, 500px); height: auto; }
+.tieMark { color: #594719; font-size: clamp(64px, 9vw, 128px); line-height: 1; font-weight: 850; letter-spacing: -.06em; }
 .artDate { margin-top: 10px; color: var(--muted); font-size: 10px; }
 .cert { display: flex; gap: 14px; align-items: center; padding: 18px 22px; border-left: 4px solid #a77c04; background: #ece7ce; }
 .cert > svg { flex: 0 0 auto; color: #685113; }
