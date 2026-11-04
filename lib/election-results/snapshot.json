@@ -1,0 +1,133 @@
+{
+  "official": false,
+  "reporting": "13 of 13 precincts partially reporting",
+  "yes": 2274,
+  "no": 2259,
+  "votingTypes": [
+    {
+      "label": "Election Day",
+      "yes": 1667,
+      "no": 1725
+    },
+    {
+      "label": "Vote By Mail",
+      "yes": 361,
+      "no": 282
+    },
+    {
+      "label": "Early Voting",
+      "yes": 246,
+      "no": 252
+    },
+    {
+      "label": "Provisional",
+      "yes": 0,
+      "no": 0
+    },
+    {
+      "label": "Other",
+      "yes": 0,
+      "no": 0
+    }
+  ],
+  "precincts": [
+    {
+      "label": "Centreville 10",
+      "yes": 0,
+      "no": 1
+    },
+    {
+      "label": "Millstadt 1",
+      "yes": 407,
+      "no": 382
+    },
+    {
+      "label": "Millstadt 2",
+      "yes": 556,
+      "no": 427
+    },
+    {
+      "label": "Millstadt 3",
+      "yes": 159,
+      "no": 201
+    },
+    {
+      "label": "Millstadt 4",
+      "yes": 340,
+      "no": 156
+    },
+    {
+      "label": "Millstadt 5",
+      "yes": 372,
+      "no": 424
+    },
+    {
+      "label": "St Clair 2",
+      "yes": 3,
+      "no": 1
+    },
+    {
+      "label": "St Clair 4",
+      "yes": 4,
+      "no": 3
+    },
+    {
+      "label": "Smithton 3",
+      "yes": 25,
+      "no": 33
+    },
+    {
+      "label": "Stookey 1",
+      "yes": 357,
+      "no": 581
+    },
+    {
+      "label": "Stookey 5",
+      "yes": 25,
+      "no": 22
+    },
+    {
+      "label": "Stookey 6",
+      "yes": 26,
+      "no": 28
+    },
+    {
+      "label": "Sugar Loaf 1",
+      "yes": 0,
+      "no": 0
+    }
+  ],
+  "townships": [
+    {
+      "label": "Centreville Township",
+      "yes": 0,
+      "no": 1
+    },
+    {
+      "label": "Millstadt Township",
+      "yes": 1834,
+      "no": 1590
+    },
+    {
+      "label": "Smithton Township",
+      "yes": 25,
+      "no": 33
+    },
+    {
+      "label": "St. Clair Township",
+      "yes": 7,
+      "no": 4
+    },
+    {
+      "label": "Stookey Township",
+      "yes": 408,
+      "no": 631
+    },
+    {
+      "label": "Sugar Loaf Township",
+      "yes": 0,
+      "no": 0
+    }
+  ],
+  "checkedAt": "2026-11-04T19:02:20.964Z"
+}

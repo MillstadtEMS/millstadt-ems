@@ -1,246 +1,120 @@
 import type { Metadata } from "next";
-import EmsTaxCalculator from "@/components/EmsTaxCalculator";
-import EmsReferendumFacts from "@/components/EmsReferendumFacts";
-import styles from "./ElectionInformation.module.css";
-import ZoomableElectionImage from "./ZoomableElectionImage";
-import { hasElectionAccess } from "@/lib/election-review";
-import ElectionComingSoon from "@/components/ElectionComingSoon";
-import { electionIsPublic } from "@/lib/election-review-auth";
-import LockElectionReview from "@/components/LockElectionReview";
-
-const COUNTY_VOTER_RESOURCES =
-  "https://www.co.st-clair.il.us/departments/county-clerk/elections/voter-resources";
-const COUNTY_MOBILE_RESOURCES =
-  "https://vr.platinumvrms.com/county/RSLRequest/6?t=0";
-const COUNTY_VOTE_BY_MAIL =
-  "https://www.co.st-clair.il.us/departments/county-clerk/elections/vote-by-mail-information";
-const ILLINOIS_VOTE_BY_MAIL =
-  "https://www.elections.il.gov/electionoperations/VotingByMail.aspx";
+import Image from "next/image";
+import { connection } from "next/server";
+import { ArrowUpRight, CheckCheck, ChevronDown } from "lucide-react";
+import { getElectionReport } from "@/lib/election-results/report";
+import { sources, type VoteRow } from "@/lib/election-results/county";
+import RefreshResults from "./RefreshResults";
+import styles from "./Results.module.css";
 
 export const metadata: Metadata = {
-  title: "Election Information",
-  robots: { index: false, follow: false },
-  description:
-    "EMS tax calculator, referendum facts, flyer comparison, and official St. Clair County voter resources.",
+  title: "Election Results",
+  description: "Follow St. Clair County’s returns for the November 3, 2026 Millstadt EMS ESD referendum. Explore results by precinct, township, and voting type.",
 };
+const numbers = new Intl.NumberFormat("en-US");
+const format = (n: number) => numbers.format(n);
+const checkedTime = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/Chicago", month: "short", day: "numeric", year: "numeric",
+  hour: "numeric", minute: "2-digit", timeZoneName: "short",
+});
+const countySummary = sources.summary + "#:~:text=organized%20as%20Millstadt%20EMS%20ESD";
 
-export default async function ElectionInformationPage({ searchParams }: { searchParams: Promise<{ review?: string }> }) {
-  const query = await searchParams;
-  if (!electionIsPublic() && (query.review !== "1" || !await hasElectionAccess())) return <ElectionComingSoon />;
-  return (
-    <main className={styles.page}>
-      <LockElectionReview />
-      <header className={styles.hero}>
-        <div className={styles.wrap}>
-          <h1>Election Information</h1>
-          <p className={styles.lead}>
-            Find your address, see the estimated change in your EMS tax,
-            and learn about the referendum and voting.
-          </p>
-          <nav className={styles.sectionNav} aria-label="Election information sections">
-            <a href="/election-information/address-directory">Find your address</a>
-            <a href="#ems-tax-calculator">EMS Tax Calculator</a>
-            <a href="#referendum-facts">Referendum facts</a>
-            <a href="#service-continuity">Funding &amp; service</a>
-            <a href="#flyer-review">Flyer comparison</a>
-            <a href="#county-voter-resources">Official voter resources</a>
-          </nav>
-          <a
-            className={styles.mainLink}
-            href={COUNTY_VOTER_RESOURCES}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            St. Clair County Voter Resources
-          </a>
-        </div>
+function CountyLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return <a className={styles.link} href={href} target="_blank" rel="noopener noreferrer">
+    {children} <ArrowUpRight size={15} aria-hidden="true" />
+  </a>;
+}
+
+function Breakdown({ title, column, rows, source, open = false }: {
+  title: string; column: string; rows: VoteRow[]; source: string; open?: boolean;
+}) {
+  const yes = rows.reduce((sum, row) => sum + row.yes, 0);
+  const no = rows.reduce((sum, row) => sum + row.no, 0);
+  return <details className={styles.details} open={open}>
+    <summary>
+      <span>{title}</span>
+      <small>{rows.length} {column === "Voting type" ? "types" : column.toLowerCase() + "s"}</small>
+      <ChevronDown size={19} aria-hidden="true" />
+    </summary>
+    <div className={styles.detailBody}>
+      <table>
+        <caption className="sr-only">{title} for the Millstadt EMS ESD referendum</caption>
+        <thead><tr><th scope="col">{column}</th><th scope="col">Yes</th><th scope="col">No</th><th scope="col">Total</th></tr></thead>
+        <tbody>{rows.map(row => <tr key={row.label}>
+          <th scope="row">{row.label}</th><td>{format(row.yes)}</td><td>{format(row.no)}</td><td>{format(row.yes + row.no)}</td>
+        </tr>)}</tbody>
+        <tfoot><tr><th scope="row">Total</th><td>{format(yes)}</td><td>{format(no)}</td><td>{format(yes + no)}</td></tr></tfoot>
+      </table>
+      <CountyLink href={source}>View county report</CountyLink>
+    </div>
+  </details>;
+}
+
+export default async function ElectionResultsPage() {
+  await connection();
+  const report = await getElectionReport();
+  const total = report.yes + report.no;
+  const percent = (votes: number) => total ? (100 * votes / total).toFixed(2) + "%" : "—";
+  const gap = Math.abs(report.yes - report.no);
+  const saved = Date.now() - Date.parse(report.checkedAt) > 150_000;
+  return <article className={styles.page}>
+    <RefreshResults />
+    <div className={styles.wrap}>
+      <header className={styles.mast}>
+        <span>Millstadt EMS <b>/</b> Election desk</span>
+        <span>St. Clair County, Illinois</span>
       </header>
-
-      <EmsTaxCalculator />
-      <EmsReferendumFacts />
-
-      <section
-        id="county-voter-resources"
-        className={[styles.section, styles.toolsSection].join(" ")}
-        aria-labelledby="county-tools-heading"
-      >
-        <div className={styles.readingWidth}>
-          <h2 id="county-tools-heading">What you can find on the county website</h2>
-          <ul className={styles.plainList}>
-            <li>Check whether you are registered to vote.</li>
-            <li>Find your Election Day polling place.</li>
-            <li>View a sample ballot when one is available.</li>
-            <li>Request a Vote-by-Mail ballot.</li>
-            <li>Find the elected officials for your address.</li>
-          </ul>
-        </div>
-      </section>
-
-      <section
-        className={[styles.section, styles.screenshotSection].join(" ")}
-        aria-label="Voting picture guides"
-      >
-        <div className={styles.wrap}>
-          <div className={styles.guideGallery}>
-            <ZoomableElectionImage
-              featured
-              src="/images/election-information/st-clair-county-voting-guide.webp"
-              alt="Six-step picture guide for requesting a Vote-by-Mail ballot in St. Clair County"
-              width={2752}
-              height={1536}
-              title="Vote-by-Mail in six steps"
-              caption="Open the county page. Find the request area. Enter your name and one ID number. Submit the request. Watch the mail."
-            />
-
-            <ZoomableElectionImage
-              src="/images/election-information/st-clair-county-request-ballot-guide.webp"
-              alt="Annotated picture of the St. Clair County Vote-by-Mail request form with numbered directions"
-              width={1122}
-              height={1402}
-              title="County Vote-by-Mail form"
-              caption="The numbers point to the mobile link, the name and ID boxes, and the Submit Request button."
-            />
-
-            <ZoomableElectionImage
-              src="/images/election-information/st-clair-county-voter-tools-guide.webp"
-              alt="St. Clair County voter resources guide showing registration, Vote-by-Mail, polling place, and elected-official tools"
-              width={1122}
-              height={1402}
-              title="County voter resources"
-              caption="Use the official page to check registration, find a polling place, see ballot information, and find elected officials."
-            />
-          </div>
-
-          <p className={styles.belowPictures}>
-            Pictures are for help only. To enter your information, use the{" "}
-            <a href={COUNTY_VOTER_RESOURCES} target="_blank" rel="noopener noreferrer">
-              official St. Clair County website
-            </a>
-            .
-          </p>
-        </div>
-      </section>
-
-      <section className={styles.section} aria-labelledby="mail-heading">
-        <div className={styles.readingWidth}>
-          <h2 id="mail-heading">How to request a ballot by mail</h2>
-          <p>
-            You make the request on the county website. We do not collect your voter information.
-          </p>
-
-          <ol className={styles.steps}>
-            <li>
-              <strong>Open the official Voter Resources page.</strong>
-              <a href={COUNTY_VOTER_RESOURCES} target="_blank" rel="noopener noreferrer">
-                Click here to open it
-              </a>
-              .
-            </li>
-            <li>
-              <strong>On a phone, tap “Mobile Friendly Version” if needed.</strong>
-              The county also says the page works best in Google Chrome.{" "}
-              <a href={COUNTY_MOBILE_RESOURCES} target="_blank" rel="noopener noreferrer">
-                Open the mobile version
-              </a>
-              .
-            </li>
-            <li>
-              <strong>Enter your first and last name.</strong>
-              Use the name shown on your voter information. If you have more
-              than one last name, the county says to enter only your first last name.
-            </li>
-            <li>
-              <strong>Enter one ID number.</strong>
-              Use either the last four digits of your Social Security number or
-              your driver&apos;s license number.
-            </li>
-            <li>
-              <strong>Select “Submit Request.”</strong>
-              Read the next screen and follow the county&apos;s instructions.
-            </li>
-            <li>
-              <strong>Watch your mail.</strong>
-              If the county approves and processes the request, it will mail
-              the ballot to the address connected to your voter registration.
-            </li>
-          </ol>
-
-          <div className={styles.note}>
-            <h3>If the search does not work</h3>
-            <p>
-              Remove the last four digits of your Social Security number. Enter
-              your full driver&apos;s license or state ID number with no dashes,
-              then try again.
-            </p>
+      <section className={styles.hero} aria-labelledby="election-heading">
+        <div className={styles.lead}>
+          <p className={styles.kicker}><span className={styles.dash} /> November 3, 2026 <b>·</b> General election</p>
+          <h1 id="election-heading">Election results</h1>
+          <h2>Millstadt EMS ESD referendum</h2>
+          <p className={styles.description}>Voters weighed whether to form an emergency services district and authorize a property tax levy of up to 0.40%.</p>
+          <div className={styles.score}>
+            <div className={styles.scoreHead}>
+              <span className={styles.status}>{report.official ? "Official results" : "Unofficial results"}</span>
+              <span>{format(total)} votes</span>
+            </div>
+            <div className={styles.numbers}>
+              <div><span><i />Yes</span><strong>{format(report.yes)}</strong><small>{percent(report.yes)}</small></div>
+              <div><span><i />No</span><strong>{format(report.no)}</strong><small>{percent(report.no)}</small></div>
+            </div>
+            <div className={styles.bar} aria-hidden="true"><span style={{ width: total ? percent(report.yes) : "0%" }} /></div>
+            <p className={styles.gap}>{gap ? <><strong>{format(gap)}-vote difference</strong> <span>· {report.yes > report.no ? "Yes" : "No"} ahead</span></> : <strong>{total ? "Tied vote" : "Awaiting votes"}</strong>}</p>
+            <p className={styles.reporting}>{report.reporting}</p>
           </div>
         </div>
+        <figure className={styles.poster}>
+          <Image src="/images/election-results/too-close-to-call.webp" width={1254} height={1254}
+            sizes="(max-width: 780px) 92vw, 460px" loading="eager" alt="Millstadt EMS election-night graphic. A referee crosses his arms above the words “Too close to call.”" />
+          <figcaption><span>Election night</span> <span>Nov. 3, 2026</span></figcaption>
+        </figure>
       </section>
-
-      <section className={[styles.section, styles.optionsSection].join(" ")} aria-labelledby="mail-options-heading">
-        <div className={styles.readingWidth}>
-          <h2 id="mail-options-heading">One election or future elections</h2>
-          <div className={styles.optionGrid}>
-            <div className={styles.optionItem}>
-              <h3>One-time request</h3>
-              <p>
-                You can request a ballot by mail for one election using the
-                county Voter Resources page.
-              </p>
-            </div>
-            <div className={styles.optionItem}>
-              <h3>Permanent Vote by Mail</h3>
-              <p>
-                Illinois voters may apply to receive eligible future ballots
-                by mail. Read the county&apos;s information before choosing this
-                option.
-              </p>
-              <a
-                className={styles.textLink}
-                href={COUNTY_VOTE_BY_MAIL}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Read the county&apos;s Vote-by-Mail information
-              </a>
-            </div>
+      <aside className={styles.cert}>
+        <CheckCheck size={24} aria-hidden="true" />
+        <div><h2>{report.official ? "Official county results" : "Awaiting certification"}</h2>
+          <p>{report.official ? "St. Clair County now lists these results as official." : "These totals may change. Official results will be posted here after St. Clair County certifies the election."}</p>
+        </div>
+        <CountyLink href="https://www.co.st-clair.il.us/departments/county-clerk/elections/previous-election-results">County canvass records</CountyLink>
+      </aside>
+      <section className={styles.breakdowns} aria-labelledby="details-heading">
+        <div className={styles.sectionIntro}>
+          <p className={styles.kicker}><span className={styles.dash} /> County returns</p>
+          <h2 id="details-heading">Inside the count</h2>
+          <p>Explore the votes by precinct, township, or voting type. Each view breaks down the same {format(total)} votes.</p>
+          <div className={styles.sourceBlock}>
+            <p><strong>{saved ? "Saved county report" : "County figures checked"}</strong><br />
+              <time dateTime={report.checkedAt}>{checkedTime.format(new Date(report.checkedAt))}</time></p>
+            <p>{saved ? "Showing the last verified figures. This page checks again every minute while open." : "This page checks for county updates every minute while open."}</p>
+            <CountyLink href={countySummary}>St. Clair County results</CountyLink>
           </div>
         </div>
-      </section>
-
-      <section className={styles.section} aria-labelledby="privacy-heading">
-        <div className={styles.readingWidth}>
-          <div className={styles.infoGrid}>
-            <div>
-              <h2 id="privacy-heading">Keep your information private</h2>
-              <p>
-                Only enter your Social Security, driver&apos;s license, or state ID
-                information on the official county voter website. Do not put it
-                in comments, send it through social media, or send it to
-                Millstadt EMS.
-              </p>
-            </div>
-
-            <div className={styles.helpBlock}>
-              <h2>Need help?</h2>
-              <p>Contact the St. Clair County Election Department:</p>
-              <ul className={styles.contactList}>
-                <li><a href="tel:+16188252366">618-825-2366</a></li>
-                <li><a href="mailto:elections@stclaircountyil.gov">elections@stclaircountyil.gov</a></li>
-                <li>
-                  <a href={ILLINOIS_VOTE_BY_MAIL} target="_blank" rel="noopener noreferrer">
-                    Illinois Vote-by-Mail information
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <p className={styles.footerNote}>
-            Voting rules, dates, and forms can change. The St. Clair County
-            Clerk and the Illinois State Board of Elections are the official sources.
-          </p>
+        <div className={styles.tables}>
+          <Breakdown title="Precinct results" column="Precinct" rows={report.precincts} source={sources.precincts} open />
+          <Breakdown title="Township results" column="Township" rows={report.townships} source={sources.townships} />
+          <Breakdown title="Voting type results" column="Voting type" rows={report.votingTypes} source={countySummary} />
         </div>
       </section>
-    </main>
-  );
+    </div>
+  </article>;
 }

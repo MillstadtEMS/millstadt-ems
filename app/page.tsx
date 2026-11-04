@@ -113,9 +113,9 @@ export default async function Home({
                 href="/election-information"
                 className="col-span-2 flex min-h-[104px] w-full flex-col items-center justify-center rounded-2xl border-2 border-[#f0b429] bg-[#f0b429] px-5 py-5 text-center font-black text-[#040d1a] shadow-lg transition-colors hover:border-[#ffd45c] hover:bg-[#ffd45c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0b429] sm:col-span-1 sm:px-6"
               >
-                <span className="text-[22px] leading-tight sm:text-2xl">Election Information</span>
+                <span className="text-[22px] leading-tight sm:text-2xl">Election Results</span>
                 <span className="mt-2 text-xs uppercase tracking-[0.12em] text-[#0f2d5c]">
-                  Tax calculator, facts &amp; voter resources
+                  Millstadt EMS ESD referendum
                 </span>
               </Link>
             </div>

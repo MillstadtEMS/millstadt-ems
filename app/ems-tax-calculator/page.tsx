@@ -24,7 +24,7 @@ export default async function EmsTaxCalculatorPage() {
       />
       <nav className="wrap" aria-label="Calculator page sections" style={{ paddingTop: 24, display: "flex", flexWrap: "wrap", gap: "16px 28px" }}>
         <Link href="/" className="text-sm font-bold text-[#f0b429] underline-offset-4 hover:underline">← Back to homepage</Link>
-        <Link href="/election-information?review=1" className="text-sm font-bold text-[#f0b429] underline-offset-4 hover:underline">Election information</Link>
+        <Link href="/election-information" className="text-sm font-bold text-[#f0b429] underline-offset-4 hover:underline">Election Results</Link>
         <a href="#referendum-facts" className="text-sm font-bold text-[#f0b429] underline-offset-4 hover:underline">Referendum facts</a>
         <a href="#service-continuity" className="text-sm font-bold text-[#f0b429] underline-offset-4 hover:underline">Funding &amp; service</a>
         <a href="#flyer-review" className="text-sm font-bold text-[#f0b429] underline-offset-4 hover:underline">Flyer comparison</a>

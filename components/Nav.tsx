@@ -51,7 +51,7 @@ const MENU_GROUPS = [
       { href: "/donate",   label: "Donate" },
       { href: "/billing",  label: "Pay My Bill" },
       { href: "/financials-information-hub", label: "Financial & Information Transparency" },
-      { href: "/election-information", label: "Election Information" },
+      { href: "/election-information", label: "Election Results" },
       { href: "/forms",    label: "Forms" },
       { href: "/links",    label: "Important Links" },
       { href: "/movies",   label: "EMS in Crisis" },

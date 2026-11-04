@@ -1,0 +1,95 @@
+.page {
+  --ink: #12191e;
+  --muted: #47535b;
+  --line: #c9ced0;
+  --yellow: #ffe137;
+  color: var(--ink);
+  background: #f4f3ee;
+  font-family: var(--font-inter), Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.wrap { max-width: 1232px; margin-inline: auto; padding: 0 clamp(20px, 5vw, 65px) clamp(50px, 7vw, 92px); }
+.mast, .kicker, .poster figcaption, .scoreHead, .details small, .status {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px; font-weight: 700; line-height: 1.5; letter-spacing: .085em; text-transform: uppercase;
+}
+.mast { display: flex; justify-content: space-between; gap: 10px; padding: 24px 0 16px; border-bottom: 2px solid var(--ink); }
+.mast b { margin: 0 6px; color: #7c807a; }
+.mast > :last-child { color: var(--muted); }
+.hero { display: grid; grid-template-columns: 1.23fr 1fr; align-items: center; gap: clamp(26px, 4.5vw, 68px); padding: clamp(28px, 4vw, 56px) 0 30px; }
+.kicker { display: flex; align-items: center; gap: 9px; color: var(--muted); margin: 0; }
+.dash { display: inline-block; width: 26px; height: 4px; flex-shrink: 0; background: #b28100; }
+.lead h1, .sectionIntro h2 { color: var(--ink); font-weight: 850; letter-spacing: -.065em; text-wrap: balance; }
+.lead h1 { font-size: clamp(50px, 5.35vw, 78px); line-height: .99; margin: 16px 0 12px; }
+.lead h2 { color: var(--ink); font-size: clamp(20px, 1.9vw, 28px); font-weight: 730; line-height: 1.2; letter-spacing: -.035em; margin: 0; }
+.description, .sectionIntro > p:not(.kicker) { color: var(--muted); font-size: 16px; line-height: 1.55; margin: 10px 0 0; max-width: 54ch; }
+.score { color: #f8f8f4; background: #151c20; border-radius: 5px; padding: clamp(19px, 2vw, 29px); margin-top: 24px; }
+.scoreHead, .numbers, .poster figcaption { display: flex; justify-content: space-between; align-items: center; }
+.scoreHead { color: #d0d8dc; gap: 8px; letter-spacing: .045em; }
+.status { color: var(--yellow); border: 1px solid #776e38; border-radius: 3px; padding: 3px 8px; letter-spacing: .06em; }
+.numbers { margin-top: 17px; }
+.numbers > div { display: grid; justify-items: start; }
+.numbers > div:last-child { justify-items: end; }
+.numbers span { display: flex; align-items: center; gap: 7px; line-height: 1.4; font-size: 15px; font-weight: 700; }
+.numbers i { width: 8px; height: 8px; background: var(--yellow); }
+.numbers > div:last-child i { background: #a6bfd4; }
+.numbers strong { font-size: clamp(37px, 3.6vw, 53px); line-height: 1.15; letter-spacing: -.055em; font-weight: 780; }
+.numbers small { color: #d1d7d9; font-size: 14px; }
+.bar { height: 8px; border-radius: 1px; margin: 14px 0; display: flex; overflow: hidden; background: #a6bfd4; }
+.bar span { background: var(--yellow); border-right: 2px solid #151c20; }
+.gap { margin: 0; font-size: 15px; line-height: 1.6; color: #fff; }
+.gap span, .reporting { color: #cdd5d8; }
+.reporting { margin: 1px 0 0; font-size: 13px; line-height: 1.5; }
+.poster { background: #151818; color: #fff; padding: 7px 7px 0; border-radius: 3px; margin: 0; }
+.poster img { display: block; width: 100%; height: auto; }
+.poster figcaption { border-top: 1px solid #383b3a; padding: 10px 6px; color: #d9d9d0; font-size: 10px; }
+.cert { display: flex; gap: 14px; align-items: center; padding: 18px 22px; border-left: 4px solid #a77c04; background: #ece7ce; }
+.cert > svg { flex: 0 0 auto; color: #685113; }
+.cert h2 { margin: 0; font-size: 17px; font-weight: 780; letter-spacing: -.025em; }
+.cert p { color: #484739; margin: 4px 0 0; font-size: 14px; line-height: 1.55; }
+.cert > a { margin-left: auto; flex-shrink: 0; }
+.link { display: inline-flex; align-items: center; gap: 3px; color: #203d4e; font-size: 13px; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; line-height: 1.5; padding-block: 5px; }
+.link:hover { color: #000; text-decoration-thickness: 2px; }
+.page :is(a, summary):focus-visible { outline: 3px solid #096ba2; outline-offset: 3px; }
+.breakdowns { display: grid; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); gap: clamp(24px, 5vw, 72px); margin-top: clamp(36px, 5vw, 66px); }
+.sectionIntro h2 { font-size: clamp(34px, 3.6vw, 50px); line-height: 1.1; margin: 12px 0; }
+.sourceBlock { color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; margin-top: 23px; font-size: 13px; line-height: 1.6; }
+.sourceBlock p { margin: 0 0 8px; }
+.sourceBlock strong { color: var(--ink); }
+.tables { min-width: 0; }
+.details { border: 1px solid var(--line); border-radius: 4px; background: #fff; margin-bottom: 12px; }
+.details summary { display: flex; align-items: center; gap: 12px; padding: 18px 20px; cursor: pointer; color: #182127; font-weight: 760; font-size: 20px; line-height: 1.2; letter-spacing: -.035em; list-style: none; }
+.details summary::-webkit-details-marker { display: none; }
+.details summary:hover { background: #f8f8f2; }
+.details small { margin-left: auto; color: var(--muted); font-size: 10px; letter-spacing: .04em; }
+.details[open] summary > svg { transform: rotate(180deg); }
+.detailBody { padding: 0 20px 12px; }
+.detailBody table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: right; }
+.detailBody :is(th, td) { padding: 9px 5px; border-bottom: 1px solid #e3e6e5; line-height: 1.35; }
+.detailBody tr > :first-child { text-align: left; padding-left: 8px; }
+.detailBody tr > :last-child { padding-right: 8px; }
+.detailBody thead, .detailBody tfoot { background: #ecf0ee; }
+.detailBody thead th { color: #34454d; font-size: 12px; }
+.detailBody tbody th { font-weight: 560; }
+.detailBody tfoot { font-weight: 780; }
+.detailBody a { margin-top: 9px; }
+@media (max-width: 780px) {
+  .hero { grid-template-columns: 1fr; }
+  .poster { width: min(100%, 460px); justify-self: center; }
+  .cert { flex-wrap: wrap; align-items: start; gap: 8px 12px; }
+  .cert > div { flex: 1 1 75%; }
+  .cert > a { margin-left: 36px; }
+  .breakdowns { grid-template-columns: 1fr; }
+  .sourceBlock { margin-top: 14px; }
+}
+@media (max-width: 460px) {
+  .wrap { padding-inline: 16px; }
+  .mast { font-size: 9px; letter-spacing: .035em; }
+  .mast b { margin: 0 2px; }
+  .kicker { font-size: 10px; }
+  .dash { width: 18px; }
+  .details summary { padding: 16px 12px; font-size: 18px; gap: 6px; }
+  .detailBody { padding-inline: 10px; }
+  .detailBody table { font-size: 13px; }
+  .cert { padding: 15px 12px; }
+}

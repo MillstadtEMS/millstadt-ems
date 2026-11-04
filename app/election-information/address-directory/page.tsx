@@ -12,7 +12,7 @@ export default async function AddressDirectoryPage({ searchParams }: { searchPar
   await requireElectionAccess(`/election-information/address-directory${query.address ? `?address=${encodeURIComponent(query.address)}` : ""}`);
   return <main><PublicPageHero title="Find your" accent="EMS tax" description="Choose your street or subdivision. Then choose your address." />
     <LockElectionReview />
-    <div className="wrap" style={{ paddingTop: 24 }}><Link href="/election-information?review=1" style={{ color: "#f0b429" }}>← Election Information</Link></div>
+    <div className="wrap" style={{ paddingTop: 24 }}><Link href="/election-information" style={{ color: "#f0b429" }}>← Election Results</Link></div>
     <AddressDirectory directory={directory as ElectionDirectory} initialPin={query.address} />
   </main>;
 }

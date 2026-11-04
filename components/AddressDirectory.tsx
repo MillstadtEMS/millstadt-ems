@@ -107,7 +107,7 @@ export default function AddressDirectory({ directory, initialPin }: { directory:
     </section>}
 
     <div className={styles.footer}>
-      <p>Can’t find your address? <a href="/election-information?review=1#ems-tax-calculator">Use the tax calculator.</a></p>
+      <p>Can’t find your address? <a href="/ems-tax-calculator">Use the tax calculator.</a></p>
       <details className={styles.help}>
         <summary>How we figured these amounts</summary>
         <p>These are yearly estimates using the county’s 2025 tax values. Street names and subdivisions follow the county records.</p>

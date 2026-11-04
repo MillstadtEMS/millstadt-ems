@@ -31,9 +31,9 @@ for (const host of ["localhost", "127.0.0.1"]) {
       redirect: "manual", headers: { Cookie: cookie.split(";")[0] },
     });
     assert.equal(page.status, 200);
-    assert.ok((await page.text()).includes("Find your address"));
+    assert.ok((await page.text()).includes("Millstadt EMS ESD referendum"));
     const entry = await fetch(`${origin}/election-information`, { headers: { Cookie: cookie.split(";")[0] } });
-    assert.ok((await entry.text()).includes("Coming soon."), "the main election entry must not reuse an unlocked session");
+    assert.ok((await entry.text()).includes("Millstadt EMS ESD referendum"), "the main election entry must show public results");
     const again = await fetch(`${origin}/election-review`, { headers: { Cookie: cookie.split(";")[0] }, redirect: "manual" });
     assert.equal(again.status, 200);
     assert.ok((await again.text()).includes('name="password"'), "review entry must ask for the password again");
