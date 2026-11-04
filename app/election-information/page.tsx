@@ -55,9 +55,11 @@ export default async function ElectionResultsPage() {
   const report = await getElectionReport();
   const total = report.yes + report.no;
   const percent = (votes: number) => total ? (100 * votes / total).toFixed(2) + "%" : "—";
-  const gap = Math.abs(report.yes - report.no);
+  const margin = report.yes - report.no;
+  const gap = Math.abs(margin);
+  const lead = margin === 0 ? "tie" : margin > 0 ? "yes" : "no";
   const saved = Date.now() - Date.parse(report.checkedAt) > 150_000;
-  return <article className={styles.page}>
+  return <article className={styles.page} data-lead={lead}>
     <RefreshResults />
     <div className={styles.wrap}>
       <header className={styles.mast}>
@@ -81,7 +83,7 @@ export default async function ElectionResultsPage() {
             <div><span><i />No</span><strong>{format(report.no)}</strong><small>{percent(report.no)}</small></div>
           </div>
           <div className={styles.bar} aria-hidden="true"><span style={{ width: total ? percent(report.yes) : "0%" }} /></div>
-          <p className={styles.gap}>{gap ? <><strong>{format(gap)}-vote difference</strong> <span>· {report.yes > report.no ? "Yes" : "No"} ahead</span></> : <strong>{total ? "Tied vote" : "Awaiting votes"}</strong>}</p>
+          <p className={styles.gap}>{gap ? <><strong>{format(gap)}-vote difference</strong> <span>· {lead === "yes" ? "Yes" : "No"} ahead</span></> : <strong>{total ? "Tied vote" : "Awaiting votes"}</strong>}</p>
           <p className={styles.reporting}>{report.reporting}</p>
         </div>
         <ElectionNightIllustration />

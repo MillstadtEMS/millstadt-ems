@@ -4,10 +4,12 @@
   --line: #c9ced0;
   --yellow: #ffe137;
   color: var(--ink);
-  background: #f4f3ee;
+  background: #fff0ab;
   font-family: var(--font-inter), Arial, sans-serif;
   font-variant-numeric: tabular-nums;
 }
+.page[data-lead="yes"] { background: #ceebce; }
+.page[data-lead="no"] { background: #f5c7c3; }
 .wrap { max-width: 1232px; margin-inline: auto; padding: 0 clamp(20px, 5vw, 65px) clamp(50px, 7vw, 92px); }
 .mast, .kicker, .artDate, .scoreHead, .details small, .status {
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
@@ -42,13 +44,8 @@
 .gap span, .reporting { color: #cdd5d8; }
 .reporting { margin: 1px 0 0; font-size: 13px; line-height: 1.5; }
 .illustration { grid-area: art; margin: 0; min-width: 0; display: grid; justify-items: center; align-content: center; }
-.referee { display: block; width: min(100%, 360px); height: auto; }
-.artCaption { position: relative; display: grid; justify-items: center; margin-top: 4px; color: var(--ink); }
-.artWords { grid-row: 1; font-size: clamp(42px, 4vw, 60px); font-weight: 900; letter-spacing: -.065em; line-height: 1.06; font-style: italic; }
-.artWords em { position: relative; z-index: 0; display: inline-block; white-space: nowrap; }
-.artWords em::before { content: ""; position: absolute; z-index: -1; inset: 55% -5% 2%; background: var(--yellow); transform: rotate(-3deg) skewX(-10deg); }
+.referee { display: block; width: min(100%, 410px); height: auto; }
 .artDate { margin-top: 10px; color: var(--muted); font-size: 10px; }
-.artDate b { margin: 0 3px; }
 .cert { display: flex; gap: 14px; align-items: center; padding: 18px 22px; border-left: 4px solid #a77c04; background: #ece7ce; }
 .cert > svg { flex: 0 0 auto; color: #685113; }
 .cert h2 { margin: 0; font-size: 17px; font-weight: 780; letter-spacing: -.025em; }
@@ -101,17 +98,11 @@
 @media (min-width: 600px) and (max-width: 979px) {
   .hero { grid-template-areas: "lead art" "score score"; grid-template-columns: 1.18fr 1fr; row-gap: 22px; column-gap: 20px; }
   .lead { align-self: center; }
-  .referee { width: min(100%, 225px); }
-  .artWords { font-size: clamp(29px, 4.3vw, 42px); }
+  .referee { width: min(100%, 260px); }
   .artDate { font-size: 9px; margin-top: 6px; }
 }
 @media (max-width: 599px) {
   .hero { grid-template-columns: minmax(0, 1fr); grid-template-areas: "lead" "score" "art"; row-gap: 19px; padding-bottom: 20px; }
-  .illustration { display: flex; justify-content: center; align-items: center; gap: clamp(4px, 2vw, 14px); }
-  .referee { width: clamp(112px, 35vw, 168px); flex: none; }
-  .artCaption { justify-items: start; margin: 0; }
-  .artWords { font-size: clamp(29px, 8vw, 39px); line-height: .98; }
-  .artWords em { display: table; }
-  .artDate { font-size: clamp(8px, 1.9vw, 10px); letter-spacing: .02em; margin-top: 8px; }
-  .artDate b { margin: 0; }
+  .referee { width: min(65vw, 230px); }
+  .artDate { font-size: 10px; letter-spacing: .04em; margin-top: 8px; }
 }
