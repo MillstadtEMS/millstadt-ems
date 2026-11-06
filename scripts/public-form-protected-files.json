@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "reviewed": "2026-09-29",
+  "reviewed": "2026-10-01",
   "files": {
     ".github/workflows/protected-public-forms.yml": "08d59d3683038e5612c8721b887d6bec30cd7016ecfb0b96ac54f26355204d73",
     "AGENTS.md": "01ecc9184f17ea8974463e052aa02d5090a44010dd22b486dd19474fddc1c576",
@@ -37,8 +37,8 @@
     "lib/security/http.ts": "0f166954a4687734600da10ea3b08c935c9f858eb47978d8f636595366cdc188",
     "lib/security/public-form-schemas.ts": "bd87b283c7e119074b0ad12b64ade4ec4d5001768d766802d9bf4ae04a652571",
     "next.config.ts": "b67be837cc10f146c1690c79a94e9e4c1a45c29596d1c26c8b8820c38bcec703",
-    "package-lock.json": "4e8b197b6af242c2098d4c2ae0119c5933d686c18841b1046763149dd410d031",
-    "package.json": "3077385ab112c76d244912c7a1beafcac5a695ad0027f1e04a6a0a01e50a257a",
+    "package-lock.json": "93aeb6ed993794f3ab46a8d744883695322982bfcf001554887541dda3355c42",
+    "package.json": "cb27106fe1c4e1101424f344a20197de73b283b27bae741ae35b7875e3e96639",
     "proxy.ts": "6b3feec3bf30dd24df68e67c678bd8f1469cd0c7326fa68096cd88a9c38c5533",
     "scripts/check-public-forms-live.mjs": "6500a420b1d171204d808b52e1b9f30517c920d244d2dfe2bdda6db547798fcc",
     "scripts/protect-public-form-contract.mjs": "ef4bc645411bbdeb1dae4de1ff38bf162afcd0f0bd5b4cd44b1123c821af5ee4",
