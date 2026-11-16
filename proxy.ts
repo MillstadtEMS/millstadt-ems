@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken as verifyTruckCheckToken } from "@/lib/truckcheck/auth";
 import { verifySessionToken as verifyLoungeToken } from "@/lib/lounge/auth";
+import { protectResponse as protectTenEightPortal } from "@/lib/ten-eight-portal/policy";
 
 const RETAINED_BOARD_MIGRATION_ARTIFACTS = new Set([
   "/board/referendum/current.xlsx",
@@ -109,6 +110,11 @@ function withSecurityHeaders(res: NextResponse, pathname = ""): NextResponse {
         "worker-src 'self' blob:",
       ].join("; "),
     );
+  }
+  // Only this separately gated fictional portal gets its own stricter policy.
+  // Do not match lookalike prefixes or alter any existing public/employee route.
+  if (pathname === "/ten-eight" || pathname.startsWith("/ten-eight/")) {
+    protectTenEightPortal(res);
   }
   return res;
 }
