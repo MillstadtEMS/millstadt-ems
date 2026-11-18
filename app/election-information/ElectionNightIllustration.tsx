@@ -22,7 +22,7 @@ const illustrations = {
   },
 };
 
-export default function ElectionNightIllustration({ outcome }: { outcome: keyof typeof illustrations | "tie" }) {
+export default function ElectionNightIllustration({ outcome, certified }: { outcome: keyof typeof illustrations | "tie"; certified: boolean }) {
   if (outcome === "tie") {
     return <figure className={styles.illustration}>
       <strong className={styles.tieMark}>TIE</strong>
@@ -40,6 +40,6 @@ export default function ElectionNightIllustration({ outcome }: { outcome: keyof 
       className={outcome === "no" ? styles.wideReferee : styles.referee}
       loading="eager"
     />
-    <figcaption className={styles.artDate}>{caption}</figcaption>
+    <figcaption className={styles.artDate}>{outcome === "yes" && !certified ? "Tentative result · Certification pending" : caption}</figcaption>
   </figure>;
 }

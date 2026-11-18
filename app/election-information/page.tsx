@@ -59,7 +59,8 @@ export default async function ElectionResultsPage() {
   const margin = report.yes - report.no;
   const gap = Math.abs(margin);
   const lead = margin === 0 ? "tie" : margin > 0 ? "yes" : "no";
-  const outcome = report.official ? lead : "pending";
+  const tentativePass = !report.official && lead === "yes";
+  const outcome = report.official || tentativePass ? lead : "pending";
   const votes = (n: number) => n === 1 ? "1 vote" : format(n) + " votes";
   const certification = {
     pending: "These totals may change. Official results will be posted here after St. Clair County certifies the election.",
@@ -95,12 +96,14 @@ export default async function ElectionResultsPage() {
           <p className={styles.gap}>{gap ? <><strong>{format(gap)}-vote difference</strong> <span>· {lead === "yes" ? "Yes" : "No"} {report.official ? "majority" : "ahead"}</span></> : <strong>{total ? "Tied vote" : report.official ? "No votes recorded" : "Awaiting votes"}</strong>}</p>
           <p className={styles.reporting}>{report.certifiedPage ? "Source: St. Clair County Clerk’s official canvass" : report.reporting}</p>
         </div>
-        <ElectionNightIllustration outcome={outcome} />
+        <ElectionNightIllustration outcome={outcome} certified={report.official} />
       </section>
       <aside className={styles.cert}>
         <CheckCheck size={24} aria-hidden="true" />
-        <div><h2>{report.official ? "Results certified by St. Clair County" : report.canvassUrl ? "County canvass available" : "Awaiting certification"}</h2>
-          <p>{outcome === "pending" && report.canvassUrl
+        <div><h2>{report.official ? "Results certified by St. Clair County" : tentativePass ? "Tentative passage · Certification pending" : report.canvassUrl ? "County canvass available" : "Awaiting certification"}</h2>
+          <p>{tentativePass
+            ? "St. Clair County has advised that vote tabulation is complete. The reported count shows the referendum passing. This result remains tentative until the county certifies the election."
+            : outcome === "pending" && report.canvassUrl
             ? "The clerk has posted a canvass. Refer to the county document while this referendum’s certified count is being verified."
             : certification[outcome]}</p>
         </div>
