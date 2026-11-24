@@ -51,7 +51,6 @@ export default function WinterMusicPlayer() {
 
 function Soundtrack() {
   const [enabled, setEnabled] = useState(wantsSound);
-  const [initialMute] = useState(() => !enabled);
   const [recordingPath, setRecordingPath] = useState(ownedRecordingPath);
   const [expanded, setExpanded] = useState(false);
   const desired = useRef(enabled);
@@ -60,6 +59,7 @@ function Soundtrack() {
   const bell = useRef<HTMLButtonElement>(null);
   const started = useRef(false);
   const ready = useRef(false);
+  const needsGesture = useRef(false);
 
   function tryStart() {
     if (started.current || document.hidden) return;
@@ -79,6 +79,12 @@ function Soundtrack() {
       if (!ready.current && ++attempts <= 35) send(player, { event: "listening" });
       else window.clearInterval(subscription);
     }
+    function subscribe() {
+      window.clearInterval(subscription);
+      attempts = 0;
+      subscription = window.setInterval(listen, 300);
+      listen();
+    }
     function receive(event: MessageEvent) {
       if (!player || event.source !== player.contentWindow || event.origin !== youtube || typeof event.data !== "string") return;
       let update;
@@ -89,16 +95,29 @@ function Soundtrack() {
         window.clearInterval(subscription);
         if (first) {
           command(player, "addEventListener", ["onStateChange"]);
+          command(player, "addEventListener", ["onAutoplayBlocked"]);
           command(player, desired.current ? "unMute" : "mute");
           tryStart();
         }
       }
       const state = update?.event === "onStateChange" ? update.info : update?.info?.playerState;
       if (state === 1) started.current = true;
+      if (desired.current && typeof update?.info?.muted === "boolean" && started.current) {
+        needsGesture.current = update.info.muted;
+      }
+      if (update?.event === "onAutoplayBlocked" && desired.current && !needsGesture.current) {
+        needsGesture.current = true;
+        command(player, "mute");
+        if (visibleForAutoplay(player)) command(player, "playVideo");
+      }
     }
     function retryOnGesture(event: Event) {
       if (!event.isTrusted || bell.current?.contains(event.target as Node)) return;
       if (event instanceof KeyboardEvent && (event.repeat || event.ctrlKey || event.altKey || event.metaKey)) return;
+      if (player && desired.current && needsGesture.current) {
+        command(player, "unMute");
+        if (visibleForAutoplay(player)) command(player, "playVideo");
+      }
       tryStart();
     }
     const observer = player ? new IntersectionObserver(tryStart, { threshold: [0, 0.5, 0.51, 0.75, 1] }) : null;
@@ -109,9 +128,13 @@ function Soundtrack() {
     window.addEventListener("touchend", retryOnGesture, { passive: true, capture: true });
     if (player) {
       observer?.observe(player);
-      player.addEventListener("load", listen);
-      subscription = window.setInterval(listen, 300);
-      listen();
+      player.addEventListener("load", subscribe);
+      const params = new URLSearchParams({
+        autoplay: visibleForAutoplay(player) ? "1" : "0", mute: desired.current ? "0" : "1",
+        enablejsapi: "1", playsinline: "1", controls: "1", loop: "1", playlist: video, origin: window.location.origin,
+      });
+      player.src = `${youtube}/embed/${video}?${params}`;
+      subscribe();
     } else if (local) {
       local.muted = !desired.current;
       tryStart();
@@ -119,10 +142,11 @@ function Soundtrack() {
     return () => {
       observer?.disconnect();
       window.clearInterval(subscription);
-      player?.removeEventListener("load", listen);
+      player?.removeEventListener("load", subscribe);
       local?.pause();
       ready.current = false;
       started.current = false;
+      needsGesture.current = false;
       window.removeEventListener("message", receive);
       document.removeEventListener("visibilitychange", tryStart);
       window.removeEventListener("click", retryOnGesture, true);
@@ -134,6 +158,7 @@ function Soundtrack() {
   function toggleSound() {
     const on = !desired.current;
     desired.current = on;
+    needsGesture.current = false;
     setEnabled(on);
     try { window.localStorage.setItem(preferenceKey, on ? "on" : "off"); } catch { /* Remember within the current page. */ }
     if (audio.current) audio.current.muted = !on;
@@ -151,7 +176,7 @@ function Soundtrack() {
     return (
       <aside className={styles.audioOnly} aria-label="Christmas soundtrack">
         {control}
-        <audio id={frameId} ref={audio} src={recordingPath} loop preload="none" muted={!enabled}
+        <audio id={frameId} ref={audio} src={recordingPath} autoPlay loop preload="auto" muted={!enabled}
           aria-label="Christmas Saves the Year by Twenty One Pilots"
           onPlaying={() => { started.current = true; }} onError={() => setRecordingPath(null)} />
       </aside>
@@ -160,7 +185,6 @@ function Soundtrack() {
   return (
     <aside className={styles.player} data-expanded={expanded} aria-label="Christmas soundtrack">
       <iframe id={frameId} ref={frame} title="Christmas Saves the Year by Twenty One Pilots, official music video"
-        src={`${youtube}/embed/${video}?enablejsapi=1&playsinline=1&controls=1&loop=1&playlist=${video}&mute=${Number(initialMute)}&origin=${encodeURIComponent(window.location.origin)}`}
         allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen
         referrerPolicy="strict-origin-when-cross-origin" />
       <div className={styles.controls}>

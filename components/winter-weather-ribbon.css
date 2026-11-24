@@ -3,16 +3,17 @@
     padding-top: var(--winter-public-header-end, 144px) !important;
   }
   html[data-mems-season="winter"] .mems-nav-content {
-    padding-block: 3px;
+    /* Reserve space below Lounge and Menu for the peppermint edge and roof cable. */
+    padding-block: 3px 16px;
   }
   .mems-weather-ribbon {
     display: flex;
     align-items: center;
     width: 100%;
-    min-height: 30px;
+    min-height: 36px;
     box-sizing: border-box;
   }
-  .mems-weather-ribbon > div { min-height: 30px; }
+  .mems-weather-ribbon > div { min-height: 34px; }
   .mems-weather-readout {
     display: inline-flex;
     align-items: center;
