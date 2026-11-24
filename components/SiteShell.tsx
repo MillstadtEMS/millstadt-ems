@@ -1,6 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import "./winter-workspace.css";
+import WinterPageSurprises from "./WinterPageSurprises";
+import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 
 export default function SiteShell({
   header,
@@ -12,6 +15,7 @@ export default function SiteShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname() || "";
+  const winter = useWinterTheme();
   // Routes that render their own full chrome (their own header/sidebar) and
   // must NOT also get the public site header. /admin uses the same LoungeShell
   // as /lounge, so it belongs here too — otherwise the global CAD ticker +
@@ -21,11 +25,11 @@ export default function SiteShell({
     pathname.startsWith("/inventory") ||
     pathname.startsWith("/lounge") ||
     pathname.startsWith("/admin") ||
-    pathname.startsWith("/board");
+    (pathname.startsWith("/board") && !(winter && pathname === "/board-minutes"));
 
   if (standalone) {
     return (
-      <main className="flex-1 w-full overflow-x-hidden" style={{ paddingTop: 0 }}>
+      <main className="mems-standalone flex-1 w-full overflow-x-hidden" style={{ paddingTop: 0 }}>
         {children}
       </main>
     );
@@ -40,6 +44,7 @@ export default function SiteShell({
       >
         {children}
       </main>
+      <WinterPageSurprises pathname={pathname} />
       {footer}
     </>
   );

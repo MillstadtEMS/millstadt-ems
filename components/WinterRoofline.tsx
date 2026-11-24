@@ -15,7 +15,7 @@ const bodyOnClient = () => document.body;
 const noBody = () => null;
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
-function HangingCrew({ anchor }: { anchor: RefObject<HTMLSpanElement | null> }) {
+function HangingCrew({ anchor, compact, menuOpen }: { anchor: RefObject<HTMLSpanElement | null>; compact: boolean; menuOpen: boolean }) {
   const body = useSyncExternalStore<HTMLElement | null>(noSubscription, bodyOnClient, noBody);
   const puppet = useRef<HTMLDivElement>(null);
 
@@ -35,7 +35,7 @@ function HangingCrew({ anchor }: { anchor: RefObject<HTMLSpanElement | null> }) 
     function paint() {
       if (!figure) return;
       const progress = clamp01((pageY - 16) / 190);
-      const dock = reduced.matches ? Number(pageY > 75) : progress * progress * (3 - 2 * progress);
+      const dock = compact ? 1 : reduced.matches ? Number(pageY > 75) : progress * progress * (3 - 2 * progress);
       const x = rootX + (parkedX - rootX) * dock;
       const scale = 1 + (parkedScale - 1) * dock;
       figure.style.transform = `translate3d(${x.toFixed(2)}px, ${rootY.toFixed(2)}px, 0)`;
@@ -59,7 +59,7 @@ function HangingCrew({ anchor }: { anchor: RefObject<HTMLSpanElement | null> }) 
       const hidden = !pos.width || getComputedStyle(header).visibility === "hidden";
       rootX = hidden ? view - parked * .45 : pos.left + pos.width / 2;
       rootY = hidden ? 62 : Math.max(62, pos.top);
-      parkedX = view - parked * .46;
+      parkedX = view - parked * .35;
       parkedScale = parked / base;
       pageY = window.scrollY;
       paint();
@@ -119,11 +119,11 @@ function HangingCrew({ anchor }: { anchor: RefObject<HTMLSpanElement | null> }) 
       document.removeEventListener("visibilitychange", rest);
       reduced.removeEventListener("change", rest);
     };
-  }, [anchor, body]);
+  }, [anchor, body, compact]);
 
   if (!body) return null;
   return createPortal(
-    <div ref={puppet} className={styles.cradle} aria-hidden="true">
+    <div ref={puppet} className={styles.cradle} data-menu-open={menuOpen} aria-hidden="true">
       <svg className={styles.tether} viewBox="0 0 120 32" preserveAspectRatio="none" aria-hidden="true">
         <path d="M0 30C30 32 71 24 119 2" fill="none" stroke="#122a20" strokeWidth="3" />
         <path d="M0 29C30 31 71 23 119 1" fill="none" stroke="#9b9a65" strokeWidth=".75" />
@@ -142,7 +142,7 @@ function HangingCrew({ anchor }: { anchor: RefObject<HTMLSpanElement | null> }) 
   );
 }
 
-export default function WinterRoofline({ showCharacter }: { showCharacter: boolean }) {
+export default function WinterRoofline({ compact, menuOpen }: { compact: boolean; menuOpen: boolean }) {
   const roof = useRef<HTMLDivElement>(null);
   const pin = useRef<HTMLSpanElement>(null);
 
@@ -210,7 +210,7 @@ export default function WinterRoofline({ showCharacter }: { showCharacter: boole
           {span === swags.length - 1 && <span ref={pin} className={styles.anchor} />}
         </div>
       ))}
-      {showCharacter && <HangingCrew anchor={pin} />}
+      <HangingCrew anchor={pin} compact={compact} menuOpen={menuOpen} />
     </div>
   );
 }

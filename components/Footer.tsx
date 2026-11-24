@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import WinterLogoHat from "@/components/WinterLogoHat";
 import brandStyles from "@/components/WinterBrandPlacement.module.css";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -54,7 +53,6 @@ export default function Footer() {
                   sizes="64px"
                   className="h-16 w-16 shrink-0 object-contain"
                 />
-                <WinterLogoHat />
               </span>
               <div className="min-w-0">
                 <div className="text-sm font-black uppercase tracking-wider text-white">

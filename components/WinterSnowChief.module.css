@@ -13,7 +13,8 @@
 .pose {
   position: absolute;
   inset: 0;
-  transform: translateY(125%);
+  transform: translateY(125%) rotate(-4deg) scale(.96, .93);
+  transition: transform .28s cubic-bezier(.48, .1, .78, .75);
   transform-origin: 50% 95%;
 }
 
@@ -23,17 +24,10 @@
   filter: drop-shadow(1px 3px 2px #29385188);
 }
 
-.chief[data-revealed="true"] .pose { animation: surprise var(--show-duration) both; }
-
-@keyframes surprise {
-  0% { transform: translateY(125%) rotate(-5deg) scale(.94); }
-  5% { transform: translateY(83%) rotate(-4deg) scale(.94); }
-  8% { transform: translateY(91%) rotate(-4deg) scale(1.03, .89); animation-timing-function: cubic-bezier(.12,.72,.22,1); }
-  17% { transform: translateY(-12%) rotate(3deg) scale(.99, 1.03); }
-  23% { transform: translateY(3%) rotate(-1.4deg) scale(1.015, .985); }
-  30%, 76% { transform: translateY(0) rotate(0); }
-  82% { transform: translateY(-3%) rotate(-1.7deg); animation-timing-function: cubic-bezier(.45,.02,.83,.59); }
-  96%, 100% { transform: translateY(125%) rotate(5deg) scale(.96); }
+.chief[data-revealed="true"] .pose {
+  transform: translateY(0) rotate(0) scale(1);
+  /* The spring overshoots slightly. A reversal picks up at the current position. */
+  transition: transform .64s cubic-bezier(.19, 1.58, .41, 1);
 }
 
 .powder { position: absolute; inset: 0; }
@@ -66,9 +60,9 @@
   box-shadow: .7px 1px 1px #74a6c5, -1.2cqw 1.4cqw 0 -.45cqw #eaf6ff;
 }
 
-.chief[data-revealed="true"] .powder::before { animation: puff .68s .26s both; }
-.chief[data-revealed="true"] .powder::after { animation: puff .5s 3.72s both; }
-.chief[data-revealed="true"] .powder i { animation: burst .86s calc(.28s + var(--delay)) both; }
+.chief[data-revealed="true"] .powder::before { animation: puff .57s both; }
+.chief[data-ducked="true"] .powder::after { animation: puff .42s .09s both; }
+.chief[data-revealed="true"] .powder i { animation: burst .76s var(--delay) both; }
 
 @keyframes puff {
   0% { opacity: 0; transform: scale(.57, .35); }
@@ -87,7 +81,7 @@
   .chief { width: 17%; height: 30%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .chief[data-revealed="true"] .pose { animation: none; transform: none; }
+  .chief .pose, .chief[data-revealed="true"] .pose { transition: none; }
   .powder { display: none; }
 }
 @media print, (scripting: none) {

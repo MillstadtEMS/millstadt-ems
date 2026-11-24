@@ -1,54 +1,56 @@
-/* Match the local path and the encoded URL used by next/image. Each replacement
-   has the source aspect ratio, with the hat fitted to that particular mark. */
+/* The public marks keep their existing image boxes. Match ordinary image URLs
+   and the encoded source in next/image's optimizer URL. */
 @media screen {
   html[data-mems-season="winter"] .mems-main-pad img:is([src*="/images/millstadt-ems/crest.png"], [src*="%2Fimages%2Fmillstadt-ems%2Fcrest.png" i]) {
-    content: url("/images/winter/logos/crest.webp");
+    content: url("/images/winter/logos/christmas-crest.webp");
   }
   html[data-mems-season="winter"] .mems-main-pad img:is([src*="/images/millstadt-ems/logo.png"], [src*="%2Fimages%2Fmillstadt-ems%2Flogo.png" i]) {
-    content: url("/images/winter/logos/wordmark.webp");
+    content: url("/images/winter/logos/christmas-wordmark.webp");
   }
   html[data-mems-season="winter"] .mems-main-pad img:is([src*="/images/financial-transparency/millstadt-ems-financial-transparency.png"], [src*="%2Fimages%2Ffinancial-transparency%2Fmillstadt-ems-financial-transparency.png" i]) {
-    /* Keep the original lettering in front. The cap sits in the transparent
-       space above the outer letter, inside the logo's existing image box. */
-    background-image: url("/images/winter/logo-santa-hat.webp");
-    background-repeat: no-repeat;
-    background-size: 17.5% auto;
-    background-position: 90.5% 9%;
+    content: url("/images/winter/logos/christmas-financial.webp");
   }
-  html[data-mems-season="winter"] .mems-main-pad img:is([src*="/kids-club/kids-club-home.png"], [src*="%2Fkids-club%2Fkids-club-home.png" i]) {
-    content: url("/images/winter/logos/kids-club.webp");
+  html[data-mems-season="winter"] .mems-main-pad img:is([src*="/kids-club/kids-club-home.png"], [src*="%2Fkids-club%2Fkids-club-home.png" i], [src*="/kids-club/coloring/kids-club-logo.png"], [src*="%2Fkids-club%2Fcoloring%2Fkids-club-logo.png" i]) {
+    content: url("/images/winter/logos/christmas-kids.webp");
   }
   html[data-mems-season="winter"] .community-team-alerts img:is([src*="/images/community-alerts/cardinals.png"], [src*="%2Fimages%2Fcommunity-alerts%2Fcardinals.png" i]) {
-    content: url("/images/winter/logos/cardinals.webp");
+    content: url("/images/winter/logos/christmas-cardinals.webp");
   }
   html[data-mems-season="winter"] .community-team-alerts img:is([src*="/images/community-alerts/blues.png"], [src*="%2Fimages%2Fcommunity-alerts%2Fblues.png" i]) {
-    content: url("/images/winter/logos/blues.webp");
+    content: url("/images/winter/logos/christmas-blues.webp");
   }
   html[data-mems-season="winter"] .community-team-alerts img:is([src*="/images/community-alerts/city-sc.png"], [src*="%2Fimages%2Fcommunity-alerts%2Fcity-sc.png" i]) {
-    content: url("/images/winter/logos/city-sc.webp");
+    content: url("/images/winter/logos/christmas-city-sc.webp");
   }
   html[data-mems-season="winter"] .community-team-alerts img:is([src*="/images/community-alerts/millstadt-ccsd.png"], [src*="%2Fimages%2Fcommunity-alerts%2Fmillstadt-ccsd.png" i]) {
-    content: url("/images/winter/logos/millstadt-ccsd.webp");
+    content: url("/images/winter/logos/christmas-millstadt-ccsd.webp");
   }
   html[data-mems-season="winter"] .community-team-alerts img:is([src*="/images/community-alerts/st-james.png"], [src*="%2Fimages%2Fcommunity-alerts%2Fst-james.png" i]) {
-    content: url("/images/winter/logos/st-james.webp");
+    content: url("/images/winter/logos/christmas-st-james.webp");
   }
   html[data-mems-season="winter"] .community-team-alerts img:is([src*="/images/community-alerts/belleville-west.png"], [src*="%2Fimages%2Fcommunity-alerts%2Fbelleville-west.png" i]) {
-    content: url("/images/winter/logos/belleville-west.webp");
+    content: url("/images/winter/logos/christmas-belleville-west.webp");
   }
   html[data-mems-season="winter"] .mems-main-pad img:is([src*="/millstadt-ems/crest.png"], [src*="millstadt-ems%2Fcrest.png" i])[style*="hue-rotate"] {
     filter: drop-shadow(0 0 2px #f0b42970) !important;
   }
-  html[data-mems-season="winter"] .kids-club-winter-initial {
-    position: relative;
-    --hat-width: 125%;
-    --hat-top: -23%;
-    --hat-right: -9%;
-    --hat-angle: -10deg;
+  html[data-mems-season="winter"] .kids-club-winter-wordmark > span[aria-hidden] {
+    --kids-ink: #c82e3b;
+    --kids-shadow: #770e24;
+    background: linear-gradient(174deg, #fffdf2 0% 21%, #ccdfdf 24%, var(--kids-ink) 26% 62%, var(--kids-shadow) 98%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: .6px #fff2ce !important;
+    text-shadow: none !important;
+    filter: drop-shadow(0 2px 1px #0b1217);
+  }
+  html[data-mems-season="winter"] .kids-club-winter-wordmark > span:nth-of-type(n+7) {
+    --kids-ink: #318856;
+    --kids-shadow: #124d37;
   }
   html[data-mems-season="winter"] .kids-club-winter-star {
-    position: relative;
-    --hat-width: 68%;
-    --hat-top: -12%;
+    background: url("/images/winter/logos/christmas-crest.webp") center / contain no-repeat;
   }
+  html[data-mems-season="winter"] .kids-club-winter-star svg { visibility: hidden; }
 }

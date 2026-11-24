@@ -1,0 +1,19 @@
+@media screen {
+  html[data-mems-season="winter"] .mems-standalone::before {
+    content: "";
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 45;
+    height: 4px;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at 12px 1px, #fff6ce 0 1px, #e2b151 1.5px 3px, transparent 5px) 0 0 / 58px 4px repeat-x,
+      repeating-linear-gradient(105deg, #264e3f 0 20px, #9a3444 20px 35px, #315b48 35px 58px);
+  }
+  html[data-mems-season="winter"] .mems-standalone img:is([src*="/images/millstadt-ems/logo.png"], [src*="%2Fmillstadt-ems%2Flogo.png" i]) {
+    content: url("/images/winter/logos/christmas-wordmark.webp");
+  }
+  html[data-mems-season="winter"] .mems-standalone img:is([src*="/images/millstadt-ems/crest.png"], [src*="%2Fmillstadt-ems%2Fcrest.png" i]) {
+    content: url("/images/winter/logos/christmas-crest.webp");
+  }
+}

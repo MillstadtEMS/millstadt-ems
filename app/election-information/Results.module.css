@@ -10,6 +10,18 @@
 }
 .page[data-lead="yes"] { background: #ceebce; }
 .page[data-lead="no"] { background: #f5c7c3; }
+@media screen {
+  :global(html[data-mems-season="winter"]) .page[data-lead="yes"] {
+    --ink: #122d26;
+    --muted: #435b52;
+    --yellow: #f8d481;
+    background: linear-gradient(150deg, #fcfaf1 0, #e2eee2 36rem, #eff4ed 66rem);
+  }
+  :global(html[data-mems-season="winter"]) .page[data-lead="yes"] .score {
+    background: linear-gradient(125deg, #13392d, #102a24);
+    border-top: 3px solid #af4353;
+  }
+}
 .wrap { max-width: 1232px; margin-inline: auto; padding: 0 clamp(20px, 5vw, 65px) clamp(50px, 7vw, 92px); }
 .mast, .kicker, .artDate, .scoreHead, .details small, .status {
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;

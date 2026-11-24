@@ -1,5 +1,4 @@
 import Image from "next/image";
-import WinterLogoHat from "@/components/WinterLogoHat";
 import Link from "next/link";
 
 const featureCards = [
@@ -252,7 +251,7 @@ function KidsClubWordmark() {
   return (
     <div
       aria-label="Millstadt EMS Kids Club"
-      className="text-4xl sm:text-5xl md:text-6xl"
+      className="kids-club-winter-wordmark text-4xl sm:text-5xl md:text-6xl"
       style={{
         fontFamily: "'Chalkboard SE', 'Comic Sans MS', 'Marker Felt', system-ui, sans-serif",
         fontWeight: 900,
@@ -266,7 +265,6 @@ function KidsClubWordmark() {
       {letters.map((l, i) => (
         <span
           key={i}
-          className={i === 0 ? "kids-club-winter-initial" : undefined}
           aria-hidden
           style={{
             color: l.color || "transparent",
@@ -274,7 +272,6 @@ function KidsClubWordmark() {
             textShadow: l.color ? "0 4px 0 rgba(0,0,0,0.32), 0 8px 14px rgba(0,0,0,0.28)" : "none",
           }}
         >
-          {i === 0 && <WinterLogoHat variant="icon" />}
           {l.ch === " " ? " " : l.ch}
         </span>
       ))}
@@ -295,7 +292,6 @@ function KidStarOfLife() {
         height: 22,
       }}
     >
-      <WinterLogoHat variant="icon" />
       <svg viewBox="0 0 32 32" width="22" height="22">
         <g transform="translate(16 16)">
           <rect x="-3" y="-12" width="6" height="24" rx="1.6" fill="#22d3ee" />

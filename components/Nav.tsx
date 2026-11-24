@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronRight, X } from "lucide-react";
-import WinterLogoHat from "@/components/WinterLogoHat";
 import brandStyles from "@/components/WinterBrandPlacement.module.css";
 import WinterRoofline from "@/components/WinterRoofline";
 import winterStyles from "@/components/WinterRoofline.module.css";
@@ -181,10 +180,10 @@ export default function Nav() {
                 src="/images/millstadt-ems/logo.png"
                 alt="Millstadt EMS"
                 width={140}
-                height={60}
+                height={140}
+                sizes="56px"
                 className="h-14 w-auto object-contain group-hover:opacity-80 transition-opacity"
               />
-              <WinterLogoHat />
             </Link>
             <CommunityAlertTicker placement="left" />
           </div>
@@ -213,7 +212,6 @@ export default function Nav() {
                   className="lounge-hover-expand-img"
                   style={{ height: "clamp(36px, 4.6vw, 52px)", width: "auto", display: "block", transition: "transform 0.22s cubic-bezier(0.22,1.2,0.36,1), filter 0.22s" }}
                 />
-                <WinterLogoHat variant="small" />
               </span>
               <div className={`text-[9px] text-[#f0b429] uppercase tracking-widest font-black mt-0.5 ${winter ? winterStyles.label : ""}`}>Lounge</div>
             </Link>
@@ -238,7 +236,6 @@ export default function Nav() {
                   alt=""
                   style={{ height: "clamp(30px, 4vw, 44px)", width: "auto", display: "block" }}
                 />
-                <WinterLogoHat variant="wide" />
               </span>
               <div className={`text-[9px] text-slate-300 uppercase tracking-widest font-black mt-0.5 ${winter ? winterStyles.label : ""}`}>menu</div>
             </button>
@@ -246,7 +243,7 @@ export default function Nav() {
           </div>
 
         </div>
-        {winter && <WinterRoofline showCharacter={pathname === "/" && !open} />}
+        {winter && <WinterRoofline compact={pathname !== "/" || open} menuOpen={open} />}
       </div>
       </CommunityAlertProvider>
 

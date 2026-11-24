@@ -1,7 +1,11 @@
+"use client";
+
 import Image from "next/image";
+import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 import pendingArt from "@/public/images/election-results/referee-cutout.webp";
 import passArt from "@/public/images/election-results/referee-pass.webp";
 import failArt from "@/public/images/election-results/referee-fail.webp";
+import holidayPassArt from "@/public/images/winter/election-pass.webp";
 import styles from "./Results.module.css";
 
 const illustrations = {
@@ -23,6 +27,7 @@ const illustrations = {
 };
 
 export default function ElectionNightIllustration({ outcome, certified }: { outcome: keyof typeof illustrations | "tie"; certified: boolean }) {
+  const winter = useWinterTheme();
   if (outcome === "tie") {
     return <figure className={styles.illustration}>
       <strong className={styles.tieMark}>TIE</strong>
@@ -30,10 +35,11 @@ export default function ElectionNightIllustration({ outcome, certified }: { outc
     </figure>;
   }
   const { image, alt, caption } = illustrations[outcome];
+  const holidayPass = winter && outcome === "yes";
   return <figure className={styles.illustration}>
     <Image
-      src={image}
-      alt={alt}
+      src={holidayPass ? holidayPassArt : image}
+      alt={holidayPass ? "A referee in a turkey hat holds up a holiday platter beside the Christmas Millstadt EMS emblem and the word PASS." : alt}
       sizes={outcome === "no"
         ? "(max-width: 599px) 90vw, (max-width: 979px) 40vw, 500px"
         : "(max-width: 599px) 230px, (max-width: 979px) 260px, 410px"}

@@ -113,7 +113,7 @@ function VillagePostcard() {
               </div>
             ))}
             <div className={styles.snoopy}>
-              <Image src="/images/winter/snoopy.webp" alt="Snoopy wearing a scarf atop his red doghouse" fill sizes="(max-width: 720px) 100px, 15vw" unoptimized />
+              <Image src="/images/winter/rose-beagle.webp" alt="A white beagle lies on his back on a snowy red doghouse, holding a red rose." fill sizes="(max-width: 720px) 100px, 15vw" unoptimized />
             </div>
             <div className={styles.grinch}>
               <Image src="/images/winter/grinch.webp" alt="The Grinch in the snow" fill sizes="(max-width: 720px) 90px, 13vw" unoptimized />

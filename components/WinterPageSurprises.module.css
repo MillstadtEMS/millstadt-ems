@@ -1,0 +1,159 @@
+.shelf {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  text-align: center;
+  padding: 0 16px 12px;
+  border-block: 1px solid #90784e80;
+  background: radial-gradient(ellipse at 50% 0, #2f4739, transparent 52%), linear-gradient(105deg,#0a211b,#12352a 50%,#0d211e);
+  color: #ffedcf;
+}
+.shelf::before, .shelf::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  width: clamp(80px, 18vw, 150px);
+  height: 94px;
+  top: -16px;
+  background: url("/images/winter/evergreen-swag.webp") left top / contain no-repeat;
+  filter: brightness(.83);
+}
+.shelf::before { left: -18px; }
+.shelf::after { right: -18px; transform: scaleX(-1); }
+.trim {
+  position: relative;
+  width: min(73%, 740px);
+  height: 11px;
+  margin: 0 auto;
+  border-bottom: 1px solid #bba178;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+}
+.trim i { position: absolute; width: 4px; height: 5px; border-radius: 45% 45% 55% 55%; background: #ecbe71; box-shadow: 0 0 6px 1px #fbb75a85; }
+.trim i:nth-child(1) { left: 9%; top: 5px; }
+.trim i:nth-child(2) { left: 21%; top: 8px; background: #ee7777; box-shadow: 0 0 6px #f35965; }
+.trim i:nth-child(3) { left: 34%; top: 10px; }
+.trim i:nth-child(4) { left: 50%; top: 10px; background: #bddabc; }
+.trim i:nth-child(5) { right: 34%; top: 10px; }
+.trim i:nth-child(6) { right: 21%; top: 8px; background: #71cba6; box-shadow: 0 0 6px #77d7a5; }
+.trim i:nth-child(7) { right: 9%; top: 5px; }
+.ornament {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 12px 4px;
+  color: #e7dac1;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+}
+.ornament img {
+  display: block;
+  width: 82px;
+  height: 69px;
+  object-fit: contain;
+  object-position: center top;
+  filter: drop-shadow(1px 3px 2px #061710b3);
+  transform-origin: 50% 3%;
+}
+.ornament span { font: 570 .79rem/1.2 system-ui, sans-serif; }
+.ornament:is(:hover,:focus-visible) img { animation: tilt .82s ease-out; }
+.ornament:focus-visible, .actions button:focus-visible { outline: 2px solid #ffdf99; outline-offset: 1px; }
+.card {
+  width: min(100%,390px);
+  margin: 9px auto 4px;
+  overflow: hidden;
+  border-radius: 9px;
+  border: 1px solid #b89c60b8;
+  box-shadow: 0 9px 30px #06130f73;
+  background: #172d24;
+  text-align: left;
+}
+.card[hidden] { display: none; }
+.miniature {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 1672 / 941;
+  background: #12283a;
+}
+.scenery { object-fit: cover; }
+.subject { position: absolute; }
+.subject img { object-fit: contain; object-position: center bottom; filter: drop-shadow(1px 2px 1px #24313d9e); }
+.frame { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 16px #14273670; }
+.miniature[data-scene="engine"] .subject {
+  width: 37%; height: 47%; bottom: 7%; left: 39%;
+  animation: parade 2.6s cubic-bezier(.18,.65,.36,.98) both;
+}
+.miniature[data-scene="globe"] .subject {
+  width: 29%; height: 58%; left: 47%; bottom: 5%;
+  animation: skate 2.8s ease-out both;
+}
+.miniature[data-scene="stocking"] .subject {
+  width: 25%; height: 59%; left: 26%; bottom: 7%;
+  animation: peek 1.18s cubic-bezier(.18,.71,.29,1) both;
+}
+.miniature .drift { object-fit: fill; height: 21% !important; top: auto !important; bottom: -1px !important; }
+.flurry {
+  position: absolute; inset: -55% -15% 0;
+  background-image: radial-gradient(circle at 12px 19px,#f5faffdc 1px,transparent 2px), radial-gradient(circle at 26px 31px,#fffaf08c 1.4px,transparent 2.9px);
+  background-size: 46px 53px, 79px 73px;
+  animation: flurry 2.8s ease-out both;
+}
+.miniature[data-scene="lantern"] .scenery { animation: dusk 1.8s ease-out both; }
+.stationLights {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 54% 49%, #ffca6f86, transparent 20%), radial-gradient(ellipse at 15% 47%, #ffd58461, transparent 14%);
+  mix-blend-mode: screen;
+  animation: lightWindows 2s ease-out both;
+}
+.treeStar {
+  position: absolute; left: 75.3%; top: 25.7%; width: 15%; aspect-ratio: 1;
+  background: linear-gradient(90deg,transparent 47%,#fffbc9 50%,transparent 53%), linear-gradient(0deg,transparent 47%,#fff9bc 50%,transparent 53%),radial-gradient(circle,#fff8d5 3%,#ffc65a53 16%,transparent 62%);
+  mask-image: radial-gradient(circle,black 5%,transparent 68%);
+  animation: trimTree 1.85s ease-out both;
+}
+.miniature[data-scene="gift"] .subject {
+  width: 38%; height: 86%; bottom: 2%; left: 32%;
+  animation: cocoa 1.18s ease-out both;
+}
+.steam { position: absolute; width: 10%; height: 15%; left: 48.5%; top: 30%; }
+.steam i { position: absolute; left: 0; width: 40%; height: 78%; border-left: 2px solid #ffeccebd; border-radius: 70%; animation: steam 1.9s .25s ease-out 2 both; }
+.steam i:nth-child(2) { left: 22%; animation-delay: .53s; }
+.steam i:nth-child(3) { left: 40%; animation-delay: .7s; }
+.caption { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 9px 8px 14px; }
+.caption h3 { margin: 0; color: #fff4db; font: 600 1.05rem/1.2 Georgia, serif; }
+.caption p { margin: 4px 0 0; color: #c7d5c8; font: 500 .78rem/1.2 system-ui, sans-serif; }
+.actions { display: flex; }
+.actions button { display: grid; place-items: center; color: #f2e3c5; width: 43px; height: 44px; border-radius: 6px; cursor: pointer; }
+.actions button:hover { background: #c6dcce16; }
+@keyframes tilt { 24% { transform: rotate(7deg); } 56% { transform: rotate(-4deg); } 82% { transform: rotate(1.5deg); } }
+@keyframes parade { from { transform: translateX(-270%) rotate(-2deg); } 73% { transform: translateX(3%); } to { transform: translateX(0); } }
+@keyframes skate { from { transform: translateX(-170%) rotate(-4deg); } 66% { transform: translateX(-22%) rotate(1.8deg); } to { transform: translateX(0); } }
+@keyframes peek { from { transform: translateY(100%) rotate(6deg); } 70% { transform: translateY(-2%) rotate(-1.7deg); } to { transform: none; } }
+@keyframes flurry { from { transform: translate(-2%,0); opacity: 0; } 20% { opacity: .91; } to { transform: translate(4%,30%); opacity: .14; } }
+@keyframes dusk { from { filter: brightness(.45) saturate(.63); } to { filter: none; } }
+@keyframes lightWindows { from { opacity: 0; } 70% { opacity: 1; } to { opacity: .7; } }
+@keyframes trimTree { from { transform: translate(-310%,-220%) rotate(-55deg) scale(.35); opacity: .25; } 70% { opacity: 1; } to { transform: translate(-50%,-50%) scale(.85); } }
+@keyframes cocoa { from { transform: translateY(9%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes steam { from { transform: translateY(30%) scale(.7); opacity: 0; } 30% { opacity: .73; } to { transform: translateY(-55%) scale(1.2); opacity: 0; } }
+
+/* Only restyle the public shell's existing dark section backgrounds. The
+   custom document library, election layouts, links and form fields keep
+   their original colors and sizing. */
+:global(.mems-main-pad):has(+ .shelf) :is(main,section)[class~="bg-[#040d1a]"],
+:global(.mems-main-pad):has(+ .shelf) :is(main,section)[class~="bg-[#030914]"] {
+  background-color: #0b241d;
+}
+:global(.mems-main-pad):has(+ .shelf) :is(main,section)[class~="bg-[#071428]"] {
+  background-color: #193028;
+}
+:global(.mems-main-pad):has(+ .shelf) :global(.mems-page-hero__copy h1 span) { color: #f3d19c; }
+:global(.mems-main-pad):has(+ .shelf) :global(.mems-action-card) { background-color: #163027; border-color: #a1895c48; }
+@media (prefers-reduced-motion: reduce) {
+  .shelf *, .shelf *::before, .shelf *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+@media print { .shelf { display: none; } }

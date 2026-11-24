@@ -134,6 +134,7 @@
   visibility: hidden;
 }
 .cradle[data-ready] { visibility: visible; }
+.cradle[data-menu-open="true"] { z-index: 51; }
 .tether {
   position: absolute;
   width: 110%;
