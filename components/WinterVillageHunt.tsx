@@ -154,21 +154,41 @@ export function WinterVillageHuntProvider({ children }: { children: ReactNode })
   const [found, setFound] = useState(false);
   const [hits, setHits] = useState(0);
   const [rounds, setRounds] = useState(0);
+  const spot = nextSpot ?? first;
+  const volley = useRef(0);
+  const expiry = useRef<number>(undefined);
+  useEffect(() => () => window.clearTimeout(expiry.current), []);
   const fire = useCallback(() => {
-    if (found) setHits((value) => Math.min(escapeHits, value + 1));
+    if (!found || volley.current === escapeHits) return;
+    if (volley.current === 0) {
+      expiry.current = window.setTimeout(() => { volley.current = 0; setHits(0); }, 2400);
+    }
+    volley.current += 1;
+    if (volley.current === escapeHits) window.clearTimeout(expiry.current);
+    setHits(volley.current);
   }, [found]);
   const finish = useCallback(() => setFound(true), []);
   useEffect(() => {
-    if (hits !== escapeHits) return;
-    const timer = window.setTimeout(() => {
+    if (hits !== escapeHits || !spot) return;
+    let active = true;
+    function hideAgain() {
+      if (!active) return;
+      active = false;
+      volley.current = 0;
       setNextSpot(drawVisit());
       setFound(false);
       setHits(0);
       setRounds((value) => value + 1);
-    }, 600);
-    return () => window.clearTimeout(timer);
-  }, [hits]);
-  return <HuntContext.Provider value={{ spot: nextSpot ?? first, found, hits, rounds, finish, fire }}>{children}</HuntContext.Provider>;
+    }
+    const timer = window.setTimeout(() => {
+      const pickup = new CustomEvent("winter-rink-pickup", {
+        cancelable: true, detail: { person: "guest", x: spot.x / 100, onComplete: hideAgain },
+      });
+      if (window.dispatchEvent(pickup)) hideAgain();
+    }, 720);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [hits, spot]);
+  return <HuntContext.Provider value={{ spot, found, hits, rounds, finish, fire }}>{children}</HuntContext.Provider>;
 }
 
 function useHunt() {
@@ -329,7 +349,7 @@ export function WinterVillageHuntTarget() {
         </div>
       )}
       {found && aim && <>
-        <SnowballButton className={styles.aim} style={aim} />
+        {hits < escapeHits && <SnowballButton className={styles.aim} style={aim} />}
         {Array.from({ length: hits }, (_, i) => (
           <span key={i} className={styles.shot} aria-hidden="true"
             style={{ ...aim, "--from-x": `${(i % 2 ? 1 : -1) * (40 + i * 9)}px` } as CSSProperties}>
@@ -351,10 +371,10 @@ export function WinterVillageHuntControls() {
     <div className={styles.bar}>
       <div className={styles.intro}>
         <div className={styles.sample} aria-hidden="true"><Image src={guestArt} alt="" width={276} height={630} loading="lazy" unoptimized /></div>
-        <div><h3>Find the gift thief</h3><p>{found ? "Tap him fast or hold to throw a flurry of snowballs." : "Look for the green fellow with round glasses, a crooked nose and a sack of presents."}</p></div>
+        <div><h3>Find the gift thief</h3><p>{hits === escapeHits ? "Down in the snow! Here come the medics." : found ? "Tap him fast or hold to land five snowballs in a row." : "Look for the green fellow with round glasses, a crooked nose and a sack of presents."}</p></div>
       </div>
       <span role="status" className={styles.success}>{found ? (hits ? `Snowballs ${hits}/${escapeHits}` : "You found him!") : rounds ? `He ducked away! Times chased off: ${rounds}.` : ""}</span>
-      {found && <SnowballButton className={styles.throwButton}>Throw snowballs</SnowballButton>}
+      {found && hits < escapeHits && <SnowballButton className={styles.throwButton}>Throw snowballs</SnowballButton>}
       {!found && spot && <details className={styles.clue}>
         <summary>Get a clue</summary>
         <div className={styles.clueBody}>

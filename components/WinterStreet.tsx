@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Coffee } from "lucide-react";
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type MouseEvent, type ReactNode, type RefObject } from "react";
 import styles from "./WinterStreet.module.css";
 import WinterRinkRescue from "./WinterRinkRescue";
 
@@ -102,16 +102,41 @@ function Skater({ solo = false }: { solo?: boolean }) {
   const src = solo ? "/images/winter/street/solo-skater.webp" : "/images/winter/street/skating-family.webp";
   const width = solo ? 373 : 410;
   const height = solo ? 500 : 488;
+  const person = solo ? "solo" : "family";
+  const art = useRef<HTMLImageElement>(null);
+  const nextShot = useRef(0);
+  const drag = useRef({ x: 0, y: 0, moved: false });
+  const [snow, setSnow] = useState<number[]>([]);
+  function throwSnowball(event: MouseEvent<HTMLButtonElement>) {
+    if (!art.current || (event.detail && drag.current.moved)) return;
+    const rink = event.currentTarget.closest("[data-winter-rink]");
+    if (!rink) return;
+    const ground = rink.getBoundingClientRect(), player = art.current.getBoundingClientRect();
+    const request = new CustomEvent("winter-rink-shot", { cancelable: true, detail: {
+      person, x: (player.left + player.width * (solo ? .51 : .29) - ground.left) / ground.width,
+      floor: (ground.bottom - player.top - player.height * (solo ? .98 : .85)) / ground.height,
+    } });
+    if (!window.dispatchEvent(request)) {
+      const id = ++nextShot.current;
+      setSnow(previous => [...previous.slice(-3), id]);
+    }
+  }
   return (
-    <div className={solo ? styles.soloLane : styles.familyLane}>
+    <div className={solo ? styles.soloLane : styles.familyLane} data-skater={person}>
       <div className={styles.skater}>
         <span className={styles.skateShadow} aria-hidden="true" />
         <div className={styles.reflection} aria-hidden="true">
           <Image src={src} alt="" width={width} height={height} sizes="14vw" unoptimized />
         </div>
-        <Image className={styles.person} src={src}
+        <Image ref={art} className={styles.person} src={src}
           alt={solo ? "A young skater glides past in a golden scarf." : "A father steadies his daughter as she skates across the ice."}
           width={width} height={height} sizes="(max-width: 720px) 100px, 14vw" unoptimized />
+        <button type="button" className={styles.skateTarget} aria-describedby="rink-snowball-instructions" aria-label={solo ? "Throw a snowball at the skater in the golden scarf" : "Throw a snowball at the skating father"}
+          onPointerDown={e => { drag.current = { x: e.clientX, y: e.clientY, moved: false }; }}
+          onPointerMove={e => { if (e.buttons && Math.hypot(e.clientX - drag.current.x, e.clientY - drag.current.y) > 8) drag.current.moved = true; }}
+          onPointerCancel={() => { drag.current.moved = true; }} onClick={throwSnowball} />
+        {snow.map(id => <span key={id} className={styles.skateShot} aria-hidden="true"
+          onAnimationEnd={e => { if (e.target === e.currentTarget) setSnow(previous => previous.filter(shot => shot !== id)); }}><i /></span>)}
       </div>
     </div>
   );
@@ -119,13 +144,14 @@ function Skater({ solo = false }: { solo?: boolean }) {
 
 export function WinterStreetForeground({ active }: StreetProps) {
   return (
-    <div className={styles.rink} data-active={active} role="group" aria-label="The Christmas skating rink">
+    <div className={styles.rink} data-winter-rink="" data-active={active} role="group" aria-label="The Christmas skating rink">
       <div className={styles.rinkLights} aria-hidden="true"><i /><i /><i /></div>
       <CocoaStall />
       <div className={styles.neighbors}>
         <Image src="/images/winter/street/neighbors.webp" alt="Five neighbors with cocoa, wrapped presents and a lantern watch from the snowy edge of the rink."
           width={600} height={469} sizes="(max-width: 720px) 130px, 16vw" unoptimized />
       </div>
+      <span id="rink-snowball-instructions" className={styles.announcement}>Land three snowballs on the same skater within two seconds for a visit from the Millstadt medics.</span>
       <Skater solo />
       <Skater />
       <WinterRinkRescue />

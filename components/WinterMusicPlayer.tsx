@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { Bell, BellOff, Maximize2, Minimize2 } from "lucide-react";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
@@ -54,7 +53,6 @@ function Soundtrack() {
   const [enabled, setEnabled] = useState(wantsSound);
   const [initialMute] = useState(() => !enabled);
   const [recordingPath, setRecordingPath] = useState(ownedRecordingPath);
-  const [header] = useState(() => document.querySelector(".mems-nav-actions"));
   const [expanded, setExpanded] = useState(false);
   const desired = useRef(enabled);
   const frame = useRef<HTMLIFrameElement>(null);
@@ -149,24 +147,30 @@ function Soundtrack() {
       {enabled ? <Bell size={19} aria-hidden /> : <BellOff size={19} aria-hidden />}
     </button>
   );
-  return <>
-    {header ? createPortal(control, header) : control}
-    {recordingPath ? (
-      <audio id={frameId} ref={audio} src={recordingPath} loop preload="none" muted={!enabled}
-        aria-label="Christmas Saves the Year by Twenty One Pilots"
-        onPlaying={() => { started.current = true; }} onError={() => setRecordingPath(null)} />
-    ) : (
-      <aside className={styles.player} data-expanded={expanded} aria-label="Christmas soundtrack">
-        <iframe id={frameId} ref={frame} title="Christmas Saves the Year by Twenty One Pilots, official music video"
-          src={`${youtube}/embed/${video}?enablejsapi=1&playsinline=1&controls=1&loop=1&playlist=${video}&mute=${Number(initialMute)}&origin=${encodeURIComponent(window.location.origin)}`}
-          allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen
-          referrerPolicy="strict-origin-when-cross-origin" />
+  if (recordingPath) {
+    return (
+      <aside className={styles.audioOnly} aria-label="Christmas soundtrack">
+        {control}
+        <audio id={frameId} ref={audio} src={recordingPath} loop preload="none" muted={!enabled}
+          aria-label="Christmas Saves the Year by Twenty One Pilots"
+          onPlaying={() => { started.current = true; }} onError={() => setRecordingPath(null)} />
+      </aside>
+    );
+  }
+  return (
+    <aside className={styles.player} data-expanded={expanded} aria-label="Christmas soundtrack">
+      <iframe id={frameId} ref={frame} title="Christmas Saves the Year by Twenty One Pilots, official music video"
+        src={`${youtube}/embed/${video}?enablejsapi=1&playsinline=1&controls=1&loop=1&playlist=${video}&mute=${Number(initialMute)}&origin=${encodeURIComponent(window.location.origin)}`}
+        allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen
+        referrerPolicy="strict-origin-when-cross-origin" />
+      <div className={styles.controls}>
+        {control}
         <button id="winter-sound-expand" type="button" className={styles.resize} aria-controls={frameId}
+          aria-label={expanded ? "Make player smaller" : "Enlarge player"} title={expanded ? "Make player smaller" : "Enlarge player"}
           aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
           {expanded ? <Minimize2 size={14} aria-hidden /> : <Maximize2 size={14} aria-hidden />}
-          {expanded ? "Make smaller" : "Enlarge player"}
         </button>
-      </aside>
-    )}
-  </>;
+      </div>
+    </aside>
+  );
 }

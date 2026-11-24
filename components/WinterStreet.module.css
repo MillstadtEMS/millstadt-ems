@@ -364,3 +364,56 @@
 .rink .soloLane, .rink .familyLane { transition: opacity .25s ease; }
 .rink:has([data-rink-rescue="playing"]) :is(.soloLane, .familyLane) { opacity: 0; }
 .rink:has([data-rink-rescue="playing"]) :is(.soloLane, .familyLane) .skater { animation-play-state: paused; }
+
+.skateTarget {
+  position: absolute;
+  z-index: 3;
+  inset: 1% 5% 3%;
+  border: 0; padding: 0;
+  background: none;
+  cursor: crosshair;
+  pointer-events: auto;
+  touch-action: manipulation;
+  clip-path: polygon(38% 0,76% 4%,83% 21%,99% 36%,94% 51%,73% 52%,65% 64%,87% 93%,66% 100%,47% 79%,30% 97%,12% 92%,24% 60%,0 41%,5% 28%,27% 24%);
+}
+.familyLane .skateTarget { inset: 0 50% 13% 2%; clip-path: polygon(54% 0,89% 2%,93% 14%,85% 27%,97% 43%,81% 53%,69% 63%,55% 96%,31% 100%,24% 93%,10% 97%,2% 88%,14% 62%,0 60%,17% 25%,28% 10%); }
+.skater:has(.skateTarget:focus-visible) .person { filter: drop-shadow(0 0 2px #2a435a) drop-shadow(0 0 3px #fff3a9); }
+.skateShot { z-index: 4; position: absolute; left: 50%; top: 35%; width: 0; height: 0; pointer-events: none; animation: shotLife .46s linear; }
+.skateShot::before, .skateShot i {
+  content: ""; position: absolute; width: clamp(5px,1.05vw,17px); aspect-ratio: 1;
+  border-radius: 45% 55% 51% 42%;
+  background: radial-gradient(at 32% 24%,white 18%,#e6f9fc 47%,#94b7ca);
+  animation: skateSnow .28s cubic-bezier(.2,.55,.34,1) both;
+}
+.skateShot i { box-shadow: -.55em -.35em 0 -.12em white, .44em -.22em 0 -.15em #f4fbff; animation: skateImpact .22s .24s ease-out both; }
+@keyframes shotLife { from { opacity: 1; } to { opacity: .98; } }
+@keyframes skateSnow { from { opacity:.85; transform:translate(-10vw,5vw) scale(2.3); } to { opacity:1; transform:translate(-50%,-50%) scale(.65); } }
+@keyframes skateImpact { from { opacity:0; transform:scale(.4); } 22% { opacity:1; } to{ opacity:0; transform:scale(1.8); } }
+
+.rink:has([data-rink-rescue="loading"]) .skater { animation-play-state: paused; }
+.rink:has(:is([data-rink-rescue="loading"],[data-rink-rescue="playing"])) .skateTarget { visibility: hidden; }
+.rink:has([data-rink-rescue="playing"][data-subject="solo"]) .soloLane,
+.rink:has([data-rink-rescue="playing"][data-subject="family"]) .familyLane { opacity: 1; }
+.rink:has([data-rink-rescue="playing"][data-subject="solo"]) .soloLane .person,
+.rink:has([data-rink-rescue="playing"][data-subject="family"]) .familyLane .person {
+  transform-origin: 48% 83%;
+  animation: tipOnSkates .814s cubic-bezier(.37,.02,.8,.67) both;
+}
+.rink:has([data-rink-rescue="playing"]) :is(.reflection,.skateShadow) { opacity: 0; }
+.rink:has([data-paused="true"]) .person { animation-play-state: paused; }
+@keyframes tipOnSkates {
+  0% { opacity: 1; transform: none; } 19% { transform: translateY(-2%) rotate(-7deg); }
+  99% { opacity: 1; transform: translateY(4%) rotate(-72deg) scale(.91); }
+  100% { opacity: 0; transform: translateY(4%) rotate(-72deg) scale(.91); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rink .skateShot::before { animation: none; }
+  .rink .skateShot i { animation: none; }
+  .rink:has([data-rink-rescue="playing"]) .person { visibility: hidden; }
+}
+
+.rink:has([data-rink-rescue="playing"][data-subject="family"]) .familyLane .person {
+  transform-origin: 30% 83%;
+  clip-path: polygon(26% 0,47% 0,48% 12%,45% 18%,43% 29%,38% 31%,40% 36%,36% 40%,43% 42%,42% 56%,36% 57%,35% 49%,29% 67%,27% 84%,23% 87%,17% 83%,17% 77%,12% 80%,6% 83%,5% 79%,9% 66%,10% 55%,4% 57%,3% 50%,10% 24%,13% 10%);
+}
+.rink:has([data-paused="true"]) .person { animation-play-state: paused !important; }

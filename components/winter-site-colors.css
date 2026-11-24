@@ -1,3 +1,4 @@
+@import "./winter-secondary-trim.css";
 @import "./winter-form-colors.css";
 
 /* Screen-only site colors preserve the meaning of report figures and clinical classifications. */
@@ -12,6 +13,30 @@
     --winter-dark-floor: radial-gradient(ellipse at 80% 0%, #075c45, transparent 66%), #064333;
     --winter-brass: #ffea99;
     --winter-stitch: #ffce5a;
+    --winter-peppermint: repeating-linear-gradient(125deg, #fff9e8 0 9px, #eab4b4 9px 12px, #fff9e8 12px 15px, #bc1d37 15px 26px);
+    --winter-butterscotch: repeating-linear-gradient(125deg, #fff5cb 0 8px, #f7cf73 8px 11px, #fff5cb 11px 14px, #bf7928 14px 25px);
+  }
+
+  html[data-mems-season="winter"] .mems-site-nav .mems-nav-bar::after,
+  html[data-mems-season="winter"] .mems-main-pad section[aria-labelledby="financial-library-title"]::after,
+  html[data-mems-season="winter"] .mems-main-pad article[data-lead] header::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 7px;
+    pointer-events: none;
+    background: linear-gradient(#ffffff40, transparent 50%, #6936111a), var(--winter-butterscotch);
+    box-shadow: 0 -1px #ffefb9;
+  }
+  html[data-mems-season="winter"] .mems-site-nav .mems-nav-bar::after {
+    background: linear-gradient(#fffaee55, transparent 50%, #78132b1f), var(--winter-peppermint);
+  }
+  html[data-mems-season="winter"] .mems-main-pad article[data-lead] header {
+    position: relative;
+  }
+  html[data-mems-season="winter"] .mems-main-pad article[data-lead] header::after {
+    /* Match the masthead's existing 24px extensions at each edge. */
+    inset-inline: max(-24px, calc((100% - 100vw) / 2));
   }
 
   html[data-mems-season="winter"] .mems-main-pad {

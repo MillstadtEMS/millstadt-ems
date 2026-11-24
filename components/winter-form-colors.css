@@ -73,6 +73,7 @@
       box-shadow: none !important;
     }
     & :is(input, textarea)::placeholder { color: #58695e !important; opacity: 1; }
+    & :is(input, select, textarea):disabled { color: #566059 !important; background-color: #e8e9dd !important; cursor: not-allowed; }
     & select option { background: var(--wf-field); color: var(--wf-ink); }
     & input:is([type="radio"], [type="checkbox"]) { color-scheme: light; accent-color: var(--wf-pine) !important; }
     & :is(input, select, textarea, button, a, summary):focus-visible {
@@ -105,6 +106,22 @@
     & :is(p, small) { color: var(--wf-muted) !important; }
     & a { color: var(--wf-berry) !important; }
     & [role="alert"] { color: var(--wf-berry) !important; }
+  }
+  html[data-mems-season="winter"] [role="dialog"][aria-labelledby="privacy-preferences-title"] {
+    color: #fff9df !important;
+    background: var(--winter-forest-floor) !important;
+    border-color: #d8b66c !important;
+    & :is(h2, p, a, button) { color: #fff9df !important; }
+    & fieldset label { color: var(--wf-ink) !important; background: var(--wf-panel) !important; border-color: #e6ca87 !important; }
+    & fieldset label :is(strong, span) { color: var(--wf-ink) !important; }
+    & button:not([aria-label]) { background: var(--wf-step) !important; border-color: #dbb776 !important; }
+    & [role="alert"] { border-inline-start: 3px solid #ffb7a2; padding-inline-start: .6rem; }
+  }
+  html[data-mems-season="winter"] .mems-main-pad :is(.text-center.p-8:has(> h3 + p + a[href="/forms"]), .text-center.p-12:has(> h3), div[class~="min-h-[60vh]"]:has(a[href="/careers"])) {
+    color: #fff7dd !important;
+    background: var(--winter-forest-floor) !important;
+    & :is(h1, h3, p) { color: #fff7dd !important; }
+    & a { color: #fff8e8 !important; background: var(--wf-step) !important; }
   }
   html[data-mems-season="winter"] .board-login .aside { background: var(--winter-evergreen) !important; }
   html[data-mems-season="winter"] .board-login .panel { background: var(--winter-forest-floor) !important; }

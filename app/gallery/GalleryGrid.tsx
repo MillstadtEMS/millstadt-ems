@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 import { crewPhotoSource } from "@/lib/seasonal/crew-photo";
@@ -163,6 +163,8 @@ function getStart(i: number): { x: number; y: number; rot: number } {
 
 export default function GalleryGrid({ initialWinter }: { initialWinter: boolean }) {
   const winter = useWinterTheme(initialWinter);
+  const modal = useRef<HTMLDialogElement>(null);
+  const close = useRef<HTMLButtonElement>(null);
   const [visible, setVisible] = useState(false);
   const [active, setActive] = useState<string | null>(null);
   const [photoList, setPhotoList] = useState(photos);
@@ -183,12 +185,15 @@ export default function GalleryGrid({ initialWinter }: { initialWinter: boolean 
 
   useEffect(() => {
     if (!active) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setActive(null); };
-    document.addEventListener("keydown", onKey);
+    const dialog = modal.current;
+    if (!dialog) return;
+    const previousOverflow = document.body.style.overflow;
+    dialog.showModal();
+    close.current?.focus({ preventScroll: true });
     document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
     };
   }, [active]);
 
@@ -202,6 +207,8 @@ export default function GalleryGrid({ initialWinter }: { initialWinter: boolean 
             <div
               key={src}
               className="break-inside-avoid mb-3 lg:mb-4 cursor-zoom-in"
+              role="button" tabIndex={0} aria-label={`Open photo ${i + 1}`}
+              onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setActive(src); } }}
               onClick={() => setActive(src)}
               style={{
                 transform: visible ? "none" : `translate(${x}vw, ${y}vh) rotate(${rot}deg) scale(0.55)`,
@@ -232,14 +239,15 @@ export default function GalleryGrid({ initialWinter }: { initialWinter: boolean 
 
       {/* Lightbox */}
       {active && (
-        <div
-          className="fixed inset-0 z-[200] bg-black/92 flex items-center justify-center p-4"
+        <dialog ref={modal} aria-label="Expanded gallery photo" onCancel={() => setActive(null)}
+          className="fixed inset-0 m-0 w-screen h-dvh max-w-none max-h-none border-0 bg-black/92 flex items-center justify-center p-4"
           onClick={() => setActive(null)}
         >
           {/* Close button */}
           <button
-            onClick={() => setActive(null)}
-            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center text-white transition-colors z-10"
+            type="button" ref={close} onClick={() => setActive(null)}
+            style={{ top: "max(12px, env(safe-area-inset-top))", right: "max(12px, env(safe-area-inset-right))" }}
+            className="absolute w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center text-white transition-colors z-10"
             aria-label="Close"
           >
             <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
@@ -260,7 +268,7 @@ export default function GalleryGrid({ initialWinter }: { initialWinter: boolean 
               className="w-full h-auto max-h-[90vh] object-contain rounded-xl shadow-2xl"
             />
           </div>
-        </div>
+        </dialog>
       )}
     </>
   );

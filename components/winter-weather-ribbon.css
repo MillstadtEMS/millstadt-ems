@@ -1,0 +1,46 @@
+@media screen {
+  html[data-mems-season="winter"] .mems-main-pad {
+    padding-top: var(--winter-public-header-end, 144px) !important;
+  }
+  html[data-mems-season="winter"] .mems-nav-content {
+    padding-block: 3px;
+  }
+  .mems-weather-ribbon {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 30px;
+    box-sizing: border-box;
+  }
+  .mems-weather-ribbon > div { min-height: 30px; }
+  .mems-weather-readout {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    max-width: 100%;
+    padding: 2px 10px;
+    border: 1px solid;
+    border-radius: 4px;
+    font-size: clamp(.68rem, 1.3vw, .8rem);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: .045em;
+    text-transform: uppercase;
+  }
+  .mems-weather-readout > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mems-weather-ribbon .mems-weather-details { top: calc(100% + 3px) !important; }
+}
+@media screen and (forced-colors: none) {
+  .mems-weather-ribbon {
+    border-block: 1px solid #ffe7bb;
+    background: repeating-linear-gradient(125deg, #c82337 0 15px, #fff4d9 15px 17px, #087348 17px 32px, #fff4d9 32px 34px);
+  }
+  .mems-weather-readout { color: #e2f8e7; background: #082b21; border-color: #edd5a0; }
+  .mems-weather-readout[data-level="red"] { background: #35151c; color: #ffdadd; border-color: #ff989e; }
+  .mems-weather-readout[data-level="yellow"] { background: #30270f; color: #ffecac; border-color: #f8d768; }
+  .mems-weather-readout[data-level="unknown"] { background: #293330; color: #fff7e9; }
+  .mems-weather-ribbon [role="button"]:focus-visible .mems-weather-readout { outline: 2px solid white; outline-offset: 2px; }
+}
+@media (max-width: 767px) {
+  .mems-weather-ribbon .mems-weather-details { top: var(--winter-public-header-end, 144px) !important; }
+}

@@ -181,3 +181,58 @@
 @media (prefers-reduced-motion: reduce), print {
   .stage { display: none; }
 }
+
+.stage[data-paused="true"] * { animation-play-state: paused !important; }
+.stage:not([data-subject="hockey"]) :is(.cotLane, .downLane) { bottom: var(--ground); }
+.stage:not([data-subject="hockey"]) .cotLane { animation-name: collect; }
+.stage:not([data-subject="hockey"]) .downLane {
+  transform: translateX(var(--pickup-x));
+  animation: patientOnIce var(--run) step-end both;
+}
+.stage[data-subject="guest"] .downLane { animation-name: guestOnIce; }
+.stage:not([data-subject="hockey"]) .down { animation: pickupLift var(--run) ease-in-out both; }
+.stage:not([data-subject="hockey"]) .empty { animation-name: pickupEmpty; }
+.stage:not([data-subject="hockey"]) .loaded { animation-name: pickupLoaded; }
+@keyframes collect {
+  0%, 11% { transform: translateX(-22%); }
+  33% { transform: translateX(calc(var(--pickup-x) - 6%)); }
+  39%, 78% { transform: translateX(var(--pickup-x)); }
+  84% { transform: translateX(calc(var(--pickup-x) + 6%)); }
+  100% { transform: translateX(121%); }
+}
+@keyframes patientOnIce { 0% { opacity: 0; } 11% { opacity: 1; } 73%, 100% { opacity: 0; } }
+@keyframes guestOnIce { 0% { opacity: 1; } 73%, 100% { opacity: 0; } }
+@keyframes pickupEmpty { 0% { opacity: 1; } 73%, 100% { opacity: 0; } }
+@keyframes pickupLoaded { 0% { opacity: 0; } 73%, 100% { opacity: 1; } }
+@keyframes pickupLift {
+  0%, 11% { transform: translateY(-1cqh) rotate(-5deg); }
+  17%, 52% { transform: none; }
+  59% { transform: translateY(-3cqh) rotate(-3deg); }
+  68% { transform: translateY(-24cqh) rotate(-4deg) scale(.88); }
+  73%, 100% { transform: translate(-1.45cqh,-36.6cqh) scale(.78); }
+}
+.announcement { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+@media (prefers-reduced-motion: reduce) {
+  .stage:is([data-subject="guest"],[data-subject="solo"],[data-subject="family"]) { display: block; }
+  .stage:not([data-subject="hockey"]) .cotLane {
+    transform: translateX(var(--pickup-x));
+    animation: stillMedics var(--run) step-end both;
+  }
+  .stage:not([data-subject="hockey"]) :is(.crew, .down) { animation: none; }
+  @keyframes stillMedics { 0% { opacity: 0; } 30%, 100% { opacity: 1; } }
+}
+
+.companionLane {
+  position: absolute; left: 0; bottom: calc(var(--ground) + .8cqh); width: 100%; height: 0;
+  animation: walkWithDad var(--run) ease-in-out both, familyHandoff var(--run) step-end both;
+}
+.stage .companion { position: absolute; left: 0; bottom: 0; width: auto; height: 39.15cqh; translate: -50% 0; }
+@keyframes walkWithDad {
+  0%, 12% { transform: translateX(calc(var(--pickup-x) + 6%)); }
+  28% { transform: translateX(calc(var(--pickup-x) + 3%)); }
+  60%, 100% { transform: translateX(calc(var(--pickup-x) - 64.75cqh)); }
+}
+@keyframes familyHandoff { 0% { opacity: 1; } 73%, 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .companionLane { transform: translateX(calc(var(--pickup-x) - 64.75cqh)); animation-name: familyHandoff; }
+}

@@ -1,0 +1,89 @@
+.overlay {
+  position: fixed; inset: 0; z-index: 42;
+  overflow: clip; pointer-events: none;
+}
+.cast {
+  position: absolute; left: var(--actor-x); top: var(--actor-y); width: var(--actor-w); aspect-ratio: 661 / 600;
+  isolation: isolate; pointer-events: none; user-select: none;
+  --hand-left: 86%; --hand-top: 30%;
+}
+.cast[data-snow-ambush="kenny"] { --hand-left: 19.8%; --hand-top: 28.8%; }
+.drift {
+  position: absolute; inset: 84% 7% 1%;
+  background: radial-gradient(ellipse at 36% 43%,#fff 0 13%,transparent 34%),
+    radial-gradient(ellipse at 64% 42%,#f4fcff 0 18%,transparent 45%),
+    radial-gradient(ellipse at 51% 60%,#e4f3ff 15%,#aac1d0 46%,#7d96ac99 54%,transparent 69%);
+  border-radius: 50%; filter: drop-shadow(0 3px 2px #102d4080);
+  animation: growDrift .32s ease-out both;
+}
+.reveal { position: absolute; inset: -4% -7% 0; overflow: hidden; }
+.pose {
+  position: absolute; width: 87.72%; height: 96.16%; bottom: 0; left: 6.14%;
+  transform-origin: 50% 94%;
+  filter: drop-shadow(1px 3px 2px #24384a73);
+}
+.sprite, .mad, .hat {
+  position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain;
+}
+.hat { transform-origin: 38.43% 4.17%; }
+.cast[data-phase="rise"] .pose { animation: pop .64s cubic-bezier(.2,.88,.33,1.14) both; }
+.cast[data-phase="rise"] .hat { animation: floppy .68s ease-out both; }
+.cast[data-phase="throw"] .pose { animation: fling .43s ease-in-out both; }
+.cast[data-snow-ambush="kenny"][data-phase="throw"] .pose { --lean: -7deg; --release: 5deg; }
+.cast[data-phase="return"] .pose { animation: recoil .16s .25s ease-out both; }
+.cast[data-phase="return"] .mad { animation: faceHit .01s .24s step-end both; }
+.cast[data-phase="retreat"] .pose { animation: duck .45s cubic-bezier(.57,.04,.8,.49) forwards; }
+.cast[data-phase="retreat"] .drift { animation: hideDrift .49s ease-in both; }
+.gloveBall {
+  position: absolute; left: var(--hand-left); top: var(--hand-top); width: 9.8%; aspect-ratio: 1; border-radius: 50%;
+  transform: translate(-50%,-90%); opacity: 0;
+  background: radial-gradient(at 32% 24%,#fff 18%,#edf7fc 47%,#93b4cb);
+}
+.cast[data-phase="rise"] .gloveBall { animation: gather .66s ease-out both; }
+.counter {
+  position: absolute; left: 33%; top: 16%; width: 36%; height: 58%;
+  border: 0; padding: 0; background: transparent; pointer-events: none;
+}
+.counter:focus-visible {
+  border: 2px dashed #fff9c1; border-radius: 48%;
+  outline: 2px solid #315444; outline-offset: 2px;
+}
+.flight { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.flight i {
+  position: absolute; left: 0; top: 0; width: clamp(11px,1.55vw,24px); aspect-ratio: 1; border-radius: 47% 52% 44% 55%;
+  background: radial-gradient(at 30% 21%,white 14%,#eaf5ff 44%,#bed5df 70%,#869eae);
+  box-shadow: inset -1px -1px 2px #8aa8b7,0 2px 4px #0e2c443e;
+}
+.flight b {
+  position: absolute; left: 50vw; top: 49vh; width: clamp(83px,16vw,202px); aspect-ratio: 1.25;
+  background: radial-gradient(ellipse at 35% 39%,#fff 0 12%,#eff8fc 23%,transparent 41%),
+    radial-gradient(ellipse at 64% 45%,#fff 0 14%,#d7e9f2 27%,transparent 43%),
+    radial-gradient(ellipse at 47% 65%,#eff6ff 0 7%,#e5f4fb 21%,transparent 37%);
+  filter: drop-shadow(1px 3px 2px #31455f3d);
+  animation: splat .26s .34s ease-out both;
+}
+.flight[data-ambush-flight="throw"] i { animation: flyOut .4s cubic-bezier(.44,.05,.88,.64) both; }
+.flight[data-ambush-flight="return"] i { animation: flyBack .33s cubic-bezier(.16,.49,.41,.94) both; }
+.flight[data-ambush-flight="return"] b { left: var(--face-x); top: var(--face-y); width: clamp(25px,5vw,61px); animation: splat .19s .25s both; }
+.sr { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }
+@keyframes growDrift { from { opacity: .05; transform: scale(.35,.3); } to { opacity: 1; transform: none; } }
+@keyframes hideDrift { 0%,40% { opacity: 1; } to { opacity: 0; transform: scale(.77,.54); } }
+@keyframes pop { 0% { transform: translateY(105%) scale(.91,.9); } 66% { transform: translateY(-5%) rotate(-2deg); } to { transform: none; } }
+@keyframes floppy { 36% { transform: rotate(-13deg); } 65% { transform: rotate(9deg); } to { transform: none; } }
+@keyframes gather { 0%,50% { opacity:0; } 86%,100% { opacity:1; } }
+@keyframes fling { 0% { transform: rotate(var(--lean,7deg)) scale(.98); } 36% { transform: rotate(var(--release,-5deg)) translateY(-3%); } to { transform:none; } }
+@keyframes recoil { 0% { transform:none; } 55% { transform: translateY(4%) rotate(3deg); } to { transform: none; } }
+@keyframes faceHit { from { opacity:0; } to { opacity:1; } }
+@keyframes duck { from { transform: none; } to { transform: translateY(110%) rotate(5deg) scale(.94); } }
+@keyframes flyOut { 0% { opacity:1; transform:translate(var(--hand-x),var(--hand-y)) translate(-50%,-80%) scale(.6); } 93% { opacity:1; } to { opacity:0; transform:translate(50vw,49vh) translate(-50%,-50%) scale(5.2) rotate(48deg); } }
+@keyframes flyBack { 0% { opacity:1; transform:translate(54vw,87vh) scale(3.5) rotate(-47deg); } 90% { opacity:1; } to { opacity:0; transform:translate(var(--face-x),var(--face-y)) translate(-50%,-50%) scale(.65); } }
+@keyframes splat { from { opacity:0; transform:translate(-50%,-50%) scale(.48); } 25% { opacity:.96; } to { opacity:0; transform:translate(-50%,-47%) scale(1.08); } }
+@media (prefers-reduced-motion: reduce) {
+  .cast *, .flight * { animation: none !important; }
+  .cast[data-phase="rise"] .gloveBall { opacity: 1; }
+  .cast[data-phase="retreat"] { opacity: .35; }
+  .flight i { display: none; }
+  .flight b { width: 40px; transform: translate(-50%,-50%); opacity:.8; }
+  .flight[data-ambush-flight="throw"] b { left: var(--hand-x); top: var(--hand-y); }
+}
+@media print { .overlay { display: none; } }

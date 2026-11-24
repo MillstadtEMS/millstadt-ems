@@ -8,6 +8,7 @@ import { ChevronDown, ChevronRight, X } from "lucide-react";
 import brandStyles from "@/components/WinterBrandPlacement.module.css";
 import WinterRoofline from "@/components/WinterRoofline";
 import winterStyles from "@/components/WinterRoofline.module.css";
+import "@/components/winter-weather-ribbon.css";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 import CommunityAlertTicker, { CommunityAlertProvider } from "@/components/CommunityAlertTicker";
 
@@ -146,6 +147,22 @@ export default function Nav() {
     return () => { alive = false; };
   }, []);
 
+  useEffect(() => {
+    const bar = navRef.current?.querySelector(".mems-nav-bar");
+    if (!winter || !bar) return;
+    const root = document.documentElement;
+    const syncHeight = () => root.style.setProperty("--winter-public-header-end", `${Math.ceil(bar.getBoundingClientRect().bottom)}px`);
+    syncHeight();
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(bar);
+    window.addEventListener("resize", syncHeight);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", syncHeight);
+      root.style.removeProperty("--winter-public-header-end");
+    };
+  }, [winter]);
+
   const selectedGroup = MENU_GROUPS.find(group => group.heading === activeGroup) ?? MENU_GROUPS[0];
 
   function toggleMenu() {
@@ -169,6 +186,7 @@ export default function Nav() {
       {/* ── Nav bar ── */}
       <CommunityAlertProvider>
       <div className={`mems-nav-bar bg-[#020912] border-b border-white/8 ${winter ? winterStyles.bar : ""}`} style={{ overflow: "visible" }}>
+        {winter && <div className="mems-weather-ribbon"><WeatherTicker ribbon /></div>}
         <div className="mems-nav-content wrap flex items-center gap-4 py-3" style={{ overflow: "visible" }}>
 
           {/* Left group (flex-1) — balances the right group so the weather
@@ -191,7 +209,7 @@ export default function Nav() {
           {/* Center group (flex-1) — weather ticker. Wrapper must NOT clip;
               the hover popup drops below the bar. Truncation handled inside. */}
           <div className="mems-nav-weather flex-1 flex items-center justify-center min-w-0">
-            <WeatherTicker />
+            {!winter && <WeatherTicker />}
           </div>
 
           {/* Right group (flex-1) — mirrors the left group's width. */}
@@ -528,9 +546,10 @@ function getAlertRank(event: string, severity: string, headline = "", descriptio
   return 12;
 }
 
-function WeatherTicker() {
+function WeatherTicker({ ribbon = false }: { ribbon?: boolean }) {
   const pathname = usePathname();
   const [alerts, setAlerts] = useState<ProcessedAlert[]>([]);
+  const [unavailable, setUnavailable] = useState(false);
   const [idx, setIdx]       = useState(0);
   const [hover, setHover]   = useState(false);
   const [compact, setCompact] = useState(false);
@@ -597,9 +616,11 @@ function WeatherTicker() {
         const res  = await fetch("https://api.weather.gov/alerts/active?zone=ILC163", { headers: { "User-Agent": "(millstadtems.org, millstadtems@gmail.com)", Accept: "application/geo+json" } });
         if (!res.ok) throw new Error(`Weather source returned ${res.status}`);
         const data = await res.json();
+        setUnavailable(false);
         setAlerts(processAlerts(data.features ?? []));
         setIdx(0);
       } catch {
+        setUnavailable(true);
         setAlerts([]);
         setIdx(0);
       }
@@ -640,7 +661,9 @@ function WeatherTicker() {
     ? (canExpand ? `⚠ ${realAlerts.length}` : "")
     : eventLabel;
 
-  if (alerts.length === 0 || (compact && !canExpand)) return null;
+  if (!ribbon && (alerts.length === 0 || (compact && !canExpand))) return null;
+  const ribbonText = alerts.length ? eventLabel : unavailable ? "Weather alerts unavailable" : "Checking weather alerts";
+  const ribbonIcon = !alerts.length ? "☁" : canExpand ? "⚠" : "✓";
 
   return (
     <div
@@ -667,7 +690,13 @@ function WeatherTicker() {
       {/* ── Rotating ticker line — must stay constrained so the long text
           truncates with an ellipsis and never spills over the nav buttons. ── */}
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, overflow: "hidden", padding: "0 28px", minWidth: 0, cursor: canExpand ? "pointer" : "default" }}>
-        {compact ? (
+        {ribbon ? (
+          <span className="mems-weather-readout" data-level={alerts.length ? current.level : "unknown"}>
+            <span aria-hidden="true">{ribbonIcon}</span>
+            <span>{ribbonText}</span>
+            {realAlerts.length > 1 && <span aria-label={`${realAlerts.length} active alerts`}>({realAlerts.length})</span>}
+          </span>
+        ) : compact ? (
           // Mobile/tablet: single compact chip (unchanged).
           <span key={current.level} className="weather-status-chip text-[10px]" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 32, height: 32, padding: "0 7px", border: `1px solid ${color}70`, borderRadius: 6, background: `${color}16`, color, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: "100%", animation: `weather-pulse-${current.level} 2.5s ease-in-out infinite` }}>
             {displayText}
@@ -696,6 +725,7 @@ function WeatherTicker() {
         <div
           role="dialog"
           aria-label="Active weather alerts"
+          className={ribbon ? "mems-weather-details" : undefined}
           style={{
             position: compact ? "fixed" : "absolute",
             top: compact ? 124 : "calc(100% + 7px)",

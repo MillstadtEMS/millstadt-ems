@@ -1,0 +1,69 @@
+@media screen and (forced-colors: none) {
+  html[data-mems-season="winter"] .kids-activities-page :is(.kc-spotlight-art, .kc-printable-callout, .kc-parent-grid),
+  html[data-mems-season="winter"] #voter-resources a:has(#vote-title) {
+    background: var(--winter-evergreen);
+    border-color: #d5b56e;
+    color: #fffaf0;
+  }
+  html[data-mems-season="winter"] .kids-activities-page :is(.kc-coloring-header, .kc-badge-tracker) {
+    background: linear-gradient(130deg, #922535, #74152a);
+    border-color: #e3c27e;
+  }
+  html[data-mems-season="winter"] .kids-activities-page :is(.kc-coloring-header, .kc-badge-tracker, .kc-callout-copy, .kc-parent-notes) p,
+  html[data-mems-season="winter"] #voter-resources a:has(#vote-title) p:not(:first-child) {
+    color: #fff3dc;
+  }
+  html[data-mems-season="winter"] .kids-activities-page :is(.kc-card-actions a, .kc-coloring-actions a:first-child, .kc-supply-row span, .kc-supplies em),
+  html[data-mems-season="winter"] .kids-activities-page .kc-steps li::before,
+  html[data-mems-season="winter"] a[href^="/kids-club/coloring/"][href$=".pdf"][class~="bg-[#061121]"] {
+    background: #075537;
+    color: #fff7e2;
+  }
+  html[data-mems-season="winter"] .kids-activities-page :is(.kc-filter-row, .kc-theme-row) button {
+    background: #fffaf0;
+    color: #194635;
+    border-color: #b4bfa6;
+  }
+  html[data-mems-season="winter"] .kids-activities-page :is(.kc-filter-row, .kc-theme-row) button.is-active {
+    background: #8d2031;
+    color: #fff7db;
+    border-color: #722334;
+  }
+  html[data-mems-season="winter"] .kids-activities-page :is(.kc-filter-row button, .kc-theme-row button, .kc-card-actions a, .kc-coloring-actions a):focus-visible,
+  html[data-mems-season="winter"] a[href^="/kids-club/coloring/"]:focus-visible {
+    outline: 3px solid #a7253e;
+    outline-offset: 3px;
+  }
+  html[data-mems-season="winter"] a[href^="/kids-club/coloring/"][href$=".pdf"][class~="bg-[#061121]"]:hover,
+  html[data-mems-season="winter"] .kids-activities-page :is(.kc-card-actions a, .kc-coloring-actions a:first-child):hover {
+    background: #8d2031;
+  }
+  html[data-mems-season="winter"] .mems-main-pad main[class*="PrivacyPage"] {
+    background: var(--winter-dark-floor);
+    color: #fff7df;
+  }
+  html[data-mems-season="winter"] main[class*="PrivacyPage"] > header::before {
+    background: linear-gradient(90deg, #b51c37, #f4d38a 50%, #b51c37);
+  }
+  html[data-mems-season="winter"] main[class*="PrivacyPage"] :is(header, section) :is(p, li) { color: #f6eddf; }
+  html[data-mems-season="winter"] main[class*="PrivacyPage"] section { border-color: #d9bd734a; }
+  html[data-mems-season="winter"] main[class*="PrivacyPage"] :is([class*="note"], form) {
+    background: #0a5b40;
+    border-color: #e1b764;
+  }
+  html[data-mems-season="winter"] main[class*="PrivacyPage"] button {
+    background: #8d2031;
+    border-color: #e1b764;
+    color: #fff9ed;
+  }
+  html[data-mems-season="winter"] main[class*="PrivacyPage"] button:focus-visible {
+    outline: 2px solid #ffdf92;
+    outline-offset: 3px;
+  }
+  html[data-mems-season="winter"] #serenity-prayer {
+    background: #075238;
+  }
+  html[data-mems-season="winter"] #serenity-prayer > .absolute.inset-0.z-10 {
+    background: radial-gradient(ellipse at center, #0c60330a 24%, #06362377 88%), linear-gradient(180deg, #09553900 35%, #082f223b) !important;
+  }
+}
