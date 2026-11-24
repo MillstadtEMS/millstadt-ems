@@ -28,95 +28,89 @@ html[data-mems-season="winter"] .mems-site-nav > .fixed.bottom-0 .text-slate-500
   color: #fff2d9;
 }
 
-/* The directory's three category tabs keep their colors in both navigation layouts. */
+/* The directory uses the same three category colors in both layouts. */
 @media screen and (forced-colors: none) {
+  html[data-mems-season="winter"] .mems-site-nav:has(button[aria-controls="site-navigation-panel"][aria-expanded="true"]) {
+    /* Let open links and their close control sit above the portaled roof characters. */
+    z-index: 52;
+  }
   html[data-mems-season="winter"] #site-navigation-panel {
-    --menu-paper: #fff9e8;
-    --menu-ink: #134935;
-    --menu-muted: #425c47;
-    --menu-rule: #cdb77a;
-    --menu-arrow: #8d2438;
-  }
-  html[data-mems-season="winter"] #site-navigation-panel :is(.wrap > .rounded-lg, [class~="bg-[#020912]"], [id^="mobile-navigation-"]) {
-    background: var(--menu-paper);
-    border-color: var(--menu-rule);
+    --menu-ink: #fff9e9;
+    --menu-muted: #fcebd2;
+    --menu-gold: #ffdd8d;
+    --menu-rule: #d8b876;
+    --menu-pine: linear-gradient(115deg, #056d3d, #065830);
+    --menu-berry: linear-gradient(115deg, #ac1c38, #911533);
+    --menu-forest: radial-gradient(ellipse at 96% 0%, #126d47, transparent 67%), linear-gradient(130deg, #05472e, #073d2a);
     color: var(--menu-ink);
   }
-  html[data-mems-season="winter"] #site-navigation-panel :is(.border-b, .border-r) {
+  html[data-mems-season="winter"] #site-navigation-panel :is(.wrap > .rounded-lg, #desktop-navigation-links, [id^="mobile-navigation-"]) {
+    background: var(--menu-forest);
     border-color: var(--menu-rule);
   }
-  html[data-mems-season="winter"] #site-navigation-panel :is(button, a, .text-white) {
-    color: var(--menu-ink);
+  html[data-mems-season="winter"] #site-navigation-panel [class~="bg-[#020912]"] {
+    background: linear-gradient(157deg, #a81c36, #8c1730 52%, #71142a);
+    border-color: var(--menu-rule);
   }
-  html[data-mems-season="winter"] #site-navigation-panel :is(.text-slate-400, .text-slate-500) {
-    color: var(--menu-muted);
-  }
-  html[data-mems-season="winter"] #site-navigation-panel :is(button, a) svg,
-  html[data-mems-season="winter"] #desktop-navigation-links > div:first-child .uppercase,
-  html[data-mems-season="winter"] #site-navigation-panel [class~="text-[#f0b429]"].uppercase {
-    color: var(--menu-arrow);
-  }
+  html[data-mems-season="winter"] #site-navigation-panel :is(.text-white, a, button) { color: var(--menu-ink); }
+  html[data-mems-season="winter"] #site-navigation-panel :is(.text-slate-400, .text-slate-500) { color: var(--menu-muted); }
+  html[data-mems-season="winter"] #site-navigation-panel :is(a svg, button svg, .uppercase) { color: var(--menu-gold); }
+  html[data-mems-season="winter"] #desktop-navigation-links > div:first-child { border-color: #d2b16c9c; }
   html[data-mems-season="winter"] #site-navigation-panel button[aria-label="Close menu"] {
-    border-color: var(--menu-rule);
-  }
-  html[data-mems-season="winter"] #site-navigation-panel :is(a, button):is(:hover, :focus-visible) {
-    background: #e0efd9;
-    border-color: #799b74;
-    outline-color: #a21835;
-  }
-  html[data-mems-season="winter"] #site-navigation-panel button[aria-expanded="true"],
-  html[data-mems-season="winter"] #site-navigation-panel a[aria-current="page"] {
-    --menu-muted: #fff1d4;
-    --menu-arrow: #ffdf85;
-    color: #fffaf0;
-    background: #06643d;
-    border-color: #0b6b40;
-    box-shadow: inset 3px 0 #f4c85b;
-  }
-  html[data-mems-season="winter"] #site-navigation-panel a[aria-current="page"] {
-    background: #aa1732;
-    border-color: #a4122c;
+    color: #fff8df;
+    background: #71182c;
+    border: 1px solid var(--menu-rule);
   }
   html[data-mems-season="winter"] #site-navigation-panel button[aria-expanded] {
-    --menu-muted: #fff1dc;
-    --menu-arrow: #ffe292;
-    color: #fffbed;
     background: var(--winter-cranberry);
-    border-color: #cf8290;
+    border-block: 1px solid #e9a999;
   }
   html[data-mems-season="winter"] #site-navigation-panel :is(
     button[aria-controls="desktop-navigation-links"]:nth-child(2),
     button[aria-controls="mobile-navigation-what-s-happening"]) {
     background: var(--winter-evergreen);
-    border-color: #71af88;
+    border-color: #83bd8f;
   }
   html[data-mems-season="winter"] #site-navigation-panel :is(
     button[aria-controls="desktop-navigation-links"]:nth-child(3),
     button[aria-controls="mobile-navigation-help-resources"]) {
-    --menu-muted: #573819;
-    --menu-arrow: #7c192f;
+    --menu-muted: #563416;
+    --menu-gold: #772533;
     color: #483015;
-    background: linear-gradient(110deg, #ffefb1, #f6c968);
-    border-color: #cda454;
+    background: linear-gradient(115deg, #ffeca9, #f3c263);
+    border-color: #edcc88;
   }
   html[data-mems-season="winter"] #site-navigation-panel button[aria-expanded="true"] {
-    box-shadow: inset 5px 0 #ffdd7c, inset 0 0 0 2px #593515;
+    box-shadow: inset 5px 0 #fff1b8, inset 0 0 0 2px #30251b;
   }
-  html[data-mems-season="winter"] #site-navigation-panel button[aria-expanded]:is(:hover, :focus-visible) {
-    box-shadow: inset 0 0 0 3px #ffdc77;
-    outline-color: #8f2132;
+  html[data-mems-season="winter"] #site-navigation-panel a {
+    background: var(--menu-pine);
+    border: 1px solid #b5d3a98a;
   }
-  html[data-mems-season="winter"] #site-navigation-panel :is(#desktop-navigation-links, [id^="mobile-navigation-"]) a:not([aria-current="page"]) {
-    background: #edf4e7;
-    border-inline-start: 3px solid #278052;
+  html[data-mems-season="winter"] #site-navigation-panel :is(
+    [id^="mobile-navigation-"] a:nth-child(even),
+    #desktop-navigation-links a:nth-child(4n+2),
+    #desktop-navigation-links a:nth-child(4n+3)) {
+    background: var(--menu-berry);
+    border-color: #efbba591;
   }
-  html[data-mems-season="winter"] #site-navigation-panel :is(#desktop-navigation-links, [id^="mobile-navigation-"]) a:nth-child(even):not([aria-current="page"]) {
-    background: #fbeae7;
-    border-inline-start-color: #c42742;
+  html[data-mems-season="winter"] #site-navigation-panel :is(#desktop-navigation-links, [id^="mobile-navigation-"]) a[aria-current="page"] {
+    --menu-gold: #702432;
+    color: #4c2918;
+    background: linear-gradient(110deg, #ffeaa5, #f2c160);
+    border-color: #fff1b0;
+    box-shadow: inset 4px 0 #952641;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: .2em;
   }
-  html[data-mems-season="winter"] #site-navigation-panel :is(#desktop-navigation-links, [id^="mobile-navigation-"]) a:not([aria-current="page"]):is(:hover, :focus-visible) {
-    background: #ffebbb;
-    border-color: #a47821;
+  html[data-mems-season="winter"] #site-navigation-panel :is(a, button):hover {
+    box-shadow: inset 0 0 0 2px #ffe5a9;
+  }
+  html[data-mems-season="winter"] #site-navigation-panel :is(a, button):focus-visible {
+    outline: 3px solid #fff6c9;
+    outline-offset: -3px;
+    box-shadow: inset 0 0 0 5px #44261b;
   }
 }
 
