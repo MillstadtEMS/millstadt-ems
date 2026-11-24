@@ -6,7 +6,7 @@ html[data-mems-season="winter"] :is(.mems-site-nav, .mems-footer, .mems-main-pad
 }
 
 html[data-mems-season="winter"] .mems-site-nav .mems-nav-bar {
-  background: linear-gradient(175deg, #087445, #005b38 90%) !important;
+  background: linear-gradient(113deg, #00733e, #006337 49%, #bd0c29 49.3%, #c81330) !important;
   border-bottom-color: #ffcd5b !important;
 }
 
@@ -20,7 +20,7 @@ html[data-mems-season="winter"] .mems-nav-weather span[class~="text-[13px]"] {
 
 html[data-mems-season="winter"] .mems-site-nav .mems-nav-panel,
 html[data-mems-season="winter"] .mems-site-nav > .fixed.bottom-0 > div {
-  background: linear-gradient(125deg, #086b43, #005133 74%) !important;
+  background: linear-gradient(125deg, #056f42, #005032 68%, #971830) !important;
   border-color: #ffcf60 !important;
 }
 
@@ -28,8 +28,7 @@ html[data-mems-season="winter"] .mems-site-nav > .fixed.bottom-0 .text-slate-500
   color: #fff2d9;
 }
 
-/* Desktop directory and mobile accordion use the same winter paper,
-   with holly selection and a cranberry marker for the visitor's current page. */
+/* The directory's three category tabs keep their colors in both navigation layouts. */
 @media screen and (forced-colors: none) {
   html[data-mems-season="winter"] #site-navigation-panel {
     --menu-paper: #fff9e8;
@@ -78,6 +77,47 @@ html[data-mems-season="winter"] .mems-site-nav > .fixed.bottom-0 .text-slate-500
     background: #aa1732;
     border-color: #a4122c;
   }
+  html[data-mems-season="winter"] #site-navigation-panel button[aria-expanded] {
+    --menu-muted: #fff1dc;
+    --menu-arrow: #ffe292;
+    color: #fffbed;
+    background: var(--winter-cranberry);
+    border-color: #cf8290;
+  }
+  html[data-mems-season="winter"] #site-navigation-panel :is(
+    button[aria-controls="desktop-navigation-links"]:nth-child(2),
+    button[aria-controls="mobile-navigation-what-s-happening"]) {
+    background: var(--winter-evergreen);
+    border-color: #71af88;
+  }
+  html[data-mems-season="winter"] #site-navigation-panel :is(
+    button[aria-controls="desktop-navigation-links"]:nth-child(3),
+    button[aria-controls="mobile-navigation-help-resources"]) {
+    --menu-muted: #573819;
+    --menu-arrow: #7c192f;
+    color: #483015;
+    background: linear-gradient(110deg, #ffefb1, #f6c968);
+    border-color: #cda454;
+  }
+  html[data-mems-season="winter"] #site-navigation-panel button[aria-expanded="true"] {
+    box-shadow: inset 5px 0 #ffdd7c, inset 0 0 0 2px #593515;
+  }
+  html[data-mems-season="winter"] #site-navigation-panel button[aria-expanded]:is(:hover, :focus-visible) {
+    box-shadow: inset 0 0 0 3px #ffdc77;
+    outline-color: #8f2132;
+  }
+  html[data-mems-season="winter"] #site-navigation-panel :is(#desktop-navigation-links, [id^="mobile-navigation-"]) a:not([aria-current="page"]) {
+    background: #edf4e7;
+    border-inline-start: 3px solid #278052;
+  }
+  html[data-mems-season="winter"] #site-navigation-panel :is(#desktop-navigation-links, [id^="mobile-navigation-"]) a:nth-child(even):not([aria-current="page"]) {
+    background: #fbeae7;
+    border-inline-start-color: #c42742;
+  }
+  html[data-mems-season="winter"] #site-navigation-panel :is(#desktop-navigation-links, [id^="mobile-navigation-"]) a:not([aria-current="page"]):is(:hover, :focus-visible) {
+    background: #ffebbb;
+    border-color: #a47821;
+  }
 }
 
 html[data-mems-season="winter"] .mems-footer {
@@ -89,12 +129,41 @@ html[data-mems-season="winter"] .mems-footer address svg {
   color: #ffe18b;
 }
 
+@media screen and (forced-colors: none) {
+  html[data-mems-season="winter"] :is([data-home-call-tile], [data-top-categories-root], [data-callstats-popout], [data-top-categories-popover]) {
+    --callstats-secondary: #fff3d3;
+    --callstats-note: #e0e7d0;
+    --callstats-future: #b8ccba;
+  }
+  html[data-mems-season="winter"] .mems-main-pad [data-home-call-tile],
+  html[data-mems-season="winter"] [data-top-categories-root] > [role="button"] {
+    background: linear-gradient(125deg, #075b37, #063d2b) !important;
+    border-color: #d7b45f !important;
+  }
+  html[data-mems-season="winter"] .mems-main-pad [data-home-call-tile="gold"],
+  html[data-mems-season="winter"] [data-top-categories-root] > [role="button"] {
+    background: linear-gradient(120deg, #a21734, #71132b) !important;
+  }
+  html[data-mems-season="winter"] .mems-main-pad [data-home-call-tile] > div:first-child {
+    color: #ffea9f !important;
+  }
+  html[data-mems-season="winter"] :is([data-callstats-popout][role="dialog"], [data-callstats-popout] > [role="dialog"], [data-top-categories-popover]) {
+    background: linear-gradient(130deg, #09432f, #063126) !important;
+    border-color: #efd58d !important;
+    border-top: 5px solid #ce2845 !important;
+  }
+  html[data-mems-season="winter"] :is([data-home-call-tile], [data-top-categories-root] [role="button"]):focus-visible {
+    outline: 3px solid #ffe295;
+    outline-offset: 2px;
+  }
+}
+
 html[data-mems-season="winter"] .mems-main-pad {
   background: #075134;
 }
 
 html[data-mems-season="winter"] .mems-page-hero {
-  background: radial-gradient(ellipse at 82% -12%, #177e4f, transparent 62%), linear-gradient(115deg, #08663f, #005535);
+  background: radial-gradient(ellipse at 88% -10%, #c91530, transparent 55%), linear-gradient(115deg, #00723f, #005531);
 }
 
 html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) {
@@ -166,7 +235,7 @@ html[data-mems-season="winter"] .hero-top > p {
 }
 
 html[data-mems-season="winter"] .hero-bottom {
-  background: linear-gradient(174deg, #04683df2, #035536f2);
+  background: linear-gradient(100deg, #00683df2, #006336f0 50%, #b20c2af0);
   border-color: #ffda7b99;
   box-shadow: inset 0 1px #e2f3f040;
 }
@@ -176,7 +245,7 @@ html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) > section[clas
 }
 
 html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) > section[class~="bg-[#071428]"] {
-  background: radial-gradient(ellipse at 88% 0, #14694f, transparent 63%), linear-gradient(120deg, #09523c, #06412f) !important;
+  background: radial-gradient(ellipse at 90% 0, #c91d38, transparent 65%), linear-gradient(115deg, #990f2c, #780e28) !important;
 }
 
 

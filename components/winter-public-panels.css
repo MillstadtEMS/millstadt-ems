@@ -1,0 +1,29 @@
+@media screen and (forced-colors: none) {
+  /* Shared directory entries, reference links and expandable job/education cards. */
+  html[data-mems-season="winter"] .mems-main-pad :is(a, li, details)[class*="rounded-"]:is([class~="bg-[#040d1a]"], [class~="bg-[#071428]"]):not(form *) {
+    --panel-paint: var(--winter-evergreen);
+    background: var(--panel-paint) !important;
+    color: #fff7e5;
+    border-color: #e9c376a1 !important;
+    & :is(.text-slate-300, .text-slate-400, .text-slate-500, .text-slate-600) { color: #fff1de !important; }
+    & [class~="text-[#f0b429]"] { color: #ffe59c; }
+    &:nth-child(3n + 2) { --panel-paint: var(--winter-cranberry); }
+    &:is(:hover, :focus-visible, [open]) { border-color: #ffe591 !important; }
+    &:focus-visible, & > summary:focus-visible { outline: 3px solid #ffdd7c; outline-offset: 3px; }
+  }
+
+  /* The numerical tiles below the homepage team portrait remain readable on warm paper. */
+  html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) .flex.gap-4 > .text-center.flex-1[class~="bg-[#040d1a]"] {
+    background: linear-gradient(142deg, #fffdf1, #ffe9b5) !important;
+    border-color: #e5be71 !important;
+    color: #174d35;
+    & > :first-child { color: #a31831 !important; }
+    & > :last-child { color: #24563c !important; }
+  }
+  html[data-mems-season="winter"] .mems-main-pad div[class~="bg-[#020912]"]:has(> pre) {
+    background: #fff3d8 !important;
+    border-block: 1px solid #d8b568;
+    & pre { color: #194b35 !important; }
+  }
+  html[data-mems-season="winter"] .mems-main-pad a:has(img) > [class~="bg-[#0b1728]"] { background: #14563a !important; }
+}

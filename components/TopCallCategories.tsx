@@ -140,7 +140,7 @@ export default function TopCallCategories() {
           <span style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
             Top Call Categories
           </span>
-          <span style={{ color: "#94a3b8", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+          <span style={{ color: "var(--callstats-secondary, #94a3b8)", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
             {data.year} YTD · {data.total} calls
           </span>
         </div>
@@ -149,14 +149,14 @@ export default function TopCallCategories() {
             <li key={c.name} style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
               <span style={{
                 display: "inline-block", minWidth: 18, textAlign: "center",
-                color: ["#f0b429","#7dd3fc","#c4b5fd","#86efac","#fda4af"][i] ?? "#94a3b8",
+                color: ["#f0b429","#7dd3fc","#c4b5fd","#86efac","#fda4af"][i] ?? "var(--callstats-secondary, #94a3b8)",
                 fontWeight: 900, fontVariantNumeric: "tabular-nums",
                 fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
                 fontSize: 11.5,
               }}>{i + 1}.</span>
               <span style={{ color: "white", fontWeight: 700, fontSize: 13.5, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</span>
               <span style={{ color: "#cbd5e1", fontSize: 12, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-                {c.count} <span style={{ color: "#64748b" }}>· {c.pct.toFixed(1)}%</span>
+                {c.count} <span style={{ color: "var(--callstats-note, #64748b)" }}>· {c.pct.toFixed(1)}%</span>
               </span>
             </li>
           ))}
@@ -164,7 +164,7 @@ export default function TopCallCategories() {
         <div style={{
           marginTop: 8, paddingTop: 8,
           borderTop: "1px solid rgba(255,255,255,0.05)",
-          color: "#64748b", fontSize: 10, fontWeight: 700,
+          color: "var(--callstats-note, #64748b)", fontSize: 10, fontWeight: 700,
           letterSpacing: "0.14em", textTransform: "uppercase", textAlign: "center",
         }}>
           Hover for the full year-to-date list
@@ -192,7 +192,7 @@ export default function TopCallCategories() {
             <span style={{ color: "#f0b429", fontSize: 10, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase" }}>
               {data.year} YTD · All categories
             </span>
-            <span style={{ color: "#64748b", fontSize: 10.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+            <span style={{ color: "var(--callstats-note, #64748b)", fontSize: 10.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
               {data.categories.length} types · {data.total} calls
             </span>
           </div>
@@ -212,7 +212,7 @@ export default function TopCallCategories() {
                 <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {i + 1}. {c.name}
                 </span>
-                <span style={{ fontVariantNumeric: "tabular-nums", color: "#94a3b8", whiteSpace: "nowrap" }}>
+                <span style={{ fontVariantNumeric: "tabular-nums", color: "var(--callstats-secondary, #94a3b8)", whiteSpace: "nowrap" }}>
                   {c.count} · {c.pct.toFixed(1)}%
                 </span>
               </li>
@@ -221,14 +221,14 @@ export default function TopCallCategories() {
           <div style={{
             marginTop: 10, paddingTop: 10,
             borderTop: "1px solid rgba(255,255,255,0.06)",
-            color: "#64748b", fontSize: 10.5, lineHeight: 1.5,
+            color: "var(--callstats-note, #64748b)", fontSize: 10.5, lineHeight: 1.5,
           }}>
             <p style={{ margin: "0 0 6px" }}>
-              <strong style={{ color: "#94a3b8" }}>Disclaimer.</strong> {PLATFORM_ORIGIN_DISCLAIMER}
+              <strong style={{ color: "var(--callstats-secondary, #94a3b8)" }}>Disclaimer.</strong> {PLATFORM_ORIGIN_DISCLAIMER}
             </p>
             <div style={{
               fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
-              fontSize: 10, color: "#475569",
+              fontSize: 10, color: "var(--callstats-future, #475569)",
             }}>
               <span style={{ color: "#f0b429" }}>Category %</span> = category count ÷ total calls year-to-date × 100
             </div>

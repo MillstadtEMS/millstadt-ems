@@ -1,0 +1,106 @@
+@media screen and (forced-colors: none) {
+  html[data-mems-season="winter"] .public-call-stats {
+    --stat-ink: #fff9eb;
+    --stat-muted: #f6ead3;
+    --stat-accent: #ffe39c;
+    --stat-line: #e1c681;
+    --stat-track: #ffffff42;
+    --stat-records: #ffffff12;
+  }
+  html[data-mems-season="winter"] .public-call-stats .call-stat-card {
+    box-shadow: inset 0 3px 0 var(--stat-edge), 0 3px 10px #042f2624;
+  }
+  html[data-mems-season="winter"] .public-call-stats [data-stat-family="Trauma"] {
+    --stat-surface: linear-gradient(125deg, #ae193c, #75162f);
+    --stat-edge: #ffb7bd;
+    --stat-accent: #fff0de;
+    --stat-ink: #fffcf1;
+    --stat-muted: #ffdbd8;
+    --stat-meter: #ffada3;
+  }
+  html[data-mems-season="winter"] .public-call-stats [data-stat-family="Medical"] {
+    --stat-surface: linear-gradient(130deg, #087542, #074b34);
+    --stat-edge: #aad49c;
+    --stat-accent: #fff1be;
+    --stat-ink: #fffff0;
+    --stat-muted: #e2f2d7;
+    --stat-meter: #b4e5ac;
+  }
+  html[data-mems-season="winter"] .public-call-stats [data-stat-family="Cardiac Arrest"] {
+    --stat-surface: linear-gradient(125deg, #831338, #5a1937);
+    --stat-edge: #f7c477;
+    --stat-accent: #ffe09a;
+    --stat-muted: #ffe0d5;
+  }
+  html[data-mems-season="winter"] .public-call-stats :is([data-stat-family="Fire Response"], [data-stat-family="Uncategorized"], [data-stat-family="Total calls"]) {
+    --stat-surface: linear-gradient(125deg, #fff7df, #f3ddac);
+    --stat-edge: #9e542b;
+    --stat-accent: #8b3219;
+    --stat-ink: #3e2a1e;
+    --stat-muted: #684d31;
+    --stat-meter: #a94220;
+    --stat-records: #fffbeb;
+    --stat-track: #d7bd92;
+  }
+  html[data-mems-season="winter"] .public-call-stats [data-stat-family="Uncategorized"] {
+    --stat-surface: linear-gradient(125deg, #fffdf0, #e6ead7);
+    --stat-edge: #548568;
+    --stat-accent: #325341;
+    --stat-ink: #253b2e;
+    --stat-muted: #4a5b48;
+    --stat-meter: #527a60;
+  }
+  html[data-mems-season="winter"] .public-call-stats [data-stat-family="Total calls"] {
+    --stat-surface: linear-gradient(125deg, #ffe9a0, #edc35c);
+    --stat-edge: #9d6921;
+    --stat-accent: #654019;
+  }
+  html[data-mems-season="winter"] .call-stats-notice {
+    --stat-surface: #084433;
+    --stat-muted: #f7ead2;
+  }
+  html[data-mems-season="winter"] .public-call-stats button:focus-visible {
+    outline: 2px solid var(--stat-accent) !important;
+    outline-offset: 2px;
+  }
+  html[data-mems-season="winter"] .public-call-stats .call-peak {
+    --stat-surface: linear-gradient(145deg, #fff9e9, #f9edce);
+    --stat-line: #c2a663;
+    --stat-accent: #82273b;
+    --stat-muted: #495641;
+    --stat-ink: #233f2d;
+    --stat-columns: minmax(47px, 74px) repeat(7, minmax(0, 1fr));
+    box-shadow: inset 0 3px 0 #d2ab57;
+  }
+  html[data-mems-season="winter"] .public-call-stats .call-peak-highlight {
+    --stat-highlight: #075d3c;
+    --stat-accent: #fff1b4;
+    --stat-muted: #fff4db;
+  }
+  html[data-mems-season="winter"] .public-call-stats .call-peak-highlight[data-highlight="Busiest window"] { --stat-highlight: #92233b; }
+  html[data-mems-season="winter"] .public-call-stats .call-heat-cell {
+    --stat-cell: #f5eedc;
+    --stat-cell-ink: #173a29;
+    border: 1px solid #87967a !important;
+    box-shadow: none !important;
+  }
+  html[data-mems-season="winter"] .public-call-stats .call-heat-cell[data-intensity="1"] { --stat-cell: #d9ebc9; }
+  html[data-mems-season="winter"] .public-call-stats .call-heat-cell[data-intensity="2"] { --stat-cell: #add3ac; }
+  html[data-mems-season="winter"] .public-call-stats .call-heat-cell[data-intensity="3"] { --stat-cell: #78b590; }
+  html[data-mems-season="winter"] .public-call-stats .call-heat-cell[data-intensity="4"] { --stat-cell: #34774f; --stat-cell-ink: white; }
+  html[data-mems-season="winter"] .public-call-stats .call-heat-cell[data-intensity="5"] { --stat-cell: #12583b; --stat-cell-ink: white; }
+  html[data-mems-season="winter"] .public-call-stats .call-heat-cell[data-peak] {
+    outline: 2px solid #92651c;
+    outline-offset: 1px;
+  }
+  html[data-mems-season="winter"] .public-call-stats [data-stat-month] {
+    background: #fffdf3 !important;
+    color: #254c36 !important;
+    border-color: #889f7e !important;
+  }
+  html[data-mems-season="winter"] .public-call-stats [data-stat-month][aria-pressed="true"] {
+    background: #92233b !important;
+    border-color: #76253a !important;
+    color: #fff9e7 !important;
+  }
+}

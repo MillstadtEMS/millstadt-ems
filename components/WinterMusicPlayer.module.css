@@ -4,6 +4,10 @@
   align-items: center;
   isolation: isolate;
 }
+/* The homepage normally tucks its carousel 96px beneath the header. With a
+   soundtrack row in between, cancel that tuck and its matching text inset. */
+.stage:has(.player, .audioOnly) + section:has(> :global(.hero-content)) { margin-top: 0 !important; }
+.stage:has(.player, .audioOnly) + section > :global(.hero-content) { padding-top: 0 !important; }
 .stage:has(.player) > :global([data-winter-parade]), .player { grid-area: 1 / 1; }
 .stage:has(.player) > :global([data-winter-parade]) { height: 100%; min-height: 200px; }
 .player {

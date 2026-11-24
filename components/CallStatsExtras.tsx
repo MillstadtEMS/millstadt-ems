@@ -513,6 +513,7 @@ function Stat({
   return (
     <div
       ref={tileRef}
+      data-home-call-tile={accent}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
       onClick={clickable && mobileAppLike ? onToggle : undefined}
@@ -726,7 +727,7 @@ function PerMonthTable({
               borderRadius: 6,
               background: r.isCurrent ? `${accentColor(accent)}14` : "transparent",
               fontSize: 13,
-              color: r.isCurrent ? "white" : r.isFuture ? "#475569" : "#cbd5e1",
+              color: r.isCurrent ? "white" : r.isFuture ? "var(--callstats-future, #475569)" : "#cbd5e1",
               fontWeight: r.isCurrent ? 800 : 500,
             }}
           >
@@ -790,7 +791,7 @@ function CompareBlock({
           padding: "5px 6px", marginTop: 2,
           borderTop: "1px solid rgba(255,255,255,0.06)",
         }}>
-          <span style={{ color: "#94a3b8", fontSize: 12, fontWeight: 700 }}>Change</span>
+          <span style={{ color: "var(--callstats-secondary, #94a3b8)", fontSize: 12, fontWeight: 700 }}>Change</span>
           <span style={{
             background: chip.bg, color: chip.fg,
             fontSize: 12, fontWeight: 900, letterSpacing: "0.04em",
@@ -800,7 +801,7 @@ function CompareBlock({
         </div>
       </div>
       {note && (
-        <p style={{ color: "#64748b", fontSize: 11, lineHeight: 1.4, margin: "8px 0 0" }}>
+        <p style={{ color: "var(--callstats-note, #64748b)", fontSize: 11, lineHeight: 1.4, margin: "8px 0 0" }}>
           {note}
         </p>
       )}
@@ -879,11 +880,11 @@ function ComparisonTable({
         {rows.map((r) => {
           const change = r.curr === null ? null : percentChange(r.prev, r.curr);
           const changeLabel = r.curr === null ? "—" : formatPercentChange(r.prev, r.curr);
-          const chipFg = change === null ? "#64748b"
+          const chipFg = change === null ? "var(--callstats-note, #64748b)"
             : change >= 0 ? "#34d399" : "#fca5a5";
           const rowBg = r.isCurrent ? `${accentColor(accent)}14` : "transparent";
-          const labelColor = r.isCurrent ? "white" : r.isFuture ? "#475569" : "#cbd5e1";
-          const numColor   = r.isCurrent ? "white" : r.isFuture ? "#475569" : "#e2e8f0";
+          const labelColor = r.isCurrent ? "white" : r.isFuture ? "var(--callstats-future, #475569)" : "#cbd5e1";
+          const numColor   = r.isCurrent ? "white" : r.isFuture ? "var(--callstats-future, #475569)" : "#e2e8f0";
           return (
             <span key={r.label + "-row"} style={{ display: "contents" }}>
               <span style={{ ...cell, color: labelColor, background: rowBg, fontWeight: r.isCurrent ? 800 : 500 }}>
@@ -902,7 +903,7 @@ function ComparisonTable({
           );
         })}
       </div>
-      <p style={{ color: "#64748b", fontSize: 10, lineHeight: 1.4, margin: "8px 0 0" }}>
+      <p style={{ color: "var(--callstats-note, #64748b)", fontSize: 10, lineHeight: 1.4, margin: "8px 0 0" }}>
         <span style={{ color: accentColor(accent) }}>MTD</span> = month-to-date (real ticker count through today). All other values are actual completed months.
       </p>
     </div>
@@ -910,7 +911,7 @@ function ComparisonTable({
 }
 
 const hdr: React.CSSProperties = {
-  color: "#94a3b8", fontSize: 9.5, fontWeight: 800,
+  color: "var(--callstats-secondary, #94a3b8)", fontSize: 9.5, fontWeight: 800,
   letterSpacing: "0.18em", textTransform: "uppercase",
   padding: "2px 6px 6px",
 };
@@ -930,7 +931,7 @@ function FormulaFooter({ accent, note, mode = "actual" }: { accent: Accent; note
         onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
         style={{
           background: "transparent", border: 0, padding: 0,
-          color: "#94a3b8", fontSize: 11, fontWeight: 800,
+          color: "var(--callstats-secondary, #94a3b8)", fontSize: 11, fontWeight: 800,
           letterSpacing: "0.14em", textTransform: "uppercase",
           cursor: "pointer", fontFamily: "inherit",
           display: "inline-flex", alignItems: "center", gap: 6,
@@ -956,11 +957,11 @@ function FormulaFooter({ accent, note, mode = "actual" }: { accent: Accent; note
             </p>
           )}
           {note && (
-            <p style={{ margin: "0 0 8px", color: "#94a3b8" }}>{note}</p>
+            <p style={{ margin: "0 0 8px", color: "var(--callstats-secondary, #94a3b8)" }}>{note}</p>
           )}
           <div style={{
             fontFamily: "var(--font-mas-mono), ui-monospace, monospace",
-            fontSize: 10.5, color: "#94a3b8", display: "grid", gap: 4,
+            fontSize: 10.5, color: "var(--callstats-secondary, #94a3b8)", display: "grid", gap: 4,
           }}>
             {mode === "projection" ? (
               <>
