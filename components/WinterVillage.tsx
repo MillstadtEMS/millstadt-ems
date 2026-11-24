@@ -171,5 +171,30 @@ function VillagePostcard() {
 
 export default function WinterVillage() {
   const winter = useWinterTheme();
-  return <div id="christmas-in-millstadt" className={styles.destination}>{winter && <VillagePostcard />}</div>;
+  const destination = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const target = destination.current;
+    if (!winter || !target || location.hash !== "#christmas-in-millstadt") return;
+
+    // Live call totals above the postcard can expand after the browser follows the fragment.
+    const align = () => {
+      const margin = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
+      const offset = target.getBoundingClientRect().top - margin;
+      if (Math.abs(offset) > 3) window.scrollBy({ top: offset, behavior: "instant" });
+    };
+    align();
+    const timer = window.setInterval(align, 180);
+    const deadline = window.setTimeout(stop, 7000);
+    const userEvents = ["wheel", "touchstart", "pointerdown", "keydown", "hashchange", "pagehide"] as const;
+    function stop() {
+      window.clearInterval(timer);
+      window.clearTimeout(deadline);
+      for (const event of userEvents) window.removeEventListener(event, stop);
+    }
+    for (const event of userEvents) window.addEventListener(event, stop, { passive: true });
+    return stop;
+  }, [winter]);
+
+  return <div id="christmas-in-millstadt" ref={destination} className={styles.destination}>{winter && <VillagePostcard />}</div>;
 }
