@@ -29,6 +29,67 @@
 .guest[data-cover="snow"] .silhouette { clip-path: polygon(0 0,100% 0,100% 58%,84% 56%,70% 61%,61% 59%,44% 66%,28% 61%,0 65%); }
 .guest[data-found="true"] { filter: drop-shadow(0 0 2px #fff5cf) drop-shadow(0 0 4px #f9c153); }
 .face { position: absolute; top: 4%; width: 75%; height: 27%; }
+.aim, .throwButton { touch-action: manipulation; user-select: none; -webkit-touch-callout: none; }
+.aim {
+  position: absolute;
+  z-index: 10;
+  width: max(44px, 3.6%);
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  pointer-events: auto;
+  cursor: crosshair;
+  transform: translate(-50%, -50%);
+}
+.aim:focus-visible { outline: 2px dashed #fffbe9; box-shadow: 0 0 0 3px #17483d; }
+.shot { position: absolute; z-index: 11; pointer-events: none; }
+.ball, .powder { position: absolute; border-radius: 50%; pointer-events: none; }
+.ball {
+  width: clamp(11px, 1.5vw, 22px);
+  aspect-ratio: 1;
+  background: radial-gradient(circle at 33% 26%, white 18%, #e5f7ff 55%, #92b3d4 92%);
+  box-shadow: 0 1px 3px #274d7180;
+  animation: thiefVolley .23s ease-in forwards;
+}
+.powder {
+  width: 6px;
+  height: 6px;
+  opacity: 0;
+  background: white;
+  box-shadow: -8px -2px 1px white, -4px -7px 1px #d8efff, 5px -6px 1px white, 9px 1px 1px #d8efff, 1px 6px 1px white;
+  animation: thiefPowder .29s .21s ease-out forwards;
+}
+.silhouette[data-escaping="true"] { animation: thiefDuck .27s .24s ease-in forwards; }
+.throwButton {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid #f6cc74;
+  border-radius: 6px;
+  background: #fff2cc;
+  color: #174435;
+  font: 700 .87rem/1.2 system-ui, sans-serif;
+  cursor: pointer;
+}
+@keyframes thiefVolley {
+  0% { transform: translate(var(--from-x), clamp(38px, 8vw, 115px)) scale(1.2); }
+  92% { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(.42); opacity: 0; }
+}
+@keyframes thiefPowder {
+  0% { transform: translate(-50%, -50%) scale(.25); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+}
+@keyframes thiefDuck {
+  to { transform: translateY(26%) scale(.82); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ball { display: none; }
+  .powder { animation: none; }
+  .shot:last-of-type .powder { opacity: .75; }
+  .silhouette[data-escaping="true"] { animation: none; opacity: .5; }
+}
 .reticle {
   position: absolute;
   z-index: 8;

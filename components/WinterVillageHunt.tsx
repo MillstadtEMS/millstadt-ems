@@ -105,14 +105,15 @@ const storageKey = "millstadt:christmas-hunt:deck:v1";
 type Deck = { last: string; remaining: string[] };
 
 let visit: Spot | undefined;
-function getVisit() {
-  if (visit) return visit;
+let memoryDeck: Deck | undefined;
+function drawVisit() {
   let deck: Deck | undefined;
   let saved: unknown;
   try { saved = JSON.parse(sessionStorage.getItem(storageKey) || "null"); } catch { /* Try history storage below. */ }
   if (!saved) {
     try { saved = history.state?.[storageKey]; } catch { /* A randomized in-memory round still works. */ }
   }
+  saved ??= memoryDeck;
   if (saved && typeof saved === "object" && "last" in saved && "remaining" in saved &&
       typeof saved.last === "string" && Array.isArray(saved.remaining)) {
     const valid = new Set(spots.map(({ id }) => id));
@@ -130,6 +131,7 @@ function getVisit() {
   }
   const next = deck.remaining.pop()!;
   deck.last = next;
+  memoryDeck = deck;
   try {
     sessionStorage.setItem(storageKey, JSON.stringify(deck));
   } catch {
@@ -141,14 +143,32 @@ function getVisit() {
 
 const noSubscription = () => () => {};
 const serverVisit = () => null;
-type HuntState = { spot: Spot | null; found: boolean; finish: () => void };
+const getVisit = () => visit ?? drawVisit();
+const escapeHits = 5;
+type HuntState = { spot: Spot | null; found: boolean; hits: number; rounds: number; finish: () => void; fire: () => void };
 const HuntContext = createContext<HuntState | null>(null);
 
 export function WinterVillageHuntProvider({ children }: { children: ReactNode }) {
-  const spot = useSyncExternalStore<Spot | null>(noSubscription, getVisit, serverVisit);
+  const first = useSyncExternalStore<Spot | null>(noSubscription, getVisit, serverVisit);
+  const [nextSpot, setNextSpot] = useState<Spot | null>(null);
   const [found, setFound] = useState(false);
+  const [hits, setHits] = useState(0);
+  const [rounds, setRounds] = useState(0);
+  const fire = useCallback(() => {
+    if (found) setHits((value) => Math.min(escapeHits, value + 1));
+  }, [found]);
   const finish = useCallback(() => setFound(true), []);
-  return <HuntContext.Provider value={{ spot, found, finish }}>{children}</HuntContext.Provider>;
+  useEffect(() => {
+    if (hits !== escapeHits) return;
+    const timer = window.setTimeout(() => {
+      setNextSpot(drawVisit());
+      setFound(false);
+      setHits(0);
+      setRounds((value) => value + 1);
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [hits]);
+  return <HuntContext.Provider value={{ spot: nextSpot ?? first, found, hits, rounds, finish, fire }}>{children}</HuntContext.Provider>;
 }
 
 function useHunt() {
@@ -161,13 +181,53 @@ type Point = { x: number; y: number };
 const startPoint = { x: 50, y: 58 };
 const clamp = (n: number) => Math.min(99.5, Math.max(.5, n));
 
+function SnowballButton({ className, style, children }: {
+  className: string; style?: CSSProperties; children?: ReactNode;
+}) {
+  const { fire } = useHunt();
+  const repeat = useRef<number>(undefined);
+  const gesture = useRef<{ x: number; y: number; held: boolean } | null>(null);
+  const stop = useCallback(() => window.clearInterval(repeat.current), []);
+  useEffect(() => {
+    const cancel = () => { stop(); gesture.current = null; };
+    window.addEventListener("blur", cancel);
+    document.addEventListener("visibilitychange", cancel);
+    return () => {
+      stop();
+      window.removeEventListener("blur", cancel);
+      document.removeEventListener("visibilitychange", cancel);
+    };
+  }, [stop]);
+  return <button type="button" className={className} style={style} aria-label="Throw snowballs at the gift thief"
+    onPointerDown={(e) => {
+      if (!e.isPrimary || e.button !== 0) return;
+      stop();
+      gesture.current = { x: e.clientX, y: e.clientY, held: false };
+      e.currentTarget.setPointerCapture(e.pointerId);
+      repeat.current = window.setInterval(() => {
+        if (gesture.current) { gesture.current.held = true; fire(); }
+      }, 160);
+    }}
+    onPointerMove={(e) => {
+      const start = gesture.current;
+      if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 12) { stop(); start.held = true; }
+    }}
+    onPointerUp={stop} onPointerCancel={() => { stop(); gesture.current = null; }} onLostPointerCapture={stop}
+    onContextMenu={(e) => e.preventDefault()}
+    onClick={(e) => {
+      if (!e.detail || (gesture.current && !gesture.current.held)) fire();
+      gesture.current = null;
+    }}>{children}</button>;
+}
+
 export function WinterVillageHuntTarget() {
-  const { spot, found, finish } = useHunt();
+  const { spot, found, finish, hits, fire } = useHunt();
   const layer = useRef<HTMLDivElement>(null);
   const face = useRef<HTMLSpanElement>(null);
   const [searching, setSearching] = useState(false);
   const [cursor, setCursor] = useState<Point>(startPoint);
   const [miss, setMiss] = useState(0);
+  const discovery = useRef<{ x: number; y: number; at: number } | null>(null);
 
   // Use the face, present and shushing hand as the hit area. Clothing below
   // the foreground objects is never a clickable giveaway.
@@ -183,10 +243,10 @@ export function WinterVillageHuntTarget() {
 
   useEffect(() => {
     const scene = layer.current?.closest<HTMLElement>("[data-hunt-scene]") ?? layer.current?.parentElement;
-    if (!scene || !spot || found) return;
+    if (!scene || !spot) return;
     let start: { pointerId: number; x: number; y: number } | undefined;
     function down(e: PointerEvent) {
-      if (e.target instanceof Element && e.target.closest("[data-snow-chief] button")) {
+      if (found || (e.target instanceof Element && e.target.closest("[data-snow-chief] button"))) {
         start = undefined;
         return;
       }
@@ -194,14 +254,27 @@ export function WinterVillageHuntTarget() {
     }
     function up(e: PointerEvent) {
       if (start?.pointerId !== e.pointerId) return;
-      if (Math.hypot(start.x - e.clientX, start.y - e.clientY) < 8) check(e.clientX, e.clientY, e.pointerType !== "mouse");
+      if (Math.hypot(start.x - e.clientX, start.y - e.clientY) < 8 && check(e.clientX, e.clientY, e.pointerType !== "mouse")) {
+        discovery.current = { x: e.clientX, y: e.clientY, at: performance.now() };
+      }
       start = undefined;
     }
+    // Finding him in the belfry consumes that tap, leaving the bell ready for its own gesture.
+    function clicked(e: MouseEvent) {
+      const last = discovery.current;
+      discovery.current = null;
+      if (last && e.detail > 0 && performance.now() - last.at < 480 && Math.hypot(last.x - e.clientX, last.y - e.clientY) < 8) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    }
     function cancel() { start = undefined; }
+    scene.addEventListener("click", clicked, true);
     scene.addEventListener("pointerdown", down, true);
     scene.addEventListener("pointerup", up, true);
     scene.addEventListener("pointercancel", cancel);
     return () => {
+      scene.removeEventListener("click", clicked, true);
       scene.removeEventListener("pointerdown", down, true);
       scene.removeEventListener("pointerup", up, true);
       scene.removeEventListener("pointercancel", cancel);
@@ -209,14 +282,16 @@ export function WinterVillageHuntTarget() {
   }, [check, found, spot]);
 
   function keySearch(e: KeyboardEvent<HTMLDivElement>) {
-    if (!layer.current || !spot || found) return;
+    if (!layer.current || !spot || e.target !== e.currentTarget) return;
     const bounds = layer.current.getBoundingClientRect();
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       e.stopPropagation();
-      if (!check(bounds.left + bounds.width * cursor.x / 100, bounds.top + bounds.height * cursor.y / 100, false)) setMiss((n) => n + 1);
+      if (found) fire();
+      else if (!check(bounds.left + bounds.width * cursor.x / 100, bounds.top + bounds.height * cursor.y / 100, false)) setMiss((n) => n + 1);
       return;
     }
+    if (found) return;
     const moves: Record<string, Point> = {
       ArrowLeft: { x: -1, y: 0 }, ArrowRight: { x: 1, y: 0 },
       ArrowUp: { x: 0, y: -2 }, ArrowDown: { x: 0, y: 2 },
@@ -237,20 +312,31 @@ export function WinterVillageHuntTarget() {
     }
   }
 
+  // Project the center of the visible face from the 276:630 sprite onto the 2:1 postcard.
+  const aim = spot && { left: `${spot.x + spot.width * (spot.flip ? .225 : -.225)}%`, top: `${spot.y + spot.width * .80}%` };
   return (
-    <div ref={layer} className={styles.layer} role="group" tabIndex={found ? -1 : 0}
+    <div ref={layer} className={styles.layer} role="group" tabIndex={0}
       aria-label="Search the Christmas postcard" aria-describedby="winter-hunt-key-help"
       onFocus={() => setSearching(true)} onBlur={() => setSearching(false)} onKeyDown={keySearch}>
-      <span id="winter-hunt-key-help" className={styles.sr}>Use arrow keys to move the search lens. Hold Shift for a fine step. Enter checks the spot. You can also solve a landmark clue below the picture.</span>
+      <span id="winter-hunt-key-help" className={styles.sr}>Use arrow keys to move the search lens. Hold Shift for a fine step. Enter checks the spot and throws snowballs after you find him. A landmark clue is available below the picture.</span>
       {spot && (
         <div aria-hidden="true" className={styles.guest} data-light={spot.light} data-cover={spot.cover} data-found={found}
           style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${spot.width}%`,
             "--anchor": spot.flip ? "-20%" : "-80%", "--flip": spot.flip ? -1 : 1, "--lean": `${spot.lean ?? 0}deg`,
           } as CSSProperties}>
-          <div className={styles.silhouette}><Image src={guestArt} alt="" width={276} height={630} loading="eager" unoptimized /></div>
-          <span ref={face} className={styles.face} style={{ left: spot.flip ? "5%" : "20%" }} />
+          <div className={styles.silhouette} data-escaping={hits === escapeHits}><Image src={guestArt} alt="" width={276} height={630} loading="eager" unoptimized /></div>
+          <span ref={face} data-hunt-face="" className={styles.face} style={{ left: spot.flip ? "5%" : "20%" }} />
         </div>
       )}
+      {found && aim && <>
+        <SnowballButton className={styles.aim} style={aim} />
+        {Array.from({ length: hits }, (_, i) => (
+          <span key={i} className={styles.shot} aria-hidden="true"
+            style={{ ...aim, "--from-x": `${(i % 2 ? 1 : -1) * (40 + i * 9)}px` } as CSSProperties}>
+            <i className={styles.ball} /><i className={styles.powder} />
+          </span>
+        ))}
+      </>}
       {searching && !found && <span aria-hidden="true" className={styles.reticle} style={{ left: `${cursor.x}%`, top: `${cursor.y}%` }} />}
       <span role="status" className={styles.sr}>{searching && miss > 0 && `Search ${miss}. Nothing there yet.`}</span>
     </div>
@@ -258,16 +344,17 @@ export function WinterVillageHuntTarget() {
 }
 
 export function WinterVillageHuntControls() {
-  const { spot, found, finish } = useHunt();
+  const { spot, found, finish, hits, rounds } = useHunt();
   const [guess, setGuess] = useState("");
   const [wrong, setWrong] = useState(false);
   return (
     <div className={styles.bar}>
       <div className={styles.intro}>
         <div className={styles.sample} aria-hidden="true"><Image src={guestArt} alt="" width={276} height={630} loading="lazy" unoptimized /></div>
-        <div><h3>Find the gift thief</h3><p>{found ? "Refresh the postcard and he'll find another hiding place." : "Look for the green fellow with round glasses, a crooked nose and a sack of presents."}</p></div>
+        <div><h3>Find the gift thief</h3><p>{found ? "Tap him fast or hold to throw a flurry of snowballs." : "Look for the green fellow with round glasses, a crooked nose and a sack of presents."}</p></div>
       </div>
-      <span role="status" className={styles.success}>{found ? "You found him!" : ""}</span>
+      <span role="status" className={styles.success}>{found ? (hits ? `Snowballs ${hits}/${escapeHits}` : "You found him!") : rounds ? `He ducked away! Times chased off: ${rounds}.` : ""}</span>
+      {found && <SnowballButton className={styles.throwButton}>Throw snowballs</SnowballButton>}
       {!found && spot && <details className={styles.clue}>
         <summary>Get a clue</summary>
         <div className={styles.clueBody}>
@@ -279,7 +366,9 @@ export function WinterVillageHuntControls() {
               e.preventDefault();
               const answer = normalizeAnswer(guess);
               if (!answer) return;
-              if ([spot.name, ...aliases[spot.id]].some((name) => normalizeAnswer(name) === answer)) finish();
+              if ([spot.name, ...aliases[spot.id]].some((name) => normalizeAnswer(name) === answer)) {
+                setGuess(""); setWrong(false); finish();
+              }
               else setWrong(true);
             }}>
               <label htmlFor="winter-hunt-landmark">Where is he hiding?</label>

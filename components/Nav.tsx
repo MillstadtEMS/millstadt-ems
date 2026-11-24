@@ -243,7 +243,7 @@ export default function Nav() {
           </div>
 
         </div>
-        {winter && <WinterRoofline compact={pathname !== "/" || open} menuOpen={open} />}
+        {winter && <WinterRoofline menuOpen={open} />}
       </div>
       </CommunityAlertProvider>
 

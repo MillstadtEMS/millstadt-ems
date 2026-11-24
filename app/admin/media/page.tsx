@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { leadershipPortraits } from "@/lib/leadership-portraits";
 
 // ── Static slot definitions ────────────────────────────────────────────────
 
@@ -40,11 +41,11 @@ const SLOTS: Slot[] = [
   { key: "fleet.unit-3925",           label: "Fleet — Unit M3925",              description: "Reserve Unit M3925 (Demers Sprinter Van)",                            fallback: "/images/millstadt-ems/3925.jpg",              category: "Fleet" },
 
   // ── Leadership ─────────────────────────────────────────────────────────────
-  { key: "leadership.chief.photo",    label: "Leadership — Co-Chief Jennifer Goetz",   description: "Portrait photo of EMS Co-Chief Jennifer Goetz",                 fallback: "/images/millstadt-ems/jennifer-goetz.png",    category: "Leadership" },
-  { key: "leadership.asst-chief.photo", label: "Leadership — Co-Chief Kenneth James",  description: "Portrait photo of EMS Co-Chief Kenneth James",                 fallback: "/images/millstadt-ems/kenneth-james.png",     category: "Leadership" },
+  { key: "leadership.chief.photo",    label: "Leadership — Co-Chief Jennifer Goetz",   description: "Portrait photo of EMS Co-Chief Jennifer Goetz",                 fallback: leadershipPortraits["jennifer-goetz"],    category: "Leadership" },
+  { key: "leadership.asst-chief.photo", label: "Leadership — Co-Chief Kenneth James",  description: "Portrait photo of EMS Co-Chief Kenneth James",                 fallback: leadershipPortraits["kenneth-james"],     category: "Leadership" },
 
   // ── Medical Control ────────────────────────────────────────────────────────
-  { key: "medical-control.physician.photo", label: "Medical Control — Dr. Leo Hsu",   description: "Portrait photo of Medical Director Dr. Leo Hsu",                fallback: "/images/millstadt-ems/leo-hsu.jpg",           category: "Medical Control" },
+  { key: "medical-control.physician.photo", label: "Medical Control — Dr. Leo Hsu",   description: "Portrait photo of Medical Director Dr. Leo Hsu",                fallback: leadershipPortraits["leo-hsu"],           category: "Medical Control" },
 
   // ── Community ─────────────────────────────────────────────────────────────
   { key: "community.header",          label: "Community Ed — Page Header",      description: "Hero image for the Community Education page header",                  fallback: "/images/millstadt-ems/community24.jpg",       category: "Community" },

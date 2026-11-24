@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 import WinterStreet, { WinterCocoaControl, WinterCocoaProvider, WinterStreetForeground } from "./WinterStreet";
-import { WinterVillageBellControl, WinterVillageBellsProvider, WinterVillageBellTower } from "./WinterVillageBells";
+import { WinterVillageBellTower } from "./WinterVillageBells";
 import { WinterVillageHuntControls, WinterVillageHuntProvider, WinterVillageHuntTarget } from "./WinterVillageHunt";
 import WinterSnowChief from "./WinterSnowChief";
 import styles from "./WinterVillage.module.css";
@@ -83,7 +83,6 @@ function VillagePostcard() {
         </div>
       </div>
       <div className={styles.controls} role="group" aria-label="Explore the Christmas village">
-        <WinterVillageBellControl />
         <WinterCocoaControl />
       </div>
       <WinterVillageHuntControls />
@@ -122,9 +121,7 @@ export default function WinterVillage() {
     <div id="christmas-in-millstadt" ref={destination} className={styles.destination}>
       {winter && (
         <WinterVillageHuntProvider>
-          <WinterVillageBellsProvider>
-            <WinterCocoaProvider><VillagePostcard /></WinterCocoaProvider>
-          </WinterVillageBellsProvider>
+          <WinterCocoaProvider><VillagePostcard /></WinterCocoaProvider>
         </WinterVillageHuntProvider>
       )}
     </div>

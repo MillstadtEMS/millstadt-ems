@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import LeadershipPortrait from "@/components/LeadershipPortrait";
+import { getSeasonalThemePublicConfig } from "@/lib/seasonal/themes";
 import { getContent } from "@/lib/db";
 import SectionDivider from "@/components/SectionDivider";
+import frame from "./PortraitFrame.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +19,7 @@ const leaders = [
     name: "Jennifer Goetz",
     title: "EMS Co-Chief",
     since: "Serving since 2024",
-    img: "/images/millstadt-ems/jennifer-goetz.png",
+    portrait: "jennifer-goetz" as const,
     imgSide: "left" as const,
     credentials: ["RN, BSN", "EMT", "PHRN", "CCRN (in progress)"],
     bio: [
@@ -32,7 +35,7 @@ const leaders = [
     name: "Kenneth James",
     title: "EMS Co-Chief",
     since: "Serving since 2015",
-    img: "/images/millstadt-ems/kenneth-james.png",
+    portrait: "kenneth-james" as const,
     imgSide: "right" as const,
     credentials: ["NRP", "CCP-C", "FP-C", "TP-C", "BSN (in progress)", "MS — Public Safety Administration"],
     bio: [
@@ -52,6 +55,7 @@ export default async function LeadershipPage({
 }) {
   const params = await searchParams;
   const isPreview = params?.preview === "ve";
+  const initialWinter = getSeasonalThemePublicConfig().initialTheme === "winter";
 
   const [
     leadershipTitle, leadershipSubtitle,
@@ -107,18 +111,16 @@ export default async function LeadershipPage({
                 <div className={`${leader.imgSide === "right" ? "md:order-2" : ""}`}>
                   <div className="relative w-full aspect-square">
                     {/* Clip image to circle */}
-                    <div className="absolute inset-0" style={{ clipPath: "circle(50%)" }}>
-                      <Image
-                        src={leader.img}
+                    <div className={`absolute inset-0 ${frame.disc}`} style={{ clipPath: "circle(50%)" }}>
+                      <LeadershipPortrait
+                        person={leader.portrait}
                         alt={leader.name}
-                        fill
-                        className="object-cover object-top"
-                        sizes="(max-width: 768px) 100vw, 50vw"
+                        initialWinter={initialWinter}
                       />
                     </div>
                     {/* Cover the black ring baked into the photo */}
                     <div
-                      className="absolute inset-0 rounded-full pointer-events-none"
+                      className={`absolute inset-0 rounded-full pointer-events-none ${frame.rim}`}
                       style={{
                         boxShadow: `inset 0 0 0 22px ${index % 2 === 0 ? "#040d1a" : "#071428"}`,
                       }}

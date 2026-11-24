@@ -2,6 +2,12 @@
   position: relative;
 }
 
+/* The socket and the portaled figure share the same viewport sizing. */
+.roof, .cradle {
+  --preferred-crew-width: clamp(180px, 24vw, 324px);
+  --crew-width: min(var(--preferred-crew-width), max(76px, calc(66.6svh - 98px)));
+}
+
 .roof {
   position: absolute;
   inset: auto 0 0;
@@ -21,7 +27,13 @@
 }
 
 .swag:last-child {
-  flex: 0 0 clamp(156px, 23vw, 440px);
+  flex: 0 0 max(calc(var(--crew-width) + 16px), clamp(156px, 23vw, 440px));
+}
+
+.roof[data-standalone] {
+  position: fixed;
+  inset: max(8px, env(safe-area-inset-top)) 0 auto;
+  z-index: 35;
 }
 
 /* A braided forest-green cable hangs between warm brass mounting clips. */
@@ -126,7 +138,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: clamp(180px, 24vw, 324px);
+  width: var(--crew-width);
   height: 0;
   z-index: 36;
   pointer-events: none;
@@ -153,7 +165,7 @@
   width: 100%;
   aspect-ratio: 477 / 716;
   transform-origin: 50% 5%;
-  transform: translate(-50%, -5%) scale(var(--puppet-scale, 1));
+  transform: translate(-50%, -5%);
 }
 .idle, .figure, .torso, .legLeft, .legRight {
   position: absolute;
@@ -236,8 +248,8 @@
 
 @media (max-width: 700px) {
   .swag:nth-child(3) { display: none; }
-  .swag:last-child { flex-basis: clamp(82px, 23vw, 153px); }
-  .cradle { width: clamp(144px, 42vw, 222px); }
+  .swag:last-child { flex-basis: calc(var(--crew-width) + 16px); }
+  .roof, .cradle { --preferred-crew-width: clamp(144px, 42vw, 222px); }
   .lamp { scale: .84; transform-origin: top; }
 }
 
@@ -246,17 +258,16 @@
 }
 
 @media (max-width: 639px) {
-  .cradle { width: clamp(144px, 42vw, 174px); }
+  .roof, .cradle { --preferred-crew-width: clamp(144px, 42vw, 174px); }
 }
 
 @media (max-width: 360px) {
   .swag:nth-child(5) { display: none; }
-  .swag:last-child { flex-basis: 73px; }
-  .cradle { width: 142px; }
+  .roof, .cradle { --preferred-crew-width: 142px; }
 }
 
 @media (max-width: 335px) {
-  .cradle { width: 132px; }
+  .roof, .cradle { --preferred-crew-width: 132px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

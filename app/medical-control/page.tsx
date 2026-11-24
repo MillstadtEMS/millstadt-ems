@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import LeadershipPortrait from "@/components/LeadershipPortrait";
+import { getSeasonalThemePublicConfig } from "@/lib/seasonal/themes";
 import Link from "next/link";
 import { getContent } from "@/lib/db";
 import SectionDivider from "@/components/SectionDivider";
@@ -64,11 +66,10 @@ export default async function MedicalControlPage({
             {/* Photo */}
             <div className="md:col-span-4">
               <div className="w-full aspect-[4/5] rounded-2xl overflow-hidden border border-white/8 relative">
-                <Image
-                  src="/images/millstadt-ems/leo-hsu.jpg"
+                <LeadershipPortrait
+                  person="leo-hsu"
                   alt="Dr. Leo Hsu, MD, MBA, MDiv, FACEP, FAEMS"
-                  fill
-                  className="object-cover object-top"
+                  initialWinter={getSeasonalThemePublicConfig().initialTheme === "winter"}
                 />
               </div>
             </div>

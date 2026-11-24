@@ -361,3 +361,6 @@
 @media print {
   .cocoaBadge, .delivery, .pour { display: none; }
 }
+.rink .soloLane, .rink .familyLane { transition: opacity .25s ease; }
+.rink:has([data-rink-rescue="playing"]) :is(.soloLane, .familyLane) { opacity: 0; }
+.rink:has([data-rink-rescue="playing"]) :is(.soloLane, .familyLane) .skater { animation-play-state: paused; }

@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import "./winter-workspace.css";
 import "./winter-site-colors.css";
 import WinterPageSurprises from "./WinterPageSurprises";
+import WinterRoofline from "./WinterRoofline";
 import WinterStreetParade from "./WinterStreetParade";
 import WinterMusicPlayer from "./WinterMusicPlayer";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
@@ -33,6 +34,7 @@ export default function SiteShell({
   if (standalone) {
     return (
       <main className="mems-standalone flex-1 w-full overflow-x-hidden" style={{ paddingTop: 0 }}>
+        {winter && <WinterRoofline standalone />}
         <WinterStreetParade pathname={pathname} compact />
         {children}
       </main>

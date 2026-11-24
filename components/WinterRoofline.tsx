@@ -15,18 +15,17 @@ const bodyOnClient = () => document.body;
 const noBody = () => null;
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
-function HangingCrew({ anchor, compact, menuOpen }: { anchor: RefObject<HTMLSpanElement | null>; compact: boolean; menuOpen: boolean }) {
+function HangingCrew({ anchor, menuOpen }: { anchor: RefObject<HTMLSpanElement | null>; menuOpen: boolean }) {
   const body = useSyncExternalStore<HTMLElement | null>(noSubscription, bodyOnClient, noBody);
   const puppet = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     const figure = puppet.current;
     const pin = anchor.current;
-    const header = pin?.closest("header");
+    const header = pin?.closest("header") ?? pin?.closest<HTMLElement>("[data-winter-roof]");
     if (!body || !figure || !pin || !header) return;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let rootX = 0, rootY = 0, parkedX = 0, parkedScale = 1;
     let pageY = window.scrollY, lastInput = performance.now(), lastFrame = 0, raf = 0;
     let phase = 0, energy = 0, expression = 0, sign = 1;
 
@@ -34,13 +33,6 @@ function HangingCrew({ anchor, compact, menuOpen }: { anchor: RefObject<HTMLSpan
     // resize/header changes so the scroll handler never requests layout.
     function paint() {
       if (!figure) return;
-      const progress = clamp01((pageY - 16) / 190);
-      const dock = compact ? 1 : reduced.matches ? Number(pageY > 75) : progress * progress * (3 - 2 * progress);
-      const x = rootX + (parkedX - rootX) * dock;
-      const scale = 1 + (parkedScale - 1) * dock;
-      figure.style.transform = `translate3d(${x.toFixed(2)}px, ${rootY.toFixed(2)}px, 0)`;
-      figure.style.setProperty("--puppet-scale", scale.toFixed(3));
-      figure.style.setProperty("--tie-opacity", dock.toFixed(2));
       figure.style.setProperty("--panic", reduced.matches ? "0" : Math.min(1, expression * 1.25).toFixed(3));
       const swing = energy * (Math.sin(phase) * 9.8 + sign * 1.9);
       const kickLeft = energy * (Math.sin(phase * 1.31 + .5) * 15 + 10);
@@ -54,13 +46,11 @@ function HangingCrew({ anchor, compact, menuOpen }: { anchor: RefObject<HTMLSpan
       if (!figure || !pin || !header) return;
       const pos = pin.getBoundingClientRect();
       const view = document.documentElement.clientWidth;
-      const base = Math.max(1, figure.offsetWidth);
-      const parked = Math.min(base, Math.max(101, Math.min(178, view * .18)));
-      const hidden = !pos.width || getComputedStyle(header).visibility === "hidden";
-      rootX = hidden ? view - parked * .45 : pos.left + pos.width / 2;
-      rootY = hidden ? 62 : Math.max(62, pos.top);
-      parkedX = view - parked * .35;
-      parkedScale = parked / base;
+      const hidden = !pos.width || pos.top < 5 || getComputedStyle(header).visibility === "hidden";
+      const x = hidden ? view - figure.offsetWidth / 2 - 8 : pos.left + pos.width / 2;
+      const y = hidden ? Math.max(24, figure.offsetWidth * .076) : pos.top;
+      figure.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)`;
+      figure.style.setProperty("--tie-opacity", hidden ? "1" : "0");
       pageY = window.scrollY;
       paint();
       figure.dataset.ready = "";
@@ -119,7 +109,7 @@ function HangingCrew({ anchor, compact, menuOpen }: { anchor: RefObject<HTMLSpan
       document.removeEventListener("visibilitychange", rest);
       reduced.removeEventListener("change", rest);
     };
-  }, [anchor, body, compact]);
+  }, [anchor, body]);
 
   if (!body) return null;
   return createPortal(
@@ -142,7 +132,7 @@ function HangingCrew({ anchor, compact, menuOpen }: { anchor: RefObject<HTMLSpan
   );
 }
 
-export default function WinterRoofline({ compact, menuOpen }: { compact: boolean; menuOpen: boolean }) {
+export default function WinterRoofline({ menuOpen = false, standalone = false }: { menuOpen?: boolean; standalone?: boolean }) {
   const roof = useRef<HTMLDivElement>(null);
   const pin = useRef<HTMLSpanElement>(null);
 
@@ -185,7 +175,7 @@ export default function WinterRoofline({ compact, menuOpen }: { compact: boolean
   }, []);
 
   return (
-    <div ref={roof} className={styles.roof} aria-hidden="true">
+    <div ref={roof} className={styles.roof} data-winter-roof="" data-standalone={standalone || undefined} aria-hidden="true">
       {swags.map((sag, span) => (
         <div key={span} className={styles.swag} style={{ "--sag": sag + "px" } as CSSProperties}>
           <span className={styles.wire} />
@@ -210,7 +200,7 @@ export default function WinterRoofline({ compact, menuOpen }: { compact: boolean
           {span === swags.length - 1 && <span ref={pin} className={styles.anchor} />}
         </div>
       ))}
-      <HangingCrew anchor={pin} compact={compact} menuOpen={menuOpen} />
+      <HangingCrew anchor={pin} menuOpen={menuOpen} />
     </div>
   );
 }

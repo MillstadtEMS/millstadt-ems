@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Coffee } from "lucide-react";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import styles from "./WinterStreet.module.css";
+import WinterRinkRescue from "./WinterRinkRescue";
 
 type StreetProps = { active: boolean };
 
@@ -127,6 +128,7 @@ export function WinterStreetForeground({ active }: StreetProps) {
       </div>
       <Skater solo />
       <Skater />
+      <WinterRinkRescue />
     </div>
   );
 }

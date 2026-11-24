@@ -1,0 +1,183 @@
+.stage {
+  --run: 11.8s;
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  container-type: size;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.redLane, .blueLane, .downLane, .cotLane {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 0;
+  bottom: 10%;
+  animation: var(--run) linear both;
+}
+
+.stage img {
+  display: block;
+  max-width: none;
+  user-select: none;
+  filter: drop-shadow(.26cqh .65cqh .3cqh rgb(46 52 70 / 29%));
+}
+
+.stage .blue, .stage .red, .stage .down, .crew {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  translate: -50% 0;
+}
+
+.blueLane { animation-name: blueTrack, uprightPresence; animation-timing-function: linear, step-end; }
+.redLane { bottom: 11%; animation-name: redTrack; }
+.cotLane { animation-name: crewTrack; }
+.downLane { animation-name: downTrack, pronePresence; animation-timing-function: linear, step-end; }
+
+.stage .blue, .stage .red {
+  width: auto;
+  height: 62cqh;
+  transform-origin: 52% 79%;
+}
+.stage .blue { animation: blueEdges var(--run) ease-in-out both; }
+.stage .red { animation: redEdges var(--run) ease-in-out both; }
+
+.stage .down {
+  width: 95cqh;
+  height: auto;
+  transform-origin: center bottom;
+  animation: lift var(--run) ease-in-out both;
+}
+
+.crew {
+  width: 148cqh;
+  aspect-ratio: 2;
+  transform-origin: center bottom;
+  animation: footfalls var(--run) linear both;
+}
+.crew::before, .downLane::before {
+  content: "";
+  position: absolute;
+  inset: 95% 6% -2%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #24344866, transparent 70%);
+}
+.downLane::before {
+  inset: auto auto -2cqh 0;
+  width: 77cqh;
+  height: 6.5cqh;
+  translate: -50% 0;
+}
+.stage .empty, .stage .loaded {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.stage .empty { animation: emptyCot var(--run) step-end both; }
+.stage .loaded { animation: loadedCot var(--run) step-end both; }
+
+.spray {
+  position: absolute;
+  left: 49%;
+  bottom: 10%;
+  width: 31cqh;
+  height: 13cqh;
+  transform-origin: 90% 100%;
+  background:
+    radial-gradient(ellipse at 11% 42%, #f7ffffda 0 1.7%, transparent 2.3%),
+    radial-gradient(ellipse at 35% 19%, #e9fcffce 0 1.4%, transparent 2%),
+    radial-gradient(ellipse at 51% 60%, white 0 1.4%, transparent 2.2%),
+    radial-gradient(ellipse at 23% 78%, #d1eeff 0 1.8%, transparent 3%),
+    radial-gradient(ellipse at 66% 83%, #f1fbffb0 0 6%, transparent 28%);
+  animation: iceSpray var(--run) linear both;
+}
+
+@keyframes blueTrack {
+  0% { transform: translateX(-10%); }
+  11% { transform: translateX(21%); }
+  21% { transform: translateX(40%); }
+  27% { transform: translateX(49.5%); }
+  30% { transform: translateX(50%); }
+  35%, 100% { transform: translateX(48.8%); }
+}
+@keyframes redTrack {
+  0%, 8% { transform: translateX(110%); }
+  18% { transform: translateX(78%); }
+  26.5% { transform: translateX(54%); }
+  29% { transform: translateX(52.2%); }
+  34% { transform: translateX(43%); }
+  45%, 100% { transform: translateX(-15%); }
+}
+@keyframes blueEdges {
+  0%, 13% { transform: rotate(2deg); }
+  8%, 19% { transform: rotate(-3deg); }
+  25.5% { transform: rotate(2deg); }
+  28% { transform: translateY(-3%) rotate(-13deg); }
+  31% { transform: translateY(2%) rotate(-37deg); }
+  35%, 100% { transform: translateY(20%) rotate(-73deg); }
+}
+@keyframes redEdges {
+  0%, 15% { transform: rotate(-3deg); }
+  21% { transform: rotate(3deg); }
+  26.5% { transform: translateY(2%) rotate(-10deg); }
+  30% { transform: rotate(4deg); }
+  36%, 100% { transform: rotate(-2deg); }
+}
+@keyframes uprightPresence {
+  0% { opacity: 1; }
+  35%, 100% { opacity: 0; }
+}
+@keyframes pronePresence {
+  0% { opacity: 0; }
+  35% { opacity: 1; }
+  77%, 100% { opacity: 0; }
+}
+@keyframes downTrack {
+  0%, 35% { transform: translateX(48.4%); }
+  38% { transform: translateX(46.2%); }
+  42%, 67% { transform: translateX(45.6%); }
+  77%, 100% { transform: translateX(47.7%); }
+}
+@keyframes lift {
+  0%, 35% { transform: translateY(-5cqh) rotate(-9deg); }
+  37% { transform: translateY(1cqh) rotate(2deg); }
+  40%, 66% { transform: none; }
+  69% { transform: translateY(-2cqh) rotate(-3deg); }
+  73% { transform: translateY(-21cqh) rotate(-5deg) scale(.9); }
+  76.8%, 100% { transform: translateY(-35.8cqh) scale(.80); }
+}
+@keyframes crewTrack {
+  0%, 42% { transform: translateX(-19%); }
+  50% { transform: translateX(13%); }
+  58% { transform: translateX(42%); }
+  61%, 80% { transform: translateX(48%); }
+  84% { transform: translateX(51%); }
+  94% { transform: translateX(88%); }
+  100% { transform: translateX(121%); }
+}
+@keyframes footfalls {
+  0%, 43%, 46%, 49%, 52%, 55%, 58%, 62%, 69%, 77%, 82%, 85%, 88%, 91%, 94%, 97%, 100% { transform: none; }
+  44.5%, 47.5%, 50.5%, 53.5%, 56.5%, 83.5%, 86.5%, 89.5%, 92.5%, 95.5%, 98.5% { transform: translateY(-1.4%) rotate(-.45deg); }
+  65% { transform: scaleY(.975); }
+  72% { transform: scaleY(.985); }
+}
+@keyframes emptyCot {
+  0% { opacity: 1; }
+  77%, 100% { opacity: 0; }
+}
+@keyframes loadedCot {
+  0% { opacity: 0; }
+  77%, 100% { opacity: 1; }
+}
+@keyframes iceSpray {
+  0%, 27% { opacity: 0; transform: translateX(-42%) scale(.2); }
+  29% { opacity: .8; transform: translateX(-62%) scale(.8); }
+  34%, 100% { opacity: 0; transform: translateX(-80%) scale(1.3); }
+}
+@media (prefers-reduced-motion: reduce), print {
+  .stage { display: none; }
+}

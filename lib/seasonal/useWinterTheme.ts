@@ -10,8 +10,7 @@ function subscribe(onChange: () => void) {
 }
 
 const isWinter = () => document.documentElement.dataset.memsSeason === "winter";
-const serverSnapshot = () => false;
 
-export function useWinterTheme() {
-  return useSyncExternalStore(subscribe, isWinter, serverSnapshot);
+export function useWinterTheme(initialWinter = false) {
+  return useSyncExternalStore(subscribe, isWinter, () => initialWinter);
 }

@@ -1,0 +1,11 @@
+/* The photographs contain a circular image within a square black surround. */
+@media screen {
+  :global(html[data-mems-season="winter"]) .disc {
+    clip-path: circle(43.75%) !important;
+  }
+
+  :global(html[data-mems-season="winter"]) .rim {
+    inset: 6.25%;
+    box-shadow: 0 0 0 1px #ffe6a3, 0 0 0 3px #a4253d, 0 4px 16px #09352545 !important;
+  }
+}
