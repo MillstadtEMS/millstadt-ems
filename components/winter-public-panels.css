@@ -6,7 +6,8 @@
     color: #fff7e5;
     border-color: #e9c376a1 !important;
     & :is(.text-slate-300, .text-slate-400, .text-slate-500, .text-slate-600) { color: #fff1de !important; }
-    & [class~="text-[#f0b429]"] { color: #ffe59c; }
+    & [class~="text-[#f0b429]"]:not(svg) { color: #ffe59c; }
+    & [class*="bg-[#1a3a6e]"] svg { color: #194c35 !important; }
     &:nth-child(3n + 2) { --panel-paint: var(--winter-cranberry); }
     &:is(:hover, :focus-visible, [open]) { border-color: #ffe591 !important; }
     &:focus-visible, & > summary:focus-visible { outline: 3px solid #ffdd7c; outline-offset: 3px; }

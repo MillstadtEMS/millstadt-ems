@@ -28,10 +28,11 @@ function hexToRgb(hex: string) {
 }
 
 export default function PeakActivity({ months, accent = "#f0b429" }: { months: MonthPeak[]; accent?: string }) {
-  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [previewKey, setPreviewKey] = useState<string | null>(null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   if (!months || months.length === 0) return null;
 
-  const active = months.find((m) => m.key === activeKey) ?? months[months.length - 1];
+  const active = months.find((m) => m.key === (previewKey ?? selectedKey)) ?? months[months.length - 1];
   const grid = active.grid;
   const byDow = DOW.map((_, d) => grid[d].reduce((a, b) => a + b, 0));
   const byBlock = [0, 1, 2].map((b) => grid.reduce((a, row) => a + row[b], 0));
@@ -99,19 +100,19 @@ export default function PeakActivity({ months, accent = "#f0b429" }: { months: M
           <div style={{ color: "var(--stat-muted, #64748b)", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Choose a month</div>
           <div
             style={{ display: "flex", flexWrap: "wrap", gap: 6 }}
-            onMouseLeave={() => setActiveKey(null)}
+            onPointerLeave={event => { if (event.pointerType === "mouse") setPreviewKey(null); }}
             onBlur={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setActiveKey(null);
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPreviewKey(null);
             }}
           >
             {months.map((m) => {
               const on = m.key === active.key;
               return (
                 <button
-                  key={m.key} data-stat-month="" aria-pressed={on} onClick={() => setActiveKey(m.key)}
+                  key={m.key} data-stat-month="" aria-pressed={on} onClick={() => { setSelectedKey(m.key); setPreviewKey(null); }}
                   type="button"
-                  onMouseEnter={() => setActiveKey(m.key)}
-                  onFocus={() => setActiveKey(m.key)}
+                  onPointerEnter={event => { if (event.pointerType === "mouse") setPreviewKey(m.key); }}
+                  onFocus={() => setPreviewKey(m.key)}
                   title={`${m.label} ${m.year} · ${m.total} calls`}
                   style={{
                     cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: on ? 700 : 600,
