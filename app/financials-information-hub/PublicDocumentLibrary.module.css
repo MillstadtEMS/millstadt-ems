@@ -228,3 +228,37 @@
 }
 @media(prefers-reduced-motion:reduce) { .page * { transition:none!important; animation:none!important; scroll-behavior:auto!important; } }
 @media print { .toolbar,.documentActions,.technicalReport,.heroActions,.voteSection { display:none!important; } .page,.hero { background:white; color:black; } .disclosurePanel[hidden] { display:block; } .heroLogo { max-width:200px; } }
+
+/* Holiday trim uses the library's existing disclosure and record hierarchy. */
+@media screen and (forced-colors: none) {
+  :global(html[data-mems-season="winter"]) .page :is(.searchField, .filterField, .disclosure, .categoryDisclosure, .notice, .technicalReport) {
+    border-color: #c6bd99;
+  }
+  :global(html[data-mems-season="winter"]) .page :is(.searchField, .filterField, .categoryDisclosure > .disclosureHeading > .disclosureButton) {
+    background: #f3f6e9;
+    color: #184632;
+  }
+  :global(html[data-mems-season="winter"]) .page :is(.searchField, .filterField):focus-within {
+    outline-color: #a11734;
+  }
+  :global(html[data-mems-season="winter"]) .page .categoryDisclosure > .disclosureHeading > .disclosureButton[aria-expanded="true"] {
+    background: #0a5b3b;
+    color: #fff7de;
+  }
+  :global(html[data-mems-season="winter"]) .page :is(.sectionResults, .taxDetails) {
+    background: #f5f6e8;
+    border-left-color: #b08230;
+  }
+  :global(html[data-mems-season="winter"]) .page :is(.recordType, .payRateGroup h3) {
+    color: #1f563e;
+  }
+  :global(html[data-mems-season="winter"]) .page .documentActions a {
+    background: #fffaea;
+    border-color: #cdb987;
+    color: #8b1930;
+  }
+  :global(html[data-mems-season="winter"]) .page .documentActions a:is(:hover,:focus-visible) {
+    background: #f5e9c6;
+    border-color: #a67e3e;
+  }
+}

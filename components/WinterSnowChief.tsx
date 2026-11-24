@@ -9,11 +9,22 @@ const powder = [
   [-57, -37, 0], [-43, -64, 42], [-27, -77, 28], [-16, -53, 65], [-4, -84, 15],
   [11, -66, 47], [23, -80, 31], [34, -58, 72], [49, -65, 22], [62, -40, 52],
 ];
+const people = {
+  jen: {
+    name: "Jen", surprise: "/images/winter/snow-chief-boo.webp", mad: "/images/winter/snow-chief-mad.webp",
+    faceX: .5, faceY: .24, alt: "Jen pops out of a Millstadt snowdrift with wide eyes, a Santa hat and both hands raised.",
+  },
+  kenny: {
+    name: "Kenny", surprise: "/images/winter/kenny/snow-boo.webp", mad: "/images/winter/kenny/snow-mad.webp",
+    faceX: .53, faceY: .26, alt: "Kenny pops out of another snowdrift in his EMS uniform and Santa hat, holding a lump of coal.",
+  },
+} as const;
+type Person = keyof typeof people;
 type Pose = "waiting" | "out" | "buried";
 type Fight = "idle" | "incoming" | "impact" | "windup" | "return" | "splat" | "recover";
 type Flight = { startX: number; startY: number; endX: number; endY: number };
 
-function SnowFlight({ phase, line }: { phase: Fight; line: Flight }) {
+function SnowFlight({ phase, line, person }: { phase: Fight; line: Flight; person: Person }) {
   if (phase !== "incoming" && phase !== "return" && phase !== "splat") return null;
   const style = {
     "--x0": line.startX + "px", "--y0": line.startY + "px",
@@ -22,13 +33,14 @@ function SnowFlight({ phase, line }: { phase: Fight; line: Flight }) {
     "--x1": line.endX + "px", "--y1": line.endY + "px",
   } as CSSProperties;
   return createPortal(
-    <div className={styles.lens} data-snow-flight={phase} style={style} aria-hidden="true">
+    <div className={styles.lens} data-snow-flight={phase} data-person={person} style={style} aria-hidden="true">
       {phase === "splat" ? <div className={styles.splat}><i /><i /><i /><i /><i /><i /></div> : <div className={styles.ball} />}
     </div>, document.body,
   );
 }
 
-export default function WinterSnowChief() {
+export default function WinterSnowChief({ person }: { person: Person }) {
+  const chief = people[person];
   const actor = useRef<HTMLDivElement>(null);
   const figure = useRef<HTMLDivElement>(null);
   const palm = useRef<HTMLSpanElement>(null);
@@ -146,7 +158,7 @@ export default function WinterSnowChief() {
   function throwSnow(event: MouseEvent<HTMLButtonElement>) {
     if (poseRef.current !== "out" || busy.current || !figure.current || (event.detail !== 0 && gesture.current.drag)) return;
     const area = figure.current.getBoundingClientRect();
-    const faceX = area.left + area.width * .5, faceY = area.top + area.height * .24;
+    const faceX = area.left + area.width * chief.faceX, faceY = area.top + area.height * chief.faceY;
     busy.current = true;
     setFlight({
       startX: window.innerWidth * .59,
@@ -154,11 +166,11 @@ export default function WinterSnowChief() {
       endX: faceX, endY: faceY,
     });
     setPhase("incoming");
-    setStatus("You threw a snowball!");
+    setStatus(`You threw a snowball at ${chief.name}!`);
     const after = (ms: number, action: () => void) => {
       timers.current.push(window.setTimeout(() => { if (busy.current && poseRef.current === "out") action(); }, ms));
     };
-    after(400, () => { setPhase("impact"); setStatus("Direct hit! The chief is getting a snowball ready."); });
+    after(400, () => { setPhase("impact"); setStatus(`Direct hit! ${chief.name} is getting a snowball ready.`); });
     after(650, () => setPhase("windup"));
     after(1230, () => {
       const hand = palm.current?.getBoundingClientRect();
@@ -169,30 +181,31 @@ export default function WinterSnowChief() {
       });
       setPhase("return");
     });
-    after(1740, () => { setPhase("splat"); setStatus("The chief got you back!"); });
+    after(1740, () => { setPhase("splat"); setStatus(`${chief.name} got you back!`); });
     after(2200, () => setPhase("recover"));
     after(2560, () => { busy.current = false; timers.current = []; setPhase("idle"); setFlight(null); });
   }
 
   const angry = phase !== "idle" && phase !== "incoming" && phase !== "recover";
   return (
-    <div ref={actor} className={styles.chief} data-snow-chief="" data-revealed={pose === "out"}
+    <div ref={actor} className={styles.chief} data-snow-chief="" data-person={person}
+      style={{ "--throw-art": `url("${chief.mad}")` } as CSSProperties} data-revealed={pose === "out"}
       data-ducked={pose === "buried"} data-fight={phase} data-angry={angry}>
       <div className={styles.pose}>
         <div ref={figure} className={styles.figure}>
           <div className={styles.action}>
             <div className={styles.body}>
-              <Image ref={image} className={styles.portrait} src="/images/winter/snow-chief-boo.webp"
-                alt="The Millstadt EMS chief pops out of a snowdrift with wide eyes and both hands raised." width={661} height={600} loading="eager" unoptimized />
-              <Image className={styles.mad} src="/images/winter/snow-chief-mad.webp" alt="" width={661} height={600} loading="eager" unoptimized />
+              <Image ref={image} className={styles.portrait} src={chief.surprise}
+                alt={chief.alt} width={661} height={600} loading="eager" unoptimized />
+              <Image className={styles.mad} src={chief.mad} alt="" width={661} height={600} loading="eager" unoptimized />
             </div>
             <div className={styles.arm} aria-hidden="true">
               <span ref={palm} className={styles.palm} />
             </div>
-            <Image className={styles.hat} src="/images/winter/snow-chief-hat.webp" alt="" width={661} height={600} loading="eager" unoptimized />
+            {person === "jen" && <Image className={styles.hat} src="/images/winter/snow-chief-hat.webp" alt="" width={661} height={600} loading="eager" unoptimized />}
             <div className={styles.impactPuff} aria-hidden="true" />
           </div>
-          {pose === "out" && <button type="button" className={styles.hit} aria-label="Throw a snowball at the chief"
+          {pose === "out" && <button type="button" className={styles.hit} aria-label={`Throw a snowball at ${chief.name} in the snowbank`}
             aria-disabled={phase !== "idle"} onClick={throwSnow}
             onPointerDown={(e) => { gesture.current = { x: e.clientX, y: e.clientY, drag: false }; }}
             onPointerMove={(e) => { if (e.buttons && Math.hypot(e.clientX - gesture.current.x, e.clientY - gesture.current.y) > 8) gesture.current.drag = true; }}
@@ -208,7 +221,7 @@ export default function WinterSnowChief() {
         ))}
       </div>
       <span role="status" className={styles.sr}>{status}</span>
-      {flight && <SnowFlight phase={phase} line={flight} />}
+      {flight && <SnowFlight phase={phase} line={flight} person={person} />}
     </div>
   );
 }

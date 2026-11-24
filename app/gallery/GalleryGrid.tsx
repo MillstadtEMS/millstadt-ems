@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
+import { crewPhotoSource } from "@/lib/seasonal/crew-photo";
 
 const photos = [
   "/images/millstadt-ems/gallery1.jpg",
@@ -159,7 +161,8 @@ function getStart(i: number): { x: number; y: number; rot: number } {
   return { x, y, rot };
 }
 
-export default function GalleryGrid() {
+export default function GalleryGrid({ initialWinter }: { initialWinter: boolean }) {
+  const winter = useWinterTheme(initialWinter);
   const [visible, setVisible] = useState(false);
   const [active, setActive] = useState<string | null>(null);
   const [photoList, setPhotoList] = useState(photos);
@@ -210,7 +213,7 @@ export default function GalleryGrid() {
             >
               <div className="relative overflow-hidden rounded-xl bg-[#071428] group">
                 <Image
-                  src={src}
+                  src={crewPhotoSource(src, winter)}
                   alt="Millstadt EMS"
                   width={600}
                   height={450}
@@ -250,7 +253,7 @@ export default function GalleryGrid() {
             onClick={(e) => e.stopPropagation()}
           >
             <Image
-              src={active}
+              src={crewPhotoSource(active, winter)}
               alt="Millstadt EMS"
               width={1400}
               height={1000}

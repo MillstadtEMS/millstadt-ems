@@ -1,3 +1,4 @@
+import { getSeasonalThemePublicConfig } from "@/lib/seasonal/themes";
 import type { Metadata } from "next";
 import GalleryGrid from "./GalleryGrid";
 import { PublicMetric, PublicPageHero } from "@/components/site/PublicChrome";
@@ -7,6 +8,8 @@ export const metadata: Metadata = {
   description:
     "Photos from Millstadt Ambulance Service — our crew, our units, and our community.",
 };
+
+export const dynamic = "force-dynamic";
 
 export default function GalleryPage() {
   return (
@@ -24,7 +27,7 @@ export default function GalleryPage() {
       {/* Gallery */}
       <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>
         <div className="wrap">
-          <GalleryGrid />
+          <GalleryGrid initialWinter={getSeasonalThemePublicConfig().initialTheme === "winter"} />
         </div>
       </section>
 

@@ -125,17 +125,17 @@
 .chief[data-fight="windup"] .action { transform: translate(2.6%, 4%) rotate(6deg) scale(.96); transition-duration: .43s; }
 .chief[data-fight="return"] .action { animation: tossBack .45s ease-out both; }
 .arm {
-  transform-origin: 67% 48%;
+  transform-origin: var(--arm-joint, 67% 48%);
   transition: transform .25s ease-out;
 }
 .chief:is([data-fight="windup"],[data-fight="return"],[data-fight="splat"]) .body {
   clip-path: polygon(0 0,68% 0,67.2% 34%,65.5% 40%,67% 48%,67.3% 57%,66.4% 68%,100% 73%,100% 100%,0 100%);
 }
 .chief:is([data-fight="windup"],[data-fight="return"],[data-fight="splat"]) .arm {
-  background: url("/images/winter/snow-chief-mad.webp") center / 100% 100% no-repeat;
+  background: var(--throw-art) center / 100% 100% no-repeat;
   clip-path: polygon(67.5% 0,100% 0,100% 73.2%,66.2% 68%,67.1% 57%,66.8% 48%,65.3% 40%,67% 34%);
 }
-.chief[data-fight="windup"] .arm { transform: rotate(-15deg); transition-duration: .35s; }
+.chief[data-fight="windup"] .arm { transform: rotate(var(--arm-windup, -15deg)); transition-duration: .35s; }
 .chief[data-fight="return"] .arm { animation: release .45s ease-out both; }
 .palm {
   width: 1px;
@@ -207,7 +207,7 @@
 @keyframes hatThrow { from { transform: rotate(-10deg); } 28% { transform: rotate(15deg); } 69% { transform: rotate(-8deg); } to { transform: none; } }
 @keyframes recoil { 35% { transform: translate(1.6%,4%) rotate(3deg) scale(.98); } 100% { transform: none; } }
 @keyframes tossBack { from { transform:translate(2.6%,4%) rotate(6deg) scale(.96); } 32% { transform:translate(-2%,-3%) rotate(-5deg) scale(1.04); } to { transform:none; } }
-@keyframes release { from { transform:rotate(-15deg); } 38% { transform:rotate(17deg) scale(1.045); } to { transform:rotate(0); } }
+@keyframes release { from { transform:rotate(var(--arm-windup, -15deg)); } 38% { transform:rotate(var(--arm-release, 17deg)) scale(1.045); } to { transform:rotate(0); } }
 @keyframes packSnow { from { opacity:0; transform:translateX(-50%) scale(.4); } to { opacity:1; transform:translateX(-50%) scale(1); } }
 @keyframes powderHit { 0% { opacity:1; transform:translate(-50%,-50%) scale(.45); } 26% { opacity:1; } to { opacity:0; transform:translate(-50%,-65%) scale(2.35); } }
 @keyframes incoming {
@@ -232,3 +232,23 @@
   .lens { display: none; }
 }
 @media print { .lens, .hit { display: none; } }
+
+.chief[data-person="kenny"] {
+  left: 65.4%;
+  bottom: 3.1%;
+  --arm-joint: 34% 46%;
+  --arm-windup: 15deg;
+  --arm-release: -17deg;
+}
+.chief[data-person="kenny"] .palm { left: 19.8%; top: 28.8%; }
+.chief[data-person="kenny"] .impactPuff { left: 53%; top: 26%; }
+.chief[data-person="kenny"] .hit {
+  clip-path: polygon(6% 23%,13% 20%,24% 26%,27% 43%,33% 40%,34% 20%,40% 4%,52% 1%,61% 7%,64% 27%,63% 39%,73% 46%,73% 34%,78% 25%,85% 22%,92% 26%,90% 34%,81% 39%,86% 59%,85% 67%,77% 70%,70% 64%,68% 87%,34% 89%,31% 66%,17% 66%,14% 61%,18% 35%,8% 29%);
+}
+/* His open, screen-left palm throws the snow. The coal stays in his other hand. */
+.chief[data-person="kenny"]:is([data-fight="windup"],[data-fight="return"],[data-fight="splat"]) .body {
+  clip-path: polygon(31% 0,100% 0,100% 100%,0 100%,0 69%,29.2% 68%,31.5% 65.4%,32.2% 59.7%,29.6% 54%,26% 49.2%,25.6% 47.5%,30.8% 41.5%,36.6% 38.8%,41% 38%,40.4% 36%,31% 34%);
+}
+.chief[data-person="kenny"]:is([data-fight="windup"],[data-fight="return"],[data-fight="splat"]) .arm {
+  clip-path: polygon(0 0,31.2% 0,31.2% 34%,40.6% 36%,41.2% 38.2%,36.8% 39%,31% 41.7%,25.8% 47.5%,26.2% 49.2%,29.8% 54%,32.4% 59.7%,31.7% 65.6%,29.4% 68.2%,0 69.2%);
+}

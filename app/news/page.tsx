@@ -7,7 +7,7 @@ import SiteIcon from "@/components/site/SiteIcon";
 
 function StorySeparator() {
   return (
-    <div className="flex items-center gap-4 py-2">
+    <div className="mems-story-separator flex items-center gap-4 py-2" aria-hidden="true">
       <span className="flex-1 h-px bg-gradient-to-r from-transparent to-white/8" />
       <Image
         src="/images/millstadt-ems/crest.png"

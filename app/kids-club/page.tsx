@@ -1,3 +1,5 @@
+import WinterCrewPhoto from "@/components/WinterCrewPhoto";
+import { getSeasonalThemePublicConfig } from "@/lib/seasonal/themes";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -28,7 +30,10 @@ const featureCards = [
   },
 ];
 
+export const dynamic = "force-dynamic";
+
 export default function KidsClubHubPage() {
+  const initialWinter = getSeasonalThemePublicConfig().initialTheme === "winter";
   return (
     <main className="bg-[#030914] text-white">
       <section className="relative isolate overflow-hidden bg-[#030914]">
@@ -165,7 +170,8 @@ export default function KidsClubHubPage() {
                 className="group flex min-h-[520px] flex-col overflow-hidden rounded-lg border border-white/12 bg-[#071428] shadow-xl shadow-black/20 transition hover:-translate-y-1 hover:border-[#f0b429]/55 focus:outline-none focus:ring-2 focus:ring-[#f0b429] focus:ring-offset-2 focus:ring-offset-[#030914]"
               >
                 <div className="relative aspect-[16/10] overflow-hidden bg-[#0b1728]">
-                  <Image
+                  <WinterCrewPhoto
+                    initialWinter={initialWinter}
                     src={card.image}
                     alt=""
                     fill

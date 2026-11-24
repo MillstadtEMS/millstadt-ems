@@ -1,0 +1,71 @@
+.divider {
+  --first: #040d1a;
+  --second: #071428;
+  --metal: 240 180 41;
+  position: relative;
+  overflow: hidden;
+  padding-block: 10px;
+  background: var(--first);
+}
+.divider[data-section-divider="fadeDown"] { background: linear-gradient(var(--first), var(--second)); }
+.divider[data-section-divider="fadeUp"] { background: linear-gradient(var(--second), var(--first)); }
+.divider::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 220px;
+  height: 1px;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(90deg, transparent, var(--highlight, #7dd3fc52), transparent);
+  filter: blur(.2px);
+}
+.rails {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-inline: 24px;
+}
+.rail {
+  position: relative;
+  flex: 1 1 auto;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgb(var(--metal) / .3) 65%, rgb(var(--metal) / .55));
+}
+.rail:last-child { transform: scaleX(-1); }
+.rail i { position: absolute; right: 48px; top: -3px; width: 1px; height: 7px; background: rgb(var(--metal) / .6); }
+.rail i:nth-child(2) { right: 96px; top: -2px; height: 5px; opacity: .58; }
+.rail i:last-child { right: 160px; top: -2px; height: 5px; opacity: .417; }
+.ornament { display: flex; align-items: center; gap: 12px; }
+.bead { width: 6px; height: 6px; border-radius: 50%; background: rgb(var(--metal) / .7); box-shadow: 0 0 10px 2px rgb(var(--metal) / .55); }
+.diamond { position: relative; width: 12px; height: 12px; transform: rotate(45deg); border: 1px solid rgb(var(--metal) / .8); box-shadow: 0 0 12px rgb(var(--metal) / .45), inset 0 0 6px rgb(var(--metal) / .35); }
+.diamond svg { display: none; }
+
+@media screen and (forced-colors: none) {
+  :global(html[data-mems-season="winter"]) .divider {
+    --first: #064b31;
+    --second: #064333;
+    --metal: 255 211 107;
+    --highlight: #ffedaf77;
+  }
+  :global(html[data-mems-season="winter"]) .bead {
+    background: radial-gradient(circle at 32% 26%, #fff0df 0 10%, #e94945 24%, #bb1531 63%, #741329);
+    box-shadow: 0 0 0 1px #e2b766b0;
+  }
+  :global(html[data-mems-season="winter"]) .diamond {
+    transform: none;
+    border: 0;
+    box-shadow: none;
+  }
+  :global(html[data-mems-season="winter"]) .diamond svg {
+    position: absolute;
+    inset: -2px;
+    display: block;
+    width: 16px;
+    height: 16px;
+    color: #fff2bd;
+  }
+}

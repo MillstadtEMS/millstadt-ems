@@ -75,7 +75,8 @@ function VillagePostcard() {
             <div className={styles.grinch}>
               <Image src="/images/winter/grinch.webp" alt="The Grinch in the snow" fill sizes="(max-width: 720px) 90px, 13vw" unoptimized />
             </div>
-            <WinterSnowChief />
+            <WinterSnowChief person="jen" />
+            <WinterSnowChief person="kenny" />
             <Image className={styles.bank} src="/images/winter/village-snowbank.webp"
               alt="" width={1500} height={258} sizes="100vw" unoptimized />
           </div>

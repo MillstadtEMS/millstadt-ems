@@ -179,9 +179,6 @@ html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) > section[clas
   background: radial-gradient(ellipse at 88% 0, #14694f, transparent 63%), linear-gradient(120deg, #09523c, #06412f) !important;
 }
 
-html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) > div:has(> div[aria-hidden]:first-child + div[style*="max-width"]) {
-  background: linear-gradient(90deg, #00713e, #00643b, #005334) !important;
-}
 
 html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) :is(.hero-top, .hero-bottom, section[class~="bg-[#040d1a]"], section[class~="bg-[#071428]"]) [class~="text-[#f0b429]"] {
   color: var(--holiday-gold);

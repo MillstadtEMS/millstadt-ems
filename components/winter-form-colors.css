@@ -1,0 +1,144 @@
+/* Operational form markup and native validation are shared by both seasons. */
+@media screen and (forced-colors: none) {
+  html[data-mems-season="winter"] {
+    --wf-ink: #123d2d;
+    --wf-muted: #425e50;
+    --wf-field: #fffef7;
+    --wf-paper: #fff8e6;
+    --wf-pine: #075835;
+    --wf-berry: #9f1532;
+    --wf-line: #668473;
+    --wf-step: linear-gradient(150deg, #c62741, #94122d);
+    --wf-panel: linear-gradient(128deg, #fffdf3 8%, #fff6df 80%, #f3edcf);
+  }
+
+  html[data-mems-season="winter"] .mems-main-pad :is(main, div[class~="bg-[#0A0A0A]"]):has(form input[name="website"]) {
+    background: var(--winter-forest-floor) !important;
+  }
+
+  /* Paper steps are individually bordered so their division remains visible on small screens. */
+  html[data-mems-season="winter"] form:has(input[name="website"]) {
+    & > .p-5.mb-4,
+    & [aria-label="Security check"] {
+      color-scheme: light;
+      color: var(--wf-ink) !important;
+      background: var(--wf-panel) !important;
+      border: 1px solid #e4bd65 !important;
+      border-top: 4px solid #be2641 !important;
+      box-shadow: 0 3px 14px #09281c45 !important;
+    }
+
+    & :is(.p-5.mb-4, [aria-label="Security check"]) :is(h2, h3, legend, .text-white:not(input, textarea, select), label.block) { color: var(--wf-pine) !important; }
+    & :is(.p-5.mb-4, [aria-label="Security check"]) :is(.text-slate-300, .text-slate-400, .text-slate-500, .text-slate-600, .text-slate-700) { color: var(--wf-muted) !important; }
+    & :is(.p-5.mb-4, [aria-label="Security check"]) :is(label, legend) { color: var(--wf-pine) !important; }
+    & :is(label.block > span, [class~="text-[#f0b429]"]) { color: var(--wf-berry) !important; }
+    & .p-5.mb-4 .w-10.h-10.shrink-0 {
+      color: #fffaf0 !important;
+      background: var(--wf-step) !important;
+      border-color: #8f142c !important;
+      box-shadow: inset 0 0 0 1px #f0ac9a !important;
+    }
+    & .p-5.mb-4 .h-px.my-6 { background: #c1b58e !important; }
+    & .p-5.mb-4 :is([class~="bg-[#0d0d0d]"], .p-4.mt-4.rounded-xl) {
+      background: #f2edd8 !important;
+      border-color: #b9b495 !important;
+    }
+    & label:has(input:is([type="radio"], [type="checkbox"])):is(.cursor-pointer[class~="px-4"], .min-h-16) {
+      background: #fffdf4 !important;
+      border: 1px solid var(--wf-line) !important;
+    }
+    & label:has(input:checked):is(.cursor-pointer[class~="px-4"], .min-h-16) {
+      background: #e4f1dd !important;
+      border-color: var(--wf-pine) !important;
+      box-shadow: inset 0 0 0 1px var(--wf-pine) !important;
+    }
+    & .peer[type="checkbox"] + div { background: #687c6c !important; }
+    & .peer[type="checkbox"]:checked + div { background: var(--wf-pine) !important; }
+    & .peer[type="checkbox"]:focus-visible + div { outline: 3px solid var(--wf-berry); outline-offset: 2px; }
+    & .p-5.mb-4 button[type="button"], & [aria-label="Security check"] button { color: var(--wf-berry) !important; }
+    & :is(.p-5.mb-4, [aria-label="Security check"]) :is(.text-red-400, .text-red-300, .text-amber-400) { color: #902137 !important; }
+    & > [role="alert"] { color: #fff2e6 !important; }
+    & > [role="alert"] :is(.text-red-300, .text-red-400) { color: #ffddd3 !important; }
+    & a[href="/careers"] { color: #fffbe9 !important; background: #075435 !important; border-color: #f4d383 !important; }
+  }
+
+  /* Native fields retain native type-specific affordances, check marks and validation text. */
+  html[data-mems-season="winter"] :is(form, [role="dialog"] fieldset, .financials-field, .financials-modal, .financials-request-step, .financials-section[aria-labelledby="document-library-heading"]) {
+    & :is(input:not([type="hidden"], [type="range"], [type="color"], [type="checkbox"], [type="radio"], [type="button"], [type="submit"], [type="image"]), textarea, select) {
+      color-scheme: light;
+      background: var(--wf-field) !important;
+      color: var(--wf-ink) !important;
+      caret-color: var(--wf-pine);
+      border: 1px solid var(--wf-line) !important;
+      box-shadow: none !important;
+    }
+    & :is(input, textarea)::placeholder { color: #58695e !important; opacity: 1; }
+    & select option { background: var(--wf-field); color: var(--wf-ink); }
+    & input:is([type="radio"], [type="checkbox"]) { color-scheme: light; accent-color: var(--wf-pine) !important; }
+    & :is(input, select, textarea, button, a, summary):focus-visible {
+      outline: 3px solid #a81a39 !important;
+      outline-offset: 2px !important;
+      box-shadow: 0 0 0 6px #ffdf89 !important;
+    }
+    & :is(input, select, textarea)[aria-invalid="true"] { border: 2px dashed var(--wf-berry) !important; }
+    & input[type="file"]::file-selector-button {
+      background: #e5eedf !important;
+      color: var(--wf-pine) !important;
+      border: 1px solid var(--wf-line) !important;
+    }
+    & :is(button, input)[type="submit"] {
+      background: var(--wf-step) !important;
+      color: #fffcf4 !important;
+      border-color: #f1bc7a !important;
+      text-shadow: none !important;
+    }
+    & :is(button, input)[type="submit"]:enabled:hover { background: #86142a !important; }
+    & :is(button, input)[type="submit"]:disabled { opacity: .67; }
+  }
+
+  /* Authentication screens, utility forms and the technical-report dialog have single panels. */
+  html[data-mems-season="winter"] :is(.board-login .form, dialog:has(form textarea), form:has(#ems-tax-area), form:has(#community-area), form[action="/api/election-review/login"], .financials-modal:has(.financials-field, .financials-signature-panel), .financials-section[aria-labelledby="request-access-heading"], .financials-section[aria-labelledby="document-library-heading"]):not([hidden]) {
+    color: var(--wf-ink) !important;
+    background: var(--wf-panel) !important;
+    border-color: #e3bf71 !important;
+    & :is(h1, h2, h3, label, legend, strong, summary) { color: var(--wf-pine) !important; }
+    & :is(p, small) { color: var(--wf-muted) !important; }
+    & a { color: var(--wf-berry) !important; }
+    & [role="alert"] { color: var(--wf-berry) !important; }
+  }
+  html[data-mems-season="winter"] .board-login .aside { background: var(--winter-evergreen) !important; }
+  html[data-mems-season="winter"] .board-login .panel { background: var(--winter-forest-floor) !important; }
+  html[data-mems-season="winter"] .board-password-toggle { color: var(--wf-pine) !important; }
+  html[data-mems-season="winter"] :is(form:has(#community-area), form:has(#ems-tax-area)) { padding: clamp(14px, 3vw, 24px); border-radius: 8px; }
+  html[data-mems-season="winter"] form:has(#ems-tax-area) {
+    & [role="group"] { border-color: var(--wf-line) !important; }
+    & button:is([aria-pressed], [aria-expanded]) { background: #eff1df !important; color: var(--wf-pine) !important; }
+    & button[aria-pressed="true"] { background: var(--wf-pine) !important; color: white !important; box-shadow: inset 0 -3px #e8c77e; }
+    & [class*="moneyInput"] { background: var(--wf-field) !important; color: var(--wf-pine) !important; border-color: var(--wf-line) !important; }
+    & [class*="moneyInput"] input { border: 0 !important; }
+  }
+
+  /* The financial records wizard uses labeled controls and step buttons outside a form element. */
+  html[data-mems-season="winter"] :is(.financials-modal:has(.financials-field, .financials-signature-panel), .financials-section[aria-labelledby="request-access-heading"], .financials-section[aria-labelledby="document-library-heading"]) {
+    & :is(.financials-modal__body, .financials-request-step, .financials-signature-panel, [class*="pickerBody"], [class*="pickerRow"]) { color: var(--wf-ink) !important; background: var(--wf-panel) !important; }
+    & :is(.financials-modal__bar, .financials-section-heading, [class*="documentPicker"] > summary) { background: var(--wf-pine) !important; color: #fff7df !important; }
+    & :is(.financials-modal__bar, .financials-section-heading, [class*="documentPicker"] > summary) :is(h2, h3, strong, p, small) { color: #fff7df !important; }
+    & :is(.financials-field > span, .financials-acceptance, .financials-copy-choice, [class*="pickerDocument"] > strong) { color: var(--wf-pine) !important; }
+    & [class*="stepActive"], & .financials-primary-button { background: var(--wf-step) !important; color: white !important; }
+    & .financials-secondary-button { background: #edf1de !important; color: var(--wf-pine) !important; border-color: var(--wf-line) !important; }
+  }
+  html[data-mems-season="winter"] .mems-standalone form :is(section:has(> h2), .board-card) {
+    background: linear-gradient(135deg, #07563a, #073f30) !important;
+    border-color: #ba9b59 !important;
+    & :is(h2, h3, legend, label > div:first-child) { color: #ffedbf !important; }
+  }
+  html[data-mems-season="winter"] :is(form:has(input[autocomplete="current-password"]), form:has(input[autocomplete="one-time-code"]), form:has(input[autocomplete="new-password"])):not(.board-login form, [action="/api/election-review/login"]) {
+    color: #fffae8 !important;
+    background: linear-gradient(145deg, #075b39, #06422e) !important;
+    border: 1px solid #dabe75;
+    border-radius: 14px;
+    padding: clamp(14px, 3vw, 22px);
+    & :is(h2, label, legend) { color: #fff4d5 !important; }
+    & button[type="button"] { color: #ffedbb !important; }
+  }
+}

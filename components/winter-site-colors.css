@@ -1,5 +1,6 @@
-/* Screen-only winter colors. Page headers and navigation supply the richest color;
-   report figures, clinical classifications and form controls keep their own palettes. */
+@import "./winter-form-colors.css";
+
+/* Screen-only site colors preserve the meaning of report figures and clinical classifications. */
 @media screen and (forced-colors: none) {
   html[data-mems-season="winter"] {
     --winter-masthead:
@@ -198,5 +199,66 @@
   }
   html[data-mems-season="winter"] .mems-standalone > div:has(input:is([autocomplete="username"], [autocomplete="one-time-code"])):has(img[src*="millstadt-ems/crest"]) {
     background: radial-gradient(ellipse at 80% 0, #0e7851 0, transparent 58%), linear-gradient(120deg, #075c36, #063e29 70%) !important;
+  }
+}
+
+@media screen and (forced-colors: none) {
+  /* Older pages use empty utility spacers between the fleet and story sections. */
+  html[data-mems-season="winter"] .mems-main-pad :is(.h-20, .h-40):empty:is([class~="bg-[#040d1a]"], [class~="from-[#040d1a]"], [class~="from-[#071428]"]) {
+    background: linear-gradient(#064b31, #064333) !important;
+  }
+
+  html[data-mems-season="winter"] .mems-main-pad .mems-story-separator > span {
+    background: linear-gradient(to right, transparent, #f4ca659c);
+  }
+  html[data-mems-season="winter"] .mems-main-pad .mems-story-separator > span:last-child {
+    background: linear-gradient(to left, transparent, #f4ca659c);
+  }
+  html[data-mems-season="winter"] .mems-main-pad .mems-story-separator img {
+    opacity: .94;
+  }
+  html[data-mems-season="winter"] .mems-main-pad section > .h-px[class*="via-[#f0b429]"] {
+    background: linear-gradient(90deg, transparent, #f6d589b3, transparent);
+  }
+  html[data-mems-season="winter"] .mems-main-pad .absolute.inset-0[class~="bg-gradient-to-t"][class~="from-[#040d1a]/30"] {
+    background: linear-gradient(to top, #08422d55, transparent);
+  }
+  html[data-mems-season="winter"] .mems-main-pad .absolute.inset-0[class~="bg-gradient-to-t"][class~="from-[#040d1a]/60"] {
+    background: linear-gradient(to top, #063722aa, transparent);
+  }
+  html[data-mems-season="winter"] .mems-main-pad .absolute.inset-0[class~="bg-gradient-to-t"][class~="from-[#071428]"] {
+    background: linear-gradient(to top, #064333, #06433344 45%, transparent);
+  }
+
+  /* Brand-blue tiles/markers only. Weather, clinical labels and data series
+     retain their source colors. */
+  html[data-mems-season="winter"] .mems-main-pad :is(div,span)[class*="bg-[#1a3a6e]"]:not(form *) {
+    background: #ffe8ae !important;
+    border-color: #e7bc60 !important;
+    box-shadow: inset 0 1px 0 #fff7d9, 0 4px 14px #103c2440;
+  }
+  html[data-mems-season="winter"] .mems-main-pad :is(div,span)[class*="bg-[#1a3a6e]"] svg {
+    color: #165838;
+  }
+  html[data-mems-season="winter"] .mems-main-pad :is(span.uppercase, div.uppercase, h2, h3, .font-black)[class~="text-[#2563eb]"]:not(form *) {
+    color: #ffe39b;
+  }
+  html[data-mems-season="winter"] .mems-main-pad :is(.mems-metric.tone-blue, .mems-metric.tone-cyan) {
+    color: #ffe39b;
+  }
+  html[data-mems-season="winter"] .mems-main-pad :is(.wrap > div, .wrap > article, .grid > article, .grid > div)[class*="rounded-"][class~="bg-[#040d1a]"]:not(form *) {
+    background: var(--winter-evergreen) !important;
+    border-color: #c8a85d80 !important;
+  }
+  html[data-mems-season="winter"] .mems-main-pad a.rounded-2xl[class*="border-[#2563eb]"] {
+    border-color: #e9bf65 !important;
+  }
+  html[data-mems-season="winter"] .mems-main-pad a.rounded-2xl[class*="border-[#2563eb]"]:is(:hover,:focus-visible) {
+    border-color: #ffea99 !important;
+  }
+
+  /* Educational resources use dark ink on their original light reading pages. */
+  html[data-mems-season="winter"] .mems-main-pad :is([class~="bg-[#f4f8fb]"], .call-guide) [class~="text-[#1b58c9]"] {
+    color: #9b1833;
   }
 }

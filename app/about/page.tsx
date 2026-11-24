@@ -1,3 +1,5 @@
+import WinterCrewPhoto from "@/components/WinterCrewPhoto";
+import { getSeasonalThemePublicConfig } from "@/lib/seasonal/themes";
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -51,6 +53,7 @@ export default async function AboutPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const initialWinter = getSeasonalThemePublicConfig().initialTheme === "winter";
   const params = await searchParams;
   const isPreview = params?.preview === "ve";
 
@@ -178,8 +181,9 @@ export default async function AboutPage({
               ))}
             </ul>
           </div>
-          <div className="relative h-[520px] rounded-2xl overflow-hidden shadow-2xl shadow-black/40">
-            <Image
+          <div className="relative h-[520px] [[data-mems-season=winter]_&]:h-auto [[data-mems-season=winter]_&]:aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl shadow-black/40">
+            <WinterCrewPhoto
+              initialWinter={initialWinter}
               src="/images/millstadt-ems/truck1.jpg"
               alt="Millstadt EMS Paramedic Unit"
               fill
