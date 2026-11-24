@@ -1,6 +1,6 @@
 @media screen and (forced-colors: none) {
   /* Shared directory entries, reference links and expandable job/education cards. */
-  html[data-mems-season="winter"] .mems-main-pad :is(a, li, details)[class*="rounded-"]:is([class~="bg-[#040d1a]"], [class~="bg-[#071428]"]):not(form *) {
+  html[data-mems-season="winter"] .mems-main-pad :is(a, li, details, button)[class*="rounded-"]:is([class~="bg-[#040d1a]"], [class~="bg-[#071428]"], [class~="bg-[#061121]"]):not(form *) {
     --panel-paint: var(--winter-evergreen);
     background: var(--panel-paint) !important;
     color: #fff7e5;
@@ -26,4 +26,25 @@
     & pre { color: #194b35 !important; }
   }
   html[data-mems-season="winter"] .mems-main-pad a:has(img) > [class~="bg-[#0b1728]"] { background: #14563a !important; }
+  html[data-mems-season="winter"] .mems-main-pad main[class~="bg-[#030914]"],
+  html[data-mems-season="winter"] .kids-activities-page .kc-hero,
+  html[data-mems-season="winter"] .mems-main-pad > div[class~="bg-[#040d1a]"]:has(#ecg-challenge-heading) { background: var(--winter-forest-floor) !important; }
+  html[data-mems-season="winter"] .kids-activities-page .kc-hero-wash {
+    background: linear-gradient(90deg, #063c2df5, #07513bd4 45%, #063c2a9c) !important;
+  }
+  html[data-mems-season="winter"] .mems-main-pad :is(a[href*="kids-club"], a[href="/community-education"]) span[class~="bg-[#061121]"] {
+    background: #0b573e; color: #fff5da;
+  }
+
+  /* Tint the surrounds of teaching tools without recoloring severity labels, alert states or ECG traces. */
+  html[data-mems-season="winter"] .mems-main-pad :is(.px-10.py-12[class~="bg-[#071428]"], .p-12.gap-10[class~="bg-[#040d1a]"], [aria-labelledby="ecg-challenge-heading"] .border[class~="bg-[#071428]"]) {
+    background: linear-gradient(140deg, #134c39, #12382f) !important;
+    border-color: #d4b97680 !important;
+  }
+  html[data-mems-season="winter"] .mems-main-pad > .min-h-screen[class~="bg-[#040d1a]"]:has(a[href="/community-education"]) {
+    background: #164b35 !important;
+    & .rounded-2xl.p-10.mb-10 { background: #103e30 !important; border-color: #d2b976 !important; }
+  }
+  html[data-mems-season="winter"] [aria-labelledby="ecg-challenge-heading"] button[class~="bg-[#040d1a]"] { background: #164a3b; color: #fff6dd; }
+  html[data-mems-season="winter"] [aria-labelledby="ecg-challenge-heading"] [class~="bg-[#0b1728]"] { background: #213d31; }
 }
