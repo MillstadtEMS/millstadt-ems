@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { PublicMetric, PublicPageHero } from "@/components/site/PublicChrome";
 import SiteIcon from "@/components/site/SiteIcon";
+import verified from "@/lib/millstadt-news/verified.json";
 
 function StorySeparator() {
   return (
@@ -45,34 +46,30 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function NewsPage() {
-  const [items, setItems] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [feed, setFeed] = useState<{ items: NewsItem[]; checkedAt: string; stale: boolean }>({ ...verified, stale: false });
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
+    let pending = false;
     async function load() {
+      if (pending) return;
+      pending = true;
       try {
-        // cache: "no-store" so the browser actually re-hits the API
-        // on each interval tick — the server still throttles upstream
-        // via the 30 min revalidate cache, but the page sees fresh
-        // data the moment that cache rotates.
-        const r = await fetch("/api/millstadt-news", { cache: "no-store" });
-        const d = await r.json();
-        if (cancelled) return;
-        if (d.ok) { setItems(d.items); setError(false); }
-        else if (!items.length) setError(true);
+        const response = await fetch("/api/millstadt-news", { cache: "no-store", signal: controller.signal });
+        if (!response.ok) throw new Error("Headlines unavailable");
+        const data = await response.json();
+        if (!data.ok || !Array.isArray(data.items) || !data.items.length || !Number.isFinite(Date.parse(data.checkedAt))) throw new Error("No verified headlines");
+        if (!controller.signal.aborted) setFeed(previous => Date.parse(data.checkedAt) < Date.parse(previous.checkedAt)
+          ? { ...previous, stale: true } : { items: data.items, checkedAt: data.checkedAt, stale: Boolean(data.stale) });
       } catch {
-        if (!cancelled && !items.length) setError(true);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+        if (!controller.signal.aborted) setFeed(previous => ({ ...previous, stale: true }));
+      } finally { pending = false; }
     }
-    load();
-    const id = setInterval(load, 60_000);
-    return () => { cancelled = true; clearInterval(id); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    void load();
+    const timer = window.setInterval(load, 60_000);
+    return () => { controller.abort(); window.clearInterval(timer); };
   }, []);
+  const { items } = feed;
 
   return (
     <>
@@ -96,33 +93,12 @@ export default function NewsPage() {
 
       <section className="py-14 bg-[#040d1a]">
         <div className="wrap max-w-4xl">
-          {loading && (
-            <div className="space-y-5">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-36 rounded-2xl bg-white/3 animate-pulse" />
-              ))}
-            </div>
-          )}
-
-          {!loading && error && (
-            <div className="text-center py-20 border border-white/10 rounded-2xl bg-[#071428]/60">
-              <span className="mems-icon-tile mx-auto mb-4"><SiteIcon name="newspaper" /></span>
-              <p className="text-slate-300 font-bold">Couldn&apos;t load news right now.</p>
-              <p className="text-slate-700 text-sm mt-2">Check back in a few minutes or visit millstadtnews.com directly.</p>
-            </div>
-          )}
-
-          {!loading && !error && items.length === 0 && (
-            <div className="text-center py-20 border border-white/10 rounded-2xl bg-[#071428]/60">
-              <span className="mems-icon-tile mx-auto mb-4"><SiteIcon name="file" /></span>
-              <p className="text-slate-300 font-bold">No news stories found.</p>
-            </div>
-          )}
-
-          {!loading && !error && items.length > 0 && (
-            <div>
+          {feed.stale && <p className="text-slate-300 text-sm mb-5" role="status">
+            Showing the publisher’s headlines last verified on {new Date(feed.checkedAt).toLocaleDateString("en-US", { timeZone: "America/Chicago", month: "long", day: "numeric", year: "numeric" })}.
+          </p>}
+          <div>
               {items.map((item, i) => (
-                <div key={i}>
+                <div key={item.link}>
                   <a
                     href={item.link}
                     target="_blank"
@@ -158,11 +134,9 @@ export default function NewsPage() {
                   {i < items.length - 1 && <StorySeparator />}
                 </div>
               ))}
-            </div>
-          )}
+          </div>
 
-          {!loading && !error && items.length > 0 && (
-            <div className="mt-10 text-center">
+          <div className="mt-10 text-center">
               <a
                 href="https://www.millstadtnews.com"
                 target="_blank"
@@ -172,8 +146,7 @@ export default function NewsPage() {
                 View all stories on millstadtnews.com
                 <SiteIcon name="external" className="w-4 h-4" />
               </a>
-            </div>
-          )}
+          </div>
         </div>
       </section>
       </>
