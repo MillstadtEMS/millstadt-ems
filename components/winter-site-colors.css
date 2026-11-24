@@ -1,0 +1,199 @@
+/* Screen-only winter colors. Page headers and navigation supply the richest color;
+   report figures, clinical classifications and form controls keep their own palettes. */
+@media screen and (forced-colors: none) {
+  html[data-mems-season="winter"] {
+    --winter-masthead:
+      repeating-linear-gradient(126deg, transparent 0 28px, #fff6ce0c 28px 29px, transparent 29px 54px),
+      linear-gradient(119deg, #08733d 0%, #006038 51.2%, #d8a848 51.3%, #ffdd72 51.55%, #b90d29 51.7%, #ce1631 100%);
+    --winter-evergreen: linear-gradient(130deg, #087543, #00653a 48%, #00532f);
+    --winter-cranberry: linear-gradient(130deg, #cb1430, #b60c27 55%, #920820);
+    --winter-forest-floor: radial-gradient(ellipse at 96% 0%, #087445, transparent 66%), #064b31;
+    --winter-dark-floor: radial-gradient(ellipse at 6% 0%, #ad1634, transparent 67%), #71102a;
+    --winter-brass: #ffea99;
+    --winter-stitch: #ffce5a;
+  }
+
+  html[data-mems-season="winter"] .mems-main-pad {
+    --mems-panel: #065e3a;
+    --mems-panel-2: #0b7042;
+    --mems-line: #ffe79a70;
+    --mems-gold: var(--winter-brass);
+    background: var(--winter-dark-floor);
+  }
+
+  /* Dark editorial sections shared by fleet, education, events, news and careers. */
+  html[data-mems-season="winter"] .mems-main-pad:not(:has(.hero-content))
+    :is(section, main)[class~="bg-[#040d1a]"] {
+    background: var(--winter-forest-floor) !important;
+  }
+  html[data-mems-season="winter"] .mems-main-pad:not(:has(.hero-content))
+    section:is([class~="bg-[#071428]"], [class~="bg-[#0a0f1f]"], [class~="bg-[#061121]"], [class~="bg-[#030914]"]) {
+    background: var(--winter-dark-floor) !important;
+  }
+
+  html[data-mems-season="winter"] .mems-main-pad:not(:has(.hero-content))
+    :is(.mems-page-hero,
+      section[aria-labelledby="financial-library-title"],
+      section:has(> .wrap a[href="/forms"]):has(h1),
+      section:has(> .wrap h1):is([class~="bg-[#040d1a]"], [class~="from-[#071428]"]),
+      main > header:first-child:has(h1)) {
+    background: var(--winter-masthead) !important;
+    box-shadow: inset 0 -2px #ffcf58, inset 0 -5px #fff1c448;
+  }
+  html[data-mems-season="winter"] .mems-main-pad
+    section:has(> .wrap h1) > .absolute.inset-0:is([class~="from-[#071428]"], [class*="bg-[radial-gradient"]) {
+    background: transparent !important;
+  }
+  html[data-mems-season="winter"] .mems-main-pad .mems-page-hero :is(.mems-eyebrow, h1 span),
+  html[data-mems-season="winter"] .mems-main-pad section:has(> .wrap h1) [class~="text-[#f0b429]"] {
+    color: var(--winter-brass);
+  }
+
+  html[data-mems-season="winter"] .mems-main-pad:not(:has(.hero-content))
+    :is(.mems-action-card, .mems-callout, .mems-metric,
+      article[class~="bg-[#071428]"], a[class~="bg-[#071428]"],
+      div[class~="bg-[#071428]"][class*="rounded-"]) {
+    background: var(--winter-evergreen) !important;
+    border-color: #ffdc8880 !important;
+  }
+  html[data-mems-season="winter"] .mems-main-pad:not(:has(.hero-content)) :is(.mems-action-grid > .mems-action-card:nth-child(3n+1), .mems-page-hero .mems-metric:first-child) {
+    background: var(--winter-cranberry) !important;
+    border-color: #ffd16f94 !important;
+  }
+  html[data-mems-season="winter"] .mems-main-pad :is(.mems-action-card, .mems-callout) .mems-icon-tile {
+    color: #113c28;
+    background: #ffe18c;
+    border-color: #fff3c9;
+  }
+  html[data-mems-season="winter"] .mems-main-pad :is(.mems-page-hero__copy, .mems-action-card, .mems-callout) p,
+  html[data-mems-season="winter"] .mems-main-pad .mems-metric span {
+    color: #fff5e8;
+  }
+  html[data-mems-season="winter"] .mems-main-pad :is(.mems-action-card, .mems-callout):is(:hover, :focus-visible) {
+    border-color: var(--winter-brass) !important;
+  }
+  html[data-mems-season="winter"] .mems-main-pad:not(:has(.hero-content)) section > .wrap a[class~="bg-[#2563eb]"] {
+    color: #fffaf0;
+    background: linear-gradient(140deg, #d61c32, #a30b26) !important;
+    box-shadow: inset 0 1px #ecb49380, 0 5px 16px #28061545;
+  }
+
+  /* Snowy cards break up the jewel-colored rows and keep their captions dark. */
+  html[data-mems-season="winter"] .mems-main-pad:not(:has(.hero-content)) .mems-action-grid > .mems-action-card:nth-child(3n) {
+    background: linear-gradient(135deg, #fffef7, #fff1ca) !important;
+    border-color: #f5cb59 !important;
+  }
+  html[data-mems-season="winter"] .mems-action-grid > .mems-action-card:nth-child(3n) :is(h2, p) {
+    color: #0c4933;
+  }
+  html[data-mems-season="winter"] .mems-action-grid > .mems-action-card:nth-child(3n) .mems-card-link {
+    color: #a6102a;
+  }
+  html[data-mems-season="winter"] .mems-action-grid > .mems-action-card:nth-child(3n) .mems-badge {
+    color: #713820;
+    background: #ffe4a0;
+    border-color: #c68731;
+  }
+  html[data-mems-season="winter"] .mems-main-pad :is(.mems-page-hero, section:has(> .wrap h1)) :is(.text-slate-300, .text-slate-400, .text-slate-500) {
+    color: #fff6e8;
+  }
+
+  html[data-mems-season="winter"] .mems-main-pad:not(:has(.hero-content))
+    section:is([class~="bg-[#040d1a]"], [class~="bg-[#071428]"], [class~="bg-[#0a0f1f]"])
+    :is(.text-slate-300, .text-slate-400, .text-slate-500):not(form *):not(.mems-action-card *) {
+    color: #f6faee;
+  }
+
+  /* The finance report retains light paper and its logo's original footprint. */
+  html[data-mems-season="winter"] .mems-main-pad > div:has(> section[aria-labelledby="financial-library-title"]) {
+    --paper: #fffaee;
+    --blue: #a8102c;
+    --blue-dark: #880c26;
+    --ink: #123b26;
+    --gold: #ffea99;
+  }
+  html[data-mems-season="winter"] section[aria-labelledby="financial-library-title"] > [aria-hidden="true"] {
+    background: #fff5b814;
+  }
+  html[data-mems-season="winter"] section[aria-labelledby="financial-library-title"] [aria-label="Official external resources"] a {
+    background: #00643a;
+    border-color: #ffdc75;
+    color: #fff8e8;
+  }
+  html[data-mems-season="winter"] section[aria-labelledby="financial-library-title"] [aria-label="Official external resources"] a:is(:hover,:focus-visible) {
+    background: #b2112d;
+  }
+  html[data-mems-season="winter"] .mems-main-pad :is(#personnel, #document-library, #annual-call-volume) {
+    background: #fffbed;
+    border-color: #ebd18a;
+  }
+  html[data-mems-season="winter"] .mems-main-pad #personnel :is(h2, dd),
+  html[data-mems-season="winter"] .mems-main-pad #district-support p {
+    color: #006a39;
+  }
+  html[data-mems-season="winter"] .mems-main-pad #pay-transparency {
+    background: #e4f4df;
+    border-color: #aed3ae;
+  }
+
+  /* The election report uses paper and ink; its vote bar, score and chart retain
+     their data colors. The same masthead treatment applies for every vote outcome. */
+  html[data-mems-season="winter"] .mems-main-pad article[data-lead] header {
+    background: linear-gradient(90deg, #07713f 0%, #005931 57%, #be1131);
+    background-clip: padding-box;
+    color: #fff6df;
+    border-color: #faca55;
+    box-shadow: 24px 0 #be1131, -24px 0 #07713f;
+  }
+  html[data-mems-season="winter"] .mems-main-pad article[data-lead] header :is(span, b) {
+    color: #fff3d6;
+  }
+  html[data-mems-season="winter"] .mems-main-pad article[data-lead] #election-heading {
+    color: #ad142d;
+  }
+  html[data-mems-season="winter"] .mems-main-pad > main[style*="max-width"]:has(> h1) {
+    background: radial-gradient(ellipse 90% 15rem at 100% 0%, #b11936, transparent 85%), linear-gradient(#075e3b, #063f2b 25rem);
+  }
+  html[data-mems-season="winter"] .mems-main-pad section:has(img[src*="senior-center-1"]) div:has(> h1) {
+    background: var(--winter-cranberry) !important;
+    border-color: var(--winter-stitch) !important;
+  }
+
+  /* A colored photographic scrim keeps the original Kids Club photography visible. */
+  html[data-mems-season="winter"] .mems-main-pad :is(
+    .kc-hero-wash, section[class~="bg-[#030914]"]:has(> img) > img + .absolute.inset-0) {
+    background: linear-gradient(102deg, #005a37f2 2%, #006b3dda 39%, #381c229c 65%, #ae102db0 100%);
+  }
+  html[data-mems-season="winter"] .mems-main-pad section:has(.kids-club-winter-wordmark) > img + div + .absolute.inset-0 {
+    background: linear-gradient(180deg, transparent 12%, #096a3b30 55%, #064b2fe0);
+  }
+  html[data-mems-season="winter"] .mems-main-pad .kc-hero-console {
+    background: var(--winter-evergreen);
+    border-color: #ffd46a;
+  }
+  html[data-mems-season="winter"] .mems-main-pad .kc-hero .kc-primary-action {
+    color: #fff9e9;
+    background: #bd1230;
+    border-color: var(--winter-brass);
+  }
+  html[data-mems-season="winter"] .mems-main-pad [aria-labelledby="call-guide-title"] {
+    border-color: #d31738;
+    color: #006838;
+  }
+
+  /* Operational colors stay confined to the outer branding and navigation.
+     The Board portal's selectable light/dark schemes keep their own text contrast. */
+  html[data-mems-season="winter"] .mems-standalone :is(.lounge-sidebar-desktop, .lounge-mobile-bar, .lounge-bottom-nav) {
+    background: linear-gradient(120deg, #075332, #06482c 56%, #8b142e) !important;
+    border-color: #e5b951 !important;
+  }
+  html[data-mems-season="winter"] .mems-standalone .board-root :is(.board-top, .board-side, .board-login .aside) {
+    background: linear-gradient(117deg,
+      color-mix(in srgb, var(--b-navigation) 82%, #04a458),
+      color-mix(in srgb, var(--b-topbar) 84%, #de1e42));
+    border-color: color-mix(in srgb, var(--b-hair) 65%, #eabf56);
+  }
+  html[data-mems-season="winter"] .mems-standalone > div:has(input:is([autocomplete="username"], [autocomplete="one-time-code"])):has(img[src*="millstadt-ems/crest"]) {
+    background: radial-gradient(ellipse at 80% 0, #bb1535 0, transparent 48%), linear-gradient(120deg, #075c36, #063e29 70%) !important;
+  }
+}

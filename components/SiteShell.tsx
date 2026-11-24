@@ -2,7 +2,10 @@
 
 import { usePathname } from "next/navigation";
 import "./winter-workspace.css";
+import "./winter-site-colors.css";
 import WinterPageSurprises from "./WinterPageSurprises";
+import WinterStreetParade from "./WinterStreetParade";
+import WinterMusicPlayer from "./WinterMusicPlayer";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 
 export default function SiteShell({
@@ -30,6 +33,7 @@ export default function SiteShell({
   if (standalone) {
     return (
       <main className="mems-standalone flex-1 w-full overflow-x-hidden" style={{ paddingTop: 0 }}>
+        <WinterStreetParade pathname={pathname} compact />
         {children}
       </main>
     );
@@ -42,6 +46,8 @@ export default function SiteShell({
         className="flex-1 w-full overflow-x-hidden mems-main-pad"
         style={{ paddingTop: "120px" }}
       >
+        <WinterMusicPlayer />
+        <WinterStreetParade pathname={pathname} compact={pathname === "/"} />
         {children}
       </main>
       <WinterPageSurprises pathname={pathname} />

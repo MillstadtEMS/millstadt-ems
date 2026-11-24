@@ -6,13 +6,6 @@
   background: #122642;
   border-block: 1px solid #bda371;
 }
-.viewport {
-  width: 100%;
-  overflow-x: auto;
-  scrollbar-width: none;
-  overscroll-behavior-x: contain;
-}
-.viewport::-webkit-scrollbar { display: none; }
 .artboard {
   position: relative;
   isolation: isolate;
@@ -159,7 +152,6 @@
   height: 17%;
   pointer-events: none;
 }
-.viewport[data-zoomed="true"] .artboard { width: 145%; }
 .controls {
   display: flex;
   justify-content: center;
@@ -187,10 +179,8 @@
 .controls > button:disabled { opacity: .36; cursor: default; }
 .controls > button:focus-visible { outline: 2px solid #ffe0a0; outline-offset: -3px; }
 .controls > button:enabled:hover { background: #e8efd415; }
-.viewport:focus-visible { outline: 2px solid #ffdd9f; outline-offset: -3px; }
 @media screen and (max-width: 1023px) {
   .artboard { container-type: inline-size; }
-  .viewport[data-zoomed="true"] .artboard { width: 1080px; }
   .greeting { top: 3.6%; font-size: clamp(1.15rem, 5.8cqw, 3.9rem); }
   .greeting span { font-size: clamp(.48rem, 1.42cqw, .65rem); }
 }
@@ -198,7 +188,5 @@
   .glows { display: none; }
 }
 @media print {
-  .viewport { overflow: visible; }
-  .viewport[data-zoomed="true"] .artboard { width: 100%; }
   .controls, .glows { display: none; }
 }

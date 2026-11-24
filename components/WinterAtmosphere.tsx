@@ -1,6 +1,5 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 import "./winter-atmosphere.css";
@@ -20,6 +19,21 @@ function snowTexture(layer: number) {
   glow.addColorStop(1, "rgba(186,214,242,0)");
   context.fillStyle = glow;
   context.fillRect(0, 0, 32, 32);
+  if (layer > 0) {
+    context.translate(16, 16);
+    context.lineCap = "round";
+    for (const [color, thickness] of [["#63879c", 2.8], ["#f9fdff", 1.7]] as const) {
+      context.strokeStyle = color;
+      context.lineWidth = thickness;
+      context.beginPath();
+      for (let arm = 0; arm < 6; arm++) {
+        context.moveTo(0, 0); context.lineTo(0, -12);
+        context.moveTo(-3, -9); context.lineTo(0, -6); context.lineTo(3, -9);
+        context.rotate(Math.PI / 3);
+      }
+      context.stroke();
+    }
+  }
   return texture;
 }
 
@@ -32,7 +46,6 @@ function Snowfall() {
     if (!canvas || !context) return;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
-    if (connection?.saveData) return;
     const textures = [0, 1, 2].map(snowTexture);
     let width = 0;
     let height = 0;
@@ -49,9 +62,9 @@ function Snowfall() {
         x: Math.random() * (width + 36) - 18,
         y: Math.random() * (height + 36) - 18,
         phase: Math.random() * Math.PI * 2,
-        size: [1.8, 4.4, 9.5][layer] * (0.7 + Math.random() * 0.9),
-        speed: [12, 27, 51][layer] * (0.75 + Math.random() * 0.55),
-        alpha: [0.58, 0.79, 0.36][layer] * (0.65 + Math.random() * 0.35),
+        size: [3.2, 7.2, 13][layer] * (0.75 + Math.random() * 0.8),
+        speed: [19, 38, 62][layer] * (0.75 + Math.random() * 0.55),
+        alpha: [0.7, 0.92, 0.78][layer] * (0.72 + Math.random() * 0.28),
       };
     }
 
@@ -66,7 +79,7 @@ function Snowfall() {
         if (flake.x > width + 10) flake.x = -10;
         if (flake.x < -10) flake.x = width + 10;
         const edge = Math.abs(flake.x / width - 0.5) * 2;
-        context.globalAlpha = flake.alpha * (0.4 + edge * 0.75);
+        context.globalAlpha = flake.alpha * (0.65 + edge * 0.35);
         context.drawImage(textures[flake.layer], flake.x, flake.y, flake.size, flake.size);
       }
       context.globalAlpha = 1;
@@ -80,7 +93,7 @@ function Snowfall() {
       canvas.width = Math.round(width * scale);
       canvas.height = Math.round(height * scale);
       context.setTransform(scale, 0, 0, scale, 0, 0);
-      const count = Math.min(170, Math.max(48, Math.round(width * height / 5700)));
+      const count = Math.min(connection?.saveData ? 65 : 210, Math.max(55, Math.round(width * height / 4600)));
       flakes = Array.from({ length: count }, (_, index) => makeFlake(index));
       draw(0);
     }
@@ -119,6 +132,5 @@ function Snowfall() {
 
 export default function WinterAtmosphere() {
   const winter = useWinterTheme();
-  const pathname = usePathname();
-  return winter && pathname === "/" ? <Snowfall /> : null;
+  return winter ? <Snowfall /> : null;
 }

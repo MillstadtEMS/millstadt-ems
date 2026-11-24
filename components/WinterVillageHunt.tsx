@@ -186,6 +186,10 @@ export function WinterVillageHuntTarget() {
     if (!scene || !spot || found) return;
     let start: { pointerId: number; x: number; y: number } | undefined;
     function down(e: PointerEvent) {
+      if (e.target instanceof Element && e.target.closest("[data-snow-chief] button")) {
+        start = undefined;
+        return;
+      }
       if (e.isPrimary && e.button === 0) start = { pointerId: e.pointerId, x: e.clientX, y: e.clientY };
     }
     function up(e: PointerEvent) {

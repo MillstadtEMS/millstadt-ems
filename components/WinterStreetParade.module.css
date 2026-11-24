@@ -1,0 +1,105 @@
+.street {
+  --height: clamp(100px, 8.8vw, 140px);
+  position: relative;
+  width: 100%;
+  height: var(--height);
+  isolation: isolate;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  border-block: 1px solid #ffce5e;
+  background: #173540;
+  box-shadow: inset 0 -1px 0 #cde2f5;
+}
+.town, .streetLights, .ice, .snow, .drift { position: absolute; inset: 0; }
+.town {
+  background: linear-gradient(180deg,#1c324232,#192f2c25 78%,#e3edfa33), url("/images/winter/village.webp") center 57% / cover no-repeat;
+  filter: saturate(1.17) brightness(1.08);
+}
+.street[data-winter-parade="fleet"] .town, .street[data-winter-parade="charity"] .town {
+  background-image: linear-gradient(180deg,#0a233632,#132c291a 75%,#c4d3e52b), url("/images/winter/millstadt-village.webp");
+  background-position: center 61%;
+}
+.street[data-winter-parade="rink"] .town { background-position: center 66%; }
+.streetLights {
+  opacity: .72;
+  background: linear-gradient(180deg, #0d593978, transparent 11%), radial-gradient(ellipse at 18% 36%,#f9c36d38,transparent 14%),radial-gradient(ellipse at 77% 39%,#fca85135,transparent 12%);
+}
+.ice {
+  top: auto;
+  height: 24%;
+  background: linear-gradient(180deg, #c5d8e501, #a8bfd0a8 17%, #d9e4e9bf 62%, #849cafb5);
+}
+.mark { position: absolute; bottom: 6%; height: 86%; width: clamp(67px, 13vw, 175px); }
+.mark[data-slot="0"] { left: 6.8%; height: 82%; }
+.mark[data-slot="1"] { left: 23.5%; }
+.mark[data-slot="2"] { left: 45%; height: 89%; }
+.mark[data-slot="3"] { left: 65%; height: 85%; }
+.mark[data-slot="4"] { right: 4%; height: 78%; }
+.mark[data-player="beagle"] { height: 68%; }
+.mark[data-player="engine"] { height: 91%; width: clamp(89px,17vw,198px); }
+.mark[data-player="sleigh"] { width: clamp(83px,14vw,159px); }
+.lane, .player { position: absolute; inset: 0; }
+.player { transform-origin: 50% 93%; }
+.player img { object-fit: contain; object-position: center bottom; filter: drop-shadow(.6px 2px 1.4px #304147bb); }
+.mark[data-player="skater"] .lane { animation: glide 6.9s ease-in-out -2.2s infinite alternate; }
+.mark[data-player="skater"] .player { animation: edge 6.9s ease-in-out -2.2s infinite alternate; }
+.mark[data-player="family"] .lane { animation: glide 8.4s ease-in-out -5s infinite alternate-reverse; }
+.mark[data-player="family"] .player { animation: edge 8.4s ease-in-out -5s infinite alternate-reverse; }
+.mark:is([data-player="sleigh"],[data-player="engine"]) .lane { animation: roll 9.4s ease-in-out -1.4s infinite alternate; }
+.mark:is([data-player="sleigh"],[data-player="engine"]) .player { animation: runners 1.5s ease-in-out infinite alternate; }
+.mark:is([data-player="carolers"],[data-player="neighbors"]) .player { animation: sing 3.15s ease-in-out -.9s infinite alternate; }
+.mark[data-player="grinch"] .player { animation: twoStep 2.3s ease-in-out -.28s infinite; }
+.mark[data-player="crew"] .player { animation: tossing 4.2s ease-out -1.5s infinite; }
+.mark[data-player="beagle"] .player { animation: snooze 4.6s ease-in-out -.5s infinite alternate; }
+.steam { position: absolute; left: 50%; top: 30%; width: 15%; height: 24%; }
+.steam i { position: absolute; top: 0; left: 10%; height: 85%; width: 36%; border-left: 1.6px solid #fff0d29e; border-radius: 90%; animation: steaming 2.4s ease-out infinite; }
+.steam i+i { left: 40%; animation-delay: -1.1s; }
+.runningLights { position:absolute; inset:0; }
+.runningLights i { position: absolute; width: 3.8%; aspect-ratio: 1; bottom: 23%; right: 8%; border-radius: 50%; background: radial-gradient(circle,#fff8dc 10%,#ffe2a485 34%,transparent 74%); animation: light 3.9s ease-in-out infinite alternate; }
+.runningLights i+i { right: 12%; bottom: 25%; animation-delay: -.7s; }
+.snow {
+  inset: -60% -3% 0;
+  opacity: .53;
+  background-image: radial-gradient(circle at 7px 14px,#eafaffd9 1px,transparent 1.9px), radial-gradient(circle at 36px 31px,#fff9dfab 1px,transparent 2.4px);
+  background-size: 85px 54px, 127px 77px;
+  animation: powder 8s linear infinite;
+}
+.drift {
+  top: auto; bottom: -1px; height: 14%;
+  background: url("/images/winter/village-snowbank.webp") center / 100% 100% no-repeat;
+}
+.bough {
+  position: absolute; top: -9%; left: -2%; height: 83%; width: clamp(60px,12vw,140px);
+  background: url("/images/winter/evergreen-swag.webp") left top / contain no-repeat; filter: drop-shadow(1px 2px 1px #0a281d77);
+}
+.bough:last-child { left:auto; right: -2%; transform: scaleX(-1); }
+.street:not([data-playing="true"]) *, .street:not([data-playing="true"]) *::before { animation-play-state: paused !important; }
+@keyframes glide { from { transform: translateX(-23%); } to { transform: translateX(24%); } }
+@keyframes edge { from { transform: rotate(-4.2deg); } to { transform: rotate(3deg); } }
+@keyframes roll { from { transform: translateX(-14%); } to { transform: translateX(14%); } }
+@keyframes runners { from { transform: translateY(0) rotate(-.45deg); } to { transform: translateY(-1.6%) rotate(.35deg); } }
+@keyframes sing { from { transform: rotate(-1.65deg); } to { transform: rotate(1.35deg) translateY(-1%); } }
+@keyframes twoStep { 0%,100% { transform: rotate(-2.3deg); } 28% { transform: translateY(-3%) rotate(.6deg); } 58% { transform: rotate(3deg); } 80% { transform: translateY(-2%); } }
+@keyframes tossing { 0%,100% { transform: translateY(2%) rotate(-1deg); } 30% { transform: translateY(-5%) rotate(2deg); } 50%, 78% { transform: translateY(0) rotate(.6deg); } }
+@keyframes snooze { from { transform: rotate(-1deg); } to { transform: rotate(1deg) scaleY(.99); } }
+@keyframes steaming { from { opacity: 0; transform: translateY(28%) scale(.6); } 24% { opacity:.85; } to { opacity: 0; transform: translateY(-67%) scale(1.3); } }
+@keyframes light { from { opacity: .2; } to { opacity: .95; } }
+@keyframes powder { from { background-position: 0 0, 0 0; } to { background-position: 85px 54px, -127px 77px; } }
+.street[data-compact="true"] { --height: clamp(62px,5.5vw,84px); }
+@media (max-width: 650px) {
+  .street { --height: clamp(76px,21vw,103px); }
+  .town { background-position: center 61%; }
+  .mark { width: 18%; }
+  .mark[data-slot="0"] { left: 1%; }
+  .mark[data-slot="1"] { left: 20.2%; }
+  .mark[data-slot="2"] { left: 41.5%; }
+  .mark[data-slot="3"] { left: 60.5%; }
+  .mark[data-slot="4"] { right: .2%; }
+  .mark[data-player="engine"] { width: 25%; }
+  .mark[data-player="sleigh"] { width: 21%; }
+  .bough { width: 15%; height: 55%; }
+  .street[data-compact="true"] { --height: 62px; }
+}
+@media (prefers-reduced-motion: reduce) { .street * { animation: none !important; } }
+@media print { .street { display: none; } }

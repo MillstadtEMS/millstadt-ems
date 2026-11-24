@@ -60,12 +60,12 @@ export default function RootLayout({
         <AnalyticsTracker />
         <PrivacyPreferences />
         <SeasonalThemeController config={seasonalTheme} />
+        <WinterAtmosphere />
         <SiteShell
           header={
             <>
               <CallTicker />
               <Nav />
-              <WinterAtmosphere />
             </>
           }
           footer={

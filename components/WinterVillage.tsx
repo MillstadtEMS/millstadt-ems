@@ -6,7 +6,6 @@ import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 import WinterStreet, { WinterCocoaControl, WinterCocoaProvider, WinterStreetForeground } from "./WinterStreet";
 import { WinterVillageBellControl, WinterVillageBellsProvider, WinterVillageBellTower } from "./WinterVillageBells";
 import { WinterVillageHuntControls, WinterVillageHuntProvider, WinterVillageHuntTarget } from "./WinterVillageHunt";
-import WinterTowerDetail from "./WinterTowerDetail";
 import WinterSnowChief from "./WinterSnowChief";
 import styles from "./WinterVillage.module.css";
 
@@ -31,64 +30,22 @@ const fleet = [
 function VillagePostcard() {
   const viewport = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
-  const [zoomed, setZoomed] = useState(false);
-  const [pan, setPan] = useState({ left: false, right: false });
-
-  function updatePan() {
-    const el = viewport.current;
-    if (!el) return;
-    const left = el.scrollLeft > 2;
-    const right = el.scrollWidth - el.clientWidth - el.scrollLeft > 2;
-    setPan((previous) => previous.left === left && previous.right === right ? previous : { left, right });
-  }
-
   useEffect(() => {
     const el = viewport.current;
     if (!el) return;
-    let wasWideEnough = true;
-    function frameVillage() {
-      if (!el) return;
-      const travel = el.scrollWidth - el.clientWidth;
-      if (travel > 2 && wasWideEnough) el.scrollLeft = travel / 2;
-      wasWideEnough = travel <= 2;
-      updatePan();
-    }
-    frameVillage();
-    const resize = new ResizeObserver(frameVillage);
-    resize.observe(el);
-    if (el.firstElementChild) resize.observe(el.firstElementChild);
     const visibility = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting));
     visibility.observe(el);
-    return () => {
-      resize.disconnect();
-      visibility.disconnect();
-    };
+    return () => visibility.disconnect();
   }, []);
-
-  function panVillage(direction: -1 | 1) {
-    const el = viewport.current;
-    if (!el) return;
-    el.scrollBy({
-      left: direction * el.clientWidth * 0.72,
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
-    });
-  }
 
   return (
     <section className={styles.postcard} aria-labelledby="winter-village-title">
-      <div className={styles.viewport} ref={viewport} onScroll={updatePan} id="winter-village-picture"
-        data-zoomed={zoomed} tabIndex={zoomed && (pan.left || pan.right) ? 0 : undefined}
-        role="group" aria-label="Illustrated Millstadt village"
-        onKeyDown={(event) => {
-          if (event.defaultPrevented || event.target !== event.currentTarget || !zoomed || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
-          event.preventDefault();
-          panVillage(event.key === "ArrowLeft" ? -1 : 1);
-        }}>
+      <div ref={viewport} id="winter-village-picture" role="group" aria-label="Illustrated Millstadt village">
         <div className={styles.artboard} data-visible={inView}>
           <div className={styles.town} data-hunt-scene="">
             <Image className={styles.village} src="/images/winter/millstadt-village.webp"
               alt="A snowy Millstadt Christmas postcard with the old Tin Man water tower, the brick corner store, the former firehouse and St. James Catholic Church. A snowman and Santa flank the street."
-              fill sizes="(max-width: 720px) 720px, 100vw" unoptimized />
+              fill sizes="100vw" unoptimized />
             <WinterVillageBellTower />
             <div className={styles.glows} aria-hidden="true">
               {nightLights.map(({ x, y, delay, period }) => (
@@ -126,26 +83,6 @@ function VillagePostcard() {
         </div>
       </div>
       <div className={styles.controls} role="group" aria-label="Explore the Christmas village">
-        <button type="button" className={styles.zoom} onClick={() => setZoomed((current) => !current)}
-          aria-controls="winter-village-picture" aria-pressed={zoomed}>
-          <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
-            strokeWidth="1.8" strokeLinecap="round">
-            <circle cx="10" cy="10" r="6.5" /><path d="m15 15 5.5 5.5M7 10h6" />
-            {!zoomed && <path d="M10 7v6" />}
-          </svg>
-          {zoomed ? "Zoom out" : "Zoom in"}
-        </button>
-        {zoomed && ([-1, 1] as const).map((direction) => (
-            <button key={direction} type="button" disabled={direction === -1 ? !pan.left : !pan.right}
-              onClick={() => panVillage(direction)} aria-controls="winter-village-picture"
-              aria-label={direction === -1 ? "View the left side of the village" : "View the right side of the village"}>
-              <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
-                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d={direction === -1 ? "m14 5-7 7 7 7" : "m10 5 7 7-7 7"} />
-              </svg>
-            </button>
-        ))}
-        <WinterTowerDetail />
         <WinterVillageBellControl />
         <WinterCocoaControl />
       </div>
