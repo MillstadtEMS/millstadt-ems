@@ -1,0 +1,187 @@
+/* Public chrome uses the Christmas palette. The dispatch ticker, weather
+   warnings, and forms keep their purpose-specific colors. */
+html[data-mems-season="winter"] :is(.mems-site-nav, .mems-footer, .mems-main-pad) {
+  --mems-gold: #ffe2a4;
+  --mems-season-accent: #d1ac6a;
+}
+
+html[data-mems-season="winter"] .mems-site-nav .mems-nav-bar {
+  background: linear-gradient(100deg, #102e25 0%, #071d1b 45%, #331720 100%) !important;
+  border-bottom-color: #937b51 !important;
+}
+
+html[data-mems-season="winter"] .mems-site-nav .mems-nav-panel,
+html[data-mems-season="winter"] .mems-site-nav > .fixed.bottom-0 > div {
+  background: linear-gradient(125deg, #102e27, #0a211c 68%, #231a20) !important;
+  border-color: #816b47 !important;
+}
+
+html[data-mems-season="winter"] .mems-site-nav > .fixed.bottom-0 .text-slate-500 {
+  color: #b2bfb5;
+}
+
+html[data-mems-season="winter"] .mems-footer {
+  background: radial-gradient(ellipse at 14% 0, #234734, transparent 58%), #0a1c19 !important;
+  border-top-color: #897957 !important;
+}
+
+html[data-mems-season="winter"] .mems-footer address svg {
+  color: #dfbf81;
+}
+
+html[data-mems-season="winter"] .mems-main-pad {
+  background: #0a201b;
+}
+
+html[data-mems-season="winter"] .mems-page-hero {
+  background: radial-gradient(ellipse at 88% -10%, #38432a, transparent 55%), linear-gradient(115deg, #0c3029, #142321);
+}
+
+html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) {
+  --holiday-gold: #f6dca2;
+  --holiday-cream: #fff9e9;
+}
+
+html[data-mems-season="winter"] .mems-main-pad:has(.hero-content)::after {
+  background: radial-gradient(ellipse at 72% 12%, #79674032, transparent 40%), linear-gradient(118deg, #1a372935, transparent 55%);
+}
+
+html[data-mems-season="winter"] .mems-main-pad > section:has(> .hero-content) > .bg-gradient-to-t {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 22%, #0714164a 9%, transparent 56%),
+    linear-gradient(180deg, #0b2f321f, #0e222938 42%, #1124259c 73%, #0a211de8);
+}
+
+/* The carousel gradient uses inline z-index: 2. Put the entire public hero
+   copy above it, including controls and the evergreen foreground. */
+html[data-mems-season="winter"] .mems-main-pad > section:first-child:has(> .hero-content) > .hero-content {
+  z-index: 5;
+}
+
+html[data-mems-season="winter"] .hero-top {
+  position: relative;
+  isolation: isolate;
+}
+
+html[data-mems-season="winter"] .hero-top::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  top: -9px;
+  left: -14px;
+  width: clamp(134px, 29vw, 545px);
+  aspect-ratio: 760 / 563;
+  background: url("/images/winter/evergreen-swag.webp") left top / contain no-repeat;
+  filter: drop-shadow(2px 9px 8px #07121482);
+}
+
+html[data-mems-season="winter"] .hero-top h1 {
+  color: var(--holiday-cream);
+  text-shadow: 0 3px 20px #051b19cc, 0 1px 4px #031a19bb;
+}
+
+html[data-mems-season="winter"] .hero-top h1 span {
+  color: #f9d693;
+  background: linear-gradient(175deg, #fff2cf, #f3d99d 58%, #ddb77c 95%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 3px 9px #061c20a6);
+}
+
+html[data-mems-season="winter"] .hero-top > div:first-child,
+html[data-mems-season="winter"] .hero-top > p {
+  filter: drop-shadow(0 2px 5px #071b1c99);
+}
+
+html[data-mems-season="winter"] .hero-bottom {
+  background: linear-gradient(100deg, #10342eeb, #162b28ef 50%, #342128e8);
+  border-color: #dec79740;
+  box-shadow: inset 0 1px #e2f3f040;
+}
+
+html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) > section[class~="bg-[#040d1a]"] {
+  background: radial-gradient(ellipse at 0 12%, #213e30, transparent 54%), linear-gradient(115deg,#102b25,#0b201c) !important;
+}
+
+html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) > section[class~="bg-[#071428]"] {
+  background: radial-gradient(ellipse at 90% 0, #42232d, transparent 65%), linear-gradient(115deg, #1d2524, #2a1f24) !important;
+}
+
+html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) > div:has(> div[aria-hidden]:first-child + div[style*="max-width"]) {
+  background: linear-gradient(90deg, #0c211c, #23372c, #0d241f) !important;
+}
+
+html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) :is(.hero-top, .hero-bottom, section[class~="bg-[#040d1a]"], section[class~="bg-[#071428]"]) [class~="text-[#f0b429]"] {
+  color: var(--holiday-gold);
+}
+
+html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) :is(section[class~="bg-[#040d1a]"], section[class~="bg-[#071428]"]) a[class~="bg-[#071428]"] {
+  background: radial-gradient(ellipse at 85% 0, #32503d, transparent 62%), linear-gradient(140deg, #1d3b31, #102820) !important;
+  border-color: #b89d665c !important;
+  box-shadow: inset 0 1px 0 #e6efe13b, 0 12px 25px #03140e40;
+}
+
+html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) :is(.hero-top, section[class~="bg-[#040d1a]"], section[class~="bg-[#071428]"]) [class~="bg-[#f0b429]"] {
+  background: linear-gradient(160deg, #fae7bc, #e5c084 67%, #d1a76f) !important;
+  color: #1d251c;
+  box-shadow: inset 0 1px #fff6d980, 0 5px 16px #120e0c33;
+}
+
+html[data-mems-season="winter"] .mems-main-pad .hero-top a[class~="bg-[#2563eb]"] {
+  color: #fffaf5;
+  background: linear-gradient(145deg, #ab364c, #8a263f 58%, #691b32) !important;
+  box-shadow: inset 0 1px #f9c0b77d, 0 5px 16px #25081550;
+}
+
+html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) .hero-top a[class~="border-[#f0b429]/60"] {
+  color: #fff3d9;
+  background: linear-gradient(145deg, #204c3d, #10372f) !important;
+  border-color: #e6c98e;
+}
+
+html[data-mems-season="winter"] .mems-main-pad .hero-top a[class~="border-[#f0b429]"] {
+  border-color: #efd69c;
+}
+
+html[data-mems-season="winter"] .mems-main-pad .hero-top a[class~="border-[#f0b429]"] span {
+  color: #233025;
+}
+
+html[data-mems-season="winter"] .hero-bottom .text-slate-400,
+html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) section[class~="bg-[#071428]"] p.text-slate-400 {
+  color: #c6d2ca;
+}
+
+.winter-snowfall {
+  position: fixed;
+  z-index: 17;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100vh;
+  height: 100lvh;
+  pointer-events: none;
+  user-select: none;
+  mask-image: linear-gradient(180deg, transparent 42px, #000 120px, #000 88%, #0008);
+}
+
+@media (max-width: 640px) {
+  html[data-mems-season="winter"] .hero-top::before {
+    width: clamp(140px, 40vw, 186px);
+    top: 4px;
+    left: -4px;
+  }
+}
+
+@media (forced-colors: active), print {
+  .winter-snowfall,
+  html[data-mems-season="winter"] .hero-top::before { display: none; }
+
+  html[data-mems-season="winter"] .hero-top h1 span { -webkit-text-fill-color: currentColor; }
+}

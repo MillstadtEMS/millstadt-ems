@@ -1,0 +1,213 @@
+.marker {
+  height: 1px;
+  pointer-events: none;
+}
+
+.normalLane,
+.winterLane {
+  position: fixed;
+  right: 0;
+  left: 0;
+  z-index: 30;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.normalLane {
+  bottom: 14px;
+  height: 72px;
+}
+
+.solo {
+  position: absolute;
+  bottom: 0;
+  width: 96px;
+  transform: translateX(calc(100vw + 300px));
+}
+
+.truck {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.solo .truck {
+  filter: drop-shadow(0 4px 8px rgb(0 0 0 / 42%));
+}
+
+.solo[data-moving] {
+  animation: ordinaryDrive 9s cubic-bezier(.4, 0, .2, 1) forwards;
+}
+
+.winterLane,
+.parked {
+  --truck-width: clamp(153px, 16vw, 220px);
+  height: calc(var(--truck-width) * .77);
+}
+
+.winterLane {
+  bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+.parked {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: end;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.convoy {
+  position: relative;
+  isolation: isolate;
+  width: calc(var(--truck-width) * 1.88);
+  height: calc(var(--truck-width) * .73);
+  flex: none;
+}
+
+.winterLane .convoy {
+  position: absolute;
+  bottom: 3px;
+  transform: translateX(calc(100vw + 16px));
+}
+
+.convoy[data-moving] {
+  animation: winterDrive 12s linear forwards;
+}
+
+.convoy .truck {
+  position: absolute;
+  bottom: calc(var(--truck-width) * -.055);
+  left: 0;
+  width: var(--truck-width);
+  filter: url("#winter-truck-alpha") drop-shadow(0 1.5px 1px rgb(0 18 27 / 56%));
+}
+
+.sleigh {
+  position: absolute;
+  left: 59%;
+  bottom: 2%;
+  width: 40%;
+  height: 91%;
+  transform: scaleX(-1);
+  transform-origin: center bottom;
+}
+
+.filterDefinitions {
+  position: absolute;
+}
+
+.rider {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  height: 100%;
+  aspect-ratio: 741 / 693;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 1px 1px rgb(1 10 18 / 65%));
+}
+
+/* The cut follows the black watchband, so the wrist stays attached as it turns. */
+.riderBody {
+  clip-path: polygon(0 0, 54.6% 0, 54.6% 23.8%, 58.7% 26.55%, 63.85% 25.15%, 69% 23.8%, 69% 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.wavingHand {
+  clip-path: polygon(54.6% 0, 69% 0, 69% 23.95%, 63.85% 25.45%, 58.7% 26.85%, 54.6% 24%);
+  transform-origin: 61.5% 25.8%;
+}
+
+.convoy[data-moving] .wavingHand {
+  animation: wristWave 2.45s ease-in-out infinite;
+}
+
+.sleighShadow {
+  position: absolute;
+  left: 62%;
+  right: 2%;
+  bottom: 0;
+  height: 6%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgb(0 12 22 / 55%) 0%, transparent 72%);
+}
+
+.towline {
+  position: absolute;
+  left: 50%;
+  bottom: 7%;
+  width: 16%;
+  height: 14%;
+  overflow: visible;
+}
+
+.towLights {
+  filter: drop-shadow(0 0 2px rgb(255 221 138 / 88%));
+}
+
+.powder {
+  position: absolute;
+  left: 93%;
+  bottom: 0;
+  width: 13%;
+  height: 13%;
+  background:
+    radial-gradient(ellipse at 8% 82%, #f3fcffd9, transparent 29%),
+    radial-gradient(ellipse at 39% 60%, #dbf2ff73, transparent 28%),
+    radial-gradient(ellipse at 64% 36%, #d4f2ff66, transparent 17%),
+    radial-gradient(ellipse at 85% 20%, #fff9, transparent 5%);
+  border-radius: 50%;
+  mask-image: radial-gradient(ellipse, black 42%, transparent 73%);
+  transform-origin: left bottom;
+}
+
+.convoy[data-moving] .sleigh {
+  animation: sleighGlide 1.4s ease-in-out infinite alternate;
+}
+
+.convoy[data-moving] .powder {
+  animation: snowWake .86s ease-in-out infinite alternate;
+}
+
+@keyframes ordinaryDrive {
+  from { transform: translateX(calc(100vw + 300px)); }
+  to { transform: translateX(-300px); }
+}
+
+@keyframes winterDrive {
+  from { transform: translateX(calc(100vw + 16px)); }
+  to { transform: translateX(calc(-100% - 60px)); }
+}
+
+@keyframes wristWave {
+  0%, 58%, 100% { transform: rotate(0deg); }
+  15%, 43% { transform: rotate(10deg); }
+  30% { transform: rotate(-8deg); }
+}
+
+@keyframes sleighGlide {
+  from { transform: scaleX(-1) rotate(-.5deg); }
+  to { transform: scaleX(-1) rotate(.5deg); }
+}
+
+@keyframes snowWake {
+  from { opacity: .32; transform: scale(.78, .8); }
+  to { opacity: .75; transform: scale(1.07); }
+}
+
+@media (max-width: 767px) {
+  .winterLane {
+    bottom: calc(69px + env(safe-area-inset-bottom));
+  }
+
+  .convoy[data-moving] {
+    animation-duration: 9s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .normalLane,
+  .winterLane {
+    display: none;
+  }
+}

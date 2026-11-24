@@ -1,0 +1,215 @@
+.bar {
+  position: relative;
+}
+
+.roof {
+  position: absolute;
+  inset: auto 0 0;
+  height: 8px;
+  display: flex;
+  align-items: start;
+  user-select: none;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.swag {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: var(--sag);
+}
+
+.swag:last-child {
+  flex: 0 0 clamp(88px, 16vw, 218px);
+}
+
+/* A braided forest-green cable hangs between warm brass mounting clips. */
+.wire {
+  position: absolute;
+  inset: 0 -1px;
+  border: solid #183323;
+  border-width: 0 2px 3px;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  box-shadow: 0 1px 1px #031209cc, inset 0 -1px #788a68;
+}
+
+.swag::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  left: -2px;
+  top: -2px;
+  width: 5px;
+  height: 5px;
+  border: 1px solid #9b825a;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, #ffebbd, #8a6943 56%, #463821);
+}
+
+.lamp {
+  position: absolute;
+  width: 10px;
+  height: 20px;
+  margin-left: -5px;
+  transform: rotate(var(--angle));
+  transform-origin: 50% 0;
+  --halo: 22px;
+}
+
+.socket {
+  position: absolute;
+  z-index: 2;
+  height: 6px;
+  width: 6px;
+  top: 0;
+  left: 2px;
+  background: repeating-linear-gradient(0deg, #172e20 0 1px, transparent 1px 3px),
+    linear-gradient(90deg, #06190f, #6a785a 38%, #2c4230 68%, #071b11);
+  border-radius: 1px;
+}
+
+.glass {
+  position: absolute;
+  top: 4px;
+  width: 10px;
+  height: 15px;
+  background: radial-gradient(ellipse at 36% 34%, #ffffeb 0 10%, #fffad0bd 16%, transparent 32%),
+    radial-gradient(ellipse at 52% 43%, #fff6bf 3%, var(--bulb) 50%, color-mix(in srgb, var(--bulb) 63%, #181525) 88%);
+  clip-path: polygon(26% 0, 74% 0, 88% 18%, 99% 40%, 94% 61%, 76% 82%, 52% 100%, 31% 86%, 10% 61%, 2% 43%, 10% 20%);
+  animation: filament var(--period) ease-in-out var(--delay) infinite;
+}
+
+.bloom {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: var(--halo);
+  aspect-ratio: 1;
+  margin-left: calc(var(--halo) * -.5);
+  margin-top: calc(var(--halo) * -.5);
+  background: radial-gradient(circle, #fff7ce 0%, var(--bulb) 9%, color-mix(in srgb, var(--bulb) 52%, transparent) 29%, transparent 73%);
+  transform: scale(1.4);
+  animation: bloom var(--period) ease-in-out var(--delay) infinite;
+  transition: filter .3s;
+}
+
+.swag[data-warm] .bloom {
+  filter: brightness(1.6) drop-shadow(0 0 4px var(--bulb));
+}
+
+@keyframes filament {
+  0%, 100% { filter: brightness(1); }
+  24%, 50% { filter: brightness(1.36); }
+  38% { filter: brightness(.88); }
+  70% { filter: brightness(.72); }
+  84% { filter: brightness(1.48); }
+}
+
+@keyframes bloom {
+  0%, 100% { opacity: .76; transform: scale(1.24); }
+  25%, 54% { opacity: .98; transform: scale(1.68); }
+  38% { opacity: .64; transform: scale(1.15); }
+  72% { opacity: .47; transform: scale(.98); }
+  85% { opacity: 1; transform: scale(1.82); }
+}
+
+.hanger {
+  position: absolute;
+  display: block;
+  z-index: 3;
+  left: 50%;
+  top: calc(var(--sag) - 1px);
+  width: clamp(110px, 12.5vw, 165px);
+  aspect-ratio: 477 / 716;
+  transform: translate(-50%, -5%);
+  transition: opacity .25s;
+}
+
+.figure {
+  display: block;
+  width: 100%;
+  height: auto;
+  transform-origin: 50% 5%;
+  filter: drop-shadow(1px 4px 4px #0008);
+  animation: sway 4.6s ease-in-out infinite alternate;
+}
+
+.roof[data-away] .hanger {
+  visibility: hidden;
+  opacity: 0;
+}
+
+@keyframes sway {
+  0% { transform: rotate(-3deg); }
+  62% { transform: rotate(2.4deg); }
+  100% { transform: rotate(1.7deg); }
+}
+
+/* Little strings loop just above the actual Lounge and Menu lettering. */
+.label {
+  position: relative;
+  color: #ffeabc;
+}
+
+.directoryLabel {
+  position: relative;
+}
+
+.label::before,
+.directoryLabel::before {
+  content: "";
+  position: absolute;
+  inset: -4px -6px auto;
+  height: 4px;
+  border-bottom: 1px solid #648773;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  background:
+    radial-gradient(circle at 9% 30%, #ff7d69 0 1px, transparent 2px),
+    radial-gradient(circle at 34% 79%, #ffda6a 0 1px, transparent 2px),
+    radial-gradient(circle at 65% 79%, #85fdb4 0 1px, transparent 2px),
+    radial-gradient(circle at 92% 30%, #94d8ff 0 1px, transparent 2px);
+  filter: drop-shadow(0 0 2px #ffe3a27a);
+}
+
+/* A short arc along the upper edge of each open navigation category. */
+.directoryLabel::before {
+  inset: -4px 2px auto;
+  opacity: .8;
+  transition: filter .2s ease, opacity .2s ease;
+}
+
+:global(button):is(:hover, :focus-visible) .directoryLabel::before {
+  opacity: 1;
+  filter: drop-shadow(0 0 3px #ffe3a2);
+}
+
+@media (min-width: 951px) {
+  .roof { height: 9px; }
+}
+
+@media (max-width: 950px) {
+  .swag:nth-child(2) { display: none; }
+}
+
+@media (max-width: 700px) {
+  .swag:nth-child(3) { display: none; }
+  .swag:last-child { flex-basis: clamp(97px, 26vw, 142px); }
+  .hanger { width: clamp(83px, 23.5vw, 118px); }
+  .lamp { scale: .84; transform-origin: top; }
+}
+
+@media (max-width: 500px) {
+  .swag:nth-child(4) { display: none; }
+}
+
+@media (max-width: 360px) {
+  .swag:nth-child(5) { display: none; }
+  .swag:last-child { flex-basis: 85px; }
+  .hanger { width: clamp(72px, 22vw, 80px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .figure, .glass, .bloom { animation: none; }
+  .hanger, .bloom { transition: none; }
+}

@@ -62,6 +62,15 @@ assert.equal(resolveSeasonalTheme({ now: new Date("2026-11-01T08:01:00Z"), windo
 assert.equal(resolveSeasonalTheme({ override: "winter", windows: themeWindows }), "winter");
 assert.equal(resolveSeasonalTheme({ disabled: true, override: "winter", windows: themeWindows }), "normal");
 assert.deepEqual(parseSeasonalThemeWindows("bad json"), []);
+for (const year of [2026, 2027, 2028, 2030]) {
+  const themeAt = (timestamp: string) => resolveSeasonalTheme({ now: new Date(timestamp) });
+  assert.equal(themeAt(`${year}-11-18T05:59:59Z`), "normal");
+  assert.equal(themeAt(`${year}-11-18T06:00:00Z`), "winter");
+  assert.equal(themeAt(`${year}-12-25T12:00:00Z`), "winter");
+  assert.equal(themeAt(`${year + 1}-01-02T05:59:59Z`), "winter");
+  assert.equal(themeAt(`${year + 1}-01-02T06:00:00Z`), "normal");
+  assert.equal(themeAt(`${year + 1}-07-04T12:00:00Z`), "normal");
+}
 
 await access(resolve(root, "app/kids-club/printables/911-call-guide/page.tsx"));
 await assert.rejects(access(resolve(root, "public/kids-club/coloring/ambulance-and-rescue.png")));
@@ -97,7 +106,7 @@ assert.match(seasonal, /PUBLIC_SEASONAL_THEME_OVERRIDE/);
 assert.match(seasonal, /PUBLIC_SEASONAL_THEMES_JSON/);
 assert.doesNotMatch(seasonal, /2026-10-24|2026-11-01/);
 
-console.log("Public experience checks passed (47 assertions).");
+console.log("Public experience and recurring seasonal date checks passed.");
 }
 
 void main();

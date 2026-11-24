@@ -10,6 +10,7 @@ import PwaRegistration from "@/components/PwaRegistration";
 import AnalyticsTracker from "@/components/analytics/AnalyticsTracker";
 import PrivacyPreferences from "@/components/analytics/PrivacyPreferences";
 import SeasonalThemeController from "@/components/SeasonalThemeController";
+import WinterAtmosphere from "@/components/WinterAtmosphere";
 import { getSeasonalThemePublicConfig } from "@/lib/seasonal/themes";
 
 export const metadata: Metadata = {
@@ -56,6 +57,7 @@ export default function RootLayout({
             <>
               <CallTicker />
               <Nav />
+              <WinterAtmosphere />
             </>
           }
           footer={

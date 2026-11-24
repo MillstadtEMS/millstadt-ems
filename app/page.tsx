@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import HolidayOverlay from "@/components/HolidayOverlay";
+import WinterVillage from "@/components/WinterVillage";
 import HeroCarousel from "@/components/HeroCarousel";
 import CallVolumeCounter from "@/components/CallVolumeCounter";
 import CallStatsExtras from "@/components/CallStatsExtras";
@@ -173,6 +174,8 @@ export default async function Home({
       </section>
 
       <PublicStatsSummary />
+
+      <WinterVillage />
 
       <SectionDivider />
 

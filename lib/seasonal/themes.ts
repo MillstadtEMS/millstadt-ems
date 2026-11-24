@@ -92,9 +92,13 @@ export function resolveSeasonalTheme({
   if (disabled) return "normal";
   if (override) return override;
   const localNow = chicagoDateTimeKey(now);
-  return windows.find((window) =>
+  const scheduled = windows.find((window) =>
     window.enabled && localNow >= window.startsAt && localNow <= window.endsAt,
-  )?.id ?? "normal";
+  );
+  if (scheduled) return scheduled.id;
+
+  const monthDay = localNow.slice(5, 10);
+  return monthDay >= "11-18" || monthDay === "01-01" ? "winter" : "normal";
 }
 
 export function getSeasonalThemePublicConfig(): SeasonalThemePublicConfig {

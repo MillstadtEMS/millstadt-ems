@@ -5,6 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronRight, X } from "lucide-react";
+import WinterRoofline from "@/components/WinterRoofline";
+import winterStyles from "@/components/WinterRoofline.module.css";
+import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 import CommunityAlertTicker, { CommunityAlertProvider } from "@/components/CommunityAlertTicker";
 
 // ── Menu structure ──────────────────────────────────────────────────────────
@@ -75,6 +78,7 @@ function linksForMenuGroup(heading: string, showBoardMinutes: boolean) {
 
 export default function Nav() {
   const pathname = usePathname();
+  const winter = useWinterTheme();
   const [open, setOpen]               = useState(false);
   const [activeGroup, setActiveGroup] = useState(MENU_GROUPS[0].heading);
   const [expandedMobileGroup, setExpandedMobileGroup] = useState<string | null>(MENU_GROUPS[0].heading);
@@ -163,7 +167,7 @@ export default function Nav() {
 
       {/* ── Nav bar ── */}
       <CommunityAlertProvider>
-      <div className="mems-nav-bar bg-[#020912] border-b border-white/8" style={{ overflow: "visible" }}>
+      <div className={`mems-nav-bar bg-[#020912] border-b border-white/8 ${winter ? winterStyles.bar : ""}`} style={{ overflow: "visible" }}>
         <div className="mems-nav-content wrap flex items-center gap-4 py-3" style={{ overflow: "visible" }}>
 
           {/* Left group (flex-1) — balances the right group so the weather
@@ -205,7 +209,7 @@ export default function Nav() {
                 className="lounge-hover-expand-img"
                 style={{ height: "clamp(36px, 4.6vw, 52px)", width: "auto", display: "block", transition: "transform 0.22s cubic-bezier(0.22,1.2,0.36,1), filter 0.22s" }}
               />
-              <div className="text-[9px] text-[#f0b429] uppercase tracking-widest font-black mt-0.5">Lounge</div>
+              <div className={`text-[9px] text-[#f0b429] uppercase tracking-widest font-black mt-0.5 ${winter ? winterStyles.label : ""}`}>Lounge</div>
             </Link>
 
           {/* Ambulance menu button */}
@@ -228,12 +232,13 @@ export default function Nav() {
                 className={`ambo-menu-img ${open || dispatchFlash ? "ambo-img-active" : ""}`}
                 style={{ height: "clamp(30px, 4vw, 44px)", width: "auto", display: "block" }}
               />
-              <div className="text-[9px] text-slate-300 uppercase tracking-widest font-black mt-0.5">menu</div>
+              <div className={`text-[9px] text-slate-300 uppercase tracking-widest font-black mt-0.5 ${winter ? winterStyles.label : ""}`}>menu</div>
             </button>
           </div>
           </div>
 
         </div>
+        {winter && <WinterRoofline showCharacter={pathname === "/" && !open} />}
       </div>
       </CommunityAlertProvider>
 
@@ -269,7 +274,7 @@ export default function Nav() {
                         }`}
                       >
                         <span className="flex items-center justify-between gap-3 text-[17px] font-extrabold">
-                          {group.heading}
+                          <span className={winter ? winterStyles.directoryLabel : undefined}>{group.heading}</span>
                           <ChevronRight aria-hidden size={18} className={selected ? "text-[#f0b429]" : "text-slate-600 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-300"} />
                         </span>
                         <span className="mt-1 block text-[13px] leading-5 text-slate-500 group-hover:text-slate-400">
@@ -354,7 +359,7 @@ export default function Nav() {
                       className={`flex min-h-14 w-full items-center justify-between gap-4 px-4 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[#f0b429] ${selected ? "bg-white/5 text-white" : "text-slate-300"}`}
                     >
                       <span>
-                        <span className="block text-[17px] font-extrabold">{group.heading}</span>
+                        <span className="block text-[17px] font-extrabold"><span className={winter ? winterStyles.directoryLabel : undefined}>{group.heading}</span></span>
                         <span className="mt-0.5 block text-[13px] leading-5 text-slate-500">{group.description}</span>
                       </span>
                       <ChevronDown aria-hidden size={19} className={`shrink-0 transition-transform ${selected ? "rotate-180 text-[#f0b429]" : "text-slate-500"}`} />
