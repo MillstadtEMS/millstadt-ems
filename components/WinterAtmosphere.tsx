@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 import "./winter-atmosphere.css";
+import "./winter-public-logos.css";
 
 // Pre-render the soft light at three focal distances; only the small textures
 // are composited each frame, regardless of the number of visible flakes.

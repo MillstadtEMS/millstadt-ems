@@ -21,7 +21,7 @@
 }
 
 .swag:last-child {
-  flex: 0 0 clamp(88px, 16vw, 218px);
+  flex: 0 0 clamp(156px, 23vw, 440px);
 }
 
 /* A braided forest-green cable hangs between warm brass mounting clips. */
@@ -120,7 +120,7 @@
   z-index: 3;
   left: 50%;
   top: calc(var(--sag) - 1px);
-  width: clamp(110px, 12.5vw, 165px);
+  width: clamp(180px, 24vw, 324px);
   aspect-ratio: 477 / 716;
   transform: translate(-50%, -5%);
   transition: opacity .25s;
@@ -131,8 +131,8 @@
   width: 100%;
   height: auto;
   transform-origin: 50% 5%;
-  filter: drop-shadow(1px 4px 4px #0008);
-  animation: sway 4.6s ease-in-out infinite alternate;
+  filter: brightness(1.08) drop-shadow(0 1px 1px #fff4) drop-shadow(1px 4px 3px #07100fbd);
+  animation: sway 5.4s ease-in-out infinite alternate;
 }
 
 .roof[data-away] .hanger {
@@ -141,9 +141,9 @@
 }
 
 @keyframes sway {
-  0% { transform: rotate(-3deg); }
-  62% { transform: rotate(2.4deg); }
-  100% { transform: rotate(1.7deg); }
+  0% { transform: rotate(-1.7deg); }
+  62% { transform: rotate(1.5deg); }
+  100% { transform: rotate(.8deg); }
 }
 
 /* Little strings loop just above the actual Lounge and Menu lettering. */
@@ -194,8 +194,8 @@
 
 @media (max-width: 700px) {
   .swag:nth-child(3) { display: none; }
-  .swag:last-child { flex-basis: clamp(97px, 26vw, 142px); }
-  .hanger { width: clamp(83px, 23.5vw, 118px); }
+  .swag:last-child { flex-basis: clamp(82px, 23vw, 153px); }
+  .hanger { width: clamp(144px, 42vw, 222px); }
   .lamp { scale: .84; transform-origin: top; }
 }
 
@@ -203,10 +203,18 @@
   .swag:nth-child(4) { display: none; }
 }
 
+@media (max-width: 639px) {
+  .hanger { width: clamp(144px, 42vw, 174px); }
+}
+
 @media (max-width: 360px) {
   .swag:nth-child(5) { display: none; }
-  .swag:last-child { flex-basis: 85px; }
-  .hanger { width: clamp(72px, 22vw, 80px); }
+  .swag:last-child { flex-basis: 73px; }
+  .hanger { width: 142px; }
+}
+
+@media (max-width: 335px) {
+  .hanger { width: 132px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

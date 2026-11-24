@@ -85,7 +85,7 @@ export default function WinterRoofline({ showCharacter }: { showCharacter: boole
           {span === swags.length - 1 && showCharacter && (
             <span className={styles.hanger}>
               <Image src="/images/winter/hanging.webp" alt="" width={477} height={716}
-                sizes="(max-width: 360px) 80px, (max-width: 700px) 24vw, (max-width: 1250px) 13vw, 165px"
+                sizes="(max-width: 360px) 142px, (max-width: 700px) clamp(144px, 42vw, 222px), clamp(180px, 24vw, 324px)"
                 className={styles.figure} unoptimized />
             </span>
           )}

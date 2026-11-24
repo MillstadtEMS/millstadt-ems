@@ -9,12 +9,19 @@ const powderDirections = [-82, -65, -52, -40, -30, -19, 13, 25, 37, 50, 64, 79];
 // Publisher character art: https://www.peanuts.com/about/snoopy and
 // https://www.drseuss.com/characters. The winter town and EMS portraits are original.
 
-// Positions are measured on the uncropped 1672 × 941 painted village.
+// Streetlights on the Millstadt postcard, from the corner store to St. James.
 const nightLights = [
-  { x: 30.5, y: 36.9, delay: "-1.1s", period: "4.8s" },
-  { x: 45.0, y: 45.4, delay: "-2.8s", period: "5.7s" },
-  { x: 64.7, y: 45.4, delay: "-1.6s", period: "4.2s" },
-  { x: 80.9, y: 36.0, delay: "-3.1s", period: "5.2s" },
+  { x: 11.3, y: 52.1, delay: "-1.1s", period: "4.8s" },
+  { x: 31.9, y: 61.9, delay: "-2.8s", period: "5.7s" },
+  { x: 52.2, y: 62.0, delay: "-1.6s", period: "4.2s" },
+  { x: 60.2, y: 62.2, delay: "-.7s", period: "5.9s" },
+  { x: 97.5, y: 39.3, delay: "-3.1s", period: "5.2s" },
+];
+
+const fleet = [
+  { unit: "3925", height: 444, description: "white Ford Transit ambulance" },
+  { unit: "3935", height: 452, description: "black and yellow paramedic ambulance with the Millstadt water tower on its side" },
+  { unit: "3926", height: 465, description: "white Ford box ambulance with blue and gold stripes" },
 ];
 
 function VillagePostcard() {
@@ -23,6 +30,7 @@ function VillagePostcard() {
   const [inView, setInView] = useState(false);
   const [hasArrived, setHasArrived] = useState(false);
   const [portraitLoaded, setPortraitLoaded] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
   const [pan, setPan] = useState({ left: false, right: false });
 
   function updatePan() {
@@ -47,6 +55,7 @@ function VillagePostcard() {
     frameVillage();
     const resize = new ResizeObserver(frameVillage);
     resize.observe(el);
+    if (el.firstElementChild) resize.observe(el.firstElementChild);
     const visibility = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting));
     visibility.observe(el);
     return () => {
@@ -78,10 +87,17 @@ function VillagePostcard() {
 
   return (
     <section className={styles.postcard} aria-labelledby="winter-village-title">
-      <div className={styles.viewport} ref={viewport} onScroll={updatePan} id="winter-village-picture">
+      <div className={styles.viewport} ref={viewport} onScroll={updatePan} id="winter-village-picture"
+        data-zoomed={zoomed} tabIndex={zoomed && (pan.left || pan.right) ? 0 : undefined}
+        role="group" aria-label="Illustrated Millstadt village"
+        onKeyDown={(event) => {
+          if (!zoomed || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
+          event.preventDefault();
+          panVillage(event.key === "ArrowLeft" ? -1 : 1);
+        }}>
         <div className={styles.artboard} data-visible={inView}>
-          <Image className={styles.village} src="/images/winter/village.webp"
-            alt="A yellow Millstadt ambulance outside a wreath-trimmed station. Santa passes a gingerbread house and a snowman under a starry winter sky."
+          <Image className={styles.village} src="/images/winter/millstadt-village.webp"
+            alt="A snowy Millstadt Christmas postcard with the old Tin Man water tower, the brick corner store, the former firehouse and St. James Catholic Church. A snowman and Santa flank the street."
             fill sizes="(max-width: 720px) 720px, 100vw" unoptimized />
           <div className={styles.glows} aria-hidden="true">
             {nightLights.map(({ x, y, delay, period }) => (
@@ -89,7 +105,6 @@ function VillagePostcard() {
                 left: `${x}%`, top: `${y}%`, animationDuration: period, animationDelay: delay,
               }} />
             ))}
-            <i className={styles.treeStar} />
             <i className={styles.roadLight} />
             <i className={styles.roadLight} />
           </div>
@@ -97,6 +112,13 @@ function VillagePostcard() {
             <span>Christmas in</span>
             Millstadt
           </h2>
+          {fleet.map(({ unit, height, description }) => (
+            <div key={unit} className={styles.rig} data-unit={unit}
+              style={{ "--rig-art": `url("/images/winter/fleet/${unit}.webp")` } as CSSProperties}>
+              <Image src={`/images/winter/fleet/${unit}.webp`} alt={`Millstadt EMS unit ${unit}, ${description}.`}
+                width={760} height={height} sizes="(max-width: 720px) 200px, 27vw" unoptimized />
+            </div>
+          ))}
           <div className={styles.snoopy}>
             <Image src="/images/winter/snoopy.webp" alt="Snoopy wearing a scarf atop his red doghouse" fill sizes="(max-width: 720px) 100px, 15vw" unoptimized />
           </div>
@@ -122,9 +144,17 @@ function VillagePostcard() {
             alt="" width={1500} height={258} sizes="100vw" unoptimized />
         </div>
       </div>
-      {(pan.left || pan.right) && (
-        <div className={styles.controls} role="group" aria-label="Explore the Christmas village">
-          {([-1, 1] as const).map((direction) => (
+      <div className={styles.controls} role="group" aria-label="Explore the Christmas village">
+        <button type="button" className={styles.zoom} onClick={() => setZoomed((current) => !current)}
+          aria-controls="winter-village-picture">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+            strokeWidth="1.8" strokeLinecap="round">
+            <circle cx="10" cy="10" r="6.5" /><path d="m15 15 5.5 5.5M7 10h6" />
+            {!zoomed && <path d="M10 7v6" />}
+          </svg>
+          {zoomed ? "Zoom out" : "Zoom in"}
+        </button>
+        {zoomed && ([-1, 1] as const).map((direction) => (
             <button key={direction} type="button" disabled={direction === -1 ? !pan.left : !pan.right}
               onClick={() => panVillage(direction)} aria-controls="winter-village-picture"
               aria-label={direction === -1 ? "View the left side of the village" : "View the right side of the village"}>
@@ -133,13 +163,13 @@ function VillagePostcard() {
                 <path d={direction === -1 ? "m14 5-7 7 7 7" : "m10 5 7 7-7 7"} />
               </svg>
             </button>
-          ))}
-        </div>
-      )}
+        ))}
+      </div>
     </section>
   );
 }
 
 export default function WinterVillage() {
-  return useWinterTheme() ? <VillagePostcard /> : null;
+  const winter = useWinterTheme();
+  return <div id="christmas-in-millstadt" className={styles.destination}>{winter && <VillagePostcard />}</div>;
 }

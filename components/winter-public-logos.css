@@ -1,0 +1,49 @@
+/* Match the local path and the encoded URL used by next/image. Each replacement
+   has the source aspect ratio, with the hat fitted to that particular mark. */
+@media screen {
+  html[data-mems-season="winter"] .mems-main-pad img:is([src*="/images/millstadt-ems/crest.png"], [src*="%2Fimages%2Fmillstadt-ems%2Fcrest.png" i]) {
+    content: url("/images/winter/logos/crest.webp");
+  }
+  html[data-mems-season="winter"] .mems-main-pad img:is([src*="/images/millstadt-ems/logo.png"], [src*="%2Fimages%2Fmillstadt-ems%2Flogo.png" i]) {
+    content: url("/images/winter/logos/wordmark.webp");
+  }
+  html[data-mems-season="winter"] .mems-main-pad img:is([src*="/images/financial-transparency/millstadt-ems-financial-transparency.png"], [src*="%2Fimages%2Ffinancial-transparency%2Fmillstadt-ems-financial-transparency.png" i]) {
+    content: url("/images/winter/logos/financial-transparency.webp");
+  }
+  html[data-mems-season="winter"] .mems-main-pad img:is([src*="/kids-club/kids-club-home.png"], [src*="%2Fkids-club%2Fkids-club-home.png" i]) {
+    content: url("/images/winter/logos/kids-club.webp");
+  }
+  html[data-mems-season="winter"] .community-team-alerts img:is([src*="/images/community-alerts/cardinals.png"], [src*="%2Fimages%2Fcommunity-alerts%2Fcardinals.png" i]) {
+    content: url("/images/winter/logos/cardinals.webp");
+  }
+  html[data-mems-season="winter"] .community-team-alerts img:is([src*="/images/community-alerts/blues.png"], [src*="%2Fimages%2Fcommunity-alerts%2Fblues.png" i]) {
+    content: url("/images/winter/logos/blues.webp");
+  }
+  html[data-mems-season="winter"] .community-team-alerts img:is([src*="/images/community-alerts/city-sc.png"], [src*="%2Fimages%2Fcommunity-alerts%2Fcity-sc.png" i]) {
+    content: url("/images/winter/logos/city-sc.webp");
+  }
+  html[data-mems-season="winter"] .community-team-alerts img:is([src*="/images/community-alerts/millstadt-ccsd.png"], [src*="%2Fimages%2Fcommunity-alerts%2Fmillstadt-ccsd.png" i]) {
+    content: url("/images/winter/logos/millstadt-ccsd.webp");
+  }
+  html[data-mems-season="winter"] .community-team-alerts img:is([src*="/images/community-alerts/st-james.png"], [src*="%2Fimages%2Fcommunity-alerts%2Fst-james.png" i]) {
+    content: url("/images/winter/logos/st-james.webp");
+  }
+  html[data-mems-season="winter"] .community-team-alerts img:is([src*="/images/community-alerts/belleville-west.png"], [src*="%2Fimages%2Fcommunity-alerts%2Fbelleville-west.png" i]) {
+    content: url("/images/winter/logos/belleville-west.webp");
+  }
+  html[data-mems-season="winter"] .mems-main-pad img:is([src*="/millstadt-ems/crest.png"], [src*="millstadt-ems%2Fcrest.png" i])[style*="hue-rotate"] {
+    filter: drop-shadow(0 0 2px #f0b42970) !important;
+  }
+  html[data-mems-season="winter"] .kids-club-winter-initial {
+    position: relative;
+    --hat-width: 125%;
+    --hat-top: -23%;
+    --hat-right: -9%;
+    --hat-angle: -10deg;
+  }
+  html[data-mems-season="winter"] .kids-club-winter-star {
+    position: relative;
+    --hat-width: 68%;
+    --hat-top: -12%;
+  }
+}

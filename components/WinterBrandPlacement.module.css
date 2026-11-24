@@ -1,0 +1,38 @@
+.home, .lounge, .menu, .footer {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  line-height: 0;
+}
+
+/* Each mark has its own silhouette and amount of transparent space. */
+.home, .footer {
+  --hat-width: 47%;
+  --hat-right: -2%;
+  --hat-top: -7%;
+}
+
+.lounge {
+  --hat-width: 32%;
+  --hat-right: 46%;
+  --hat-top: -13%;
+}
+
+.menu {
+  --hat-width: 38%;
+  --hat-right: 0%;
+  --hat-top: -25%;
+}
+
+:global(html[data-mems-season="winter"]) .home {
+  transform: scale(1.16);
+  transform-origin: left center;
+  margin-right: .6rem;
+}
+
+@media (max-width: 767px) {
+  :global(html[data-mems-season="winter"]) .brandGroup {
+    overflow: visible;
+  }
+}

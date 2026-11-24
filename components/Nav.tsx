@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronRight, X } from "lucide-react";
+import WinterLogoHat from "@/components/WinterLogoHat";
+import brandStyles from "@/components/WinterBrandPlacement.module.css";
 import WinterRoofline from "@/components/WinterRoofline";
 import winterStyles from "@/components/WinterRoofline.module.css";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
@@ -172,9 +174,9 @@ export default function Nav() {
 
           {/* Left group (flex-1) — balances the right group so the weather
               ticker in the middle sits at the TRUE center of the bar. */}
-          <div className="mems-nav-alert-group flex-1 flex items-center justify-start min-w-0">
+          <div className={`mems-nav-alert-group flex-1 flex items-center justify-start min-w-0 ${brandStyles.brandGroup}`}>
             {/* Logo */}
-            <Link href="/" className="shrink-0 group">
+            <Link href="/" className={`shrink-0 group ${brandStyles.home}`}>
               <Image
                 src="/images/millstadt-ems/logo.png"
                 alt="Millstadt EMS"
@@ -182,6 +184,7 @@ export default function Nav() {
                 height={60}
                 className="h-14 w-auto object-contain group-hover:opacity-80 transition-opacity"
               />
+              <WinterLogoHat />
             </Link>
             <CommunityAlertTicker placement="left" />
           </div>
@@ -202,13 +205,16 @@ export default function Nav() {
               className="lounge-hover-expand shrink-0 flex flex-col items-center group relative"
               style={{ marginRight: 6 }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/lounge/lounge-button.png"
-                alt=""
-                className="lounge-hover-expand-img"
-                style={{ height: "clamp(36px, 4.6vw, 52px)", width: "auto", display: "block", transition: "transform 0.22s cubic-bezier(0.22,1.2,0.36,1), filter 0.22s" }}
-              />
+              <span className={brandStyles.lounge}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/lounge/lounge-button.png"
+                  alt=""
+                  className="lounge-hover-expand-img"
+                  style={{ height: "clamp(36px, 4.6vw, 52px)", width: "auto", display: "block", transition: "transform 0.22s cubic-bezier(0.22,1.2,0.36,1), filter 0.22s" }}
+                />
+                <WinterLogoHat variant="small" />
+              </span>
               <div className={`text-[9px] text-[#f0b429] uppercase tracking-widest font-black mt-0.5 ${winter ? winterStyles.label : ""}`}>Lounge</div>
             </Link>
 
@@ -225,13 +231,15 @@ export default function Nav() {
             >
               {/* A single restrained lift marks menu open/new dispatch states.
                   Touch devices never retain a hover treatment. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/millstadt-ems/cartoon-ambo.png"
-                alt=""
-                className={`ambo-menu-img ${open || dispatchFlash ? "ambo-img-active" : ""}`}
-                style={{ height: "clamp(30px, 4vw, 44px)", width: "auto", display: "block" }}
-              />
+              <span className={`${brandStyles.menu} ambo-menu-img ${open || dispatchFlash ? "ambo-img-active" : ""}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/millstadt-ems/cartoon-ambo.png"
+                  alt=""
+                  style={{ height: "clamp(30px, 4vw, 44px)", width: "auto", display: "block" }}
+                />
+                <WinterLogoHat variant="wide" />
+              </span>
               <div className={`text-[9px] text-slate-300 uppercase tracking-widest font-black mt-0.5 ${winter ? winterStyles.label : ""}`}>menu</div>
             </button>
           </div>

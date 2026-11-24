@@ -1,3 +1,5 @@
+.destination { scroll-margin-top: 150px; }
+
 .postcard {
   position: relative;
   isolation: isolate;
@@ -16,21 +18,16 @@
   isolation: isolate;
   overflow: hidden;
   width: 100%;
-  min-width: 720px;
-  aspect-ratio: 1.98;
+  aspect-ratio: 2;
   background-color: #142942;
 }
 .village {
   object-fit: cover;
   object-position: center 63%;
 }
-/* Match the panorama's object-fit and its 63% vertical crop on every size. */
 .glows {
   position: absolute;
-  top: 63%;
-  width: 100%;
-  aspect-ratio: 1672 / 941;
-  transform: translateY(-63%);
+  inset: 0;
   pointer-events: none;
   mix-blend-mode: screen;
 }
@@ -47,19 +44,9 @@
   border-radius: 50%;
   background: radial-gradient(ellipse, #fff4bf 0%, #ffc36599 16%, #f89f393b 40%, transparent 72%);
 }
-.glows .treeStar {
-  left: 75.33%;
-  top: 25.66%;
-  width: 2.5%;
-  aspect-ratio: 1;
-  background: linear-gradient(0deg, transparent 44%, #ffe299 50%, transparent 56%),
-    linear-gradient(90deg, transparent 46%, #fff0bd 50%, transparent 54%);
-  mask-image: radial-gradient(circle, black 5%, transparent 67%);
-  animation-name: starGlow;
-}
 .glows .roadLight {
-  left: 52%;
-  top: 71%;
+  left: 31.5%;
+  top: 80%;
   width: 4.8%;
   height: 7%;
   background: repeating-linear-gradient(170deg, transparent 0 9%, #ffcb7544 10% 13%, transparent 15% 22%);
@@ -67,7 +54,7 @@
   animation-duration: 5.7s;
   animation-delay: -2.5s;
 }
-.glows .roadLight:last-child { left: 62.8%; top: 73%; width: 3.5%; animation-delay: -4.1s; }
+.glows .roadLight:last-child { left: 76.5%; top: 83%; width: 3.5%; animation-delay: -4.1s; }
 .artboard[data-visible="true"] .glows i { animation-play-state: running; }
 @keyframes lampGlow {
   0%, 16% { opacity: .23; }
@@ -75,10 +62,42 @@
   77% { opacity: .48; }
   100% { opacity: .83; }
 }
-@keyframes starGlow {
-  0%, 24% { opacity: .25; scale: .7; }
-  63% { opacity: .9; scale: 1.14; }
-  100% { opacity: .45; scale: .91; }
+.rig {
+  position: absolute;
+  isolation: isolate;
+  bottom: 17%;
+  width: 25%;
+  pointer-events: none;
+}
+.rig[data-unit="3925"] { left: 7.5%; width: 22.2%; bottom: 17.4%; }
+.rig[data-unit="3935"] { left: 35.5%; width: 26%; bottom: 14.7%; }
+.rig[data-unit="3926"] { left: 64.3%; width: 24.6%; }
+.rig img {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: brightness(.95) drop-shadow(0 2px 1px #12203a99);
+}
+.rig::before {
+  content: "";
+  position: absolute;
+  inset: 78% 1% -2% 1%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #101325bd 3%, #1724396b 46%, transparent 72%);
+  transform: rotate(-5deg);
+}
+.rig::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  width: 100%;
+  height: 21%;
+  background: var(--rig-art) center / 100% 100% no-repeat;
+  transform: scaleY(-1);
+  opacity: .19;
+  filter: blur(1px);
+  mask-image: linear-gradient(0deg, black, transparent 86%);
 }
 .greeting {
   position: absolute;
@@ -115,22 +134,22 @@
 .snoopy img, .grinch img, .portrait { object-fit: contain; object-position: center bottom; }
 .snoopy, .grinch { filter: drop-shadow(0 3px 3px #27365788); }
 .snoopy {
-  left: 9%;
-  bottom: 4.4%;
-  width: 15%;
-  height: 27%;
+  left: 1.2%;
+  bottom: 3.7%;
+  width: 10%;
+  height: 20%;
 }
 .grinch {
-  left: 68%;
-  bottom: 5.5%;
-  width: 13%;
-  height: 31%;
+  left: 86%;
+  bottom: 3.4%;
+  width: 10%;
+  height: 22%;
 }
 .actor {
-  left: 43%;
-  bottom: 4.5%;
-  width: 19%;
-  height: 35%;
+  left: 28.2%;
+  bottom: 3.6%;
+  width: 14%;
+  height: 24%;
   overflow: hidden;
   overflow: clip;
   filter: drop-shadow(1px 4px 3px #29385188);
@@ -163,30 +182,8 @@
   box-shadow: 1px 1px 3px #a6c6df;
 }
 .actor[data-revealed="true"] .powder i { animation: toss .78s var(--delay) both; }
-.controls {
-  position: absolute;
-  right: 10px;
-  bottom: 8px;
-  display: flex;
-  gap: 3px;
-  border-radius: 999px;
-  padding: 2px;
-  background: #102337dc;
-  box-shadow: 0 2px 8px #172c5060;
-  border: 1px solid #dce9f38a;
-}
-.controls button {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  color: #fff9e8;
-  cursor: pointer;
-}
-.controls button:disabled { opacity: .3; cursor: default; }
-.controls button:focus-visible { outline: 2px solid #ffdd9f; outline-offset: -3px; }
-.controls button:enabled:hover { background: #d8ebff24; }
+.controls { display: none; }
+.viewport:focus-visible { outline: 2px solid #ffdd9f; outline-offset: -3px; }
 @keyframes emerge {
   0% { transform: translateY(110%) rotate(-4deg); animation-timing-function: cubic-bezier(.14,.55,.24,1); }
   66% { transform: translateY(-2.8%) rotate(1.3deg); animation-timing-function: ease-in-out; }
@@ -198,9 +195,35 @@
   72% { opacity: .65; }
   100% { transform: rotate(var(--angle)) translateY(calc(-1 * var(--height))) scale(.45); opacity: 0; }
 }
-@media (max-width: 720px) {
-  .artboard { aspect-ratio: 1.86; }
-  .greeting { top: 3.6%; }
+@media screen and (max-width: 719px) {
+  .artboard { container-type: inline-size; }
+  .viewport[data-zoomed="true"] .artboard { min-width: 720px; }
+  .greeting { top: 3.6%; font-size: clamp(1.15rem, 5.8cqw, 2.65rem); }
+  .greeting span { font-size: clamp(.48rem, 1.42cqw, .65rem); }
+  .controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    color: #fff3d9;
+    background: linear-gradient(105deg, #102f25, #0a211b);
+    border-top: 1px solid #b49b68;
+  }
+  .controls button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    color: inherit;
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  .controls .zoom { gap: .55rem; padding-inline: 12px; font: 650 .91rem/1.2 system-ui, sans-serif; }
+  .controls button:disabled { opacity: .36; cursor: default; }
+  .controls button:focus-visible { outline: 2px solid #ffe0a0; outline-offset: -3px; }
+  .controls button:enabled:hover { background: #e8efd415; }
 }
 @media (prefers-reduced-motion: reduce) {
   .actor .portrait, .actor[data-revealed="true"] .portrait { transform: none; animation: none; }

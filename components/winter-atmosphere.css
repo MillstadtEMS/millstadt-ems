@@ -172,10 +172,37 @@ html[data-mems-season="winter"] .mems-main-pad:has(.hero-content) section[class~
 }
 
 @media (max-width: 640px) {
+  html[data-mems-season="winter"] .hero-top > :is(h1, div:first-child) {
+    transform: translateX(-5vw);
+  }
   html[data-mems-season="winter"] .hero-top::before {
     width: clamp(140px, 40vw, 186px);
     top: 4px;
     left: -4px;
+  }
+}
+
+@media (max-width: 360px) {
+  html[data-mems-season="winter"] .hero-top > :is(h1, div:first-child) {
+    transform: translateX(-7.5vw);
+  }
+}
+
+@media (max-width: 639px) {
+  html[data-mems-season="winter"] .hero-top > h1 {
+    margin-bottom: 3.25rem;
+  }
+}
+
+@media (max-width: 335px) {
+  html[data-mems-season="winter"] .hero-top > h1 {
+    font-size: 2.75rem;
+  }
+}
+
+@media (min-width: 501px) and (max-width: 639px) {
+  html[data-mems-season="winter"] .hero-top > h1 {
+    margin-bottom: 4.25rem;
   }
 }
 

@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import WinterLogoHat from "@/components/WinterLogoHat";
+import brandStyles from "@/components/WinterBrandPlacement.module.css";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -43,14 +45,17 @@ export default function Footer() {
         <div className="grid items-center gap-3 py-3 md:grid-cols-[minmax(0,1fr)_auto]">
           <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
             <div className="flex min-w-0 items-center gap-3">
-              <Image
-                src="/images/millstadt-ems-footer-logo.png"
-                alt=""
-                width={64}
-                height={64}
-                sizes="64px"
-                className="h-16 w-16 shrink-0 object-contain"
-              />
+              <span className={brandStyles.footer}>
+                <Image
+                  src="/images/millstadt-ems-footer-logo.png"
+                  alt=""
+                  width={64}
+                  height={64}
+                  sizes="64px"
+                  className="h-16 w-16 shrink-0 object-contain"
+                />
+                <WinterLogoHat />
+              </span>
               <div className="min-w-0">
                 <div className="text-sm font-black uppercase tracking-wider text-white">
                   Millstadt Ambulance Service
