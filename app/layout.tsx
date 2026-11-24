@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
+import { withWinterShareCard } from "@/lib/seasonal/share-metadata";
 import { siteSans } from "./fonts";
 import "./globals.css";
 import Nav from "@/components/Nav";
@@ -13,7 +15,7 @@ import SeasonalThemeController from "@/components/SeasonalThemeController";
 import WinterAtmosphere from "@/components/WinterAtmosphere";
 import { getSeasonalThemePublicConfig } from "@/lib/seasonal/themes";
 
-export const metadata: Metadata = {
+const normalMetadata: Metadata = {
   title: {
     default: "Millstadt Ambulance Service | Advanced Life Support",
     template: "%s | Millstadt Ambulance Service",
@@ -28,6 +30,12 @@ export const metadata: Metadata = {
     title: "Millstadt EMS",
   },
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  // Read the Chicago season on the initial HTML request, including bot requests.
+  await connection();
+  return withWinterShareCard(normalMetadata);
+}
 
 export default function RootLayout({
   children,

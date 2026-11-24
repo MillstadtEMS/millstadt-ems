@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
+  openGraph: null,
+  twitter: null,
   title: "Truck Check — Millstadt EMS",
   description: "Daily ambulance inspection — Millstadt Ambulance Service",
   manifest: "/truckcheck/manifest.webmanifest",

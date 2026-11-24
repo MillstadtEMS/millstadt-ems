@@ -7,6 +7,8 @@ import { requireElectionAccess } from "@/lib/election-review";
 import LockElectionReview from "@/components/LockElectionReview";
 
 export const metadata: Metadata = {
+  openGraph: null,
+  twitter: null,
   title: "EMS Tax Calculator",
   robots: { index: false, follow: false },
   description: "Estimate the planned 0.30% ESD levy and the existing ambulance levy offset for your fire tax district. Understand home value, EAV and exemptions.",

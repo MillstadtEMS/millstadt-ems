@@ -8,7 +8,12 @@
     content: url("/images/winter/logos/wordmark.webp");
   }
   html[data-mems-season="winter"] .mems-main-pad img:is([src*="/images/financial-transparency/millstadt-ems-financial-transparency.png"], [src*="%2Fimages%2Ffinancial-transparency%2Fmillstadt-ems-financial-transparency.png" i]) {
-    content: url("/images/winter/logos/financial-transparency.webp");
+    /* Keep the original lettering in front. The cap sits in the transparent
+       space above the outer letter, inside the logo's existing image box. */
+    background-image: url("/images/winter/logo-santa-hat.webp");
+    background-repeat: no-repeat;
+    background-size: 17.5% auto;
+    background-position: 90.5% 9%;
   }
   html[data-mems-season="winter"] .mems-main-pad img:is([src*="/kids-club/kids-club-home.png"], [src*="%2Fkids-club%2Fkids-club-home.png" i]) {
     content: url("/images/winter/logos/kids-club.webp");

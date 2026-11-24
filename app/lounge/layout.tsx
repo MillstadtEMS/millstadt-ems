@@ -25,6 +25,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  openGraph: null,
+  twitter: null,
   title: { default: "Employee Lounge", template: "%s · MAS Lounge" },
   robots: "noindex,nofollow",
   manifest: "/lounge/manifest.webmanifest",

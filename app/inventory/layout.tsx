@@ -9,6 +9,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  openGraph: null,
+  twitter: null,
   title: { default: "Inventory", template: "%s · MAS Inventory" },
   robots: "noindex,nofollow",
   manifest: "/inventory-manifest.json",

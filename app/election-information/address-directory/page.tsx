@@ -6,7 +6,12 @@ import AddressDirectory from "@/components/AddressDirectory";
 import LockElectionReview from "@/components/LockElectionReview";
 import type { ElectionDirectory } from "@/lib/election-directory-types";
 import directory from "@/data/election-directory/directory.json";
-export const metadata: Metadata = { title: "Find your EMS tax", robots: { index: false, follow: false } };
+export const metadata: Metadata = {
+  openGraph: null,
+  twitter: null,
+  title: "Find your EMS tax",
+  robots: { index: false, follow: false },
+};
 export default async function AddressDirectoryPage({ searchParams }: { searchParams: Promise<{ address?: string }> }) {
   const query = await searchParams;
   await requireElectionAccess(`/election-information/address-directory${query.address ? `?address=${encodeURIComponent(query.address)}` : ""}`);

@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import { safeReviewPath } from "@/lib/election-review-auth";
 import { PublicPageHero } from "@/components/site/PublicChrome";
 import styles from "./review.module.css";
-export const metadata: Metadata = { title: "Election page review", robots: { index: false, follow: false } };
+export const metadata: Metadata = {
+  openGraph: null,
+  twitter: null,
+  title: "Election page review",
+  robots: { index: false, follow: false },
+};
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = await searchParams;
   const next = safeReviewPath(query.next);

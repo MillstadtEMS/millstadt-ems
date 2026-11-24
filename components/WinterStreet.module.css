@@ -1,0 +1,363 @@
+.street {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.street img, .rink img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.fireEngine, .carolers {
+  position: absolute;
+  isolation: isolate;
+}
+
+.fireEngine {
+  left: 50%;
+  width: 21.4%;
+  bottom: 20.2%;
+}
+
+.fireEngine img {
+  filter: brightness(.95) drop-shadow(0 2px 1px #1823388c);
+}
+
+.fireEngine::before, .carolers::before, .stall::before, .skateShadow {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 85% 3% -3%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #131d33a3 2%, #27345152 46%, transparent 73%);
+}
+
+.fireEngine::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  width: 100%;
+  height: 23%;
+  background: url("/images/winter/street/fire-engine.webp") center / 100% 100% no-repeat;
+  transform: scaleY(-1);
+  opacity: .17;
+  filter: blur(1px);
+  mask-image: linear-gradient(0deg, black, transparent 84%);
+}
+
+.lamps, .rinkLights { position: absolute; inset: 0; pointer-events: none; }
+.lamps i, .lantern, .rinkLights i {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffbca 0 10%, #ffdb7fb3 22%, #ffac4a44 44%, transparent 70%);
+  transform: translate(-50%, -50%);
+  animation: lanternGlow 4.3s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+.lamps i { width: 6%; aspect-ratio: 1; }
+.lamps i:nth-child(1) { left: 11.6%; top: 27.5%; }
+.lamps i:nth-child(2) { left: 20.8%; top: 26.8%; animation-delay: -2s; }
+.lamps i:nth-child(3) { left: 90%; top: 66%; width: 5.5%; animation-delay: -.7s; }
+.lamps i:nth-child(4) { left: 96.6%; top: 61.8%; width: 4.8%; animation-delay: -1.6s; }
+
+.carolers {
+  left: 22.55%;
+  width: 4.95%;
+  bottom: 24%;
+}
+.carolers img { filter: brightness(.92) drop-shadow(0 1px 1px #1c243b75); }
+.lantern { left: 53%; top: 45%; width: 20%; aspect-ratio: 1; }
+
+.rink {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  aspect-ratio: 4.9;
+  margin-top: -1.1%;
+  overflow: hidden;
+  pointer-events: none;
+  background: #889bb4 url("/images/winter/street/town-rink.webp") center top / 100% auto no-repeat;
+  mask-image: linear-gradient(180deg, transparent, black 5.1%);
+}
+
+/* The spectators stand on the snowy approach outside the ice. */
+.rink::before {
+  content: "";
+  position: absolute;
+  right: -4%;
+  bottom: -9%;
+  width: 29%;
+  height: 47%;
+  background: url("/images/winter/village-snowbank.webp") center / 100% 100% no-repeat;
+  transform: rotate(-12deg);
+  opacity: .97;
+  mask-image: linear-gradient(100deg, transparent, black 24%);
+}
+.neighbors {
+  position: absolute;
+  left: 81%;
+  bottom: 13%;
+  width: 16%;
+  isolation: isolate;
+}
+.neighbors::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 92% -2% -3%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #19253d82 0, transparent 70%);
+}
+.neighbors img { filter: brightness(.94) drop-shadow(0 1px 1px #19283b5c); }
+.rinkLights i { top: 9.5%; width: 3.8%; aspect-ratio: 1; }
+.rinkLights i:nth-child(1) { left: 22%; animation-delay: -2.1s; }
+.rinkLights i:nth-child(2) { left: 50.1%; animation-duration: 5.2s; }
+.rinkLights i:nth-child(3) { left: 79.5%; animation-delay: -1.2s; }
+
+.stall {
+  position: absolute;
+  z-index: 1;
+  left: 4.2%;
+  width: 11.4%;
+  bottom: 25%;
+  isolation: isolate;
+}
+.stall img { filter: brightness(.91) drop-shadow(.12em .12em .18em #26355266); }
+
+.steam {
+  position: absolute;
+  left: 46%;
+  top: 45%;
+  width: 6%;
+  height: 8%;
+}
+.steam i {
+  position: absolute;
+  left: 20%;
+  width: 65%;
+  height: 75%;
+  border-left: 1px solid #fff7e3;
+  border-radius: 45%;
+  opacity: 0;
+  filter: blur(.4px);
+  animation: cocoaSteam 3.4s ease-out infinite;
+  animation-play-state: paused;
+}
+.steam i + i { left: 60%; animation-delay: -1.7s; }
+@keyframes cocoaSteam {
+  from { opacity: 0; transform: translate(0, 20%) scale(.62); }
+  36% { opacity: .65; }
+  to { opacity: 0; transform: translate(48%, -62%) scale(1.1) rotate(-19deg); }
+}
+
+.soloLane, .familyLane {
+  position: absolute;
+  width: 9.4%;
+  left: 48%;
+  bottom: 22%;
+}
+.familyLane {
+  z-index: 2;
+  width: 12.7%;
+  left: 24%;
+  bottom: 1%;
+}
+.skater { position: relative; isolation: isolate; }
+.person { position: relative; z-index: 1; }
+.familyLane .skater {
+  animation: familyGlide 18s ease-in-out -4s infinite alternate;
+  animation-play-state: paused;
+}
+.soloLane .skater {
+  animation: soloGlide 13s ease-in-out -3s infinite alternate;
+  animation-play-state: paused;
+}
+
+/* Remove the tile below the family's blades so only the skaters move. */
+.familyLane img {
+  clip-path: polygon(0 0,100% 0,100% 71%,81% 71%,85.5% 79.5%,85.5% 82%,82% 81%,78% 77%,75% 72%,67% 72%,68% 79%,71% 85%,70% 88%,63% 87%,61% 84%,61% 78%,59.2% 72%,27% 72%,26% 76%,27.4% 82%,26% 86.5%,17.8% 86.5%,16% 83%,16.5% 77%,14% 79.5%,8% 82.5%,6% 82.5%,6.6% 78%,9% 74%,8.7% 72%,0 71%);
+}
+.familyLane .skateShadow { inset: 79% 10% 11% 5%; }
+.soloLane .skateShadow { inset: 92% 12% -1% 8%; }
+.reflection {
+  position: absolute;
+  inset: 100% 0 auto;
+  height: 22%;
+  overflow: hidden;
+  opacity: .2;
+  filter: blur(1px);
+  mask-image: linear-gradient(black, transparent);
+}
+.reflection img {
+  position: absolute;
+  width: 100%;
+  bottom: 100%;
+  transform-origin: center bottom;
+  transform: scaleY(-.52);
+}
+.familyLane .reflection { top: 85.7%; }
+.familyLane .reflection img { transform: translateY(-7%) scaleY(-.5); }
+
+.street[data-active="true"] .lamps i,
+.street[data-active="true"] .lantern,
+.rink[data-active="true"] .rinkLights i,
+.rink[data-active="true"] .steam i,
+.rink[data-active="true"] .skater { animation-play-state: running; }
+
+@keyframes familyGlide {
+  0% { transform: translate(0, -1.4%) rotate(-1deg); }
+  38% { transform: translate(42%, 1.2%) rotate(.2deg); }
+  74% { transform: translate(77%, -1.6%) rotate(-.5deg); }
+  100% { transform: translate(93%, -2%) rotate(-.1deg); }
+}
+@keyframes soloGlide {
+  0% { transform: translate(149%, -4%) rotate(2deg); }
+  34% { transform: translate(99%, -.8%) rotate(-1.3deg); }
+  78% { transform: translate(29%, 3.5%) rotate(-2.1deg); }
+  100% { transform: translate(0, 2%) rotate(.2deg); }
+}
+@keyframes lanternGlow {
+  0%, 100% { opacity: .36; }
+  52% { opacity: .86; }
+  73% { opacity: .55; }
+}
+@media (prefers-reduced-motion: reduce), print {
+  .skater, .lamps i, .lantern, .rinkLights i, .steam i { animation: none !important; }
+}
+
+.pour {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .43em;
+  white-space: nowrap;
+}
+
+.announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.stallButton {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  min-width: 44px;
+  min-height: 44px;
+  pointer-events: auto;
+  touch-action: manipulation;
+  border: 0;
+  border-radius: .35em;
+  background: transparent;
+  cursor: pointer;
+}
+.stallButton:focus-visible { outline: 2px solid #ffedac; outline-offset: 2px; }
+.cocoaBadge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  width: clamp(16px, 1.7vw, 25px);
+  aspect-ratio: 1;
+  color: #fff2bc;
+  background: radial-gradient(ellipse at 30% 25%, #784a29, #452019);
+  border: 1px solid #e4bd75;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px #201b2d88;
+}
+.cocoaBadge svg { width: 67%; height: 67%; }
+.stallButton:hover .cocoaBadge, .stallButton:focus-visible .cocoaBadge {
+  background: #834029;
+  box-shadow: 0 0 0 2px #ffdc865c;
+}
+.stall[data-serving="true"] { z-index: 5; }
+.stall[data-serving="true"] .steam { transform: scale(1.8); transform-origin: center bottom; }
+.stall[data-serving="true"] .steam i { animation-duration: 1.65s; }
+.delivery {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+}
+.cup {
+  position: absolute;
+  width: clamp(18px, 2.35vw, 37px);
+  height: auto;
+  aspect-ratio: 1.25;
+  left: 87%;
+  top: 34%;
+  border-radius: 15% 15% 39% 38%;
+  background: linear-gradient(98deg, #722c29, #da5a45 26%, #a82c2c 62%, #682225);
+  border-bottom: 2px solid #d89c71;
+  filter: drop-shadow(1px 3px 2px #22132970);
+  animation: handCup .7s cubic-bezier(.2,.75,.3,1) both;
+}
+.cup::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 27%;
+  left: 0;
+  top: -2%;
+  border: 1px solid #ffdcaf;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 35% 48%, #fff1ca 0 12%, transparent 18%),
+    radial-gradient(ellipse at 63% 50%, #f3dfb2 0 12%, transparent 18%), #5a3425;
+}
+.cup::after {
+  content: "";
+  position: absolute;
+  left: 91%;
+  top: 16%;
+  width: 36%;
+  height: 49%;
+  border: 2px solid #b74536;
+  border-left: 0;
+  border-radius: 0 65% 65% 0;
+}
+.cup i {
+  position: absolute;
+  left: 30%;
+  bottom: 100%;
+  width: 38%;
+  height: 66%;
+  border-left: 2px solid #fff2d8;
+  border-radius: 50%;
+  opacity: .7;
+  animation: cocoaSteam 1.4s ease-out infinite;
+}
+.delivery .speech {
+  position: absolute;
+  left: 103%;
+  top: 0;
+  width: max-content;
+  max-width: none;
+  white-space: nowrap;
+  border: 1px solid #bca267;
+  border-radius: .4em .55em .55em .18em;
+  background: #fdf0d3;
+  padding: .28em .58em;
+  color: #402922;
+  box-shadow: 0 2px 4px #1d223e55;
+  font: 700 clamp(.65rem, .96vw, .89rem)/1.18 system-ui, sans-serif;
+}
+@keyframes handCup {
+  from { opacity: .1; transform: translate(-80%, 33%) scale(.5) rotate(-9deg); }
+  73% { opacity: 1; transform: translate(0, -5%) scale(1.05) rotate(2deg); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce), print {
+  .cup, .cup i { animation: none; }
+}
+@media print {
+  .cocoaBadge, .delivery, .pour { display: none; }
+}

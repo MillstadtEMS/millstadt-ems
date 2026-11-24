@@ -6,6 +6,8 @@ import LoungeShell from "@/components/lounge/LoungeShell";
 import { getAnalyticsConfig } from "@/lib/analytics/config";
 
 export const metadata: Metadata = {
+  openGraph: null,
+  twitter: null,
   title: { default: "Admin", template: "%s · MAS Admin" },
   robots: "noindex,nofollow",
 };

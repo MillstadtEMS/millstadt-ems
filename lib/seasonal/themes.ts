@@ -101,7 +101,7 @@ export function resolveSeasonalTheme({
   return monthDay >= "11-18" || monthDay === "01-01" ? "winter" : "normal";
 }
 
-export function getSeasonalThemePublicConfig(): SeasonalThemePublicConfig {
+export function getSeasonalThemePublicConfig(now = new Date()): SeasonalThemePublicConfig {
   const disabled = process.env.DISABLE_PUBLIC_SEASONAL_THEMES === "true";
   const override = isSeasonalThemeId(process.env.PUBLIC_SEASONAL_THEME_OVERRIDE)
     ? process.env.PUBLIC_SEASONAL_THEME_OVERRIDE
@@ -111,6 +111,6 @@ export function getSeasonalThemePublicConfig(): SeasonalThemePublicConfig {
     disabled,
     override,
     windows,
-    initialTheme: resolveSeasonalTheme({ disabled, override, windows }),
+    initialTheme: resolveSeasonalTheme({ now, disabled, override, windows }),
   };
 }

@@ -5,6 +5,8 @@ import { WifiOff } from "lucide-react";
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
+  openGraph: null,
+  twitter: null,
   title: "Offline",
   robots: { index: false, follow: false },
 };

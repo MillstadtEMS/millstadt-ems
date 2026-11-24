@@ -4,6 +4,8 @@ import "@fontsource-variable/mona-sans/wght.css";
 import "./board.css";
 
 export const metadata: Metadata = {
+  openGraph: null,
+  twitter: null,
   title: { default: "Board Portal", template: "%s · Millstadt EMS Board Portal" },
   robots: "noindex,nofollow",
 };

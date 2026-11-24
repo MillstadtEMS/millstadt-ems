@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { withWinterShareCard } from "@/lib/seasonal/share-metadata";
 import { HUB_TITLE } from "@/lib/financials-hub/types";
 import { publicFinancialDocumentLibrary } from "@/lib/financials-hub/public-library";
 import PublicDocumentLibrary from "./PublicDocumentLibrary";
@@ -16,7 +17,7 @@ const shareImage = {
   alt: shareTitle,
 };
 
-export const metadata: Metadata = {
+const normalMetadata: Metadata = {
   title: HUB_TITLE,
   description,
   alternates: {
@@ -39,6 +40,10 @@ export const metadata: Metadata = {
   manifest: "/financial-information.webmanifest",
   robots: { index: true, follow: true },
 };
+
+export function generateMetadata(): Metadata {
+  return withWinterShareCard(normalMetadata, "financial");
+}
 
 export default function FinancialsInformationHubPage() {
   return (
