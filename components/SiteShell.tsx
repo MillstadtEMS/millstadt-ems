@@ -3,13 +3,19 @@
 import { usePathname } from "next/navigation";
 import "./winter-workspace.css";
 import "./winter-site-colors.css";
+import "./winter-snowball-play.css";
 import WinterPageSurprises from "./WinterPageSurprises";
+import WinterTrinketHunt from "./WinterTrinketHunt";
 import WinterRoofline from "./WinterRoofline";
 import WinterSnowballAmbush from "./WinterSnowballAmbush";
 import WinterStreetParade from "./WinterStreetParade";
 import WinterMusicPlayer from "./WinterMusicPlayer";
+import WinterSnowballFight from "./WinterSnowballFight";
+import WinterTimeoutButton from "./WinterTimeoutButton";
+import WinterFightSign from "./WinterFightSign";
 import musicStyles from "./WinterMusicPlayer.module.css";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
+import { useDeviceMarker } from "@/lib/device/profile";
 
 export default function SiteShell({
   header,
@@ -22,6 +28,7 @@ export default function SiteShell({
 }) {
   const pathname = usePathname() || "";
   const winter = useWinterTheme();
+  useDeviceMarker();
   // Routes that render their own full chrome (their own header/sidebar) and
   // must NOT also get the public site header. /admin uses the same LoungeShell
   // as /lounge, so it belongs here too — otherwise the global CAD ticker +
@@ -40,6 +47,8 @@ export default function SiteShell({
       <main className="mems-standalone flex-1 w-full overflow-x-hidden" style={{ paddingTop: 0 }}>
         {ambush}
         {winter && <WinterRoofline standalone />}
+        {/* Staff pages have no candy-cane ribbon, so Time Out docks in the corner instead. */}
+        {winter && <WinterTimeoutButton floating />}
         <WinterStreetParade pathname={pathname} compact />
         {children}
       </main>
@@ -54,13 +63,19 @@ export default function SiteShell({
         className="flex-1 w-full overflow-x-hidden mems-main-pad"
         style={{ paddingTop: "120px" }}
       >
+        {/* The top banner is a cozy living room; the music video plays on its old TV. */}
         <div className={musicStyles.stage}>
           <WinterMusicPlayer />
-          <WinterStreetParade pathname={pathname} compact={pathname === "/"} />
         </div>
+        {/* The home page plants the Time Out road signs in its big village picture; other pages
+            get a small version of the same signs in the lower-left corner. */}
+        {winter && pathname !== "/" && <WinterFightSign placement="floating" />}
         {children}
       </main>
       <WinterPageSurprises pathname={pathname} />
+      <WinterTrinketHunt pathname={pathname} />
+      {/* Public pages only: the staff tools (lounge, admin, inventory, truck check, board) stay calm. */}
+      {winter && <WinterSnowballFight />}
       {footer}
     </>
   );

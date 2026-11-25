@@ -1,0 +1,413 @@
+/* Board of Directors.
+   Normal season: the site's navy and gold. Winter (Nov 18 – Jan 1): brass, cranberry and evergreen,
+   a twinkling light garland and holly on every frame. Motion is decorative and opt-in. */
+
+.section {
+  position: relative;
+  padding-block: clamp(3rem, 6vw, 5.5rem) clamp(3rem, 6vw, 5rem);
+  overflow: hidden;
+}
+
+.section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 50% at 50% 0%, rgb(240 180 41 / 0.07), transparent 70%),
+    radial-gradient(40% 40% at 90% 100%, rgb(37 99 235 / 0.08), transparent 70%);
+}
+
+/* ── Heading ─────────────────────────────────────────────────────────── */
+.head {
+  position: relative;
+  max-width: 46rem;
+  margin: 0 auto clamp(2.25rem, 4.5vw, 3.75rem);
+  text-align: center;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 0.9rem;
+  color: #f0b429;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+.eyebrow span {
+  width: 2rem;
+  height: 1px;
+  background: #f0b429;
+}
+
+.title {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(2.3rem, 5vw, 3.6rem);
+  font-weight: 900;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.lede {
+  max-width: 38rem;
+  margin: 1rem auto 0;
+  color: #94a3b8;
+  font-size: clamp(1rem, 1.6vw, 1.12rem);
+  line-height: 1.65;
+}
+
+/* ── Portrait grid ───────────────────────────────────────────────────── */
+.stage {
+  position: relative;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(2rem, 4vw, 3rem) clamp(1rem, 2.6vw, 2.25rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  position: relative;
+  min-width: 0;
+}
+
+.figure {
+  margin: 0;
+  transition: transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.frame {
+  position: relative;
+}
+
+.photo {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #0b1a33;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.04),
+    0 24px 48px -22px rgb(0 0 0 / 0.85),
+    0 10px 20px -12px rgb(0 0 0 / 0.6);
+  isolation: isolate;
+}
+
+.photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1px rgb(240 180 41 / 0.35),
+    inset 0 -70px 60px -40px rgb(4 13 26 / 0.45);
+  transition: box-shadow 400ms ease;
+}
+
+.photoImg {
+  object-fit: cover;
+  object-position: 50% 20%;
+  transition: transform 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* light sweep on hover */
+.sheen {
+  position: absolute;
+  inset: -20%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 38%, rgb(255 255 255 / 0.16) 48%, rgb(255 255 255 / 0.04) 54%, transparent 62%);
+  transform: translateX(-70%);
+  opacity: 0;
+}
+
+.caption {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  padding-top: 1.05rem;
+  text-align: center;
+}
+
+.name {
+  color: #fff;
+  font-size: clamp(1.02rem, 1.6vw, 1.28rem);
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.office {
+  color: #f0b429;
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1.3;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.holly {
+  display: none;
+}
+
+.lights {
+  display: none;
+}
+
+@media (hover: hover) {
+  .card:hover .figure {
+    transform: translateY(-6px);
+  }
+  .card:hover .photoImg {
+    transform: scale(1.035);
+  }
+  .card:hover .photo::after {
+    box-shadow:
+      inset 0 0 0 1px rgb(240 180 41 / 0.75),
+      inset 0 -70px 60px -40px rgb(4 13 26 / 0.35);
+  }
+  .card:hover .sheen {
+    animation: sheen 1100ms cubic-bezier(0.3, 0.7, 0.3, 1) both;
+  }
+}
+
+@keyframes sheen {
+  from { opacity: 1; transform: translateX(-70%); }
+  to { opacity: 1; transform: translateX(70%); }
+}
+
+/* ── Layout breakpoints ──────────────────────────────────────────────── */
+@media (max-width: 639px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.75rem 0.9rem;
+  }
+  .photo {
+    border-radius: 14px;
+  }
+  .office {
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+  }
+  .caption {
+    padding-top: 0.8rem;
+    gap: 0.3rem;
+  }
+}
+
+/* ── Flip-book reveal: cards flip up into place as they scroll in ────── */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .card {
+      animation: deal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 24%;
+      transform-origin: 50% 100%;
+    }
+    .card:nth-child(3n + 2) { animation-range: entry 4% cover 28%; }
+    .card:nth-child(3n) { animation-range: entry 8% cover 32%; }
+    @media (max-width: 639px) {
+      .card:nth-child(odd) { animation-range: entry 0% cover 24%; }
+      .card:nth-child(even) { animation-range: entry 5% cover 29%; }
+    }
+  }
+}
+
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: perspective(1100px) rotateX(-26deg) translateY(36px) scale(0.96);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Winter: Nov 18 – Jan 1 ─────────────────────────────────────────── */
+@media screen and (forced-colors: none) {
+  :global(html[data-mems-season="winter"]) .section::before {
+    background:
+      radial-gradient(55% 45% at 50% 0%, rgb(255 234 153 / 0.12), transparent 70%),
+      radial-gradient(45% 40% at 8% 100%, rgb(173 22 52 / 0.35), transparent 70%);
+  }
+
+  :global(html[data-mems-season="winter"]) .eyebrow {
+    color: #ffea99;
+  }
+  :global(html[data-mems-season="winter"]) .eyebrow span {
+    background: #ffea99;
+  }
+  :global(html[data-mems-season="winter"]) .title {
+    color: #fff8e7;
+    text-shadow: 0 2px 0 rgb(6 54 34 / 0.45);
+  }
+  :global(html[data-mems-season="winter"]) .lede {
+    color: #e3f1e6;
+  }
+
+  /* twinkling garland of lights draped over the portraits */
+  :global(html[data-mems-season="winter"]) .lights {
+    display: block;
+    position: absolute;
+    top: -2.4rem;
+    left: -1.5rem;
+    right: -1.5rem;
+    height: 44px;
+    pointer-events: none;
+    z-index: 3;
+  }
+  :global(html[data-mems-season="winter"]) .lights::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(70px 26px at 60px -6px, transparent 95%, #163626 96%, #2d5a3f 98%, transparent 99.6%) repeat-x;
+    background-size: 120px 44px;
+  }
+  :global(html[data-mems-season="winter"]) .lights span {
+    position: absolute;
+    inset: 0;
+    background-repeat: repeat-x;
+    background-size: 120px 44px;
+    animation: twinkle 2.8s ease-in-out infinite alternate;
+  }
+  :global(html[data-mems-season="winter"]) .lights span:nth-child(1) {
+    background-image: radial-gradient(4.5px 6.5px at 15px 21px, #fff6f3 0 18%, #ff4d5e 34% 70%, transparent 78%);
+    --glow: #ff4d5e;
+  }
+  :global(html[data-mems-season="winter"]) .lights span:nth-child(2) {
+    background-image: radial-gradient(4.5px 6.5px at 45px 26px, #fffbe8 0 18%, #ffcf4a 34% 70%, transparent 78%);
+    --glow: #ffcf4a;
+    animation-delay: -0.7s;
+  }
+  :global(html[data-mems-season="winter"]) .lights span:nth-child(3) {
+    background-image: radial-gradient(4.5px 6.5px at 75px 26px, #effff6 0 18%, #36d483 34% 70%, transparent 78%);
+    --glow: #36d483;
+    animation-delay: -1.4s;
+  }
+  :global(html[data-mems-season="winter"]) .lights span:nth-child(4) {
+    background-image: radial-gradient(4.5px 6.5px at 105px 21px, #f1f9ff 0 18%, #63c3ff 34% 70%, transparent 78%);
+    --glow: #63c3ff;
+    animation-delay: -2.1s;
+  }
+
+  /* frames: brass hairline, cranberry mat, holly tucked into the corner */
+  :global(html[data-mems-season="winter"]) .photo {
+    border-radius: 16px;
+    box-shadow:
+      0 0 0 2px #ffe6a3,
+      0 0 0 6px #a4253d,
+      0 0 0 7px rgb(255 209 111 / 0.55),
+      0 26px 46px -22px rgb(2 30 18 / 0.9);
+  }
+  :global(html[data-mems-season="winter"]) .photo::after {
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.28),
+      inset 0 -70px 60px -40px rgb(40 6 16 / 0.35);
+  }
+  :global(html[data-mems-season="winter"]) .holly {
+    display: block;
+    position: absolute;
+    z-index: 3;
+    top: -16px;
+    left: -18px;
+    width: 64px;
+    height: 40px;
+    transform: rotate(-24deg);
+    transform-origin: 70% 60%;
+    filter: drop-shadow(0 3px 3px rgb(0 0 0 / 0.35));
+  }
+  /* holly on the outer corners: left on the first two columns, right on the last (2-up: right on even) */
+  :global(html[data-mems-season="winter"]) .card:nth-child(3n) .holly {
+    left: auto;
+    right: -18px;
+    transform: rotate(24deg) scaleX(-1);
+  }
+  :global(html[data-mems-season="winter"]) .caption .name {
+    color: #fff8e7;
+  }
+  :global(html[data-mems-season="winter"]) .office {
+    color: #ffea99;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :global(html[data-mems-season="winter"]) .holly {
+      animation: holly 5.5s ease-in-out infinite;
+    }
+    :global(html[data-mems-season="winter"]) .card:nth-child(3n) .holly {
+      animation-name: hollyFlip;
+    }
+    :global(html[data-mems-season="winter"]) .card:nth-child(3n + 2) .holly { animation-delay: -1.8s; }
+    :global(html[data-mems-season="winter"]) .card:nth-child(3n) .holly { animation-delay: -3.6s; }
+  }
+}
+
+@media screen and (forced-colors: none) and (max-width: 639px) {
+  :global(html[data-mems-season="winter"]) .card:nth-child(n) .holly {
+    left: -14px;
+    right: auto;
+    width: 52px;
+    height: 32px;
+    transform: rotate(-24deg);
+    animation-name: holly;
+  }
+  :global(html[data-mems-season="winter"]) .card:nth-child(even) .holly {
+    left: auto;
+    right: -14px;
+    transform: rotate(24deg) scaleX(-1);
+    animation-name: hollyFlip;
+  }
+  :global(html[data-mems-season="winter"]) .lights {
+    left: -0.75rem;
+    right: -0.75rem;
+    top: -2.1rem;
+  }
+}
+
+@keyframes twinkle {
+  0%, 18% {
+    opacity: 1;
+    filter: drop-shadow(0 0 5px var(--glow)) brightness(1.15);
+  }
+  100% {
+    opacity: 0.38;
+    filter: drop-shadow(0 0 1px var(--glow)) brightness(0.85);
+  }
+}
+
+@keyframes holly {
+  0%, 100% { transform: rotate(-24deg); }
+  50% { transform: rotate(-19deg); }
+}
+
+@keyframes hollyFlip {
+  0%, 100% { transform: rotate(24deg) scaleX(-1); }
+  50% { transform: rotate(19deg) scaleX(-1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .figure,
+  .photoImg {
+    transition: none;
+  }
+  .lights span,
+  .sheen {
+    animation: none !important;
+  }
+}

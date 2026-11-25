@@ -2,12 +2,38 @@
   position: fixed; inset: 0; z-index: 42;
   overflow: clip; pointer-events: none;
 }
-.cast {
-  position: absolute; left: var(--actor-x); top: var(--actor-y); width: var(--actor-w); aspect-ratio: 661 / 600;
-  isolation: isolate; pointer-events: none; user-select: none;
-  --hand-left: 86%; --hand-top: 30%;
+
+/* One pop-up character. The box is the art's stage; --cut is how far its bottom sits below the
+   floor line (the bottom of the screen, or the top of the phone's bottom bar), which hides the rest.
+   Layers, outside in: clip (the floor) > lean (corner peeks tilt in) > rise (pop up, duck, sink) >
+   motion (sway, strum, flip) > stage (the ragdoll jolt) > one frame of art. */
+.actor {
+  position: absolute; left: var(--x); top: var(--y); width: var(--w); height: var(--h);
+  pointer-events: none; user-select: none; -webkit-user-select: none; isolation: isolate;
 }
-.cast[data-snow-ambush="kenny"] { --hand-left: 19.8%; --hand-top: 28.8%; }
+.clip { position: absolute; inset: 0; clip-path: inset(-160% -160% var(--cut, 0px) -160%); }
+.lean { position: absolute; inset: 0; transform: rotate(var(--tilt, 0deg)); transform-origin: var(--pivot, 50% 100%); }
+.rise, .motion, .stage { position: absolute; inset: 0; transform-origin: 50% 100%; }
+.stage { filter: drop-shadow(1px 3px 2px #24384a73); }
+.actor[data-edge^="corner"] .motion, .actor[data-edge^="corner"] .stage { transform-origin: 50% var(--floor-at, 70%); }
+
+/* Every pose is its own picture and only one shows at a time (swapped instantly, never blended),
+   so nobody ever grows a third arm mid-throw. */
+.frame { position: absolute; display: block; overflow: visible; opacity: 0; pointer-events: none; }
+.frame[data-on] { opacity: 1; }
+.stageRef { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+/* What the site-wide snowball fight aims at: the visible part of the character. */
+.target { position: absolute; left: 12%; right: 12%; top: 2%; bottom: calc(var(--cut, 0px) + 6%); }
+/* The visitor's crosshair. It stays click-through until a mouse is over the painted character
+   (checked against the art's alpha in code), so the page under the transparent space still works. */
+.aim {
+  position: absolute; left: -45%; right: -45%; top: -35%; bottom: var(--cut, 0px);
+  pointer-events: none; cursor: var(--snow-cursor, crosshair);
+}
+.aim[data-aim] { pointer-events: auto; }
+html[data-snowball-timeout] .aim { pointer-events: none; cursor: auto; }
+
+/* Snow at their feet: the classic drift they burst out of, or a bank along the bottom edge. */
 .drift {
   position: absolute; inset: 84% 7% 1%;
   background: radial-gradient(ellipse at 36% 43%,#fff 0 13%,transparent 34%),
@@ -16,74 +42,180 @@
   border-radius: 50%; filter: drop-shadow(0 3px 2px #102d4080);
   animation: growDrift .32s ease-out both;
 }
-.reveal { position: absolute; inset: -4% -7% 0; overflow: hidden; }
-.pose {
-  position: absolute; width: 87.72%; height: 96.16%; bottom: 0; left: 6.14%;
-  transform-origin: 50% 94%;
-  filter: drop-shadow(1px 3px 2px #24384a73);
-}
-.sprite, .mad, .hat {
-  position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain;
-}
-.hat { transform-origin: 38.43% 4.17%; }
-.cast[data-phase="rise"] .pose { animation: pop .64s cubic-bezier(.2,.88,.33,1.14) both; }
-.cast[data-phase="rise"] .hat { animation: floppy .68s ease-out both; }
-.cast[data-phase="throw"] .pose { animation: fling .43s ease-in-out both; }
-.cast[data-snow-ambush="kenny"][data-phase="throw"] .pose { --lean: -7deg; --release: 5deg; }
-.cast[data-phase="return"] .pose { animation: recoil .16s .25s ease-out both; }
-.cast[data-phase="return"] .mad { animation: faceHit .01s .24s step-end both; }
-.cast[data-phase="retreat"] .pose { animation: duck .45s cubic-bezier(.57,.04,.8,.49) forwards; }
-.cast[data-phase="retreat"] .drift { animation: hideDrift .49s ease-in both; }
+.actor[data-stand] .drift { inset: auto -14% calc(var(--cut, 0px) - 3.5%) -14%; height: 9%; }
+.actor[data-phase="retreat"] .drift { animation: hideDrift .49s ease-in both; }
+
+/* The ball in hand while a classic thrower rises (it leaves when the shared snowball layer launches it). */
 .gloveBall {
-  position: absolute; left: var(--hand-left); top: var(--hand-top); width: 9.8%; aspect-ratio: 1; border-radius: 50%;
+  position: absolute; width: 9.8%; aspect-ratio: 1; border-radius: 50%;
   transform: translate(-50%,-90%); opacity: 0;
   background: radial-gradient(at 32% 24%,#fff 18%,#edf7fc 47%,#93b4cb);
 }
-.cast[data-phase="rise"] .gloveBall { animation: gather .66s ease-out both; }
+.actor[data-phase="rise"][data-kind="classic"] .gloveBall { animation: gather .66s ease-out both; }
+
+/* Entrances and exits */
+.actor[data-phase="rise"] .rise { animation: pop .62s cubic-bezier(.2,.8,.3,1) both; }
+.actor[data-edge^="corner"][data-phase="rise"] .rise { animation: peekIn .7s cubic-bezier(.2,.8,.3,1) both; }
+/* A caroler who is hit ducks (fully, before anything else moves) and then pops back up, indignant. */
+.actor[data-phase="duck"] .rise { animation: duck .2s cubic-bezier(.5,0,.9,.5) forwards; }
+.actor[data-phase="indignant"] .rise { animation: popBack .36s cubic-bezier(.2,.85,.3,1.05) both; }
+.actor[data-phase="retreat"] .rise { animation: sink .46s cubic-bezier(.57,.04,.8,.49) forwards; }
+.actor[data-phase="retreat"][data-slow] .rise { animation-duration: 1.05s; animation-timing-function: cubic-bezier(.45,.05,.75,.6); }
+.actor[data-edge^="corner"][data-phase="retreat"] .rise { animation-name: peekOut; }
+
+/* Moods and moves */
+.actor[data-phase="idle"] .motion { animation: breathe 2.6s ease-in-out infinite; }
+.actor[data-phase="toss"] .motion { animation: tossLift .44s cubic-bezier(.3,.7,.4,1) both; }
+.actor[data-phase="wave"] .motion { animation: rock .86s ease-in-out 2; }
+.actor[data-phase="throw"] .motion { animation: fling .43s ease-in-out both; }
+.actor[data-phase="sing"] .motion { animation: sway 2.4s ease-in-out infinite; }
+.actor[data-phase="indignant"] .motion { animation: huff .62s ease-out both; }
+.actor[data-phase="lob"] .motion { animation: lob .52s ease-in-out both; }
+.actor[data-phase="woozy"] .motion { animation: woozy 1.45s ease-in-out infinite; }
+.actor[data-phase="crouch"] .motion { animation: squat .38s ease-in-out both; }
+.actor[data-phase="land"] .motion { animation: land .3s ease-out both, cheer .52s .3s ease-in-out 3; }
+.actor[data-phase="pose"] .motion { animation: strut .9s ease-in-out both; }
+
+/* Braeden's serenade: strum, strum, strum, kick, flip-book style (each beat is one picture). */
+.actor[data-phase="strum"] { --beat: 1.84s; }
+.actor[data-phase="strum"][data-fast] { --beat: 1.3s; }
+.actor[data-phase="strum"] .motion { animation: strumBounce var(--beat) linear infinite; }
+.actor[data-phase="strum"] .frame[data-frame="s2"] { animation: strumA var(--beat) step-end infinite; }
+.actor[data-phase="strum"] .frame[data-frame="s3"] { animation: strumB var(--beat) step-end infinite; }
+.actor[data-phase="strum"] .frame[data-frame="s4"] { animation: strumKick var(--beat) step-end infinite; }
+
+/* Dylan's backflip: crouch, launch, tuck (upside down), open out, stick the landing. */
+.actor[data-phase="flip"] .motion { animation: flipArc 1.12s linear both; }
+/* Pictures switch on hard steps; the tumble (rotate) runs smoothly on its own track. */
+.actor[data-phase="flip"] .frame[data-frame="f2"] { animation: flipF2 1.12s step-end both; }
+.actor[data-phase="flip"] .frame[data-frame="f3"] { animation: flipF3 1.12s step-end both, spinF3 1.12s linear both; transform-origin: 50% 50%; }
+.actor[data-phase="flip"] .frame[data-frame="f4"] { animation: flipF4 1.12s step-end both, spinF4 1.12s linear both; transform-origin: 50% 50%; }
+.actor[data-phase="flip"] .frame[data-frame="f5"] { animation: flipF5 1.12s step-end both; }
+/* Hit mid-celebration: he flips backwards right off the bottom of the screen. */
+.actor[data-phase="bail"] .motion { animation: bailArc .84s cubic-bezier(.3,.1,.7,1) both; }
+.actor[data-phase="bail"] .frame[data-frame="f2"] { animation: bailF2 .84s step-end both; }
+.actor[data-phase="bail"] .frame[data-frame="f3"] { animation: bailF3 .84s step-end both, bailSpin3 .84s linear both; transform-origin: 50% 50%; }
+.actor[data-phase="bail"] .frame[data-frame="f4"] { animation: bailF4 .84s step-end both, bailSpin4 .84s linear both; transform-origin: 50% 50%; }
+
+/* Speech, song and the throw-back button */
+.bubble {
+  position: absolute; left: var(--bx); top: var(--by); z-index: 2;
+  width: max-content; max-width: min(250px, 58vw); padding: .32em .72em .36em; border-radius: 1.1em;
+  background: #fff8ea; color: #a3141f; box-shadow: 0 2px 7px #0b1a3559, inset 0 0 0 1.5px #e8c98c;
+  font: italic 800 clamp(.76rem, 1.02vw, 1rem)/1.2 Georgia, "Times New Roman", serif;
+  text-wrap: balance; text-align: center; translate: -50% -100%; transform-origin: 50% 120%;
+  animation: bubbleIn .3s cubic-bezier(.2,.9,.3,1.3) both;
+}
+.bubble::after {
+  content: ""; position: absolute; left: calc(50% - 7px); bottom: -7px; width: 14px; height: 9px;
+  background: #fff8ea; clip-path: polygon(0 0,100% 0,30% 100%);
+}
+.bubble[data-side="left"] { translate: -88% -100%; }
+.bubble[data-side="left"]::after { left: auto; right: 14px; clip-path: polygon(0 0,100% 0,72% 100%); }
+.bubble[data-side="right"] { translate: -12% -100%; }
+.bubble[data-side="right"]::after { left: 14px; }
+.bubble[data-mood="cross"] { color: #fff; background: #b81c27; box-shadow: 0 2px 7px #4a0a1080, inset 0 0 0 1.5px #ffb3b3; font-style: normal; letter-spacing: .02em; }
+.bubble[data-mood="cross"]::after { background: #b81c27; }
+.notes { position: absolute; left: var(--nx); top: var(--ny); width: 0; height: 0; z-index: 1; }
+.notes i {
+  position: absolute; left: 0; top: 0; font: 700 clamp(18px, 1.8vw, 29px)/1 Georgia, serif; font-style: normal;
+  color: #b51d28; text-shadow: 0 0 2px #fff, 0 0 3px #fff, 0 0 6px #fffc, 0 1px 3px #0b1a3580; opacity: 0;
+  animation: note 2.2s ease-out infinite;
+}
+.notes i:nth-child(2) { color: #17663a; animation-delay: .72s; --drift: -1; }
+.notes i:nth-child(3) { color: #b8860b; animation-delay: 1.44s; }
+.notes[data-sour] i { color: #6d7f8f; animation-duration: 1.1s; }
 .counter {
-  position: absolute; left: 33%; top: 16%; width: 36%; height: 58%;
-  border: 0; padding: 0; background: transparent; pointer-events: none;
+  position: absolute; left: var(--cx); top: var(--cy); width: var(--cw); height: var(--cw);
+  translate: -50% -50%; border: 0; padding: 0; border-radius: 50%; background: transparent; pointer-events: none;
 }
-.counter:focus-visible {
-  border: 2px dashed #fff9c1; border-radius: 48%;
-  outline: 2px solid #315444; outline-offset: 2px;
-}
-.flight { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-.flight i {
-  position: absolute; left: 0; top: 0; width: clamp(11px,1.55vw,24px); aspect-ratio: 1; border-radius: 47% 52% 44% 55%;
-  background: radial-gradient(at 30% 21%,white 14%,#eaf5ff 44%,#bed5df 70%,#869eae);
-  box-shadow: inset -1px -1px 2px #8aa8b7,0 2px 4px #0e2c443e;
-}
-.flight b {
-  position: absolute; left: 50vw; top: 49vh; width: clamp(83px,16vw,202px); aspect-ratio: 1.25;
-  background: radial-gradient(ellipse at 35% 39%,#fff 0 12%,#eff8fc 23%,transparent 41%),
-    radial-gradient(ellipse at 64% 45%,#fff 0 14%,#d7e9f2 27%,transparent 43%),
-    radial-gradient(ellipse at 47% 65%,#eff6ff 0 7%,#e5f4fb 21%,transparent 37%);
-  filter: drop-shadow(1px 3px 2px #31455f3d);
-  animation: splat .26s .34s ease-out both;
-}
-.flight[data-ambush-flight="throw"] i { animation: flyOut .4s cubic-bezier(.44,.05,.88,.64) both; }
-.flight[data-ambush-flight="return"] i { animation: flyBack .33s cubic-bezier(.16,.49,.41,.94) both; }
-.flight[data-ambush-flight="return"] b { left: var(--face-x); top: var(--face-y); width: clamp(25px,5vw,61px); animation: splat .19s .25s both; }
+.counter:focus-visible { border: 2px dashed #fff9c1; outline: 2px solid #315444; outline-offset: 2px; }
 .sr { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }
+
+/* Hits: small, quick and gone in about a quarter second (no lingering white poofs). */
+.puff, .smack {
+  position: absolute; width: var(--d); height: var(--d); margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2);
+  border-radius: 50%; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at 46% 44%,#fff 0 26%,#f1f8ff 38%,#dcebf6aa 50%,transparent 64%),
+    radial-gradient(circle at 24% 30%,#fff 0 10%,transparent 17%), radial-gradient(circle at 76% 34%,#fff 0 9%,transparent 15%),
+    radial-gradient(circle at 70% 76%,#fff 0 10%,transparent 16%), radial-gradient(circle at 28% 72%,#fff 0 8%,transparent 14%);
+  filter: drop-shadow(0 1px 2px #2a466659);
+  animation: smack .24s ease-out forwards;
+}
+.puff { animation-duration: .2s; }
+.fleck {
+  position: absolute; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 1px #6f8ba3; pointer-events: none;
+  animation: fleck .23s ease-out forwards;
+}
+
 @keyframes growDrift { from { opacity: .05; transform: scale(.35,.3); } to { opacity: 1; transform: none; } }
 @keyframes hideDrift { 0%,40% { opacity: 1; } to { opacity: 0; transform: scale(.77,.54); } }
-@keyframes pop { 0% { transform: translateY(105%) scale(.91,.9); } 66% { transform: translateY(-5%) rotate(-2deg); } to { transform: none; } }
-@keyframes floppy { 36% { transform: rotate(-13deg); } 65% { transform: rotate(9deg); } to { transform: none; } }
-@keyframes gather { 0%,50% { opacity:0; } 86%,100% { opacity:1; } }
-@keyframes fling { 0% { transform: rotate(var(--lean,7deg)) scale(.98); } 36% { transform: rotate(var(--release,-5deg)) translateY(-3%); } to { transform:none; } }
-@keyframes recoil { 0% { transform:none; } 55% { transform: translateY(4%) rotate(3deg); } to { transform: none; } }
-@keyframes faceHit { from { opacity:0; } to { opacity:1; } }
-@keyframes duck { from { transform: none; } to { transform: translateY(110%) rotate(5deg) scale(.94); } }
-@keyframes flyOut { 0% { opacity:1; transform:translate(var(--hand-x),var(--hand-y)) translate(-50%,-80%) scale(.6); } 93% { opacity:1; } to { opacity:0; transform:translate(50vw,49vh) translate(-50%,-50%) scale(5.2) rotate(48deg); } }
-@keyframes flyBack { 0% { opacity:1; transform:translate(54vw,87vh) scale(3.5) rotate(-47deg); } 90% { opacity:1; } to { opacity:0; transform:translate(var(--face-x),var(--face-y)) translate(-50%,-50%) scale(.65); } }
-@keyframes splat { from { opacity:0; transform:translate(-50%,-50%) scale(.48); } 25% { opacity:.96; } to { opacity:0; transform:translate(-50%,-47%) scale(1.08); } }
+@keyframes gather { 0%,50% { opacity: 0; } 86%,100% { opacity: 1; } }
+/* One rise per visit, with only a small settle at the top. */
+@keyframes pop { 0% { transform: translateY(105%) scale(.94,.92); } 70% { transform: translateY(-1.6%) rotate(-1deg); } to { transform: none; } }
+@keyframes tossLift { 30% { transform: translateY(-2.6%) rotate(-1.6deg) scale(1.015); } to { transform: none; } }
+@keyframes peekIn {
+  from { transform: translate(calc(var(--side) * -72%), 34%) rotate(calc(var(--side) * -9deg)); }
+  72% { transform: translate(calc(var(--side) * 1.2%), -.8%) rotate(calc(var(--side) * 1deg)); }
+  to { transform: none; }
+}
+@keyframes peekOut { to { transform: translate(calc(var(--side) * -80%), 30%) rotate(calc(var(--side) * -8deg)); } }
+@keyframes duck { to { transform: translateY(var(--duck, 46%)) scale(1.02,.97); } }
+@keyframes popBack { from { transform: translateY(var(--duck, 46%)); } 70% { transform: translateY(-3%); } to { transform: none; } }
+@keyframes sink { to { transform: translateY(112%) rotate(4deg) scale(.95); } }
+@keyframes breathe { 50% { transform: translateY(-1.1%) rotate(.6deg); } }
+@keyframes rock { 25% { transform: rotate(-3.2deg); } 75% { transform: rotate(3.2deg); } }
+@keyframes fling { 0% { transform: rotate(7deg) scale(.98); } 36% { transform: rotate(-5deg) translateY(-3%); } to { transform: none; } }
+@keyframes sway { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg) translateY(-1%); } }
+@keyframes huff { 18% { transform: rotate(-7deg) translateY(1%); } 42% { transform: rotate(4deg); } 62% { transform: rotate(-3deg); } 82% { transform: rotate(1.5deg); } }
+@keyframes lob { 38% { transform: rotate(-6deg) translateY(1.5%); } 60% { transform: rotate(7deg) translateY(-2.5%); } }
+@keyframes woozy { 0%,100% { transform: rotate(-5deg) translateX(-2%); } 50% { transform: rotate(5deg) translateX(2%) skewX(-3deg); } }
+@keyframes squat { 55% { transform: scale(1.04,.93); } }
+@keyframes land { 0% { transform: scale(1.06,.9); } 60% { transform: scale(.98,1.03); } to { transform: none; } }
+@keyframes cheer { 45% { transform: translateY(-4.5%); } }
+@keyframes strut { 30% { transform: rotate(-1.8deg); } 65% { transform: rotate(1.6deg); } }
+@keyframes strumBounce {
+  0%,25%,50% { transform: none; } 6%,31%,56% { transform: translateY(1.2%) scale(1.01,.985); }
+  75% { transform: translateY(-3.5%) rotate(-1.5deg); } 87.5% { transform: none; }
+}
+@keyframes strumA { 0% { opacity: 1; } 12.5% { opacity: 0; } 25% { opacity: 1; } 37.5% { opacity: 0; } 50% { opacity: 1; } 62.5%,100% { opacity: 0; } }
+@keyframes strumB { 0% { opacity: 0; } 12.5% { opacity: 1; } 25% { opacity: 0; } 37.5% { opacity: 1; } 50% { opacity: 0; } 62.5% { opacity: 1; } 75% { opacity: 0; } 87.5%,100% { opacity: 1; } }
+@keyframes strumKick { 0% { opacity: 0; } 75% { opacity: 1; } 87.5%,100% { opacity: 0; } }
+@keyframes flipArc {
+  0% { transform: none; } 22% { transform: translateY(-34%); } 42% { transform: translateY(-52%); }
+  58% { transform: translateY(-47%); } 79% { transform: translateY(-7%); } 85% { transform: translateY(1.5%) scale(1.04,.94); } to { transform: none; }
+}
+@keyframes flipF2 { 0% { opacity: 1; } 24%,100% { opacity: 0; } }
+@keyframes flipF3 { 0% { opacity: 0; } 24% { opacity: 1; } 58%,100% { opacity: 0; } }
+@keyframes spinF3 { 0%,24% { rotate: -26deg; } 58%,100% { rotate: 22deg; } }
+@keyframes flipF4 { 0% { opacity: 0; } 58% { opacity: 1; } 80%,100% { opacity: 0; } }
+@keyframes spinF4 { 0%,58% { rotate: -18deg; } 80%,100% { rotate: 10deg; } }
+@keyframes flipF5 { 0% { opacity: 0; } 80%,100% { opacity: 1; } }
+@keyframes bailArc { 0% { transform: none; } 28% { transform: translateY(-26%); } to { transform: translateY(135%); } }
+@keyframes bailF2 { 0% { opacity: 1; } 26%,100% { opacity: 0; } }
+@keyframes bailF3 { 0% { opacity: 0; } 26% { opacity: 1; } 62%,100% { opacity: 0; } }
+@keyframes bailSpin3 { 0%,26% { rotate: -20deg; } 62%,100% { rotate: 25deg; } }
+@keyframes bailF4 { 0% { opacity: 0; } 62%,100% { opacity: 1; } }
+@keyframes bailSpin4 { 0%,62% { rotate: -12deg; } to { rotate: 14deg; } }
+@keyframes bubbleIn { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
+@keyframes note {
+  0% { opacity: 0; transform: translate(0, 0) scale(.7); } 12% { opacity: 1; }
+  70% { opacity: .9; } to { opacity: 0; transform: translate(calc(var(--dir, 1) * (var(--drift, 1) * 8px + 22px)), -74px) rotate(calc(var(--drift, 1) * 14deg)) scale(1.05); }
+}
+@keyframes smack { 0% { opacity: 0; transform: scale(.42); } 22% { opacity: 1; transform: scale(1.06); } 100% { opacity: 0; transform: scale(1.14); } }
+@keyframes fleck { from { opacity: 1; transform: none; } to { opacity: 0; transform: translate(var(--fx), var(--fy)) scale(.5); } }
+
+/* Car screens: bigger art (set in code) and lighter effects. */
+html[data-device="tesla"] .stage { filter: none; }
+html[data-device="tesla"] .notes i:nth-child(n+2), html[data-device="tesla"] .fleck { display: none; }
+
 @media (prefers-reduced-motion: reduce) {
-  .cast *, .flight * { animation: none !important; }
-  .cast[data-phase="rise"] .gloveBall { opacity: 1; }
-  .cast[data-phase="retreat"] { opacity: .35; }
-  .flight i { display: none; }
-  .flight b { width: 40px; transform: translate(-50%,-50%); opacity:.8; }
-  .flight[data-ambush-flight="throw"] b { left: var(--hand-x); top: var(--hand-y); }
+  .actor, .actor *, .puff, .smack, .fleck { animation: none !important; }
+  .actor[data-phase="rise"][data-kind="classic"] .gloveBall { opacity: 1; }
+  .actor[data-phase="strum"] .frame[data-frame="s3"], .actor[data-phase="flip"] .frame[data-frame="f5"] { opacity: 1; }
+  .actor[data-phase="retreat"], .actor[data-phase="duck"] { opacity: .35; }
+  .notes, .fleck { display: none; }
+  .puff, .smack { opacity: .85; transform: none; }
 }
 @media print { .overlay { display: none; } }

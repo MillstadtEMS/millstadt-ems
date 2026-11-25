@@ -1,0 +1,738 @@
+/* Christmas look for Mission, Vision, Pillars of Excellence and Core Values.
+   The roof is SVG (three tuned variants); the walls are gingerbread holding real text. */
+
+.scene {
+  --ink: #4a2a17;
+  --red: #b5122a;
+  --green: #1d5534;
+  --icing: #fffaf2;
+  --gutter: max(16px, 4vw);
+  --wall-pad: clamp(14px, 3vw, 38px);
+  --horizon: clamp(150px, 19vw, 260px);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding-top: clamp(26px, 4.6vw, 64px);
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse min(900px, 90vw) 420px at 50% 520px, #ffb45e2e, #ff9d4a0d 62%, transparent 76%),
+    linear-gradient(180deg, #0a1830 0, #132a52 360px, #1c3a6c 620px, #27497f 900px);
+}
+
+.defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* ── Night sky ─────────────────────────────────────────────────────────── */
+.sky {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: -3;
+  height: 900px;
+  pointer-events: none;
+}
+.stars {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.moon {
+  position: absolute;
+  top: -26px;
+  left: clamp(-50px, calc(100vw - 424px), -34px);
+  width: 116px;
+}
+@media (min-width: 640px) {
+  .moon { top: -8px; left: max(-20px, calc(50% - 680px)); width: clamp(150px, 17vw, 250px); }
+}
+
+.greeting {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+  text-align: center;
+}
+.merry {
+  display: block;
+  font-size: clamp(38px, 11.8vw, 48px);
+  font-weight: 700;
+  line-height: 1.04;
+  color: #fff4d8;
+  text-shadow:
+    0 3px 0 #c41d30,
+    0 6px 0 #500a168c,
+    0 0 28px #ffbe6480;
+}
+.from {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7em;
+  font-size: clamp(12px, 1.2vw, 17px);
+  font-weight: 900;
+  letter-spacing: 0.26em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: #ffdc94;
+  text-shadow: 0 2px 0 #081028b3;
+}
+.from > span { margin-right: -0.26em; }
+@media (min-width: 640px) {
+  .merry { font-size: clamp(52px, 7.4vw, 100px); }
+}
+.fromSpark {
+  width: 0.85em;
+  height: 0.85em;
+  flex: none;
+  fill: #ffdc94;
+}
+
+/* ── House frame ───────────────────────────────────────────────────────── */
+.house {
+  --ar: var(--ar-s);
+  --oh: var(--oh-s);
+  --ov: var(--ov-s);
+  --cw: var(--cw-s);
+  --ct: var(--ct-s);
+  position: relative;
+  width: min(1120px, calc(100% - 2 * var(--gutter)));
+  margin: clamp(30px, 4vw, 40px) auto 0;
+}
+@media (min-width: 640px) {
+  .house { --ar: var(--ar-m); --oh: var(--oh-m); --ov: var(--ov-m); --cw: var(--cw-m); --ct: var(--ct-m); }
+}
+@media (min-width: 1024px) {
+  .house { --ar: var(--ar-l); --oh: var(--oh-l); --ov: var(--ov-l); --cw: var(--cw-l); --ct: var(--ct-l); }
+}
+
+.tower {
+  position: absolute;
+  z-index: -2;
+  top: -38px;
+  right: -14px;
+  width: clamp(100px, 33vw, 128px);
+  height: auto;
+}
+@media (min-width: 640px) {
+  .tower { top: -34px; right: -6px; width: 168px; }
+}
+@media (min-width: 1024px) {
+  .tower { top: -18px; right: -26px; width: 196px; }
+}
+@media (min-width: 1280px) {
+  .tower { top: -14px; right: -128px; width: 224px; }
+}
+
+.roof {
+  position: relative;
+  z-index: 2;
+  aspect-ratio: var(--ar);
+  margin: 0 calc(-1 * var(--oh)) calc(-1 * var(--ov));
+  pointer-events: none;
+}
+.roofArt {
+  position: absolute;
+  inset: 0;
+  display: none;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.roofArt_s { display: block; }
+@media (min-width: 640px) {
+  .roofArt_s { display: none; }
+  .roofArt_m { display: block; }
+}
+@media (min-width: 1024px) {
+  .roofArt_m { display: none; }
+  .roofArt_l { display: block; }
+}
+.crest {
+  position: absolute;
+  top: var(--ct);
+  left: 50%;
+  width: var(--cw);
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 3px 0 #3c19084d);
+}
+
+/* ── Gingerbread walls ─────────────────────────────────────────────────── */
+.walls {
+  position: relative;
+  padding: calc(var(--ov) + clamp(22px, 3vw, 38px)) var(--wall-pad) clamp(70px, 8.4vw, 112px);
+  background:
+    radial-gradient(circle at 3px 4px, #7a3d1659 0.9px, transparent 1.3px) 0 0 / 18px 18px,
+    radial-gradient(circle at 11px 9px, #f0b47a59 0.8px, transparent 1.2px) 0 0 / 18px 18px,
+    radial-gradient(circle at 15px 15px, #7a3d164d 0.8px, transparent 1.2px) 0 0 / 18px 18px,
+    radial-gradient(circle at 6px 14px, #f0b47a4d 0.6px, transparent 1px) 0 0 / 18px 18px,
+    linear-gradient(180deg, #c47a3e 0, #b9692f 55%, #a65a26 100%);
+  box-shadow:
+    inset 14px 0 20px -14px #3c190873,
+    inset -14px 0 20px -14px #3c190873;
+}
+
+.field {
+  position: absolute;
+  z-index: -1;
+  top: var(--horizon);
+  bottom: 0;
+  left: -50vw;
+  right: -50vw;
+  background: linear-gradient(180deg, #3e5a84 0, #5f7aa3 160px, #93aacb 620px, #a8bcd7 100%);
+  box-shadow: 0 -1px 0 #8fa6c6;
+}
+.pines {
+  position: absolute;
+  z-index: -1;
+  top: calc(var(--horizon) - 52px);
+  width: 120px;
+  height: auto;
+  display: none;
+}
+.pinesLeft { right: calc(100% + 8px); }
+.pinesRight { left: calc(100% + 8px); transform: scaleX(-1); }
+@media (min-width: 1180px) {
+  .pines { display: block; }
+}
+
+/* Mission and Vision: cream panels with piped icing pearls */
+.mv {
+  position: relative;
+  display: grid;
+  gap: clamp(18px, 2.6vw, 30px);
+}
+@media (min-width: 768px) {
+  .mv { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mv::before {
+    content: "";
+    position: absolute;
+    top: 14px;
+    bottom: 14px;
+    left: 50%;
+    width: 6px;
+    transform: translateX(-50%);
+    background: radial-gradient(circle, var(--icing) 2.2px, transparent 2.7px) 50% 0 / 6px 11px repeat-y;
+  }
+}
+.panel {
+  position: relative;
+  padding: clamp(14px, 2vw, 24px) clamp(18px, 2.4vw, 32px) clamp(18px, 2.2vw, 28px);
+  border: 4px dotted var(--icing);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff9ea, #fff0cf) padding-box;
+  box-shadow:
+    inset 0 0 0 2px var(--icing),
+    inset 0 0 26px #ffba5c47,
+    0 6px 0 #3c19084d;
+}
+.panelTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 6px;
+  font-size: clamp(34px, 3.3vw, 46px);
+  font-weight: 700;
+  line-height: 1.12;
+  color: var(--red);
+}
+.panel p {
+  margin: 0;
+  font-size: clamp(16px, 1.32vw, 18.5px);
+  font-weight: 500;
+  line-height: 1.62;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+.holly {
+  flex: none;
+  width: 40px;
+  height: 26px;
+}
+
+/* Ribbon with legend tags */
+.ribbon {
+  --band-h: 58px;
+  --tail: clamp(12px, 2.6vw, 38px);
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 10px;
+  margin: clamp(30px, 3.8vw, 44px) calc(-1 * var(--wall-pad) - 8px) 0;
+}
+.ribbon::before,
+.ribbon::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 8px;
+  width: calc(var(--tail) + 30px);
+  height: var(--band-h);
+  background: linear-gradient(180deg, #a3132a, #7d0c1d);
+}
+.ribbon::before {
+  left: calc(-1 * var(--tail));
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, var(--tail) 50%);
+}
+.ribbon::after {
+  right: calc(-1 * var(--tail));
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--tail)) 50%, 100% 100%, 0 100%);
+}
+.ribbonTitle {
+  position: relative;
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  height: var(--band-h);
+  margin: 0;
+  padding: 0 16px 4px;
+  font-size: clamp(31px, 3.3vw, 46px);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  color: #ffffff;
+  text-shadow: 0 2px 0 #5a08148c;
+  background:
+    linear-gradient(180deg, #ffffff26, transparent 40%, #5a081426),
+    linear-gradient(180deg, #e23646, #b5152a);
+  box-shadow: 0 4px 0 #3c19084d;
+}
+.ribbonTitle::before {
+  content: "";
+  position: absolute;
+  inset: 5px 6px;
+  border-block: 1.3px dashed #fff3f0b3;
+  pointer-events: none;
+}
+
+.tag {
+  position: relative;
+  justify-self: center;
+  margin: 0;
+  filter: drop-shadow(0 2px 0 #3c190852);
+}
+.tagFunction { rotate: -1.5deg; }
+.tagPrinciple { rotate: 1.5deg; }
+.tagBody {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px 7px 26px;
+  background: #fff6df;
+  clip-path: polygon(13px 0, 100% 0, 100% 100%, 13px 100%, 0 calc(100% - 11px), 0 11px);
+  border-radius: 0 6px 6px 0;
+  box-shadow: inset 0 0 0 1px #dcb985;
+}
+.tagBody::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  translate: 0 -50%;
+  background: radial-gradient(circle, #7d0d1f 0 2.2px, #f3dfb8 2.6px);
+  box-shadow: 0 0 0 0.8px #d6b07c;
+}
+.tagPrinciple .tagBody {
+  padding: 7px 26px 7px 12px;
+  clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 11px, 100% calc(100% - 11px), calc(100% - 13px) 100%, 0 100%);
+  border-radius: 6px 0 0 6px;
+}
+.tagPrinciple .tagBody::before { left: auto; right: 7px; }
+.twine {
+  position: absolute;
+  z-index: 1;
+  top: -13px;
+  left: 1px;
+  width: 20px;
+  height: 26px;
+}
+.tagPrinciple .twine { left: auto; right: 1px; }
+.tagText {
+  max-width: 9.5em;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+.tagFunction .tagText { color: var(--green); }
+.tagPrinciple .tagText { color: var(--red); }
+.tagStar {
+  flex: none;
+  color: #1f5fae;
+}
+.tagMark {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  fill: var(--red);
+}
+
+@media (min-width: 768px) {
+  .ribbon {
+    --band-h: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    height: var(--band-h);
+    padding: 0 18px;
+    background:
+      linear-gradient(180deg, #ffffff26, transparent 40%, #5a081426),
+      linear-gradient(180deg, #e23646, #b5152a);
+    box-shadow: 0 4px 0 #3c19084d;
+  }
+  .ribbon::before,
+  .ribbon::after { top: 9px; }
+  .ribbonTitle {
+    order: 2;
+    height: auto;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ribbonTitle::before { display: none; }
+  .tag { order: 1; flex: none; }
+  .tagFunction { rotate: 2deg; }
+  .tagPrinciple { order: 3; rotate: -2deg; }
+}
+@media (min-width: 1024px) {
+  .tagBody { gap: 9px; padding: 8px 16px 8px 30px; }
+  .tagPrinciple .tagBody { padding: 8px 30px 8px 16px; }
+  .tagText { font-size: 14.5px; }
+  .tagStar { width: 22px; height: 22px; }
+  .tagMark { width: 16px; height: 16px; }
+}
+
+/* Porch: a warm recess where the candy-cane pillars stand */
+.porch {
+  position: relative;
+  margin: 18px calc(-1 * clamp(2px, 0.8vw, 12px)) 0;
+  padding: clamp(18px, 2.4vw, 30px) clamp(8px, 1.4vw, 16px) clamp(6px, 1vw, 10px);
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 0, #ffcf7a4d, transparent 72%),
+    linear-gradient(180deg, #5e2e12, #874620);
+  box-shadow:
+    inset 0 10px 18px #1e0a0273,
+    inset 0 -2px 0 #ffdcaa1f;
+}
+@media (min-width: 768px) {
+  .porch {
+    margin-top: -18px;
+    padding-top: clamp(34px, 4vw, 44px);
+    border-radius: 0 0 12px 12px;
+  }
+}
+
+.pillars {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 640px) {
+  .pillars { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 16px; }
+}
+@media (min-width: 1024px) {
+  .pillars { grid-template-columns: repeat(6, minmax(0, 1fr)); column-gap: 12px; }
+}
+.pillar {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-row: span 8;
+  grid-template-rows: subgrid;
+  row-gap: 0;
+  justify-items: center;
+  min-width: 0;
+  text-align: center;
+}
+.pillar::before {
+  content: "";
+  z-index: -1;
+  grid-row: 2 / 7;
+  grid-column: 1;
+  justify-self: stretch;
+  margin: 5px 0;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 13px, #b0763d0d 13px 14px),
+    linear-gradient(90deg, #e3c79c 0%, #fff4de 15%, #fffbf3 48%, #fff4de 84%, #e3c79c 100%);
+  box-shadow: inset 0 -10px 14px -10px #a0643033;
+}
+.pillar::after {
+  content: "";
+  grid-row: 8;
+  grid-column: 1;
+  height: 22px;
+}
+/* Every part shares the single column so the shaft sits behind the text. */
+.pillar > * { grid-column: 1; }
+.cap,
+.base {
+  justify-self: stretch;
+  height: 16px;
+  margin: 0 -4px;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, #ffffff8c, #ffffff00 52%, #780a141f),
+    repeating-linear-gradient(135deg, #d0202f 0 7px, #fffaf2 7px 14px);
+  box-shadow:
+    0 0 0 2px #fffaf2,
+    0 3px 0 2px #3c190859;
+}
+.cap { grid-row: 1; }
+.base { grid-row: 7; height: 14px; }
+/* Beats the site-wide mobile `span { max-width: 100% }` so the caps overhang both sides. */
+.pillar .cap,
+.pillar .base { max-width: none; }
+.pillarStar {
+  grid-row: 2;
+  margin-top: clamp(16px, 1.8vw, 22px);
+  color: #1f5fae;
+}
+.fn {
+  grid-row: 3;
+  align-self: center;
+  margin: 6px 0 2px;
+  padding-inline: 8px;
+  font-size: clamp(15.5px, 1.3vw, 17.5px);
+  font-weight: 800;
+  line-height: 1.16;
+  color: var(--green);
+  text-wrap: balance;
+}
+.mark {
+  grid-row: 4;
+  width: 40px;
+  height: 10px;
+  margin: 4px 0 6px;
+  color: var(--red);
+}
+.principle {
+  grid-row: 5;
+  align-self: start;
+  margin: 0;
+  padding-inline: 8px;
+  font-size: clamp(14px, 1.15vw, 15.5px);
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--red);
+  text-wrap: balance;
+}
+.desc {
+  grid-row: 6;
+  align-self: start;
+  margin: 10px 0 0;
+  padding: 0 10px clamp(18px, 2vw, 24px);
+  font-size: clamp(14.5px, 1.18vw, 16px);
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+/* Core Values: cream panel with a candy-cane border */
+.values {
+  position: relative;
+  margin-top: clamp(26px, 3.4vw, 40px);
+  padding: clamp(16px, 2.2vw, 26px) clamp(18px, 3.2vw, 44px) clamp(22px, 2.8vw, 36px);
+  border: clamp(8px, 0.8vw, 11px) solid transparent;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, #fff9ea, #fff0cf) padding-box,
+    repeating-linear-gradient(135deg, #d0202f 0 10px, #fffaf2 10px 20px) border-box;
+  box-shadow:
+    inset 0 0 26px #ffba5c38,
+    0 6px 0 #3c19084d;
+}
+.valuesTitle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 0 0 clamp(14px, 2vw, 24px);
+  font-size: clamp(34px, 3.4vw, 48px);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--red);
+}
+.valueList {
+  display: grid;
+  gap: 20px 40px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 700px) {
+  .valueList { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .valueList { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 26px; }
+}
+.valueList h3 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 5px;
+  font-size: clamp(18px, 1.5vw, 21px);
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--green);
+}
+.valueList p {
+  margin: 0;
+  padding-left: 29px;
+  font-size: clamp(15.5px, 1.25vw, 17px);
+  font-weight: 500;
+  line-height: 1.58;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+.valueCandy {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.cane {
+  position: absolute;
+  z-index: 1;
+  bottom: -40px;
+  display: none;
+  width: clamp(40px, 3.6vw, 52px);
+  height: auto;
+}
+.caneLeft { right: calc(100% + 4px); }
+.caneRight { left: calc(100% + 4px); transform: scaleX(-1); }
+@media (min-width: 1180px) {
+  .cane { display: block; }
+}
+
+/* ── Snow and candies at the doorstep ──────────────────────────────────── */
+.ground {
+  position: relative;
+  z-index: 3;
+  height: clamp(100px, 10vw, 150px);
+  margin-top: clamp(-72px, -6vw, -46px);
+  pointer-events: none;
+}
+.drift {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.candyRow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(16px, 2.2vw, 30px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  margin: 0;
+  padding: 0 var(--gutter);
+  list-style: none;
+}
+.candyRow li {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.candyRow li::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  width: 120%;
+  height: 7px;
+  border-radius: 50%;
+  background: #9cb2cf99;
+  z-index: -1;
+}
+.groundGum { width: clamp(26px, 2.6vw, 36px); height: auto; }
+.groundPep { width: clamp(24px, 2.3vw, 32px); height: auto; }
+/* Pressed into the snow by hand: small, uneven offsets. */
+.candyRow li:nth-child(3n + 1) { translate: 0 3px; }
+.candyRow li:nth-child(4n + 2) { translate: 0 -3px; rotate: -8deg; }
+.candyRow li:nth-child(5n + 3) { rotate: 7deg; scale: 0.92; }
+.candyRow li:nth-child(7n) { translate: 0 5px; scale: 1.06; }
+@media (max-width: 639px) {
+  .candyRow li:nth-child(n + 8) { display: none; }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  .candyRow li:nth-child(n + 11) { display: none; }
+}
+.snowGlint {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  fill: #ffffff;
+  opacity: 0;
+  animation: gb-glint 3.8s ease-in-out infinite;
+}
+
+.towerText {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-weight: 800;
+}
+
+/* ── Gentle motion ─────────────────────────────────────────────────────── */
+.glow { animation: gb-bulb 3.2s ease-in-out infinite; }
+.twinkle { animation: gb-twinkle 4.2s ease-in-out infinite; }
+.smokeStill { display: none; }
+.puff {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: gb-smoke 9s cubic-bezier(0.3, 0.1, 0.5, 1) infinite;
+}
+.puff:nth-child(2) { animation-delay: -1.8s; }
+.puff:nth-child(3) { animation-delay: -3.6s; }
+.puff:nth-child(4) { animation-delay: -5.4s; }
+.puff:nth-child(5) { animation-delay: -7.2s; }
+
+@keyframes gb-bulb {
+  0%, 100% { opacity: 1; }
+  45% { opacity: 0.28; }
+  62% { opacity: 0.92; }
+}
+@keyframes gb-twinkle {
+  0%, 100% { opacity: 0.95; }
+  50% { opacity: 0.2; }
+}
+@keyframes gb-smoke {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.45); }
+  14% { opacity: 0.75; }
+  60% { opacity: 0.4; }
+  100% { opacity: 0; transform: translate(52px, -104px) scale(1.8); }
+}
+@keyframes gb-glint {
+  0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(45deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow,
+  .twinkle { animation: none; }
+  .smoke { display: none; }
+  .smokeStill { display: inline; }
+  .snowGlint { animation: none; opacity: 0.85; transform: none; }
+}
+
+@media (forced-colors: active) {
+  .panel,
+  .values { border-style: solid; border-color: CanvasText; background: Canvas; }
+  .ribbonTitle,
+  .ribbon { background: Canvas; }
+}

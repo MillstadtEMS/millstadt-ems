@@ -288,3 +288,32 @@
     color: #9b1833;
   }
 }
+
+/* The CAD ticker keeps its code and behaviour untouched (it is a protected operational feature);
+   only its colours dress for the season: evergreen with a candy-cane edge and gold dividers. The
+   on-a-run red is brightened so it stays easy to read on green. */
+@media screen and (forced-colors: none) {
+  html[data-mems-season="winter"] [class~="bg-[#020912]"]:has(.ct-callinfo) {
+    position: relative;
+    background:
+      repeating-linear-gradient(126deg, transparent 0 28px, #fff6ce08 28px 29px, transparent 29px 54px),
+      linear-gradient(180deg, #0d4d30, #083a24 62%, #062d1c);
+    border-bottom-color: transparent;
+  }
+  html[data-mems-season="winter"] [class~="bg-[#020912]"]:has(.ct-callinfo)::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 3px;
+    pointer-events: none;
+    background: var(--winter-peppermint);
+  }
+  html[data-mems-season="winter"] [class~="bg-[#020912]"]:has(.ct-callinfo) [class~="bg-white/15"] { background-color: #f3c87566; }
+  html[data-mems-season="winter"] [class~="bg-[#020912]"]:has(.ct-callinfo) [class~="text-red-400"] { color: #ff9a9a; }
+  html[data-mems-season="winter"] [class~="bg-[#020912]"]:has(.ct-callinfo) [class~="bg-red-400"] { background-color: #ff9a9a; }
+  /* The call log that drops down from it. */
+  html[data-mems-season="winter"] [class~="bg-[#020912]/98"] {
+    background: linear-gradient(180deg, #08361fF7, #052616F7);
+    border-bottom-color: #f3c87555;
+  }
+}

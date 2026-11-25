@@ -7,11 +7,16 @@
     padding-block: 3px 16px;
   }
   .mems-weather-ribbon {
+    position: relative;
     display: flex;
     align-items: center;
     width: 100%;
     min-height: 36px;
     box-sizing: border-box;
+  }
+  /* Phones: the Call Time Out button sits in the row; the weather readout centers in the rest. */
+  @media (max-width: 640px) {
+    .mems-weather-ribbon { padding-inline: 8px; gap: 8px; }
   }
   .mems-weather-ribbon > div { min-height: 34px; }
   .mems-weather-readout {
@@ -44,4 +49,33 @@
 }
 @media (max-width: 767px) {
   .mems-weather-ribbon .mems-weather-details { top: var(--winter-public-header-end, 144px) !important; }
+}
+
+/* The alert details that drop from the ribbon wear the holiday colours too: evergreen with a
+   candy-cane edge, warm cream text and gold headings. Each alert's level colour (the dot and the
+   event name) is left as it is, so the severity still reads at a glance. */
+@media screen and (forced-colors: none) {
+  html[data-mems-season="winter"] .mems-weather-details {
+    background: linear-gradient(165deg, #0e4d31fb 0%, #083923fb 55%, #052b1afb) !important;
+    border-color: #e6cd9055 !important;
+    border-top: 0 !important;
+    box-shadow: 0 20px 55px #000a, 0 0 0 1px #f3c8753d !important;
+  }
+  html[data-mems-season="winter"] .mems-weather-details::before {
+    content: "";
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: block;
+    height: 6px;
+    background: var(--winter-peppermint);
+    box-shadow: 0 1px #fff3d455;
+  }
+  html[data-mems-season="winter"] .mems-weather-details > div:first-of-type { border-bottom-color: #f3c87533 !important; }
+  html[data-mems-season="winter"] .mems-weather-details > div:first-of-type > span:last-child { color: #ffe1a0 !important; }
+  html[data-mems-season="winter"] .mems-weather-details [style*="color: rgb(226, 232, 240)"],
+  html[data-mems-season="winter"] .mems-weather-details [style*="color:#e2e8f0"] { color: #ffeccc !important; }
+  html[data-mems-season="winter"] .mems-weather-details [style*="color: rgb(203, 213, 225)"] { color: #e9f3ec !important; }
+  html[data-mems-season="winter"] .mems-weather-details [style*="color: rgb(148, 163, 184)"] { color: #bcd6c6 !important; }
+  html[data-mems-season="winter"] .mems-weather-details > div:last-child { color: #a8c8b4 !important; border-top-color: #f3c8752e !important; }
 }

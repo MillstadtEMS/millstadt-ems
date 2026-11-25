@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { Bell, BellOff, Maximize2, Minimize2 } from "lucide-react";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
+import { useSnowballTimeout } from "@/lib/seasonal/snowballTimeout";
 import styles from "./WinterMusicPlayer.module.css";
 
-const excluded = new Set(["admin", "api", "board", "inventory", "lounge", "truckcheck", "ten-eight", "offline", "weather-test"]);
+// /movies plays its own trailer, so the soundtrack stays out of its way there.
+const excluded = new Set(["admin", "api", "board", "inventory", "lounge", "truckcheck", "ten-eight", "offline", "weather-test", "movies"]);
 const preferenceKey = "mems:winter-sound";
 const frameId = "winter-soundtrack";
 const youtube = "https://www.youtube.com";
@@ -21,12 +24,21 @@ function ownedRecordingPath() {
   } catch { return null; }
 }
 
+// The TV's buttons live in the header, on the red-and-green split right above the TV.
+const noSubscription = () => () => {};
+const headerDock = () => document.querySelector<HTMLElement>(".mems-site-nav .mems-nav-bar");
+const noDock = () => null;
+
 function wantsSound() {
   try { return window.localStorage.getItem(preferenceKey) !== "off"; } catch { return true; }
 }
 
 function send(frame: HTMLIFrameElement | null, payload: object) {
-  frame?.contentWindow?.postMessage(JSON.stringify({ id: frameId, channel: "widget", ...payload }), youtube);
+  const target = frame?.contentWindow;
+  if (!target) return;
+  // Until the YouTube player has loaded, the frame is still a same-origin blank page: wait.
+  try { if (target.location.href) return; } catch { /* Cross-origin: the player is there. */ }
+  target.postMessage(JSON.stringify({ id: frameId, channel: "widget", ...payload }), youtube);
 }
 
 function command(frame: HTMLIFrameElement | null, func: string, args: string[] = []) {
@@ -60,6 +72,43 @@ function Soundtrack() {
   const started = useRef(false);
   const ready = useRef(false);
   const needsGesture = useRef(false);
+  // One song at a time: it pauses while this tab is in the background or another open tab of the
+  // site is playing it, and picks up again here when this tab comes back (unless the visitor
+  // paused it themselves).
+  const playing = useRef(false);
+  const heldByUs = useRef(false);
+  const channel = useRef<BroadcastChannel | null>(null);
+  // The cozy living room around the TV: its fire, tree lights and window snow loop quietly, and
+  // hold still during a time out, in a background tab, with reduced motion, or when enlarged.
+  const room = useRef<HTMLVideoElement>(null);
+  const timeout = useSnowballTimeout();
+  const dock = useSyncExternalStore(noSubscription, headerDock, noDock);
+  // Snow falls outdoors only: the snowfall layer starts below the living-room banner.
+  useEffect(() => {
+    const banner = room.current?.closest("aside")?.parentElement;
+    if (!banner) return;
+    const root = document.documentElement;
+    let frameId = 0;
+    const place = () => { frameId = 0; root.style.setProperty("--room-bottom", Math.max(0, banner.getBoundingClientRect().bottom) + "px"); };
+    const queue = () => { if (!frameId) frameId = requestAnimationFrame(place); };
+    place();
+    window.addEventListener("scroll", queue, { passive: true });
+    window.addEventListener("resize", queue, { passive: true });
+    return () => { cancelAnimationFrame(frameId); window.removeEventListener("scroll", queue); window.removeEventListener("resize", queue); root.style.removeProperty("--room-bottom"); };
+  }, []);
+  useEffect(() => {
+    const video = room.current;
+    if (!video) return;
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => {
+      if (timeout || expanded || still.matches || document.hidden) video.pause();
+      else void video.play().catch(() => {});
+    };
+    sync();
+    still.addEventListener("change", sync);
+    document.addEventListener("visibilitychange", sync);
+    return () => { still.removeEventListener("change", sync); document.removeEventListener("visibilitychange", sync); };
+  }, [timeout, expanded]);
 
   function tryStart() {
     if (started.current || document.hidden) return;
@@ -75,6 +124,25 @@ function Soundtrack() {
     const local = audio.current;
     let subscription = 0;
     let attempts = 0;
+    const tabs = "BroadcastChannel" in window ? new BroadcastChannel("mems-winter-sound") : null;
+    channel.current = tabs;
+    function hold() {
+      if (!playing.current) return;
+      heldByUs.current = true;
+      if (local) local.pause();
+      else command(player, "pauseVideo");
+    }
+    function resume() {
+      if (!heldByUs.current || !desired.current || document.hidden) return;
+      heldByUs.current = false;
+      if (local) void local.play().catch(() => {});
+      else if (ready.current) command(player, "playVideo");
+    }
+    function onVisibility() {
+      if (document.hidden) hold();
+      else { resume(); tryStart(); }
+    }
+    tabs?.addEventListener("message", (event) => { if (event.data === "playing") hold(); });
     function listen() {
       if (!ready.current && ++attempts <= 35) send(player, { event: "listening" });
       else window.clearInterval(subscription);
@@ -102,6 +170,10 @@ function Soundtrack() {
       }
       const state = update?.event === "onStateChange" ? update.info : update?.info?.playerState;
       if (state === 1) started.current = true;
+      if (typeof state === "number" && (state === 1) !== playing.current) {
+        playing.current = state === 1;
+        if (state === 1) { heldByUs.current = false; tabs?.postMessage("playing"); }
+      }
       if (desired.current && typeof update?.info?.muted === "boolean" && started.current) {
         needsGesture.current = update.info.muted;
       }
@@ -122,7 +194,7 @@ function Soundtrack() {
     }
     const observer = player ? new IntersectionObserver(tryStart, { threshold: [0, 0.5, 0.51, 0.75, 1] }) : null;
     window.addEventListener("message", receive);
-    document.addEventListener("visibilitychange", tryStart);
+    document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("click", retryOnGesture, true);
     window.addEventListener("keydown", retryOnGesture, true);
     window.addEventListener("touchend", retryOnGesture, { passive: true, capture: true });
@@ -134,7 +206,6 @@ function Soundtrack() {
         enablejsapi: "1", playsinline: "1", controls: "1", loop: "1", playlist: video, origin: window.location.origin,
       });
       player.src = `${youtube}/embed/${video}?${params}`;
-      subscribe();
     } else if (local) {
       local.muted = !desired.current;
       tryStart();
@@ -147,8 +218,12 @@ function Soundtrack() {
       ready.current = false;
       started.current = false;
       needsGesture.current = false;
+      playing.current = false;
+      heldByUs.current = false;
+      tabs?.close();
+      channel.current = null;
       window.removeEventListener("message", receive);
-      document.removeEventListener("visibilitychange", tryStart);
+      document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("click", retryOnGesture, true);
       window.removeEventListener("keydown", retryOnGesture, true);
       window.removeEventListener("touchend", retryOnGesture, true);
@@ -178,23 +253,41 @@ function Soundtrack() {
         {control}
         <audio id={frameId} ref={audio} src={recordingPath} autoPlay loop preload="auto" muted={!enabled}
           aria-label="Christmas Saves the Year by Twenty One Pilots"
-          onPlaying={() => { started.current = true; }} onError={() => setRecordingPath(null)} />
+          onPlaying={() => { started.current = true; playing.current = true; heldByUs.current = false; channel.current?.postMessage("playing"); }}
+          onPause={() => { playing.current = false; }} onError={() => setRecordingPath(null)} />
       </aside>
     );
   }
   return (
-    <aside className={styles.player} data-expanded={expanded} aria-label="Christmas soundtrack">
+    <aside className={styles.player} data-winter-video="" data-expanded={expanded} aria-label="Christmas soundtrack">
+      {/* The living room: the music video plays on the old TV (its screen is the video's width). */}
+      <span className={styles.room} aria-hidden="true">
+        <video ref={room} className={styles.roomVideo} src="/images/winter/kit/living-room/living-room.mp4"
+          poster="/images/winter/kit/living-room/living-room-still.webp" muted loop playsInline preload="auto"
+          disablePictureInPicture disableRemotePlayback tabIndex={-1} />
+        <i className={styles.tvScreen} />
+      </span>
       <iframe id={frameId} ref={frame} title="Christmas Saves the Year by Twenty One Pilots, official music video"
-        allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen
+        allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
         referrerPolicy="strict-origin-when-cross-origin" />
-      <div className={styles.controls}>
-        {control}
-        <button id="winter-sound-expand" type="button" className={styles.resize} aria-controls={frameId}
-          aria-label={expanded ? "Make player smaller" : "Enlarge player"} title={expanded ? "Make player smaller" : "Enlarge player"}
-          aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
-          {expanded ? <Minimize2 size={14} aria-hidden /> : <Maximize2 size={14} aria-hidden />}
-        </button>
-      </div>
+      {/* The TV's buttons, each with its word underneath, docked on the header's red-and-green
+          split right above the TV. */}
+      {(() => {
+        const buttons = (
+          <div className={styles.controls} data-docked={dock ? "" : undefined}>
+            <span className={styles.knob}>{control}<small aria-hidden="true">{enabled ? "Sound on" : "Muted"}</small></span>
+            <span className={styles.knob}>
+              <button id="winter-sound-expand" type="button" className={styles.resize} aria-controls={frameId}
+                aria-label={expanded ? "Make player smaller" : "Enlarge player"} title={expanded ? "Make player smaller" : "Enlarge player"}
+                aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
+                {expanded ? <Minimize2 size={16} aria-hidden /> : <Maximize2 size={16} aria-hidden />}
+              </button>
+              <small aria-hidden="true">{expanded ? "Smaller" : "Enlarge"}</small>
+            </span>
+          </div>
+        );
+        return dock ? createPortal(buttons, dock) : buttons;
+      })()}
     </aside>
   );
 }

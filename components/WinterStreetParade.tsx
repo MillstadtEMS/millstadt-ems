@@ -5,8 +5,10 @@ import { useEffect, useRef } from "react";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 import styles from "./WinterStreetParade.module.css";
 
+// Jen already hangs from the Christmas lights, so the street keeps one of each person (her sleigh
+// and snow-pop art aren't used here). The fish stand lives in the big village picture.
 const players = {
-  beagle: "rose-beagle.webp", grinch: "grinch.webp", sleigh: "sleigh.webp", crew: "snow-pop.webp",
+  beagle: "rose-beagle.webp", grinch: "grinch.webp",
   engine: "street/fire-engine.webp", carolers: "street/carolers.webp", neighbors: "street/neighbors.webp",
   family: "street/skating-family.webp", skater: "street/solo-skater.webp", cocoa: "street/cocoa-stall.webp",
 } as const;
@@ -14,11 +16,11 @@ type Player = keyof typeof players;
 type Bill = readonly [Player, Player, Player, Player, Player];
 
 const bills: Record<string, Bill> = {
-  market: ["cocoa", "skater", "carolers", "sleigh", "beagle"],
-  fleet: ["carolers", "engine", "crew", "family", "beagle"],
+  market: ["cocoa", "skater", "carolers", "neighbors", "beagle"],
+  fleet: ["carolers", "engine", "neighbors", "family", "beagle"],
   rink: ["beagle", "family", "cocoa", "skater", "neighbors"],
-  play: ["grinch", "skater", "beagle", "sleigh", "crew"],
-  press: ["cocoa", "sleigh", "neighbors", "family", "grinch"],
+  play: ["grinch", "skater", "beagle", "family", "neighbors"],
+  press: ["cocoa", "skater", "neighbors", "family", "grinch"],
   charity: ["beagle", "family", "carolers", "engine", "cocoa"],
 };
 
@@ -53,7 +55,8 @@ function Street({ pathname, compact }: { pathname: string; compact: boolean }) {
       {bills[bill].map((player, slot) => (
         <div className={styles.mark} key={player} data-slot={slot} data-player={player}>
           <div className={styles.lane}>
-            <div className={styles.player}>
+            {/* Everyone on the street joins the snowball fight (not the fire engine or the cocoa stall). */}
+            <div className={styles.player} data-snow-fighter={player === "engine" || player === "cocoa" ? undefined : player}>
               <Image src={`/images/winter/${players[player]}`} alt="" fill
                 loading="eager" sizes="(max-width: 520px) 95px, 145px" unoptimized />
               {player === "cocoa" && <span className={styles.steam}><i /><i /></span>}

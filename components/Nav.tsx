@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, ChevronRight, X } from "lucide-react";
+import { ChevronDown, ChevronRight, House, X } from "lucide-react";
 import brandStyles from "@/components/WinterBrandPlacement.module.css";
 import WinterRoofline from "@/components/WinterRoofline";
 import winterStyles from "@/components/WinterRoofline.module.css";
@@ -95,6 +95,7 @@ export default function Nav() {
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   const isActive = (href: string) => activeHref === href;
+  const onHome = pathname === "/";
 
   useEffect(() => {
     function onNewDispatch() {
@@ -281,6 +282,22 @@ export default function Nav() {
                   <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Explore</span>
                 </div>
                 <div className="grid gap-2">
+                  <Link
+                    href="/"
+                    onClick={() => setOpen(false)}
+                    aria-current={onHome ? "page" : undefined}
+                    className={`group flex min-h-12 w-full items-center justify-between gap-3 rounded-md border px-4 py-3 text-left text-[17px] font-extrabold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b429] ${
+                      onHome
+                        ? "border-[#f0b429]/35 bg-[#f0b429]/10 text-white"
+                        : "border-transparent text-slate-300 hover:border-white/10 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <House aria-hidden size={18} className={onHome ? "text-[#f0b429]" : "text-slate-500 transition-colors group-hover:text-[#f0b429]"} />
+                      <span className={winter ? winterStyles.directoryLabel : undefined}>Home</span>
+                    </span>
+                    <ChevronRight aria-hidden size={18} className={onHome ? "text-[#f0b429]" : "text-slate-600 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-300"} />
+                  </Link>
                   {MENU_GROUPS.map(group => {
                     const selected = group.heading === activeGroup;
                     return (
@@ -369,6 +386,19 @@ export default function Nav() {
                   <X aria-hidden size={20} />
                 </button>
               </div>
+
+              <Link
+                href="/"
+                onClick={() => setOpen(false)}
+                aria-current={onHome ? "page" : undefined}
+                className={`flex min-h-14 w-full items-center justify-between gap-4 border-b border-white/8 px-4 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[#f0b429] ${onHome ? "bg-[#f0b429]/10 text-[#f0b429]" : "text-slate-300"}`}
+              >
+                <span className="flex items-center gap-3">
+                  <House aria-hidden size={19} className="shrink-0 text-[#f0b429]" />
+                  <span className="block text-[17px] font-extrabold"><span className={winter ? winterStyles.directoryLabel : undefined}>Home</span></span>
+                </span>
+                <ChevronRight aria-hidden size={19} className="shrink-0 text-slate-500" />
+              </Link>
 
               {MENU_GROUPS.map(group => {
                 const selected = group.heading === expandedMobileGroup;

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import LeadershipPortrait from "@/components/LeadershipPortrait";
+import LeadershipBoard from "@/components/LeadershipBoard";
+import ChainOfCommand from "@/components/ChainOfCommand";
 import { getSeasonalThemePublicConfig } from "@/lib/seasonal/themes";
 import { getContent } from "@/lib/db";
 import SectionDivider from "@/components/SectionDivider";
@@ -11,7 +13,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Leadership",
   description:
-    "Meet the leadership team of Millstadt Ambulance Service — EMS Co-Chiefs Jennifer Goetz and Kenneth James.",
+    "Meet the leadership of Millstadt Ambulance Service — the Board of Directors, EMS Co-Chiefs Jennifer Goetz and Kenneth James, and the service's chain of command.",
 };
 
 const leaders = [
@@ -95,6 +97,16 @@ export default async function LeadershipPage({
           <p className="text-slate-400 text-xl max-w-2xl leading-relaxed">{leadershipSubtitle}</p>
         </div>
       </section>
+
+      {/* Board of Directors */}
+      <LeadershipBoard initialWinter={initialWinter} />
+
+      <SectionDivider variant="fadeDown" />
+
+      {/* Chain of Command */}
+      <ChainOfCommand />
+
+      <SectionDivider variant="fadeUp" />
 
       {/* Leaders */}
       {resolvedLeaders.map((leader, index) => (

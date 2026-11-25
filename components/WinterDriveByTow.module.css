@@ -1,0 +1,84 @@
+.tow { position: absolute; inset: 0; pointer-events: none; }
+.cable { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.police, .santa { position: absolute; left: 0; transform-origin: 50% 100%; will-change: transform; }
+.police { filter: drop-shadow(0 2px 1.5px rgb(0 18 27 / 50%)); }
+.santa { filter: drop-shadow(0 1.5px 1px rgb(0 18 27 / 45%)); transition: opacity .2s; }
+
+/* Santa at the wheel, or the empty cab while he's out with the hook. */
+.cabEmpty { visibility: hidden; }
+.police[data-cab="empty"] .cabEmpty { visibility: visible; }
+.police[data-cab="empty"] .cabSanta { visibility: hidden; }
+
+/* Walk cycle: one of three painted frames shows at a time. */
+.santaFrame { visibility: hidden; }
+.santa[data-step="1"] .santaFrame[data-frame="1"],
+.santa[data-step="2"] .santaFrame[data-frame="2"],
+.santa[data-step="3"] .santaFrame[data-frame="3"] { visibility: visible; }
+
+/* Dash light bar and grille lights: dark until a snowball hits the truck, then red and blue for a
+   few seconds (kept going while the hits keep coming). */
+.beacon {
+  position: absolute;
+  width: 4%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  opacity: 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.grille { width: 5.5%; }
+.police[data-lights="true"] .beacon { opacity: 1; animation: beacon .5s steps(1) infinite; }
+.police[data-lights="true"] .grille { animation-delay: -.25s; }
+@keyframes beacon {
+  0% { background: radial-gradient(circle, #fff 0 16%, #ff3b3b 38%, rgb(255 40 40 / 35%) 56%, transparent 72%); }
+  50% { background: radial-gradient(circle, #fff 0 16%, #3b7dff 38%, rgb(50 110 255 / 35%) 56%, transparent 72%); }
+}
+
+/* Snowball targets on the truck and on Santa while he's out with the hook. */
+.hit { position: absolute; inset: 6% 2% 3%; }
+
+/* "Ho ho ho!" from Santa when the truck (or he) gets hit. */
+.ho {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  padding: .25em .6em;
+  border: 1.5px solid #7a1018;
+  border-radius: 1em;
+  background: #fffaf2;
+  color: #a3121d;
+  font: 800 clamp(11px, .9vw, 14px) / 1.1 system-ui, sans-serif;
+  white-space: nowrap;
+  translate: -50% -100%;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 25%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s;
+}
+.ho[data-on="true"] { opacity: 1; }
+
+/* Reversing hard: the rear tyre throws snow forward. */
+.spray {
+  position: absolute;
+  width: 26%;
+  height: 40%;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 18% 78%, #ffffff 0 8%, transparent 10%),
+    radial-gradient(circle at 42% 52%, #f2f9ff 0 7%, transparent 9%),
+    radial-gradient(circle at 64% 70%, #ffffff 0 9%, transparent 11%),
+    radial-gradient(circle at 82% 38%, #e6f2ff 0 6%, transparent 8%),
+    radial-gradient(circle at 30% 30%, #ffffff 0 5%, transparent 7%);
+  pointer-events: none;
+}
+.police[data-spray="true"] .spray { animation: towSpray .26s linear infinite; }
+@keyframes towSpray {
+  from { opacity: .95; transform: translate(10%, 10%) scale(.7); }
+  to { opacity: 0; transform: translate(70%, -35%) scale(1.25); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .police[data-lights="true"] .beacon, .police[data-spray="true"] .spray { animation: none !important; }
+}

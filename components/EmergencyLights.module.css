@@ -1,0 +1,51 @@
+.beacons {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+.beacons[data-on="true"] { visibility: visible; }
+.beacons i {
+  position: absolute;
+  inset: 0;
+  display: block;
+  opacity: 0;
+  -webkit-mask: var(--lens) 0 0 / 100% 100% no-repeat;
+  mask: var(--lens) 0 0 / 100% 100% no-repeat;
+}
+.red { background: #ff2d22; }
+.blue { background: #2a6cff; }
+/* The lit lens: a hot centre fading to the colour, painted only through the lens mask. */
+.lens.red { background: radial-gradient(circle at 50% 45%, #fff3ee 0 2%, #ff4a3c 30%, #e3140c); background-size: 100% 100%; }
+.lens.blue { background: radial-gradient(circle at 50% 45%, #f0f6ff 0 2%, #4d8bff 30%, #1246e0); background-size: 100% 100%; }
+/* A tight bloom so each light glows without spilling onto the bodywork. */
+.bloom {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+  filter: blur(2px) brightness(1.5) saturate(1.2);
+}
+
+/* Red double-flash, then blue double-flash: two flashes per colour each second. */
+.beacons[data-on="true"] .red { animation: redStrobe 1s step-end infinite; }
+.beacons[data-on="true"] .blue { animation: blueStrobe 1s step-end infinite; }
+@keyframes redStrobe {
+  0% { opacity: 1; }
+  10% { opacity: 0; }
+  16% { opacity: 1; }
+  26% { opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes blueStrobe {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  60% { opacity: 0; }
+  66% { opacity: 1; }
+  76% { opacity: 0; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .beacons[data-on="true"] .red, .beacons[data-on="true"] .blue { animation: none; opacity: .9; }
+}
+@media print { .beacons { display: none; } }

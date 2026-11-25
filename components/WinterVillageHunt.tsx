@@ -5,6 +5,7 @@ import {
   createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore,
   type CSSProperties, type KeyboardEvent, type ReactNode,
 } from "react";
+import { isTesla, tapSlop, useDeviceProfile } from "@/lib/device/profile";
 import styles from "./WinterVillageHunt.module.css";
 
 type Cover = "window" | "sill" | "bough" | "post" | "snow" | "rail" | "full";
@@ -14,7 +15,7 @@ type Spot = {
   flip?: boolean; light?: "amber" | "shade"; lean?: number;
 };
 
-// Coordinates on the uncropped 2:1 town. x is the position of his glasses,
+// Coordinates on the uncropped 2:1 town. x is the position of his face,
 // y the top of his hat. Paint the guest before the fleet, crowd and snowbanks.
 const spots: Spot[] = [
   { id: "cottage", name: "Gingerbread shop doorway", clue: "My doorway looks sweet enough to eat.",
@@ -100,7 +101,16 @@ function normalizeAnswer(value: string) {
     .replace(/\b(?:the|a|an|behind|beside|near|under|on|in|at|of|by)\b/g, " ").trim().replace(/\s+/g, " ");
 }
 
-const guestArt = "/images/winter/hidden-guest.webp";
+// The crouched gift thief is a three-frame flip-book (peek, finger up, shush) on a 350:630
+// canvas. His face sits 70.6% across with his hat at the top edge, the anchors the hiding
+// spots were calibrated for; artScale keeps him the size of the original 276-wide sprite.
+const thiefFrames = ["peek", "finger", "shush"].map((name) => `/images/winter/gift-thief/${name}.webp`);
+const artWidth = 350;
+const artHeight = 630;
+const artScale = artWidth / 276;
+const faceAnchor = 70.6;
+// In doorways his whole body shows; lower him until his boots meet the threshold line.
+const doorwayDrop = 5;
 const storageKey = "millstadt:christmas-hunt:deck:v1";
 type Deck = { last: string; remaining: string[] };
 
@@ -180,6 +190,8 @@ export function WinterVillageHuntProvider({ children }: { children: ReactNode })
       setHits(0);
       setRounds((value) => value + 1);
     }
+    // Once he goes down in the snow, the medics bring the stretcher out on the rink, lower it,
+    // lift him on and wheel him away; then he slips off to a new hiding spot.
     const timer = window.setTimeout(() => {
       const pickup = new CustomEvent("winter-rink-pickup", {
         cancelable: true, detail: { person: "guest", x: spot.x / 100, onComplete: hideAgain },
@@ -230,7 +242,7 @@ function SnowballButton({ className, style, children }: {
     }}
     onPointerMove={(e) => {
       const start = gesture.current;
-      if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 12) { stop(); start.held = true; }
+      if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > (isTesla() ? 24 : 12)) { stop(); start.held = true; }
     }}
     onPointerUp={stop} onPointerCancel={() => { stop(); gesture.current = null; }} onLostPointerCapture={stop}
     onContextMenu={(e) => e.preventDefault()}
@@ -249,13 +261,15 @@ export function WinterVillageHuntTarget() {
   const [miss, setMiss] = useState(0);
   const discovery = useRef<{ x: number; y: number; at: number } | null>(null);
 
-  // Use the face, present and shushing hand as the hit area. Clothing below
-  // the foreground objects is never a clickable giveaway.
+  // Use the face and shushing hand as the hit area. Clothing below the
+  // foreground objects is never a clickable giveaway.
   const check = useCallback((x: number, y: number, touch: boolean) => {
     if (!face.current || found) return false;
     const box = face.current.getBoundingClientRect();
-    const padX = Math.max(2, ((touch ? 38 : 17) - box.width) / 2);
-    const padY = Math.max(2, ((touch ? 38 : 17) - box.height) / 2);
+    // Finger targets: 44px (the common touch minimum), 64px on a car touchscreen.
+    const reach = touch ? (isTesla() ? 64 : 44) : 17;
+    const padX = Math.max(2, (reach - box.width) / 2);
+    const padY = Math.max(2, (reach - box.height) / 2);
     const hit = x >= box.left - padX && x <= box.right + padX && y >= box.top - padY && y <= box.bottom + padY;
     if (hit) finish();
     return hit;
@@ -274,7 +288,7 @@ export function WinterVillageHuntTarget() {
     }
     function up(e: PointerEvent) {
       if (start?.pointerId !== e.pointerId) return;
-      if (Math.hypot(start.x - e.clientX, start.y - e.clientY) < 8 && check(e.clientX, e.clientY, e.pointerType !== "mouse")) {
+      if (Math.hypot(start.x - e.clientX, start.y - e.clientY) < tapSlop(e.pointerType) && check(e.clientX, e.clientY, e.pointerType !== "mouse")) {
         discovery.current = { x: e.clientX, y: e.clientY, at: performance.now() };
       }
       start = undefined;
@@ -283,7 +297,7 @@ export function WinterVillageHuntTarget() {
     function clicked(e: MouseEvent) {
       const last = discovery.current;
       discovery.current = null;
-      if (last && e.detail > 0 && performance.now() - last.at < 480 && Math.hypot(last.x - e.clientX, last.y - e.clientY) < 8) {
+      if (last && e.detail > 0 && performance.now() - last.at < 480 && Math.hypot(last.x - e.clientX, last.y - e.clientY) < 24) {
         e.stopPropagation();
         e.preventDefault();
       }
@@ -332,8 +346,12 @@ export function WinterVillageHuntTarget() {
     }
   }
 
-  // Project the center of the visible face from the 276:630 sprite onto the 2:1 postcard.
-  const aim = spot && { left: `${spot.x + spot.width * (spot.flip ? .225 : -.225)}%`, top: `${spot.y + spot.width * .80}%` };
+  // Project his face from the 350:630 frame onto the 2:1 postcard. One percent of the
+  // postcard's width is two percent of its height, so a frame w% wide stands 2·w·630/350 % tall.
+  const width = spot ? spot.width * artScale : 0;
+  const tall = 2 * width * artHeight / artWidth;
+  const drop = spot?.cover === "post" ? doorwayDrop : 0;
+  const aim = spot && { left: `${spot.x + width * (spot.flip ? .026 : -.026)}%`, top: `${spot.y + tall * (16.7 + drop) / 100}%` };
   return (
     <div ref={layer} className={styles.layer} role="group" tabIndex={0}
       aria-label="Search the Christmas postcard" aria-describedby="winter-hunt-key-help"
@@ -341,11 +359,15 @@ export function WinterVillageHuntTarget() {
       <span id="winter-hunt-key-help" className={styles.sr}>Use arrow keys to move the search lens. Hold Shift for a fine step. Enter checks the spot and throws snowballs after you find him. A landmark clue is available below the picture.</span>
       {spot && (
         <div aria-hidden="true" className={styles.guest} data-light={spot.light} data-cover={spot.cover} data-found={found}
-          style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${spot.width}%`,
-            "--anchor": spot.flip ? "-20%" : "-80%", "--flip": spot.flip ? -1 : 1, "--lean": `${spot.lean ?? 0}deg`,
+          data-flip={spot.flip ? "true" : undefined}
+          style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${width}%`,
+            "--anchor": `-${spot.flip ? 100 - faceAnchor : faceAnchor}%`, "--drop": `${drop}%`,
+            "--flip": spot.flip ? -1 : 1, "--lean": `${spot.lean ?? 0}deg`,
           } as CSSProperties}>
-          <div className={styles.silhouette} data-escaping={hits === escapeHits}><Image src={guestArt} alt="" width={276} height={630} loading="eager" unoptimized /></div>
-          <span ref={face} data-hunt-face="" className={styles.face} style={{ left: spot.flip ? "5%" : "20%" }} />
+          <div className={styles.silhouette} data-escaping={hits === escapeHits}>
+            {thiefFrames.map((src) => <Image key={src} src={src} alt="" width={artWidth} height={artHeight} loading="eager" unoptimized />)}
+          </div>
+          <span ref={face} data-hunt-face="" className={styles.face} style={{ left: spot.flip ? "11%" : "44%" }} />
         </div>
       )}
       {found && aim && <>
@@ -365,13 +387,15 @@ export function WinterVillageHuntTarget() {
 
 export function WinterVillageHuntControls() {
   const { spot, found, finish, hits, rounds } = useHunt();
+  const tesla = useDeviceProfile() === "tesla";
   const [guess, setGuess] = useState("");
   const [wrong, setWrong] = useState(false);
   return (
     <div className={styles.bar}>
       <div className={styles.intro}>
-        <div className={styles.sample} aria-hidden="true"><Image src={guestArt} alt="" width={276} height={630} loading="lazy" unoptimized /></div>
-        <div><h3>Find the gift thief</h3><p>{hits === escapeHits ? "Down in the snow! Here come the medics." : found ? "Tap him fast or hold to land five snowballs in a row." : "Look for the green fellow with round glasses, a crooked nose and a sack of presents."}</p></div>
+        <div className={styles.sample} aria-hidden="true"><Image src={thiefFrames[2]} alt="" width={artWidth} height={artHeight} loading="lazy" unoptimized /></div>
+        <div><h3>Find the gift thief</h3><p>{hits === escapeHits ? "Down in the snow! Here come the medics." : found ? "Tap him fast or hold to land five snowballs in a row." : "Look for a green fellow in a red Santa suit, crouched low and shushing."}</p>
+          {tesla && <p className={styles.parked}>Tesla drivers: play while parked.</p>}</div>
       </div>
       <span role="status" className={styles.success}>{found ? (hits ? `Snowballs ${hits}/${escapeHits}` : "You found him!") : rounds ? `He ducked away! Times chased off: ${rounds}.` : ""}</span>
       {found && hits < escapeHits && <SnowballButton className={styles.throwButton}>Throw snowballs</SnowballButton>}

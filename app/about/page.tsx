@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getContent } from "@/lib/db";
 import SectionDivider from "@/components/SectionDivider";
+import MissionVisionValues from "./MissionVisionValues";
 
 export const dynamic = "force-dynamic";
 
@@ -93,66 +94,8 @@ export default async function AboutPage({
 
       <SectionDivider />
 
-      {/* Mission & Vision — stacked full width */}
-      <section className="bg-[#040d1a]" style={{ paddingBottom: 24 }}>
-        <div className="wrap flex flex-col gap-8">
-
-          {/* Mission */}
-          <div className="p-16 rounded-2xl bg-[#071428] border border-white/8">
-            <div className="flex items-center gap-4 mb-8">
-              <Image
-                src="/images/millstadt-ems/crest.png"
-                alt=""
-                width={32}
-                height={32}
-               
-              />
-              <span className="text-[#f0b429] text-4xl font-black tracking-[0.15em] uppercase">Mission</span>
-            </div>
-            <p className="text-slate-200 text-2xl leading-relaxed">{mission}</p>
-          </div>
-
-          {/* Vision */}
-          <div className="p-16 rounded-2xl bg-[#071428] border border-white/8">
-            <div className="flex items-center gap-4 mb-8">
-              <Image
-                src="/images/millstadt-ems/crest.png"
-                alt=""
-                width={32}
-                height={32}
-                style={{ filter: "drop-shadow(0 0 4px #2563eb)" }}
-              />
-              <span className="text-[#2563eb] text-4xl font-black tracking-[0.15em] uppercase">Vision</span>
-            </div>
-            <p className="text-slate-200 text-2xl leading-relaxed">{vision}</p>
-          </div>
-
-        </div>
-      </section>
-
-      <SectionDivider variant="fadeDown" />
-
-      {/* Core Values */}
-      <section className="bg-[#071428]" style={{ paddingBottom: 24 }}>
-        <div className="wrap">
-          <div className="flex items-center gap-4 mb-8">
-            <Image src="/images/millstadt-ems/crest.png" alt="" width={32} height={32} />
-            <span className="text-[#f0b429] text-2xl font-black tracking-[0.15em] uppercase">Core Values</span>
-          </div>
-          <h2 className="text-4xl md:text-5xl font-black text-white mb-24">What We Stand For</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {values.map((v) => (
-              <div key={v.label} className="p-14 rounded-2xl bg-[#040d1a] border border-white/8 hover:border-[#f0b429]/25 transition-colors">
-                <div className="flex items-center gap-3 mb-5">
-                  <Image src="/images/millstadt-ems/crest.png" alt="" width={22} height={22} style={{ filter: "hue-rotate(180deg) saturate(2) brightness(1.1) drop-shadow(0 0 3px #f0b429)" }} />
-                  <span className="text-[#f0b429] font-black text-xl">{v.label}</span>
-                </div>
-                <p className="text-slate-300 text-base leading-relaxed">{v.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Mission, Vision, Pillars of Excellence & Core Values — gingerbread house in winter, temple otherwise */}
+      <MissionVisionValues initialWinter={initialWinter} mission={mission} vision={vision} values={values} />
 
       <SectionDivider variant="fadeUp" />
 

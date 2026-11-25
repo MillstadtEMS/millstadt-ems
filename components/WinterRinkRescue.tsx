@@ -4,22 +4,61 @@ import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import styles from "./WinterRinkRescue.module.css";
 
-type Subject = "hockey" | "solo" | "family" | "guest";
-type Request = { subject: Subject; x: number; floor: number; onComplete?: () => void };
-type Shot = { person: "solo" | "family"; x: number; floor: number };
+// The Millstadt medics answer every fall on the Christmas rink: they wheel the stretcher in, lower
+// it, bend to lift the patient on, raise it and wheel out. A skater knocked flat on the ice (three
+// quick snowballs, or the hockey pair's collision) sends "winter-rink-knockdown"; the village hunt
+// sends "winter-rink-pickup" when the gift thief goes down in the snow. While the crew is out, the
+// rink hears "winter-rink-rescue" so the other skaters can make room and watch.
+
+export const rinkKnockdownEvent = "winter-rink-knockdown";
+export const rinkRescueEvent = "winter-rink-rescue";
+
+/** Stacking order on the rink: nearer the front (a lower floor) paints on top. */
+export const rinkDepthZ = (floor: number) => Math.round(10 + (.5 - floor) * 160);
+
+export type RinkKnockdown = {
+  person: string;
+  /** Spoken in status messages, e.g. "the speed skater". */
+  name: string;
+  /** Centre of the patient lying on the ice, as a fraction of the rink's width. */
+  x: number;
+  /** The patient's resting line on the ice, as a fraction of the rink's height from the bottom. */
+  floor: number;
+  /** Perspective scale for the crew; 1 is the painted crew's own size. */
+  scale: number;
+  /** The lying patient's width on the ice, in percent of the rink's height. */
+  width: number;
+  /** -1 when the patient lies mirrored (head to the right). */
+  flip: 1 | -1;
+  /** Lying-down art. `rest` is where the patient's back meets the ice, as a fraction of its height. */
+  patient: { src: string; width: number; height: number; rest: number };
+  onStart?: () => void;
+  onComplete?: () => void;
+};
+export type RinkRescueState = { active: boolean; person: string; x: number };
+
+type Request = {
+  subject: string; label: string; x: number; floor: number; scale: number; width: number; flip: 1 | -1;
+  src: string; ratio: number; rest: number; lift: number; skater: boolean;
+  onStart?: () => void; onComplete?: () => void;
+};
 type Guest = { person: "guest"; x?: number; onComplete: () => void };
 type Scene = { request: Request; playing: boolean; duration: number };
 
-const directory = "/images/winter/hockey/";
-const nextHockey = () => 150_000 + Math.random() * 90_000;
-const patient = (subject: Subject) => subject === "guest" ? "thief" : subject;
-const loaded = (subject: Subject) => subject === "hockey" ? "medics-cot-loaded" : patient(subject) + "-loaded";
-const down = (subject: Subject) => subject === "hockey" ? "blues-down" : patient(subject) + "-down";
+const rigDirectory = "/images/winter/hockey/rig/";
+// The painted medics and stretcher are cut into puppet layers (one shared 768x384 canvas) so the
+// crew can stop, lower the stretcher, bend to lift the patient on, raise it and wheel out. Back to front:
+const rig = ["base", "scissor", "bed", "woman-legs", "woman-body", "man-legs", "man-body"] as const;
+const rigClass = {
+  base: "rigBase", scissor: "rigScissor", bed: "rigBed", "woman-legs": "rigWomanLegs",
+  "woman-body": "rigWomanBody", "man-legs": "rigManLegs", "man-body": "rigManBody",
+} as const;
+// The gift thief keeps his painted fall: 95cqh wide on the snow, shrunk to the bed's length on the lift.
+const thief = { src: "/images/winter/hockey/thief-down.webp", width: 600, height: 264 };
 const bounded = (value: number, low: number, high: number) => Math.max(low, Math.min(high, value));
 
-function Sprite({ file, className, width, height }: { file: string; className: string; width: number; height: number }) {
-  return <Image src={directory + file + ".webp"} alt="" width={width} height={height}
-    loading="eager" unoptimized draggable={false} className={className} />;
+function Sprite({ src, className, width, height }: { src: string; className: string; width: number; height: number }) {
+  return <Image src={src} alt="" width={width} height={height} loading="eager" unoptimized draggable={false} className={className} />;
 }
 
 export default function WinterRinkRescue() {
@@ -32,16 +71,16 @@ export default function WinterRinkRescue() {
     const rink = stage.current?.parentElement;
     if (!rink) return;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const hits: Record<Shot["person"], number[]> = { solo: [], family: [] };
     let current: Request | null = null, queuedGuest: Request | null = null;
     let ready = false, playing = false, visible = false, disposed = false;
-    let remaining = nextHockey(), duration = 0, startedAt: number | null = null;
+    let remaining = 0, duration = 0, startedAt: number | null = null;
     let timer: number | undefined;
-    let focusedSkater: HTMLButtonElement | null = null;
-    const targets = rink.querySelectorAll<HTMLButtonElement>("[data-skater] button");
 
-    // A single clock counts only visible, foreground time for either the
-    // next hockey game or the currently playing rescue. The two cannot overlap.
+    const tell = (active: boolean, request: Request) => window.dispatchEvent(new CustomEvent<RinkRescueState>(rinkRescueEvent, {
+      detail: { active, person: request.subject, x: request.x },
+    }));
+
+    // One clock counts only visible, foreground time for the rescue that is playing.
     function pauseClock() {
       window.clearTimeout(timer);
       if (startedAt !== null) remaining = Math.max(0, remaining - (performance.now() - startedAt));
@@ -52,17 +91,17 @@ export default function WinterRinkRescue() {
       pauseClock();
       const canRun = visible && !document.hidden;
       setPaused(!canRun);
-      if (disposed || !canRun || (current ? !ready : motion.matches)) return;
-      if (current && !playing) {
+      if (disposed || !canRun || !current || !ready) return;
+      if (!playing) {
         playing = true;
         setScene({ request: current, playing: true, duration });
-        if (current.subject !== "hockey") setStatus("Two Millstadt medics are bringing the stretcher onto the ice.");
+        setStatus(`Two Millstadt medics are bringing the stretcher onto the ice for ${current.label}.`);
+        current.onStart?.();
       }
       startedAt = performance.now();
       timer = window.setTimeout(() => {
         startedAt = null;
-        if (current) finish();
-        else begin({ subject: "hockey", x: .48, floor: .1 });
+        finish();
       }, remaining);
     }
 
@@ -71,40 +110,27 @@ export default function WinterRinkRescue() {
       const completed = current;
       current = null; ready = false; playing = false;
       setScene(null);
-      setStatus(completed?.subject !== "hockey" ? "The medics have left the rink with their passenger." : "");
-      remaining = nextHockey();
+      if (completed) {
+        setStatus("The medics have left the rink with their passenger.");
+        tell(false, completed);
+      }
       const next = queuedGuest;
       queuedGuest = null;
-      if (next) begin(next);
-      else {
-        targets.forEach(button => { button.disabled = false; });
-        schedule();
-        const restoreFocus = focusedSkater;
-        focusedSkater = null;
-        if (restoreFocus) requestAnimationFrame(() => {
-          if (!disposed && !current && document.activeElement === document.body) restoreFocus.focus({ preventScroll: true });
-        });
-      }
+      if (next) void begin(next);
+      else schedule();
       completed?.onComplete?.();
     }
 
     async function begin(request: Request) {
       pauseClock();
       current = request; ready = playing = false;
-      targets.forEach(button => {
-        if (document.activeElement === button) focusedSkater = button;
-        button.disabled = true;
-      });
-      hits.solo = []; hits.family = [];
-      duration = request.subject === "hockey" ? 11_800 : motion.matches ? 3000 : 7400;
+      duration = motion.matches ? 3000 : 10_500;
       setScene({ request, playing: false, duration });
-      const files = ["medics-cot-empty", loaded(request.subject), down(request.subject)];
-      if (request.subject === "family") files.push("family-companion");
-      if (request.subject === "hockey") files.push("blues-skater", "red-skater");
+      tell(true, request);
       try {
-        await Promise.all(files.map(async file => {
+        await Promise.all([...rig.map(part => rigDirectory + part + ".webp"), request.src].map(async src => {
           const image = new window.Image();
-          image.src = directory + file + ".webp";
+          image.src = src;
           await image.decode();
         }));
       } catch {
@@ -116,19 +142,19 @@ export default function WinterRinkRescue() {
       schedule();
     }
 
-    function onShot(event: Event) {
+    function onKnockdown(event: Event) {
       if (!(event instanceof CustomEvent) || !event.cancelable || current || queuedGuest || document.hidden) return;
-      const hit = event.detail as Shot;
-      if (!hit || (hit.person !== "family" && hit.person !== "solo") || !Number.isFinite(hit.x) || !Number.isFinite(hit.floor)) return;
+      const fall = event.detail as RinkKnockdown;
+      if (!fall || typeof fall.person !== "string" || !fall.patient?.src ||
+        ![fall.x, fall.floor, fall.scale, fall.width, fall.patient.width, fall.patient.height, fall.patient.rest].every(Number.isFinite)) return;
       event.preventDefault();
-      const now = performance.now();
-      hits[hit.person] = hits[hit.person].filter(timestamp => now - timestamp <= 2000);
-      hits[hit.person].push(now);
-      setStatus(`Snowball hit ${hits[hit.person].length} on the ${hit.person === "solo" ? "skater in the golden scarf" : "skating father"}.`);
-      if (hits[hit.person].length === 3) {
-        if (!visible) rink!.scrollIntoView({ block: "nearest", behavior: motion.matches ? "instant" : "smooth" });
-        void begin({ subject: hit.person, x: bounded(hit.x, .16, .84), floor: bounded(hit.floor, .04, .27) });
-      }
+      if (!visible) rink!.scrollIntoView({ block: "nearest", behavior: motion.matches ? "instant" : "smooth" });
+      void begin({
+        subject: fall.person, label: fall.name || "a skater", x: bounded(fall.x, .03, .97), floor: bounded(fall.floor, 0, .6),
+        scale: bounded(fall.scale, .4, 1.4), width: bounded(fall.width, 10, 160), flip: fall.flip === -1 ? -1 : 1,
+        src: fall.patient.src, ratio: fall.patient.height / fall.patient.width, rest: bounded(fall.patient.rest, 0, 1),
+        lift: 1, skater: true, onStart: fall.onStart, onComplete: fall.onComplete,
+      });
     }
 
     function onGuest(event: Event) {
@@ -136,58 +162,65 @@ export default function WinterRinkRescue() {
       const guest = event.detail as Guest;
       if (guest?.person !== "guest" || typeof guest.onComplete !== "function") return;
       event.preventDefault();
-      const request: Request = { subject: "guest", x: bounded(Number.isFinite(guest.x) ? guest.x! : .5, .19, .81), floor: .12, onComplete: guest.onComplete };
+      const request: Request = {
+        subject: "guest", label: "the gift thief", x: bounded(Number.isFinite(guest.x) ? guest.x! : .5, .19, .81), floor: .12,
+        scale: 1, width: 95, flip: 1, src: thief.src, ratio: thief.height / thief.width, rest: 1, lift: .78, skater: false,
+        onComplete: guest.onComplete,
+      };
       if (!visible) rink!.scrollIntoView({ block: "center", behavior: motion.matches ? "instant" : "smooth" });
       if (current) queuedGuest = request;
       else void begin(request);
     }
 
-    function onMotion() {
-      if (motion.matches && current?.subject === "hockey") finish();
-      else schedule();
-    }
     const observer = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting && entry.intersectionRatio >= .42;
       schedule();
     }, { threshold: [0, .42], rootMargin: "-50px 0px -35px" });
     observer.observe(rink);
     document.addEventListener("visibilitychange", schedule);
-    motion.addEventListener("change", onMotion);
-    window.addEventListener("winter-rink-shot", onShot);
+    motion.addEventListener("change", schedule);
+    window.addEventListener(rinkKnockdownEvent, onKnockdown);
     window.addEventListener("winter-rink-pickup", onGuest);
     return () => {
       disposed = true; pauseClock(); observer.disconnect();
       document.removeEventListener("visibilitychange", schedule);
-      motion.removeEventListener("change", onMotion);
-      window.removeEventListener("winter-rink-shot", onShot);
+      motion.removeEventListener("change", schedule);
+      window.removeEventListener(rinkKnockdownEvent, onKnockdown);
       window.removeEventListener("winter-rink-pickup", onGuest);
       current?.onComplete?.();
       queuedGuest?.onComplete?.();
     };
   }, []);
 
-  const subject = scene?.request.subject;
+  const request = scene?.request;
+  const drop = request ? (1 - request.rest) * request.width * request.ratio : 0;
   return <>
-    <div className={styles.stage} ref={stage} aria-hidden="true" data-subject={subject} data-paused={paused}
-      data-rink-rescue={scene ? scene.playing ? "playing" : "loading" : "idle"} style={scene ? {
-        "--run": scene.duration + "ms", "--pickup-x": scene.request.x * 100 + "%", "--ground": scene.request.floor * 100 + "%",
+    <div className={styles.stage} ref={stage} aria-hidden="true" data-paused={paused}
+      data-kind={request ? request.skater ? "skater" : "guest" : undefined}
+      data-rink-rescue={scene ? scene.playing ? "playing" : "loading" : "idle"} style={request ? {
+        "--run": (scene?.duration ?? 10_500) + "ms", "--pickup-x": request.x * 100 + "%", "--ground": request.floor * 100 + "%",
+        "--crew": request.scale, "--down-w": request.width, "--down-drop": drop, "--flip": request.flip, "--lift": request.lift,
+        // On the bed the patient keeps the same size (skaters) or shrinks to the bed's length (the thief).
+        "--bed-w": request.width * request.lift / (148 * request.scale) * 100 + "%",
+        "--bed-drop": drop * request.lift / (74 * request.scale) * 100 + "%",
+        // Limbs below the patient's back tuck out of sight behind the mattress once they're on the bed.
+        "--clip": request.skater ? Math.max(0, (1 - request.rest) * 100 - 3) + "%" : "0%",
+        "--z": rinkDepthZ(request.floor),
       } as CSSProperties : undefined}>
-      {scene?.playing && subject && <>
-        {subject === "hockey" && <>
-          <div className={styles.redLane}><Sprite file="red-skater" width={400} height={391} className={styles.red} /></div>
-          <div className={styles.blueLane}><Sprite file="blues-skater" width={400} height={384} className={styles.blue} /></div>
-        </>}
+      {scene?.playing && request && <>
         <div className={styles.cotLane}>
           <div className={styles.crew}>
-            <Sprite file="medics-cot-empty" width={768} height={384} className={styles.empty} />
-            <Sprite file={loaded(subject)} width={768} height={384} className={styles.loaded} />
+            {rig.map(part => part === "bed"
+              ? <div key={part} className={styles.rigBed}>
+                  <Sprite src={rigDirectory + "bed.webp"} width={768} height={384} className={styles.rigPart} />
+                  <Sprite src={request.src} width={400} height={Math.round(400 * request.ratio)} className={styles.onBed} />
+                </div>
+              : <Sprite key={part} src={rigDirectory + part + ".webp"} width={768} height={384} className={`${styles.rigPart} ${styles[rigClass[part]]}`} />)}
           </div>
         </div>
-        {subject === "family" && <div className={styles.companionLane}>
-          <Sprite file="family-companion" width={114} height={256} className={styles.companion} />
-        </div>}
-        <div className={styles.downLane}><Sprite file={down(subject)} width={400} height={{ hockey: 129, guest: 163, family: 142, solo: 149 }[subject]} className={styles.down} /></div>
-        {subject === "hockey" && <i className={styles.spray} />}
+        <div className={styles.downLane}>
+          <Sprite src={request.src} width={400} height={Math.round(400 * request.ratio)} className={styles.down} />
+        </div>
       </>}
     </div>
     <span role="status" className={styles.announcement}>{status}</span>

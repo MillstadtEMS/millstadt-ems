@@ -2,11 +2,30 @@
   position: relative;
 }
 
-/* The socket and the portaled figure share the same viewport sizing. */
+/* The socket and the portaled figure share the same viewport sizing. Each figure is the same
+   share of the screen on every device (phones, tablets, laptops, wall monitors, car screens),
+   never smaller than a comfortable tap target, and never taller than two thirds of the view. */
 .roof, .cradle {
-  --preferred-crew-width: clamp(180px, 24vw, 324px);
-  --crew-width: min(var(--preferred-crew-width), max(76px, calc(66.6svh - 98px)));
+  /* Six people share the lights, each the same share of the screen on every device (phone, tablet,
+     laptop, monitor, car screen), so the lineup keeps its proportions as the screen changes size.
+     Only a very short, wide view (a phone on its side) caps them so they don't fill it. */
+  --preferred-crew-width: 16vw;
+  --crew-width: min(var(--preferred-crew-width), max(50px, calc(48svh - 60px)));
 }
+/* On pages with the music video (wider screens), the string leaves a gap over the video so it
+   plays in plain view: three people hang either side, sized to their slightly narrower swags.
+   Keep in step with WinterMusicPlayer.module.css (200px video + 47px buttons + margins). */
+@media (min-width: 701px) {
+  :global(html:has([data-winter-video])) :is(.roof, .cradle) {
+    --video-gap: 311px;
+    --preferred-crew-width: min(16vw, calc((100vw - var(--video-gap)) / 6 * 1.12));
+  }
+  :global(html:has([data-winter-video][data-expanded="true"])) :is(.roof, .cradle) {
+    --video-gap: min(744px, calc(100vw - 360px));
+  }
+  :global(html:has([data-winter-video])) .roof:not([data-standalone]) .videoGap { display: block; flex: 0 0 var(--video-gap); }
+}
+.videoGap { display: none; }
 
 .roof {
   position: absolute;
@@ -26,9 +45,7 @@
   height: var(--sag);
 }
 
-.swag:first-child, .swag:last-child {
-  flex: 0 0 max(calc(var(--crew-width) + 16px), clamp(156px, 23vw, 440px));
-}
+/* Equal swags: one person hangs from the low point of each. */
 
 .roof[data-standalone] {
   position: fixed;
@@ -138,7 +155,8 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: var(--crew-width);
+  /* Same height for everyone: wider art gets a proportionally wider box. */
+  width: calc(var(--crew-width) * var(--hang-scale, 1));
   height: 0;
   z-index: 36;
   pointer-events: none;
@@ -163,7 +181,7 @@
   left: 0;
   top: 0;
   width: 100%;
-  aspect-ratio: 477 / 716;
+  aspect-ratio: var(--hang-ratio, 477 / 716);
   transform-origin: 50% 5%;
   transform: translate(-50%, -5%);
 }
@@ -181,9 +199,30 @@
 .torso { clip-path: polygon(0 0,100% 0,100% 55.3%,63% 55.3%,50% 56.8%,36% 56%,0 56%); }
 .torso img { position: absolute; inset: 0; display: block; height: 100%; width: 100%; }
 .alarmed { opacity: var(--panic, 0); }
-.legLeft, .legRight {
-  background: var(--chief-image) center / 100% 100% no-repeat;
+/* Kit crew: one whole figure (no cut-out legs). Calm and startled are different poses, so they
+   swap instantly instead of blending, and the wider startled pose keeps its proportions. */
+/* Their art carries no light strand of its own: the fists grip the site's wire, so a falling
+   figure simply lets go and nothing comes down with it. */
+.cradle[data-kit] { --release-mask: none; }
+.kitPiece { position: absolute; inset: 0; display: block; }
+.cradle[data-kit] .torso { clip-path: none; }
+/* Each leg kicks from its own hip with the same springy motion as Jen's and Kenny's (Braeden's
+   legs also stay turned in so they hang together). */
+.kitLeg { transform: rotate(calc(var(--leg-turn, 0deg) + var(--kick-left, 0deg) * .85)); }
+.kitLegRight { transform: rotate(calc(var(--leg-turn, 0deg) + var(--kick-right, 0deg) * .85)); }
+/* Scared: only the face changes, painted on the same body, so nobody grows or jumps. */
+.scaredFace { position: absolute; inset: 0; display: block; opacity: 0; transition: opacity .08s linear; }
+.cradle[data-kit][data-startled] .scaredFace, .cradle[data-kit][data-phase="hit"] .scaredFace { opacity: 1; }
+/* Each limb is its own composited layer holding a real image, so mobile Safari keeps painting it
+   while the page scrolls and the pieces rotate every frame. */
+.legLeft, .legRight, .coal {
+  will-change: transform;
+  backface-visibility: hidden;
 }
+/* Static painted hips beneath the legs (hidden at rest under the torso and legs). */
+.hips { position: absolute; inset: 0; display: block; clip-path: polygon(16% 52.5%, 90% 52.5%, 90% 67%, 16% 67%); }
+.cradle[data-hanging-chief="kenny"] .hips { clip-path: polygon(0 55%, 76% 55%, 76% 70%, 0 70%); }
+.limb { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 .legLeft {
   clip-path: polygon(20% 54%,49.8% 54%,52.4% 61%,57.4% 69.6%,52.3% 79%,48.4% 90%,49.2% 100%,18% 100%);
   transform-origin: 44% 55%;
@@ -242,33 +281,15 @@
   .roof { height: 9px; }
 }
 
-@media (max-width: 950px) {
-  .swag:nth-child(2) { display: none; }
-}
-
+/* Every swag stays (someone hangs from each); smaller screens get fewer, smaller bulbs. */
 @media (max-width: 700px) {
-  .swag:nth-child(3) { display: none; }
-  .swag:first-child, .swag:last-child { flex-basis: calc(var(--crew-width) + 16px); }
-  .roof, .cradle { --preferred-crew-width: clamp(144px, 42vw, 222px); }
-  .lamp { scale: .84; transform-origin: top; }
+  .lamp { scale: .8; transform-origin: top; }
+  .lamp:nth-of-type(2), .lamp:nth-of-type(4) { display: none; }
 }
 
-@media (max-width: 500px) {
-  .swag:nth-child(4) { display: none; }
-}
-
-@media (max-width: 639px) {
-  .roof, .cradle { --preferred-crew-width: clamp(144px, 42vw, 174px); }
-}
-
-@media (max-width: 360px) {
-  .swag:nth-child(5) .lamp:nth-of-type(even) { display: none; }
-  .roof, .cradle { --preferred-crew-width: 142px; }
-}
-
-@media (max-width: 335px) {
-  .roof, .cradle { --preferred-crew-width: 132px; }
-}
+/* Car screens: one shadow instead of two on the constantly moving figures keeps the car's
+   processor free for the game. */
+:global(html[data-device="tesla"]) .figure { filter: brightness(1.08) drop-shadow(1px 4px 3px #07100fbd); }
 
 @media (prefers-reduced-motion: reduce) {
   .idle, .glass, .bloom { animation: none; }
@@ -320,7 +341,6 @@
 }
 .coal {
   position: absolute; inset: 0;
-  background: var(--chief-image) center / 100% 100% no-repeat;
   clip-path: polygon(78% 57.2%,100% 57.2%,100% 76%,94% 76%,77% 75.2%,73.5% 74.2%,71.5% 71.5%,70.2% 68%,69% 64%,69.8% 61.8%,73.2% 59.5%);
   transform-origin: 77.8% 54.6%;
   transform: rotate(calc(var(--kick-right, 0deg) * -.4));
@@ -373,12 +393,12 @@
   background: radial-gradient(at 30% 27%, white, #e5f6ff 54%, #b0c6d1);
   box-shadow: 0 0 3px #ecf9ff;
   transform-origin: center;
-  animation: powder .53s .37s cubic-bezier(.1,.56,.55,1) both;
+  animation: powder .24s .37s cubic-bezier(.1,.56,.55,1) both;
 }
 @keyframes powder {
   0% { opacity: 0; transform: rotate(var(--flake-angle)) translateX(3px) scale(.5); }
   10% { opacity: 1; }
-  100% { opacity: 0; transform: rotate(var(--flake-angle)) translateX(clamp(22px,4vw,47px)) scale(.35); }
+  100% { opacity: 0; transform: rotate(var(--flake-angle)) translateX(clamp(12px,2vw,24px)) scale(.35); }
 }
 .announcement {
   position: absolute; width: 1px; height: 1px; overflow: hidden;

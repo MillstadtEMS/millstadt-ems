@@ -44,13 +44,13 @@ function collect(kind: Ornament) {
 }
 
 const drift = "/images/winter/village-snowbank.webp";
-const village = "/images/winter/village.webp";
+// Branded Millstadt village only: the generic town art shows an unbranded ambulance.
 const town = "/images/winter/millstadt-village.webp";
 const rink = "/images/winter/street/town-rink.webp";
 
 function Miniature({ kind }: { kind: Ornament }) {
   const scene = {
-    lantern: village, engine: town, globe: rink, stocking: village, star: village, gift: rink,
+    lantern: town, engine: town, globe: rink, stocking: town, star: town, gift: rink,
   }[kind];
   const item = {
     lantern: null, engine: "/images/winter/street/fire-engine.webp", globe: "/images/winter/street/skating-family.webp",

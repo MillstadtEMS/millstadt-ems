@@ -3,6 +3,9 @@
 import Image from "next/image";
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
+import { isSnowballTimeout, snowballTimeoutEvent } from "@/lib/seasonal/snowballTimeout";
+import { tapSlop } from "@/lib/device/profile";
+import { claimPerson } from "@/lib/seasonal/cast";
 import styles from "./WinterSnowChief.module.css";
 
 const powder = [
@@ -76,10 +79,16 @@ export default function WinterSnowChief({ person }: { person: Person }) {
       return box.top + Math.min(28, box.height * .25) < window.innerHeight - bottomClearance &&
         box.bottom > 130 && box.right > 0 && box.left < window.innerWidth;
     }
+    // One of each person at a time: while they hang from the Christmas lights they stay up there;
+    // knock them down and they land here in the village snowbank.
+    let release: (() => void) | null = null;
     function popUp() {
-      if (poseRef.current === "out" || !onScreen()) return;
+      if (isSnowballTimeout() || poseRef.current === "out" || !onScreen()) return;
       waitingForPortrait = !portrait!.complete || !portrait!.naturalWidth;
-      if (!waitingForPortrait) { poseRef.current = "out"; setPose("out"); }
+      if (waitingForPortrait) return;
+      release ??= claimPerson(person);
+      if (!release) return;
+      poseRef.current = "out"; setPose("out");
     }
     function bury() {
       waitingForPortrait = false;
@@ -87,6 +96,7 @@ export default function WinterSnowChief({ person }: { person: Person }) {
       poseRef.current = "buried";
       cancelFight();
       setPose("buried");
+      release?.(); release = null;
     }
     function onScroll() {
       const y = window.scrollY;
@@ -146,14 +156,16 @@ export default function WinterSnowChief({ person }: { person: Person }) {
     window.addEventListener("blur", pointerUp, options);
     window.addEventListener("hashchange", () => { clearIntent(); waitingForPortrait = false; }, options);
     document.addEventListener("visibilitychange", () => { if (document.hidden && busy.current) cancelFight(); }, options);
+    window.addEventListener(snowballTimeoutEvent, () => { if (isSnowballTimeout()) bury(); }, options);
     portrait.addEventListener("load", imageReady, options);
     return () => {
       listeners.abort();
+      release?.(); release = null;
       timers.current.forEach(window.clearTimeout);
       timers.current = [];
       busy.current = false;
     };
-  }, [cancelFight]);
+  }, [cancelFight, person]);
 
   function throwSnow(event: MouseEvent<HTMLButtonElement>) {
     if (poseRef.current !== "out" || busy.current || !figure.current || (event.detail !== 0 && gesture.current.drag)) return;
@@ -189,6 +201,7 @@ export default function WinterSnowChief({ person }: { person: Person }) {
   const angry = phase !== "idle" && phase !== "incoming" && phase !== "recover";
   return (
     <div ref={actor} className={styles.chief} data-snow-chief="" data-person={person}
+      data-snow-fighter={person} data-snow-own-click="" data-snow-off={pose !== "out"}
       style={{ "--throw-art": `url("${chief.mad}")` } as CSSProperties} data-revealed={pose === "out"}
       data-ducked={pose === "buried"} data-fight={phase} data-angry={angry}>
       <div className={styles.pose}>
@@ -206,9 +219,9 @@ export default function WinterSnowChief({ person }: { person: Person }) {
             <div className={styles.impactPuff} aria-hidden="true" />
           </div>
           {pose === "out" && <button type="button" className={styles.hit} aria-label={`Throw a snowball at ${chief.name} in the snowbank`}
-            aria-disabled={phase !== "idle"} onClick={throwSnow}
+            aria-disabled={phase !== "idle"} data-snow-target={phase === "idle" ? "" : undefined} onClick={throwSnow}
             onPointerDown={(e) => { gesture.current = { x: e.clientX, y: e.clientY, drag: false }; }}
-            onPointerMove={(e) => { if (e.buttons && Math.hypot(e.clientX - gesture.current.x, e.clientY - gesture.current.y) > 8) gesture.current.drag = true; }}
+            onPointerMove={(e) => { if (e.buttons && Math.hypot(e.clientX - gesture.current.x, e.clientY - gesture.current.y) > tapSlop(e.pointerType)) gesture.current.drag = true; }}
             onPointerCancel={() => { gesture.current.drag = true; }} />}
         </div>
       </div>

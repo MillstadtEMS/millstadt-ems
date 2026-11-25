@@ -1,0 +1,47 @@
+/* Medics peeking up from behind the parked rigs. The layer sits in the village picture just before
+   the street, so Old No. 5 and the three ambulances (later in the page) paint over them: only the part
+   above a roof or hood line shows. Sizes are in cqw of the picture (the .town container). */
+.layer { position: absolute; inset: 0; pointer-events: none; }
+.townRef { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+.medic {
+  position: absolute; left: calc(var(--x) * 1cqw); top: calc(var(--y) * 1cqw);
+  width: calc(var(--w) * 1cqw); height: calc(var(--h) * 1cqw);
+  pointer-events: none; user-select: none; -webkit-user-select: none;
+}
+/* Below the vehicle's body line nothing shows, even through the gaps under the chassis. */
+.clip { position: absolute; inset: 0; clip-path: inset(-300% -300% calc(var(--cut) * 1cqw) -300%); }
+.rise, .motion, .stage { position: absolute; inset: 0; transform-origin: 50% 100%; }
+.stage { filter: drop-shadow(0 1px 1.5px #12203a99); }
+/* One picture at a time, swapped instantly (never blended). */
+.frame { position: absolute; display: block; overflow: visible; opacity: 0; pointer-events: none; }
+.frame[data-on] { opacity: 1; }
+.stageRef { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+
+/* Down behind the vehicle unless up. */
+.rise { transform: translateY(var(--down)); }
+.medic:is([data-phase="rise"], [data-phase="look"], [data-phase="throw"], [data-phase="hold"], [data-phase="hit"]) .rise { transform: none; }
+.medic[data-phase="rise"] .rise { animation: rise .52s cubic-bezier(.2,.8,.3,1) both; }
+.medic[data-phase="duck"] .rise { animation: duck .36s cubic-bezier(.5,0,.85,.45) both; }
+.medic[data-phase="look"] .motion { animation: look 1.3s ease-in-out both; }
+.medic[data-phase="throw"] .motion { animation: fling .43s ease-in-out both; }
+
+/* What the snowball fight aims at: the part above the vehicle (sides set in code). */
+.fighter { position: absolute; top: 0; height: var(--shown); }
+.counter {
+  position: absolute; left: var(--cx); top: var(--cy); width: max(44px, 60%); aspect-ratio: 1;
+  translate: -50% -50%; border: 0; padding: 0; border-radius: 50%; background: transparent; pointer-events: none;
+}
+.counter:focus-visible { border: 2px dashed #fff9c1; outline: 2px solid #315444; outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }
+
+@keyframes rise { from { transform: translateY(var(--down)); } 78% { transform: translateY(-1.5%); } to { transform: none; } }
+@keyframes duck { from { transform: none; } to { transform: translateY(var(--down)); } }
+/* Looking around: a lean one way, a lean the other, back to the middle. */
+@keyframes look { 24% { transform: translateX(-3%) rotate(-4deg); } 58% { transform: translateX(3%) rotate(4deg); } }
+@keyframes fling { 0% { transform: rotate(6deg) scale(.98); } 36% { transform: rotate(-5deg) translateY(-3%); } to { transform: none; } }
+
+:global(html[data-device="tesla"]) .stage { filter: none; }
+@media (prefers-reduced-motion: reduce) {
+  .rise, .motion, .stage { animation: none !important; }
+}
+@media print { .layer { display: none; } }

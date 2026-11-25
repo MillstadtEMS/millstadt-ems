@@ -10,22 +10,28 @@
   height: auto;
 }
 
-.fireEngine, .carolers {
+.fireEngine {
   position: absolute;
   isolation: isolate;
-}
-
-.fireEngine {
   left: 50%;
   width: 21.4%;
   bottom: 20.2%;
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
+.fireEngine:focus-visible { outline: 2px solid #ffe0a0; outline-offset: 3px; border-radius: 6px; }
 
 .fireEngine img {
   filter: brightness(.95) drop-shadow(0 2px 1px #1823388c);
 }
 
-.fireEngine::before, .carolers::before, .stall::before, .skateShadow {
+.fireEngine::before, .stall::before, .singer::before {
   content: "";
   position: absolute;
   z-index: -1;
@@ -48,7 +54,7 @@
 }
 
 .lamps, .rinkLights { position: absolute; inset: 0; pointer-events: none; }
-.lamps i, .lantern, .rinkLights i {
+.lamps i, .rinkLights i {
   position: absolute;
   border-radius: 50%;
   background: radial-gradient(circle, #fffbca 0 10%, #ffdb7fb3 22%, #ffac4a44 44%, transparent 70%);
@@ -62,13 +68,67 @@
 .lamps i:nth-child(3) { left: 90%; top: 66%; width: 5.5%; animation-delay: -.7s; }
 .lamps i:nth-child(4) { left: 96.6%; top: 61.8%; width: 4.8%; animation-delay: -1.6s; }
 
+/* The carolers stand on the corner store's walk, sized to the painting's perspective. The
+   grandfather with the lantern stands a step behind on the right; when the gift thief hides with
+   the singers ("carol"), only his hat and face peek out over the grandfather's shoulder. */
 .carolers {
-  left: 22.55%;
-  width: 4.95%;
-  bottom: 24%;
+  position: absolute;
+  left: 22.36%;
+  bottom: 23.9%;
+  width: 5.63%;
+  aspect-ratio: 81 / 103;
 }
-.carolers img { filter: brightness(.92) drop-shadow(0 1px 1px #1c243b75); }
-.lantern { left: 53%; top: 45%; width: 20%; aspect-ratio: 1; }
+.singer {
+  position: absolute;
+  isolation: isolate;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.singer::before { inset: 95% 8% -2.5%; }
+.singer[data-singer="lantern"] { z-index: 1; left: 53.1%; width: 46.9%; bottom: 4.9%; }
+.singer[data-singer="woman"] { z-index: 2; left: 0; width: 41.6%; bottom: 1%; }
+.singer[data-singer="boy"] { z-index: 3; left: 33.3%; width: 30.1%; bottom: 0; }
+.voice {
+  position: relative;
+  transform-origin: 50% 100%;
+  animation: carolSway 3.5s ease-in-out -.4s infinite;
+  animation-play-state: paused;
+}
+.singer[data-singer="lantern"] .voice { animation-duration: 4.2s; animation-delay: -1.3s; }
+.singer[data-singer="boy"] .voice { animation-duration: 3.1s; animation-delay: -2.2s; }
+.voice img { filter: brightness(.9) saturate(.94) drop-shadow(0 1px 1px #1c243b75); }
+/* Candlelight in the lantern: a warm glow that flickers on the grandfather's coat. */
+.lantern {
+  position: absolute;
+  left: 63.4%;
+  top: 46.5%;
+  width: 52%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff6c4 0 9%, #ffd77ccc 20%, #ffa94a55 42%, transparent 70%);
+  mix-blend-mode: screen;
+  transform: translate(-50%, -50%);
+  animation: candle 2.3s linear infinite;
+  animation-play-state: paused;
+}
+@keyframes carolSway {
+  0%, 100% { transform: rotate(-1.1deg); }
+  30% { transform: rotate(.2deg) translateY(-1.2%); }
+  50% { transform: rotate(1.1deg); }
+  80% { transform: rotate(-.2deg) translateY(-1.2%); }
+}
+@keyframes candle {
+  0%, 100% { opacity: .62; transform: translate(-50%, -50%) scale(.95); }
+  9% { opacity: .86; transform: translate(-50%, -50%) scale(1.03); }
+  17% { opacity: .7; }
+  26% { opacity: .93; transform: translate(-50%, -50%) scale(1.06); }
+  38% { opacity: .74; transform: translate(-50%, -50%) scale(.98); }
+  47% { opacity: .88; }
+  59% { opacity: .64; transform: translate(-50%, -50%) scale(.94); }
+  68% { opacity: .82; }
+  77% { opacity: .7; transform: translate(-50%, -50%) scale(1.01); }
+  88% { opacity: .95; transform: translate(-50%, -50%) scale(1.05); }
+}
 
 .rink {
   position: relative;
@@ -95,12 +155,19 @@
   opacity: .97;
   mask-image: linear-gradient(100deg, transparent, black 24%);
 }
+/* Stacking follows depth: things nearer the front edge paint over things behind them (see
+   rinkDepthZ). The neighbors watch from the back boards at floor 44%, sized for the distance, so
+   every skater glides in front of them; the cocoa stall stands at 25%. */
 .neighbors {
   position: absolute;
-  left: 81%;
-  bottom: 13%;
-  width: 16%;
+  z-index: 19;
+  left: 78.5%;
+  bottom: 44%;
+  width: 11.3%;
   isolation: isolate;
+  /* The rink itself lets clicks through; the neighbors take snowballs. */
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
 }
 .neighbors::before {
   content: "";
@@ -111,6 +178,7 @@
   background: radial-gradient(ellipse, #19253d82 0, transparent 70%);
 }
 .neighbors img { filter: brightness(.94) drop-shadow(0 1px 1px #19283b5c); }
+.rinkLights { z-index: 1; }
 .rinkLights i { top: 9.5%; width: 3.8%; aspect-ratio: 1; }
 .rinkLights i:nth-child(1) { left: 22%; animation-delay: -2.1s; }
 .rinkLights i:nth-child(2) { left: 50.1%; animation-duration: 5.2s; }
@@ -118,7 +186,7 @@
 
 .stall {
   position: absolute;
-  z-index: 1;
+  z-index: 50;
   left: 4.2%;
   width: 11.4%;
   bottom: 25%;
@@ -152,80 +220,136 @@
   to { opacity: 0; transform: translate(48%, -62%) scale(1.1) rotate(-19deg); }
 }
 
-.soloLane, .familyLane {
-  position: absolute;
-  width: 9.4%;
-  left: 48%;
-  bottom: 22%;
-}
-.familyLane {
-  z-index: 2;
-  width: 12.7%;
-  left: 24%;
-  bottom: 1%;
-}
-.skater { position: relative; isolation: isolate; }
-.person { position: relative; z-index: 1; }
-.familyLane .skater {
-  animation: familyGlide 18s ease-in-out -4s infinite alternate;
-  animation-play-state: paused;
-}
-.soloLane .skater {
-  animation: soloGlide 13s ease-in-out -3s infinite alternate;
-  animation-play-state: paused;
-}
-
-/* Remove the tile below the family's blades so only the skaters move. */
-.familyLane img {
-  clip-path: polygon(0 0,100% 0,100% 71%,81% 71%,85.5% 79.5%,85.5% 82%,82% 81%,78% 77%,75% 72%,67% 72%,68% 79%,71% 85%,70% 88%,63% 87%,61% 84%,61% 78%,59.2% 72%,27% 72%,26% 76%,27.4% 82%,26% 86.5%,17.8% 86.5%,16% 83%,16.5% 77%,14% 79.5%,8% 82.5%,6% 82.5%,6.6% 78%,9% 74%,8.7% 72%,0 71%);
-}
-.familyLane .skateShadow { inset: 79% 10% 11% 5%; }
-.soloLane .skateShadow { inset: 92% 12% -1% 8%; }
-.reflection {
-  position: absolute;
-  inset: 100% 0 auto;
-  height: 22%;
-  overflow: hidden;
-  opacity: .2;
-  filter: blur(1px);
-  mask-image: linear-gradient(black, transparent);
-}
-.reflection img {
-  position: absolute;
-  width: 100%;
-  bottom: 100%;
-  transform-origin: center bottom;
-  transform: scaleY(-.52);
-}
-.familyLane .reflection { top: 85.7%; }
-.familyLane .reflection img { transform: translateY(-7%) scaleY(-.5); }
-
 .street[data-active="true"] .lamps i,
+.street[data-active="true"] .voice,
 .street[data-active="true"] .lantern,
 .rink[data-active="true"] .rinkLights i,
-.rink[data-active="true"] .steam i,
-.rink[data-active="true"] .skater { animation-play-state: running; }
+.rink[data-active="true"] .steam i { animation-play-state: running; }
 
-@keyframes familyGlide {
-  0% { transform: translate(0, -1.4%) rotate(-1deg); }
-  38% { transform: translate(42%, 1.2%) rotate(.2deg); }
-  74% { transform: translate(77%, -1.6%) rotate(-.5deg); }
-  100% { transform: translate(93%, -2%) rotate(-.1deg); }
-}
-@keyframes soloGlide {
-  0% { transform: translate(149%, -4%) rotate(2deg); }
-  34% { transform: translate(99%, -.8%) rotate(-1.3deg); }
-  78% { transform: translate(29%, 3.5%) rotate(-2.1deg); }
-  100% { transform: translate(0, 2%) rotate(.2deg); }
-}
 @keyframes lanternGlow {
   0%, 100% { opacity: .36; }
   52% { opacity: .86; }
   73% { opacity: .55; }
 }
 @media (prefers-reduced-motion: reduce), print {
-  .skater, .lamps i, .lantern, .rinkLights i, .steam i { animation: none !important; }
+  .voice, .lamps i, .lantern, .rinkLights i, .steam i { animation: none !important; }
+  .lantern { opacity: .78; }
 }
+
+/* ---- Skaters. Each lane is the skater's canvas at its spot on the ice (moved by script); the
+   figure inside turns, leans and flips about the blades. ---- */
+.ice { position: absolute; inset: 0; pointer-events: none; }
+.filters { position: absolute; width: 0; height: 0; overflow: hidden; }
+.lane, .leadLane {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: calc(var(--tall) * 1%);
+  aspect-ratio: var(--aspect);
+  transform-origin: 50% 100%;
+  pointer-events: none;
+}
+.lane { visibility: hidden; will-change: transform; }
+.lane[data-on="true"] { visibility: visible; }
+.figure {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 100%;
+}
+.rink .figure img {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  filter: brightness(.95) drop-shadow(0 1px 1px #1c243b66);
+}
+/* Flip-book frames: swap, never blend. */
+.lane:not([data-pose="1"]) [data-frame="1"], .lane[data-pose="1"] [data-frame="0"] { visibility: hidden; }
+.reflection {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  width: 100%;
+  height: 34%;
+  overflow: hidden;
+  transform-origin: 50% 0;
+  mask-image: linear-gradient(black, transparent 92%);
+}
+.rink .reflection img {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  height: 294.12%;
+  transform-origin: 50% 100%;
+  transform: scaleY(-.5);
+  opacity: .3;
+  filter: blur(.7px) saturate(.8);
+}
+.skateShadow {
+  position: absolute;
+  left: calc(var(--bx) - var(--bw) * .02);
+  width: calc(var(--bw) * 1.04);
+  bottom: -3.4%;
+  height: 8%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #0b1426c4 0, #16213b80 34%, #27345133 58%, transparent 72%);
+}
+.skateTarget, .lead {
+  position: absolute;
+  left: var(--bx);
+  top: var(--by);
+  width: var(--bw);
+  height: var(--bh);
+}
+.lane[data-facing="-1"] :is(.skateTarget, .skateShadow), .leadLane[data-facing="-1"] .lead { left: auto; right: var(--bx); }
+.lane[data-facing="-1"] .skateShadow { right: calc(var(--bx) - var(--bw) * .02); }
+.lead { display: block; }
+.skateTarget {
+  padding: 0;
+  border: 0;
+  border-radius: 40% 40% 28% 28%;
+  background: none;
+  cursor: var(--snow-cursor, crosshair);
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+/* Time out: nothing on the ice takes snowballs, so the pointer goes back to normal. */
+:global(html[data-snowball-timeout]) .skateTarget { cursor: default; }
+.skateTarget:focus-visible { outline: 2px solid #fff3a9; outline-offset: 2px; }
+.lane:has(.skateTarget:focus-visible) .figure img { filter: brightness(1.04) drop-shadow(0 0 2px #2a435a) drop-shadow(0 0 3px #fff3a9); }
+/* Fingers get extra reach around small, moving skaters; car screens get the most. */
+@media (pointer: coarse) {
+  .skateTarget::before { content: ""; position: absolute; inset: -14% -20% -6%; }
+}
+:global(html[data-device="tesla"]) .skateTarget::before { content: ""; position: absolute; inset: -24% -30% -10%; }
+:global(html[data-device="tesla"]) .reflection { display: none; }
+:global(html[data-device="tesla"]) .rink .figure img { filter: none; }
+
+.puck {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: .5%;
+  aspect-ratio: 2.6;
+  margin: -.096% 0 0 -.25%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 30%, #4a505b, #0c0e13 68%);
+  box-shadow: 0 1px 1px #0b122480;
+  transform-origin: 50% 50%;
+  pointer-events: none;
+}
+.puck[data-on="false"] { visibility: hidden; }
+
+/* Snow on a hit: small and gone in a blink. */
+.puff, .chip, .iceChip {
+  position: absolute;
+  z-index: 140;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.puff { background: radial-gradient(circle, #fffffff2 0 28%, #e8f4ffb3 50%, transparent 70%); }
+.chip { background: #fff; box-shadow: 0 0 1px #9fc3e0; }
+.iceChip { z-index: auto; background: #f3fbff; box-shadow: 0 0 2px #cde9ff; }
 
 .pour {
   display: inline-flex;
@@ -279,7 +403,7 @@
   background: #834029;
   box-shadow: 0 0 0 2px #ffdc865c;
 }
-.stall[data-serving="true"] { z-index: 5; }
+.stall[data-serving="true"] { z-index: 130; }
 .stall[data-serving="true"] .steam { transform: scale(1.8); transform-origin: center bottom; }
 .stall[data-serving="true"] .steam i { animation-duration: 1.65s; }
 .delivery {
@@ -359,61 +483,5 @@
   .cup, .cup i { animation: none; }
 }
 @media print {
-  .cocoaBadge, .delivery, .pour { display: none; }
+  .cocoaBadge, .delivery, .pour, .ice { display: none; }
 }
-.rink .soloLane, .rink .familyLane { transition: opacity .25s ease; }
-.rink:has([data-rink-rescue="playing"]) :is(.soloLane, .familyLane) { opacity: 0; }
-.rink:has([data-rink-rescue="playing"]) :is(.soloLane, .familyLane) .skater { animation-play-state: paused; }
-
-.skateTarget {
-  position: absolute;
-  z-index: 3;
-  inset: 1% 5% 3%;
-  border: 0; padding: 0;
-  background: none;
-  cursor: crosshair;
-  pointer-events: auto;
-  touch-action: manipulation;
-  clip-path: polygon(38% 0,76% 4%,83% 21%,99% 36%,94% 51%,73% 52%,65% 64%,87% 93%,66% 100%,47% 79%,30% 97%,12% 92%,24% 60%,0 41%,5% 28%,27% 24%);
-}
-.familyLane .skateTarget { inset: 0 50% 13% 2%; clip-path: polygon(54% 0,89% 2%,93% 14%,85% 27%,97% 43%,81% 53%,69% 63%,55% 96%,31% 100%,24% 93%,10% 97%,2% 88%,14% 62%,0 60%,17% 25%,28% 10%); }
-.skater:has(.skateTarget:focus-visible) .person { filter: drop-shadow(0 0 2px #2a435a) drop-shadow(0 0 3px #fff3a9); }
-.skateShot { z-index: 4; position: absolute; left: 50%; top: 35%; width: 0; height: 0; pointer-events: none; animation: shotLife .46s linear; }
-.skateShot::before, .skateShot i {
-  content: ""; position: absolute; width: clamp(5px,1.05vw,17px); aspect-ratio: 1;
-  border-radius: 45% 55% 51% 42%;
-  background: radial-gradient(at 32% 24%,white 18%,#e6f9fc 47%,#94b7ca);
-  animation: skateSnow .28s cubic-bezier(.2,.55,.34,1) both;
-}
-.skateShot i { box-shadow: -.55em -.35em 0 -.12em white, .44em -.22em 0 -.15em #f4fbff; animation: skateImpact .22s .24s ease-out both; }
-@keyframes shotLife { from { opacity: 1; } to { opacity: .98; } }
-@keyframes skateSnow { from { opacity:.85; transform:translate(-10vw,5vw) scale(2.3); } to { opacity:1; transform:translate(-50%,-50%) scale(.65); } }
-@keyframes skateImpact { from { opacity:0; transform:scale(.4); } 22% { opacity:1; } to{ opacity:0; transform:scale(1.8); } }
-
-.rink:has([data-rink-rescue="loading"]) .skater { animation-play-state: paused; }
-.rink:has(:is([data-rink-rescue="loading"],[data-rink-rescue="playing"])) .skateTarget { visibility: hidden; }
-.rink:has([data-rink-rescue="playing"][data-subject="solo"]) .soloLane,
-.rink:has([data-rink-rescue="playing"][data-subject="family"]) .familyLane { opacity: 1; }
-.rink:has([data-rink-rescue="playing"][data-subject="solo"]) .soloLane .person,
-.rink:has([data-rink-rescue="playing"][data-subject="family"]) .familyLane .person {
-  transform-origin: 48% 83%;
-  animation: tipOnSkates .814s cubic-bezier(.37,.02,.8,.67) both;
-}
-.rink:has([data-rink-rescue="playing"]) :is(.reflection,.skateShadow) { opacity: 0; }
-.rink:has([data-paused="true"]) .person { animation-play-state: paused; }
-@keyframes tipOnSkates {
-  0% { opacity: 1; transform: none; } 19% { transform: translateY(-2%) rotate(-7deg); }
-  99% { opacity: 1; transform: translateY(4%) rotate(-72deg) scale(.91); }
-  100% { opacity: 0; transform: translateY(4%) rotate(-72deg) scale(.91); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .rink .skateShot::before { animation: none; }
-  .rink .skateShot i { animation: none; }
-  .rink:has([data-rink-rescue="playing"]) .person { visibility: hidden; }
-}
-
-.rink:has([data-rink-rescue="playing"][data-subject="family"]) .familyLane .person {
-  transform-origin: 30% 83%;
-  clip-path: polygon(26% 0,47% 0,48% 12%,45% 18%,43% 29%,38% 31%,40% 36%,36% 40%,43% 42%,42% 56%,36% 57%,35% 49%,29% 67%,27% 84%,23% 87%,17% 83%,17% 77%,12% 80%,6% 83%,5% 79%,9% 66%,10% 55%,4% 57%,3% 50%,10% 24%,13% 10%);
-}
-.rink:has([data-paused="true"]) .person { animation-play-state: paused !important; }

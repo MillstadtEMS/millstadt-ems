@@ -1,0 +1,117 @@
+/* Thanksgiving week: the paramedic turkey crosses the sky now and then.
+   Fixed over the page content and the seasonal layers (snowfall 17, roofline crew 36, snowball
+   overlays 42-47), beneath the site header (50), the open menu (52) and dialogs (1000+).
+   Exists only during a pass and never takes a pointer event. */
+
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  contain: strict;
+}
+
+.bird {
+  --turkey-width: clamp(168px, 11vw + 64px, 240px);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(var(--turkey-width) * var(--turkey-depth, 1));
+  aspect-ratio: 240 / 222;
+  /* Waits off-screen until its first frame is decoded; the flight then drives the transform. */
+  transform: translate3d(-200vw, 0, 0);
+  transform-origin: 50% 55%;
+  will-change: transform;
+}
+
+.sprite {
+  display: block;
+  width: 100%;
+  height: auto;
+  -webkit-user-drag: none;
+  /* A faint warm rim keeps the navy uniform's outline readable over the dark navy sections, and a
+     soft, low shadow lifts the bird off the page. */
+  filter:
+    drop-shadow(0 0 0.6px rgb(255 246 230 / 0.42))
+    drop-shadow(0 12px 10px rgb(2 8 20 / 0.24));
+}
+
+.bird[data-direction="left"] .sprite {
+  transform: scaleX(-1);
+}
+
+/* The bird itself takes taps (the sky around it never does), so a snowball aimed at it never
+   clicks whatever is underneath. */
+.bird {
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.tumbler { display: block; transform-origin: 50% 55%; }
+
+/* A hit: a quick puff of feathers and an indignant "Gobble!". */
+.ruffle { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.ruffle i {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 9%;
+  height: 4%;
+  border-radius: 50% 50% 45% 55% / 70% 70% 30% 30%;
+  background: linear-gradient(90deg, #6b3d1d, #b07a45 55%, #f1e3cc);
+  opacity: 0;
+  animation: feather .62s cubic-bezier(.2,.7,.35,1) forwards;
+  --angle: calc(var(--feather) * 40deg - 20deg);
+}
+.ruffle i:nth-child(3n) { background: linear-gradient(90deg, #f6efe2, #ffffff); }
+@keyframes feather {
+  0% { opacity: 1; transform: rotate(var(--angle)) translateX(0) rotate(0deg); }
+  60% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(var(--angle)) translateX(70%) translateY(18%) rotate(140deg); }
+}
+.ruffle b {
+  position: absolute;
+  left: 50%;
+  top: -6%;
+  padding: .2em .55em;
+  color: #4a2112;
+  background: #fff4dc;
+  border: 1px solid #c79a5e;
+  border-radius: .6em .6em .6em .15em;
+  box-shadow: 0 2px 4px rgb(2 8 20 / .35);
+  font: 800 clamp(.62rem, .8vw, .82rem)/1.1 system-ui, sans-serif;
+  white-space: nowrap;
+  animation: gobble .9s ease-out forwards;
+}
+@keyframes gobble {
+  0% { opacity: 0; transform: translate(-50%, 6px) scale(.7); }
+  18% { opacity: 1; transform: translate(-50%, 0) scale(1.05); }
+  75% { opacity: 1; transform: translate(-50%, -6px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -12px) scale(.96); }
+}
+
+@media (max-width: 640px) {
+  .bird {
+    --turkey-width: 120px;
+  }
+
+  .sprite {
+    filter:
+      drop-shadow(0 0 0.5px rgb(255 246 230 / 0.4))
+      drop-shadow(0 7px 6px rgb(2 8 20 / 0.22));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sky {
+    display: none;
+  }
+}
+
+@media print {
+  .sky {
+    display: none;
+  }
+}
