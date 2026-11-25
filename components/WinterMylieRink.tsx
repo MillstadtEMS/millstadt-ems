@@ -19,7 +19,9 @@ import styles from "./WinterMylieRink.module.css";
    planted feet on the walk, push-and-glide strokes on the ice. Positions are fractions of the
    rink (x across, f = floor depth up from the front edge) so it scales with every screen. Purely
    decorative: it never takes a click, Time Out ends it, and reduced motion never starts it.
-   Preview: ?preview=ve&mylie-preview=now (plays soon after the rink is in view, then repeats).
+   Preview: ?preview=ve&mylie-preview=now plays it soon after the rink comes into view and again
+   every few seconds; ?preview=ve&mylie-preview=seek holds it still for frame-by-frame checks
+   (window.__mylieRinkSeek(seconds) draws any moment).
    --------------------------------------------------------------------------------------------- */
 
 type Mat = readonly [number, number, number, number, number, number];
@@ -106,7 +108,7 @@ const bodyMat = (root: Pt, lean: number) => mul(tr(PEL[0] + root[0], PEL[1] + ro
 
 /* ---- the walk: two steps a cycle; feet planted where they strike while the body travels on ---- */
 const WALK_STRIDE = 425, DUTY = .6, TOEOFF = -.55;
-function walkPose(phase: number, stride: number, settle = 0): LegPose & { farArm: number; nearArm: number } {
+function walkPose(phase: number, stride: number): LegPose & { farArm: number; nearArm: number } {
   const ground = PEL[1] + .9 * LEG + WALK.ankleH; // knees a little bent: careful steps on her blades
   const bodyX = -stride * phase;
   const toe = WALK.blade.toe;
@@ -134,10 +136,11 @@ function walkPose(phase: number, stride: number, settle = 0): LegPose & { farArm
     }
     legs[side] = { ankle: [ankle[0] - bodyX, ankle[1]], foot };
   }
-  const swing = Math.sin(TAU * (phase - .05)) * (1 - settle);
+  // arms swing against the legs; the hips are highest at mid-stance and lowest just after a strike
+  const swing = Math.sin(TAU * (phase - .05));
   return {
-    root: [0, -7 * Math.cos(4 * Math.PI * (phase - .3)) * (1 - settle)], lean: -.04 * (1 - settle), ground, ...legs,
-    farArm: -.26 * (1 - settle) - .2 * swing, nearArm: .02 + .2 * swing,
+    root: [0, -7 * Math.cos(4 * Math.PI * (phase - .3))], lean: -.04, ground, ...legs,
+    farArm: -.26 - .2 * swing, nearArm: .02 + .2 * swing,
   };
 }
 
@@ -642,7 +645,9 @@ function Scene({ onDone, seek }: { onDone: () => void; seek: boolean }) {
       if (!scene) return;
       shown = t;
       const fr = scene.frameAt(t);
-      const z = rinkDepthZ(fr.f);
+      // depth-sorted with the rink's skaters; kept above the stall if a visitor takes the cocoa mug
+      // (the stall then rises over the rink for its hand-out), since she stands in front of it
+      const z = rinkDepthZ(fr.f) + (stallBox?.dataset.serving === "true" ? 100 : 0);
       for (const r of rigs) {
         const on = r.name === fr.rig;
         if (on && lastRig !== r.name) { r.figure.dataset.on = "true"; r.mirror.dataset.on = "true"; }
