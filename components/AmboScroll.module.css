@@ -399,8 +399,8 @@
    never smaller than 12px, so it reads on a phone. */
 .gabbyAnger {
   position: absolute;
-  top: 21%;
-  left: 56%;
+  top: 13%;
+  left: 58%;
   width: max(10%, 12px);
   aspect-ratio: 1;
   overflow: visible;
@@ -414,10 +414,11 @@
   animation: gabbyAnger 4.6s linear both;
 }
 
-/* Steam puffs off her head and a grumble while she glares. The puffs carry a grey-blue rim so they
-   read over white type too. */
+/* Steam puffs off her head and a grumble while she glares, always over the roof-ride art (she may be
+   under it). The puffs carry a grey-blue rim so they read over white type too. */
 .gabbyFume {
   position: absolute;
+  z-index: 3;
   inset: 0;
   pointer-events: none;
 }
