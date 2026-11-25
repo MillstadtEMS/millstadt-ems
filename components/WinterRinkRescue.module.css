@@ -179,6 +179,24 @@
 }
 /* Heading back to the ambulance, the crew turns around. */
 @keyframes backToAmbulance { 0% { scale: 1 1; } 72% { scale: -1 1; } }
+/* The gift thief down in the snow, waiting for the crew to finish another call (or for his own
+   pickup to load): he lies where he fell until the stretcher reaches him. */
+.waitingLane {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 0;
+  bottom: var(--ground);
+  transform: translateX(var(--pickup-x));
+}
+.stage .waiting {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 95cqh;
+  height: auto;
+  translate: -50% 0;
+}
 .announcement { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
 
 .stage[data-paused="true"] * { animation-play-state: paused !important; }

@@ -45,6 +45,15 @@ const officers: Record<Chief, Officer> = {
 };
 // This document's dismissals follow client navigation and reset on reload.
 const fallenChiefs = new Set<Chief>();
+// Knocking everyone off the lights unlocks the living room's turkey heist (WinterFireplaceScenes).
+const crewListeners = new Set<() => void>();
+export function subscribeCrewDown(listener: () => void) {
+  crewListeners.add(listener);
+  return () => { crewListeners.delete(listener); };
+}
+/** How many of the crew have been knocked off the lights on this visit. */
+export const crewDownCount = () => fallenChiefs.size;
+export const allCrewDown = () => lineup.every(chief => fallenChiefs.has(chief));
 // Crew members the mouse is currently aiming at (drives the snowball reticle).
 const aimers = new Set<Chief>();
 const controls = [
@@ -132,6 +141,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
   const throwSnowball = useCallback((x: number, y: number) => {
     if (fallenChiefs.has(chief) || isSnowballTimeout()) return;
     fallenChiefs.add(chief);
+    crewListeners.forEach(listener => listener());
     setShot({ x, y });
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     retire.current = window.setTimeout(() => setGone(true), still ? 750 : 1460);

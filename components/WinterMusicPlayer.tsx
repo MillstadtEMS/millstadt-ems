@@ -7,6 +7,7 @@ import { Bell, BellOff, Maximize2, Minimize2 } from "lucide-react";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 import { useSnowballTimeout } from "@/lib/seasonal/snowballTimeout";
 import styles from "./WinterMusicPlayer.module.css";
+import WinterFireplaceScenes from "./WinterFireplaceScenes";
 
 // /movies plays its own trailer, so the soundtrack stays out of its way there.
 const excluded = new Set(["admin", "api", "board", "inventory", "lounge", "truckcheck", "ten-eight", "offline", "weather-test", "movies"]);
@@ -282,10 +283,10 @@ function Soundtrack() {
       </aside>
     );
   }
-  return (
+  return (<>
     <aside className={styles.player} data-winter-video="" data-expanded={expanded} aria-label="Christmas soundtrack">
       {/* The living room: the music video plays on the old TV (its screen is the video's width). */}
-      <span className={styles.room} aria-hidden="true">
+      <span className={styles.room} aria-hidden="true" data-living-room="">
         <video ref={room} className={styles.roomVideo} src="/images/winter/kit/living-room/living-room.mp4"
           poster="/images/winter/kit/living-room/living-room-still.webp" muted loop playsInline preload="auto"
           disablePictureInPicture disableRemotePlayback tabIndex={-1} />
@@ -313,5 +314,7 @@ function Soundtrack() {
         return dock ? createPortal(buttons, dock) : buttons;
       })()}
     </aside>
-  );
+    {/* The fridge beside the fireplace, and the scenes that take turns there (the turkey heist). */}
+    <WinterFireplaceScenes expanded={expanded} timeout={timeout} />
+  </>);
 }

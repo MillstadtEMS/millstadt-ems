@@ -143,8 +143,9 @@ const rand = (min: number, max: number) => min + Math.random() * (max - min);
 
 type VariantId = "classic" | "chaos" | "roof" | "reindeer" | "engine" | "ladder";
 type Pass = { id: number; variant: VariantId; version: 1 | 2; seed: number };
+// The fire trucks are the rarest passes (each about one in fifteen), on every device.
 const VARIANT_WEIGHTS: ReadonlyArray<readonly [VariantId, number]> = [
-  ["classic", .34], ["chaos", .22], ["roof", .22], ["reindeer", .22], ["engine", .2], ["ladder", .2],
+  ["classic", .34], ["chaos", .22], ["roof", .22], ["reindeer", .22], ["engine", .07], ["ladder", .07],
 ];
 /** Development only: ?vehicle=ambulance|engine_3911|ladder_3919 pins the drive-by and sends it right away. */
 const VEHICLE_FLAG: Readonly<Record<string, VariantId>> = { ambulance: "classic", engine_3911: "engine", ladder_3919: "ladder" };
@@ -163,19 +164,6 @@ function previewVariant(): Pick<Pass, "variant" | "version"> | null {
   return VARIANT_WEIGHTS.some(([id]) => id === asked) ? { variant: asked as VariantId, version: 1 } : null;
 }
 
-// The fire trucks make their debut: until a visitor has seen Engine 3911 and Ladder 3919 this
-// session, the first passes of a visit are those (the engine, then the ladder).
-const FIRE_DEBUT_KEY = "millstadt:driveby-fire-seen:v1";
-function fireSeen(): Set<string> {
-  try { return new Set(JSON.parse(sessionStorage.getItem(FIRE_DEBUT_KEY) ?? "[]") as string[]); } catch { return new Set(); }
-}
-function markFireSeen(variant: VariantId) {
-  if (variant !== "engine" && variant !== "ladder") return;
-  const seen = fireSeen();
-  seen.add(variant);
-  try { sessionStorage.setItem(FIRE_DEBUT_KEY, JSON.stringify([...seen])); } catch { /* Storage blocked: the debut just repeats. */ }
-}
-
 function choosePass(id: number, previous: VariantId | null, broken: ReadonlySet<VariantId>): Pass | null {
   const pinned = previewVariant();
   const usable = VARIANT_WEIGHTS.filter(([v]) => !broken.has(v));
@@ -184,10 +172,6 @@ function choosePass(id: number, previous: VariantId | null, broken: ReadonlySet<
   let roll = Math.random() * pool.reduce((sum, [, w]) => sum + w, 0);
   let variant = pool[0]?.[0] ?? "classic";
   for (const [v, w] of pool) { roll -= w; if (roll <= 0) { variant = v; break; } }
-  const seen = fireSeen();
-  const debut = (["engine", "ladder"] as const).find(v => !seen.has(v) && pool.some(([p]) => p === v));
-  if (debut && !pinned) variant = debut;
-  markFireSeen(pinned?.variant ?? variant);
   return {
     id,
     variant: pinned?.variant ?? variant,

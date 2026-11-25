@@ -133,7 +133,7 @@
 /* Phones: the hanging crew are short, so the room is a little taller and the TV sits low,
    clear of their boots. */
 @media (max-width: 700px) {
-  .stage:has(.player) { min-height: 262px; }
+  .stage:has(.player) { min-height: 310px; }
   .player:not([data-expanded="true"]) { align-self: end; margin-top: 0; margin-bottom: 31.75px; }
 }
 @media (prefers-reduced-motion: reduce) { .roomVideo { display: none; } }

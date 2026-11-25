@@ -68,6 +68,8 @@ function Sprite({ src, className, width, height }: { src: string; className: str
 export default function WinterRinkRescue() {
   const stage = useRef<HTMLDivElement>(null);
   const [scene, setScene] = useState<Scene | null>(null);
+  // The gift thief, already down in the snow while the crew finishes another call.
+  const [guestWaiting, setGuestWaiting] = useState<{ x: number; floor: number } | null>(null);
   const [paused, setPaused] = useState(true);
   const [status, setStatus] = useState("");
 
@@ -128,6 +130,7 @@ export default function WinterRinkRescue() {
 
     async function begin(request: Request) {
       pauseClock();
+      if (request.subject === "guest") setGuestWaiting(null);
       current = request; ready = playing = false;
       duration = motion.matches ? 3000 : request.ambulance ? 13_000 : 10_500;
       setScene({ request, playing: false, duration });
@@ -176,7 +179,8 @@ export default function WinterRinkRescue() {
         onComplete: guest.onComplete,
       };
       if (!visible) rink!.scrollIntoView({ block: "center", behavior: motion.matches ? "instant" : "smooth" });
-      if (current) queuedGuest = request;
+      // The crew is out on another call: he lies in the snow right away and waits his turn.
+      if (current) { queuedGuest = request; setGuestWaiting({ x: request.x, floor: request.floor }); }
       else void begin(request);
     }
 
@@ -203,6 +207,8 @@ export default function WinterRinkRescue() {
 
   const request = scene?.request;
   const drop = request ? (1 - request.rest) * request.width * request.ratio : 0;
+  // Down in the snow until the crew reaches him: queued behind another call, or while his own pickup loads.
+  const thiefDown = guestWaiting ?? (request && !request.skater && !scene?.playing ? { x: request.x, floor: request.floor } : null);
   return <>
     <div className={styles.stage} ref={stage} aria-hidden="true" data-paused={paused}
       data-kind={request ? request.skater ? "skater" : "guest" : undefined} data-ambulance={request?.ambulance || undefined}
@@ -242,6 +248,11 @@ export default function WinterRinkRescue() {
           <Sprite src={request.src} width={400} height={Math.round(400 * request.ratio)} className={styles.down} />
         </div>
       </>}
+      {thiefDown && (
+        <div className={styles.waitingLane} style={{ "--pickup-x": thiefDown.x * 100 + "%", "--ground": thiefDown.floor * 100 + "%" } as CSSProperties}>
+          <Sprite src={thief.src} width={400} height={Math.round(400 * thief.height / thief.width)} className={styles.waiting} />
+        </div>
+      )}
     </div>
     <span role="status" className={styles.announcement}>{status}</span>
   </>;

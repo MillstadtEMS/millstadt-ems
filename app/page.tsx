@@ -106,7 +106,7 @@ export default async function Home({
               </a>
               <Link
                 href={secondaryBtnHref}
-                className="flex min-h-[76px] w-full items-center justify-center rounded-2xl border-2 border-[#f0b429]/60 px-3 py-4 text-center text-sm font-black text-[#f0b429] transition-colors hover:border-[#f0b429] hover:bg-[#f0b429]/10 sm:px-8 sm:text-lg"
+                className="flex min-h-[76px] w-full items-center justify-center rounded-2xl bg-white/10 px-3 py-4 text-center text-sm font-black text-[#f0b429] transition-colors hover:bg-[#f0b429]/15 sm:px-8 sm:text-lg"
               >
                 {secondaryBtnText}
               </Link>

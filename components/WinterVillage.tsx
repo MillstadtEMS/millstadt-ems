@@ -272,6 +272,14 @@ function VillagePostcard() {
           <WinterStreetForeground active={inView} />
         </div>
       </div>
+      {/* Snow globe mode is sideways only: held upright, the scene turns with it and this asks the
+          visitor to turn the phone (it fades away for phones whose screen rotation is locked). */}
+      {globe && (
+        <div className={styles.globeHint} aria-hidden="true">
+          <Smartphone size={42} />
+          <span>Turn your phone sideways</span>
+        </div>
+      )}
       <div className={styles.controls} role="group" aria-label="Explore the Christmas village">
         <button type="button" ref={globeButton} className={styles.globeButton} onClick={() => void enterGlobe()}
           aria-label="Play the snowball fight in snow globe mode, full screen and sideways">

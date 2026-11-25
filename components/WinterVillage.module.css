@@ -347,6 +347,39 @@
 @media (orientation: portrait) {
   .postcard[data-globe] .globeStage { width: min(100dvh, calc(100vw * 1.42)); rotate: 90deg; }
 }
+/* Sideways only: held upright, a prompt (turning the phone a quarter turn to the left, which lines
+   the scene up) shows over the turned scene for a few seconds. */
+.globeHint { display: none; }
+@media (orientation: portrait) {
+  .postcard[data-globe] > .globeHint {
+    position: absolute;
+    z-index: 30;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    padding: 18px 22px;
+    color: #fff3d9;
+    text-align: center;
+    background: #0b1730eb;
+    border: 1px solid #d9c38c;
+    border-radius: 16px;
+    box-shadow: 0 12px 34px #000a;
+    font: 700 1rem/1.2 system-ui, sans-serif;
+    pointer-events: none;
+    animation: globeHint 3.6s ease both;
+  }
+  .globeHint svg { animation: globeTurn 1.2s ease-in-out .35s 2 both; }
+}
+@keyframes globeHint { 0% { opacity: 0; } 9%, 80% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+@keyframes globeTurn { 0%, 15% { rotate: 0deg; } 65%, 100% { rotate: -90deg; } }
+@media (prefers-reduced-motion: reduce) {
+  .postcard[data-globe] > .globeHint { animation: globeHintStill 3.6s step-end both; }
+  .globeHint svg { animation: none; rotate: -90deg; }
+}
+@keyframes globeHintStill { 0% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
 /* The page's main column isolates its layers; lift that while the globe covers the screen so it
    sits above the header, tab bar and hanging crew, with the snowballs flying above it. */
 :global(html:has([data-globe])) main { isolation: auto; }

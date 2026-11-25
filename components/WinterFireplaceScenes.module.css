@@ -1,0 +1,58 @@
+/* The heist stage, in the pose sheets' own pixels (1640 x 560), scaled as one piece from its
+   bottom-right corner. Purely decorative: every click and tap passes through to the page and the
+   snowball fight. */
+.heist {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  width: 1640px;
+  height: 560px;
+  transform: scale(var(--heist-scale, .4));
+  transform-origin: 100% 100%;
+  pointer-events: none;
+  user-select: none;
+}
+.heist[data-off] { display: none; }
+.layer {
+  position: absolute;
+  display: block;
+  max-width: none;
+}
+/* The at-the-fridge poses share one fridge position (the script cross-fades them). */
+.at { opacity: 0; }
+/* The officer glides across the floor (moved by the script, anchored at his boots); his
+   sneaking and running poses step like a flip-book. */
+.officer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  will-change: transform;
+}
+.pose {
+  position: absolute;
+  display: block;
+  max-width: none;
+  visibility: hidden;
+}
+/* The angry turkey's flight: in from the far left of the banner, across the room, after the officer
+   and out the right edge (sized and steered by the script, in banner pixels). */
+.chase {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.bird {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 92px;
+  aspect-ratio: 264 / 230;
+  visibility: hidden;
+  will-change: transform;
+}
+.bird img { display: block; width: 100%; height: 100%; max-width: none; }
+@media print { .heist, .chase { display: none; } }

@@ -18,6 +18,17 @@ html[data-mems-season="winter"]:not([data-snowball-timeout]) main :is([data-wint
 html[data-mems-season="winter"]:not([data-snowball-timeout]) main :is([data-winter-signs] button, [data-winter-video] button, [data-winter-trinkets] button, #christmas-in-millstadt button, #christmas-in-millstadt a, input, textarea, select, label) {
   cursor: pointer;
 }
+/* iPhone Safari only turns a tap into a click on things it treats as clickable (links, buttons,
+   anything with a pointer cursor), so a tap on plain text, a photo or the banner's wallpaper threw
+   nothing. On touch screens the page content counts as clickable while the fight is on, so every
+   tap throws; no grey tap flash. */
+@media (hover: none) and (pointer: coarse) {
+  html[data-mems-season="winter"]:not([data-snowball-timeout]) main,
+  html[data-mems-season="winter"]:not([data-snowball-timeout]) main * {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
 html[data-mems-season="winter"]:not([data-snowball-timeout]) main :is(input, textarea) { cursor: text; }
 /* The crew hanging from the lights take clicks through a page-level test of their painted
    pixels, so hovering them marks the page instead (WinterRoofline). */

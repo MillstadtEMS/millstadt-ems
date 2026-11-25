@@ -12,6 +12,11 @@
   --preferred-crew-width: 16vw;
   --crew-width: min(var(--preferred-crew-width), max(50px, calc(48svh - 60px)));
 }
+/* Phones: the six of them are about half again as big, so they read on a small screen (their
+   painted bodies are much narrower than their boxes, so neighbours only just overlap). */
+@media (max-width: 700px) {
+  .roof, .cradle { --preferred-crew-width: 24vw; }
+}
 /* On pages with the music video (wider screens), the string leaves a gap over the video so it
    plays in plain view: three people hang either side, sized to their slightly narrower swags.
    Keep in step with WinterMusicPlayer.module.css (200px video + 47px buttons + margins). */
