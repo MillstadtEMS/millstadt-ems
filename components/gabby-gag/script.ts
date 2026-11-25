@@ -199,24 +199,27 @@ export function buildGag(stage: Stage) {
   const tYank = settled(run1);
   const tHn1 = tYank + 330, tSlip = tHn1 + 1400, tRegrip = tSlip + 300, tHn2 = tRegrip + 220, tPop = tHn2 + 1050;
   const tImpact = tPop + 270, tLand = tPop + 480, tGetUp = tImpact + 1000, tStood = tGetUp + 620;
-  const tReach = tStood + 120, tGripBoot = tReach + 430, tTurn = tGripBoot + 520, tDrag = tTurn + 240;
+  const tReach = tStood + 140, tGripBoot = tReach + 460, tTurn = tGripBoot + 560, tDrag = tTurn + 240;
   // ---------------------------------------------------------------- 4. the drag
   const SANTA_LAND: Pt = [602, 176];
-  const BOOT_REST: Pt = [566, 185];
+  // dazed, one of his legs sticks up in the air (that's the boot she grabs); she pulls it in close to
+  // HOLD, turns, and her far arm keeps it there, behind her, for the whole drag
+  const BOOT_UP: Pt = [566, 151];
   const DRAG_X = 541;
   const DRAG_END = L - 190;
   const vDrag = clamp((DRAG_X - DRAG_END) / 6.0, 96, 205);
   const drag = makeLoco({ style: "walk", dir: -1, t0: tDrag, x0: DRAG_X, x1: DRAG_END, v: vDrag, step: clamp(vDrag * .3, 26, 44), sigma: 1.3, easeStart: true, startFeet: [DRAG_X - 6, DRAG_X + 6], hips: HIPS, lead: 0, lift: 3.5 });
   const dragPose = (t: number): GabbyPose => {
-    const w = walkPose(drag, t, { head: "grit", lean: 15, amp: 20, keepGoing: true, bob: 3.6 });
-    // her near arm stays back on his boot, every frame; the far arm pumps
-    w.armN = fk(-24 + Math.sin((t - tDrag) / 300) * 2, -8, "fist");
-    w.armF = fk(14 + (w.armF as { a: number }).a * .6, 58, "fist");
+    const w = walkPose(drag, t, { head: "grit", lean: 15, amp: 24, keepGoing: true, bob: 3.6 });
+    // her far arm stays back on his boot, every frame (it's the arm behind her); the near arm pumps
+    w.armF = fk(-30 + Math.sin((t - tDrag) / 300) * 1.5, 0, "fist");
+    w.armN = fk(10 + (w.armN as { a: number }).a * .8, 70, "fist");
     w.head = t < tDrag + 3200 ? "yell" : "grit";
     return w;
   };
+  const HOLD = handWorld(dragPose(tDrag), false);
   const santaDrag = (t: number, g: GabbyPose): SantaPose => {
-    const hand = handWorld(g, true);
+    const hand = handWorld(g, false);
     const tug = Math.max(0, Math.sin(((t - tDrag) / (drag.T * 2)) * 2 * Math.PI));
     const px = hand[0] + 31 + tug * 1.5, py = 171 - tug * 1.2;
     return {
@@ -235,17 +238,18 @@ export function buildGag(stage: Stage) {
   }
   // ---------------------------------------------------------------- 5. stroll back, sit, doze
   const tStroll = tGone + 720;
-  const CHAIR = 82;
+  // she stops in front of the chair with her boots on the two spots she'll sit and stand up on
+  const CHAIR = 73, FEET_L = 69, FEET_R = 77;
   const vSt = clamp((CHAIR - OFF) / 3.2, 78, 170);
-  const stroll = makeLoco({ style: "walk", dir: 1, t0: tStroll, x0: OFF, x1: CHAIR, v: vSt, step: clamp(vSt * .37, 28, 46), easeEnd: true, endFeet: [5, -5], hips: HIPS });
+  const stroll = makeLoco({ style: "walk", dir: 1, t0: tStroll, x0: OFF, x1: CHAIR, v: vSt, step: clamp(vSt * .37, 28, 46), easeEnd: true, endFeet: [FEET_R - CHAIR, FEET_L - CHAIR], hips: HIPS });
   const tAtChair = settled(stroll);
   const tTurn2 = tAtChair + 90, tSit = tTurn2 + 200, tSat = tSit + 540, tDoze = tSat + 950, tZ = tDoze + 650;
   // ---------------------------------------------------------------- 6. the pager, run off
   const tBeep = tDoze + 2150, tStartle = tBeep + 340, tSay3 = tStartle + 230, tHop = tStartle + 470, tUp = tHop + 380;
   const tSay3End = tSay3 + 1950, tCrouch = tSay3End - 620, tRun2 = tCrouch + 240;
-  const RUN_FROM = 76;
+  const RUN_FROM = 71;
   const vRun = clamp((RUN_FROM - OFF) / 1.25, 250, 470);
-  const run2 = makeLoco({ style: "run", dir: -1, t0: tRun2, x0: RUN_FROM, x1: OFF - 40, v: vRun, step: clamp(vRun * .2, 46, 70), easeStart: true, startFeet: [RUN_FROM - 5, RUN_FROM + 6], hips: HIPS, lead: 0, sigma: .62 });
+  const run2 = makeLoco({ style: "run", dir: -1, t0: tRun2, x0: RUN_FROM, x1: OFF - 40, v: vRun, step: clamp(vRun * .2, 46, 70), easeStart: true, startFeet: [FEET_L, FEET_R], hips: HIPS, lead: 0, sigma: .62 });
   const tOff = whenPast(run2, OFF - 6, tRun2);
   const tTidy = Math.max(tOff - 250, tRun2 + 300);
   const END = tTidy + 900;
@@ -307,26 +311,26 @@ export function buildGag(stage: Stage) {
   const kneel: GabbyPose = { x: SIT_X + 9, y: FLOOR - 15, dir: 1, lean: 38, floor: FLOOR, head: "neutral", armN: { to: [SIT_X + 30, FLOOR - 3], hand: "open", bend: -1 }, armF: { to: [SIT_X + 24, FLOOR - 3], hand: "open", bend: -1 }, legN: flat(B_FWD), legF: flat(B_BACK) };
   const stood = standR(DRAG_X, { head: "grit", lean: 3, legN: flat(B_FWD), legF: flat(B_BACK) });
   // the boot: she steps in, bends, grabs it, straightens with it, turns to face left
-  const bend: GabbyPose = { ...standR(DRAG_X + 2, { head: "grit" }), lean: 40, y: STAND + 5, legN: flat(B_FWD), legF: flat(B_BACK), armN: { to: [BOOT_REST[0] - 1, BOOT_REST[1] - 4], hand: "open", bend: 1 }, armF: fk(-30, 30) };
-  const LIFT: Pt = [DRAG_X + 18, 152];
-  const lifted: GabbyPose = { ...bend, lean: 6, y: STAND + 1, head: "grit", armN: { to: LIFT, hand: "fist", bend: 1 }, armF: fk(-12, 40, "fist") };
+  const bend: GabbyPose = { ...standR(DRAG_X, { head: "grit" }), lean: 17, y: STAND + 4, legN: flat(B_FWD), legF: flat(B_BACK), armN: { to: BOOT_UP, hand: "open", bend: 1 }, armF: fk(-20, 30) };
+  const lifted: GabbyPose = { ...bend, lean: 3, y: STAND + 1, head: "grit", armN: { to: HOLD, hand: "fist", bend: 1 }, armF: fk(-10, 40, "fist") };
   // turned: now facing left; the boot she holds is behind her (her near arm reaches back to it)
   const turned: GabbyPose = { ...dragPose(tDrag), y: STAND + 2 };
   // the armchair: facing left (like the chair), sunk into the seat, boots on the rug in front
-  const SEAT: Pt = [83, 157];
+  // her far hip tucked in behind the near armrest, thighs out toward us, shins down in front of the seat
+  const SEAT: Pt = [87, 157];
   const seated = (o: Partial<GabbyPose> = {}): GabbyPose => ({
-    x: SEAT[0], y: SEAT[1], dir: -1, lean: -7, floor: FLOOR, head: "sly", hat: { on: true },
-    armN: fk(12, 96), armF: fk(4, 104),
-    legN: { x: 73, y: ANK, a: 0, knee: [70, 161] }, legF: { x: 81, y: ANK, a: 0, knee: [78, 163] },
+    x: SEAT[0], y: SEAT[1], dir: -1, lean: -8, floor: FLOOR, head: "sly", hat: { on: true },
+    armN: fk(14, 98), armF: fk(6, 106),
+    legN: { x: 69, y: ANK, a: 4, knee: [66, 158.5] }, legF: { x: 77, y: ANK, a: 4, knee: [74, 160] },
     ...o,
   });
   const atChair = (dir: 1 | -1, o: Partial<GabbyPose> = {}): GabbyPose => ({
     x: CHAIR, y: STAND, dir, lean: dir === 1 ? -2 : 0, floor: FLOOR, head: "sly", hat: { on: true },
     armN: fk(4, 16), armF: fk(-3, 14),
-    legN: flat(dir === 1 ? CHAIR + 5 : CHAIR - 5), legF: flat(dir === 1 ? CHAIR - 5 : CHAIR + 5), ...o,
+    legN: flat(dir === 1 ? FEET_R : FEET_L), legF: flat(dir === 1 ? FEET_L : FEET_R), ...o,
   });
   // standing up out of the chair and the wind-up before the sprint
-  const upPose = atChair(-1, { head: "yell", lean: 6, x: CHAIR - 6, legN: flat(RUN_FROM - 5), legF: flat(RUN_FROM + 6), armN: fk(30, 70, "fist"), armF: fk(-20, 70, "fist") });
+  const upPose = atChair(-1, { head: "yell", lean: 6, x: RUN_FROM, armN: fk(30, 70, "fist"), armF: fk(-20, 70, "fist") });
   const crouch = (c: number): GabbyPose => ({ ...upPose, y: STAND + 5 * c, lean: lerp(6, -8, c), armN: fk(lerp(30, -45, c), 60, "fist"), armF: fk(lerp(-20, 40, c), 70, "fist"), head: "grit" });
   const runAnchor = headTop(crouch(1));
 
@@ -374,47 +378,59 @@ export function buildGag(stage: Stage) {
       legA: { a: 4, e: -6 }, legB: { a: -4, e: 6 },
     };
   };
-  /** The pop: he squeezes through, tumbles out (turning from face-on to profile) and slams onto his back. */
+  /** The pop: his belly snaps through the arch and he slams down into the firebox, squashed flat with
+   *  his legs tucked (all of him inside the opening), then springs out in front of the fireplace,
+   *  tumbling from face-on and upside down to his back in profile, and slams down: head toward the
+   *  fireplace, boots toward Gabby. */
   const santaPop = (t: number): { pose: SantaPose; inside: boolean } => {
     const u = t - tPop;
-    const fly = seg(u, 70, 480);
-    const start: Pt = [SX - 4, 98], exit: Pt = [SX - 8, 136];
-    let x: number, y: number, rot: number, turn: number, bsx = 1, bsy = 1;
-    if (u < 70) {
-      // the belly snaps through the arch
-      const s = u / 70;
-      x = lerp(start[0], exit[0], s * .4); y = lerp(start[1], exit[1], s * .4);
-      rot = 184; turn = 0; bsy = lerp(1.3, .72, s); bsx = lerp(.86, 1.24, s);
+    let x: number, y: number, rot: number, turn = 0, bsx = 1, bsy = 1, sx = 1, sy = 1;
+    let legA: SantaPose["legA"], legB: SantaPose["legB"];
+    const tuck = (k: number): [SantaPose["legA"], SantaPose["legB"]] => [{ a: lerp(4, 70, k), e: lerp(-6, -120, k) }, { a: lerp(-4, -70, k), e: lerp(6, 120, k) }];
+    if (u < 80) {
+      const s = easeIn(u / 80);
+      x = lerp(SX - 4, SX - 2, s); y = lerp(98, 131, s); rot = 184 - 4 * s;
+      sy = lerp(1, .64, s); sx = lerp(1, 1.16, s); bsy = lerp(1.3, .8, s); bsx = lerp(.86, 1.2, s);
+      [legA, legB] = tuck(s);
+    } else if (u < 170) {
+      // springing out of the firebox, stretched, toward the room
+      const s = easeOut((u - 80) / 90);
+      x = lerp(SX - 2, SX - 9, s); y = lerp(131, 120, s); rot = lerp(180, 160, s);
+      sy = lerp(.64, 1.1, s); sx = lerp(1.16, .94, s); bsy = lerp(.8, 1.06, s); bsx = lerp(1.2, .96, s);
+      [legA, legB] = tuck(1 - s * .7);
     } else if (u < 480) {
-      const s = fly;
-      x = lerp(exit[0], SANTA_LAND[0], easeOut(s)) - Math.sin(s * Math.PI) * 6;
-      // up a little and down onto his back
-      y = lerp(lerp(start[1], exit[1], .4), SANTA_LAND[1], easeIn(s)) - Math.sin(s * Math.PI) * 14;
-      rot = lerp(184, 99, easeInOut(s)); turn = lerp(0, -1, smooth(clamp(s * 1.6, 0, 1)));
-      bsy = lerp(.72, 1.05, smooth(s)); bsx = lerp(1.24, .97, smooth(s));
+      const s = (u - 170) / 310;
+      x = lerp(SX - 9, SANTA_LAND[0], smooth(s)) - Math.sin(s * Math.PI) * 5;
+      y = lerp(120, SANTA_LAND[1], easeIn(s)) - Math.sin(s * Math.PI) * 16;
+      rot = lerp(160, 99, easeInOut(s)); turn = -smooth(clamp(s * 1.5, 0, 1));
+      sy = lerp(1.1, 1, s); sx = lerp(.94, 1, s);
+      legA = { a: 20 + wave(u, 130) * 35, e: -40 + wave(u, 130) * 25 };
+      legB = { a: -10 + wave(u + 60, 140) * 35, e: -30 + wave(u + 40, 150) * 20 };
     } else {
-      // landing squash, a bounce, and settle
+      // landing squash, one bounce, settle
       const s = (u - 480) / 520;
       x = SANTA_LAND[0]; rot = 99; turn = -1;
-      const bounce = s < 1 ? Math.abs(Math.sin(s * Math.PI * 1.6)) * (1 - s) * 7 : 0;
+      const bounce = s < 1 ? Math.abs(Math.sin(s * Math.PI * 1.6)) * (1 - s) * 6 : 0;
       y = SANTA_LAND[1] - bounce;
       const sq = s < 1 ? Math.max(0, 1 - s * 3) : 0;
-      bsy = 1 - .16 * sq; bsx = 1 + .12 * sq;
+      bsy = 1 - .18 * sq; bsx = 1 + .14 * sq; sy = 1 - .06 * sq;
+      legA = { a: 26, e: -44, foot: 8 };
+      // one leg flops up and stays there, twitching
+      const up = smooth(clamp(s * 1.4, 0, 1));
+      legB = { to: [lerp(560, BOOT_UP[0], up) + wave(u, 700) * .8, lerp(186, BOOT_UP[1], up) + wave(u, 520) * 1.2], foot: 16 };
     }
     const flail = Math.min(1, u / 150);
     const lying = u >= 480;
     const pose: SantaPose = {
-      x, y, rot, turn, look: u < 260 ? 1 : -1, nod: lying ? wave(u, 400) * 6 * Math.max(0, 1 - (u - 480) / 1500) : 0,
-      bsx, bsy, hat: { on: true, tilt: lying ? 10 : 0 },
+      x, y, rot, turn, sx, sy, bsx, bsy, look: u < 300 ? 1 : -1,
+      nod: lying ? wave(u, 400) * 6 * Math.max(0, 1 - (u - 480) / 1500) : 0,
+      hat: { on: true, tilt: lying ? 10 : 0 },
       armA: lying ? { a: 120 + wave(u, 900) * 6, e: 30 } : { a: 150 + wave(u, 160) * 40 * flail, e: 40 },
       armB: lying ? { a: 160, e: -20 + wave(u, 1100) * 5 } : { a: 170 + wave(u + 80, 170) * 40 * flail, e: -20 },
-      legA: lying ? { a: 26, e: -44, foot: 8 } : { a: 20 + wave(u, 130) * 30, e: -30 },
-      legB: lying ? { to: BOOT_REST, foot: 30 } : { a: -10 + wave(u + 60, 140) * 30, e: -20 },
+      legA, legB,
     };
-    // once he's clear of the arch he's in front of the fireplace
-    return { pose, inside: u < 140 };
+    return { pose, inside: u < 80 };
   };
-
   // ---------------------------------------------------------------- treats
   const PLATE: Pt = [613, FIREBOX.hearth], GLASS: Pt = [627, FIREBOX.hearth];
   const treats = (t: number): Treats => {
@@ -465,7 +481,7 @@ export function buildGag(stage: Stage) {
     } else if (t < tReach) {
       g = track(t, [[tGetUp, { ...sitting, head: "grit" }], [tGetUp + 320, kneel], [tStood, stood]]);
     } else if (t < tTurn) {
-      g = track(t, [[tReach, stood], [tGripBoot, bend], [tGripBoot + 140, { ...bend, armN: { to: [BOOT_REST[0] - 1, BOOT_REST[1] - 4], hand: "fist", bend: 1 } }], [tTurn - 60, lifted]]);
+      g = track(t, [[tReach, stood], [tGripBoot, bend], [tGripBoot + 160, { ...bend, armN: { to: BOOT_UP, hand: "fist", bend: 1 } }], [tTurn - 40, lifted]]);
       if (t >= tGripBoot) (g.armN as { hand: string }).hand = "fist";
     } else if (t < tDrag) {
       // the turn: crisp, with a little hop, her fist never leaving the boot
@@ -539,10 +555,11 @@ export function buildGag(stage: Stage) {
       const base = santaPop(tReach).pose;
       s.santaInside = false;
       if (t >= tGripBoot && g) {
-        const hand = handWorld(g, true);
+        // once she has it, his boot goes wherever her fist goes (near fist before the turn, far fist after)
+        const hand = handWorld(g, t < tTurn);
         const lift = seg(t, tGripBoot, tTurn);
-        base.legB = { to: hand, foot: lerp(30, 20, lift) };
-        base.x = lerp(SANTA_LAND[0], hand[0] + 31, smooth(seg(t, tGripBoot + 100, tDrag)));
+        base.legB = { to: hand, foot: lerp(16, 20, lift) };
+        base.x = lerp(SANTA_LAND[0], HOLD[0] + 31, smooth(seg(t, tGripBoot + 100, tDrag)));
         base.y = lerp(SANTA_LAND[1], 171, smooth(seg(t, tGripBoot + 100, tDrag)));
         base.look = -1;
         base.nod = -12 * lift;
@@ -563,7 +580,6 @@ export function buildGag(stage: Stage) {
       const sp = s.santa;
       if (sp) s.dust.push({ x: sp.x + 4, y: FLOOR - 1, u: ph, spread: .55, dir: 1 });
     }
-    if (t >= tPop - 20 && t < tPop + 380 && s.santa) s.streak = { x: s.santa.x + 10, y: s.santa.y + 40, dir: -1, amount: 1 - seg(t, tPop + 150, tPop + 380), height: 70 };
     if (t > tZ && t < tBeep + 200 && g) {
       const h = headTop(g);
       s.zzz = { x: h[0] - 2, y: h[1] + 4, u: ((t - tZ) % 1500) / 1500 };

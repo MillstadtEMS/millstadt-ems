@@ -231,6 +231,7 @@ export default function WinterGabbyGag({ aside, room, onDone, preview = false }:
       duration: () => gag.duration,
       marks: () => gag.marks,
       stage: () => stage,
+      state: (ms: number) => gag.sample(ms),
       seek: (ms: number) => { paused = ms; if (!frame) frame = requestAnimationFrame(tick); },
       pause: () => { paused = performance.now() - start; },
       play: (from?: number) => { start = performance.now() - (from ?? paused ?? 0); paused = null; finished = false; if (!frame) frame = requestAnimationFrame(tick); },

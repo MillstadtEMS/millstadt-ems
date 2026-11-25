@@ -22,6 +22,9 @@ export type SantaPose = {
   /** Belly squash and stretch (1 = round). */
   bsx?: number;
   bsy?: number;
+  /** Whole-body squash and stretch along his own axes (impacts, springing out). */
+  sx?: number;
+  sy?: number;
   /** The head: which way he looks (-1 left, 1 right), tilt (deg) and an offset along the neck. */
   look: 1 | -1;
   nod?: number;
@@ -105,12 +108,13 @@ export class SantaRig {
 
   pose(p: SantaPose) {
     const t = clamp(p.turn, -1, 1), a = Math.abs(t), s = t < 0 ? -1 : 1;
-    this.root.setAttribute("transform", `translate(${f(p.x)} ${f(p.y)}) rotate(${f(p.rot)})`);
+    const ssx = p.sx ?? 1, ssy = p.sy ?? 1;
+    this.root.setAttribute("transform", `translate(${f(p.x)} ${f(p.y)}) rotate(${f(p.rot)}) scale(${f(ssx)} ${f(ssy)})`);
     const inv = (w: Pt): Pt => {
       // world -> his frame
       const r = (-p.rot * Math.PI) / 180, c = Math.cos(r), sn = Math.sin(r);
       const dx = w[0] - p.x, dy = w[1] - p.y;
-      return [dx * c - dy * sn, dx * sn + dy * c];
+      return [(dx * c - dy * sn) / ssx, (dx * sn + dy * c) / ssy];
     };
     // the belly: round and huge, pushed forward in profile
     const bsx = p.bsx ?? 1, bsy = p.bsy ?? 1;
