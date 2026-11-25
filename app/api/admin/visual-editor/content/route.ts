@@ -6,7 +6,7 @@
 import { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { verifyVisualEditorToken, VISUAL_EDITOR_COOKIE } from "@/lib/admin/visual-editor-auth";
-import { visualEditorDraftSchema, visualEditorPublishSchema } from "@/lib/admin/visual-editor-schema";
+import { isSecretContentKey, visualEditorDraftSchema, visualEditorPublishSchema } from "@/lib/admin/visual-editor-schema";
 import { currentAdmin } from "@/lib/admin/auth";
 import { getAllContent, saveDraft, publishAllDrafts, publishContent, logChange } from "@/lib/db";
 import { contentLengthWithin, hasContentType, isSameOriginRequest, noStoreJson } from "@/lib/security/http";
@@ -49,7 +49,8 @@ async function authorizeMutation(req: NextRequest) {
 
 export async function GET() {
   if (!(await editorAdmin())) return noStoreJson({ error: "Unauthorized" }, { status: 401 });
-  const content = await getAllContent();
+  // Secrets kept in site_content (the inventory and station password hashes) are not editor content.
+  const content = (await getAllContent()).filter(row => !isSecretContentKey(row.key));
   return noStoreJson(content);
 }
 
