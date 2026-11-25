@@ -392,9 +392,7 @@ function WinterDriveBy() {
   }
 
   function driveAnimation() {
-    const el = convoy.current;
-    // CSS module keyframe names are prefixed, so match the end of the name.
-    return el?.getAnimations().find(a => a instanceof CSSAnimation && a.animationName.endsWith(el.dataset.drive ?? "winterDrive"));
+    return driveRun(convoy.current);
   }
 
   // Where the convoy is heading (px/s); the throw leads the moving target like a real thrower.
@@ -583,6 +581,11 @@ function WinterDriveBy() {
         onDone={() => setTow(null)} />}
     </div>
   );
+}
+
+/** A convoy's drive across the screen (CSS module keyframe names are prefixed, so match the end). */
+function driveRun(el: HTMLElement | null) {
+  return el?.getAnimations().find(a => a instanceof CSSAnimation && a.animationName.endsWith(el.dataset.drive ?? "winterDrive"));
 }
 
 /** A quick knock when a snowball lands (the translate property leaves the running animations alone). */
@@ -806,6 +809,8 @@ const GABBY = {
   frame: [0, 0, 240, 270] as Box,
   hit: [78, 50, 166, 254] as Box,
 };
+/** Seconds into her knocked-off gag (4.6 s in the CSS) when she's back on the roof grumbling. */
+const GRUMBLE_AT = 4.6 * .52;
 type RoofSpot = { box: Box; clip: string; dir: 1 | -1; bubble: "left" | "right" };
 /** Gabby's spot on a roof ride (its 874 px still's pixels): where she stands, the roof's top edge she
  *  falls behind (right to left), which way she tumbles and the side her grumble goes. */
@@ -1042,9 +1047,27 @@ function MylieInChaos({ frame }: { frame: Box }) {
 function RoofGabby({ version, knocks, onBack }: { version: 1 | 2; knocks: number; onBack: () => void }) {
   const spot = GABBY_ROOF[version];
   const [settled, setSettled] = useState(0);
+  const root = useRef<HTMLSpanElement>(null);
+  const fume = useRef<HTMLSpanElement>(null);
   const gag = knocks > settled;
+
+  // Her grumble goes on the side that will be on screen when it shows, after the truck has driven on
+  // for a couple of seconds (near the left edge it swaps to her right).
+  useEffect(() => {
+    const box = root.current, bubble = fume.current;
+    if (!gag || !box || !bubble) return;
+    const convoy = box.closest<HTMLElement>("[data-drive]");
+    const run = driveRun(convoy);
+    const speed = convoy && !convoy.dataset.stuck && run?.playState === "running"
+      ? (window.innerWidth + convoy.offsetWidth + 106) / ((Number(run.effect?.getTiming().duration) || 19_200) / 1000) * run.playbackRate : 0;
+    const r = box.getBoundingClientRect(), width = bubble.querySelector("b")?.offsetWidth ?? 70, shift = speed * GRUMBLE_AT;
+    const right = r.left + r.width * .6 + width - shift <= window.innerWidth - 6;
+    const left = r.right - r.width * .6 - width - shift >= 6;
+    bubble.dataset.side = spot.bubble === "right" ? (right || !left ? "right" : "left") : (left || !right ? "left" : "right");
+  }, [gag, knocks, spot.bubble]);
+
   return (
-    <span className={styles.gabbyRoof} data-gag={gag ? "true" : undefined}
+    <span ref={root} className={styles.gabbyRoof} data-gag={gag ? "true" : undefined}
       style={{ ...place(spot.box, ROOF.art), "--dir": spot.dir } as CSSProperties}>
       <span className={styles.gabbyClip} style={{ clipPath: spot.clip }}>
         <span key={knocks} className={styles.gabbyMover}
@@ -1054,7 +1077,7 @@ function RoofGabby({ version, knocks, onBack }: { version: 1 | 2; knocks: number
         </span>
       </span>
       {gag && (
-        <span key={knocks} className={styles.gabbyFume} data-side={spot.bubble} aria-hidden="true">
+        <span key={knocks} ref={fume} className={styles.gabbyFume} data-side={spot.bubble} aria-hidden="true">
           <i /><i /><i />
           <b className={styles.gabbyGrumble}>#@$%!</b>
         </span>
