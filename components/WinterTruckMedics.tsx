@@ -319,7 +319,9 @@ function runMedics(env: Env) {
   const abort = new AbortController(), signal = abort.signal;
   document.addEventListener("pointerdown", pointer, { signal, passive: true, capture: true });
   document.addEventListener("pointermove", hover, { signal, passive: true, capture: true });
-  document.addEventListener("click", click, { signal, capture: true });
+  // On the window: a tap on the medic is theirs before the site-wide fight's document listener
+  // can take it as a plain throw (phones have no hover to mark the aim first).
+  window.addEventListener("click", click, { signal, capture: true });
   document.addEventListener("visibilitychange", conditions, { signal });
   document.addEventListener("mems:snow-hit", caught, { signal });
   window.addEventListener(snowballTimeoutEvent, conditions, { signal });
