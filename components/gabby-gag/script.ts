@@ -46,6 +46,8 @@ export type Bubble = {
 type Dust = { x: number; y: number; u: number; spread: number; dir: number };
 export type Treats = { o: number; plate: [number, number, number]; cookie: [number, number, number]; glass: [number, number, number]; splash: number; puddle: number };
 export type SceneState = {
+  /** What Gabby is doing (for frame-sheet labels): walking, running and dragging are her travel. */
+  act: string;
   gabby: GabbyPose | null;
   santa: SantaPose | null;
   /** Santa still in the chimney: drawn behind the arch and the stockings. */
@@ -72,6 +74,14 @@ const HIPS: readonly [number, number] = [5, -5];
 const LEG_MAX = (G.thigh + G.shin) * .985;
 
 const flat = (x: number): Leg => ({ x, y: ANK, a: 0 });
+/** A boot rocked back onto its heel by a degrees (toe up), its heel staying where a flat boot's would be
+ *  (facing right). */
+function heelDig(x: number, a: number): Leg {
+  const hx = GEO.heel[0], hy = GEO.heel[1];
+  const th = (-a * Math.PI) / 180, c = Math.cos(th), sn = Math.sin(th);
+  const vx = -hx, vy = -hy;
+  return { x: x + hx + (vx * c - vy * sn), y: ANK + hy + (vx * sn + vy * c), a };
+}
 const fk = (a: number, e: number, hand: "open" | "fist" = "open"): Arm => ({ a, e, hand });
 const wave = (t: number, ms: number) => Math.sin((t / ms) * 2 * Math.PI);
 
@@ -177,18 +187,21 @@ function walkPose(l: Loco, t: number, o: WalkOpts): GabbyPose {
     if (p.t0 <= t && p.t0 > td) td = p.t0;
     if (p.t0 > t && p.t0 < tn) tn = p.t0;
   }
-  const u = Number.isFinite(td) && Number.isFinite(tn) ? (t - td) / (tn - td) : .5;
+  // (before the first footfall and after the last, the phase runs on as if the stride continued)
+  if (!Number.isFinite(td) && Number.isFinite(tn)) td = tn - l.T;
+  if (!Number.isFinite(tn) && Number.isFinite(td)) tn = td + l.T;
+  const u = Number.isFinite(td) && Number.isFinite(tn) ? clamp((t - td) / (tn - td), 0, 1) : .5;
   let y: number;
   if (run) y = STAND + 4 + 4.2 * k * Math.cos(2 * Math.PI * (u - .3));
   else y = STAND + Math.max(o.bob ?? 0, dipOf(l)) * k * (.5 + .5 * Math.cos(2 * Math.PI * (u - .1)));
-  // the stance boots must stay reachable (they never slide): drop the pelvis if one would overstretch
-  for (const [f, hip] of [[fN, HIPS[0]], [fF, HIPS[1]]] as const) {
-    if (!f.stance) continue;
-    const dx = px + hip * l.dir - f.x, ay = FLOOR - f.up;
-    const need = ay - Math.sqrt(Math.max(0, LEG_MAX * LEG_MAX - dx * dx));
-    // (never more than a few px: a long reach is the planner's job, not a sudden crouch)
-    if (need > y) y = Math.min(need, y + 4);
+  // the stance boots must stay reachable (they never slide): the pelvis sinks ahead of any long reach,
+  // along a smooth envelope of what the planted boots need over the next and last few frames
+  let need = -Infinity;
+  for (let d = -90; d <= 90; d += 10) {
+    const n = needAt(l, t + d, o.keepGoing);
+    if (n > -Infinity) need = Math.max(need, n - .0013 * d * d);
   }
+  if (need > y) y = need;
   const offN = (fN.x - px) * l.dir, offF = (fF.x - px) * l.dir;
   const swing = clamp((offF - offN) / Math.max(20, l.step * 1.2), -1, 1) * k;
   const amp = o.amp, el = o.elbow ?? (run ? 82 : 14);
@@ -240,7 +253,7 @@ export function buildGag(stage: Stage) {
     // her far arm stays back on his boot, every frame (it's the arm behind her); the near arm pumps
     w.armF = fk(-30 + Math.sin((t - tDrag) / 300) * 1.5, 0, "fist");
     w.armN = fk(10 + (w.armN as { a: number }).a * .8, 70, "fist");
-    w.head = t < tDrag + 3200 ? "yell" : "grit";
+    w.head = t < tDrag + 3500 ? "yell" : "grit";
     return w;
   };
   const HOLD = handWorld(dragPose(tDrag), false);
@@ -292,11 +305,14 @@ export function buildGag(stage: Stage) {
   const grit = standR(SPOT, { head: "grit", lean: 4, armN: fk(4, 40, "fist"), armF: fk(-8, 44, "fist") });
   const shout = standR(SPOT, { head: "yell", lean: 11, y: STAND + 1, armN: fk(76, 8), armF: fk(-14, 78, "fist"), legN: flat(SPOT + 5), legF: flat(SPOT - 6) });
   // the yank: she leans back on his arm with both fists, front boot braced on the hearth
-  const grip = (lean: number, py: number, dx = 0): { pose: GabbyPose; nearFist: Pt; farFist: Pt } => {
-    const pose: GabbyPose = { x: YANK + dx, y: py, dir: 1, lean, floor: FLOOR, head: "grit", armN: fk(0, 0), armF: fk(0, 0), legN: { x: FRONT, y: ANK, a: 10 }, legF: flat(BACK) };
+  /** Her back heel digs in harder the harder she pulls (rocked back onto it, toe up). */
+  const dig = (t: number) => keys(t, [[tYank + 120, 0], [tYank + 420, 12], [tHn1 + 400, 19], [tSlip, 20], [tSlip + 130, 5], [tRegrip, 5], [tHn2, 17], [tHn2 + 420, 28], [tPop, 30]]);
+  const grip = (t: number, lean: number, py: number, dx = 0): { pose: GabbyPose; nearFist: Pt; farFist: Pt } => {
+    const pose: GabbyPose = { x: YANK + dx, y: py, dir: 1, lean, floor: FLOOR, head: "grit", armN: fk(0, 0), armF: fk(0, 0), legN: heelDig(FRONT, 10), legF: heelDig(BACK, dig(t)) };
     // hands out in front at chest height, as far as they comfortably reach
     const sN: Pt = shoulderWorld(pose, true), sF: Pt = shoulderWorld(pose, false);
-    const nearFist: Pt = [sN[0] + 31, sN[1] + 22], farFist: Pt = [sF[0] + 33, sF[1] + 20];
+    // two fists in a row on his forearm, like hauling on a rope (the far one in front of her belly)
+    const nearFist: Pt = [sN[0] + 31, sN[1] + 22], farFist: Pt = [sF[0] + 38, sF[1] + 21];
     pose.armN = { to: nearFist, hand: "fist", bend: 1 };
     pose.armF = { to: farFist, hand: "fist", bend: 1 };
     return { pose, nearFist, farFist };
@@ -307,7 +323,7 @@ export function buildGag(stage: Stage) {
   /** How hard she's pulling (0..1): drives Santa's stretch. */
   const pull = (t: number) => keys(t, [[tYank, 0], [tYank + 260, .25], [tHn1 + 300, .55], [tSlip, .62], [tSlip + 110, .05], [tRegrip, .1], [tHn2, .4], [tHn2 + 500, .85], [tPop, 1]]);
   const yankPose = (t: number) => {
-    const g = grip(pullLean(t), pullY(t), pullDx(t));
+    const g = grip(t, pullLean(t), pullY(t), pullDx(t));
     const effort = t > tHn1 && t < tSlip ? .6 : t > tHn2 && t < tPop ? 1 : 0;
     g.pose.shake = effort * Math.sin(t / 19) * .55;
     g.pose.sy = 1 - effort * .02;
@@ -318,11 +334,6 @@ export function buildGag(stage: Stage) {
       const slide = Math.sin(u * Math.PI) * 6;
       g.pose.armN = { to: [g.nearFist[0] - slide, g.nearFist[1] - slide * .3], hand: u < .5 ? "open" : "fist", bend: 1 };
       g.pose.armF = { to: [g.farFist[0] - slide * .8, g.farFist[1] - slide * .2], hand: u < .55 ? "open" : "fist", bend: 1 };
-    }
-    // a step back to re-plant the back boot for the big heave
-    if (t > tRegrip - 80) {
-      const u = seg(t, tRegrip - 80, tRegrip + 170);
-      g.pose.legF = { x: lerp(BACK, BACK - 9, smooth(u)), y: ANK - Math.sin(u * Math.PI) * 4, a: Math.sin(u * Math.PI) * 10 };
     }
     return g;
   };
@@ -464,46 +475,53 @@ export function buildGag(stage: Stage) {
     const j = t - (tPop + 90);
     if (j < 0) return { o, plate: [PLATE[0], PLATE[1], 0], cookie: [PLATE[0] + 1, PLATE[1] - 3.2, 0], glass: [GLASS[0], GLASS[1], 0], splash: 0, puddle: 0 };
     // the plate hops and rattles; the loose cookie flies off over Gabby; the milk tips and spills
-    const ph = seg(j, 0, 260);
-    const plate: [number, number, number] = [PLATE[0] + ph * 30, PLATE[1] - Math.sin(ph * Math.PI) * 8, Math.sin(j / 40) * 18 * Math.max(0, 1 - j / 700)];
+    // (the plate and the glass sail past where his head lands, to the rug in front of the presents)
+    const ph = seg(j, 0, 520);
+    const plate: [number, number, number] = [lerp(PLATE[0], 707, easeOut(ph)), lerp(PLATE[1], FIREBOX.hearth, ph) - Math.sin(ph * Math.PI) * 30, ph < 1 ? ph * 340 : 360 + Math.sin((j - 520) / 45) * 14 * Math.max(0, 1 - (j - 520) / 500)];
     const cj = seg(j, 0, 700);
     const roll = seg(j, 700, 1150);
     const cx = lerp(PLATE[0] + 1, 506, easeOut(cj)) - roll * 9, cy = lerp(PLATE[1] - 3.2, FLOOR - 3.3, cj) - Math.sin(cj * Math.PI) * 46 + (cj >= 1 ? -Math.abs(Math.sin(roll * Math.PI * 2)) * 2 * (1 - roll) : 0);
     const cookie: [number, number, number] = [cx, cy, -cj * 900 - roll * 160];
     const gj = seg(j, 0, 420);
-    const glass: [number, number, number] = [lerp(GLASS[0], 688, easeOut(gj)), lerp(GLASS[1], FLOOR - 1, gj) - Math.sin(gj * Math.PI) * 22, gj * 270];
+    const glass: [number, number, number] = [lerp(GLASS[0], 722, easeOut(gj)), lerp(GLASS[1], FLOOR - 1, gj) - Math.sin(gj * Math.PI) * 38, gj * 270];
     return { o, plate, cookie, glass, splash: seg(j, 380, 520) * (1 - seg(j, 700, 1000)), puddle: seg(j, 420, 1100) };
   };
 
   // ---------------------------------------------------------------- the frame
   const sample = (t: number): SceneState => {
-    const s: SceneState = { gabby: null, santa: null, santaInside: true, chair: false, treats: treats(t), dust: [], bang: null, zzz: null, streak: null, shadows: [], bubbles: [] };
+    const s: SceneState = { act: "", gabby: null, santa: null, santaInside: true, chair: false, treats: treats(t), dust: [], bang: null, zzz: null, streak: null, shadows: [], bubbles: [] };
     let g: GabbyPose | null = null;
     // ---- Gabby
-    if (t < tWalk) g = null;
-    else if (t < tSpot) g = walkPose(walkIn, t, { head: "neutral", lean: 4, amp: 22 });
+    if (t < tWalk) { g = null; s.act = "offstage"; }
+    else if (t < tSpot) { g = walkPose(walkIn, t, { head: "neutral", lean: 4, amp: 22 }); s.act = "walk"; }
     else if (t < tSnap) {
+      s.act = t < tLook ? "stop" : "look away";
       const w = walkPose(walkIn, tSpot, { head: "neutral", lean: 4, amp: 22 });
       g = t < tLook ? blend(w, spotStand, smooth(seg(t, tSpot, tLook))) : blend(spotStand, lookBack, smooth(seg(t, tLook, tLook + 160)), .2);
     } else if (t < tRun) {
+      s.act = t < tShout ? "double take" : "shout";
       const u = t - tSnap;
       g = u < 90 ? blend(lookBack, shocked, easeOut(u / 90), 0) : u < 330 ? blend(shocked, shockedSettle, smooth((u - 90) / 240)) : t < tShout ? blend(shockedSettle, grit, smooth(seg(t, tSnap + 330, tShout - 120)), .3) : blend(grit, shout, easeOut(seg(t, tShout, tShout + 180)), .1);
       // jabbing her finger at him while she yells
       if (t > tShout + 180) g.armN = fk(76 + wave(t - tShout, 330) * 6, 8 + Math.max(0, wave(t - tShout, 330)) * 10);
       if (u < 650) s.bang = { ...offsetPt(headTop(g), 8, -9), s: u < 140 ? easeOut(u / 140) * 1.2 : u < 260 ? lerp(1.2, 1, (u - 140) / 120) : u > 560 ? 1 - (u - 560) / 90 : 1 };
     } else if (t < tYank) {
+      s.act = "run";
       g = walkPose(run1, t, { head: t < tSay1End ? "yell" : "grit", lean: 14, amp: 48 });
       if (t < tRun + 120) g = blend(shout, g, smooth((t - tRun) / 120));
     } else if (t < tPop) {
+      s.act = t < tYank + 260 ? "brace" : "pull";
       const y = yankPose(t);
       g = t < tYank + 260 ? blend(walkPose(run1, tYank, { head: "grit", lean: 14, amp: 48 }), y.pose, smooth(seg(t, tYank, tYank + 200))) : y.pose;
       if (t < tYank + 260) {
         // bracing: the front boot steps up onto the hearth's edge, then the back boot steps back and digs in
         const s1 = smooth(seg(t, tYank, tYank + 170)), s2 = smooth(seg(t, tYank + 90, tYank + 260));
-        g.legN = { x: lerp(RUN_END[0], FRONT, s1), y: ANK - Math.sin(s1 * Math.PI) * 5, a: Math.sin(s1 * Math.PI) * 14 + 10 * s1 };
-        g.legF = { x: lerp(RUN_END[1], BACK, s2), y: ANK - Math.sin(s2 * Math.PI) * 3.5, a: Math.sin(s2 * Math.PI) * 8 };
+        const fN = y.pose.legN, fF = y.pose.legF;
+        g.legN = { x: lerp(RUN_END[0], fN.x, s1), y: lerp(ANK, fN.y, s1) - Math.sin(s1 * Math.PI) * 5, a: lerp(0, fN.a, s1) + Math.sin(s1 * Math.PI) * 10 };
+        g.legF = { x: lerp(RUN_END[1], fF.x, s2), y: lerp(ANK, fF.y, s2) - Math.sin(s2 * Math.PI) * 3.5, a: lerp(0, fF.a, s2) + Math.sin(s2 * Math.PI) * 8 };
       }
     } else if (t < tGetUp) {
+      s.act = t < tImpact + 300 ? "flung back" : "dazed";
       g = track(t, [[tPop, popStart], [tPop + 130, airborne, easeOut], [tImpact, onRear, easeIn], [tImpact + 300, sitting, easeOut]]);
       if (t > tImpact + 300) {
         // dazed: a wobbly head
@@ -512,19 +530,25 @@ export function buildGag(stage: Stage) {
         if (d > 380) g.head = "grit";
       }
     } else if (t < tReach) {
+      s.act = "get up";
       g = track(t, [[tGetUp, { ...sitting, head: "grit" }], [tGetUp + 320, kneel], [tStood, stood]]);
     } else if (t < tTurn) {
+      s.act = "grab boot";
       g = track(t, [[tReach, stood], [tGripBoot, bend], [tGripBoot + 160, { ...bend, armN: { to: BOOT_UP, hand: "fist", bend: 1 } }], [tTurn - 40, lifted]]);
       if (t >= tGripBoot) (g.armN as { hand: string }).hand = "fist";
     } else if (t < tDrag) {
+      s.act = "turn";
       // the turn: crisp, with a little hop, her fist never leaving the boot
       const u = seg(t, tTurn, tDrag);
       g = { ...turned, y: turned.y - Math.sin(u * Math.PI) * 3, sy: 1 + Math.sin(u * Math.PI) * .03 };
     } else if (t < tStroll) {
       g = t < tGone + 1500 ? dragPose(t) : null;
+      s.act = g ? "drag" : "offstage";
     } else if (t < tTurn2) {
+      s.act = "walk";
       g = walkPose(stroll, t, { head: "sly", lean: -2, amp: 26, hat: { on: true } });
     } else if (t < tBeep) {
+      s.act = t < tSit ? "turn" : t < tSat + 260 ? "sit down" : t < tDoze ? "seated" : "doze";
       const sit0 = atChair(-1);
       if (t < tSit) {
         const u = seg(t, tTurn2, tSit);
@@ -548,6 +572,7 @@ export function buildGag(stage: Stage) {
       }
       if (t >= tSit) s.chair = true;
     } else if (t < tRun2) {
+      s.act = t < tStartle ? "doze" : t < tHop ? "startle" : t < tUp ? "stand up" : t < tCrouch ? "shout" : "wind-up";
       const base = seated({ head: "sleep", nod: 17, headDy: 2, lean: -10, armN: fk(10, 86) });
       if (t < tStartle) {
         g = { ...base, pager: Math.floor((t - tBeep) / 85) % 2 ? 1 : 0 };
@@ -572,12 +597,13 @@ export function buildGag(stage: Stage) {
       }
       if (t < tHop + 200) s.chair = true;
     } else if (t < tOff + 200) {
+      s.act = "run";
       g = walkPose(run2, t, { head: "grit", lean: 15, amp: 52, keepGoing: true, hat: { on: true } });
       const u = seg(t, tRun2, tRun2 + 520);
       g.hat = { on: true, lift: 9 * Math.sin(u * Math.PI), tilt: -32 * Math.sin(u * Math.PI) };
       if (t < tRun2 + 90) g = blend(crouch(1), g, easeIn((t - tRun2) / 90));
       s.streak = { x: g.x + 10, y: FLOOR - 30, dir: -1, amount: seg(t, tRun2, tRun2 + 200) * (1 - seg(t, tRun2 + 600, tRun2 + 900)), height: 60 };
-    }
+    } else s.act = "offstage";
     s.gabby = g;
 
     // ---- Santa
@@ -639,12 +665,16 @@ export function buildGag(stage: Stage) {
     if (g && t >= tHn1 && t < tSlip) s.bubbles.push({ id: "hn1", text: "HNNNGH!", kind: "sfx", ...xy(offsetPt(headTop(g), -16, -2)), ...life(tHn1, tSlip), tilt: -7 });
     if (g && t >= tHn2 && t < tPop + 60) s.bubbles.push({ id: "hn2", text: "HNNNNGH!!", kind: "sfx", ...xy(offsetPt(headTop(g), -18, -3)), ...life(tHn2, tPop + 60), tilt: -9 });
     if (t >= tPop && t < tPop + 650) s.bubbles.push({ id: "pop", text: "POP!", kind: "pop", x: SX + 2, y: 104, ...life(tPop, tPop + 650), tilt: 8 });
-    if (g && t >= tDrag + 300 && t < tDrag + 3400) s.bubbles.push({ id: "milk", text: "YOU'RE GONNA FINISH YOUR MILK AND COOKIES!", kind: "say", ...xy(headTop(g)), ...life(tDrag + 300, tDrag + 3400) });
+    if (g && t >= tDrag + 300 && t < tDrag + 3700) s.bubbles.push({ id: "milk", text: "YOU'RE GONNA FINISH YOUR MILK AND COOKIES!", kind: "say", ...xy(headTop(g)), ...life(tDrag + 300, tDrag + 3700) });
     if (s.santa && t >= tTurn && t < tGone) {
       const h = santaHeadWorld(s.santa);
       s.bubbles.push({ id: "noo", text: "NOOOO!", kind: "noo", x: h[0] + 16, y: h[1] - 34, ...life(tTurn, tGone), tilt: 5 });
     }
-    if (g && t >= tBeep && t < tBeep + 1100) s.bubbles.push({ id: "beep", text: "BEEP BEEP!", kind: "beep", ...xy(offsetPt(pagerWorld(g), 4, -12)), ...life(tBeep, tBeep + 1100), tilt: -6 });
+    if (g && t >= tBeep && t < tBeep + 1100) {
+      const pg = pagerWorld(g);
+      const front = pg[0] - 104 > stage.left;
+      s.bubbles.push({ id: "beep", text: "BEEP BEEP!", kind: "beep", ...xy(offsetPt(pg, front ? -50 : 54, front ? -4 : -16)), ...life(tBeep, tBeep + 1100), tilt: front ? 6 : -6 });
+    }
     if (g && t >= tSay3 && t < tSay3End) {
       const anchor = t < tRun2 ? headTop(g) : runAnchor;
       s.bubbles.push({ id: "run", text: "GOTTA RUN!", kind: "say", ...xy(anchor), ...life(tSay3, tSay3End) });

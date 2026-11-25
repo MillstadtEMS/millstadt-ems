@@ -93,11 +93,13 @@ export default function WinterGabbyGag({ aside, room, onDone, preview = false }:
     const streaks = new Streaks(fx);
     const bang = drawBang(fx);
     const zzz = el("g", { class: styles.zzz }, fx);
-    const zs = [0, 1, 2].map(i => {
-      const z = el("text", { "font-size": 8 + i * 2.5, "text-anchor": "middle" }, zzz);
+    const zs = [0, 1, 2].map(() => {
+      const z = el("text", { "text-anchor": "middle" }, zzz);
       z.textContent = "Z";
       return z;
     });
+    // never smaller than about 7, 9 and 11 CSS px (the room is drawn at 62% on phones)
+    const sizeZ = () => zs.forEach((z, i) => z.setAttribute("font-size", f((10 + i * 3) * Math.max(1, .72 / stage.k))));
     // ---- the room video's fire flicker, in step with the room's own
     const syncFlicker = () => {
       const theirs = aside.querySelector("[data-living-room] i i")?.getAnimations?.()[0];
@@ -115,6 +117,7 @@ export default function WinterGabbyGag({ aside, room, onDone, preview = false }:
       stage = { left: (left - r.left) / k, right: (right - r.left) / k, top: ((banner?.top ?? r.top) - r.top) / k, k };
     };
     measure();
+    sizeZ();
     let gag = buildGag(stage);
     const pool = new Map<string, HTMLDivElement>();
     const sizes = new Map<string, [number, number]>();
@@ -158,8 +161,9 @@ export default function WinterGabbyGag({ aside, room, onDone, preview = false }:
       show(zzz, Boolean(s.zzz));
       if (s.zzz) zs.forEach((z, i) => {
         const u = (s.zzz!.u + i / 3) % 1;
-        z.setAttribute("x", f(s.zzz!.x - 4 - u * 16));
-        z.setAttribute("y", f(s.zzz!.y - 4 - u * 26));
+        const k = Math.max(1, .72 / stage.k);
+        z.setAttribute("x", f(s.zzz!.x - 4 - u * 16 * k));
+        z.setAttribute("y", f(s.zzz!.y - 4 - u * 26 * k));
         z.setAttribute("opacity", f(Math.sin(u * Math.PI)));
       });
       paintWords(s.bubbles);
@@ -225,7 +229,7 @@ export default function WinterGabbyGag({ aside, room, onDone, preview = false }:
     };
     syncFlicker();
     frame = requestAnimationFrame(tick);
-    const onResize = () => { measure(); gag = buildGag(stage); sizes.clear(); pool.forEach(n => n.remove()); pool.clear(); };
+    const onResize = () => { measure(); sizeZ(); gag = buildGag(stage); sizes.clear(); pool.forEach(n => n.remove()); pool.clear(); };
     window.addEventListener("resize", onResize, { passive: true });
     const hooks = preview ? {
       duration: () => gag.duration,
@@ -236,6 +240,7 @@ export default function WinterGabbyGag({ aside, room, onDone, preview = false }:
       probe: (ms: number) => {
         const st = gag.sample(ms), g = st.gabby, sp = st.santa;
         return {
+          act: st.act,
           g: g && { p: [g.x, g.y], dir: g.dir, head: headTop(g), hn: handWorld(g, true), hf: handWorld(g, false), fn: [g.legN.x, g.legN.y], ff: [g.legF.x, g.legF.y], kn: legKnee(g, true), kf: legKnee(g, false) },
           s: sp && { p: [sp.x, sp.y], head: santaHeadWorld(sp), rot: sp.rot },
         };

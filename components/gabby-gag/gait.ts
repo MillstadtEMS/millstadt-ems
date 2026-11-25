@@ -83,13 +83,14 @@ export function makeLoco(o: LocoOpts): Loco {
   const plants: Plant[] = [];
   // footfall j (lead, other, lead, ...) is under its hip at tc(j)
   const footOf = (j: number) => ((((j % 2) + 2) % 2) === 0 ? lead : other);
-  const phase = o.startFeet ? 1 : .5;
+  // from a standing start the first footfall comes once the lead boot has had time for a real swing
+  const phase = o.startFeet ? (o.style === "run" ? 1 : 1.4) : .5;
   const tcOf = (j: number) => o.t0 + (j + phase) * T;
   if (o.startFeet) {
     // standing start: the lead boot leaves first and lands at footfall 0; the other boot holds her up
     // until the lead one is down, then pushes off for footfall 1
-    plants.push({ foot: lead, x: o.startFeet[lead], t0: -Infinity, t1: o.t0 + T * .06 });
-    plants.push({ foot: other, x: o.startFeet[other], t0: -Infinity, t1: tcOf(0) - half + T * .15 });
+    plants.push({ foot: lead, x: o.startFeet[lead], t0: -Infinity, t1: o.t0 + T * .25 });
+    plants.push({ foot: other, x: o.startFeet[other], t0: -Infinity, t1: tcOf(0) - half + T * (o.style === "run" ? .1 : .15) });
   } else {
     // already on the move: footfalls laid out before t0 as if the gait had always been running
     for (let j = -3; j < 0; j++) {
@@ -169,7 +170,9 @@ export function footAt(l: Loco, foot: 0 | 1, t: number, geo: BootGeo): FootState
         return { ...pivot(p.x, l.dir, a, geo.heel, geo), stance: true };
       }
       if (Number.isFinite(p.t1)) {
-        const roll = seg(t, p.t1 - l.T * (run ? .3 : .42), p.t1);
+        // (a boot standing still before a standing start doesn't start peeling up until she sets off)
+        const r0 = p.t1 - l.T * (run ? .3 : .42);
+        const roll = seg(t, Number.isFinite(p.t0) ? r0 : Math.max(r0, l.t0), p.t1);
         if (roll > 0) return { ...pivot(p.x, l.dir, toeOff * Math.pow(roll, 1.6), geo.toe, geo), stance: true };
       }
       return { x: p.x, up: geo.ankle, a: 0, stance: true };
