@@ -1083,7 +1083,8 @@ function RoofGabby({ version, knocks, onBack }: { version: 1 | 2; knocks: number
       {gag && (
         <span key={knocks} ref={fume} className={styles.gabbyFume} data-side={spot.bubble} aria-hidden="true">
           <i /><i /><i />
-          <b className={styles.gabbyGrumble}>#@$%!</b>
+          {/* Fuming, not cussing (the owner's call for Gabby). */}
+          <b className={styles.gabbyGrumble}>HMPH!</b>
         </span>
       )}
       {!gag && <Hit kind="gabby" box={GABBY.hit} frame={GABBY.frame} />}
