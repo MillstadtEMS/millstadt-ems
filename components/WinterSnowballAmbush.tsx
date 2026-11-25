@@ -132,7 +132,10 @@ function peekRig(person: Crew | Guest): Rig {
     const { size: [W, H], face, held: [bx, by, br], pitch, eyes } = guestArt[person];
     const pose = (name: string) => frame(`pop/${person}-${name}`, W, H);
     const [pw, ph, px, py] = pitch ?? [W, H, 0, 0];
-    const throwing = { windup: frame(`pop/${person}-windup`, pw, ph, px, py) };
+    // The wind-up, and the follow-through just after the snowball leaves the hand (the same picture as
+    // her throw, the arm swung forward and down across her (Mylie, Gabby) or the open palm thrust at
+    // the viewer (Audrey, Debbie)); then she settles into her wave.
+    const throwing = { windup: frame(`pop/${person}-windup`, pw, ph, px, py), follow: frame(`pop/${person}-follow`, pw, ph, px, py) };
     const ball: XY = [px + bx, py + by];
     const base = { W, H, faces: [[face[0] * W, face[1] * H]] as XY[], head: [face[0] * W, H * .02] as XY, ball, cocked: ball, ballR: br, eyes };
     if (person === "gabby") {
@@ -816,10 +819,13 @@ function runCast(env: Env) {
     await wait(reducedMotion() ? 0 : 230);
     set(actor, { phase: "cock", frame: "windup" });
     await wait(reducedMotion() ? 420 : 820);
-    set(actor, { phase: "hurl", frame: "throw" });
+    // The ball leaves the raised hand as the arm whips through: the follow-through picture holds a
+    // beat, then she comes back up into her wave.
+    const follow = Boolean(rig.frames.follow) && !reducedMotion();
+    set(actor, { phase: "hurl", frame: follow ? "follow" : "throw" });
     window.requestAnimationFrame(() => { if (actors.has(actor.id)) pelt(actor, rig.ball!, rig.ballR); });
     env.say(`${actor.name} throws a snowball at you. Press Alt Shift S to throw one back.`);
-    await wait(460);
+    if (follow) { await wait(170); set(actor, { frame: "throw" }); await wait(290); } else await wait(460);
     set(actor, { phase: "idle", frame: rig.after ?? "throw", hittable: true });
   }
   /**
