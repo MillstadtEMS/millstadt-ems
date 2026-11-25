@@ -76,19 +76,17 @@
   .chip { font-size: clamp(.66rem, 1.6vw, .8rem); }
 }
 
-/* In the living-room banner: the bottom-left corner of the room (by the window and the armchair),
-   so it scrolls away with the room and never sits on the page's own buttons and links. */
-.dock[data-in-banner] {
+/* Under the living-room banner, below the crew's boots (top set inline): pinned to the page, so it
+   scrolls away with the room and never sits on the page's own buttons and links. */
+.dock[data-under-banner] {
   position: absolute;
-  left: 6px;
-  bottom: 6px;
-  translate: none;
-  justify-content: flex-start;
-  max-width: calc(100% - 12px);
-  z-index: 5;
+  bottom: auto;
+  left: 50%;
+  translate: -50% 0;
+  justify-content: center;
 }
-.dock[data-in-banner] .chip { font-size: clamp(.6rem, 2.6vw, .74rem); }
-.dock[data-in-banner] .ask { min-height: 36px; }
+.dock[data-under-banner] .chip { font-size: clamp(.62rem, 2.7vw, .76rem); }
+.dock[data-under-banner] .ask { min-height: 38px; }
 
 /* The phone rocks side to side with motion marks, the way it's meant to be shaken. */
 .phone {
