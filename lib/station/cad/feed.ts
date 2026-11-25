@@ -18,6 +18,8 @@ const MAX_FETCH_PER_SYNC = 40;
 const FETCH_CONCURRENCY = 6;
 /** The TV shows "CAD feed delayed" when the last good sync is older than this. */
 const DELAYED_AFTER_MS = 2 * 60_000;
+/** A sync started this recently may still be running. */
+const SYNC_RUNNING_MS = 45_000;
 /** Each lookup can take ~9 s (Census, then Nominatim), and the route allows 30. */
 const GEOCODES_PER_REQUEST = 2;
 
@@ -83,14 +85,17 @@ export async function syncFeed(store: CadStore, now = Date.now(), mail: MailSour
   await store.recordSync({ ok: !failure, error: failure, durationMs: Date.now() - started, fetched: rows.length });
 }
 
+/** Delayed: the last good sync is over two minutes old and either the last attempt failed or nobody
+ *  has started one lately (a sync another server is running right now doesn't count as delayed). */
 export function feedHealth(state: SyncState, now = Date.now()): StationFeedHealth {
   const error = state.lastError && (state.lastErrorAt ?? 0) >= (state.lastOkAt ?? 0) ? state.lastError : null;
   const iso = (v: number | null) => (v === null ? null : new Date(v).toISOString());
+  const syncing = state.lastSyncAt !== null && now - state.lastSyncAt < SYNC_RUNNING_MS;
   return {
     lastSyncAt: iso(state.lastSyncAt),
     lastOkAt: iso(state.lastOkAt),
     error,
-    delayed: state.lastOkAt === null ? Boolean(error) : now - state.lastOkAt > DELAYED_AFTER_MS,
+    delayed: state.lastOkAt === null ? Boolean(error) : now - state.lastOkAt > DELAYED_AFTER_MS && (Boolean(error) || !syncing),
   };
 }
 

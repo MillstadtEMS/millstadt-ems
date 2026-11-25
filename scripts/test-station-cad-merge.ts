@@ -171,6 +171,9 @@ test("feed health: delayed after two minutes without a good sync, errors only wh
   const health = feedHealth(failing, now);
   assert.equal(health.error, "Gmail request failed (401)");
   assert.equal(health.delayed, true);
+  const waking = { ...ok, lastOkAt: now - 3 * 60 * 60_000, lastSyncAt: now - 2000, lastError: null, lastErrorAt: null };
+  assert.equal(feedHealth(waking, now).delayed, false, "a sync running after a quiet night is not 'delayed'");
+  assert.equal(feedHealth({ ...waking, lastSyncAt: now - 5 * 60_000 }, now).delayed, true);
 });
 
 // ── Geocoding (no network: a fake fetch) ──────────────────────────────────────────────────────────
