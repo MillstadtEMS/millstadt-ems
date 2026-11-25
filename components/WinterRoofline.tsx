@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState, useCallback, useSyncExter
 import { createPortal } from "react-dom";
 import { isSnowballTimeout, useSnowballTimeout } from "@/lib/seasonal/snowballTimeout";
 import { reachSamples, tapSlop, touchReach } from "@/lib/device/profile";
-import { SHAKE_GRAVITY, joinShake, shakeBusy, shakeStrain, shakeVelocity, shakeWanted, startShake, subscribeShake, subscribeShakeAccess } from "@/lib/seasonal/crewShake";
+import { SHAKE_GRAVITY, joinShake, shakeBusy, shakeLift, shakeStrain, shakeVelocity, shakeWanted, startShake, subscribeShake, subscribeShakeAccess } from "@/lib/seasonal/crewShake";
 import WinterShakeChip from "./WinterShakeChip";
 import styles from "./WinterRoofline.module.css";
 
@@ -372,6 +372,9 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     const swing = pendulum.current;
     const w0 = officer.tempo, reach = SHAKE_GRAVITY / (w0 * w0);
     let lastV = shakeVelocity(), clock = officer.phase, kickPhase = officer.phase, legLag = 0, flail = 0;
+    // Shaken up and down, the body lags the string too: a jolt up stretches them from the hands, a
+    // drop squashes them, and they spring back (a few percent at most).
+    let lastLift = shakeLift(), stretch = 0, stretchRate = 0;
     // Faces: 0 calm, 1 startled (a big swing, a hard scroll, a hit), 2 straining as the grip goes,
     // 3 straining and beet red, moments from letting go.
     let face = 0, faceAt = 0, startledUntil = 0, shaken = false, stillSince = 0, recentSwing = 0;
@@ -417,6 +420,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       const kickLeft = energy * (Math.sin(phase * 1.31 + .5) * 11 + 7) + legLag + flail * (Math.sin(kickPhase) * 9 + 5);
       const kickRight = energy * (Math.sin(phase * 1.57 + 2) * 10 - 6) + legLag + flail * (Math.sin(kickPhase + Math.PI) * 9 - 5);
       figure.style.setProperty("--swing", limitSwing(turn).toFixed(2) + "deg");
+      figure.style.setProperty("--stretch", (1 + .04 * Math.tanh(stretch / .04)).toFixed(4));
       figure.style.setProperty("--kick-left", clamp(kickLeft, -6, 21).toFixed(2) + "deg");
       figure.style.setProperty("--kick-right", clamp(kickRight, -21, 6).toFixed(2) + "deg");
     }
@@ -462,6 +466,13 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
         swing.theta += swing.omega * step;
       }
       recentSwing = Math.max(Math.abs(swing.theta), recentSwing * Math.exp(-dt / .9));
+      const lift = shakeLift();
+      stretchRate += clamp(lift - lastLift, -1.2, 1.2) * 1.1;
+      lastLift = lift;
+      for (let i = 0; i < steps; i++) {
+        stretchRate += (-260 * stretch - 9 * stretchRate) * step;
+        stretch += stretchRate * step;
+      }
       // The legs hang from the hips, so they trail the body's swing a moment behind.
       legLag += (clamp((before - swing.omega) / dt * .05, -9, 9) - legLag) * (1 - Math.exp(-dt * 12));
       // Struggling legs: they kick faster and wider as the strain grows, and flail on the way down.
@@ -472,8 +483,8 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       kickPhase += dt * Math.PI * 2 * (2.1 + 2.7 * flail);
       clock += dt;
       if (energy < .008 && expression < .009 && Math.abs(swing.theta) < .003 && Math.abs(swing.omega) < .02
-          && Math.abs(legLag) < .05 && flail < .01 && !face && !shakeBusy()) {
-        energy = expression = lastFrame = legLag = flail = recentSwing = 0;
+          && Math.abs(legLag) < .05 && flail < .01 && Math.abs(stretch) < .002 && Math.abs(stretchRate) < .02 && !face && !shakeBusy()) {
+        energy = expression = lastFrame = legLag = flail = recentSwing = stretch = stretchRate = 0;
         swing.theta = swing.omega = 0;
         paint(); return;
       }
@@ -497,8 +508,8 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       if (!raf) raf = requestAnimationFrame(frame);
     }
     function rest() {
-      cancelAnimationFrame(raf); raf = energy = expression = lastFrame = legLag = flail = 0;
-      swing.theta = swing.omega = recentSwing = 0; lastV = shakeVelocity(); startledUntil = 0;
+      cancelAnimationFrame(raf); raf = energy = expression = lastFrame = legLag = flail = stretch = stretchRate = 0;
+      swing.theta = swing.omega = recentSwing = 0; lastV = shakeVelocity(); lastLift = shakeLift(); startledUntil = 0;
       pageY = window.scrollY; paint();
     }
     // Each motion reading wakes the swing.
