@@ -1,9 +1,11 @@
 // Synthetic calls for trying the station TV's CAD panel without real data. Development only: the API
 // route never calls this in production. Times run from the moment the TV started the demo (t0), so a
-// fresh load always shows the same story: the location turns up after a few seconds, the crew goes
-// enroute about 30 seconds in, then on scene, transporting, at the hospital and clear, and the demo
-// starts over with a new call. The streets are real (block numbers, located with the US Census
-// geocoder) so the pins land where they should; the calls are invented.
+// fresh load always shows the same story. "demo": the screen is quiet, a call comes in a few seconds
+// later (the new-call alert), its location turns up after ~14 s ("Locating..." until then), the crew
+// goes enroute ~30 s in, then on scene, transporting, at the hospital and clear, and the demo starts
+// over with a new call. "demo3": two calls are running and a third comes in ~6 s after load. The
+// streets are real (block numbers, located with the US Census geocoder) so the pins land where they
+// should; the calls are invented.
 
 import { CALL_PHASES, type CallLocation, type CallPhase, type StationCall } from "./types";
 
@@ -36,9 +38,9 @@ const COLUMBIA: CallLocation = { lat: 38.446491, lon: -90.203422, source: "demo"
 const ONE: DemoScript[] = [
   {
     key: "fall", eventNumber: "2026-90118", nature: "Medical", detail: "Fall - Possible Hip Injury",
-    address: "300 Blk W Washington St", city: "Millstadt", crossStreets: "S Monroe St / S Polk St", units: ["M3925"],
-    location: WASHINGTON, locatedAt: 3,
-    phases: { dispatched: -8, enroute: 30, onscene: 95, transport: 165, athospital: 235, clear: 295 },
+    address: "300 Blk W Washington St", city: "Millstadt", crossStreets: "S Monroe St / S Jackson St", units: ["M3925"],
+    location: WASHINGTON, locatedAt: 14,
+    phases: { dispatched: 4, enroute: 30, onscene: 95, transport: 165, athospital: 235, clear: 295 },
   },
 ];
 
@@ -57,9 +59,9 @@ const THREE: DemoScript[] = [
   },
   {
     key: "fall", eventNumber: "2026-90112", nature: "Medical", detail: "Fall - Possible Hip Injury",
-    address: "300 Blk W Washington St", city: "Millstadt", crossStreets: "S Monroe St / S Polk St", units: ["M3926"],
-    location: WASHINGTON, locatedAt: -30,
-    phases: { dispatched: -40, enroute: 25, onscene: 120, transport: 260 },
+    address: "300 Blk W Washington St", city: "Millstadt", crossStreets: "S Monroe St / S Jackson St", units: ["M3926"],
+    location: WASHINGTON, locatedAt: 12,
+    phases: { dispatched: 6, enroute: 32, onscene: 120, transport: 260 },
   },
 ];
 
