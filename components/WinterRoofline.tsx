@@ -32,8 +32,9 @@ type Officer = {
   // goes from her still to worried to furious.
   anim?: { hang: string; still: string; mad: string; worried: string };
   // Shaking the phone: the straining face painted on the same body as they hang on for dear life,
-  // then the same face gone beet red; and where their sweat flies from (head centre at eye level
-  // and half the face's width, percent of the art box).
+  // then, moments from letting go, the effort face (eyes squeezed shut, teeth gritted, beet red);
+  // and where their sweat flies from (head centre at eye level and half the face's width, percent
+  // of the art box).
   strain: [string, string]; head: [number, number, number];
   // How each one feels a shake, so the line ripples instead of swinging as one: their share of the
   // push, how long it takes to reach them (ms), and how much their grip and the air slow them.
@@ -55,19 +56,19 @@ const officers: Record<Chief, Officer> = {
     strain: [shakeArt("jen-hanging-strain"), shakeArt("jen-hanging-strain-hard")], head: [51.9, 23, 7.9], drive: [.95, 18, 1.05],
     grip: gripArt("jen", [[39.41, 5.17], [59.12, 5.17]], [[37.11, 27.65], [62.26, 27.65]]) },
   kenny: { name: "Kenny", folder: "/images/winter/kenny/", ratio: rigRatio, fallback: .07, tempo: 4.9, phase: 2.2,
-    strain: [shakeArt("kenny-hanging-strain"), shakeArt("kenny-hanging-strain-hard")], head: [63.3, 23.3, 8.7], drive: [1.28, 60, .85],
+    strain: [shakeArt("kenny-hanging-effort"), shakeArt("kenny-hanging-effort-hard")], head: [63.3, 23.3, 8.7], drive: [1.28, 60, .85],
     grip: { holes: "/images/winter/kit/shake/kenny-hanging-holes.png" } },
   kalista: { name: "Kalista", calm: kitCrew("kalista-hanging"), startled: kitCrew("kalista-hanging-scared"), ratio: 416 / 640, fallback: .3, tempo: 5.2, phase: 1.1,
-    strain: [shakeArt("kalista-hanging-strain"), shakeArt("kalista-hanging-strain-hard")], head: [50.4, 24.4, 8.1], drive: [.78, 90, 1.15],
+    strain: [shakeArt("kalista-hanging-strain"), shakeArt("kalista-hanging-effort-hard")], head: [50.4, 24.4, 8.1], drive: [.78, 90, 1.15],
     grip: gripArt("kalista", [[38.46, 4.38], [60.58, 4.38]], [[35.82, 28.13], [63.46, 28.44]]),
     legs: { splitX: 55.5, splitY: 68.3, hipLeft: "46.5% 69.1%", hipRight: "66.8% 69.1%", turn: 0,
       split: [[55.5, 68.3], [56.7, 71.1], [56.4, 73.9], [55.3, 76.7], [53.5, 79.5], [51.4, 82.3], [48, 85.2], [45.1, 88], [44.8, 90.8], [44.4, 93.6], [44.4, 99.2]] } },
   braeden: { name: "Braeden", calm: kitCrew("braeden-hanging"), startled: kitCrew("braeden-hanging-scared"), ratio: 543 / 640, fallback: .43, tempo: 5.8, phase: 3, size: .8,
-    strain: [shakeArt("braeden-hanging-strain"), shakeArt("braeden-hanging-strain-hard")], head: [51.9, 26.6, 7.1], drive: [1.12, 110, .9],
+    strain: [shakeArt("braeden-hanging-strain"), shakeArt("braeden-hanging-effort-hard")], head: [51.9, 26.6, 7.1], drive: [1.12, 110, .9],
     grip: gripArt("braeden", [[26.15, 7.5], [73.66, 7.81]], [[30.39, 35], [67.77, 34.69]]),
     legs: { splitX: 53.8, splitY: 68.75, hipLeft: "47% 69.5%", hipRight: "59.9% 69.5%", turn: 38 } },
   dylan: { name: "Dylan", calm: kitCrew("dylan-hanging"), startled: kitCrew("dylan-hanging-scared"), ratio: 466 / 640, fallback: .57, tempo: 5, phase: .6,
-    strain: [shakeArt("dylan-hanging-strain"), shakeArt("dylan-hanging-strain-hard")], head: [51.8, 21.4, 7.2], drive: [.72, 30, 1.25],
+    strain: [shakeArt("dylan-hanging-strain"), shakeArt("dylan-hanging-effort-hard")], head: [51.8, 21.4, 7.2], drive: [.72, 30, 1.25],
     grip: gripArt("dylan", [[39.06, 4.38], [61.16, 4.38]], [[37.12, 27.5], [63.95, 26.88]]),
     legs: { splitX: 56.3, splitY: 67.3, hipLeft: "48.7% 68.1%", hipRight: "69.1% 68.1%", turn: 0,
       split: [[56.3, 67.3], [58.5, 70.2], [60, 73], [58.6, 75.8], [55.9, 78.6], [54.1, 81.4], [51.2, 84.2], [47.1, 87], [46.2, 89.8], [46.5, 92.7], [45.2, 95.5], [45.2, 99.2]] } },
@@ -76,7 +77,7 @@ const officers: Record<Chief, Officer> = {
   gabby: { name: "Gabby", ratio: 600 / 720, fallback: .7, tempo: 4.7, phase: 2.6, anim: {
     hang: "/images/winter/kit/gabby/gabby-hang.webp", still: "/images/winter/kit/gabby/gabby-hang-still.webp",
     mad: "/images/winter/kit/gabby/gabby-hang-mad.webp", worried: shakeArt("gabby-hang-worried"),
-  }, strain: ["/images/winter/kit/gabby/gabby-hang-mad.webp", shakeArt("gabby-hang-mad-hard")], head: [50.4, 24.7, 7.7], drive: [1.18, 75, .95],
+  }, strain: ["/images/winter/kit/gabby/gabby-hang-mad.webp", shakeArt("gabby-hang-effort-hard")], head: [50.4, 24.7, 7.7], drive: [1.18, 75, .95],
     grip: gripArt("gabby", [[39.11, 5.56], [58.67, 5.56]], [[37.78, 29.63], [62.67, 29.63]]) },
   "medical-director": { name: "Dr. Hsu", calm: kitCrew("medical-director-hanging"), startled: kitCrew("medical-director-hanging-scared"), ratio: 466 / 640, fallback: .7, tempo: 4.7, phase: 2.6,
     strain: [kitCrew("medical-director-hanging-scared"), kitCrew("medical-director-hanging-scared")], head: [53.4, 23.8, 7.4], drive: [1, 40, 1], grip: { holes: "" },
@@ -448,7 +449,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     // drop squashes them, and they spring back (a few percent at most).
     let lastLift = shakeLift(), stretch = 0, stretchRate = 0;
     // Faces: 0 calm, 1 startled (a big swing, a hard scroll, a hit), 2 straining as the grip goes,
-    // 3 straining and beet red, moments from letting go.
+    // 3 all-out effort (eyes squeezed shut, teeth gritted, beet red), moments from letting go.
     let face = 0, faceAt = 0, startledUntil = 0, shaken = false, stillSince = 0, recentSwing = 0;
     // Hanging by both hands (Officer.grip): the arms layer, pinned at the fists. Its art box is
     // cached at measure time; hitAt marks when they let go.

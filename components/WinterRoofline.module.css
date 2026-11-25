@@ -232,7 +232,8 @@
 .kitLeg { transform: rotate(calc(var(--leg-turn, 0deg) + var(--kick-left, 0deg) * .85)); }
 .kitLegRight { transform: rotate(calc(var(--leg-turn, 0deg) + var(--kick-right, 0deg) * .85)); }
 /* Scared: only the face changes, painted on the same body, so nobody grows or jumps. Straining
-   (a shaking phone): the gritted face, then the same face beet red, painted on the same body too.
+   (a shaking phone): the glaring face, then the effort face (eyes squeezed shut, teeth gritted,
+   beet red), painted on the same body too.
    Faces swap whole, never blending into a double image. */
 .scaredFace, .strainFace { position: absolute; inset: 0; display: block; visibility: hidden; }
 .cradle[data-kit][data-face="1"] .scaredFace, .cradle[data-kit][data-phase="hit"] .scaredFace,
