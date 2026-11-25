@@ -908,7 +908,9 @@ function runCast(env: Env) {
   }, { signal });
   document.addEventListener("pointerdown", pointer, { signal, passive: true, capture: true });
   document.addEventListener("pointermove", hover, { signal, passive: true, capture: true });
-  document.addEventListener("click", click, { signal, capture: true });
+  // On the window: a tap on a pop-up is theirs before the site-wide fight's document listener
+  // can take it as a plain throw (phones have no hover to mark the aim first).
+  window.addEventListener("click", click, { signal, capture: true });
   document.addEventListener("scroll", afterScroll, { signal, passive: true, capture: true });
   document.addEventListener("mems:snow-hit", struck, { signal });
   window.addEventListener("resize", resize, { signal, passive: true });
