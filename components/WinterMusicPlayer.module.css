@@ -144,6 +144,10 @@
   clip-path: inset(0 25px round 10.4px);
   border-radius: 0;
   box-shadow: none;
+  /* The crew hang in front of the little TV: a tap on someone over its screen must reach them,
+     not pause the song inside the video frame. Sound on/off and Enlarge (header) run the player;
+     enlarged, the video is fully interactive again. */
+  pointer-events: none;
 }
 .tvGlass {
   position: absolute;
@@ -282,8 +286,15 @@
 .stage:has(> .player[data-fire="out"]) > :not(.player) { filter: brightness(.8) saturate(.92); }
 .controls { z-index: 2; }
 .player[data-expanded="true"] .room { display: none; }
-/* The room sits flush with the bottom of the banner (it reaches 56.25px below the video). */
-.player:not([data-expanded="true"]) { align-self: end; margin-bottom: 56.25px; }
+/* The room sits flush with the bottom of the banner (it reaches 56.25px below the video). On
+   narrower banners it slides left (--room-shift) so the armchair, the fireplace and the fridge
+   beside the presents all fit on screen. */
+.player:not([data-expanded="true"]) { align-self: end; margin-bottom: 56.25px; translate: var(--room-shift, 0px) 0; }
+@media (max-width: 1099px) {
+  /* The armchair (x 55) to the fridge's open door (x ~832) is 777 of the room's 760 x 200 pixels;
+     centring that span instead of the TV moves the room 60.5 room pixels left. */
+  .stage:has(.player) { --room-shift: calc(-60.5px * var(--room-k, 1)); }
+}
 /* The whole banner is the living room: the painted room around the TV, and the same red damask
    wallpaper, wood wainscoting and floor running out to both edges. No snow falls indoors. */
 .stage:has(.player) {
@@ -293,31 +304,47 @@
   /* Cut from the room picture itself and aligned with it row for row and in phase: the damask
      from beside the tree, and the wainscot, baseboard and floor from beside the armchair. */
   background:
-    url("/images/winter/kit/living-room/wainscot-strip.webp") left calc(50% - 243.25px) bottom 0 / 28px 77px repeat-x,
-    url("/images/winter/kit/living-room/wallpaper-tile.webp") left calc(50% - 236.25px) bottom 36px / 94px 132px repeat,
+    url("/images/winter/kit/living-room/wainscot-strip.webp") left calc(50% - 243.25px + var(--room-shift, 0px)) bottom 0 / 28px 77px repeat-x,
+    url("/images/winter/kit/living-room/wallpaper-tile.webp") left calc(50% - 236.25px + var(--room-shift, 0px)) bottom 36px / 94px 132px repeat,
     #6e1718;
 }
 :global(html:has([data-winter-video])) :global(.winter-snowfall) { clip-path: inset(var(--room-bottom, 0px) 0 0 0); }
-/* Phones: the TV is just where the music plays, so the whole living room (TV, tree, fireplace)
-   is drawn at 62% and stands on the floor at the bottom of the banner, below the crew's boots. The
-   wallpaper and wainscoting running out to the edges scale with it, so the seams still line up. */
+/* Phones: the TV is just where the music plays, so the whole living room is drawn smaller (62% at
+   most, less on narrow phones so the armchair, fireplace and fridge all fit), and the banner is only
+   as tall as the room: no wallpaper band above it. The crew hang in front of the room until they're
+   knocked down. The wallpaper and wainscoting running out to the edges scale and slide with it, so
+   the seams still line up. */
 @media (max-width: 700px) {
   .stage:has(.player) {
     --room-k: .62;
     min-height: 262px;
     background:
-      url("/images/winter/kit/living-room/wainscot-strip.webp") left calc(50% - 243.25px * var(--room-k)) bottom 0 / calc(28px * var(--room-k)) calc(77px * var(--room-k)) repeat-x,
-      url("/images/winter/kit/living-room/wallpaper-tile.webp") left calc(50% - 236.25px * var(--room-k)) bottom calc(36px * var(--room-k)) / calc(94px * var(--room-k)) calc(132px * var(--room-k)) repeat,
+      url("/images/winter/kit/living-room/wainscot-strip.webp") left calc(50% - 243.25px * var(--room-k) + var(--room-shift, 0px)) bottom 0 / calc(28px * var(--room-k)) calc(77px * var(--room-k)) repeat-x,
+      url("/images/winter/kit/living-room/wallpaper-tile.webp") left calc(50% - 236.25px * var(--room-k) + var(--room-shift, 0px)) bottom calc(36px * var(--room-k)) / calc(94px * var(--room-k)) calc(132px * var(--room-k)) repeat,
       #6e1718;
   }
   .player:not([data-expanded="true"]) {
     align-self: end;
-    margin-top: 0;
+    /* The room picture is 200px tall and reaches 31.25px above the 112.5px video and 56.25px below
+       it. Scaled about the player's bottom, the room's top lands exactly at the banner's top when the
+       player's box (video plus margins) is pulled up to the room's scaled height. */
+    margin-top: calc(200px * var(--room-k) - 112.5px - 56.25px * var(--room-k));
     margin-bottom: calc(56.25px * var(--room-k));
     scale: var(--room-k);
     transform-origin: 50% 100%;
   }
+  /* So the banner is only as tall as the room; enlarged, it grows again. */
+  .stage:has(.player:not([data-expanded="true"])) { min-height: 0; }
 }
+/* The room scale that fits the armchair-to-fridge span (777 room px) on each phone width, keeping
+   the fridge at least .17 of its pose-sheet size (WinterFireplaceScenes). */
+@media (max-width: 500px) { .stage:has(.player) { --room-k: .58; } }
+@media (max-width: 450px) { .stage:has(.player) { --room-k: .55; } }
+@media (max-width: 425px) { .stage:has(.player) { --room-k: .53; } }
+@media (max-width: 410px) { .stage:has(.player) { --room-k: .5; } }
+@media (max-width: 390px) { .stage:has(.player) { --room-k: .47; } }
+@media (max-width: 370px) { .stage:has(.player) { --room-k: .45; } }
+@media (max-width: 340px) { .stage:has(.player) { --room-k: .37; } }
 @media (prefers-reduced-motion: reduce) {
   .roomVideo { display: none; }
   .vcrClock, .fireGlow i { animation: none; }
