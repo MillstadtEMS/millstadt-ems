@@ -299,8 +299,9 @@
 }
 :global(html:has([data-winter-video])) :global(.winter-snowfall) { clip-path: inset(var(--room-bottom, 0px) 0 0 0); }
 /* Phones: the TV is just where the music plays, so the whole living room (TV, tree, fireplace)
-   is drawn at 62% and stands on the floor at the bottom of the banner, below the crew's boots. The
-   wallpaper and wainscoting running out to the edges scale with it, so the seams still line up. */
+   is drawn at 62%, and the banner is only as tall as the room: no wallpaper band above it. The crew
+   hang in front of the room until they're knocked down. The wallpaper and wainscoting running out
+   to the edges scale with it, so the seams still line up. */
 @media (max-width: 700px) {
   .stage:has(.player) {
     --room-k: .62;
@@ -312,11 +313,16 @@
   }
   .player:not([data-expanded="true"]) {
     align-self: end;
-    margin-top: 0;
+    /* The room picture is 200px tall and reaches 31.25px above the 112.5px video and 56.25px below
+       it. Scaled about the player's bottom, the room's top lands exactly at the banner's top when the
+       player's box (video plus margins) is pulled up to the room's scaled height. */
+    margin-top: calc(200px * var(--room-k) - 112.5px - 56.25px * var(--room-k));
     margin-bottom: calc(56.25px * var(--room-k));
     scale: var(--room-k);
     transform-origin: 50% 100%;
   }
+  /* So the banner is only as tall as the room; enlarged, it grows again. */
+  .stage:has(.player:not([data-expanded="true"])) { min-height: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .roomVideo { display: none; }
