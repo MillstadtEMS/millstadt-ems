@@ -64,6 +64,10 @@ html[data-snowball-timeout] .aim { pointer-events: none; cursor: auto; }
 .actor[data-phase="retreat"] .rise { animation: sink .46s cubic-bezier(.57,.04,.8,.49) forwards; }
 .actor[data-phase="retreat"][data-slow] .rise { animation-duration: 1.05s; animation-timing-function: cubic-bezier(.45,.05,.75,.6); }
 .actor[data-edge^="corner"][data-phase="retreat"] .rise { animation-name: peekOut; }
+/* Leaving with snow heaped on them: they sink straight down into the heap, then the heap squashes
+   and settles away below the floor line before they're removed (it never stands there empty). */
+.actor[data-phase="retreat"][data-heap] .rise { animation: sinkIn .58s cubic-bezier(.45,0,.85,.55) forwards; }
+.actor[data-phase="retreat"][data-heap] .pile { animation: pileSettle .5s .34s cubic-bezier(.5,0,.9,.6) forwards; }
 
 /* Moods and moves */
 .actor[data-phase="idle"] .motion { animation: breathe 2.6s ease-in-out infinite; }

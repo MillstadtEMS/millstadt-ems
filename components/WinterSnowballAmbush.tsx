@@ -225,8 +225,17 @@ const soloSong = ["♪ Fa la la la la…", "♪ Deck the halls!", "♪ …la la 
 const trioSong = ["♪ Deck the halls with boughs of holly…", "♪ Fa la la la la, la la la la!", "♪ Jingle bells, jingle bells…", "♪ We wish you a merry Christmas!"];
 
 const controls = 'a,button,input,textarea,select,label,summary,form,iframe,video,audio,canvas,nav,[role="application"],[role="grid"],[role="button"],[role="tab"],[role="menuitem"],[role="switch"],[role="slider"],[role="link"],[tabindex="0"],[contenteditable="true"]';
-const excluded = '[data-hunt-scene],[data-winter-rink],[data-hanging-chief] img:first-child,footer,[data-snow-chief],[data-winter-player]';
+const excluded = '[data-hunt-scene],[data-winter-rink],[data-hanging-chief] img:first-child,footer,[data-snow-chief],[data-winter-video],[data-living-room]';
 const offLimits = controls + ",[data-winter-rink],[data-hunt-scene],footer";
+/**
+ * The bottom of the living room (the band across the top with the TV on its stand and the crew on
+ * the lights) while any of it is on screen, else 0. Pop-ups only ever come up below it, so on a short
+ * screen (a phone on its side) they wait until the room has scrolled away.
+ */
+function roomFloor() {
+  const room = document.querySelector("[data-living-room]")?.getBoundingClientRect();
+  return room && room.height > 0 && room.bottom > 0 && room.top < window.innerHeight ? room.bottom : 0;
+}
 // Snowdrift spots, all in the lower half of the screen so the living room and its shows at the top
 // stay clear.
 const drifts = [[.05,.52],[.43,.5],[.93,.56],[.23,.62],[.63,.66],[.03,.74],[.9,.76],[.39,.8],[.14,.92],[.73,.93]];
@@ -478,7 +487,9 @@ function runCast(env: Env) {
   function place(kind: Kind, rig: Rig, edges: Edge[], lead: Actor | null) {
     const vw = document.documentElement.clientWidth, vh = window.innerHeight, phone = vw < 768, car = isTesla();
     const nav = document.querySelector(".mems-nav-bar")?.getBoundingClientRect();
-    const top = Math.max(16, (nav?.bottom ?? 5) + 13);
+    // Below the header, and below the living room while it's on screen (its TV and the crew stay clear).
+    const livingRoom = roomFloor();
+    const top = Math.max(16, (nav?.bottom ?? 5) + 13, livingRoom ? livingRoom + 14 : 0);
     const floor = floorLine(vw, vh);
     const ratio = rig.W / rig.H, thrower = kind === "classic" || kind === "wave";
     let edge = preview?.edge && edges.includes(preview.edge) ? preview.edge : pick(edges);
@@ -844,7 +855,9 @@ function runCast(env: Env) {
     // A keyboard user on the throw-back button keeps the character until they move on.
     while (actor.hittable && element(actor)?.contains(document.activeElement)) await wait(1200);
     set(actor, { phase: "retreat", hittable: false, bubble: "", notes: "", slow });
-    await wait(slow ? 1080 : 520);
+    // Snow heaped on them: they sink into it, then the heap settles away below the floor line, and
+    // only then are they gone (an empty heap never stands there, or vanishes).
+    await wait(actor.bury > 0 ? (reducedMotion() ? 520 : 900) : slow ? 1080 : 520);
     remove(actor);
   }
 
@@ -1025,16 +1038,24 @@ function runCast(env: Env) {
     } else if (!actors.size) schedule();
   }
   function resize() { if (actors.size) clearAll(1600); else conditions(); }
+  // Scrolled so a control, or the living room, is now under someone: they sink away at once (no
+  // vanishing mid-act), and whatever is under them works again as soon as they start to go.
   function afterScroll() {
     window.clearTimeout(scrollCheck);
     if (!actors.size) return;
     scrollCheck = window.setTimeout(() => {
+      const room = roomFloor();
       for (const actor of [...actors.values()]) {
         const { x, y, w, h } = actor.box;
         const beneath = document.elementFromPoint(Math.min(window.innerWidth - 2, Math.max(2, x + w * .5)), y + Math.min(h * .4, (h - actor.cut) * .6));
-        if (beneath?.closest(offLimits)) remove(actor, 1800);
+        if (beneath?.closest(offLimits) || y + (h - actor.cut) * .2 < room) leave(actor);
       }
     }, 160);
+  }
+  function leave(actor: Actor) {
+    if (!actors.has(actor.id) || ["retreat", "sunk", "settle", "bail"].includes(actor.phase)) return;
+    actor.incoming = false;
+    play(actor, wait => retreat(actor, wait));
   }
   const pointer = (event: PointerEvent) => { startX = event.clientX; startY = event.clientY; startType = event.pointerType; };
   function click(event: MouseEvent) {
@@ -1178,7 +1199,7 @@ function Figure({ view, onShoot }: { view: View; onShoot: (id: number) => void }
   return (
     <div className={styles.actor} data-actor={view.id} data-snow-ambush={view.people.join(" ")} data-kind={view.kind} data-edge={view.edge}
       data-phase={view.phase} data-frame={view.frame || undefined} data-hits={view.hits} data-stand={stand || undefined}
-      data-fast={view.fast || undefined} data-slow={view.slow || undefined} style={style}>
+      data-fast={view.fast || undefined} data-slow={view.slow || undefined} data-heap={pile ? "" : undefined} style={style}>
       {(view.edge === "drift" || stand || ((view.kind === "classic" || view.kind === "wave") && view.edge === "floor")) && <div className={styles.drift} />}
       <div className={styles.clip} aria-hidden="true"><div className={styles.lean}><div className={styles.rise}><div className={styles.motion}>
         <div className={styles.stage} data-stage="">
