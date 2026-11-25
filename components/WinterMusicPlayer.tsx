@@ -55,6 +55,78 @@ function visibleForAutoplay(frame: HTMLIFrameElement) {
   return width * height > box.width * box.height / 2;
 }
 
+// The living room's fire is a snowball target. A hit douses it: a burst of steam and a hiss, the
+// logs go dark and smoke, and the room dims a little. A few seconds later the embers fizz with
+// sparks like a trick candle and the flames catch again, bringing the light back. Santa, while he
+// peeks down the chimney (2.45-5.3 s of each 15 s loop of the room video), takes the snowball
+// himself ("Ho ho ho!"), and he stays out of the cold fireplace while the fire is out.
+const FIRE = { santa: [2.45, 5.3] as const, smolder: 4200, sparkle: 1300, reveal: 700 };
+type FireState = "lit" | "out" | "sparkle" | "relight";
+const rand = (min: number, max: number) => min + Math.random() * (max - min);
+
+/** A one-off effect sprite in the fireplace's effect layer (room px), removed when it finishes. */
+function effect(host: HTMLElement, className: string, [x, y, w, h]: number[], frames: Keyframe[], options: KeyframeAnimationOptions) {
+  const el = document.createElement("i");
+  el.className = className;
+  el.style.cssText = `left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;width:${w.toFixed(1)}px;height:${h.toFixed(1)}px`;
+  host.appendChild(el);
+  const done = () => el.remove();
+  el.animate(frames, options).finished.then(done, done);
+}
+
+/** Steam billows out of the firebox and rises past the stockings. The first, big puffs cover the
+ *  opening while the flames go out underneath. */
+const BILLOWS = [[26, 55], [58, 55], [42, 46], [42, 28]] as const;
+function steam(host: HTMLElement, count: number, cover: boolean) {
+  for (let i = 0; i < count; i++) {
+    const big = cover && i < BILLOWS.length;
+    const w = big ? rand(46, 54) : rand(22, 32), h = w * .75;
+    const [x, y] = big ? [BILLOWS[i][0] + rand(-3, 3), BILLOWS[i][1] + rand(-3, 3)] : [42 + rand(-18, 18), rand(34, 60)];
+    const dx = (x - 42) * rand(.7, 1.3) + rand(-6, 6), rise = big ? rand(62, 92) : rand(44, 80);
+    effect(host, styles.puff, [x - w / 2, y - h / 2, w, h], [
+      { transform: "translate(0, 0) scale(.3)", opacity: 1 },
+      { transform: `translate(${(dx * .15).toFixed(1)}px, ${(-rise * .04).toFixed(1)}px) scale(1)`, opacity: 1, offset: .12 },
+      { transform: `translate(${(dx * .4).toFixed(1)}px, ${(-rise * .25).toFixed(1)}px) scale(1.12)`, opacity: .95, offset: .3 },
+      { transform: `translate(${(dx * .8).toFixed(1)}px, ${(-rise * .65).toFixed(1)}px) scale(1.35)`, opacity: .5, offset: .65 },
+      { transform: `translate(${dx.toFixed(1)}px, ${(-rise).toFixed(1)}px) scale(1.6)`, opacity: 0 },
+    ], { duration: big ? rand(1700, 2100) : rand(1300, 1800), delay: i * 18, easing: "cubic-bezier(.2, .7, .4, 1)", fill: "backwards" });
+  }
+}
+
+/** A spark on the logs: a crackle in place, or one that fizzes up in an arc and falls away. */
+function spark(host: HTMLElement, fly: boolean) {
+  const x = rand(18, 66), y = rand(44, 64), s = rand(7, 12);
+  if (!fly) {
+    effect(host, styles.spark, [x - s / 2, y - s / 2, s, s], [
+      { transform: "scale(0) rotate(0deg)", opacity: 1 },
+      { transform: "scale(1.3) rotate(25deg)", opacity: 1, offset: .35 },
+      { transform: "scale(0) rotate(50deg)", opacity: .6 },
+    ], { duration: rand(150, 280), easing: "ease-out" });
+    return;
+  }
+  const vx = rand(-30, 30), up = rand(22, 48), drop = rand(4, 12);
+  effect(host, styles.spark, [x - s / 2, y - s / 2, s, s], [0, .2, .4, .6, .8, 1].map(t => ({
+    transform: `translate(${(vx * t).toFixed(1)}px, ${(-up * 4 * t * (1 - t) + drop * t * t).toFixed(1)}px) scale(${(1 - t * .65).toFixed(2)})`,
+    opacity: t < .7 ? 1 : 1 - (t - .7) / .3,
+  })), { duration: rand(520, 800), easing: "linear" });
+}
+
+/** The hiss, popping out beside the firebox and held long enough to read. */
+function hiss(host: HTMLElement) {
+  const word = document.createElement("i");
+  word.className = styles.hiss;
+  host.appendChild(word);
+  const done = () => word.remove();
+  word.animate([
+    { transform: "rotate(-9deg) scale(.2)", opacity: 0 },
+    { transform: "translateY(-4px) rotate(-9deg) scale(1.2)", opacity: 1, offset: .07 },
+    { transform: "translateY(-6px) rotate(-9deg) scale(.96)", opacity: 1, offset: .12 },
+    { transform: "translateY(-7px) rotate(-9deg) scale(1)", opacity: 1, offset: .16 },
+    { transform: "translateY(-11px) rotate(-9deg) scale(1)", opacity: 1, offset: .88 },
+    { transform: "translateY(-18px) rotate(-9deg) scale(.97)", opacity: 0 },
+  ], { duration: 2000, easing: "ease-out" }).finished.then(done, done);
+}
+
 export default function WinterMusicPlayer() {
   const winter = useWinterTheme();
   const pathname = usePathname();
@@ -133,6 +205,123 @@ function Soundtrack() {
     still.addEventListener("change", sync);
     document.addEventListener("visibilitychange", sync);
     return () => { still.removeEventListener("change", sync); document.removeEventListener("visibilitychange", sync); };
+  }, [timeout, expanded]);
+
+  // The fire as a snowball target (see FIRE above). An invisible target over the firebox catches the
+  // site-wide fight's hits (it dispatches mems:snow-hit on it); a time out, enlarging the player, a
+  // background tab or reduced motion puts the fire straight back and stands the target down.
+  const player = useRef<HTMLElement>(null);
+  const fireTarget = useRef<HTMLElement>(null);
+  const fireFx = useRef<HTMLElement>(null);
+  const hearthOut = useRef<HTMLElement>(null);
+  const hearthEmbers = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const aside = player.current, target = fireTarget.current, fx = fireFx.current;
+    const out = hearthOut.current, embers = hearthEmbers.current, video = room.current;
+    if (!aside || !target || !fx || !out || !embers || !video) return;
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let state: FireState = "lit";
+    let timers: number[] = [];
+    let skipFrame = 0;
+    const later = (ms: number, run: () => void) => { timers.push(window.setTimeout(run, ms)); };
+    const live = () => !timeout && !expanded && !motion.matches && !document.hidden;
+    const santaIn = () => !video.paused && video.currentTime >= FIRE.santa[0] - .25 && video.currentTime < FIRE.santa[1] + .2;
+    function arm() {
+      if (!live()) {
+        for (const name of ["data-snow-fighter", "data-snow-santa", "data-snow-role"]) target!.removeAttribute(name);
+        return;
+      }
+      target!.setAttribute("data-snow-role", "target");
+      const santa = state === "lit" && santaIn();
+      target!.toggleAttribute("data-snow-santa", santa);
+      target!.toggleAttribute("data-snow-fighter", !santa);
+    }
+    function skipSanta() {
+      skipFrame = 0;
+      if (state === "lit") return;
+      if (video!.currentTime >= FIRE.santa[0] && video!.currentTime < FIRE.santa[1]) video!.currentTime = FIRE.santa[1];
+      skipFrame = requestAnimationFrame(skipSanta);
+    }
+    function clear() { timers.forEach(t => window.clearTimeout(t)); timers = []; }
+    /** Straight back to the burning fire. */
+    function settle() {
+      clear();
+      cancelAnimationFrame(skipFrame);
+      skipFrame = 0;
+      out!.getAnimations().forEach(a => a.cancel());
+      embers!.getAnimations().forEach(a => a.cancel());
+      fx!.replaceChildren();
+      delete aside!.dataset.fire;
+      state = "lit";
+    }
+    function douse() {
+      const first = state === "lit";
+      clear();
+      steam(fx!, first || state === "relight" ? 9 : 4, first || state === "relight");
+      if (first) hiss(fx!);
+      // The dark, put-out hearth comes in under the steam (or snaps back if the flames were catching).
+      out!.getAnimations().forEach(a => a.cancel());
+      out!.animate([{ opacity: first ? 0 : 1 }, { opacity: 1 }], { duration: 140, delay: first ? 90 : 0, fill: "both" });
+      embers!.getAnimations().forEach(a => a.cancel());
+      embers!.animate([
+        { opacity: 0 }, { opacity: 1, offset: .05 }, { opacity: .65, offset: .22 }, { opacity: .85, offset: .38 },
+        { opacity: .45, offset: .68 }, { opacity: .3 },
+      ], { duration: FIRE.smolder, delay: 120, fill: "both" });
+      aside!.dataset.fire = "out";
+      state = "out";
+      if (!skipFrame) skipFrame = requestAnimationFrame(skipSanta);
+      arm();
+      later(FIRE.smolder, sparkle);
+    }
+    function sparkle() {
+      state = "sparkle";
+      // Like a trick candle: the embers glow back up and fizz with sparks, faster and faster...
+      embers!.getAnimations().forEach(a => a.cancel());
+      embers!.animate([{ opacity: .3 }, { opacity: 1 }], { duration: FIRE.sparkle, easing: "ease-in", fill: "both" });
+      const start = performance.now();
+      const crackle = () => {
+        if (state !== "sparkle") return;
+        const t = (performance.now() - start) / FIRE.sparkle;
+        if (t >= 1) { relight(); return; }
+        for (let i = 0, n = 1 + Math.round(t * 2.5); i < n; i++) spark(fx!, Math.random() < .3 + t * .35);
+        later(rand(130, 210) * (1 - t * .55), crackle);
+      };
+      crackle();
+    }
+    function relight() {
+      state = "relight";
+      // ...and it catches: the flames rise from the logs (the dark hearth wipes away from the bottom
+      // up) and the room's light comes back.
+      delete aside!.dataset.fire;
+      const wipe: Keyframe[] = [
+        { maskPosition: "0 0%", webkitMaskPosition: "0 0%" },
+        { maskPosition: "0 62.5%", webkitMaskPosition: "0 62.5%" },
+      ];
+      for (const el of [out!, embers!]) el.animate(wipe, { duration: FIRE.reveal, easing: "cubic-bezier(.45, 0, .75, 1)", fill: "forwards" });
+      for (let i = 0; i < 16; i++) later(i * 34, () => spark(fx!, true));
+      later(FIRE.reveal + 80, () => { settle(); arm(); });
+    }
+    function onHit() {
+      if (!live() || target!.hasAttribute("data-snow-santa")) return;
+      douse();
+    }
+    function onChange() {
+      if (!live()) settle();
+      arm();
+    }
+    target.addEventListener("mems:snow-hit", onHit);
+    video.addEventListener("timeupdate", arm);
+    motion.addEventListener("change", onChange);
+    document.addEventListener("visibilitychange", onChange);
+    arm();
+    return () => {
+      settle();
+      for (const name of ["data-snow-fighter", "data-snow-santa", "data-snow-role"]) target.removeAttribute(name);
+      target.removeEventListener("mems:snow-hit", onHit);
+      video.removeEventListener("timeupdate", arm);
+      motion.removeEventListener("change", onChange);
+      document.removeEventListener("visibilitychange", onChange);
+    };
   }, [timeout, expanded]);
 
   function tryStart() {
@@ -284,7 +473,7 @@ function Soundtrack() {
     );
   }
   return (<>
-    <aside className={styles.player} data-winter-video="" data-expanded={expanded} data-still={timeout || undefined}
+    <aside ref={player} className={styles.player} data-winter-video="" data-expanded={expanded} data-still={timeout || undefined}
       aria-label="Christmas soundtrack">
       {/* The living room: the music video plays on the little 1990s TV on its stand. The repaint
           covers the old console TV's slot of the looping room video (its fire, tree lights and window
@@ -295,7 +484,17 @@ function Soundtrack() {
           disablePictureInPicture disableRemotePlayback tabIndex={-1} />
         <i className={styles.repaint} />
         <i className={styles.vcrClock} />
+        {/* The fire's warm light on the room, the put-out hearth (dark logs, last embers, smoke),
+            the steam and sparks, and the invisible snowball target over the firebox. */}
+        <i className={styles.fireGlow}><i /></i>
+        <i ref={hearthOut} className={styles.hearthOut} />
+        <i ref={hearthEmbers} className={styles.hearthEmbers} />
+        <span className={styles.smoke}><i /><i /><i /></span>
+        <span ref={fireFx} className={styles.fireFx} />
+        <i ref={fireTarget} className={styles.fireTarget} />
       </span>
+      {/* With the fire out the room dims a little (the TV's glow stays bright). */}
+      <i className={styles.roomDim} aria-hidden="true" />
       <iframe id={frameId} ref={frame} title="Christmas Saves the Year by Twenty One Pilots, official music video"
         allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
         referrerPolicy="strict-origin-when-cross-origin" />

@@ -150,6 +150,120 @@
   box-shadow: inset 0 0 5px rgb(0 0 0 / .65);
 }
 .player[data-expanded="true"] .tvGlass { display: none; }
+
+/* ---- The fire you can put out with snowballs (WinterMusicPlayer's FIRE). In room px: the firebox
+   opening is (577.5, 111) to (656, 181); the hearth art covers (575, 107, 84 x 76). ---- */
+/* The fire's warm light on the bricks and walls, flickering; it fades down while the fire is out. */
+.fireGlow {
+  position: absolute;
+  left: 377px;
+  top: -13px;
+  width: 480px;
+  height: 320px;
+  mix-blend-mode: soft-light;
+  transition: opacity .9s ease-out;
+}
+.fireGlow i {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(closest-side, rgb(255 165 80 / .5), rgb(255 130 50 / .2) 55%, transparent);
+  animation: fireFlicker 3.1s ease-in-out infinite;
+}
+@keyframes fireFlicker {
+  0%, 100% { opacity: .9; }
+  13% { opacity: 1; }
+  27% { opacity: .82; }
+  41% { opacity: .97; }
+  58% { opacity: .86; }
+  74% { opacity: 1; }
+  88% { opacity: .84; }
+}
+.player[data-fire="out"] .fireGlow { opacity: 0; }
+.player:is([data-fire="out"], [data-still]) .fireGlow i { animation-play-state: paused; }
+/* The put-out hearth: soot-dark firebox and charred logs, with the last embers glowing on top. The
+   mask (three times their height, opaque top third) lets the flames rise back from the bottom up
+   when it slides (the script animates mask-position from 0 to 62.5%). */
+.hearthOut, .hearthEmbers {
+  position: absolute;
+  left: 575px;
+  top: 107px;
+  width: 84px;
+  height: 76px;
+  opacity: 0;
+  -webkit-mask: linear-gradient(#000 0 33.34%, transparent 41.67%) 0 0 / 100% 300% no-repeat;
+  mask: linear-gradient(#000 0 33.34%, transparent 41.67%) 0 0 / 100% 300% no-repeat;
+}
+.hearthOut { background: url("/images/winter/kit/living-room/hearth-out.webp") 0 0 / 100% 100% no-repeat; }
+.hearthEmbers { background: url("/images/winter/kit/living-room/hearth-embers.webp") 0 0 / 100% 100% no-repeat; mix-blend-mode: screen; }
+/* Smoke curls up off the logs while the fire is out. */
+.smoke {
+  position: absolute;
+  left: 597px;
+  top: 116px;
+  width: 40px;
+  height: 46px;
+  opacity: 0;
+  transition: opacity .5s ease-out;
+}
+.player[data-fire="out"] .smoke { opacity: 1; transition: opacity 1.2s ease-in .45s; }
+.smoke i {
+  position: absolute;
+  bottom: 0;
+  width: 12px;
+  height: 26px;
+  opacity: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 64'%3E%3Cpath d='M16 62 C7 52 23 43 14 32 C7 23 21 15 15 3' stroke='%238f8983' stroke-width='7' stroke-linecap='round' fill='none' opacity='.6'/%3E%3Cpath d='M16 62 C7 52 23 43 14 32 C7 23 21 15 15 3' stroke='%23c9c4be' stroke-width='2.5' stroke-linecap='round' fill='none' opacity='.35'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  animation: smokeRise 2.6s ease-out infinite;
+  animation-play-state: paused;
+}
+.smoke i:nth-child(1) { left: 6px; }
+.smoke i:nth-child(2) { left: 16px; animation-delay: -.9s; }
+.smoke i:nth-child(3) { left: 25px; animation-delay: -1.7s; }
+.player[data-fire="out"] .smoke i { animation-play-state: running; }
+@keyframes smokeRise {
+  0% { transform: translate(0, 6px) scale(.7, .8); opacity: 0; }
+  25% { opacity: .8; }
+  100% { transform: translate(5px, -34px) scale(1.35, 1.2); opacity: 0; }
+}
+/* Steam puffs, sparks and the hiss (made and removed by the script). */
+.fireFx { position: absolute; left: 575px; top: 107px; width: 84px; height: 76px; }
+.puff, .spark { position: absolute; display: block; will-change: transform, opacity; }
+.puff {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 36'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.42' cy='.34' r='.72'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='.55' stop-color='%23f1f4f7'/%3E%3Cstop offset='1' stop-color='%23b9c4cf'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cg fill='url(%23g)'%3E%3Ccircle cx='14' cy='21' r='10'/%3E%3Ccircle cx='24' cy='14' r='12'/%3E%3Ccircle cx='35' cy='20' r='10'/%3E%3Cellipse cx='24' cy='25' rx='18' ry='9'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+.spark {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='6.5' fill='%23ffb43c' opacity='.38'/%3E%3Cpath d='M10 0.5 11.5 8.5 19.5 10 11.5 11.5 10 19.5 8.5 11.5 0.5 10 8.5 8.5Z' fill='%23fff3b0'/%3E%3Ccircle cx='10' cy='10' r='2.2' fill='%23fff'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+.hiss {
+  position: absolute;
+  right: calc(100% - 6px);
+  top: 2px;
+  width: 80px;
+  height: 29.33px;
+  background: url("/images/winter/kit/living-room/hiss.webp") center / 100% 100% no-repeat;
+  transform-origin: 80% 70%;
+}
+/* The target: clickable only while the fight can hit it (the script sets the snow attributes). */
+.fireTarget { position: absolute; left: 579px; top: 117px; width: 76px; height: 64px; border-radius: 10px 10px 3px 3px; }
+.fireTarget:is([data-snow-fighter], [data-snow-santa]) { pointer-events: auto; }
+/* The whole banner dims a little (most around the cold fireplace); the TV stays bright above it. */
+.roomDim {
+  position: absolute;
+  z-index: 0;
+  left: -2400px;
+  top: -600px;
+  width: 5000px;
+  height: 1400px;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(560px 320px at 2739.75px 715.75px, rgb(16 9 26 / .4), rgb(16 9 26 / .26) 55%, rgb(16 9 26 / .2));
+  transition: opacity .8s ease-in-out;
+}
+.player[data-fire="out"] .roomDim { opacity: 1; transition: opacity 1.1s ease-out .12s; }
+.player[data-expanded="true"] .roomDim { display: none; }
+/* The fridge beside the fireplace dims along with the room. */
+.stage > :not(.player) { transition: filter .9s ease-in-out; }
+.stage:has(> .player[data-fire="out"]) > :not(.player) { filter: brightness(.8) saturate(.92); }
 .controls { z-index: 2; }
 .player[data-expanded="true"] .room { display: none; }
 /* The room sits flush with the bottom of the banner (it reaches 56.25px below the video). */
@@ -188,7 +302,11 @@
     transform-origin: 50% 100%;
   }
 }
-@media (prefers-reduced-motion: reduce) { .roomVideo { display: none; } .vcrClock { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .roomVideo { display: none; }
+  .vcrClock, .fireGlow i { animation: none; }
+  .smoke { display: none; }
+}
 @media (max-width: 600px) {
   .stage:has(.player) :global([data-slot]) { width: min(20vw, 70px); }
   .stage:has(.player) :global([data-slot="0"]) { left: 0; }
