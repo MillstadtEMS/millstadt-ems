@@ -12,22 +12,29 @@
   user-select: none;
   -webkit-user-select: none;
 }
-/* Phones draw the whole room at 62%: the pull station keeps most of its size so the sign still reads. */
-@media (max-width: 700px) {
-  .station { scale: 1.22; transform-origin: 50% 62%; }
-}
 .art { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
+.artTall { display: none; }
+/* Phones: the crew hang over nearly all of the little room, but always leave a gap between Braeden and
+   Dylan (room x 424-468 on every phone width, the room and the crew both scale with the screen). The
+   tall station stands in it: horn, its sign on end, and the pull station below the chair rail, clear
+   of the TV stand's leg (x 434). */
+@media (max-width: 700px) {
+  .station { left: 432px; top: 27px; width: 36px; height: 138px; }
+  .artWide { display: none; }
+  .artTall { display: block; }
+}
 
 /* ---- The sign ---- */
-.word {
+.word, .wordTall {
   font: 900 7.6px/1 "Arial Black", Arial, Helvetica, sans-serif;
   letter-spacing: .2px;
   fill: #3f0f0d;
   transition: fill .25s ease;
 }
-.station[data-state="armed"] .word { fill: #ff4434; }
+.wordTall { font-size: 12.6px; letter-spacing: 0; }
+.station[data-state="armed"] :is(.word, .wordTall) { fill: #ff4434; }
 .station[data-state="armed"] .words { animation: signBlink 1.35s steps(1, end) infinite; }
-.station:is([data-state="alarm"], [data-state="rescue"]) .word { fill: #ffd25e; }
+.station:is([data-state="alarm"], [data-state="rescue"]) :is(.word, .wordTall) { fill: #ffd25e; }
 .station[data-state="alarm"] .words { animation: signBlink .62s steps(1, end) infinite; }
 @keyframes signBlink {
   0% { opacity: 1; }
@@ -47,6 +54,10 @@
   transition: opacity .3s ease;
 }
 .station[data-state="armed"] .halo { opacity: 1; animation: signBlink 1.35s steps(1, end) infinite; }
+@media (max-width: 700px) {
+  .halo { left: -18px; top: 8px; width: 72px; height: 96px; }
+  .flash { left: -41px; top: -40px; width: 118px; height: 94px; }
+}
 
 /* ---- The horn/strobe ---- */
 .hornWord { font: 900 4.4px/1 Arial, Helvetica, sans-serif; letter-spacing: .3px; fill: #fff6ea; }
@@ -98,12 +109,16 @@
   -webkit-tap-highlight-color: transparent;
 }
 .pull::before { content: ""; position: absolute; inset: -7px -9px; }
+@media (max-width: 700px) {
+  .pull { top: 12px; width: 36px; height: 126px; }
+  .pull::before { inset: -6px -10px; }
+}
 /* The keyboard's way in: hidden until focused, then a little red tag just under the pull station
    (stage px: the station sits 98.75px right of the banner's centre, 34-112px down the room). */
 .keyboardPull {
   position: absolute;
   z-index: 3;
-  left: calc(50% + 98.75px);
+  left: calc(50% + 98.75px + var(--room-shift, 0px));
   top: 116px;
   translate: -50% 0;
   width: 1px;
@@ -132,7 +147,7 @@
   cursor: pointer;
 }
 @media (max-width: 700px) {
-  .keyboardPull { left: calc(50% + 61px); top: auto; bottom: 30px; }
+  .keyboardPull { left: 50%; top: auto; bottom: 6px; }
 }
 
 .station[data-still] :is(.words, .halo, .lens, .flash) { animation: none; }
