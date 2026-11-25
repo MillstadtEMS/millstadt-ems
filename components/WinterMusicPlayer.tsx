@@ -483,6 +483,7 @@ function Soundtrack() {
           poster="/images/winter/kit/living-room/living-room-still.webp" muted loop playsInline preload="auto"
           disablePictureInPicture disableRemotePlayback tabIndex={-1} />
         <i className={styles.repaint} />
+        <i className={styles.lampGlow} />
         <i className={styles.vcrClock} />
         {/* The fire's warm light on the room, the put-out hearth (dark logs, last embers, smoke),
             the steam and sparks, and the invisible snowball target over the firebox. */}

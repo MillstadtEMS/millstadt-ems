@@ -111,6 +111,16 @@
   inset: 0;
   background: url("/images/winter/kit/living-room/tv-corner.webp") 0 0 / 100% 100% no-repeat;
 }
+/* The floor lamp is on: a soft warm pool of light around its shade. */
+.lampGlow {
+  position: absolute;
+  left: 160px;
+  top: -34px;
+  width: 190px;
+  height: 160px;
+  background: radial-gradient(closest-side, rgb(255 226 160 / .5), rgb(255 200 120 / .16) 58%, transparent);
+  mix-blend-mode: soft-light;
+}
 /* The VCR's clock has never been set: 12:00, blinking. */
 .vcrClock {
   position: absolute;
@@ -119,7 +129,8 @@
   width: 22px;
   height: 5.25px;
   background: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 44 10.5%27%3E%3Cpath fill=%27%237dfadb%27 d=%27M12.55 2.7h1.05v2.24h-1.05zM12.55 5.57h1.05v2.24h-1.05zM16.25 1.75h2.9v1.05h-2.9zM19.15 2.7h1.05v2.24h-1.05zM16.25 7.7h2.9v1.05h-2.9zM15.2 5.57h1.05v2.24h-1.05zM16.25 4.72h2.9v1.05h-2.9zM21.4 3.6h1.05v1.05h-1.05zM21.4 6.2h1.05v1.05h-1.05zM24.7 1.75h2.9v1.05h-2.9zM27.6 2.7h1.05v2.24h-1.05zM27.6 5.57h1.05v2.24h-1.05zM24.7 7.7h2.9v1.05h-2.9zM23.65 5.57h1.05v2.24h-1.05zM23.65 2.7h1.05v2.24h-1.05zM31.3 1.75h2.9v1.05h-2.9zM34.2 2.7h1.05v2.24h-1.05zM34.2 5.57h1.05v2.24h-1.05zM31.3 7.7h2.9v1.05h-2.9zM30.25 5.57h1.05v2.24h-1.05zM30.25 2.7h1.05v2.24h-1.05z%27/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-  filter: drop-shadow(0 0 1px #4cf2c4);
+  opacity: .9;
+  filter: drop-shadow(0 0 .6px rgb(76 242 196 / .75));
   animation: vcrBlink 1.6s steps(1, end) infinite;
 }
 @keyframes vcrBlink { 50% { opacity: 0; } }
@@ -193,7 +204,12 @@
   -webkit-mask: linear-gradient(#000 0 33.34%, transparent 41.67%) 0 0 / 100% 300% no-repeat;
   mask: linear-gradient(#000 0 33.34%, transparent 41.67%) 0 0 / 100% 300% no-repeat;
 }
-.hearthOut { background: url("/images/winter/kit/living-room/hearth-out.webp") 0 0 / 100% 100% no-repeat; }
+/* (The hiss lettering rides along as an unseen second layer, so it's loaded before the first hit.) */
+.hearthOut {
+  background:
+    url("/images/winter/kit/living-room/hearth-out.webp") 0 0 / 100% 100% no-repeat,
+    url("/images/winter/kit/living-room/hiss.webp") -999px 0 / 1px 1px no-repeat;
+}
 .hearthEmbers { background: url("/images/winter/kit/living-room/hearth-embers.webp") 0 0 / 100% 100% no-repeat; mix-blend-mode: screen; }
 /* Smoke curls up off the logs while the fire is out. */
 .smoke {
