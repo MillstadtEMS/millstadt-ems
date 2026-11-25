@@ -172,14 +172,21 @@ export default function WinterPullStation() {
         <text x="28" y="72.3" textAnchor="middle" className={styles.stationWordSmall}>ALARM</text>
         <path d="M16.2 44.5c.2-1.6 1-2.4 2.6-2.6" stroke="#fff" strokeWidth=".7" opacity=".55" fill="none" strokeLinecap="round" />
       </svg>
-      {lit && <button type="button" className={styles.pull} onClick={pull}
-        onPointerEnter={() => void loadRescue()} onFocus={() => void loadRescue()}
-        aria-label="Pull for emergency: the fire alarm calls Ladder 3919, and Santa rescues the crew from the Christmas lights" />}
+      {/* The pointer's target (the room picture is decorative and hidden from assistive tech; the
+          keyboard and screen readers use the button beside the banner below). */}
+      {lit && <button type="button" className={styles.pull} onClick={pull} tabIndex={-1} aria-hidden="true"
+        onPointerEnter={() => void loadRescue()} />}
     </span>
   );
 
   return (<>
     <span ref={marker} hidden />
+    {/* data-snow-own-click: the snowball fight lets this one button work (it holds page buttons
+        until a Time Out, and the alarm is only live while the fight is on). */}
+    {lit && room && <button type="button" className={styles.keyboardPull} onClick={pull} onFocus={() => void loadRescue()} data-snow-own-click=""
+      aria-label="Pull for emergency: the fire alarm calls Ladder 3919, and Santa rescues the crew from the Christmas lights">
+      Pull the fire alarm
+    </button>}
     {room && createPortal(station, room)}
     {body && createPortal(<span role="status" className={styles.announcement}>{status}</span>, body)}
     {pulled && <WinterLadderRescue still={reduced || forceStill} onPhase={phase} />}

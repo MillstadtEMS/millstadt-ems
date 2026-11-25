@@ -98,7 +98,42 @@
   -webkit-tap-highlight-color: transparent;
 }
 .pull::before { content: ""; position: absolute; inset: -7px -9px; }
-.pull:focus-visible { outline: 2px dashed #ffe7a3; outline-offset: 2px; }
+/* The keyboard's way in: hidden until focused, then a little red tag just under the pull station
+   (stage px: the station sits 98.75px right of the banner's centre, 34-112px down the room). */
+.keyboardPull {
+  position: absolute;
+  z-index: 3;
+  left: calc(50% + 98.75px);
+  top: 116px;
+  translate: -50% 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.keyboardPull:focus-visible {
+  width: auto;
+  height: auto;
+  padding: .3em .75em;
+  overflow: visible;
+  clip-path: none;
+  border: 2px solid #ffe7a3;
+  border-radius: 999px;
+  background: #b3140f;
+  color: #fff6ea;
+  font: 800 12px/1.2 system-ui, sans-serif;
+  letter-spacing: .02em;
+  box-shadow: 0 3px 10px rgb(0 0 0 / .5);
+  outline: 2px solid #1d4735;
+  outline-offset: 1px;
+  cursor: pointer;
+}
+@media (max-width: 700px) {
+  .keyboardPull { left: calc(50% + 61px); top: auto; bottom: 30px; }
+}
 
 .station[data-still] :is(.words, .halo, .lens, .flash) { animation: none; }
 .station[data-still][data-strobe] .lens { opacity: 1; }

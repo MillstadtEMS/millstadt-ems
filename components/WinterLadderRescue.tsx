@@ -446,9 +446,8 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
 
     // ---- The timeline ----
     type Phase = { name: string; t0: number; run: (t: number) => boolean };
-    let clock = 0, last = performance.now(), frame = 0, phase: Phase | null = null, finished = false, step = 16;
+    let clock = 0, last = performance.now(), frame = 0, phase: Phase | null = null, finished = false, lastStep = 16;
     let roomVideo: HTMLVideoElement | null = null;
-    const dt = () => step;
     const queue: Array<() => Phase | null> = [];
     const begin = (name: string, run: (t: number) => boolean): Phase => ({ name, t0: clock, run });
 
@@ -552,7 +551,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
         const endY = lerp(tip.y, waist, fall) + (u >= 1 ? Math.sin((t - 520) / 90) * Math.exp(-(t - 520) / 160) * 6 : 0);
         rope = { top: tip, end: { x: tip.x, y: Math.max(tip.y, endY) }, tail: 0, swing: t / 300, hand: true };
         // The rope lands beside them: a gulp (the scared face) and a beat before they dare let go.
-        if (t >= 560 && t - dt() < 560) {
+        if (t >= 560 && t - lastStep < 560) {
           const el = figure();
           if (el && WAVES[m.chief]) el.dataset.startled = "";
           else el?.style.setProperty("--panic", "1");
@@ -664,6 +663,11 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
     // ---- The still sequence (reduced motion) ----
     function runStill() {
       const timers: number[] = [];
+      // Each still waits while Time Out is on (or the tab is hidden), then carries on.
+      const later = (ms: number, run: () => void) => {
+        const go = () => { if (isSnowballTimeout() || document.hidden) timers.push(window.setTimeout(go, 400)); else run(); };
+        timers.push(window.setTimeout(go, ms));
+      };
       const plan0 = planNext(layout, hangingCrew(), Infinity, 1);
       if (!plan0) { finishRescue(); phaseRef.current("done"); return () => {}; }
       truckX = plan0.px - BODY.pivot[0] * layout.S;
@@ -680,21 +684,21 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
         const plan = planNext(layout, hangingCrew(), pivotX(), lad.c < 0 ? -1 : 1);
         if (!plan) {
           rope = null; lad = { a: 0, d: 0, c: 1 }; santaMode = "deck"; draw();
-          timers.push(window.setTimeout(() => { finishRescue(); phaseRef.current("done"); }, 1400));
+          later(1400, () => { finishRescue(); phaseRef.current("done"); });
           return;
         }
         truckX = plan.px - BODY.pivot[0] * layout.S;
         show(plan);
         say(SANTA_LINES[rescued % SANTA_LINES.length], santaHead, keepClear(plan.member), 1300);
-        timers.push(window.setTimeout(() => {
+        later(1300, () => {
           const handle = rescueChief(plan.member.chief);
           const actor: Actor = { chief: plan.member.chief, member: plan.member, handle, landed: 0, el: null, x: plan.member.x, top: 0, height: plan.member.height, width: plan.member.width, leave: Infinity, gone: false };
           actors.push(actor);
           land(actor, 0);
           rescued++;
           rope = null; draw();
-          timers.push(window.setTimeout(() => { if (actor.el) actor.el.style.visibility = "hidden"; actor.gone = true; step(); }, 1500));
-        }, 1300));
+          later(1500, () => { if (actor.el) actor.el.style.visibility = "hidden"; actor.gone = true; step(); });
+        });
       };
       draw();
       step();
@@ -709,7 +713,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
       last = now;
       if (paused || document.hidden) return;
       clock += dt;
-      step = dt;
+      lastStep = dt;
       // The living room's own Santa stays out of the chimney while this Santa is out.
       if (!roomVideo?.isConnected) roomVideo = document.querySelector<HTMLVideoElement>("[data-living-room] video");
       const video = roomVideo;
@@ -732,8 +736,11 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
       sceneEl!.dataset.paused = paused ? "true" : "false";
       bubbles.forEach(b => { if (paused) b.anim.pause(); else b.anim.play(); });
     }
+    // A new screen size (a phone turned, say) keeps the turntable where it was.
     function resize() {
+      const pivot = pivotX();
       layout = measureLayout();
+      truckX = pivot - BODY.pivot[0] * layout.S;
       sizeTo(layout);
       draw();
     }
