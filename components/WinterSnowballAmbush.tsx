@@ -385,7 +385,8 @@ function runCast(env: Env) {
   // (asked from 1.7 s ahead, so a backflip already under way lands first).
   const footprint = (box: Box, cut: number): LaneRect => ({ left: box.x - box.w * .14, right: box.x + box.w * 1.14, top: box.y, bottom: box.y + box.h - cut });
   const lane = trackLaneOccupants({
-    list: () => [...actors.values()].map(a => ({ id: a.id, rect: footprint(a.box, a.cut), exitMs: 560, leaving: a.phase === "retreat" || a.phase === "bail" })),
+    // (Someone snowed in takes longer to go: she sinks into her heap, then it settles away.)
+    list: () => [...actors.values()].map(a => ({ id: a.id, rect: footprint(a.box, a.cut), exitMs: a.bury > 0 ? 940 : 560, leaving: a.phase === "retreat" || a.phase === "bail" })),
     leave: (id, urgent) => { const actor = actors.get(Number(id)); if (actor) makeWay(actor, urgent); },
     grace: 1700,
   });
