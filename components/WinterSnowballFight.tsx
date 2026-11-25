@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 import { useSnowballTimeout, isSnowballTimeout } from "@/lib/seasonal/snowballTimeout";
-import { flinch, throwSnowball, visitorThrow, windUp, type Point } from "@/lib/seasonal/snowballFlight";
+import { flinch, throwSnowball, visitorThrow, windUp, type Point, type WindUp } from "@/lib/seasonal/snowballFlight";
 
 // One big snowball fight across the site each winter. Any element tagged data-snow-fighter can
 // throw and be hit: the parade crowd, Snoopy and the Grinch, carolers, skaters, the snowbank
@@ -105,6 +105,8 @@ export default function WinterSnowballFight() {
     let timer: number | undefined;
     let disposed = false;
     let busy = false;
+    /** The wind-up in progress (a Time Out makes its thrower drop the snowball at once). */
+    let winding: WindUp | null = null;
     const preview = previewThrower();
     const schedule = (ms?: number) => {
       window.clearTimeout(timer);
@@ -132,8 +134,9 @@ export default function WinterSnowballFight() {
        */
       const windUpAt = async (to: Point): Promise<{ at: Point; size?: number } | null> => {
         const painted = paintedThrow(thrower);
-        const motion = windUp(thrower, to.x >= hand.x ? 1 : -1, 1, { hold: !painted });
+        const motion = winding = windUp(thrower, to.x >= hand.x ? 1 : -1, 1, { hold: !painted });
         await motion.release;
+        winding = null;
         if (disposed || isSnowballTimeout()) { motion.drop(); return null; }
         return painted ? { at: hand } : motion.held();
       };
@@ -162,7 +165,7 @@ export default function WinterSnowballFight() {
     const onVisibility = () => { if (document.hidden) window.clearTimeout(timer); else schedule(rand(1200, 2600)); };
     schedule(rand(2200, 3800));
     document.addEventListener("visibilitychange", onVisibility);
-    return () => { disposed = true; window.clearTimeout(timer); document.removeEventListener("visibilitychange", onVisibility); };
+    return () => { disposed = true; winding?.drop(); window.clearTimeout(timer); document.removeEventListener("visibilitychange", onVisibility); };
   }, [winter, timeout]);
 
   // Visitors fight back. While the fight is on, the page is a snowball range: a click anywhere in
