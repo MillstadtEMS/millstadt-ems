@@ -117,7 +117,7 @@ function planPass(id: number): Plan {
 /** A dialog or the open site menu sits over the sky: the turkey waits rather than fly unseen. */
 function skyIsCovered() {
   return document.querySelector(
-    'dialog[open],[aria-modal="true"],[aria-controls="site-navigation-panel"][aria-expanded="true"]',
+    'dialog[open],[aria-modal="true"],[aria-controls="site-navigation-panel"][aria-expanded="true"],[data-ladder-rescue]',
   ) !== null;
 }
 

@@ -12,6 +12,10 @@
   visibility: hidden;
 }
 .scene[data-ready][data-placed] { visibility: visible; }
+/* Until the art is measured and placed, nothing in it may show: the posed Santa and the plain ladder
+   base set visibility:visible themselves, which a hidden parent can't overrule, but opacity can
+   (otherwise both flash at natural size in the top-left corner when the alarm is pulled). */
+.scene:not([data-ready][data-placed]) { opacity: 0; }
 .layer { position: absolute; display: block; max-width: none; pointer-events: none; }
 
 /* Ladder 3919 (sized in art px times --s by the script). */
@@ -42,9 +46,9 @@
 /* Santa, anchored at the foot he stands on (sized by --sigma); one pose shows at a time. */
 .santa { position: absolute; left: 0; top: 0; width: 0; height: 0; will-change: transform; }
 .santa img { visibility: hidden; filter: drop-shadow(1px 3px 2px rgb(5 10 20 / .45)); }
-.santa[data-pose="climb1"] img[data-pose="climb1"],
-.santa[data-pose="climb2"] img[data-pose="climb2"],
-.santa[data-pose="stand"] img[data-pose="stand"] { visibility: visible; }
+.scene[data-ready][data-placed] .santa[data-pose="climb1"] img[data-pose="climb1"],
+.scene[data-ready][data-placed] .santa[data-pose="climb2"] img[data-pose="climb2"],
+.scene[data-ready][data-placed] .santa[data-pose="stand"] img[data-pose="stand"] { visibility: visible; }
 
 /* The rope: a dark edge under a manila core. */
 .ropes { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }

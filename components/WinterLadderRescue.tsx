@@ -713,7 +713,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
   const px = (v: number) => `calc(${v}px * var(--s))`;
   const sx = (v: number) => `calc(${v}px * var(--sigma))`;
   return createPortal(<>
-    <div ref={scene} className={styles.scene} data-ready={ready || undefined} aria-hidden="true">
+    <div ref={scene} className={styles.scene} data-ready={ready || undefined} data-ladder-rescue="" aria-hidden="true">
       <div ref={truck} className={styles.truck} style={{ width: px(BODY.w), height: px(BODY.h) }}>
         <i className={styles.shadow} />
         <div ref={ladder} className={styles.ladder} style={{ left: px(BODY.pivot[0]), top: px(BODY.pivot[1]) }}>
@@ -724,7 +724,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
           {(["plain", "mirror"] as const).map(kind => (
             <Image key={kind} data-base={kind} className={styles.layer} src={`${ART}/${kind === "plain" ? "ladder-base" : "ladder-base-mirror"}.webp`} alt=""
               width={538} height={246} unoptimized draggable={false}
-              style={{ left: px(LAD.base - LAD.pivot[0]), top: px(-LAD.pivot[1]), width: px(538), height: px(246), visibility: kind === "plain" ? "visible" : "hidden" }} />
+              style={{ left: px(LAD.base - LAD.pivot[0]), top: px(-LAD.pivot[1]), width: px(538), height: px(246), visibility: ready && kind === "plain" ? "visible" : "hidden" }} />
           ))}
         </div>
         <Image className={styles.layer} src={`${ART}/truck-body.webp`} alt="" width={BODY.w} height={BODY.h} unoptimized draggable={false}
