@@ -540,7 +540,7 @@ function WinterDriveBy() {
   }
 
   return (
-    <div ref={lane} aria-hidden="true" className={styles.winterLane}
+    <div ref={lane} aria-hidden="true" className={styles.winterLane} data-lane=""
       data-armed={pass && !timeout ? "true" : undefined}
       data-paused={timeout ? "true" : undefined}
       onPointerDown={down}
@@ -801,32 +801,67 @@ const MYLIE_CHAOS = {
 };
 
 // Gabby on the roof: a sprite sheet of 36 frames, each 240 x 270 at the 720 px roof-ride animation's
-// scale with her ground point (between the boots) at 120, 250. Frames 0-31 are her dance (sway, arm
-// pumps and a kick on the fourth beat), 32-34 knocked off with a mad face, 35 her mad pose.
+// scale (drawn at 1.4x that, so she stays crisp where she rides bigger) with her ground point
+// (between the boots) at 120, 250. Frames 0-31 are her dance (a fist pump with a knee bounce, a wave
+// with a hip sway, a pump swaying side to side, a kick and its landing), 32-34 knocked off with a mad
+// face (the hit, then flailing arms and kicking legs), 35 her mad pose.
 const GABBY = {
-  sheet: `${RIDERS}/gabby-roof.webp`,
+  sheet: `${RIDERS}/gabby-roof-dance.webp`,
   frames: 36,
+  px: 1.4,
   frame: [0, 0, 240, 270] as Box,
   hit: [78, 50, 166, 254] as Box,
 };
-/** Seconds into her knocked-off gag (4.6 s in the CSS) when she's back on the roof grumbling. */
-const GRUMBLE_AT = 4.6 * .52;
-type RoofSpot = { box: Box; clip: string; dir: 1 | -1; bubble: "left" | "right" };
-/** Gabby's spot on a roof ride (its 874 px still's pixels): where she stands, the roof's top edge she
- *  falls behind (right to left), which way she tumbles and the side her grumble goes. */
-function roofSpot(at: readonly [number, number], edge: ReadonlyArray<readonly [number, number]>, dir: 1 | -1, bubble: "left" | "right"): RoofSpot {
-  const k = 874 / 720;
-  const box: Box = [at[0] - 120 * k, at[1] - 250 * k, at[0] + 120 * k, at[1] + 20 * k];
+/** Her knocked-off gag (4.6 s in the CSS): when her grumble shows, and when it's gone. */
+const GAG_SECONDS = 4.6;
+const GRUMBLE = [GAG_SECONDS * .52, GAG_SECONDS * .9] as const;
+type Pts = ReadonlyArray<readonly [number, number]>;
+type RoofSpot = {
+  /** Her sprite frame in the roof ride's 874 px still's pixels, and its scale against the riders' 720 px frames. */
+  box: Box; scale: number;
+  /** What shows of her (a clip-path in % of the box): while she dances and climbs back on, and while she's knocked off. */
+  clip: string; fallClip: string;
+  /** "back": she drops behind the roof's back edge; "off": she topples over the far corner and down behind the cab. */
+  fall: "back" | "off";
+  /** Mirrored (so her kick goes out over open air), and drawn behind the roof-ride art (the riders nearer
+   *  the viewer stay in front of her). */
+  mirror: boolean; under: boolean;
+  /** Where she peeks back up before hopping on (a fraction of her box width), and her grumble's side. */
+  peek: number; bubble: "left" | "right";
+};
+/** A clip-path showing everything above `edge` (points right to left, in still px), carried level past its ends. */
+function clipAbove(box: Box, edge: Pts) {
   const w = box[2] - box[0], h = box[3] - box[1];
-  const far = 2 * w, high = 3 * h;
+  const far = 4 * w, high = 4 * h;
   const pts = [[box[0] - far, box[1] - high], [box[2] + far, box[1] - high], [box[2] + far, edge[0][1]], ...edge, [box[0] - far, edge[edge.length - 1][1]]] as const;
-  return { box, clip: polygonPct(pts.map(([x, y]) => [x - box[0], y - box[1]] as const), w, h), dir, bubble };
+  return polygonPct(pts.map(([x, y]) => [x - box[0], y - box[1]] as const), w, h);
+}
+/** Gabby's spot on a roof ride: her ground point and scale, and the edges that hide her. */
+function roofSpot(at: readonly [number, number], scale: number, o: Omit<RoofSpot, "box" | "scale" | "clip" | "fallClip" | "mirror" | "under" | "peek">
+  & { edge: Pts; fallEdge?: Pts; mirror?: boolean; under?: boolean; peek?: number }): RoofSpot {
+  const k = 874 / 720 * scale;
+  const box: Box = [at[0] - 120 * k, at[1] - 250 * k, at[0] + 120 * k, at[1] + 20 * k];
+  return {
+    box, scale, clip: clipAbove(box, o.edge), fallClip: clipAbove(box, o.fallEdge ?? o.edge),
+    fall: o.fall, mirror: !!o.mirror, under: !!o.under, peek: o.peek ?? 0, bubble: o.bubble,
+  };
 }
 const GABBY_ROOF: Record<1 | 2, RoofSpot> = {
-  // At the back of the roof: she tumbles forward, staying over the box.
-  1: roofSpot([694.4, 269.5], [[745, 293], [700, 284], [650, 274], [600, 264], [540, 252], [455, 242]], -1, "right"),
-  // At the front corner: she tumbles back over the box, away from the open air above the cab.
-  2: roofSpot([239.1, 263.4], [[745, 282], [455, 242], [340, 255], [270, 261], [230, 266], [205, 270]], 1, "left"),
+  // Roof 1: at the back of the roof beside the three standing riders and at their scale, boots on the
+  // roof's edge. Knocked off, she drops behind the roof's back edge (the clip).
+  1: roofSpot([694.4, 278], 1, {
+    edge: [[745, 293], [700, 284], [650, 274], [600, 264], [540, 252], [455, 242]],
+    fall: "back", bubble: "right",
+  }),
+  // Roof 2: the two riders up front are painted much bigger, so she stands on the box's far front
+  // corner at their scale, just behind the nearer rider's raised hand (drawn under the art, so the
+  // box and the riders cover her). Mirrored, her kick goes out over the corner. Knocked off, she
+  // topples over the corner and drops out of sight behind the cab; she peeks back up clear of her
+  // neighbour's elbow, then hops back onto her corner.
+  2: roofSpot([256, 264], 1.4, {
+    edge: [[874, 520], [212, 520], [212, 266]], fallEdge: [[874, 505], [0, 505]],
+    fall: "off", mirror: true, under: true, peek: -.127, bubble: "left",
+  }),
 };
 // Santa's reindeer sleigh (the kit's 680 x 268 art, measured here in its 1235 x 487 source pixels).
 const REINDEER = {
@@ -1039,50 +1074,84 @@ function MylieInChaos({ frame }: { frame: Box }) {
   );
 }
 
-/** Gabby dancing on the roof among the crew (frames 0-31 of her sprite sheet, stepped in time with
- *  the roof ride's own 70 ms frames). A snowball knocks her off: she flails and tumbles behind the
- *  roof, a beat later rises back up from behind it glaring, hops on, fumes with a grumble and then
- *  dances again. One CSS timeline drives the whole gag, so Time Out freezes it where it is; she can't
- *  be hit again until she's back. */
+/** Gabby dancing on the roof among the crew (frames 0-31 of her sprite sheet, stepped at the roof
+ *  ride's own 70 ms a frame). A snowball knocks her off: she flails and topples off the roof, a beat
+ *  later peeks back up glaring with an anger mark, hops on, fumes with a grumble and then dances again.
+ *  One CSS timeline drives the whole gag, so Time Out freezes it where it is; she can't be hit again
+ *  until she's back. Her grumble is kept fully on screen for as long as it shows. */
 function RoofGabby({ version, knocks, onBack }: { version: 1 | 2; knocks: number; onBack: () => void }) {
   const spot = GABBY_ROOF[version];
   const [settled, setSettled] = useState(0);
   const root = useRef<HTMLSpanElement>(null);
   const fume = useRef<HTMLSpanElement>(null);
+  const grumble = useRef<HTMLElement>(null);
   const gag = knocks > settled;
 
-  // Her grumble goes on the side that will be on screen when it shows, after the truck has driven on
-  // for a couple of seconds (near the left edge it swaps to her right).
   useEffect(() => {
-    const box = root.current, bubble = fume.current;
-    if (!gag || !box || !bubble) return;
+    const box = root.current, layer = fume.current, bubble = grumble.current;
+    if (!gag || !box || !layer || !bubble) return;
+    // Her grumble goes on the side that stays on screen for its whole hold, judged by where the truck
+    // will have carried her by the time it appears and by the time it's gone.
     const convoy = box.closest<HTMLElement>("[data-drive]");
     const run = driveRun(convoy);
     const speed = convoy && !convoy.dataset.stuck && run?.playState === "running"
       ? (window.innerWidth + convoy.offsetWidth + 106) / ((Number(run.effect?.getTiming().duration) || 19_200) / 1000) * run.playbackRate : 0;
-    const r = box.getBoundingClientRect(), width = bubble.querySelector("b")?.offsetWidth ?? 70, shift = speed * GRUMBLE_AT;
-    const right = r.left + r.width * .6 + width - shift <= window.innerWidth - 6;
-    const left = r.right - r.width * .6 - width - shift >= 6;
-    bubble.dataset.side = spot.bubble === "right" ? (right || !left ? "right" : "left") : (left || !right ? "left" : "right");
+    const r = box.getBoundingClientRect(), vw = window.innerWidth;
+    const head = r.left + r.width / 2, gap = r.width * .1, width = bubble.offsetWidth;
+    const spill = (side: "left" | "right") => {
+      // How far the bubble would stick out past either screen edge (8 px margin), at the start and end of its hold.
+      const at = (t: number) => {
+        const x = head - speed * t, left = side === "right" ? x + gap : x - gap - width;
+        return Math.max(0, 8 - left) + Math.max(0, left + width - (vw - 8));
+      };
+      return Math.max(at(GRUMBLE[0]), at(GRUMBLE[1]));
+    };
+    const other = spot.bubble === "right" ? "left" : "right";
+    layer.dataset.side = spill(spot.bubble) <= spill(other) ? spot.bubble : other;
+    // And whatever the screen does meanwhile (a narrow phone, a resize, the truck stopping or going on),
+    // it's nudged back inside the screen and the lane every frame while it shows.
+    const lane = box.closest<HTMLElement>("[data-lane]");
+    let raf = 0;
+    const keep = () => {
+      const f = layer.getBoundingClientRect(), top = lane?.getBoundingClientRect().top ?? -Infinity;
+      const left = f.left + bubble.offsetLeft, right = left + bubble.offsetWidth, y = f.top + bubble.offsetTop;
+      const dx = left < 8 ? 8 - left : right > window.innerWidth - 8 ? window.innerWidth - 8 - right : 0;
+      const dy = y < top + 3 ? top + 3 - y : 0;
+      bubble.style.translate = dx || dy ? `${dx.toFixed(1)}px ${dy.toFixed(1)}px` : "";
+      raf = requestAnimationFrame(keep);
+    };
+    keep();
+    return () => cancelAnimationFrame(raf);
   }, [gag, knocks, spot.bubble]);
 
+  const hit: Box = spot.mirror ? [240 - GABBY.hit[2], GABBY.hit[1], 240 - GABBY.hit[0], GABBY.hit[3]] : GABBY.hit;
   return (
-    <span ref={root} className={styles.gabbyRoof} data-gag={gag ? "true" : undefined}
-      style={{ ...place(spot.box, ROOF.art), "--dir": spot.dir } as CSSProperties}>
-      <span className={styles.gabbyClip} style={{ clipPath: spot.clip }}>
+    <span ref={root} className={styles.gabbyRoof} data-gag={gag ? "true" : undefined} data-fall={spot.fall}
+      data-mirror={spot.mirror ? "true" : undefined}
+      style={{ ...place(spot.box, ROOF.art), "--clip": spot.clip, "--fall-clip": spot.fallClip, "--peek-x": pct(spot.peek) } as CSSProperties}>
+      {/* Her contact shadow on the roof: it shrinks as she's knocked up and off, and lands with her. */}
+      <span key={`shadow-${knocks}`} className={styles.gabbyShadow} />
+      <span key={`clip-${knocks}`} className={styles.gabbyClip}>
         <span key={knocks} className={styles.gabbyMover}
           onAnimationEnd={(event) => { if (event.target === event.currentTarget && gag) { setSettled(knocks); onBack(); } }}>
-          <Image className={styles.gabbySheet} src={GABBY.sheet} alt="" width={240 * GABBY.frames} height={270} unoptimized
-            loading="eager" draggable={false} />
+          <span className={styles.gabbyFlip}>
+            <Image className={styles.gabbySheet} src={GABBY.sheet} alt="" width={Math.round(240 * GABBY.px) * GABBY.frames}
+              height={Math.round(270 * GABBY.px)} unoptimized loading="eager" draggable={false} />
+          </span>
+          {gag && (
+            <svg className={styles.gabbyAnger} viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+              <path d="M17 4 C 17 11, 13 15, 5 16 M23 4 C 23 11, 27 15, 35 16 M17 36 C 17 29, 13 25, 5 24 M23 36 C 23 29, 27 25, 35 24" />
+            </svg>
+          )}
         </span>
       </span>
       {gag && (
         <span key={knocks} ref={fume} className={styles.gabbyFume} data-side={spot.bubble} aria-hidden="true">
           <i /><i /><i />
-          <b className={styles.gabbyGrumble}>#@$%!</b>
+          <b ref={grumble} className={styles.gabbyGrumble}>#@$%!</b>
         </span>
       )}
-      {!gag && <Hit kind="gabby" box={GABBY.hit} frame={GABBY.frame} />}
+      {!gag && <Hit kind="gabby" box={hit} frame={GABBY.frame} />}
     </span>
   );
 }
@@ -1278,6 +1347,10 @@ function ChaosConvoy({ pass, drive, ambulanceRef, sleighRef, snowRef, lit, onArt
 
 function RoofConvoy({ pass, drive, ambulanceRef, sleighRef, snowRef, lit, onArt }: { pass: Pass; drive: DriveProps; ambulanceRef: SpanRef; sleighRef: SpanRef; snowRef: SpanRef; lit: boolean; onArt: () => void }) {
   const stage = VARIANTS.roof.stage;
+  // Gabby dancing on the roof with them; where riders nearer the viewer stand beside her she's drawn
+  // under the art, so they stay in front (the drift's roof cap settles over her boots too).
+  const gabby = <RoofGabby version={pass.version} knocks={drive.gabbyKnocks} onBack={drive.onGabbyBack} />;
+  const under = GABBY_ROOF[pass.version].under;
   return (
     <>
       <span className={styles.groundShadow} style={place([40, 650, 1240, 694], stage)} />
@@ -1293,14 +1366,14 @@ function RoofConvoy({ pass, drive, ambulanceRef, sleighRef, snowRef, lit, onArt 
         </g>
       </svg>
       <span ref={ambulanceRef} className={styles.ambulance} style={place(ROOF.art, stage)}>
+        {under && gabby}
         {/* The riders bounce in the animation; Time Out swaps in its first frame. */}
         <Image className={`${styles.layerArt} ${styles.roofMoving}`} src={roofRide(pass.version)} alt="" fill unoptimized
           sizes="(max-width: 767px) 180px, 252px" loading="eager" draggable={false} onLoad={onArt} onError={onArt} />
         <Image className={`${styles.layerArt} ${styles.roofStill}`} src={roofRide(pass.version, true)} alt="" fill unoptimized
           sizes="(max-width: 767px) 180px, 252px" loading="eager" draggable={false} onLoad={onArt} onError={onArt} />
         <span className={styles.lights}><EmergencyLights unit={`driveby-roof-${pass.version}`} on={lit} /></span>
-        {/* Gabby dancing on the roof with them (the drift's roof cap settles over her boots too). */}
-        <RoofGabby version={pass.version} knocks={drive.gabbyKnocks} onBack={drive.onGabbyBack} />
+        {!under && gabby}
         <SnowStages vehicle={ROOF_AMBULANCE} drive={drive} snowRef={snowRef} />
         <Hit kind="truck" box={[0, 250, 760, 684]} frame={ROOF.art} />
         <Hit kind="truck" box={[240, 0, 640, 280]} frame={ROOF.art} />
