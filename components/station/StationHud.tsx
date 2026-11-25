@@ -169,9 +169,11 @@ export function StationSoundButton() {
   }, []);
 
   const label = on ? "Turn the Christmas music off" : "Turn the Christmas music on";
+  // data-snow-own-click: the snowball fight leaves this button's presses alone (it takes clicks
+  // elsewhere on the page as throws, and Time Out never pauses it on the station).
   return (
     <button ref={button} type="button" className={styles.sound} data-on={on || undefined} aria-pressed={on} aria-label={label} title={label}
-      onClick={() => document.getElementById("winter-sound-toggle")?.click()}>
+      data-snow-own-click="" onClick={() => document.getElementById("winter-sound-toggle")?.click()}>
       {on ? <Bell aria-hidden="true" /> : <BellOff aria-hidden="true" />}
       <span>{on ? "Sound on" : "Sound off"}</span>
     </button>
