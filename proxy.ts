@@ -79,6 +79,7 @@ function withSecurityHeaders(res: NextResponse, pathname = ""): NextResponse {
     pathname.startsWith("/board") ||
     pathname.startsWith("/inventory") ||
     pathname.startsWith("/truckcheck") ||
+    pathname.startsWith("/station") ||
     pathname.startsWith("/api/");
   if (protectedPath) {
     res.headers.set("Cache-Control", "no-store, private");
