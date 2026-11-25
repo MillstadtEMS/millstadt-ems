@@ -32,26 +32,27 @@ type Officer = {
   // goes from her still to worried to furious.
   anim?: { hang: string; still: string; mad: string; worried: string };
   // Shaking the phone: the straining face painted on the same body as they hang on for dear life,
-  // then the same face gone beet red; and where their sweat flies from (percent of the art box).
-  strain: [string, string]; head: [number, number];
+  // then the same face gone beet red; and where their sweat flies from (head centre at eye level
+  // and half the face's width, percent of the art box).
+  strain: [string, string]; head: [number, number, number];
 };
 const kitCrew = (file: string) => `/images/winter/kit/crew/${file}.webp`;
 const shakeArt = (file: string) => `/images/winter/kit/shake/${file}.webp`;
 const rigRatio = 477 / 716;
 const officers: Record<Chief, Officer> = {
   jen: { name: "Jen", folder: "/images/winter/jen-tree/", ratio: rigRatio, fallback: .93, tempo: 5.5, phase: 0,
-    strain: [shakeArt("jen-hanging-strain"), shakeArt("jen-hanging-strain-hard")], head: [51, 24.5] },
+    strain: [shakeArt("jen-hanging-strain"), shakeArt("jen-hanging-strain-hard")], head: [51.9, 23, 7.9] },
   kenny: { name: "Kenny", folder: "/images/winter/kenny/", ratio: rigRatio, fallback: .07, tempo: 4.9, phase: 2.2,
-    strain: [shakeArt("kenny-hanging-strain"), shakeArt("kenny-hanging-strain-hard")], head: [61.5, 25.5] },
+    strain: [shakeArt("kenny-hanging-strain"), shakeArt("kenny-hanging-strain-hard")], head: [63.3, 23.3, 8.7] },
   kalista: { name: "Kalista", calm: kitCrew("kalista-hanging"), startled: kitCrew("kalista-hanging-scared"), ratio: 416 / 640, fallback: .3, tempo: 5.2, phase: 1.1,
-    strain: [shakeArt("kalista-hanging-strain"), shakeArt("kalista-hanging-strain-hard")], head: [50.5, 25.5],
+    strain: [shakeArt("kalista-hanging-strain"), shakeArt("kalista-hanging-strain-hard")], head: [50.4, 24.4, 8.1],
     legs: { splitX: 55.5, splitY: 68.3, hipLeft: "46.5% 69.1%", hipRight: "66.8% 69.1%", turn: 0,
       split: [[55.5, 68.3], [56.7, 71.1], [56.4, 73.9], [55.3, 76.7], [53.5, 79.5], [51.4, 82.3], [48, 85.2], [45.1, 88], [44.8, 90.8], [44.4, 93.6], [44.4, 99.2]] } },
   braeden: { name: "Braeden", calm: kitCrew("braeden-hanging"), startled: kitCrew("braeden-hanging-scared"), ratio: 543 / 640, fallback: .43, tempo: 5.8, phase: 3, size: .8,
-    strain: [shakeArt("braeden-hanging-strain"), shakeArt("braeden-hanging-strain-hard")], head: [52, 27.5],
+    strain: [shakeArt("braeden-hanging-strain"), shakeArt("braeden-hanging-strain-hard")], head: [51.9, 26.6, 7.1],
     legs: { splitX: 53.8, splitY: 68.75, hipLeft: "47% 69.5%", hipRight: "59.9% 69.5%", turn: 38 } },
   dylan: { name: "Dylan", calm: kitCrew("dylan-hanging"), startled: kitCrew("dylan-hanging-scared"), ratio: 466 / 640, fallback: .57, tempo: 5, phase: .6,
-    strain: [shakeArt("dylan-hanging-strain"), shakeArt("dylan-hanging-strain-hard")], head: [52, 23],
+    strain: [shakeArt("dylan-hanging-strain"), shakeArt("dylan-hanging-strain-hard")], head: [51.8, 21.4, 7.2],
     legs: { splitX: 56.3, splitY: 67.3, hipLeft: "48.7% 68.1%", hipRight: "69.1% 68.1%", turn: 0,
       split: [[56.3, 67.3], [58.5, 70.2], [60, 73], [58.6, 75.8], [55.9, 78.6], [54.1, 81.4], [51.2, 84.2], [47.1, 87], [46.2, 89.8], [46.5, 92.7], [45.2, 95.5], [45.2, 99.2]] } },
   // Gabby hangs where the medical director used to on the Christmas lights (he still pops up and
@@ -59,9 +60,9 @@ const officers: Record<Chief, Officer> = {
   gabby: { name: "Gabby", ratio: 600 / 720, fallback: .7, tempo: 4.7, phase: 2.6, anim: {
     hang: "/images/winter/kit/gabby/gabby-hang.webp", still: "/images/winter/kit/gabby/gabby-hang-still.webp",
     mad: "/images/winter/kit/gabby/gabby-hang-mad.webp", worried: shakeArt("gabby-hang-worried"),
-  }, strain: ["/images/winter/kit/gabby/gabby-hang-mad.webp", shakeArt("gabby-hang-mad-hard")], head: [52.5, 18] },
+  }, strain: ["/images/winter/kit/gabby/gabby-hang-mad.webp", shakeArt("gabby-hang-mad-hard")], head: [50.4, 24.7, 7.7] },
   "medical-director": { name: "Dr. Hsu", calm: kitCrew("medical-director-hanging"), startled: kitCrew("medical-director-hanging-scared"), ratio: 466 / 640, fallback: .7, tempo: 4.7, phase: 2.6,
-    strain: [kitCrew("medical-director-hanging-scared"), kitCrew("medical-director-hanging-scared")], head: [53, 24],
+    strain: [kitCrew("medical-director-hanging-scared"), kitCrew("medical-director-hanging-scared")], head: [53.4, 23.8, 7.4],
     legs: { splitX: 54.2, splitY: 67.3, hipLeft: "47.7% 68.1%", hipRight: "66.3% 68.1%", turn: 0,
       split: [[54.2, 67.3], [56.3, 70.2], [58, 73], [57, 75.8], [55.2, 78.6], [53.9, 81.4], [51.5, 84.2], [48, 87], [46.8, 89.8], [47.5, 92.7], [46.6, 95.5], [45.8, 99.2]] } },
 };
@@ -178,10 +179,10 @@ function KitRig({ officer, onMask, motion }: { officer: Officer; onMask: (image:
   );
 }
 
-// Sweat flying off a straining head: two drops each side, drawn with the art's dark outline.
-function Sweat({ head }: { head: [number, number] }) {
+// Sweat flying off a straining head: drops flick off both temples, drawn with the art's dark outline.
+function Sweat({ head }: { head: [number, number, number] }) {
   return (
-    <span className={styles.sweat} aria-hidden="true" style={{ left: head[0] + "%", top: head[1] + "%" } as CSSProperties}>
+    <span className={styles.sweat} aria-hidden="true" style={{ "--head-x": head[0] + "%", "--head-y": head[1] + "%", "--head-half": head[2] + "%" } as CSSProperties}>
       {[-1, 1, -1, 1].map((side, i) => (
         <svg key={i} className={styles.bead} viewBox="0 0 10 14" style={{ "--side": side, "--drop-delay": `${[0, .21, .43, .62][i]}s` } as CSSProperties}>
           <path d="M5 .8C6.9 4.3 9.2 6.6 9.2 9.1a4.2 4.2 0 0 1-8.4 0C.8 6.6 3.1 4.3 5 .8Z" fill="#cdeeff" stroke="#163243" strokeWidth="1.1" />
@@ -361,7 +362,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     let lastV = shakeVelocity(), clock = officer.phase, kickPhase = officer.phase, legLag = 0, flail = 0;
     // Faces: 0 calm, 1 startled (a big swing, a hard scroll, a hit), 2 straining as the grip goes,
     // 3 straining and beet red, moments from letting go.
-    let face = 0, faceAt = 0, startled = false, shaken = false, stillSince = 0;
+    let face = 0, faceAt = 0, startledUntil = 0, shaken = false, stillSince = 0, recentSwing = 0;
 
     // These transforms move only composited layers. Geometry is cached at
     // resize/header changes so the scroll handler never requests layout.
@@ -371,17 +372,19 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       const calm = reduced.matches;
       const falling = figure.dataset.phase === "hit";
       const strain = calm || falling ? 0 : shakeStrain(chief);
-      const swingDeg = Math.abs(swing.theta) * 57.3;
-      // Calm and startled are different faces, so they swap (never blend), with a little
-      // hysteresis so the kick doesn't flicker. Gabby keeps her own painted swing on scroll.
-      if (!startled && (swingDeg > 14 || (!anim && expression > .5))) startled = true;
-      else if (startled && swingDeg < 8 && (anim || expression < .3)) startled = false;
+      // How far they've been swinging lately (not where the swing is this instant), so a face
+      // doesn't flicker each time the swing passes the bottom.
+      const swingDeg = recentSwing * 57.3;
+      // Calm and startled are different faces, so they swap (never blend), and a scare holds a
+      // moment. Gabby keeps her own painted swing on scroll.
+      if (swingDeg > 13 || (!anim && expression > .5)) startledUntil = now + 1100;
+      const startled = now < startledUntil;
       let next = strain >= .8 ? 3 : strain >= .55 ? 2 : strain >= .25 ? 1 : 0;
       // They only relax a step once they've clearly recovered.
       if (next < face && strain > [0, .19, .48, .72][face]) next = face;
       if (startled) next = Math.max(next, 1);
       if (calm || falling) next = 0;
-      if (next !== face && (now - faceAt > 260 || falling)) {
+      if (next !== face && (now - faceAt > 300 || falling)) {
         face = next; faceAt = now;
         if (face) figure.dataset.face = String(face);
         else delete figure.dataset.face;
@@ -402,8 +405,8 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       const kickLeft = energy * (Math.sin(phase * 1.31 + .5) * 11 + 7) + legLag + flail * (Math.sin(kickPhase) * 9 + 5);
       const kickRight = energy * (Math.sin(phase * 1.57 + 2) * 10 - 6) + legLag + flail * (Math.sin(kickPhase + Math.PI) * 9 - 5);
       figure.style.setProperty("--swing", clamp(turn, -40, 40).toFixed(2) + "deg");
-      figure.style.setProperty("--kick-left", clamp(kickLeft, -9, 21).toFixed(2) + "deg");
-      figure.style.setProperty("--kick-right", clamp(kickRight, -21, 9).toFixed(2) + "deg");
+      figure.style.setProperty("--kick-left", clamp(kickLeft, -6, 21).toFixed(2) + "deg");
+      figure.style.setProperty("--kick-right", clamp(kickRight, -21, 6).toFixed(2) + "deg");
     }
 
     function measure() {
@@ -446,6 +449,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
         swing.omega += alpha * step;
         swing.theta += swing.omega * step;
       }
+      recentSwing = Math.max(Math.abs(swing.theta), recentSwing * Math.exp(-dt / .9));
       // The legs hang from the hips, so they trail the body's swing a moment behind.
       legLag += (clamp((before - swing.omega) / dt * .05, -9, 9) - legLag) * (1 - Math.exp(-dt * 12));
       // Struggling legs: they kick faster and wider as the strain grows, and flail on the way down.
@@ -457,7 +461,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       clock += dt;
       if (energy < .008 && expression < .009 && Math.abs(swing.theta) < .003 && Math.abs(swing.omega) < .02
           && Math.abs(legLag) < .05 && flail < .01 && !face && !shakeBusy()) {
-        energy = expression = lastFrame = legLag = flail = 0;
+        energy = expression = lastFrame = legLag = flail = recentSwing = 0;
         swing.theta = swing.omega = 0;
         paint(); return;
       }
@@ -482,7 +486,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     }
     function rest() {
       cancelAnimationFrame(raf); raf = energy = expression = lastFrame = legLag = flail = 0;
-      swing.theta = swing.omega = 0; lastV = shakeVelocity(); startled = false;
+      swing.theta = swing.omega = recentSwing = 0; lastV = shakeVelocity(); startledUntil = 0;
       pageY = window.scrollY; paint();
     }
     // Each motion reading wakes the swing.

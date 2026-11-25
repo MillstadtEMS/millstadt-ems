@@ -17,9 +17,10 @@ import { isSnowballTimeout } from "./snowballTimeout";
 export type ShakeAccess = "idle" | "listening" | "ask" | "on" | "denied";
 
 const G = 9.80665;
-// Strain: a hard shake (about 17 m/s² rms) adds roughly one unit per second; gentle jiggles,
+// Strain: a hard shake (about 15 m/s² rms) adds one unit per second, and no shake adds more, so
+// even the wildest shaking takes a couple of seconds to break the first grip. Gentle jiggles,
 // walking and car bumps stay under the floor and add nothing.
-const STRAIN_FLOOR = 4.5, STRAIN_SPAN = 12, STRAIN_MAX_RATE = 1.4;
+const STRAIN_FLOOR = 4.5, STRAIN_SPAN = 10, STRAIN_MAX_RATE = 1;
 // After a short breather the crew recover, a little at a time.
 const RECOVER_AFTER = .9, RECOVER_RATE = .25;
 
@@ -102,8 +103,8 @@ function planFalls() {
     }
     if (group.length) groups.push(group);
   }
-  const first = groups.length === 1 ? rand(3.2, 4.4) : rand(2.4, 3.3);
-  const span = groups.length === 1 ? 0 : rand(2.4, 4.4);
+  const first = groups.length === 1 ? rand(2.6, 3.4) : rand(2, 2.8);
+  const span = groups.length === 1 ? 0 : rand(2.2, 3.6);
   groups.forEach((group, index) => {
     const at = first + (groups.length > 1 ? span * index / (groups.length - 1) : 0) + rand(-.15, .15) * (index ? 1 : 0);
     // Within a group they go a breath apart, not in robotic unison.
@@ -180,7 +181,8 @@ function onMotion(event: DeviceMotionEvent) {
     member.fired = true;
     member.fall();
   }
-  if (power > .04 || state.load) wakers.forEach(wake => wake());
+  // A hand holding the phone trembles a little all the time: only real movement wakes the swing.
+  if (power > .25 || state.load) wakers.forEach(wake => wake());
 }
 
 let users = 0, askTimer: number | undefined;
@@ -242,7 +244,7 @@ export function shakeStrain(id: string) {
 /** The running sideways velocity of the shake (m/s, screen right positive); use differences. */
 export const shakeVelocity = () => state.vx;
 /** True while the phone is moving or the crew are still strained. */
-export const shakeBusy = () => state.load > 0 || (state.last > 0 && performance.now() - state.last < 600 && state.power > .04);
+export const shakeBusy = () => state.load > 0 || (state.last > 0 && performance.now() - state.last < 600 && state.power > .5);
 /** Wakes a swing loop on each motion reading. */
 export function subscribeShake(wake: () => void) {
   wakers.add(wake);
