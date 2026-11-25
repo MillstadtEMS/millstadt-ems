@@ -144,6 +144,10 @@
   clip-path: inset(0 25px round 10.4px);
   border-radius: 0;
   box-shadow: none;
+  /* The crew hang in front of the little TV: a tap on someone over its screen must reach them,
+     not pause the song inside the video frame. Sound on/off and Enlarge (header) run the player;
+     enlarged, the video is fully interactive again. */
+  pointer-events: none;
 }
 .tvGlass {
   position: absolute;
