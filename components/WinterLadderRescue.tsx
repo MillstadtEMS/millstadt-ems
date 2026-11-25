@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { isSnowballTimeout, snowballTimeoutEvent } from "@/lib/seasonal/snowballTimeout";
+import { holdLane, laneClaimed, subscribeLane, type LaneSpan } from "@/lib/seasonal/driveLane";
 import { finishRescue, hangingCrew, rescueChief, type CrewChief, type HangingCrewMember } from "./WinterRoofline";
 import styles from "./WinterLadderRescue.module.css";
 
@@ -209,6 +210,9 @@ const noBody = () => null;
 const bodyOnClient = () => document.body;
 const noSubscription = () => () => {};
 
+/** The street along the bottom of the screen where the truck parks (the drive-by's lane), in viewport px. */
+const streetBand = (): LaneSpan => ({ top: Math.round(window.innerHeight * .4), bottom: window.innerHeight });
+
 export default function WinterLadderRescue({ still, onPhase }: { still: boolean; onPhase: (phase: "start" | "parked" | "done") => void }) {
   const body = useSyncExternalStore<HTMLElement | null>(noSubscription, bodyOnClient, noBody);
   const scene = useRef<HTMLDivElement>(null);
@@ -239,9 +243,26 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
     });
     const minimum = new Promise(done => window.setTimeout(done, still ? 400 : 1500));
     const cap = new Promise(done => window.setTimeout(done, 9000));
-    void Promise.race([Promise.all([Promise.all(urls.map(one)), minimum]), cap]).then(() => { if (alive) setReady(true); });
+    // A drive-by already announced on the street (lib/seasonal/driveLane) goes by before the truck
+    // pulls in, so the two never drive through each other (give up waiting after 25 s).
+    const roadClear = () => new Promise<void>(done => {
+      const street = streetBand();
+      if (!laneClaimed(street)) { done(); return; }
+      const finish = () => { window.clearTimeout(giveUp); stop(); done(); };
+      const stop = subscribeLane(() => { if (!laneClaimed(street)) finish(); });
+      const giveUp = window.setTimeout(finish, 25_000);
+    });
+    void Promise.race([Promise.all([Promise.all(urls.map(one)), minimum]), cap]).then(roadClear).then(() => { if (alive) setReady(true); });
     return () => { alive = false; };
   }, [still]);
+
+  // While Ladder 3919 is on the street, new drive-by passes wait for it (a hold lasts at most 20 s,
+  // so it's renewed until the truck has gone).
+  useEffect(() => {
+    let release = holdLane("ladder-rescue", streetBand(), 20_000);
+    const renew = window.setInterval(() => { release(); release = holdLane("ladder-rescue", streetBand(), 20_000); }, 15_000);
+    return () => { window.clearInterval(renew); release(); };
+  }, []);
 
   useEffect(() => {
     if (!ready) return;
