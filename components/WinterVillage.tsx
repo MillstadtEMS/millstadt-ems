@@ -237,7 +237,7 @@ function VillagePostcard() {
             <WinterTruckMedics active={inView} />
             <WinterStreet active={inView} />
             {fleet.map(rig => <FleetRig key={rig.unit} {...rig} />)}
-            <div className={styles.snoopy} data-snow-fighter="snoopy" data-snow-hand="0.55,0.35">
+            <div className={styles.snoopy} data-snow-fighter="snoopy" data-snow-hand="0.51,0.28" data-snow-windup="0.51,0.28">
               <Image src="/images/winter/rose-beagle.webp" alt="A white beagle lies on his back on a snowy red doghouse, holding a red rose." fill sizes="(max-width: 720px) 100px, 15vw" unoptimized />
             </div>
             <div className={styles.grinch} data-snow-fighter="grinch" data-snow-hand="0.66,0.53" data-snow-windup="0.68,0.22">

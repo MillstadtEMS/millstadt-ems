@@ -173,6 +173,23 @@ function glassSplat(at: Point, size: number) {
 
 /** A snowball in a thrower's hand: where it is on screen and how big (CSS px diameter). */
 export type Held = { at: Point; size: number };
+/**
+ * A throwing arm rigged from the thrower's own art (cut-out puppetry): the forearm with its hand, cut
+ * out alone on a picture the same size as the thrower's picture so it lies exactly over the painted
+ * one. It turns about the elbow: up from wherever it rests (out of sight behind a snowbank) to hold
+ * the snowball high, a pump, the whip toward the target that lets go, and back down out of sight.
+ */
+export type Arm = {
+  src: string;
+  /** The picture's size, the elbow (the pivot) and the palm the snowball sits in, in picture px. */
+  size: readonly [number, number]; elbow: readonly [number, number]; palm: readonly [number, number];
+  /** The held snowball's radius (picture px). */
+  ballR: number;
+  /** Turn (deg, clockwise) that raises the forearm with the snowball, and how far the whip turns it on. */
+  raise: number; whip: number;
+  /** How far the elbow comes up with the raised arm (picture px; the upper arm stays out of sight). */
+  lift?: number;
+};
 export type WindUpOptions = {
   /**
    * Show the snowball in the thrower's hand (for art that isn't painted holding one): it is packed
@@ -181,6 +198,8 @@ export type WindUpOptions = {
    * forward to where it leaves the hand. This wind-up runs longer so the raised snowball reads.
    */
   hold?: boolean;
+  /** Raise this rigged arm with the snowball in its hand instead (the thrower's picture must be loaded). */
+  arm?: Arm;
 };
 export type WindUp = {
   /** Resolves at the moment the ball leaves the hand. */
@@ -202,6 +221,8 @@ function fractions(value: string | undefined, fallback: readonly [number, number
 export function windUp(el: HTMLElement, facing: 1 | -1 = 1, scale = 1, options: WindUpOptions = {}): WindUp {
   const empty = { held: () => null, drop: () => {} };
   if (reducedMotion()) return { release: Promise.resolve(), done: Promise.resolve(), ...empty };
+  const picture = el.querySelector("img");
+  if (options.hold && options.arm && picture?.complete && picture.naturalWidth) return windUpArm(el, facing, scale, options.arm, picture);
   if (options.hold) return windUpHolding(el, facing, scale);
   // (The rink recognises this lean on a skater the fight picks by its second keyframe at .42.)
   const lean = 8 * scale, snap = 11 * scale;
@@ -221,13 +242,11 @@ export function windUp(el: HTMLElement, facing: 1 | -1 = 1, scale = 1, options: 
 const HOLD_MS = 1250;
 const PACKED = .11, COCKED = .42, PUMPED = .64, LET_GO = .7;
 
-function windUpHolding(el: HTMLElement, facing: 1 | -1, scale: number): WindUp {
-  const rect = el.getBoundingClientRect();
-  const w = el.offsetWidth || rect.width, h = el.offsetHeight || rect.height;
-  if (!w || !h) return windUp(el, facing, scale);
-  const lean = 8 * scale, snap = 11 * scale, f = facing;
+/** The held wind-up's lean: back with the snowball up, holding back a beat, then the snap forward. */
+function holdLean(el: HTMLElement, f: 1 | -1, scale: number) {
+  const lean = 8 * scale, snap = 11 * scale;
   // The same lean as a quick wind-up (second keyframe at .42), holding back a beat before the snap.
-  const anim = el.animate([
+  return el.animate([
     { rotate: "0deg", translate: "0 0", easing: "ease-in-out" },
     { rotate: `${-lean * f}deg`, translate: `${-3 * f * scale}px 1px`, offset: COCKED, easing: "ease-in-out" },
     { rotate: `${-(lean + 1.5) * f}deg`, translate: `${-3.6 * f * scale}px 1.5px`, offset: .62, easing: "ease-in" },
@@ -235,6 +254,30 @@ function windUpHolding(el: HTMLElement, facing: 1 | -1, scale: number): WindUp {
     { rotate: `${-2 * f}deg`, translate: "0 0", offset: .86, easing: "ease-in-out" },
     { rotate: "0deg", translate: "0 0" },
   ], { duration: HOLD_MS, easing: "linear" });
+}
+
+/**
+ * Can the snowball be held inside the thrower's own element (in their stacking layer, so whoever
+ * stands in front of them stays in front of it)? It needs a positioned box that doesn't clip.
+ */
+function holdsInside(el: HTMLElement) {
+  if (el instanceof HTMLImageElement || el.tagName === "I" || el.tagName === "SPAN") return false;
+  const style = getComputedStyle(el);
+  return style.position !== "static" && style.overflow === "visible" && style.display !== "inline";
+}
+
+/** The size on screen of something `size` px across inside `el` (through its own turn and any zoom). */
+function onScreenSize(piece: HTMLElement, el: HTMLElement) {
+  const a = (parseFloat(getComputedStyle(el).rotate) || 0) * Math.PI / 180;
+  return piece.getBoundingClientRect().width / (Math.abs(Math.cos(a)) + Math.abs(Math.sin(a)));
+}
+
+function windUpHolding(el: HTMLElement, facing: 1 | -1, scale: number): WindUp {
+  const rect = el.getBoundingClientRect();
+  const w = el.offsetWidth || rect.width, h = el.offsetHeight || rect.height;
+  if (!w || !h) return windUp(el, facing, scale);
+  const f = facing;
+  const anim = holdLean(el, f, scale);
   const done = anim.finished.then(() => undefined, () => undefined);
 
   // The path in the element's own box (CSS px, before the lean): hand, raised hand, release point.
@@ -287,11 +330,24 @@ function windUpHolding(el: HTMLElement, facing: 1 | -1, scale: number): WindUp {
   const piece = ball(size, 0);
   // A fine dark rim keeps a small snowball readable against snow.
   piece.style.boxShadow += ", 0 0 0 1px rgba(40, 56, 74, .5)";
-  layer().appendChild(piece);
+  // While it's in the hand it sits in the thrower's own layer (it leans with them, and anyone in front
+  // of them stays in front of it); it goes up to the sky layer only as it leaves the hand.
+  const inside = holdsInside(el);
+  if (inside) { piece.style.zIndex = "3"; piece.style.pointerEvents = "none"; el.appendChild(piece); }
+  else layer().appendChild(piece);
   const start = performance.now();
   let frame = 0, last: Held | null = null, state: "held" | "thrown" | "dropped" = "held";
   const draw = (t: number) => {
-    const p = pathAt(t), at = onScreen(p);
+    const p = pathAt(t);
+    if (inside) {
+      if (!el.isConnected) { last = null; return; }
+      piece.style.transform = `translate(${p.x - size / 2}px, ${p.y - size / 2}px) scale(${p.s})`;
+      piece.style.opacity = String(p.o);
+      const box = piece.getBoundingClientRect();
+      last = { at: { x: box.left + box.width / 2, y: box.top + box.height / 2 }, size: onScreenSize(piece, el) };
+      return;
+    }
+    const at = onScreen(p);
     if (!at) { last = null; piece.style.opacity = "0"; return; }
     piece.style.transform = `translate(${at.x - size / 2}px, ${at.y - size / 2}px) scale(${p.s})`;
     piece.style.opacity = String(p.o);
@@ -305,7 +361,7 @@ function windUpHolding(el: HTMLElement, facing: 1 | -1, scale: number): WindUp {
   };
   draw(0);
   frame = requestAnimationFrame(tick);
-  packFlecks(hand, onScreen, size);
+  packFlecks(hand, onScreen, size, inside ? el : null);
   const release = new Promise<void>(resolve => window.setTimeout(() => {
     if (state === "held") {
       cancelAnimationFrame(frame);
@@ -329,11 +385,132 @@ function windUpHolding(el: HTMLElement, facing: 1 | -1, scale: number): WindUp {
   };
 }
 
-/** A few crumbs of snow fall from the hand as the snowball is packed. */
-function packFlecks(hand: { x: number; y: number }, onScreen: (p: { x: number; y: number }) => Point | null, size: number) {
-  const at = onScreen(hand);
+const SVG = "http://www.w3.org/2000/svg";
+let rigs = 0;
+/** preserveAspectRatio for an SVG laid exactly over a picture, from the picture's object-fit and object-position. */
+function fitOf(picture: HTMLImageElement) {
+  const style = getComputedStyle(picture);
+  if (style.objectFit === "fill") return "none";
+  const [x, y] = style.objectPosition.split(" ").map(v => parseFloat(v));
+  const align = (v: number) => !Number.isFinite(v) || (v > 0 && v < 100) ? "Mid" : v <= 0 ? "Min" : "Max";
+  return `x${align(x)}Y${align(y)} ${style.objectFit === "cover" ? "slice" : "meet"}`;
+}
+
+/**
+ * A wind-up with a rigged arm (see Arm): the forearm, drawn exactly over the painted one, swings up
+ * about the elbow with the snowball in its palm, pumps, whips toward the target (the ball leaves the
+ * palm there), follows through and swings back down to where it rests out of sight. The thrower
+ * leans with it, as in every held wind-up.
+ */
+function windUpArm(el: HTMLElement, facing: 1 | -1, scale: number, arm: Arm, picture: HTMLImageElement): WindUp {
+  const f = facing;
+  // A gentler lean than a free-standing thrower: the arm's elbow stays down behind whatever hides it.
+  const anim = holdLean(el, f, scale * .5);
+  const done = anim.finished.then(() => undefined, () => undefined);
+  const [W, H] = arm.size, [ex, ey] = arm.elbow, [px, py] = arm.palm;
+  // The snowball is never smaller than about 6 px across on screen (a tiny thrower on a phone).
+  const zoom = Math.min((el.offsetWidth || 1) / W, (el.offsetHeight || 1) / H);
+  const ballR = Math.max(arm.ballR, 3 / Math.max(zoom, .01));
+  // Leaning back for a throw to the left drops the throwing (right) side, so the elbow comes up more.
+  const lift = (arm.lift ?? 0) * (f < 0 ? 1 : .35);
+  const id = `snow-held-${++rigs}`;
+  const rig = document.createElementNS(SVG, "svg");
+  rig.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  rig.setAttribute("preserveAspectRatio", fitOf(picture));
+  rig.setAttribute("aria-hidden", "true");
+  rig.setAttribute("focusable", "false");
+  Object.assign(rig.style, { position: "absolute", inset: "0", width: "100%", height: "100%", overflow: "visible", pointerEvents: "none", zIndex: "1" });
+  // The snowball looks like every other one: lit from the upper left, with a fine dark rim.
+  rig.innerHTML = `<defs><radialGradient id="${id}" cx="33%" cy="28%" r="78%"><stop offset="0" stop-color="#fff"/><stop offset=".26" stop-color="#fff"/>`
+    + `<stop offset=".54" stop-color="#f1f9ff"/><stop offset=".84" stop-color="#cfe3f4"/><stop offset="1" stop-color="#9dbcd9"/></radialGradient></defs>`
+    // (The snowball is behind the hand, so the fingers close over it.)
+    + `<g><circle cx="${px}" cy="${py}" r="${ballR.toFixed(1)}" fill="url(#${id})" stroke="rgba(40,56,74,.55)" stroke-width="${(1.1 / Math.max(zoom, .01)).toFixed(2)}"/>`
+    + `<image href="${arm.src}" width="${W}" height="${H}" preserveAspectRatio="none"/></g>`;
+  el.appendChild(rig);
+  const turn = rig.querySelector("g")!, held = rig.querySelector("circle")!;
+  // The turn (deg) at share t of HOLD_MS: raise (out of sight until it clears the snow), a pump back,
+  // the whip toward the target (much less across the body, so the hand never crosses the face), a
+  // follow-through, then back down.
+  const whip = arm.whip * (f > 0 ? 1 : .45) * f;
+  const ease = (t: number) => t < .5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
+  const FOLLOW = .79, LOWERED = 1.16;
+  const turnAt = (t: number) => {
+    if (t < PACKED) return 0;
+    if (t < COCKED) return arm.raise * ease((t - PACKED) / (COCKED - PACKED));
+    if (t < PUMPED) return arm.raise - whip * .2 * Math.sin(Math.PI * (t - COCKED) / (PUMPED - COCKED));
+    if (t < LET_GO) { const k = (t - PUMPED) / (LET_GO - PUMPED); return arm.raise + whip * k * k; }
+    if (t < FOLLOW) return arm.raise + whip * (1 + .3 * Math.sin(Math.PI / 2 * (t - LET_GO) / (FOLLOW - LET_GO)));
+    return (arm.raise + whip * 1.3) * (1 - ease(Math.min(1, (t - FOLLOW) / (LOWERED - FOLLOW))));
+  };
+  const pose = (deg: number) => {
+    const up = Math.min(1, Math.max(0, deg / arm.raise));
+    turn.setAttribute("transform", `translate(0 ${(-lift * up).toFixed(2)}) rotate(${deg.toFixed(2)} ${ex} ${ey})`);
+  };
+  /** The snowball in the palm, on screen. */
+  const where = (): Held | null => {
+    const m = held.getScreenCTM();
+    if (!m || !el.isConnected) return null;
+    const c = new DOMPoint(px, py).matrixTransform(m);
+    return { at: { x: c.x, y: c.y }, size: 2 * ballR * Math.hypot(m.a, m.b) };
+  };
+  const start = performance.now();
+  let frame = 0, state: "held" | "thrown" | "dropped" = "held", last: Held | null = null, lowerFrom = 0, lowerAt = 0;
+  const tick = () => {
+    frame = 0;
+    if (!el.isConnected) { rig.remove(); return; }
+    const t = (performance.now() - start) / HOLD_MS;
+    if (state === "dropped") {
+      // Called off: the empty arm drops straight back down.
+      const k = Math.min(1, (performance.now() - lowerAt) / 260);
+      pose(lowerFrom * (1 - ease(k)));
+      if (k >= 1) { rig.remove(); return; }
+    } else {
+      pose(turnAt(t));
+      if (t >= LOWERED) { rig.remove(); return; }
+    }
+    frame = requestAnimationFrame(tick);
+  };
+  pose(0);
+  frame = requestAnimationFrame(tick);
+  const release = new Promise<void>(resolve => window.setTimeout(() => {
+    if (state === "held") {
+      pose(turnAt(LET_GO));
+      last = where();
+      state = "thrown";
+      // The flight takes over from the palm at this size, in the same frame.
+      held.remove();
+    }
+    resolve();
+  }, HOLD_MS * LET_GO));
+  return {
+    release, done,
+    held: () => state === "thrown" ? last : null,
+    drop() {
+      if (state !== "held") return;
+      const now = where();
+      state = "dropped";
+      lowerFrom = turnAt((performance.now() - start) / HOLD_MS);
+      lowerAt = performance.now();
+      held.remove();
+      if (now) {
+        // The snowball falls out of the hand in the sky layer and is gone.
+        const { at, size } = now;
+        const piece = ball(size, 1);
+        piece.style.transform = `translate(${at.x - size / 2}px, ${at.y - size / 2}px)`;
+        layer().appendChild(piece);
+        piece.animate([{ translate: "0 0", opacity: 1 }, { translate: `${-f * 4}px ${Math.max(14, size * 1.4)}px`, opacity: 0 }],
+          { duration: 240, easing: "ease-in" }).finished.then(() => piece.remove(), () => piece.remove());
+      }
+      if (!frame) frame = requestAnimationFrame(tick);
+    },
+  };
+}
+
+/** A few crumbs of snow fall from the hand as the snowball is packed (inside the thrower's layer when the ball is). */
+function packFlecks(hand: { x: number; y: number }, onScreen: (p: { x: number; y: number }) => Point | null, size: number, inside: HTMLElement | null = null) {
+  const at = inside ? hand : onScreen(hand);
   if (!at) return;
-  const host = layer();
+  const host = inside ?? layer();
   for (let i = 0; i < 3; i++) {
     const r = Math.max(2, size * rand(.16, .24));
     const fleck = document.createElement("i");

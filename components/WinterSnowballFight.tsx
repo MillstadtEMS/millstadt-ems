@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 import { useSnowballTimeout, isSnowballTimeout } from "@/lib/seasonal/snowballTimeout";
-import { flinch, throwSnowball, visitorThrow, windUp, type Point, type WindUp } from "@/lib/seasonal/snowballFlight";
+import { flinch, throwSnowball, visitorThrow, windUp, type Arm, type Point, type WindUp } from "@/lib/seasonal/snowballFlight";
 
 // One big snowball fight across the site each winter. Any element tagged data-snow-fighter can
 // throw and be hit: the parade crowd, Snoopy and the Grinch, carolers, skaters, the snowbank
@@ -13,8 +13,25 @@ import { flinch, throwSnowball, visitorThrow, windUp, type Point, type WindUp } 
 // Every throw comes out of a hand: the snowball is packed in the thrower's hand (data-snow-hand,
 // fractions of their box), carried up and back over the shoulder as they lean back (or held up
 // where data-snow-windup puts the raised hand), and whipped forward to leave that hand
-// (snowballFlight's windUp). Skaters on the rink are painted holding theirs and wind up with their
-// own pictures; the medics behind the trucks throw only with their own wind-up and release pictures.
+// (snowballFlight's windUp). While it's held it sits in the thrower's own layer, so anyone in front
+// of them stays in front of it. The Grinch raises his own arm (cut from his picture) from behind the
+// snowbank with the snowball in his hand. Skaters on the rink are painted holding theirs and wind up
+// with their own pictures; the medics behind the trucks throw only with their own wind-up and
+// release pictures.
+
+/** Throwers with a rigged arm (snowballFlight's Arm), by data-snow-fighter. */
+const arms: Record<string, Arm> = {
+  // His forearm and claw, cut from grinch.webp: it rests on his hip behind the snowbank and swings up
+  // past his shoulder about the elbow (just under the snow line), the snowball in his palm.
+  grinch: { src: "/images/winter/kit/pop/grinch-forearm.webp", size: [315, 520], elbow: [303, 310], palm: [262, 415], ballR: 18, raise: -222, whip: 46, lift: 14 },
+};
+const armArt = new Map<string, HTMLImageElement>();
+/** Is a rigged arm's picture loaded (it starts loading the first time it's asked for)? */
+function armReady(arm: Arm) {
+  let art = armArt.get(arm.src);
+  if (!art) { art = new Image(); art.decoding = "async"; art.src = arm.src; armArt.set(arm.src, art); }
+  return art.complete && art.naturalWidth > 0;
+}
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)];
@@ -118,7 +135,9 @@ export default function WinterSnowballFight() {
       if (disposed) return;
       if (busy || guarded()) { schedule(1600); return; }
       const all = [...document.querySelectorAll<HTMLElement>("[data-snow-fighter]")].filter(onScreen);
-      let throwers = all.filter(el => el.dataset.snowRole !== "target" && !throwsOnOwn(el) && drawn(el));
+      // (Someone with a rigged arm waits until its picture is in: never a snowball without the hand.)
+      const armOf = (el: HTMLElement) => arms[el.dataset.snowFighter ?? ""];
+      let throwers = all.filter(el => el.dataset.snowRole !== "target" && !throwsOnOwn(el) && drawn(el) && (!armOf(el) || armReady(armOf(el))));
       // Preview one thrower (when they're on screen): ?preview=ve&fight-thrower=<name, or the start of one>.
       if (preview) throwers = throwers.filter(el => el.dataset.snowFighter?.startsWith(preview));
       if (!throwers.length) { schedule(preview ? 700 : 3000); return; }
@@ -134,7 +153,7 @@ export default function WinterSnowballFight() {
        */
       const windUpAt = async (to: Point): Promise<{ at: Point; size?: number } | null> => {
         const painted = paintedThrow(thrower);
-        const motion = winding = windUp(thrower, to.x >= hand.x ? 1 : -1, 1, { hold: !painted });
+        const motion = winding = windUp(thrower, to.x >= hand.x ? 1 : -1, 1, { hold: !painted, arm: armOf(thrower) });
         await motion.release;
         winding = null;
         if (disposed || isSnowballTimeout()) { motion.drop(); return null; }
