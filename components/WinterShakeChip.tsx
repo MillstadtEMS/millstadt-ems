@@ -15,8 +15,9 @@ import styles from "./WinterShakeChip.module.css";
 // hangs there a moment once a visit. Touch devices during the snowball fight only: never in Time
 // Out, with reduced motion, on the staff pages, with the menu open, once everyone has fallen, or
 // once the visitor has scrolled into the page (it bows out rather than hang over anything they
-// can tap). It steps aside for anything announced in the drive-by lane that would reach it. An
-// unanswered invitation (8 s) or a Don't Allow counts as declined for the rest of the visit.
+// can tap). It steps aside for anything announced in the drive-by lane that would reach it. If
+// it goes unanswered (10 s), the visitor's first tap on the page asks for motion instead
+// (lib/seasonal/crewShake); only a Don't Allow counts as declined for the rest of the visit.
 
 type Stage = "ask" | "go" | "hint";
 type Leaving = "fade" | "drop";
@@ -89,10 +90,10 @@ export default function WinterShakeChip({ hidden }: { hidden: boolean }) {
   useEffect(() => {
     if (!stage) return;
     const timer = window.setTimeout(() => {
-      // An unanswered invitation counts as declined for the rest of the visit (iPhones see it once).
-      if (stage === "ask") remember(deniedKey);
+      // An unanswered invitation just bows out: the visitor's first tap still asks for motion
+      // (lib/seasonal/crewShake), and only a real Don't Allow counts as declined for the visit.
       setLeaving(current => current ?? "fade");
-    }, stage === "ask" ? 8000 : stage === "go" ? 7000 : 5200);
+    }, stage === "ask" ? 10000 : stage === "go" ? 7000 : 5200);
     return () => window.clearTimeout(timer);
   }, [stage]);
   useEffect(() => {

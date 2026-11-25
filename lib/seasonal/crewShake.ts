@@ -220,6 +220,27 @@ function onMotion(event: DeviceMotionEvent) {
 
 let users = 0, askTimer: number | undefined;
 
+// iPhones and iPads only deliver motion once the visitor allows it, from a tap. The SHAKE sign asks,
+// but it's small and easy to miss, so the visitor's first tap anywhere during the snowball fight
+// (they tap to throw) asks too: one system prompt, after which shaking just works. A Don't Allow
+// (or Cancel) is final for the page; iOS itself remembers it.
+let gestureAsk: (() => void) | null = null;
+function armGestureAsk() {
+  if (gestureAsk) return;
+  const onTap = () => {
+    if (state.access !== "ask" || isSnowballTimeout()) return;
+    disarmGestureAsk();
+    askForShake();
+  };
+  window.addEventListener("click", onTap, true);
+  window.addEventListener("touchend", onTap, { capture: true, passive: true });
+  gestureAsk = () => {
+    window.removeEventListener("click", onTap, true);
+    window.removeEventListener("touchend", onTap, true);
+  };
+}
+function disarmGestureAsk() { gestureAsk?.(); gestureAsk = null; }
+
 /** Starts listening on phones and tablets (and with ?preview=ve&shake=1). Returns a stop function. */
 export function startShake(): () => void {
   if (typeof window === "undefined" || typeof DeviceMotionEvent === "undefined") return () => {};
@@ -229,7 +250,10 @@ export function startShake(): () => void {
     if (state.access === "idle") setAccess("listening");
     // No motion yet: iPhones and iPads need a tap to allow it.
     askTimer = window.setTimeout(() => {
-      if (state.access === "listening" && asker() && (isPhoneOrTablet() || previewMode()?.startsWith("ios"))) setAccess("ask");
+      if (state.access === "listening" && asker() && (isPhoneOrTablet() || previewMode()?.startsWith("ios"))) {
+        setAccess("ask");
+        armGestureAsk();
+      }
     }, 1400);
     if (previewMode()) (window as { __memsCrewShake?: () => unknown }).__memsCrewShake = shakeSnapshot;
   }
@@ -237,6 +261,7 @@ export function startShake(): () => void {
     if (--users > 0) return;
     window.removeEventListener("devicemotion", onMotion);
     window.clearTimeout(askTimer);
+    disarmGestureAsk();
   };
 }
 
@@ -244,6 +269,7 @@ export function startShake(): () => void {
 export function askForShake() {
   const ask = asker();
   if (!ask) return;
+  disarmGestureAsk();
   // ?preview=ve&shake=ios-deny rehearses a visitor who says Don't Allow.
   if (previewMode() === "ios-deny") { setAccess("denied"); return; }
   const answer = previewMode() === "ios" ? Promise.resolve("granted" as const) : ask.call(DeviceMotionEvent);
