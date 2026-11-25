@@ -148,3 +148,5 @@
   clip-path: inset(50%); white-space: nowrap;
 }
 @media print { .station { display: none; } }
+/* Time Out: the strobe and the sign hold still too. */
+:global(html[data-snowball-timeout]) .station :is(.words, .halo, .lens, .flash) { animation-play-state: paused; }
