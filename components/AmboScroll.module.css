@@ -298,6 +298,56 @@
 .winterLane[data-paused="true"] .roofStill { visibility: visible; }
 .winterLane[data-paused="true"] .roofMoving { visibility: hidden; }
 
+/* ---- Mylie at the wheel: behind the windshield glass, bobbing on her seat; every few seconds she
+   lifts a hand off the wheel to wave (and winks). The opening clips her, so the pillars and dash
+   stay in front; snow piling up on the truck covers her with it. ---- */
+.cab {
+  position: absolute;
+  pointer-events: none;
+}
+.cabWindow,
+.driver {
+  position: absolute;
+  inset: 0;
+}
+.driver { transform-origin: 50% 100%; }
+.convoy[data-moving] .driver { animation: driverBob .88s ease-in-out -.12s infinite alternate; }
+/* Stuck in the drift she rocks in her seat with the spinning wheels. */
+.convoy[data-stuck="true"] .driver { animation: driverRock .28s ease-in-out infinite alternate; }
+.driverWave,
+.driverHand { visibility: hidden; }
+.convoy[data-moving] .driverSmile { animation: driverSmile 6.4s linear var(--wave-delay, 0s) infinite; }
+.convoy[data-moving] .driverWave { animation: driverWave 6.4s linear var(--wave-delay, 0s) infinite; }
+.convoy[data-moving] .driverHand { animation: driverHand 6.4s ease-in-out var(--wave-delay, 0s) infinite; }
+
+/* ---- Mylie in the back of Jen's sleigh with her coffee: she sways along, steam curls off the cup
+   and now and then she gives a happy little bounce. ---- */
+.seat {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.seated {
+  position: absolute;
+  transform-origin: 50% 88%;
+}
+.convoy[data-moving] .seated { animation: mylieSway 5.2s ease-in-out infinite; }
+.steam {
+  position: absolute;
+  overflow: visible;
+}
+.steam path {
+  fill: none;
+  stroke: #fffaf0;
+  stroke-width: 4.2;
+  stroke-linecap: round;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.convoy[data-moving] .steam path { animation: steamRise 2.6s ease-out infinite; }
+.convoy[data-moving] .steam path + path { animation-delay: -1.3s; }
+
 /* ---- Santa's reindeer: a low swoop over the road with a galloping bounce. ---- */
 .team {
   inset: 0;
@@ -524,6 +574,61 @@
 @keyframes shadowPulse {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(.86); opacity: .7; }
+}
+
+@keyframes driverBob {
+  from { transform: translateY(0) rotate(0deg); }
+  to { transform: translateY(3.5%) rotate(.6deg); }
+}
+
+@keyframes driverRock {
+  from { transform: translate(-1.2%, 1%) rotate(-1.4deg); }
+  to { transform: translate(1.2%, 0) rotate(1.4deg); }
+}
+
+/* Smiling at the wheel, then a wave (and a wink) from 62% to 92% of the cycle. The poses swap
+   while the hand is down behind the dash, so it rises into view and sinks back out of it. */
+@keyframes driverSmile {
+  0%, 61.9% { visibility: visible; }
+  62%, 91.9% { visibility: hidden; }
+  92%, 100% { visibility: visible; }
+}
+
+@keyframes driverWave {
+  0%, 61.9% { visibility: hidden; }
+  62%, 91.9% { visibility: visible; }
+  92%, 100% { visibility: hidden; }
+}
+
+@keyframes driverHand {
+  0%, 61.9% { visibility: hidden; transform: translateY(44%) rotate(-6deg); }
+  62% { visibility: visible; transform: translateY(44%) rotate(-6deg); }
+  67% { transform: translateY(0) rotate(-10deg); }
+  71% { transform: translateY(0) rotate(12deg); }
+  75% { transform: translateY(0) rotate(-10deg); }
+  79% { transform: translateY(0) rotate(12deg); }
+  83% { transform: translateY(0) rotate(-8deg); }
+  87% { transform: translateY(0) rotate(5deg); }
+  91.9% { visibility: visible; transform: translateY(44%) rotate(0deg); }
+  92%, 100% { visibility: hidden; transform: translateY(44%) rotate(0deg); }
+}
+
+/* Swaying along, then a happy bounce: a dip, up on the toes and a settle. */
+@keyframes mylieSway {
+  0%, 100% { transform: translateY(0) rotate(-1.4deg) scale(1); }
+  22% { transform: translateY(0) rotate(1.4deg) scale(1); }
+  44% { transform: translateY(0) rotate(-1.2deg) scale(1); }
+  56% { transform: translateY(1%) rotate(.4deg) scale(1.02, .975); }
+  62% { transform: translateY(-4.5%) rotate(-1.8deg) scale(.985, 1.025); }
+  68% { transform: translateY(.6%) rotate(.8deg) scale(1.015, .985); }
+  74% { transform: translateY(0) rotate(1.2deg) scale(1); }
+}
+
+@keyframes steamRise {
+  0% { opacity: 0; transform: translateY(14%) scaleX(.7); }
+  22% { opacity: .78; }
+  70% { opacity: .35; }
+  100% { opacity: 0; transform: translateY(-26%) scaleX(1.25); }
 }
 
 @keyframes hoPop {
