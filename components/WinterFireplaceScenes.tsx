@@ -20,7 +20,8 @@ import styles from "./WinterFireplaceScenes.module.css";
 // while the officer glides smoothly across the floor. The fridge stands at the room's own scale,
 // a little taller than the fireplace, just past the presents with its feet on the floor at the
 // back wall; with room to spare the stage reaches the banner's visible right edge, so he truly
-// peeks in around it. It stays out where there's no wall for it (phones, the enlarged player).
+// peeks in around it. On narrower banners (phones, tablets) it stands in front of the presents,
+// and it stays out only where even that won't fit (the enlarged player, the smallest screens).
 // Between heists, and with reduced motion, the closed fridge simply stands there.
 
 const ART = "/images/winter/kit/turkey-heist";
@@ -52,8 +53,8 @@ const CREEP: ReadonlyArray<readonly [string, number]> = [
 const RUN = ["49-1", "49-2", "49-3", "49-4", "49-5", "49-6"] as const;
 // The room art (760 x 200): where the presents beside the fireplace end, the floor line at the back
 // wall (from the bottom), and the fridge's height there (the fireplace is about 135).
-const ROOM = { presentsRight: 748 / 760, floor: 30 / 200, fridge: 158 / 200 } as const;
-const MIN_SCALE = .18;
+const ROOM = { presentsLeft: 690 / 760, presentsRight: 748 / 760, floor: 30 / 200, fridge: 158 / 200 } as const;
+const MIN_SCALE = .17;
 const BIRD = { enter: 10_450, join: 12_700, end: 14_900, beak: [219, 102], size: [264, 230], width: 300, behind: 165, height: 285, beats: 3.6 } as const;
 const FIRST_TURN = 2_500, BETWEEN_TURNS = 50_000;
 
@@ -124,10 +125,14 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
       const room = stage.querySelector<HTMLElement>("[data-living-room]");
       const s = stage.getBoundingClientRect(), r = room?.getBoundingClientRect();
       if (!r || !r.width || getComputedStyle(room!).display === "none") { setLayout(null); return; }
-      const presents = r.left + r.width * ROOM.presentsRight;
+      const roomScale = r.height * ROOM.fridge / FRIDGE.h;
+      const reach = STAGE.doorRight - STAGE.fridgeLeft + 40; // the fridge and its open door, in stage pixels
+      let presents = r.left + r.width * ROOM.presentsRight;
+      // Narrower banners (phones, tablets) have no wall past the presents: the fridge stands in front of them.
+      if (s.right - presents < reach * roomScale) presents = r.left + r.width * ROOM.presentsLeft;
       const lane = s.right - presents;
       // Room scale (the fridge a little taller than the fireplace), unless its open door won't fit.
-      const scale = Math.min(r.height * ROOM.fridge / FRIDGE.h, lane / (STAGE.doorRight - STAGE.fridgeLeft + 40));
+      const scale = Math.min(roomScale, lane / reach);
       if (!(scale >= MIN_SCALE)) { setLayout(null); return; }
       const stageRight = presents + 8 - STAGE.fridgeLeft * scale + STAGE.w * scale;
       const right = Math.min(0, s.right - stageRight);
