@@ -223,7 +223,7 @@ function whenPast(l: Loco, x: number, from: number, keepGoing = true) {
 
 export function buildGag(stage: Stage) {
   const L = stage.left;
-  const OFF = L - 52;                       // her pelvis this far out: wholly past the edge
+  const OFF = L - 36;                       // her pelvis this far out: just wholly past the edge
   // ---------------------------------------------------------------- 2. walk in
   const tWalk = 650;
   const SPOT = 436;
@@ -276,7 +276,8 @@ export function buildGag(stage: Stage) {
     if (santaHeadWorld(santaDrag(t, g))[0] < L - 30) { tGone = t; break; }
   }
   // ---------------------------------------------------------------- 5. stroll back, sit, doze
-  const tStroll = tGone + 720;
+  // a beat with the room empty (about half a second once she's off the edge), then she strolls back in
+  const tStroll = tGone + 260;
   // she stops in front of the chair with her boots on the two spots she'll sit and stand up on
   const CHAIR = 73, FEET_L = 69, FEET_R = 77;
   const vSt = clamp((CHAIR - OFF) / 3.0, 78, 185);
@@ -290,8 +291,9 @@ export function buildGag(stage: Stage) {
   const vRun = clamp((RUN_FROM - OFF) / 1.25, 250, 470);
   const run2 = makeLoco({ style: "run", dir: -1, t0: tRun2, x0: RUN_FROM, x1: OFF - 40, v: vRun, step: clamp(vRun * .2, 46, 70), easeStart: true, startFeet: [FEET_L, FEET_R], hips: HIPS, lead: 0, sigma: .62 });
   const tOff = whenPast(run2, OFF - 6, tRun2);
-  const tTidy = Math.max(tOff - 250, tRun2 + 300);
-  const END = tTidy + 900;
+  // the milk and cookies are tidied away (they fade out) as she dashes off
+  const tTidy = Math.max(tRun2 + 60, tOff - 520);
+  const END = Math.max(tTidy + 560, tOff + 150);
 
   // ---------------------------------------------------------------- key poses
   const standR = (x: number, o: Partial<GabbyPose> = {}): GabbyPose => ({
@@ -471,7 +473,7 @@ export function buildGag(stage: Stage) {
   // ---------------------------------------------------------------- treats
   const PLATE: Pt = [613, FIREBOX.hearth], GLASS: Pt = [627, FIREBOX.hearth];
   const treats = (t: number): Treats => {
-    const o = Math.min(seg(t, 0, 380), 1 - seg(t, tTidy, tTidy + 600));
+    const o = Math.min(seg(t, 0, 380), 1 - seg(t, tTidy, tTidy + 520));
     const j = t - (tPop + 90);
     if (j < 0) return { o, plate: [PLATE[0], PLATE[1], 0], cookie: [PLATE[0] + 1, PLATE[1] - 3.2, 0], glass: [GLASS[0], GLASS[1], 0], splash: 0, puddle: 0 };
     // the plate hops and rattles; the loose cookie flies off over Gabby; the milk tips and spills
