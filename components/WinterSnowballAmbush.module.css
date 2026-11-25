@@ -45,13 +45,15 @@ html[data-snowball-timeout] .aim { pointer-events: none; cursor: auto; }
 .actor[data-stand] .drift { inset: auto -14% calc(var(--cut, 0px) - 3.5%) -14%; height: 9%; }
 .actor[data-phase="retreat"] .drift { animation: hideDrift .49s ease-in both; }
 
-/* The ball in hand while a classic thrower rises (it leaves when the shared snowball layer launches it). */
-.gloveBall {
-  position: absolute; width: 9.8%; aspect-ratio: 1; border-radius: 50%;
-  transform: translate(-50%,-90%); opacity: 0;
-  background: radial-gradient(at 32% 24%,#fff 18%,#edf7fc 47%,#93b4cb);
+/* A snowball held in a hand that isn't painted holding one: on the classic thrower's palm as they burst
+   out of the drift (they throw it next), or in a caroler's mitten before she lobs it. Shaded and
+   outlined like the painted ones; centred on the hand, sized like the ball they throw. */
+.heldBall {
+  position: absolute; aspect-ratio: 1; border-radius: 50%; translate: -50% -50%; opacity: 0;
+  background: radial-gradient(circle at 34% 28%,#fff 0 22%,#f1f6fa 46%,#d5e2ec 74%,#a9bfd0);
+  box-shadow: 0 0 0 1.5px #3b4652b3, inset -2px -3px 4px #6d86a052;
 }
-.actor[data-phase="rise"][data-kind="classic"] .gloveBall { animation: gather .66s ease-out both; }
+.actor[data-kind="classic"][data-phase="rise"] .heldBall[data-palm], .heldBall[data-mitten] { opacity: 1; }
 
 /* Entrances and exits */
 .actor[data-phase="rise"] .rise { animation: pop .62s cubic-bezier(.2,.8,.3,1) both; }
@@ -65,9 +67,38 @@ html[data-snowball-timeout] .aim { pointer-events: none; cursor: auto; }
 
 /* Moods and moves */
 .actor[data-phase="idle"] .motion { animation: breathe 2.6s ease-in-out infinite; }
-.actor[data-phase="toss"] .motion { animation: tossLift .44s cubic-bezier(.3,.7,.4,1) both; }
 .actor[data-phase="wave"] .motion { animation: rock .86s ease-in-out 2; }
-.actor[data-phase="throw"] .motion { animation: fling .43s ease-in-out both; }
+
+/* Throws. The wind-up picture (snowball up in the cocked hand) leans back and holds; the release
+   picture snaps forward with a squash and the ball leaves that hand. Every throwing hand is on the
+   left of its picture, so leaning back is a turn to the left. */
+.actor[data-phase="windup"] .motion, .actor[data-phase="rewind"] .motion { animation: windup .48s cubic-bezier(.3,.6,.4,1) both; }
+.actor[data-phase="release"] .motion { animation: release .38s cubic-bezier(.15,.75,.3,1) both; }
+/* Standing in the drift, they bend for a handful of snow and come back up with it packed. */
+.actor[data-phase="scoop"] .rise { animation: stoop .26s cubic-bezier(.5,0,.8,.6) forwards; }
+.actor[data-phase="rewind"] .rise { animation: unstoop .32s cubic-bezier(.2,.8,.3,1.05) both; }
+/* A peek ducks out of sight to scoop up snow, pops back up with it held high, pumps once, and hurls. */
+.actor[data-phase="dip"] .rise { animation: duck .23s cubic-bezier(.5,0,.9,.5) forwards; }
+.actor[data-phase="cock"] .rise { animation: popBack .36s cubic-bezier(.2,.85,.3,1.05) both; }
+.actor[data-phase="cock"] .motion { animation: cock .82s ease-out both; }
+.actor[data-phase="hurl"] .motion { animation: hurl .46s cubic-bezier(.15,.75,.3,1) both; }
+.actor[data-phase="buried"] .motion { animation: land .32s ease-out both; }
+
+/* The swish of the throwing arm: a crisp white smear along the hand's arc, flicked on and gone. */
+.swish {
+  position: absolute; aspect-ratio: 1; translate: -50% -50%; overflow: visible; pointer-events: none;
+  fill: #fff; stroke: #c4d6e6; stroke-width: 1.2; stroke-linejoin: round;
+  filter: drop-shadow(0 0 1.5px #13294080); transform-origin: 70% 30%;
+  animation: swish .3s ease-out both;
+}
+
+/* Snow heaped on Mylie or Gabby: each hit thumps it up a step (drawn in front of them on the stage). */
+.pile {
+  position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none;
+  transform-origin: 50% 85%; animation: pileThump .26s ease-out;
+}
+.pileEdge { fill: none; stroke: #93aec6; stroke-width: 1.7px; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.pileShade { fill: none; stroke: #c6d8ea; stroke-width: 1.5px; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .actor[data-phase="sing"] .motion { animation: sway 2.4s ease-in-out infinite; }
 .actor[data-phase="indignant"] .motion { animation: huff .62s ease-out both; }
 .actor[data-phase="lob"] .motion { animation: lob .52s ease-in-out both; }
@@ -151,10 +182,25 @@ html[data-snowball-timeout] .aim { pointer-events: none; cursor: auto; }
 
 @keyframes growDrift { from { opacity: .05; transform: scale(.35,.3); } to { opacity: 1; transform: none; } }
 @keyframes hideDrift { 0%,40% { opacity: 1; } to { opacity: 0; transform: scale(.77,.54); } }
-@keyframes gather { 0%,50% { opacity: 0; } 86%,100% { opacity: 1; } }
 /* One rise per visit, with only a small settle at the top. */
 @keyframes pop { 0% { transform: translateY(105%) scale(.94,.92); } 70% { transform: translateY(-1.6%) rotate(-1deg); } to { transform: none; } }
-@keyframes tossLift { 30% { transform: translateY(-2.6%) rotate(-1.6deg) scale(1.015); } to { transform: none; } }
+@keyframes windup { 55% { transform: rotate(-4.5deg) translateX(-1.5%) scale(.985,1.015); } to { transform: rotate(-5.5deg) translateX(-2%) scale(.98,1.02); } }
+@keyframes release {
+  from { transform: rotate(-5.5deg) translateX(-2%) scale(.98,1.02); }
+  25% { transform: rotate(6deg) translate(2.5%,-1%) scale(1.04,.97); } 60% { transform: rotate(-1.5deg); } to { transform: none; }
+}
+@keyframes stoop { to { transform: translateY(13%) scale(1.03,.95); } }
+@keyframes unstoop { from { transform: translateY(13%) scale(1.03,.95); } 70% { transform: translateY(-1.5%); } to { transform: none; } }
+@keyframes cock { 45% { transform: rotate(-4deg) translateY(1.5%); } 65% { transform: rotate(-2.5deg) translateY(.5%); } 85%,to { transform: rotate(-5deg) translateY(1.8%); } }
+@keyframes hurl {
+  from { transform: rotate(-5deg) translateY(1.8%); }
+  22% { transform: rotate(5deg) translateY(-1.5%) scale(1.06); } 55% { transform: rotate(-1deg) scale(.99); } to { transform: none; }
+}
+@keyframes swish {
+  from { opacity: 1; transform: rotate(-28deg) scale(.7); } 35% { opacity: 1; transform: none; }
+  70% { opacity: .85; transform: rotate(6deg) scale(1.02, .9); } to { opacity: 0; transform: rotate(10deg) scale(1.04, .7); }
+}
+@keyframes pileThump { 0% { transform: scale(1.03,.88); } 55% { transform: scale(.99,1.04); } to { transform: none; } }
 @keyframes peekIn {
   from { transform: translate(calc(var(--side) * -72%), 34%) rotate(calc(var(--side) * -9deg)); }
   72% { transform: translate(calc(var(--side) * 1.2%), -.8%) rotate(calc(var(--side) * 1deg)); }
@@ -166,7 +212,6 @@ html[data-snowball-timeout] .aim { pointer-events: none; cursor: auto; }
 @keyframes sink { to { transform: translateY(112%) rotate(4deg) scale(.95); } }
 @keyframes breathe { 50% { transform: translateY(-1.1%) rotate(.6deg); } }
 @keyframes rock { 25% { transform: rotate(-3.2deg); } 75% { transform: rotate(3.2deg); } }
-@keyframes fling { 0% { transform: rotate(7deg) scale(.98); } 36% { transform: rotate(-5deg) translateY(-3%); } to { transform: none; } }
 @keyframes sway { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg) translateY(-1%); } }
 @keyframes huff { 18% { transform: rotate(-7deg) translateY(1%); } 42% { transform: rotate(4deg); } 62% { transform: rotate(-3deg); } 82% { transform: rotate(1.5deg); } }
 @keyframes lob { 38% { transform: rotate(-6deg) translateY(1.5%); } 60% { transform: rotate(7deg) translateY(-2.5%); } }
@@ -212,7 +257,7 @@ html[data-device="tesla"] .notes i:nth-child(n+2), html[data-device="tesla"] .fl
 
 @media (prefers-reduced-motion: reduce) {
   .actor, .actor *, .puff, .smack, .fleck { animation: none !important; }
-  .actor[data-phase="rise"][data-kind="classic"] .gloveBall { opacity: 1; }
+  .swish { display: none; }
   .actor[data-phase="strum"] .frame[data-frame="s3"], .actor[data-phase="flip"] .frame[data-frame="f5"] { opacity: 1; }
   .actor[data-phase="retreat"], .actor[data-phase="duck"] { opacity: .35; }
   .notes, .fleck { display: none; }

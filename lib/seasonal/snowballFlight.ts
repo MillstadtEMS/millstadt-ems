@@ -12,6 +12,12 @@ export type ThrowOptions = {
   to: Point;
   /** Ball diameter at release, CSS px. Defaults to ~1.25% of the screen width. */
   size?: number;
+  /**
+   * Diameter (CSS px) of the snowball the thrower was holding: the flight starts at exactly that size,
+   * so the ball that leaves a hand is the one that was in it (no jump). Coming at the viewer it then
+   * swells to at least its usual size at the glass.
+   */
+  fromSize?: number;
   /** Apex height above the straight line between the points. Defaults from the distance. */
   arc?: number;
   /** Sideways travel speed in px/s (real snowballs: a brisk, slightly lobbed toss). */
@@ -70,13 +76,16 @@ export function throwSnowball(options: ThrowOptions): Promise<void> {
   const spin = rand(420, 760) * (dx < 0 ? -1 : 1);
   const steps = 20;
   const frames: Keyframe[] = [];
+  // Start scale: the held ball's size when known (viewer throws otherwise start small and far).
+  const s0 = options.fromSize ? options.fromSize / size : viewer ? .38 : 1;
+  const s1 = Math.max(3.28, s0 * 2.2);
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
     // Projectile motion: x moves at constant speed, y follows a gravity parabola.
     const x = from.x + dx * t;
     const y = from.y + dy * t - 4 * arc * t * (1 - t);
     // Coming at the screen it swells (perspective); into the scene it shrinks slightly with distance.
-    const s = viewer ? .38 + 2.9 * t * t : 1 - .22 * t + .06 * Math.sin(Math.PI * t);
+    const s = viewer ? s0 + (s1 - s0) * t * t : s0 * (1 - .22 * t + .06 * Math.sin(Math.PI * t));
     frames.push({ transform: `translate(${x - size / 2}px, ${y - size / 2}px) rotate(${spin * t}deg) scale(${s})`, offset: t });
   }
   const host = layer();
