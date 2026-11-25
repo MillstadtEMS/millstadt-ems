@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isTesla } from "@/lib/device/profile";
-import { claimPeople } from "@/lib/seasonal/cast";
+import { claimPerson } from "@/lib/seasonal/cast";
 import { isSnowballTimeout, snowballTimeoutEvent } from "@/lib/seasonal/snowballTimeout";
 import { MYLIE_RIG as RIG } from "./WinterMylieRink.rig";
 import { rinkDepthZ, rinkRescueEvent, type RinkRescueState } from "./WinterRinkRescue";
@@ -264,6 +264,8 @@ const DY = { tall: 57, aspect: 236 / 367 };
 const F_COUNTER = .215, F_ICE = .2, F_DYLAN = .12;
 /** Window event: the rink's skaters clear the ice to the back boards while Mylie's run plays. */
 export const rinkSceneEvent = "winter-rink-scene";
+/** Where they look while they wait: the stall end of the rink (it also keeps them clear of the stall). */
+const SCENE_WATCH = .25;
 
 function buildScene(env: Env) {
   const A = env.W / env.R;
@@ -734,7 +736,7 @@ function Scene({ onDone, seek }: { onDone: () => void; seek: boolean }) {
       host.dataset.ready = "true";
       // the rink's own skaters drift to the back boards and watch, as they do for Dylan's axel
       clearing = true;
-      window.dispatchEvent(new CustomEvent(rinkSceneEvent, { detail: { active: true, x: .42 } }));
+      window.dispatchEvent(new CustomEvent(rinkSceneEvent, { detail: { active: true, x: SCENE_WATCH } }));
       if (seek) {
         // preview frame stepping: window.__mylieRinkSeek(t) draws the scene at t seconds
         (window as Window & { __mylieRinkSeek?: (t: number) => number }).__mylieRinkSeek = (t: number) => { render(t); return scene?.length ?? 0; };
@@ -745,7 +747,7 @@ function Scene({ onDone, seek }: { onDone: () => void; seek: boolean }) {
     });
     return () => {
       disposed = true;
-      if (clearing) window.dispatchEvent(new CustomEvent(rinkSceneEvent, { detail: { active: false, x: .42 } }));
+      if (clearing) window.dispatchEvent(new CustomEvent(rinkSceneEvent, { detail: { active: false, x: SCENE_WATCH } }));
       cancelAnimationFrame(frameId);
       window.removeEventListener(snowballTimeoutEvent, onTimeout);
       motion.removeEventListener("change", onMotion);
@@ -802,7 +804,10 @@ function Scene({ onDone, seek }: { onDone: () => void; seek: boolean }) {
 /* ------------------------------------------------------------------ when it plays */
 export default function WinterMylieRink({ active }: { active: boolean }) {
   const [scene, setScene] = useState(0);
-  const release = useRef<(() => void) | null>(null);
+  // Mylie and Dylan are claimed for the run (no other act can use them meanwhile); Dylan stays
+  // claimed a little while after they skate off, so he doesn't come straight back for his axel.
+  const release = useRef<{ mylie: (() => void) | null; dylan: (() => void) | null }>({ mylie: null, dylan: null });
+  const dylanRest = useRef(0);
   const seq = useRef(0);
   const [config] = useState(() => {
     if (typeof window === "undefined") return { preview: false, seek: false };
@@ -814,8 +819,10 @@ export default function WinterMylieRink({ active }: { active: boolean }) {
   const nextAt = useRef(0);
 
   const done = useCallback(() => {
-    release.current?.();
-    release.current = null;
+    release.current.mylie?.();
+    release.current.mylie = null;
+    window.clearTimeout(dylanRest.current);
+    dylanRest.current = window.setTimeout(() => { release.current.dylan?.(); release.current.dylan = null; }, 15000);
     nextAt.current = performance.now() + (config.preview ? 5000 : (75 + Math.random() * 65) * 1000);
     setScene(0);
   }, [config.preview]);
@@ -838,17 +845,28 @@ export default function WinterMylieRink({ active }: { active: boolean }) {
       const busy = !ice || document.hidden || motion.matches || isSnowballTimeout() || rescue.current
         || ice.querySelector('[data-skater="dylan"][data-on="true"], [data-skater="redwings"][data-on="true"], [data-skater="blues"][data-on="true"], [data-serving="true"]');
       if (busy) { timer = window.setTimeout(attempt, 4000); return; }
-      const claim = claimPeople(["mylie", "dylan"]);
-      if (!claim) { timer = window.setTimeout(attempt, 4000); return; }
-      release.current = claim;
+      const held = release.current.dylan; // still ours from the last run, perhaps
+      const mylie = claimPerson("mylie"), dylan = held ?? claimPerson("dylan");
+      if (!mylie || !dylan) {
+        mylie?.();
+        if (dylan && !held) dylan();
+        timer = window.setTimeout(attempt, 4000);
+        return;
+      }
+      window.clearTimeout(dylanRest.current);
+      release.current = { mylie, dylan };
       setScene(++seq.current);
     };
     timer = window.setTimeout(attempt, 300);
     return () => window.clearTimeout(timer);
   }, [active, scene, config.preview]);
 
-  // Leaving the rink (scrolled away) or unmounting lets Mylie and Dylan go.
-  useEffect(() => () => { release.current?.(); release.current = null; }, []);
+  // Unmounting lets Mylie and Dylan go.
+  useEffect(() => () => {
+    window.clearTimeout(dylanRest.current);
+    release.current.mylie?.(); release.current.dylan?.();
+    release.current = { mylie: null, dylan: null };
+  }, []);
 
   return scene ? <Scene key={scene} onDone={done} seek={config.seek} /> : null;
 }
