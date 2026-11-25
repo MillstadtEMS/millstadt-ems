@@ -727,13 +727,15 @@ function Scene({ onDone, seek }: { onDone: () => void; seek: boolean }) {
       if (fr.done && !finished && !seek) { finished = true; onDone(); }
     }
 
+    let frames = 0;
     function tick(now: number) {
       frameId = 0;
       if (disposed || !playing) return;
-      const dt = Math.min(.05, Math.max(0, (now - last) / 1000));
+      const dt = Math.min(.1, Math.max(0, (now - last) / 1000));
       last = now;
       if (!document.hidden) clock += dt;
-      render(clock);
+      // the car's browser draws the scene at half rate, as it does the rink
+      if (!tesla || ++frames % 2 === 0 || clock >= (scene?.length ?? 0)) render(clock);
       if (!finished) frameId = requestAnimationFrame(tick);
     }
     const stop = () => { if (!finished) { finished = true; onDone(); } };
