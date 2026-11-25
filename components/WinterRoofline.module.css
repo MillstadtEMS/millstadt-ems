@@ -466,6 +466,11 @@
   10% { opacity: 1; }
   100% { opacity: 0; transform: rotate(var(--flake-angle)) translateX(clamp(12px,2vw,24px)) scale(.35); }
 }
+/* Santa's ladder rescue (WinterLadderRescue) moves the figure around its grip: no aim, no tie, and
+   Jen's and Kenny's painted strand stays behind on the lights. */
+.cradle[data-rescue] { transform-origin: 0 0; }
+.cradle[data-rescue] :is(.tether, .aim) { visibility: hidden; }
+.cradle[data-rescue] .figure { clip-path: var(--release-mask, none); }
 .announcement {
   position: absolute; width: 1px; height: 1px; overflow: hidden;
   clip-path: inset(50%); white-space: nowrap;
