@@ -367,7 +367,7 @@
 }
 .gabbyRoof[data-mirror] .gabbyFlip { transform: scaleX(-1); }
 /* Mirrored (roof 2), the anger mark goes on the side of her head away from her neighbour. */
-.gabbyRoof[data-mirror] .gabbyAnger { left: 30%; }
+.gabbyRoof[data-mirror] .gabbyAnger { left: 30%; top: calc(28% - max(8.89%, 12px) - 2px); }
 .gabbySheet {
   position: absolute;
   top: 0;
@@ -400,7 +400,8 @@
    never smaller than 12px, so it reads on a phone. */
 .gabbyAnger {
   position: absolute;
-  top: 13%;
+  /* Its bottom sits just above her grumble's top (24%); 10% of her box's width is 8.89% of its height. */
+  top: calc(24% - max(8.89%, 12px) - 2px);
   left: 58%;
   width: max(10%, 12px);
   aspect-ratio: 1;
@@ -460,6 +461,8 @@
   border-top-color: #7a1018;
 }
 .gabbyFume[data-mute] .gabbyGrumble { display: none; }
+/* Roof 2 (mirrored, near the lane's top): her grumble sits beside her face, under the anger mark. */
+.gabbyRoof[data-mirror] .gabbyGrumble { top: 28%; }
 .gabbyFume[data-side="right"] .gabbyGrumble { left: 60%; transform-origin: 0 100%; }
 .gabbyFume[data-side="right"] .gabbyGrumble::after { left: .5em; }
 .gabbyFume[data-side="left"] .gabbyGrumble { right: 60%; transform-origin: 100% 100%; }
@@ -879,11 +882,15 @@
 }
 
 /* The anger mark: up with her glare (she peeks at 40%), throbbing until she's done fuming. */
+/* It vanishes for the hop up onto the roof and pops again as she lands. */
 @keyframes gabbyAnger {
   0%, 33% { opacity: 0; transform: scale(.4); }
   36% { opacity: 1; transform: scale(1.25); }
   39%, 43%, 47%, 55%, 63%, 71%, 79%, 87% { opacity: 1; transform: scale(.9); }
-  41%, 45%, 51%, 59%, 67%, 75%, 83% { opacity: 1; transform: scale(1.15); }
+  41%, 45%, 59%, 67%, 75%, 83% { opacity: 1; transform: scale(1.15); }
+  47.5%, 50.9% { opacity: 0; transform: scale(.4); }
+  51% { opacity: 1; transform: scale(.6); }
+  53% { opacity: 1; transform: scale(1.25); }
   89% { opacity: 1; transform: scale(1); }
   91%, 100% { opacity: 0; transform: scale(.6); }
 }
