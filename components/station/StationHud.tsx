@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Bell, BellOff } from "lucide-react";
-import { currentConditionText, flightAcceptance, type MetarData } from "@/lib/weather/millstadt";
+import { currentConditionText, flightAcceptance, metarFlightCategory, type MetarData } from "@/lib/weather/millstadt";
 import { centralParts, holidayAt, monthNames, useStationSecond, weekdayNames } from "./stationTime";
 import type { StationWeather } from "./useStationWeather";
 import WeatherIcon, { weatherKind } from "./WeatherIcon";
@@ -114,7 +114,7 @@ export function StationHelicopter({ weather, big = false }: { weather: StationWe
     );
   }
   const result = flightAcceptance(data);
-  const category = data.metar?.flightCategory ?? null;
+  const category = metarFlightCategory(data.metar);
   const reason = shorterReasons[result.reason] ?? result.reason;
   return (
     <div className={styles.heli} data-status={result.status} data-big={big || undefined} role="status" aria-label={`Helicopters: ${result.title.toLowerCase()}. ${result.reason}`}>

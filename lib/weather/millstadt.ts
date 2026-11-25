@@ -210,6 +210,35 @@ export function currentConditionText(data: Pick<WeatherData, "current" | "period
   return data.current.wmoCode != null ? wmoDescription(data.current.wmoCode) : (data.periods[0]?.shortForecast ?? "—");
 }
 
+/** METAR visibility in statute miles: aviationweather.gov sends a number or text such as "10+" or "1 1/2". */
+function metarVisibilityMiles(value: unknown): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value !== "string") return null;
+  const text = value.replace(/[+SM]/gi, " ").replace(/^P/i, "").trim();
+  let miles = 0, any = false;
+  for (const part of text.split(/\s+/)) {
+    const fraction = part.match(/^(\d+)\/(\d+)$/);
+    if (fraction) { miles += Number(fraction[1]) / Number(fraction[2]); any = true; }
+    else if (/^\d+(\.\d+)?$/.test(part)) { miles += Number(part); any = true; }
+  }
+  return any ? miles : null;
+}
+
+/** The METAR's flight category: as reported, else worked out from its ceiling and visibility by the
+ *  FAA's bands (the same ones aviationweather.gov uses). Used by the station TV. */
+export function metarFlightCategory(m: MetarData | null): MetarData["flightCategory"] {
+  if (!m) return null;
+  if (m.flightCategory) return m.flightCategory;
+  const ceiling = getMetarCeilingFt(m);
+  const visibility = metarVisibilityMiles(m.visib);
+  if (ceiling == null && visibility == null) return null;
+  const below = (limitFt: number, limitMi: number) => (ceiling != null && ceiling < limitFt) || (visibility != null && visibility < limitMi);
+  if (below(500, 1)) return "LIFR";
+  if (below(1000, 3)) return "IFR";
+  if ((ceiling != null && ceiling <= 3000) || (visibility != null && visibility <= 5)) return "MVFR";
+  return "VFR";
+}
+
 // ── Helicopter Flyability ──────────────────────────────────────────────────
 
 export const FLYABILITY_THRESHOLDS = {
