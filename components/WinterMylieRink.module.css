@@ -1,0 +1,157 @@
+/* Mylie's cocoa run on the Christmas rink: a cut-out puppet of her paintings moved by script, the
+   real Dylan from the rink, and the cocoa vendor's arm. Everything here is decoration: it never
+   takes a click. The stage has no z-index of its own, so each figure sorts by depth with the
+   rink's skaters and the stall (rinkDepthZ). */
+.stage {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+}
+.stage[data-ready="false"] { visibility: hidden; }
+
+.stage img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  max-width: none;
+  transform-origin: 0 0;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* A rig is a box in its painting's own pixels, placed, scaled and (walking, skating) mirrored onto
+   the ice by script; every part inside carries its own matrix. One rig shows at a time: crisp swaps. */
+.rig, .reflection {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.rig[data-on="false"], .reflection[data-on="false"], .stage [data-on="false"] { visibility: hidden; }
+/* Matched to the rink's painted skaters. */
+.rig { filter: brightness(.95) saturate(.97) drop-shadow(0 1px 1px #1c243b66); }
+/* Her reflection in the ice: flipped about the blades and squashed, fading away from them. */
+.reflection {
+  opacity: .28;
+  filter: blur(.7px) saturate(.8);
+  mask-image: linear-gradient(to top, black 3%, rgb(0 0 0 / 55%) 14%, transparent 30%);
+}
+
+/* Contact shadows on the ice, placed by script under each blade (100x14 scaled). */
+.shadow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100px;
+  height: 14px;
+  margin: -7px 0 0 -50px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #0b1426c4 0, #16213b80 34%, #27345133 58%, transparent 72%);
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+}
+
+/* Steam off the coffee, the heart for the first sip, a sparkle for the cheers, ice chips. */
+.steam, .heart, .sparkle, .chip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.steam {
+  width: 7px;
+  height: 16px;
+  margin: -16px 0 0 -3.5px;
+  border-left: 1.4px solid #fff8ea;
+  border-radius: 50%;
+  filter: blur(.3px);
+  transform-origin: 50% 100%;
+}
+.heart { width: 14px; height: 13px; margin: -13px 0 0 -7px; transform-origin: 50% 100%; }
+.sparkle { width: 14px; height: 14px; margin: -7px 0 0 -7px; transform-origin: 50% 50%; }
+.heart svg, .sparkle svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.chip {
+  width: 3px;
+  height: 3px;
+  margin: -1.5px 0 0 -1.5px;
+  border-radius: 50%;
+  background: #f3fbff;
+  box-shadow: 0 0 2px #cde9ff;
+}
+
+/* Dylan: the same painting and the same set-up as on the rink (a lane at his spot on the ice, the
+   figure turning and leaning about his blades, a shadow and a reflection under him). */
+.dylanLane {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 57%;
+  aspect-ratio: 236 / 367;
+  transform-origin: 50% 100%;
+  will-change: transform;
+}
+.dylanFigure, .dylanMirror {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 100%;
+}
+.stage .dylanFigure img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: brightness(.95) drop-shadow(0 1px 1px #1c243b66);
+}
+.dylanMirror {
+  top: 100%;
+  bottom: auto;
+  height: 34%;
+  overflow: hidden;
+  transform-origin: 50% 0;
+  mask-image: linear-gradient(black, transparent 92%);
+}
+.stage .dylanMirror img {
+  top: auto;
+  bottom: 100%;
+  width: 100%;
+  height: 294.12%;
+  transform-origin: 50% 100%;
+  transform: scaleY(-.5);
+  opacity: .3;
+  filter: blur(.7px) saturate(.8);
+}
+.dylanShadow {
+  position: absolute;
+  left: 9%;
+  width: 74.9%;
+  bottom: -3.4%;
+  height: 8%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #0b1426c4 0, #16213b80 34%, #27345133 58%, transparent 72%);
+}
+
+/* The cocoa vendor's arm, in the stall painting's pixels over the stall: her painted forearm is
+   covered by a patch of her apron while the cut-out one (and the cup) move. It shows only above
+   the counter and outside her stacked mugs and the marshmallow jar (clip-path set by script). */
+.vendor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 51;
+  transform-origin: 0 0;
+  filter: brightness(.91);
+}
+.vendorLayer { position: absolute; inset: 0; }
+.vendorCup { filter: brightness(.96) saturate(.95); }
+
+:global(html[data-device="tesla"]) .reflection,
+:global(html[data-device="tesla"]) .dylanMirror { display: none; }
+:global(html[data-device="tesla"]) .rig { filter: none; }
+
+@media (prefers-reduced-motion: reduce), print {
+  .stage { display: none; }
+}
