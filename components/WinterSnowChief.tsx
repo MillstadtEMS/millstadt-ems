@@ -16,10 +16,14 @@ const people = {
   jen: {
     name: "Jen", surprise: "/images/winter/snow-chief-boo.webp", mad: "/images/winter/snow-chief-mad.webp",
     faceX: .5, faceY: .24, alt: "Jen pops out of a Millstadt snowdrift with wide eyes, a Santa hat and both hands raised.",
+    // Her raised right palm (screen right): the site-wide fight packs and throws its snowball there.
+    palm: "0.87,0.23",
   },
   kenny: {
     name: "Kenny", surprise: "/images/winter/kenny/snow-boo.webp", mad: "/images/winter/kenny/snow-mad.webp",
     faceX: .53, faceY: .26, alt: "Kenny pops out of another snowdrift in his EMS uniform and Santa hat, holding a lump of coal.",
+    // His open, raised palm (screen left; the coal stays in the other hand).
+    palm: "0.2,0.235",
   },
 } as const;
 type Person = keyof typeof people;
@@ -200,7 +204,7 @@ export default function WinterSnowChief({ person }: { person: Person }) {
   const angry = phase !== "idle" && phase !== "incoming" && phase !== "recover";
   return (
     <div ref={actor} className={styles.chief} data-snow-chief="" data-person={person}
-      data-snow-fighter={person} data-snow-own-click="" data-snow-off={pose !== "out"}
+      data-snow-fighter={person} data-snow-own-click="" data-snow-off={pose !== "out"} data-snow-hand={chief.palm} data-snow-windup={chief.palm}
       style={{ "--throw-art": `url("${chief.mad}")` } as CSSProperties} data-revealed={pose === "out"}
       data-ducked={pose === "buried"} data-fight={phase} data-angry={angry}>
       <div className={styles.pose}>

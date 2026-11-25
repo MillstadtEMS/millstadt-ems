@@ -86,8 +86,13 @@ const officers: Record<Chief, Officer> = {
 };
 // This document's dismissals follow client navigation and reset on reload. Kept on the window so a
 // module reload (a code update while the page is open) doesn't put everyone back on the lights.
-const memory = globalThis as typeof globalThis & { __memsFallenChiefs?: Set<Chief>; __memsEveryoneDown?: boolean };
+const memory = globalThis as typeof globalThis & { __memsFallenChiefs?: Set<Chief>; __memsEveryoneDown?: boolean; __memsRescuedChiefs?: Set<Chief> };
 const fallenChiefs: Set<Chief> = (memory.__memsFallenChiefs ??= new Set<Chief>());
+// Santa's ladder rescue (WinterLadderRescue) takes people off the lights without the fall. They count
+// as down once the truck has gone (finishRescue), so the living room's easter eggs (Gabby's chimney
+// gag has its own Santa) wait until the rescue is over.
+const rescuedChiefs: Set<Chief> = (memory.__memsRescuedChiefs ??= new Set<Chief>());
+const offLights = (chief: Chief) => fallenChiefs.has(chief) || rescuedChiefs.has(chief);
 // Knocking everyone off the lights unlocks the living room's turkey heist (WinterFireplaceScenes).
 const crewListeners = new Set<() => void>();
 export function subscribeCrewDown(listener: () => void) {
@@ -101,6 +106,85 @@ const latchEveryoneDown = () => { everyoneDown = memory.__memsEveryoneDown = tru
 /** How many of the crew have been knocked off the lights on this visit. */
 export const crewDownCount = () => fallenChiefs.size;
 export const allCrewDown = () => everyoneDown || lineup.every(chief => fallenChiefs.has(chief));
+
+// Each figure on the lights registers here for the rescue: its grip on the wire (viewport px), its
+// box, and a bounce for its string of lights when it lets go.
+type Hanging = { element: HTMLDivElement; x: number; y: number; width: number; height: number; retire: () => void; bounce: () => void };
+const hangingFigures = new Map<Chief, Hanging>();
+const rescuing = new Set<Chief>();
+const announce = () => crewListeners.forEach(listener => listener());
+export type CrewChief = Chief;
+/** Everyone is still on the lights (the living room's pull station lights up only then). */
+export const allCrewHanging = () => lineup.every(chief => !offLights(chief) && hangingFigures.has(chief));
+export type HangingCrewMember = { chief: Chief; name: string; x: number; y: number; width: number; height: number };
+/** The crew still on the lights, left to right: each grip on the wire and the figure's box size (viewport px). */
+export function hangingCrew(): HangingCrewMember[] {
+  return lineup.flatMap(chief => {
+    const figure = hangingFigures.get(chief);
+    if (!figure || offLights(chief)) return [];
+    return [{ chief, name: officers[chief].name, x: figure.x, y: figure.y, width: figure.width, height: figure.height }];
+  });
+}
+/** Takes a crew member off the lights without the fall (their string of lights bounces as they let
+ *  go). The caller moves their figure (a transform around the grip, `transform-origin: 0 0`) until it
+ *  calls release(); they count as down at finishRescue(). */
+export function rescueChief(chief: Chief): { element: HTMLDivElement; release: () => void } | null {
+  const figure = hangingFigures.get(chief);
+  if (!figure || offLights(chief) || rescuing.has(chief)) return null;
+  rescuing.add(chief);
+  rescuedChiefs.add(chief);
+  figure.element.dataset.rescue = "";
+  figure.bounce();
+  announce();
+  let released = false;
+  return { element: figure.element, release: () => { if (released) return; released = true; figure.retire(); } };
+}
+/** The rescue is over: everyone Santa took off the lights counts as down (unlocking the living room's
+ *  easter eggs once the whole crew is off). */
+export function finishRescue() {
+  if (!rescuedChiefs.size) return;
+  rescuedChiefs.forEach(chief => fallenChiefs.add(chief));
+  rescuedChiefs.clear();
+  if (lineup.every(chief => fallenChiefs.has(chief))) latchEveryoneDown();
+  announce();
+}
+
+// ── The station TV (/station) ────────────────────────────────────────────────────────────────────
+// Its attract loop drops the crew off the lights on its own (no visitor snowball, mad faces) and later
+// puts them back, each arriving along a path (the ladder) that the station supplies.
+export type HangingChief = Chief;
+/** Left to right, one per swag. */
+export const crewLineup = (): readonly Chief[] => lineup;
+export const chiefIsDown = (chief: Chief) => fallenChiefs.has(chief);
+const droppers = new Map<Chief, () => boolean>();
+const restorers = new Map<Chief, () => void>();
+const entrances = new Map<Chief, (cradle: HTMLElement) => void>();
+/** Station: the normal fall from the lights, with no visitor volley, and a mad face. False if already down. */
+export function dropChief(chief: Chief): boolean {
+  return droppers.get(chief)?.() ?? false;
+}
+/** Station: put one of the crew back on the lights. enter(cradle) runs as the figure is placed (before
+ *  it paints), so it can arrive along a path; the everyone-down latch clears so the loop can repeat. */
+export function restoreChief(chief: Chief, enter?: (cradle: HTMLElement) => void) {
+  everyoneDown = memory.__memsEveryoneDown = false;
+  if (!fallenChiefs.has(chief)) return;
+  fallenChiefs.delete(chief);
+  if (enter) entrances.set(chief, enter);
+  restorers.get(chief)?.();
+  crewListeners.forEach(listener => listener());
+}
+/** Station: everyone back on the lights at once (reduced motion, or leaving the station). */
+export function restoreCrew() {
+  for (const chief of lineup) restoreChief(chief);
+  everyoneDown = memory.__memsEveryoneDown = false;
+  crewListeners.forEach(listener => listener());
+}
+// Mad faces for the station's falls, painted onto each hanging pose (Gabby's own mad face is in her rig).
+const stationArt = (file: string) => `/images/winter/kit/station/${file}.webp`;
+const madFaces: Partial<Record<Chief, string>> = {
+  kenny: stationArt("kenny-hanging-mad"), jen: stationArt("jen-hanging-mad"), kalista: stationArt("kalista-hanging-mad"),
+  braeden: stationArt("braeden-hanging-mad"), dylan: stationArt("dylan-hanging-mad"),
+};
 
 /** Gabby's own painted swing, its still (reduced motion, Time Out), and her furious face as she falls. */
 function AnimRig({ anim, onMask, hit, motion, hard }: { anim: NonNullable<Officer["anim"]>; onMask: (image: HTMLImageElement) => void; hit: boolean; motion: boolean; hard: string }) {
@@ -160,7 +244,7 @@ function Limb({ src }: { src: string }) {
 // the hips, each leg kicking from its own hip as the page moves, and a still copy of the hips under
 // the legs so a kick never opens a hole. The figure never changes size: only the face changes, to
 // the freaked-out face painted onto the same body (…-hanging-scared.webp).
-function KitRig({ officer, onMask, motion }: { officer: Officer; onMask: (image: HTMLImageElement) => void; motion: boolean }) {
+function KitRig({ officer, onMask, motion, mad }: { officer: Officer; onMask: (image: HTMLImageElement) => void; motion: boolean; mad?: string }) {
   const { splitX, splitY, hipLeft, hipRight, turn, split = [[splitX, splitY], [splitX, 100]] } = officer.legs!;
   const seam = split.map(([x, y]) => `${x}% ${y}%`).join(",");
   const foot = split[split.length - 1][0];
@@ -188,6 +272,7 @@ function KitRig({ officer, onMask, motion }: { officer: Officer; onMask: (image:
           <span className={styles.strainFace}>{art(officer.strain[0], false, true)}</span>
           <span className={`${styles.strainFace} ${styles.strainHard}`}>{art(officer.strain[1], false, true)}</span>
         </>}
+        {mad && <span className={styles.madFace}>{art(mad)}</span>}
       </span>
       {/* The painted belt and hips over the joins. */}
       <span className={styles.kitPiece} style={{ clipPath: `polygon(37% ${splitY - 6}%,66% ${splitY - 6}%,64% ${splitY + 3}%,39% ${splitY + 3}%)` }}>{art(officer.calm!)}</span>
@@ -241,15 +326,16 @@ const limitSwing = (deg: number, oneHand: boolean) => {
 // A shaken string's push on the swing (after each person's own share of it).
 const SHAKE_PUSH = 1.25;
 
-function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObject<HTMLSpanElement | null>; menuOpen: boolean }) {
+function HangingCrew({ chief, anchor, menuOpen, station = false }: { chief: Chief; anchor: RefObject<HTMLSpanElement | null>; menuOpen: boolean; station?: boolean }) {
   const body = useSyncExternalStore<HTMLElement | null>(noSubscription, bodyOnClient, noBody);
   const puppet = useRef<HTMLDivElement>(null);
   const target = useRef<HTMLButtonElement>(null);
   const alpha = useRef<Uint8ClampedArray | null>(null);
   const retire = useRef<number | undefined>(undefined);
-  const [gone, setGone] = useState(() => fallenChiefs.has(chief));
-  // slip: they lost their grip to a shaking phone (no snowball flies).
-  const [shot, setShot] = useState<{ x: number; y: number; slip?: boolean } | null>(null);
+  const [gone, setGone] = useState(() => offLights(chief));
+  // slip: they lost their grip to a shaking phone (no snowball flies). volley false: the station TV
+  // dropped them on cue (no visitor snowball, a mad face).
+  const [shot, setShot] = useState<{ x: number; y: number; slip?: boolean; volley?: false } | null>(null);
   // The swing a shaking phone drives, shared with the fall (they let go the way they swing).
   const pendulum = useRef({ theta: 0, omega: 0 });
   // The straining faces load only once someone means to shake (most visitors never will).
@@ -290,7 +376,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
   }
 
   const throwSnowball = useCallback((x: number, y: number, slip = false) => {
-    if (fallenChiefs.has(chief) || isSnowballTimeout()) return;
+    if (offLights(chief) || isSnowballTimeout()) return;
     fallenChiefs.add(chief);
     if (lineup.every(c => fallenChiefs.has(c))) latchEveryoneDown();
     crewListeners.forEach(listener => listener());
@@ -304,6 +390,15 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
   }, [anchor, chief]);
 
   useEffect(() => () => window.clearTimeout(retire.current), []);
+  // Leaves the rescue registry when the figure leaves the lights for good.
+  useEffect(() => {
+    if (gone) return;
+    const figure = puppet.current;
+    return () => {
+      hangingFigures.delete(chief);
+      if (rescuing.delete(chief)) delete figure?.dataset.rescue;
+    };
+  }, [chief, gone]);
 
   // The straining faces decode as soon as they load, so their first appearance mid-shake is an
   // instant swap instead of a hitch at the very moment the struggle starts.
@@ -337,6 +432,31 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     });
   }, [chief, gone, shot, throwSnowball]);
 
+  // Station TV: drop off on cue (the same fall, no volley, a mad face) and come back when restored.
+  useEffect(() => {
+    if (!station) return;
+    droppers.set(chief, () => {
+      if (offLights(chief)) return false;
+      fallenChiefs.add(chief);
+      if (lineup.every(c => fallenChiefs.has(c))) latchEveryoneDown();
+      crewListeners.forEach(listener => listener());
+      setShot({ x: 0, y: 0, volley: false });
+      const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.clearTimeout(retire.current);
+      retire.current = window.setTimeout(() => setGone(true), still ? 750 : 1460);
+      return true;
+    });
+    restorers.set(chief, () => {
+      window.clearTimeout(retire.current);
+      setShot(null);
+      setGone(false);
+      // Still on screen (mid-fall): arrive from here; otherwise the placement effect runs it on remount.
+      const enter = entrances.get(chief);
+      if (enter && puppet.current) { entrances.delete(chief); enter(puppet.current); }
+    });
+    return () => { droppers.delete(chief); restorers.delete(chief); };
+  }, [chief, station]);
+
 
   useEffect(() => {
     const figure = puppet.current;
@@ -367,15 +487,21 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     function hit(event: MouseEvent) {
       const mask = alpha.current;
       if (!figure || event.defaultPrevented || !event.detail || event.button !== 0 || isSnowballTimeout() ||
-          fallenChiefs.has(chief) || Math.hypot(event.clientX - startX, event.clientY - startY) > tapSlop(startType)) return;
-      if (!(event.target instanceof Element) || event.target.closest(controls)) return;
+          offLights(chief) || Math.hypot(event.clientX - startX, event.clientY - startY) > tapSlop(startType)) return;
+      // Page controls under a hanging figure keep priority, except the living-room pull station: a
+      // crew member hanging in front of it is the one being tapped (on phones it stands in the narrow
+      // gap between Braeden and Dylan, so there only their costume right under the finger counts, not
+      // the finger's reach, or the station could never be pulled).
+      if (!(event.target instanceof Element)) return;
+      const station = Boolean(event.target.closest("[data-pull-station]"));
+      if (event.target.closest(controls) && !station) return;
       // Ask the browser which rotated/clipped costume pieces are at this point (and, for a finger,
       // a small ring around it). The overlay only participates in hit-testing during this
       // synchronous lookup, so page links, form fields, text selection and touch scrolling retain priority.
       figure.dataset.sampling = "";
       let visibleInk = false;
       try {
-        visibleInk = reachSamples(touchReach(startType)).some(([dx, dy]) => inkAt(event.clientX + dx, event.clientY + dy, mask));
+        visibleInk = reachSamples(station ? 0 : touchReach(startType)).some(([dx, dy]) => inkAt(event.clientX + dx, event.clientY + dy, mask));
       } finally { delete figure.dataset.sampling; }
       if (visibleInk) {
         event.preventDefault();
@@ -396,7 +522,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       hoverFrame = 0;
       const event = hoverAt;
       let on = false;
-      if (event && figure && !isSnowballTimeout() && !fallenChiefs.has(chief)) {
+      if (event && figure && !isSnowballTimeout() && !offLights(chief)) {
         const box = figure.querySelector("[data-snow-fighter]")?.getBoundingClientRect();
         if (box && event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom
             && !document.elementFromPoint(event.clientX, event.clientY)?.closest(controls)) {
@@ -511,7 +637,8 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       if (next < face && strain > [0, .19, .48, .72][face]) next = face;
       if (startled) next = Math.max(next, 1);
       if (calm || falling) next = 0;
-      if (next !== face && (now - faceAt > 300 || falling || calm)) {
+      // (Santa's ladder rescue sets the face of whoever is on his rope.)
+      if (next !== face && !rescuing.has(chief) && (now - faceAt > 300 || falling || calm)) {
         face = next; faceAt = now;
         if (face) figure.dataset.face = String(face);
         else delete figure.dataset.face;
@@ -544,7 +671,8 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     }
 
     function measure() {
-      if (!figure || !pin || !header) return;
+      // Santa's ladder rescue moves the figure now.
+      if (!figure || !pin || !header || rescuing.has(chief)) return;
       const pos = pin.getBoundingClientRect();
       const view = document.documentElement.clientWidth;
       const hidden = !pos.width || pos.top < 5 || getComputedStyle(header).visibility === "hidden";
@@ -557,6 +685,14 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       pageY = window.scrollY;
       paint();
       figure.dataset.ready = "";
+      const known = hangingFigures.has(chief);
+      hangingFigures.set(chief, {
+        element: figure, x, y, width: figure.offsetWidth, height: figure.offsetWidth / officer.ratio, retire: () => setGone(true),
+        bounce: () => pin.parentElement?.animate([
+          { transform: "translateY(0)" }, { transform: "translateY(-3px)" }, { transform: "translateY(1px)" }, { transform: "translateY(0)" },
+        ], { duration: 460, easing: "ease-out" }),
+      });
+      if (!known) announce();
     }
 
     function frame(now: number) {
@@ -625,7 +761,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       const dy = y - (scroller ? scrollPositions.get(scroller) ?? 0 : pageY);
       if (scroller) scrollPositions.set(scroller, y);
       else pageY = y;
-      if (Math.abs(dy) <= .1 || reduced.matches || document.hidden) return;
+      if (Math.abs(dy) <= .1 || reduced.matches || document.hidden || rescuing.has(chief)) return;
       const now = performance.now();
       const elapsed = Math.max(12, Math.min(65, now - lastInput));
       lastInput = now;
@@ -645,7 +781,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     });
     // A snowball from the site-wide fight: a hard swing and the startled face.
     function struck(event: Event) {
-      if (reduced.matches || document.hidden) return;
+      if (reduced.matches || document.hidden || rescuing.has(chief)) return;
       const from = (event as CustomEvent<{ from?: { x: number } }>).detail?.from;
       const box = figure!.getBoundingClientRect();
       sign = from && from.x > box.left + box.width / 2 ? -1 : 1;
@@ -671,6 +807,9 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     reduced.addEventListener("change", rest);
     figure.addEventListener("mems:snow-hit", struck);
     measure();
+    // Station: a figure put back on the lights arrives along the station's path (the ladder).
+    const enter = entrances.get(chief);
+    if (enter) { entrances.delete(chief); enter(figure); }
     return () => {
       sizing.disconnect(); changing.disconnect(); letting.disconnect(); unshake();
       figure.removeEventListener("mems:snow-hit", struck);
@@ -681,14 +820,14 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       document.removeEventListener("visibilitychange", rest);
       reduced.removeEventListener("change", rest);
     };
-  }, [anchor, anim, body, chief, gone, officer.drive, officer.fallback, officer.folder, officer.grip, officer.phase, officer.tempo]);
+  }, [anchor, anim, body, chief, gone, officer.drive, officer.fallback, officer.folder, officer.grip, officer.phase, officer.ratio, officer.tempo]);
 
   if (!body) return null;
   if (gone) return shot ? createPortal(<span role="status" className={styles.announcement}>{officer.name} fell from the Christmas lights!</span>, body) : null;
   const kit = !officer.folder && !anim;
   return createPortal(<>
     <div ref={puppet} className={styles.cradle} data-hanging-chief={chief} data-phase={shot ? "hit" : "hanging"}
-      data-fall={shot?.slip ? "slip" : undefined}
+      data-fall={shot?.slip ? "slip" : undefined} data-mad={shot?.volley === false || undefined}
       data-menu-open={menuOpen} data-kit={kit || undefined} data-anim={anim ? "" : undefined} data-grip={gripReady || undefined}
       style={{ "--hang-ratio": String(officer.ratio), "--hang-scale": String((officer.ratio / rigRatio) * (officer.size ?? 1)),
         ...officer.grip.holes ? { "--grip-holes": `url(${officer.grip.holes})` } : {} } as CSSProperties}>
@@ -702,7 +841,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       <div className={styles.hanger}><div className={styles.drop}><div className={styles.idle}><div className={styles.figure} data-snow-fighter={chief} data-snow-role="target">
         {officer.grip.arms && <ArmsRig src={officer.grip.arms} width={anim ? 450 : officer.folder ? 477 : Math.round(640 * officer.ratio)} height={anim ? 540 : officer.folder ? 716 : 640} />}
         {anim ? <AnimRig anim={anim} onMask={loadMask} hit={Boolean(shot)} motion={motion} hard={officer.strain[1]} />
-          : kit ? <KitRig officer={officer} onMask={loadMask} motion={motion} /> : <>
+          : kit ? <KitRig officer={officer} onMask={loadMask} motion={motion} mad={station ? madFaces[chief] : undefined} /> : <>
           {/* A still copy of the painted hips under the swinging legs: a big kick can't open a gap at the hip. */}
           <span className={styles.hips}><Limb src={officer.folder + "hanging.webp"} /></span>
           <span className={styles.legLeft}><Limb src={officer.folder + "hanging.webp"} /><HitMap /></span>
@@ -716,6 +855,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
               <Image src={officer.strain[0]} alt="" width={477} height={716} className={styles.strained} unoptimized loading="eager" data-shake-face="" />
               <Image src={officer.strain[1]} alt="" width={477} height={716} className={styles.strainedHard} unoptimized loading="eager" data-shake-face="" />
             </>}
+            {station && madFaces[chief] && <Image src={madFaces[chief]!} alt="" width={477} height={716} className={styles.madFace} unoptimized loading="eager" />}
             <HitMap />
           </div>
         </>}
@@ -727,7 +867,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
           }} />
       </div></div></div></div>
     </div>
-    {shot && !shot.slip && <div className={styles.volley} data-roof-snowball={chief} aria-hidden="true" style={{
+    {shot && !shot.slip && shot.volley !== false && <div className={styles.volley} data-roof-snowball={chief} aria-hidden="true" style={{
       left: shot.x, top: shot.y,
       "--launch-x": `${window.innerWidth / 2 - shot.x}px`,
       "--launch-y": `${Math.max(120, window.innerHeight * .87 - shot.y)}px`,
@@ -737,6 +877,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       </span>
     </div>}
     <span role="status" className={styles.announcement}>{shot ? shot.slip ? `${officer.name} lost their grip and is falling from the lights!`
+      : shot.volley === false ? `${officer.name} lost their grip on the lights!`
       : `Snowball hit! ${officer.name} is falling from the lights.` : ""}</span>
   </>, body,
   );
@@ -744,9 +885,10 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
 
 // One person per swag of lights, left to right.
 const lineup: Chief[] = ["kenny", "kalista", "braeden", "dylan", "gabby", "jen"];
-const someoneHanging = () => lineup.some(chief => !fallenChiefs.has(chief));
+// (Anyone Santa has taken down off the ladder is off the lights too.)
+const someoneHanging = () => lineup.some(chief => !offLights(chief));
 
-export default function WinterRoofline({ menuOpen = false, standalone = false }: { menuOpen?: boolean; standalone?: boolean }) {
+export default function WinterRoofline({ menuOpen = false, standalone = false, station = false }: { menuOpen?: boolean; standalone?: boolean; station?: boolean }) {
   const roof = useRef<HTMLDivElement>(null);
   const pin0 = useRef<HTMLSpanElement>(null), pin1 = useRef<HTMLSpanElement>(null), pin2 = useRef<HTMLSpanElement>(null);
   const pin3 = useRef<HTMLSpanElement>(null), pin4 = useRef<HTMLSpanElement>(null), pin5 = useRef<HTMLSpanElement>(null);
@@ -754,8 +896,9 @@ export default function WinterRoofline({ menuOpen = false, standalone = false }:
   const crewHanging = useSyncExternalStore(subscribeCrewDown, someoneHanging, () => true);
 
   // Phones and tablets: shaking the device rattles the crew on the lights (crewShake). The staff
-  // pages stay calm: no shaking there.
-  useEffect(() => standalone ? undefined : startShake(), [standalone]);
+  // pages stay calm (no shaking there), and the station TV runs its own loop of falls, so neither
+  // listens for motion.
+  useEffect(() => standalone || station ? undefined : startShake(), [standalone, station]);
 
   useEffect(() => {
     const garland = roof.current;
@@ -796,7 +939,7 @@ export default function WinterRoofline({ menuOpen = false, standalone = false }:
   }, []);
 
   return (
-    <div ref={roof} className={styles.roof} data-winter-roof="" data-standalone={standalone || undefined}>
+    <div ref={roof} className={styles.roof} data-winter-roof="" data-standalone={standalone || undefined} data-station={station || undefined}>
       {[...swags.slice(0, 3), 15, ...swags.slice(3)].map((sag, slot) => {
         // Slot 3 is the gap over the music video: the lights run across it, nobody hangs there.
         const gap = slot === 3;
@@ -826,10 +969,11 @@ export default function WinterRoofline({ menuOpen = false, standalone = false }:
         </div>
         );
       })}
-      {lineup.map((chief, span) => <HangingCrew key={chief} chief={chief} anchor={pins[span]} menuOpen={menuOpen} />)}
+      {lineup.map((chief, span) => <HangingCrew key={chief} chief={chief} anchor={pins[span]} menuOpen={menuOpen} station={station} />)}
       {/* The invitation hangs from the lights themselves (the decorations above are hidden from
-          screen readers; the sign is not). The staff pages stay calm: no shaking there. */}
-      {!standalone && <WinterShakeChip hidden={menuOpen || !crewHanging} />}
+          screen readers; the sign is not). The staff pages and the station TV (its own loop drops
+          the crew) stay calm: no shaking there. */}
+      {!standalone && !station && <WinterShakeChip hidden={menuOpen || !crewHanging} />}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { askForShake, shakeAccess, shakeCount, subscribeShakeAccess, type ShakeAccess } from "@/lib/seasonal/crewShake";
+import { useLaneTuck } from "@/lib/seasonal/driveLane";
 import { useSnowballTimeout } from "@/lib/seasonal/snowballTimeout";
 import styles from "./WinterShakeChip.module.css";
 
@@ -14,7 +15,8 @@ import styles from "./WinterShakeChip.module.css";
 // hangs there a moment once a visit. Touch devices during the snowball fight only: never in Time
 // Out, with reduced motion, on the staff pages, with the menu open, once everyone has fallen, or
 // once the visitor has scrolled into the page (it bows out rather than hang over anything they
-// can tap). A Don't Allow is remembered for the visit.
+// can tap). It steps aside for anything announced in the drive-by lane that would reach it. An
+// unanswered invitation (8 s) or a Don't Allow counts as declined for the rest of the visit.
 
 type Stage = "ask" | "go" | "hint";
 type Leaving = "fade" | "drop";
@@ -49,6 +51,11 @@ export default function WinterShakeChip({ hidden }: { hidden: boolean }) {
   const sign = useRef<HTMLSpanElement>(null);
   const shown = useRef(false);
   const shakesAtShow = useRef(0);
+  // A drive-by (or anything else announced in lib/seasonal/driveLane) about to reach the sign.
+  const tuck = useLaneTuck(() => {
+    const box = sign.current?.getBoundingClientRect();
+    return box ? { left: box.left, right: box.right, top: box.top, bottom: box.bottom } : null;
+  }, { recheck: stage });
 
   // When to offer it: a beat after the page settles, while the visitor is still at the top.
   useEffect(() => {
@@ -81,12 +88,16 @@ export default function WinterShakeChip({ hidden }: { hidden: boolean }) {
   }, [shakes, stage]);
   useEffect(() => {
     if (!stage) return;
-    const timer = window.setTimeout(() => setLeaving(current => current ?? "fade"), stage === "ask" ? 16000 : stage === "go" ? 7000 : 5200);
+    const timer = window.setTimeout(() => {
+      // An unanswered invitation counts as declined for the rest of the visit (iPhones see it once).
+      if (stage === "ask") remember(deniedKey);
+      setLeaving(current => current ?? "fade");
+    }, stage === "ask" ? 8000 : stage === "go" ? 7000 : 5200);
     return () => window.clearTimeout(timer);
   }, [stage]);
   useEffect(() => {
-    if (stage && (hidden || timeout)) setLeaving(current => current ?? "fade");
-  }, [hidden, stage, timeout]);
+    if (stage && (hidden || timeout || tuck)) setLeaving(current => current ?? "fade");
+  }, [hidden, stage, timeout, tuck]);
   useEffect(() => {
     if (!leaving) return;
     const timer = window.setTimeout(() => { setStage(null); setLeaving(null); }, leaving === "drop" ? 760 : 340);
@@ -130,7 +141,7 @@ export default function WinterShakeChip({ hidden }: { hidden: boolean }) {
     </>
   );
   return (
-    <span ref={sign} className={styles.sign} data-stage={stage} data-leaving={leaving ?? undefined}>
+    <span ref={sign} className={styles.sign} data-stage={stage} data-leaving={leaving ?? undefined} data-snow-own-click="">
       <span className={styles.swing}>
         {/* Two little chains from a hook on the light string to the sign's top corners. */}
         <svg className={styles.chains} viewBox="0 0 30 14" preserveAspectRatio="none" aria-hidden="true" focusable="false">
