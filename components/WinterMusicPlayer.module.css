@@ -102,16 +102,54 @@
 /* The site's mobile rule caps spans in page content at 100% width; the room must stay 760px. */
 .player .room { max-width: none; }
 .roomVideo { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
-.tvScreen { display: none; }
+/* The old console TV's slot, repainted (2x art at the room's full size, transparent elsewhere):
+   the wall, wainscoting and a braided rug, a small 1990s woodgrain TV with rabbit ears on an oak
+   stand (VCR, tapes), a floor lamp by the tree and a little painting by the mantel. It lies over the
+   room video, so the fire, tree lights and window snow keep moving around it. */
+.repaint {
+  position: absolute;
+  inset: 0;
+  background: url("/images/winter/kit/living-room/tv-corner.webp") 0 0 / 100% 100% no-repeat;
+}
+/* The VCR's clock has never been set: 12:00, blinking. */
+.vcrClock {
+  position: absolute;
+  left: 388.25px;
+  top: 157.75px;
+  width: 22px;
+  height: 5.25px;
+  background: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 44 10.5%27%3E%3Cpath fill=%27%237dfadb%27 d=%27M12.55 2.7h1.05v2.24h-1.05zM12.55 5.57h1.05v2.24h-1.05zM16.25 1.75h2.9v1.05h-2.9zM19.15 2.7h1.05v2.24h-1.05zM16.25 7.7h2.9v1.05h-2.9zM15.2 5.57h1.05v2.24h-1.05zM16.25 4.72h2.9v1.05h-2.9zM21.4 3.6h1.05v1.05h-1.05zM21.4 6.2h1.05v1.05h-1.05zM24.7 1.75h2.9v1.05h-2.9zM27.6 2.7h1.05v2.24h-1.05zM27.6 5.57h1.05v2.24h-1.05zM24.7 7.7h2.9v1.05h-2.9zM23.65 5.57h1.05v2.24h-1.05zM23.65 2.7h1.05v2.24h-1.05zM31.3 1.75h2.9v1.05h-2.9zM34.2 2.7h1.05v2.24h-1.05zM34.2 5.57h1.05v2.24h-1.05zM31.3 7.7h2.9v1.05h-2.9zM30.25 5.57h1.05v2.24h-1.05zM30.25 2.7h1.05v2.24h-1.05z%27/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  filter: drop-shadow(0 0 1px #4cf2c4);
+  animation: vcrBlink 1.6s steps(1, end) infinite;
+}
+@keyframes vcrBlink { 50% { opacity: 0; } }
+.player[data-still] .vcrClock { animation-play-state: paused; }
 .player iframe { position: relative; z-index: 1; border-radius: 6px; }
-/* On the TV the video fills the whole glass, edge to edge: scaled up to the glass height and
-   trimmed at the sides (148 / 112.5 = 1.3156; 207.5px of width stays visible). */
+/* On the little TV the video fills its glass, edge to edge: the 200 x 112.5 player keeps its size
+   for YouTube but is drawn at 48% (the glass is 72 x 54 at (341.25, 77) in the 760 x 200 room, so
+   its centre is 16.5px below the player's) and trimmed at the sides to the glass's 4:3 shape. */
 .player:not([data-expanded="true"]) iframe {
-  transform: scale(1.3156);
-  clip-path: inset(0 21.14px round 2.3px);
+  transform: translate(0, 16.5px) scale(.48);
+  clip-path: inset(0 25px round 10.4px);
   border-radius: 0;
   box-shadow: none;
 }
+.tvGlass {
+  position: absolute;
+  z-index: 2;
+  left: 64px;
+  top: 45.75px;
+  width: 72px;
+  height: 54px;
+  border-radius: 5px;
+  pointer-events: none;
+  background:
+    linear-gradient(158deg, rgb(255 255 255 / .2) 0%, rgb(255 255 255 / .07) 24%, transparent 42%),
+    radial-gradient(120% 110% at 50% 45%, transparent 60%, rgb(0 0 0 / .42) 100%),
+    repeating-linear-gradient(0deg, rgb(0 0 0 / .12) 0 1px, transparent 1px 3px);
+  box-shadow: inset 0 0 5px rgb(0 0 0 / .65);
+}
+.player[data-expanded="true"] .tvGlass { display: none; }
 .controls { z-index: 2; }
 .player[data-expanded="true"] .room { display: none; }
 /* The room sits flush with the bottom of the banner (it reaches 56.25px below the video). */
@@ -150,7 +188,7 @@
     transform-origin: 50% 100%;
   }
 }
-@media (prefers-reduced-motion: reduce) { .roomVideo { display: none; } }
+@media (prefers-reduced-motion: reduce) { .roomVideo { display: none; } .vcrClock { animation: none; } }
 @media (max-width: 600px) {
   .stage:has(.player) :global([data-slot]) { width: min(20vw, 70px); }
   .stage:has(.player) :global([data-slot="0"]) { left: 0; }

@@ -284,17 +284,23 @@ function Soundtrack() {
     );
   }
   return (<>
-    <aside className={styles.player} data-winter-video="" data-expanded={expanded} aria-label="Christmas soundtrack">
-      {/* The living room: the music video plays on the old TV (its screen is the video's width). */}
+    <aside className={styles.player} data-winter-video="" data-expanded={expanded} data-still={timeout || undefined}
+      aria-label="Christmas soundtrack">
+      {/* The living room: the music video plays on the little 1990s TV on its stand. The repaint
+          covers the old console TV's slot of the looping room video (its fire, tree lights and window
+          snow keep moving around it). */}
       <span className={styles.room} aria-hidden="true" data-living-room="">
         <video ref={room} className={styles.roomVideo} src="/images/winter/kit/living-room/living-room.mp4"
           poster="/images/winter/kit/living-room/living-room-still.webp" muted loop playsInline preload="auto"
           disablePictureInPicture disableRemotePlayback tabIndex={-1} />
-        <i className={styles.tvScreen} />
+        <i className={styles.repaint} />
+        <i className={styles.vcrClock} />
       </span>
       <iframe id={frameId} ref={frame} title="Christmas Saves the Year by Twenty One Pilots, official music video"
         allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
         referrerPolicy="strict-origin-when-cross-origin" />
+      {/* The picture tube's glass: a soft reflection and scan lines over the video. */}
+      <i className={styles.tvGlass} aria-hidden="true" />
       {/* The TV's buttons, each with its word underneath, docked on the header's red-and-green
           split right above the TV. */}
       {(() => {
