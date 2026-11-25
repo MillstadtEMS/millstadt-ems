@@ -783,9 +783,10 @@ function runCast(env: Env) {
     set(actor, { phase: "idle", frame: rig.after ?? "throw", hittable: true });
   }
   /**
-   * Mylie and Gabby: every hit heaps more snow on them (a lumpy pile that thumps up a step); the last
-   * one buries them to the eyes, they hold it a beat, and sink away under it. Gabby, buried, bursts
-   * out of a puff of snow sitting in a snowbank with her arms folded, glaring, before she goes.
+   * Mylie and Gabby: every hit heaps more snow on them (a lumpy mound that thumps up a step); the last
+   * one buries them to the eyes. Mylie wriggles under it ("Mmmph!"), sinks into the heap, and the heap
+   * settles away. Gabby bursts out of a puff of snow sitting in a snowbank with her arms folded,
+   * glaring, before she goes.
    */
   async function snowedUnder(actor: Actor, wait: Wait, done: boolean) {
     set(actor, { phase: "hit", frame: actor.rig.frames.scared ? "scared" : actor.frame, bury: Math.min(1, actor.hits / actor.toughness), bubble: "" });
@@ -800,15 +801,21 @@ function runCast(env: Env) {
     }
     env.say(`Direct hit! ${actor.name} is snowed in up to her eyes and sinks out of sight.`);
     await wait(700);
-    if (actor.rig.frames.buried) {
-      poof(actor);
-      await wait(70);
-      set(actor, { phase: "buried", frame: "buried", bury: 0 });
-      await wait(300);
-      set(actor, { bubble: "Seriously?!", mood: "cross" });
-    } else {
-      set(actor, { bubble: "Mmmph!" });
+    if (!actor.rig.frames.buried) {
+      set(actor, { phase: "muffled", bubble: "Mmmph!" });
+      await wait(1800);
+      set(actor, { phase: "sunk", bubble: "" });
+      await wait(reducedMotion() ? 300 : 720);
+      set(actor, { phase: "settle" });
+      await wait(reducedMotion() ? 200 : 520);
+      remove(actor);
+      return;
     }
+    poof(actor);
+    await wait(70);
+    set(actor, { phase: "buried", frame: "buried", bury: 0 });
+    await wait(300);
+    set(actor, { bubble: "Seriously?!", mood: "cross" });
     await wait(1800);
     set(actor, { bubble: "", mood: "" });
     await retreat(actor, wait, true);
@@ -1094,31 +1101,53 @@ function runCast(env: Env) {
 const pct = (n: number) => `${(n * 100).toFixed(3)}%`;
 
 /**
- * The snow heaped on a character (stage units), like the drive-by's buried sleigh riders: lumps all
- * along, wider than they are, rising from below the floor line; at `b` = 1 it comes up to just under
- * the eyes, with a dip across the face so the eyes still peek out over it.
+ * The snow heaped on a character (stage units), like the drive-by's buried sleigh riders: a mound
+ * wider than they are, with rounded shoulders that run on down past the floor line, lumpy along the
+ * top (lumpier the deeper it gets) and level across the face; at `b` = 1 it comes up to just under
+ * the eyes, so they still peek out over it.
  */
 function pileShape(rig: Rig, b: number) {
-  const { W, H } = rig, floor = H * rig.visible, eye = (rig.eyes ?? H * .25) + H * .028;
-  const level = floor - (floor - eye) * b, lump = Math.min(1, b * 2.4);
-  const fx = rig.faces[0][0], half = W * .19;
-  const xs = [-.18, -.07, .04, .15, .26, .37, .48, .59, .7, .81, .92, 1.03, 1.14].map(t => t * W);
-  // Higher away from the face (a heap around the head), level across it.
-  const pts = xs.map((x, i) => [x, level - (Math.abs(x - fx) < half ? 0 : (i % 2 ? .05 : .028) * H * lump)] as const);
-  let top = `${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
-  for (let i = 1; i < pts.length; i++) {
-    const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
-    const face = Math.abs((x0 + x1) / 2 - fx) < half;
-    const cy = face ? Math.max(y0, y1) + H * .012 * lump : Math.min(y0, y1) - (x1 - x0) * .42 * lump;
-    top += ` Q ${((x0 + x1) / 2).toFixed(1)} ${cy.toFixed(1)} ${x1.toFixed(1)} ${y1.toFixed(1)}`;
-  }
-  const bottom = (H * 1.05).toFixed(1);
-  // A few soft drifts of shading inside the heap.
-  const shade = [.12, .45, .78].map((t, i) => {
-    const x = t * W, y = level + (floor - level) * (.35 + .2 * i) + H * .03;
-    return `M ${(x - W * .14).toFixed(1)} ${y.toFixed(1)} Q ${x.toFixed(1)} ${(y - H * .025).toFixed(1)} ${(x + W * .14).toFixed(1)} ${y.toFixed(1)}`;
+  const { W, H } = rig, floor = H * rig.visible, eye = (rig.eyes ?? H * .25) + H * .03;
+  // (The open side of a corner lean always tips down, so the heap's foot stays below the floor line.)
+  const level = floor - (floor - eye) * b, base = floor + H * .08, lump = Math.min(1, b * 2.2);
+  const fx = rig.faces[0][0], half = W * .16;
+  const xs = -W * .3, xe = W * 1.3;
+  const fmt = (v: number) => v.toFixed(1);
+  const smooth = (e0: number, e1: number, v: number) => { const t = Math.min(1, Math.max(0, (v - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
+  // Lumps of uneven widths along the top, each bulging in proportion to its width.
+  const widths = [1, 1.45, .85, 1.25, 1, 1.55, .8, 1.3, 1.1, .9, 1.35, 1, 1.5, .85, 1.2];
+  const total = widths.reduce((sum, w) => sum + w, 0);
+  let run = 0;
+  const pts = [0, ...widths].map((w, i) => {
+    run += i ? w : 0;
+    const u = run / total, x = xs + (xe - xs) * u, dome = smooth(0, .34, u) * smooth(1, .66, u);
+    return { x, face: Math.abs(x - fx) < half, y: base - (base - level) * dome, dome };
+  });
+  // Lumps bulge up between the points; across the face the snow lies level, dipping a touch.
+  const curve = (dy: number) => {
+    let d = `${fmt(pts[0].x)} ${fmt(pts[0].y + dy)}`;
+    for (let i = 1; i < pts.length; i++) {
+      const p = pts[i - 1], q = pts[i];
+      const cy = p.face && q.face ? Math.max(p.y, q.y) + H * .01 * lump
+        : Math.min(p.y, q.y) - (q.x - p.x) * .55 * (.3 + .7 * lump) * Math.max(.35, Math.min(p.dome, q.dome));
+      d += ` Q ${fmt((p.x + q.x) / 2)} ${fmt(cy + dy)} ${fmt(q.x)} ${fmt(q.y + dy)}`;
+    }
+    return d;
+  };
+  const top = curve(0);
+  // Cool shadows tucked under the lumps, inside the heap (two rows on a deep heap).
+  const shade = pts.slice(1).flatMap((q, i) => {
+    const p = pts[i], mid = (p.x + q.x) / 2, reach = (q.x - p.x) * .42;
+    if (p.face || q.face || Math.min(p.y, q.y) > floor - H * .05) return [];
+    const rows = [Math.max(p.y, q.y) + H * .045];
+    if (b > .6 && i % 2) rows.push(rows[0] + (floor - rows[0]) * .55);
+    return rows.filter(y => y < floor).map(y => `M ${fmt(mid - reach)} ${fmt(y)} Q ${fmt(mid)} ${fmt(y - H * .028)} ${fmt(mid + reach)} ${fmt(y)}`);
   }).join(" ");
-  return { fill: `M ${xs[0].toFixed(1)} ${bottom} L ${top} L ${xs[xs.length - 1].toFixed(1)} ${bottom} Z`, edge: `M ${top}`, shade };
+  return {
+    fill: `M ${fmt(xs)} ${fmt(base)} L ${top} L ${fmt(xe)} ${fmt(base)} Z`, edge: `M ${top}`, shade,
+    // The rim's soft inner roll, and the shadow the heap casts on the body just above it.
+    roll: `M ${curve(H * .024)}`, cast: `M ${curve(-H * .014)}`,
+  };
 }
 
 function Figure({ view, onShoot }: { view: View; onShoot: (id: number) => void }) {
@@ -1171,23 +1200,27 @@ function Figure({ view, onShoot }: { view: View; onShoot: (id: number) => void }
               <path d="M-30 26 C-30 4 -16 -14 4 -20 C-10 -10 -18 6 -18 28 Z" opacity=".7" />
             </svg>
           )}
-          {pile && (
-            <svg key={view.hits} className={styles.pile} viewBox={`0 0 ${rig.W} ${rig.H}`} preserveAspectRatio="none" focusable="false">
-              <defs>
-                <linearGradient id={`pile-${view.id}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="#ffffff" /><stop offset=".55" stopColor="#f1f7fd" /><stop offset="1" stopColor="#d2e2f1" />
-                </linearGradient>
-              </defs>
-              <path d={pile.fill} fill={`url(#pile-${view.id})`} />
-              <path d={pile.shade} className={styles.pileShade} />
-              <path d={pile.edge} className={styles.pileEdge} />
-            </svg>
-          )}
           <svg className={styles.stageRef} viewBox={`0 0 ${rig.W} ${rig.H}`} preserveAspectRatio="none" focusable="false">
             <rect data-stage-ref="" width={rig.W} height={rig.H} fill="none" />
           </svg>
         </div>
-      </div></div></div></div>
+      </div></div>
+        {/* The snow heaped on them stays put in front while they wriggle, and sink, under it. */}
+        {pile && (
+          <svg key={view.hits} className={styles.pile} viewBox={`0 0 ${rig.W} ${rig.H}`} preserveAspectRatio="none" focusable="false">
+            <defs>
+              <linearGradient id={`pile-${view.id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#ffffff" /><stop offset=".3" stopColor="#f4f8fd" /><stop offset=".65" stopColor="#dbe7f3" /><stop offset="1" stopColor="#b3c7dc" />
+              </linearGradient>
+            </defs>
+            <path d={pile.cast} className={styles.pileCast} />
+            <path d={pile.fill} fill={`url(#pile-${view.id})`} />
+            <path d={pile.roll} className={styles.pileRoll} />
+            <path d={pile.shade} className={styles.pileShade} />
+            <path d={pile.edge} className={styles.pileEdge} />
+          </svg>
+        )}
+      </div></div>
       <i className={styles.target} data-snow-fighter={view.people.join(" ")} data-snow-role="target" data-snow-own-click="" aria-hidden="true" />
       {view.notes && rig.mouth && <span className={styles.notes} data-sour={view.notes === "sour" || undefined} aria-hidden="true"><i>♪</i><i>♫</i><i>♪</i></span>}
       {view.bubble && <span key={view.bubble} className={styles.bubble} data-side={view.talk} data-mood={view.mood || undefined} aria-hidden="true">{view.bubble}</span>}
