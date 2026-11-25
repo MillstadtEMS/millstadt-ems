@@ -19,13 +19,20 @@ export function reserveFireplace(scene: FireplaceScene): (() => void) | null {
   return () => { if (owner?.token === token) owner = null; };
 }
 
+// Gabby, once knocked off the lights (or off for her gag), stays down for the rest of the visit
+// (a refresh puts her back) and joins the pop-ups instead (WinterSnowballAmbush).
+const memory = globalThis as typeof globalThis & { __memsGabbyDone?: boolean };
+export const gabbyDone = () => memory.__memsGabbyDone === true;
+export function markGabbyDone() { memory.__memsGabbyDone = true; }
+
 export function fireplaceOwner(): FireplaceScene | null {
   return owner?.scene ?? null;
 }
 
 // Whose turn it is: the scenes alternate, skipping any that can't play right now (not on this
 // layout, still loading, reduced motion) without losing its place for long.
-const order: readonly FireplaceScene[] = ["heist", "gabby"];
+// Once everyone is off the lights, Gabby's chimney gag goes first, then the heist.
+const order: readonly FireplaceScene[] = ["gabby", "heist"];
 let turn = 0;
 
 /** The next scene due among those that can play now, advancing the rotation past it. */

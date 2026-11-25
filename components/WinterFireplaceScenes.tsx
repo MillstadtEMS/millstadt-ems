@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { createPortal } from "react-dom";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
-import { nextFireplaceTurn, reserveFireplace } from "@/lib/seasonal/fireplaceScenes";
+import { gabbyDone, markGabbyDone, nextFireplaceTurn, reserveFireplace } from "@/lib/seasonal/fireplaceScenes";
 import { allCrewDown, crewDownCount, subscribeCrewDown } from "./WinterRoofline";
 import styles from "./WinterFireplaceScenes.module.css";
 
@@ -23,6 +24,12 @@ import styles from "./WinterFireplaceScenes.module.css";
 // Between heists, and with reduced motion, the closed fridge simply stands there.
 
 const ART = "/images/winter/kit/turkey-heist";
+// Gabby's chimney gag (26.5 s, played once, a 1:1 overlay on the room): Santa peeks down the
+// chimney, Gabby hauls him out over his unfinished milk and cookies, drags him off, comes back in
+// his hat, takes a radio call and runs. Like the heist it's an easter egg: it plays once a visit, after
+// every crew member has been knocked off the lights. The room video's own Santa (2.6-5.2 s of each
+// 15 s loop) is skipped while it plays, so he never appears twice.
+const GAG = { src: "/images/winter/kit/gabby/gabby-chimney-gag.webp", ms: 26_500, santa: [2.5, 5.3] as const } as const;
 // Stage pixels (the pose sheets' own cell pixels): fridge, floor lines, and the files' scale.
 const STAGE = { w: 1640, h: 560, fridgeLeft: 153, doorRight: 484, feet: 461, boots: 515, file: .75 } as const;
 const AT = { x: 128, y: 60, w: 482, h: 472 } as const;                 // the at-the-fridge cells
@@ -98,6 +105,10 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
   const [visible, setVisible] = useState(true);
   const [onScreen, setOnScreen] = useState(true);
   const [reduced, setReduced] = useState(false);
+  const [gagUrl, setGagUrl] = useState<string | null>(null);
+  const [aside, setAside] = useState<HTMLElement | null>(null);
+  const gagBlob = useRef<Promise<Blob | null> | null>(null);
+  const gagRun = useRef<{ release: () => void; timers: number[]; frame: number; url: string; onEnd: () => void } | null>(null);
   const crewDown = useSyncExternalStore(subscribeCrewDown, allCrewDown, () => false);
   // The poses load once most of the crew are down, so they're ready when the last one falls.
   const almost = useSyncExternalStore(subscribeCrewDown, () => crewDownCount() >= 4, () => false);
@@ -214,17 +225,77 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
     current.release();
   }, [paint]);
 
-  // The shared clock: once everyone's off the lights, the heist takes its turns (first right away).
-  const active = Boolean(layout) && armed && crewDown && !timeout && !expanded && !reduced && visible && onScreen;
+  // ---- Gabby's chimney gag ----------------------------------------------------------------------
+  const room = useCallback(() => host.current?.parentElement?.querySelector<HTMLElement>("[data-living-room]") ?? null, []);
+  const loadGag = useCallback(() => {
+    gagBlob.current ??= fetch(GAG.src).then(response => response.ok ? response.blob() : null).catch(() => null);
+    return gagBlob.current;
+  }, []);
+  const gagAllowed = useCallback(() => {
+    const r = room();
+    return !gabbyDone() && !reduced && !timeout && !expanded && visible && Boolean(r) && getComputedStyle(r!).display !== "none";
+  }, [room, reduced, timeout, expanded, visible]);
+  // The gag (4.7 MB) loads once most of the crew are down, ready for when the last one falls.
+  useEffect(() => { if (almost && !reduced) void loadGag(); }, [almost, reduced, loadGag]);
+
+  const endGag = useCallback(() => {
+    const current = gagRun.current;
+    if (!current) return;
+    gagRun.current = null;
+    current.timers.forEach(t => window.clearTimeout(t));
+    cancelAnimationFrame(current.frame);
+    setGagUrl(null);
+    URL.revokeObjectURL(current.url);
+    current.release();
+    // She doesn't climb back on the lights (a refresh does that); she pops up from the sides now.
+    markGabbyDone();
+    current.onEnd();
+  }, []);
+
+  /** Play the gag once on the fireplace stage; onEnd hands the stage to the next show. */
+  const startGag = useCallback(async (onEnd: () => void) => {
+    if (gagRun.current || !gagAllowed()) return false;
+    const blob = await loadGag();
+    if (!blob || !gagAllowed()) return false;
+    const release = reserveFireplace("gabby");
+    if (!release) return false;
+    const url = URL.createObjectURL(blob);
+    const run = { release, timers: [] as number[], frame: 0, url, onEnd };
+    gagRun.current = run;
+    setGagUrl(url);
+    // Keep the room video out of its own Santa peek while the gag's Santa is on.
+    const video = room()?.querySelector("video");
+    const skip = () => {
+      if (gagRun.current !== run) return;
+      if (video && video.currentTime >= GAG.santa[0] && video.currentTime < GAG.santa[1]) video.currentTime = GAG.santa[1];
+      run.frame = requestAnimationFrame(skip);
+    };
+    run.frame = requestAnimationFrame(skip);
+    run.timers.push(window.setTimeout(endGag, GAG.ms));
+    return true;
+  }, [gagAllowed, loadGag, room, endGag]);
+
+  // The shared clock. Both shows are easter eggs: nothing happens until every crew member has been
+  // knocked off the lights. Then Gabby's gag goes first (once a visit), the heist follows, and the
+  // heist comes back every so often. One scene at a time, never overlapping.
+  const clockOn = crewDown && !timeout && !expanded && !reduced && visible && onScreen;
+  const nextDelay = useRef<number>(FIRST_TURN);
   useEffect(() => {
-    if (!active) return;
+    if (!clockOn) return;
     let cancelled = false;
     const timer = window.setTimeout(async () => {
+      const canHeist = Boolean(layoutRef.current) && armed;
+      const scene = nextFireplaceTurn(s => s === "gabby" ? gagAllowed() : canHeist);
+      if (scene === "gabby") {
+        const started = await startGag(() => { nextDelay.current = FIRST_TURN; setCycle(c => c + 1); });
+        if (!started && !cancelled) { nextDelay.current = FIRST_TURN; setCycle(c => c + 1); }
+        return;
+      }
+      if (scene !== "heist") return;
       await ready();
       if (cancelled) return;
-      const scene = nextFireplaceTurn(s => s === "heist");
-      const release = scene === "heist" ? reserveFireplace("heist") : null;
-      if (!release) { setCycle(c => c + 1); return; }
+      const release = reserveFireplace("heist");
+      if (!release) { nextDelay.current = FIRST_TURN; setCycle(c => c + 1); return; }
       played.current = true;
       const current: Run = { release, timers: [], frame: 0, start: performance.now() };
       run.current = current;
@@ -239,15 +310,27 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
       current.timers.push(window.setTimeout(() => {
         if (run.current !== current) return;
         stop();
+        nextDelay.current = BETWEEN_TURNS;
         setCycle(c => c + 1);
       }, CLIP_MS));
-    }, played.current ? BETWEEN_TURNS : FIRST_TURN);
+    }, nextDelay.current);
     // Losing the turn (Time Out, enlarging, scrolling away, a background tab, a new page) ends any
     // heist in progress and frees the stage; the clock starts a fresh cycle when it comes back.
     return () => { cancelled = true; window.clearTimeout(timer); stop(); };
-  }, [active, cycle, pathname, ready, paint, stop]);
+  }, [clockOn, cycle, pathname, armed, ready, paint, stop, gagAllowed, startGag]);
 
   useEffect(() => stop, [stop]);
+
+  // Time Out, enlarging, a background tab or a new page ends the gag.
+  useEffect(() => {
+    if (gagRun.current && (timeout || expanded || !visible || reduced)) endGag();
+  }, [timeout, expanded, visible, reduced, endGag]);
+  useEffect(() => endGag, [pathname, endGag]);
+
+  // The gag draws in the TV's own layer (so its speech bubbles can sit in front of the TV).
+  useEffect(() => {
+    setAside(host.current?.parentElement?.querySelector<HTMLElement>("[data-winter-video]") ?? null);
+  }, [expanded, layout]);
 
   const px = (v: number) => `${v}px`;
   return (<>
@@ -271,6 +354,10 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
         </span>}
       </>}
     </div>
+    {gagUrl && aside && createPortal(
+      <span className={styles.gag} aria-hidden="true">
+        <Image src={gagUrl} alt="" width={1140} height={300} unoptimized draggable={false} />
+      </span>, aside)}
     {/* The chase crosses the whole room, so the turkey flies in the banner's own layer. */}
     {armed && layout && !expanded && <div className={styles.chase} aria-hidden="true">
       <span ref={bird} className={styles.bird}>

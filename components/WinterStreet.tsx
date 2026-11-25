@@ -484,6 +484,10 @@ function RinkSkaters({ active }: StreetProps) {
       const button = lane?.querySelector("button"), lead = leadLane?.querySelector<HTMLElement>("[data-snow-fighter]");
       // Every part is rendered with the rink; if any is missing (a stale hot reload), leave the ice still.
       if (!lane || !leadLane || !figure || !reflection || !shadow || !button || !lead || !lie) return;
+      // A fresh start (the rink scrolled back into view, Time Out ended): nobody is lying on the ice.
+      lane.dataset.lying = "false";
+      lie.style.transform = "";
+      figure.style.opacity = "";
       lanes.set(art.id, {
         lane, leadLane, figure, reflection, shadow, button, lead, lie,
         on: false, z: -1, facing: 1, frame: 0, blur: false, leadOn: false, leadFacing: 1, lying: false,
@@ -650,7 +654,7 @@ function RinkSkaters({ active }: StreetProps) {
       const unit = s.art.tall * shrink / s.art.height; // rink-height percent per canvas px
       let started = false;
       const detail: RinkKnockdown = {
-        person: s.id, name: s.art.name, ambulance: s.id === "redwings" || s.id === "blues",
+        person: s.id, name: s.art.name, ambulance: true,
         x: s.x + s.facing * end.centre * unit / 100 * R / W,
         floor: s.f, scale: shrink * CREW, width: s.art.height * LIE_LENGTH * unit, flip: s.facing,
         patient: { src: s.art.lie.src, width: s.art.lie.width, height: s.art.lie.height, rest: .97 },

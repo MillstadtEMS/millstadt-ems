@@ -130,11 +130,25 @@
     #6e1718;
 }
 :global(html:has([data-winter-video])) :global(.winter-snowfall) { clip-path: inset(var(--room-bottom, 0px) 0 0 0); }
-/* Phones: the hanging crew are short, so the room is a little taller and the TV sits low,
-   clear of their boots. */
+/* Phones: the TV is just where the music plays, so the whole living room (TV, tree, fireplace)
+   is drawn at 62% and stands on the floor at the bottom of the banner, below the crew's boots. The
+   wallpaper and wainscoting running out to the edges scale with it, so the seams still line up. */
 @media (max-width: 700px) {
-  .stage:has(.player) { min-height: 310px; }
-  .player:not([data-expanded="true"]) { align-self: end; margin-top: 0; margin-bottom: 31.75px; }
+  .stage:has(.player) {
+    --room-k: .62;
+    min-height: 262px;
+    background:
+      url("/images/winter/kit/living-room/wainscot-strip.webp") left calc(50% - 243.25px * var(--room-k)) bottom 0 / calc(28px * var(--room-k)) calc(77px * var(--room-k)) repeat-x,
+      url("/images/winter/kit/living-room/wallpaper-tile.webp") left calc(50% - 236.25px * var(--room-k)) bottom calc(36px * var(--room-k)) / calc(94px * var(--room-k)) calc(132px * var(--room-k)) repeat,
+      #6e1718;
+  }
+  .player:not([data-expanded="true"]) {
+    align-self: end;
+    margin-top: 0;
+    margin-bottom: calc(56.25px * var(--room-k));
+    scale: var(--room-k);
+    transform-origin: 50% 100%;
+  }
 }
 @media (prefers-reduced-motion: reduce) { .roomVideo { display: none; } }
 @media (max-width: 600px) {

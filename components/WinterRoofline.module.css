@@ -209,6 +209,10 @@
 /* Their art carries no light strand of its own: the fists grip the site's wire, so a falling
    figure simply lets go and nothing comes down with it. */
 .cradle[data-kit] { --release-mask: none; }
+/* Gabby swings in her own painted loop (her art carries no light strand, so she just lets go). */
+.cradle[data-anim] { --release-mask: none; }
+.cradle[data-anim] .torso { clip-path: none; }
+.cradle[data-anim] .maskSource { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
 .kitPiece { position: absolute; inset: 0; display: block; }
 .cradle[data-kit] .torso { clip-path: none; }
 /* Each leg kicks from its own hip with the same springy motion as Jen's and Kenny's (Braeden's

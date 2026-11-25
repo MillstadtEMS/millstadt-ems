@@ -128,9 +128,9 @@ function SoloConvoy({ onFinish }: { onFinish: () => void }) {
 //              in five stages until it's stuck; the Millstadt police and Santa winch it out.
 //   chaos    - 3935 dragging a sleigh crammed with the screaming crew, songbooks and hats flying.
 //   roof     - 3935 with the crew riding on the roof and swinging off the side, towing Jen's sleigh.
-//   engine   - Millstadt Fire's Engine 3911 driving through on its own, in the ambulance's lane.
-//   ladder   - Millstadt Fire's Ladder 3919, likewise. Both fire trucks get snowed in and towed
-//              exactly like the ambulances.
+// About three classic passes in ten, Engine 3911 or Ladder 3919 follows behind Jen's sleigh. The fire
+// trucks never drive through on their own (the engine and ladder variants are kept for development
+// previews, ?vehicle=engine_3911|ladder_3919).
 //   reindeer - Santa's sleigh flying low over the road. Ten hits on Santa, the sleigh or the
 //              reindeer and he stops, shakes off the snow and puts you on his naughty list.
 // Any sleigh's riders can be buried up to their eyes. Time Out freezes everything where it is.
@@ -142,11 +142,9 @@ const SANTA_HITS = 10;
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 
 type VariantId = "classic" | "chaos" | "roof" | "reindeer" | "engine" | "ladder";
-type Pass = { id: number; variant: VariantId; version: 1 | 2; seed: number };
-// The fire trucks are the rarest passes (each about one in fifteen), on every device.
-const VARIANT_WEIGHTS: ReadonlyArray<readonly [VariantId, number]> = [
-  ["classic", .34], ["chaos", .22], ["roof", .22], ["reindeer", .22], ["engine", .07], ["ladder", .07],
-];
+type Pass = { id: number; variant: VariantId; version: 1 | 2; seed: number; follower?: "engine" | "ladder" };
+const VARIANT_WEIGHTS: ReadonlyArray<readonly [VariantId, number]> = [["classic", .34], ["chaos", .22], ["roof", .22], ["reindeer", .22]];
+const FOLLOWER_CHANCE = .3;
 /** Development only: ?vehicle=ambulance|engine_3911|ladder_3919 pins the drive-by and sends it right away. */
 const VEHICLE_FLAG: Readonly<Record<string, VariantId>> = { ambulance: "classic", engine_3911: "engine", ladder_3919: "ladder" };
 function devVehicle(params: URLSearchParams): VariantId | null {
@@ -172,11 +170,18 @@ function choosePass(id: number, previous: VariantId | null, broken: ReadonlySet<
   let roll = Math.random() * pool.reduce((sum, [, w]) => sum + w, 0);
   let variant = pool[0]?.[0] ?? "classic";
   for (const [v, w] of pool) { roll -= w; if (roll <= 0) { variant = v; break; } }
+  const chosen = pinned?.variant ?? variant;
+  const params = new URLSearchParams(window.location.search);
+  const forced = params.get("preview") === "ve" ? params.get("driveby-follower") : null;
+  const follower = chosen !== "classic" ? undefined
+    : forced === "engine" || forced === "ladder" ? forced
+      : Math.random() < FOLLOWER_CHANCE ? (Math.random() < .5 ? "engine" : "ladder") : undefined;
   return {
     id,
-    variant: pinned?.variant ?? variant,
+    variant: chosen,
     version: pinned?.version ?? (Math.random() < .5 ? 1 : 2),
     seed: Math.floor(Math.random() * 2 ** 31),
+    follower,
   };
 }
 
@@ -185,7 +190,7 @@ const DRIVEBY = "/images/winter/driveby";
 /** Every image a pass shows at the start: all of it is loaded and decoded before the pass begins. */
 function passArt(pass: Pass): string[] {
   switch (pass.variant) {
-    case "classic": return [AMBULANCE.art, JEN, AMBULANCE.stages[0]];
+    case "classic": return [AMBULANCE.art, JEN, AMBULANCE.stages[0], ...(pass.follower ? [pass.follower === "engine" ? ENGINE_3911.art : LADDER_3919.art] : [])];
     case "chaos": return [`${DRIVEBY}/chaos-ambulance.webp`, `${DRIVEBY}/chaos-sleigh.webp`, `${DRIVEBY}/chaos-legs.webp`, `${DRIVEBY}/chaos-props.webp`];
     case "roof": return [`${DRIVEBY}/roof-ride-${pass.version}.webp`, `${DRIVEBY}/roof-ride-${pass.version}-still.webp`, JEN];
     case "reindeer": return [REINDEER.base, POOF];
@@ -280,6 +285,7 @@ function WinterDriveBy() {
   const [pass, setPass] = useState<Pass | null>(null);
   const [riderHits, setRiderHits] = useState(0);
   const [truckHits, setTruckHits] = useState(0);
+  const [followerHits, setFollowerHits] = useState(0);
   const [santaHits, setSantaHits] = useState(0);
   const [stuck, setStuck] = useState(false);
   const [freed, setFreed] = useState(false);
@@ -297,7 +303,7 @@ function WinterDriveBy() {
   const aim = useRef<Point | null>(null);
   const pointerType = useRef<string>("mouse");
   const fire = useRef<number | undefined>(undefined);
-  const hits = useRef({ variant: null as VariantId | null, rider: 0, truck: 0, santa: 0, stuck: false, reaction: false });
+  const hits = useRef({ variant: null as VariantId | null, rider: 0, truck: 0, follower: 0, santa: 0, stuck: false, reaction: false });
   const shiftX = useRef(0);
   const towStart = useRef({ base: 0, slide: 0 });
   const lastVariant = useRef<VariantId | null>(null);
@@ -325,7 +331,7 @@ function WinterDriveBy() {
         const ok = await preload(passArt(next));
         if (cancelled) return;
         if (ok) {
-          hits.current = { variant: next.variant, rider: 0, truck: 0, santa: 0, stuck: false, reaction: false };
+          hits.current = { variant: next.variant, rider: 0, truck: 0, follower: 0, santa: 0, stuck: false, reaction: false };
           setPass(next);
           return;
         }
@@ -360,8 +366,8 @@ function WinterDriveBy() {
   function finish() {
     stopFire();
     lastVariant.current = pass?.variant ?? null;
-    hits.current = { variant: null, rider: 0, truck: 0, santa: 0, stuck: false, reaction: false };
-    setPass(null); setRiderHits(0); setTruckHits(0); setSantaHits(0); setStuck(false); setFreed(false);
+    hits.current = { variant: null, rider: 0, truck: 0, follower: 0, santa: 0, stuck: false, reaction: false };
+    setPass(null); setRiderHits(0); setTruckHits(0); setFollowerHits(0); setSantaHits(0); setStuck(false); setFreed(false);
     setReaction(false); setList(null); setHo(0); setTow(null); setPoliceHits(0);
     moveShift(0);
     setCount(value => value + 1);
@@ -432,6 +438,13 @@ function WinterDriveBy() {
     if (struck("sleigh", 4) && h.rider < BURY_HITS) {
       h.rider += 1; setRiderHits(h.rider);
       jolt(sleigh.current);
+    } else if (struck("follower", 6)) {
+      // The fire truck following the ambulance gets snowed in too; buried, it stops the whole convoy
+      // and the police tow everyone out together.
+      jolt(lane.current.querySelector("[data-fire-truck]"));
+      if (!h.variant || h.stuck) return;
+      h.follower += 1; setFollowerHits(h.follower);
+      if (h.follower >= STUCK_HITS) getStuck();
     } else if (struck("truck", 6)) {
       jolt(ambulance.current);
       // While it's being rescued, hits just add puffs; they never restart the tow.
@@ -476,8 +489,8 @@ function WinterDriveBy() {
 
   // Back to normal driving: clickable again, fresh snow count.
   function release() {
-    hits.current.stuck = false; hits.current.truck = 0;
-    setStuck(false); setTruckHits(0); setFreed(false);
+    hits.current.stuck = false; hits.current.truck = 0; hits.current.follower = 0;
+    setStuck(false); setTruckHits(0); setFollowerHits(0); setFreed(false);
   }
 
   function shoot() {
@@ -516,7 +529,7 @@ function WinterDriveBy() {
           <WinterConvoy key={pass.id} pass={pass} onFinish={finish} convoyRef={convoy} ambulanceRef={ambulance} sleighRef={sleigh} snowRef={snow} drive={{
             stuck, freed, reaction, paused: timeout,
             bury: Math.min(1, riderHits / BURY_HITS), buried: riderHits,
-            stage: snowStage(truckHits), truckHits,
+            stage: snowStage(truckHits), truckHits, followerStage: snowStage(followerHits), followerHits,
             santaStage: Math.min(5, Math.ceil(santaHits / 2)), ho,
             onReactionEnd: () => { hits.current.santa = 0; hits.current.reaction = false; setSantaHits(0); setReaction(false); setList(null); setHo(0); },
           }} />
@@ -605,6 +618,8 @@ type DriveProps = {
   bury: number; buried: number;
   /** Snow stage on the ambulance (0-5). */
   stage: number; truckHits: number;
+  /** The same for a fire truck following the ambulance. */
+  followerStage: number; followerHits: number;
   /** Snow stage on Santa's team (0-5) and the "Ho ho ho!" count. */
   santaStage: number; ho: number;
   onReactionEnd: () => void;
@@ -772,11 +787,30 @@ function SnowPile({ pile, bury, buried, viewBox }: { pile: Pile; bury: number; b
 }
 
 // ---------------------------------------------------------------------------------------------
+// A fire truck following the classic convoy rides in the same stage, 270 source px behind Jen's sleigh.
+const FOLLOW_GAP = 270;
+function convoySpec(pass: Pass): VariantSpec {
+  const spec = VARIANTS[pass.variant];
+  if (!pass.follower) return spec;
+  const [x0, y0, x1, y1] = spec.stage;
+  return { ...spec, stage: [x0, y0, x1 + FOLLOW_GAP + 1536, y1], images: spec.images + 1 };
+}
+/** The pass keeps the classic convoy's speed with a longer stage: its run takes proportionally longer. */
+function driveSeconds(pass: Pass) {
+  if (typeof window === "undefined" || !pass.follower) return undefined;
+  const truck = Math.min(300, Math.max(165, window.innerWidth * .21));
+  const base = VARIANTS[pass.variant], long = convoySpec(pass);
+  const width = (s: VariantSpec) => (s.stage[2] - s.stage[0]) * s.unit * truck;
+  const travel = (s: VariantSpec) => window.innerWidth + 16 + width(s) + 90;
+  return 19.2 * travel(long) / travel(base);
+}
+
 function WinterConvoy({ pass, onFinish, drive, convoyRef, ambulanceRef, sleighRef, snowRef }: {
   pass: Pass; onFinish: () => void; drive: DriveProps;
   convoyRef: RefObject<HTMLDivElement | null>; ambulanceRef: SpanRef; sleighRef: SpanRef; snowRef: SpanRef;
 }) {
-  const spec = VARIANTS[pass.variant];
+  const spec = convoySpec(pass);
+  const [seconds] = useState(() => driveSeconds(pass));
   const [loaded, setLoaded] = useState(0);
   const ready = loaded >= spec.images;
   const onArt = () => setLoaded(n => n + 1);
@@ -795,7 +829,7 @@ function WinterConvoy({ pass, onFinish, drive, convoyRef, ambulanceRef, sleighRe
     <div
       ref={convoyRef}
       className={styles.convoy}
-      style={stageVars(spec)}
+      style={{ ...stageVars(spec), ...(seconds ? { animationDuration: `${seconds.toFixed(2)}s` } : {}) }}
       data-variant={pass.variant}
       data-moving={ready ? "true" : undefined}
       data-stuck={drive.stuck ? "true" : undefined}
@@ -805,7 +839,8 @@ function WinterConvoy({ pass, onFinish, drive, convoyRef, ambulanceRef, sleighRe
         if (event.target === event.currentTarget) onFinish();
       }}
     >
-      {pass.variant === "classic" && <ClassicConvoy drive={drive} ambulanceRef={ambulanceRef} sleighRef={sleighRef} snowRef={snowRef} onArt={onArt} />}
+      {pass.variant === "classic" && <ClassicConvoy drive={drive} ambulanceRef={ambulanceRef} sleighRef={sleighRef} snowRef={snowRef} onArt={onArt}
+        stage={spec.stage} follower={pass.follower} />}
       {pass.variant === "chaos" && <ChaosConvoy pass={pass} drive={drive} ambulanceRef={ambulanceRef} sleighRef={sleighRef} snowRef={snowRef} lit={ready} onArt={onArt} />}
       {pass.variant === "roof" && <RoofConvoy pass={pass} drive={drive} ambulanceRef={ambulanceRef} sleighRef={sleighRef} snowRef={snowRef} lit={ready} onArt={onArt} />}
       {pass.variant === "reindeer" && <ReindeerConvoy drive={drive} sleighRef={sleighRef} onArt={onArt} />}
@@ -815,7 +850,7 @@ function WinterConvoy({ pass, onFinish, drive, convoyRef, ambulanceRef, sleighRe
   );
 }
 
-function Hit({ kind, box, frame }: { kind: "truck" | "sleigh" | "santa"; box: Box; frame: Box }) {
+function Hit({ kind, box, frame }: { kind: "truck" | "sleigh" | "santa" | "follower"; box: Box; frame: Box }) {
   return <span className={styles.hit} data-hit={kind} data-drive-target={kind} data-snow-target="" style={place(box, frame)} />;
 }
 
@@ -870,9 +905,11 @@ function SnowStages({ vehicle, drive, snowRef }: { vehicle: StuckVehicle; drive:
   );
 }
 
-function ClassicConvoy({ drive, ambulanceRef, sleighRef, snowRef, onArt }: { drive: DriveProps; ambulanceRef: SpanRef; sleighRef: SpanRef; snowRef: SpanRef; onArt: () => void }) {
-  const stage = VARIANTS.classic.stage;
+function ClassicConvoy({ drive, ambulanceRef, sleighRef, snowRef, onArt, stage, follower }: {
+  drive: DriveProps; ambulanceRef: SpanRef; sleighRef: SpanRef; snowRef: SpanRef; onArt: () => void; stage: Box; follower?: "engine" | "ladder";
+}) {
   const vehicle = AMBULANCE;
+  const followX = VARIANTS.classic.stage[2] + FOLLOW_GAP;
   return (
     <>
       <span className={styles.groundShadow} style={place([60, 900, 2780, 960], stage)} />
@@ -885,7 +922,28 @@ function ClassicConvoy({ drive, ambulanceRef, sleighRef, snowRef, onArt }: { dri
         <SnowStages vehicle={vehicle} drive={drive} snowRef={snowRef} />
         <Hit kind="truck" box={[30, 60, 1520, 900]} frame={CLASSIC.art} />
       </span>
+      {follower && <FollowerTruck name={follower} box={[followX, 0, followX + 1536, 1024]} frame={stage} onArt={onArt} drive={drive} />}
     </>
+  );
+}
+
+/** Engine 3911 or Ladder 3919 following the ambulance, every light on; it can be snowed in like the ambulance. */
+function FollowerTruck({ name, box, frame, onArt, drive }: { name: "engine" | "ladder"; box: Box; frame: Box; onArt: () => void; drive: DriveProps }) {
+  const snow = useRef<HTMLSpanElement>(null);
+  const vehicle = name === "engine" ? ENGINE_3911 : LADDER_3919;
+  const truck = name === "engine" ? "engine-3911" : "ladder-3919";
+  return (
+    <span className={styles.follower} data-fire-truck={name} style={place(box, frame)}>
+      <span className={styles.groundShadow} style={place([40, 905, 1520, 965], [0, 0, 1536, 1024])} />
+      <Image className={styles.layerArt} src={vehicle.art} alt="" fill unoptimized
+        sizes="(max-width: 767px) 155px, 300px" loading="eager" draggable={false} onLoad={onArt} onError={onArt} />
+      {TRUCK_GLOWS[name].map(glow => (
+        <Image key={glow} className={styles.truckGlow} data-glow={glow.replace(/-\d$/, "")} data-set={glow.endsWith("-1") ? "1" : undefined}
+          src={`${FIRE_TRUCKS}/${truck}-${glow}.webp`} alt="" fill unoptimized sizes="(max-width: 767px) 155px, 300px" loading="eager" draggable={false} />
+      ))}
+      <SnowStages vehicle={vehicle} drive={{ ...drive, stage: drive.followerStage, truckHits: drive.followerHits }} snowRef={snow} />
+      <Hit kind="follower" box={name === "engine" ? [20, 200, 1520, 940] : [20, 280, 1520, 940]} frame={[0, 0, 1536, 1024]} />
+    </span>
   );
 }
 

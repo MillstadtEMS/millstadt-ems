@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useLayoutEffect, useRef, useState, useCallback, useSyncExternalStore, type CSSProperties, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { isSnowballTimeout } from "@/lib/seasonal/snowballTimeout";
+import { isSnowballTimeout, useSnowballTimeout } from "@/lib/seasonal/snowballTimeout";
 import { reachSamples, tapSlop, touchReach } from "@/lib/device/profile";
 import styles from "./WinterRoofline.module.css";
 
@@ -13,7 +13,7 @@ const swags = [21, 11, 17, 13, 16, 21];
 // Everyone hangs from the Christmas lights, one swag each. Jen and Kenny use their articulated
 // rigs (legs kick separately); the crew from the Christmas kit swing whole, with a calm pose and a
 // startled, legs-kicking pose swapped like a flip-book. ratio = the hanging art's width / height.
-type Chief = "jen" | "kenny" | "kalista" | "braeden" | "dylan" | "medical-director";
+type Chief = "jen" | "kenny" | "kalista" | "braeden" | "dylan" | "medical-director" | "gabby";
 // Holiday hats are painted into the art itself so they fit exactly: Jen's Santa hat is re-dyed
 // as a Christmas-tree hat with a star, and Braeden wears his own sombrero from his mariachi art.
 // legs: swing the painted legs in at the hips (calm pose) so they hang together, not spread.
@@ -25,6 +25,9 @@ type Officer = {
   // split: the gap between the legs traced from the crotch down (percent points), so a shin that
   // swings under the other leg stays with its own leg.
   legs?: { splitX: number; splitY: number; hipLeft: string; hipRight: string; turn: number; split?: Array<[number, number]> };
+  // anim: a painted animation that swings on its own (Gabby): the hang loop, its still, and her
+  // furious face for the fall. A hit knocks her all the way off like everyone else.
+  anim?: { hang: string; still: string; mad: string };
 };
 const kitCrew = (file: string) => `/images/winter/kit/crew/${file}.webp`;
 const rigRatio = 477 / 716;
@@ -39,21 +42,58 @@ const officers: Record<Chief, Officer> = {
   dylan: { name: "Dylan", calm: kitCrew("dylan-hanging"), startled: kitCrew("dylan-hanging-scared"), ratio: 466 / 640, fallback: .57, tempo: 5, phase: .6,
     legs: { splitX: 56.3, splitY: 67.3, hipLeft: "48.7% 68.1%", hipRight: "69.1% 68.1%", turn: 0,
       split: [[56.3, 67.3], [58.5, 70.2], [60, 73], [58.6, 75.8], [55.9, 78.6], [54.1, 81.4], [51.2, 84.2], [47.1, 87], [46.2, 89.8], [46.5, 92.7], [45.2, 95.5], [45.2, 99.2]] } },
+  // Gabby hangs where the medical director used to on the Christmas lights (he still pops up and
+  // waves from behind the trucks everywhere else).
+  gabby: { name: "Gabby", ratio: 600 / 720, fallback: .7, tempo: 4.7, phase: 2.6, anim: {
+    hang: "/images/winter/kit/gabby/gabby-hang.webp", still: "/images/winter/kit/gabby/gabby-hang-still.webp",
+    mad: "/images/winter/kit/gabby/gabby-hang-mad.webp",
+  } },
   "medical-director": { name: "Dr. Hsu", calm: kitCrew("medical-director-hanging"), startled: kitCrew("medical-director-hanging-scared"), ratio: 466 / 640, fallback: .7, tempo: 4.7, phase: 2.6,
     legs: { splitX: 54.2, splitY: 67.3, hipLeft: "47.7% 68.1%", hipRight: "66.3% 68.1%", turn: 0,
       split: [[54.2, 67.3], [56.3, 70.2], [58, 73], [57, 75.8], [55.2, 78.6], [53.9, 81.4], [51.5, 84.2], [48, 87], [46.8, 89.8], [47.5, 92.7], [46.6, 95.5], [45.8, 99.2]] } },
 };
-// This document's dismissals follow client navigation and reset on reload.
-const fallenChiefs = new Set<Chief>();
+// This document's dismissals follow client navigation and reset on reload. Kept on the window so a
+// module reload (a code update while the page is open) doesn't put everyone back on the lights.
+const memory = globalThis as typeof globalThis & { __memsFallenChiefs?: Set<Chief>; __memsEveryoneDown?: boolean };
+const fallenChiefs: Set<Chief> = (memory.__memsFallenChiefs ??= new Set<Chief>());
 // Knocking everyone off the lights unlocks the living room's turkey heist (WinterFireplaceScenes).
 const crewListeners = new Set<() => void>();
 export function subscribeCrewDown(listener: () => void) {
   crewListeners.add(listener);
   return () => { crewListeners.delete(listener); };
 }
+// Once everyone has been off the lights at the same moment, the heist stays unlocked for the visit
+// (Gabby climbs back up after her chimney gag).
+let everyoneDown = memory.__memsEveryoneDown ?? false;
+const latchEveryoneDown = () => { everyoneDown = memory.__memsEveryoneDown = true; };
 /** How many of the crew have been knocked off the lights on this visit. */
 export const crewDownCount = () => fallenChiefs.size;
-export const allCrewDown = () => lineup.every(chief => fallenChiefs.has(chief));
+export const allCrewDown = () => everyoneDown || lineup.every(chief => fallenChiefs.has(chief));
+
+/** Gabby's own painted swing, its still (reduced motion, Time Out), and her furious face as she falls. */
+function AnimRig({ anim, onMask, hit }: { anim: NonNullable<Officer["anim"]>; onMask: (image: HTMLImageElement) => void; hit: boolean }) {
+  const timeout = useSnowballTimeout();
+  const [still, setStill] = useState(false);
+  useEffect(() => {
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setStill(motion.matches);
+    sync();
+    motion.addEventListener("change", sync);
+    return () => motion.removeEventListener("change", sync);
+  }, []);
+  const quiet = still || timeout;
+  return (
+    <div className={styles.torso}>
+      <Image src={hit ? anim.mad : quiet ? anim.still : anim.hang} alt="" width={450} height={540} unoptimized loading="eager" />
+      {/* Ready for the moment she's hit. */}
+      <link rel="preload" as="image" href={anim.mad} />
+      {/* The still traces her outline for the snowball hit test. */}
+      <Image className={styles.maskSource} src={anim.still} alt="" width={450} height={540} unoptimized loading="eager"
+        onLoad={event => onMask(event.currentTarget)} />
+      <HitMap />
+    </div>
+  );
+}
 // Crew members the mouse is currently aiming at (drives the snowball reticle).
 const aimers = new Set<Chief>();
 const controls = [
@@ -126,6 +166,9 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
   const [gone, setGone] = useState(() => fallenChiefs.has(chief));
   const [shot, setShot] = useState<{ x: number; y: number } | null>(null);
   const officer = officers[chief];
+  const anim = officer.anim;
+
+
 
   function loadMask(image: HTMLImageElement) {
     const canvas = document.createElement("canvas");
@@ -141,6 +184,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
   const throwSnowball = useCallback((x: number, y: number) => {
     if (fallenChiefs.has(chief) || isSnowballTimeout()) return;
     fallenChiefs.add(chief);
+    if (lineup.every(c => fallenChiefs.has(c))) latchEveryoneDown();
     crewListeners.forEach(listener => listener());
     setShot({ x, y });
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -358,10 +402,10 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
 
   if (!body) return null;
   if (gone) return shot ? createPortal(<span role="status" className={styles.announcement}>{officer.name} fell from the Christmas lights!</span>, body) : null;
-  const kit = !officer.folder;
+  const kit = !officer.folder && !anim;
   return createPortal(<>
     <div ref={puppet} className={styles.cradle} data-hanging-chief={chief} data-phase={shot ? "hit" : "hanging"}
-      data-menu-open={menuOpen} data-kit={kit || undefined}
+      data-menu-open={menuOpen} data-kit={kit || undefined} data-anim={anim ? "" : undefined}
       style={{ "--hang-ratio": String(officer.ratio), "--hang-scale": String((officer.ratio / rigRatio) * (officer.size ?? 1)) } as CSSProperties}>
       <svg className={styles.tether} viewBox="0 0 120 32" preserveAspectRatio="none" aria-hidden="true">
         <path d="M0 30C30 32 71 24 119 2" fill="none" stroke="#122a20" strokeWidth="3" />
@@ -371,7 +415,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
         <ellipse cx="73" cy="25" rx="2.3" ry="3.4" fill="#ea7061" />
       </svg>
       <div className={styles.hanger}><div className={styles.drop}><div className={styles.idle}><div className={styles.figure} data-snow-fighter={chief} data-snow-role="target">
-        {kit ? <KitRig officer={officer} onMask={loadMask} /> : <>
+        {anim ? <AnimRig anim={anim} onMask={loadMask} hit={Boolean(shot)} /> : kit ? <KitRig officer={officer} onMask={loadMask} /> : <>
           {/* A still copy of the painted hips under the swinging legs: a big kick can't open a gap at the hip. */}
           <span className={styles.hips}><Limb src={officer.folder + "hanging.webp"} /></span>
           <span className={styles.legLeft}><Limb src={officer.folder + "hanging.webp"} /><HitMap /></span>
@@ -406,7 +450,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
 }
 
 // One person per swag of lights, left to right.
-const lineup: Chief[] = ["kenny", "kalista", "braeden", "dylan", "medical-director", "jen"];
+const lineup: Chief[] = ["kenny", "kalista", "braeden", "dylan", "gabby", "jen"];
 
 export default function WinterRoofline({ menuOpen = false, standalone = false }: { menuOpen?: boolean; standalone?: boolean }) {
   const roof = useRef<HTMLDivElement>(null);

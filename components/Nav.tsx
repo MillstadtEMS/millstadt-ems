@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, type MouseEvent as ReactMouseEvent } from "react";
 import { ChevronDown, ChevronRight, House, X } from "lucide-react";
 import brandStyles from "@/components/WinterBrandPlacement.module.css";
 import WinterRoofline from "@/components/WinterRoofline";
@@ -77,18 +77,37 @@ function linksForMenuGroup(heading: string, showBoardMinutes: boolean) {
     : group.links;
 }
 
+/** DOM id stem for a category's disclosure button and link region ("What's Happening" → "what-s-happening"). */
+function groupSlug(heading: string) {
+  return heading.replace(/[^a-z]+/gi, "-").toLowerCase();
+}
+
+/** Hand focus back to the control that opened the menu (the header Menu button or the phone tab
+ * bar's More), or to the Menu button when that control is gone or hidden at this screen size. */
+function focusMenuOpener(opener: HTMLElement | null, fallback: HTMLElement | null) {
+  const target = opener?.isConnected && opener.getClientRects().length ? opener : fallback;
+  target?.focus();
+}
+
+// Inset so the ring isn't clipped by the menu's scroll area.
+const menuFocusRing =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#f0b429]";
+
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function Nav() {
   const pathname = usePathname();
   const winter = useWinterTheme();
   const [open, setOpen]               = useState(false);
-  const [activeGroup, setActiveGroup] = useState(MENU_GROUPS[0].heading);
-  const [expandedMobileGroup, setExpandedMobileGroup] = useState<string | null>(MENU_GROUPS[0].heading);
+  // One category open at a time; null means all collapsed, which is how the menu always opens.
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [dispatchFlash, setDispatchFlash] = useState(false);
   const [showBoardMinutes, setShowBoardMinutes] = useState(false);
   const navRef = useRef<HTMLElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
 
   const activeHref = MENU_GROUPS
     .flatMap((group) => linksForMenuGroup(group.heading, showBoardMinutes))
@@ -97,6 +116,11 @@ export default function Nav() {
 
   const isActive = (href: string) => activeHref === href;
   const onHome = pathname === "/";
+  // The category holding the current page is flagged on its heading, so visitors can see where
+  // they are without the menu opening a long list for them.
+  const currentGroup = activeHref
+    ? MENU_GROUPS.find(group => linksForMenuGroup(group.heading, showBoardMinutes).some(link => link.href === activeHref))?.heading
+    : undefined;
 
   useEffect(() => {
     function onNewDispatch() {
@@ -107,38 +131,50 @@ export default function Nav() {
     return () => window.removeEventListener("new-dispatch", onNewDispatch);
   }, []);
 
-  // Close on route change
+  // Close on route change (menu links also close it on click, which covers the current page).
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      setOpen(false);
-      const currentGroup = MENU_GROUPS.find(group =>
-        linksForMenuGroup(group.heading, showBoardMinutes).some(link => routeMatches(pathname, link.href)),
-      );
-      if (currentGroup) {
-        setActiveGroup(currentGroup.heading);
-        setExpandedMobileGroup(currentGroup.heading);
-      }
-    });
+    const frame = window.requestAnimationFrame(() => setOpen(false));
     return () => window.cancelAnimationFrame(frame);
-  }, [pathname, showBoardMinutes]);
+  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;
-    function closeOnOutsideClick(event: MouseEvent) {
+    // Listen for pointer presses rather than mouse presses: the snowball fight cancels mouse
+    // presses on the page, which would otherwise leave the menu stuck open.
+    function closeOnOutsidePress(event: PointerEvent) {
       if (navRef.current && !navRef.current.contains(event.target as Node)) setOpen(false);
     }
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
       setOpen(false);
-      menuButtonRef.current?.focus();
+      focusMenuOpener(openerRef.current, menuButtonRef.current);
     }
-    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("pointerdown", closeOnOutsidePress, true);
     document.addEventListener("keydown", closeOnEscape);
     return () => {
-      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("pointerdown", closeOnOutsidePress, true);
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [open]);
+
+  // Opening a category closes the one before it, which can shift the list under the visitor.
+  // Bring the newly opened heading and as many of its links as fit into view (plus the top of the
+  // next category, so it's clear there is more below), without scrolling the heading off the top.
+  useLayoutEffect(() => {
+    const scroller = scrollRef.current;
+    if (!open || !expandedGroup || !scroller) return;
+    const slug = groupSlug(expandedGroup);
+    const heading = document.getElementById(`site-navigation-${slug}-button`);
+    const region = document.getElementById(`site-navigation-${slug}`);
+    if (!heading || !region) return;
+    const next = heading.closest("li")?.nextElementSibling;
+    const peek = next ? Math.min(28, next.getBoundingClientRect().height) : 0;
+    const view = scroller.getBoundingClientRect();
+    const headroom = heading.getBoundingClientRect().top - view.top;
+    const overflow = region.getBoundingClientRect().bottom + peek - view.bottom;
+    const shift = Math.min(Math.max(overflow, 0), headroom);
+    if (shift) scroller.scrollTop += shift;
+  }, [open, expandedGroup]);
 
   useEffect(() => {
     let alive = true;
@@ -149,11 +185,25 @@ export default function Nav() {
     return () => { alive = false; };
   }, []);
 
+  // Publish where the header bar ends (the menu sizes itself to the room left below it, and in
+  // winter the page content starts there too, since the candy-cane ribbon makes the header taller)
+  // and how far the Menu button sits from the right edge (the desktop dropdown lines up under it;
+  // .wrap's side padding changes at every breakpoint, so it is measured rather than restated).
   useEffect(() => {
-    const bar = navRef.current?.querySelector(".mems-nav-bar");
-    if (!winter || !bar) return;
+    const header = navRef.current;
+    const bar = header?.querySelector(".mems-nav-bar");
+    if (!header || !bar) return;
     const root = document.documentElement;
-    const syncHeight = () => root.style.setProperty("--winter-public-header-end", `${Math.ceil(bar.getBoundingClientRect().bottom)}px`);
+    const syncHeight = () => {
+      const end = `${Math.ceil(bar.getBoundingClientRect().bottom)}px`;
+      header.style.setProperty("--mems-nav-end", end);
+      const menuButton = menuButtonRef.current;
+      if (menuButton) {
+        const inset = header.getBoundingClientRect().right - menuButton.getBoundingClientRect().right;
+        header.style.setProperty("--mems-menu-right", `${Math.max(0, Math.round(inset))}px`);
+      }
+      if (winter) root.style.setProperty("--winter-public-header-end", end);
+    };
     syncHeight();
     const observer = new ResizeObserver(syncHeight);
     observer.observe(bar);
@@ -161,29 +211,44 @@ export default function Nav() {
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", syncHeight);
-      root.style.removeProperty("--winter-public-header-end");
+      if (winter) root.style.removeProperty("--winter-public-header-end");
     };
   }, [winter]);
 
-  const selectedGroup = MENU_GROUPS.find(group => group.heading === activeGroup) ?? MENU_GROUPS[0];
+  function closeMenu(returnFocus = false) {
+    setOpen(false);
+    if (returnFocus) focusMenuOpener(openerRef.current, menuButtonRef.current);
+  }
 
-  function toggleMenu() {
-    if (!open) {
-      const currentGroup = MENU_GROUPS.find(group =>
-        linksForMenuGroup(group.heading, showBoardMinutes).some(link =>
-          routeMatches(pathname, link.href),
-        ),
-      );
-      if (currentGroup) {
-        setActiveGroup(currentGroup.heading);
-        setExpandedMobileGroup(currentGroup.heading);
-      }
+  function toggleMenu(event: ReactMouseEvent<HTMLElement>) {
+    if (open) {
+      setOpen(false);
+      return;
     }
-    setOpen(current => !current);
+    const opener = event.currentTarget;
+    openerRef.current = opener;
+    setExpandedGroup(null);
+    setOpen(true);
+    // The phone tab bar sits after the menu in reading order, so screen reader and keyboard users
+    // who open it from More are moved to the top of the menu.
+    if (opener.dataset.menuOpener === "tabbar") {
+      window.requestAnimationFrame(() => panelRef.current?.focus({ preventScroll: true }));
+    }
   }
 
   return (
     <header ref={navRef} className="mems-site-nav fixed top-[46px] left-0 right-0 z-50">
+
+      {/* Phones and tablets: dim the page behind the menu sheet; tapping it closes the menu. It
+          paints beneath everything else in the header (bar, sheet and tab bar stay bright), and
+          touch-none keeps a drag on it from scrolling the page underneath. */}
+      {open && (
+        <div
+          aria-hidden="true"
+          onClick={() => closeMenu()}
+          className="fixed inset-0 -z-10 touch-none bg-[#020912]/60 lg:hidden motion-safe:transition-opacity motion-safe:duration-200 starting:opacity-0"
+        />
+      )}
 
       {/* ── Nav bar ── */}
       <CommunityAlertProvider>
@@ -243,7 +308,7 @@ export default function Nav() {
               ref={menuButtonRef}
               type="button"
               onClick={toggleMenu}
-              className="ambo-menu-btn relative flex flex-col items-center outline-none"
+              className="ambo-menu-btn relative flex flex-col items-center rounded-md outline-none focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f0b429]"
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
               aria-controls="site-navigation-panel"
@@ -268,188 +333,131 @@ export default function Nav() {
       </div>
       </CommunityAlertProvider>
 
-      {/* ── Dropdown menu ── */}
-      <div className={`overflow-hidden transition-all duration-300 ${open ? "max-h-[90vh]" : "max-h-0"}`}>
-        <nav
-          id="site-navigation-panel"
-          aria-label="Primary navigation"
-          className="mems-nav-panel bg-[#030c1a]/99 backdrop-blur-md border-b border-white/8 overflow-y-auto"
-          style={{ maxHeight: "80vh" }}
-        >
-          <div className="wrap py-4 md:py-5">
-            {/* Desktop: compact vertical category rail with one visible group. */}
-            <div className="mx-auto hidden max-w-[980px] overflow-hidden rounded-lg border border-white/10 bg-[#061120] shadow-[0_24px_70px_rgba(0,0,0,0.48)] md:grid md:grid-cols-[260px_minmax(0,1fr)]">
-              <div className="border-r border-white/10 bg-[#020912] p-3">
-                <div className="mb-3 flex items-center justify-between px-2 py-1">
-                  <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Explore</span>
-                </div>
-                <div className="grid gap-2">
-                  <Link
-                    href="/"
-                    onClick={() => setOpen(false)}
-                    aria-current={onHome ? "page" : undefined}
-                    className={`group flex min-h-12 w-full items-center justify-between gap-3 rounded-md border px-4 py-3 text-left text-[17px] font-extrabold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b429] ${
-                      onHome
-                        ? "border-[#f0b429]/35 bg-[#f0b429]/10 text-white"
-                        : "border-transparent text-slate-300 hover:border-white/10 hover:bg-white/5 hover:text-white"
+      {/* ── Menu ──
+          Phones and tablets: a sheet under the header, sized to the room above the tab bar.
+          Desktop: a compact dropdown anchored under the Menu button.
+          Both open on the three categories, collapsed; opening one closes the others. */}
+      <nav
+        ref={panelRef}
+        id="site-navigation-panel"
+        aria-label="Primary navigation"
+        tabIndex={-1}
+        hidden={!open}
+        className="mems-nav-panel absolute top-full flex max-h-[calc(100dvh-var(--mems-nav-end,8rem)-4rem-env(safe-area-inset-bottom))] flex-col overflow-hidden border-b border-white/10 bg-[#030c1a] outline-none backdrop-blur-md max-md:inset-x-0 md:right-0 md:w-[28rem] md:max-h-[calc(100dvh-var(--mems-nav-end,8rem)-1rem)] md:rounded-bl-xl md:border-l lg:right-[var(--mems-menu-right,3.5rem)] lg:top-[calc(100%+0.5rem)] lg:w-[420px] lg:max-h-[min(70vh,calc(100dvh-var(--mems-nav-end,8rem)-1.5rem))] lg:rounded-xl lg:border motion-safe:transition-[opacity,translate] motion-safe:duration-200 motion-safe:ease-out starting:-translate-y-2 starting:opacity-0"
+      >
+        {/* Positioning note: globals.css re-declares inset-x-0, right-0, h-12, py-3 and friends
+            outside Tailwind's layers, which beats any md:/lg: override of the same property.
+            Hence max-md:inset-x-0, size-*, min-h-* and no lg:py-* here. */}
+        <div data-menu-part="header" className="flex flex-none items-center gap-3 border-b border-white/10 bg-[#020912] px-3 py-2">
+          <Link
+            href="/"
+            data-menu-part="home"
+            onClick={() => closeMenu()}
+            aria-label="Home"
+            aria-current={onHome ? "page" : undefined}
+            className={`grid size-12 shrink-0 place-items-center rounded-lg border transition-colors lg:size-11 ${menuFocusRing} ${
+              onHome
+                ? "border-[#f0b429]/50 bg-[#f0b429]/15 text-[#f0b429]"
+                : "border-white/10 text-slate-300 hover:border-white/20 hover:bg-white/5 hover:text-[#f0b429]"
+            }`}
+          >
+            <House aria-hidden size={22} />
+          </Link>
+          <p className="min-w-0 flex-1 text-lg font-black leading-6 text-white">
+            <span className={winter ? winterStyles.directoryLabel : undefined}>Explore</span>
+          </p>
+          <button
+            type="button"
+            onClick={() => closeMenu(true)}
+            aria-label="Close menu"
+            className={`inline-flex min-h-12 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-white/10 px-3.5 text-base font-bold text-slate-300 transition-colors hover:border-white/20 hover:bg-white/5 hover:text-white lg:min-h-11 lg:w-11 lg:px-0 ${menuFocusRing}`}
+          >
+            <X aria-hidden size={20} />
+            <span className="lg:hidden">Close</span>
+          </button>
+        </div>
+
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain [overflow-anchor:none]">
+          <ul className="divide-y divide-white/8">
+            {MENU_GROUPS.map(group => {
+              const slug = groupSlug(group.heading);
+              const expanded = expandedGroup === group.heading;
+              return (
+                <li key={group.heading}>
+                  <button
+                    id={`site-navigation-${slug}-button`}
+                    type="button"
+                    data-menu-group={slug}
+                    onClick={() => setExpandedGroup(current => current === group.heading ? null : group.heading)}
+                    aria-expanded={expanded}
+                    aria-controls={`site-navigation-${slug}`}
+                    className={`flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left transition-colors lg:min-h-14 ${menuFocusRing} ${
+                      expanded ? "bg-white/5 text-white" : "text-slate-200 hover:bg-white/5 hover:text-white"
                     }`}
                   >
-                    <span className="flex items-center gap-2.5">
-                      <House aria-hidden size={18} className={onHome ? "text-[#f0b429]" : "text-slate-500 transition-colors group-hover:text-[#f0b429]"} />
-                      <span className={winter ? winterStyles.directoryLabel : undefined}>Home</span>
-                    </span>
-                    <ChevronRight aria-hidden size={18} className={onHome ? "text-[#f0b429]" : "text-slate-600 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-300"} />
-                  </Link>
-                  {MENU_GROUPS.map(group => {
-                    const selected = group.heading === activeGroup;
-                    return (
-                      <button
-                        key={group.heading}
-                        type="button"
-                        onClick={() => setActiveGroup(group.heading)}
-                        aria-expanded={selected}
-                        aria-controls="desktop-navigation-links"
-                        className={`group min-h-[72px] w-full rounded-md border px-4 py-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b429] ${
-                          selected
-                            ? "border-[#f0b429]/35 bg-[#f0b429]/10 text-white"
-                            : "border-transparent text-slate-300 hover:border-white/10 hover:bg-white/5 hover:text-white"
-                        }`}
-                      >
-                        <span className="flex items-center justify-between gap-3 text-[17px] font-extrabold">
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span id={`site-navigation-${slug}-label`} className="text-lg font-extrabold leading-6 lg:text-[17px]">
                           <span className={winter ? winterStyles.directoryLabel : undefined}>{group.heading}</span>
-                          <ChevronRight aria-hidden size={18} className={selected ? "text-[#f0b429]" : "text-slate-600 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-300"} />
                         </span>
-                        <span className="mt-1 block text-[13px] leading-5 text-slate-500 group-hover:text-slate-400">
-                          {group.description}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div id="desktop-navigation-links" className="min-w-0 p-6 lg:p-7">
-                <div className="mb-5 flex items-start justify-between gap-5 border-b border-white/8 pb-4">
-                  <div>
-                    <div className={`text-xs font-black uppercase tracking-[0.18em] ${selectedGroup.color}`}>Directory</div>
-                    <h2 className="mt-1 text-2xl font-black text-white">{selectedGroup.heading}</h2>
-                    <p className="mt-1 text-[15px] leading-6 text-slate-400">{selectedGroup.description}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpen(false);
-                      menuButtonRef.current?.focus();
-                    }}
-                    aria-label="Close menu"
-                    className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-white/10 text-slate-400 transition-colors hover:border-white/20 hover:bg-white/5 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b429]"
-                  >
-                    <X aria-hidden size={20} />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  {linksForMenuGroup(selectedGroup.heading, showBoardMinutes).map(link => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setOpen(false)}
-                      aria-current={isActive(link.href) ? "page" : undefined}
-                      className={`group flex min-h-12 items-center justify-between gap-3 rounded-md border px-4 py-3 text-[17px] font-bold leading-6 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b429] ${
-                        isActive(link.href)
-                          ? "border-[#f0b429]/30 bg-[#f0b429]/10 text-[#f0b429]"
-                          : "border-transparent text-slate-300 hover:border-white/10 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      <span>{link.label}</span>
-                      <ChevronRight aria-hidden size={17} className="shrink-0 text-slate-600 transition-transform group-hover:translate-x-0.5 group-hover:text-[#f0b429]" />
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile/tablet: the same categories become one-open-at-a-time accordions. */}
-            <div className="mx-auto max-w-xl overflow-hidden rounded-lg border border-white/10 bg-[#061120] shadow-[0_20px_55px_rgba(0,0,0,0.48)] md:hidden">
-              <div className="flex items-center justify-between border-b border-white/10 bg-[#020912] px-4 py-3">
-                <div>
-                  <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#f0b429]">Navigation</div>
-                  <div className="text-lg font-black text-white">Explore Millstadt EMS</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpen(false);
-                    window.requestAnimationFrame(() => menuButtonRef.current?.focus());
-                  }}
-                  aria-label="Close menu"
-                  className="grid h-11 w-11 place-items-center rounded-md border border-white/10 text-slate-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b429]"
-                >
-                  <X aria-hidden size={20} />
-                </button>
-              </div>
-
-              <Link
-                href="/"
-                onClick={() => setOpen(false)}
-                aria-current={onHome ? "page" : undefined}
-                className={`flex min-h-14 w-full items-center justify-between gap-4 border-b border-white/8 px-4 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[#f0b429] ${onHome ? "bg-[#f0b429]/10 text-[#f0b429]" : "text-slate-300"}`}
-              >
-                <span className="flex items-center gap-3">
-                  <House aria-hidden size={19} className="shrink-0 text-[#f0b429]" />
-                  <span className="block text-[17px] font-extrabold"><span className={winter ? winterStyles.directoryLabel : undefined}>Home</span></span>
-                </span>
-                <ChevronRight aria-hidden size={19} className="shrink-0 text-slate-500" />
-              </Link>
-
-              {MENU_GROUPS.map(group => {
-                const selected = group.heading === expandedMobileGroup;
-                return (
-                  <div key={group.heading} className="border-b border-white/8 last:border-b-0">
-                    <button
-                      type="button"
-                      onClick={() => setExpandedMobileGroup(current => current === group.heading ? null : group.heading)}
-                      aria-expanded={selected}
-                      aria-controls={`mobile-navigation-${group.heading.replace(/[^a-z]+/gi, "-").toLowerCase()}`}
-                      className={`flex min-h-14 w-full items-center justify-between gap-4 px-4 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[#f0b429] ${selected ? "bg-white/5 text-white" : "text-slate-300"}`}
-                    >
-                      <span>
-                        <span className="block text-[17px] font-extrabold"><span className={winter ? winterStyles.directoryLabel : undefined}>{group.heading}</span></span>
-                        <span className="mt-0.5 block text-[13px] leading-5 text-slate-500">{group.description}</span>
+                        {group.heading === currentGroup ? (
+                          <span data-menu-here="" className="rounded-full border border-[#f0b429]/50 px-2 py-0.5 text-xs font-bold leading-4 text-[#f0b429]">
+                            You&rsquo;re here
+                          </span>
+                        ) : null}
                       </span>
-                      <ChevronDown aria-hidden size={19} className={`shrink-0 transition-transform ${selected ? "rotate-180 text-[#f0b429]" : "text-slate-500"}`} />
-                    </button>
-                    {selected ? (
-                      <div
-                        id={`mobile-navigation-${group.heading.replace(/[^a-z]+/gi, "-").toLowerCase()}`}
-                        className="grid gap-1 bg-[#020912]/55 px-3 py-3"
-                      >
-                        {linksForMenuGroup(group.heading, showBoardMinutes).map(link => (
-                          <Link
-                            key={link.href}
-                            href={link.href}
-                            onClick={() => setOpen(false)}
-                            aria-current={isActive(link.href) ? "page" : undefined}
-                            className={`flex min-h-12 items-center justify-between gap-3 rounded-md px-3 py-2.5 text-[16px] font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b429] ${
-                              isActive(link.href) ? "bg-[#f0b429]/10 text-[#f0b429]" : "text-slate-300"
-                            }`}
-                          >
-                            {link.label}
-                            <ChevronRight aria-hidden size={17} className="shrink-0 text-slate-600" />
-                          </Link>
-                        ))}
-                      </div>
-                    ) : null}
+                      <span className="mt-0.5 block text-[15px] leading-5 text-slate-400 lg:text-sm">{group.description}</span>
+                    </span>
+                    <ChevronDown
+                      aria-hidden
+                      size={20}
+                      className={`shrink-0 motion-safe:transition-transform motion-safe:duration-200 ${expanded ? "rotate-180 text-[#f0b429]" : "text-slate-500"}`}
+                    />
+                  </button>
+                  <div
+                    id={`site-navigation-${slug}`}
+                    role="region"
+                    aria-labelledby={`site-navigation-${slug}-label`}
+                    data-menu-region=""
+                    hidden={!expanded}
+                    className="border-t border-white/8 bg-[#020912]/55 px-3 py-3 motion-safe:transition-[opacity,translate] motion-safe:duration-200 motion-safe:ease-out starting:-translate-y-1 starting:opacity-0"
+                  >
+                    <ul className="grid gap-1.5">
+                      {linksForMenuGroup(group.heading, showBoardMinutes).map(link => {
+                        const current = isActive(link.href);
+                        return (
+                          <li key={link.href}>
+                            <Link
+                              href={link.href}
+                              onClick={() => closeMenu()}
+                              aria-current={current ? "page" : undefined}
+                              className={`group flex min-h-12 items-center justify-between gap-3 rounded-lg border px-4 py-2.5 text-[17px] font-bold leading-6 transition-colors lg:min-h-11 lg:text-base ${menuFocusRing} ${
+                                current
+                                  ? "border-[#f0b429]/30 bg-[#f0b429]/10 text-[#f0b429] shadow-[inset_4px_0_0_#f0b429]"
+                                  : "border-transparent text-slate-200 hover:border-white/10 hover:bg-white/5 hover:text-white"
+                              }`}
+                            >
+                              <span className="min-w-0">{link.label}</span>
+                              <ChevronRight
+                                aria-hidden
+                                size={18}
+                                className={`shrink-0 ${current ? "text-[#f0b429]" : "text-slate-500 group-hover:text-[#f0b429]"}`}
+                              />
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        </nav>
-      </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </nav>
 
       {/* ── Mobile bottom tab bar ── */}
-      <MobileBottomNav pathname={pathname} open={open} setOpen={setOpen} />
+      <MobileBottomNav pathname={pathname} open={open} onToggle={toggleMenu} />
 
     </header>
   );
@@ -458,11 +466,11 @@ export default function Nav() {
 // ── Mobile bottom tab bar ──────────────────────────────────────────────────
 
 function MobileBottomNav({
-  pathname, open, setOpen,
+  pathname, open, onToggle,
 }: {
   pathname: string;
   open: boolean;
-  setOpen: (v: boolean | ((p: boolean) => boolean)) => void;
+  onToggle: (event: ReactMouseEvent<HTMLElement>) => void;
 }) {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
@@ -482,6 +490,7 @@ function MobileBottomNav({
             <Link
               key={tab.href}
               href={tab.href}
+              aria-current={isActive(tab.href) ? "page" : undefined}
               className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
                 isActive(tab.href) ? "text-[#f0b429]" : "text-slate-500 hover:text-slate-300"
               }`}
@@ -492,7 +501,8 @@ function MobileBottomNav({
           ))}
           <button
             type="button"
-            onClick={() => setOpen(v => !v)}
+            data-menu-opener="tabbar"
+            onClick={onToggle}
             aria-expanded={open}
             aria-controls="site-navigation-panel"
             aria-label={open ? "Close more menu" : "Open more menu"}

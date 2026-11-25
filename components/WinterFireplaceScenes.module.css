@@ -55,4 +55,16 @@
   will-change: transform;
 }
 .bird img { display: block; width: 100%; height: 100%; max-width: none; }
-@media print { .heist, .chase { display: none; } }
+/* Gabby's chimney gag: exactly over the living-room picture (same box as the room art), above the
+   TV so her speech bubbles read in front of it. */
+.gag {
+  position: absolute;
+  z-index: 3;
+  left: -277.25px;
+  top: -31.25px;
+  width: 760px;
+  height: 200px;
+  pointer-events: none;
+}
+.gag img { display: block; width: 100%; height: 100%; max-width: none; }
+@media print { .heist, .chase, .gag { display: none; } }

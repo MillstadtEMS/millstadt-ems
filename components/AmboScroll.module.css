@@ -150,6 +150,11 @@
 /* Engine 3911 and Ladder 3919 run with every light on: their Christmas lights twinkle in two sets out
    of step, the engine's red light bar double-flashes and the headlights wig-wag left and right. */
 .truckGlow { pointer-events: none; mix-blend-mode: screen; }
+/* A fire truck following the classic convoy: it bobs on its suspension with the ambulance and
+   holds still with it when the ambulance is stuck. */
+.follower { position: absolute; z-index: 1; }
+.convoy[data-moving] .follower { animation: suspension .5s ease-in-out infinite alternate; }
+.convoy[data-stuck="true"] .follower { animation: none; }
 .truckGlow[data-glow="twinkle"] { animation: truckTwinkle 1.4s steps(1, end) infinite; }
 .truckGlow[data-glow="twinkle"][data-set="1"] { animation-delay: -.7s; }
 .truckGlow[data-glow="bar"] { animation: truckBar .8s steps(1, end) infinite; }

@@ -157,6 +157,9 @@ export default function WinterSnowballFight() {
     const move = (e: PointerEvent) => { if (rapid) aim = { x: e.clientX, y: e.clientY }; };
     function click(e: MouseEvent) {
       if (e.button !== 0 || e.defaultPrevented || isSnowballTimeout()) return;
+      // Aiming at someone on the lights or a medic behind a truck: they take the click themselves
+      // (whichever order the listeners were added in, say after Gabby climbs back up).
+      if (document.documentElement.hasAttribute("data-snow-aim")) return;
       if (inRange(e.target)) {
         // The page waits for a time out; mouse throws already happened on press.
         e.preventDefault();

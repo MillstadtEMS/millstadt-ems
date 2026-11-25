@@ -32,7 +32,7 @@ export type RinkKnockdown = {
   width: number;
   /** -1 when the patient lies mirrored (head to the right). */
   flip: 1 | -1;
-  /** Hockey: the crew arrives in an ambulance, lights going, and takes the player back to it. */
+  /** The crew arrives in an ambulance, lights going, and takes the patient back to it (every rescue). */
   ambulance?: boolean;
   /** Lying-down art (a posed fall). `rest` is where the patient's back meets the ice, as a fraction of its height. */
   patient: { src: string; width: number; height: number; rest: number };
@@ -43,13 +43,17 @@ export type RinkRescueState = { active: boolean; person: string; x: number };
 
 type Request = {
   subject: string; label: string; x: number; floor: number; scale: number; width: number; flip: 1 | -1;
-  src: string; ratio: number; rest: number; lift: number; skater: boolean; ambulance: boolean;
+  src: string; ratio: number; rest: number; lift: number; skater: boolean; ambulance: boolean; unit?: (typeof UNITS)[number];
   onStart?: () => void; onComplete?: () => void;
 };
 type Guest = { person: "guest"; x?: number; onComplete: () => void };
 type Scene = { request: Request; playing: boolean; duration: number };
 
 const rigDirectory = "/images/winter/hockey/rig/";
+// The rescues take turns among Millstadt EMS's own three rigs: the white Transit van, the yellow
+// paramedic box and the white box.
+const UNITS = [{ unit: "3925", height: 444 }, { unit: "3935", height: 452 }, { unit: "3926", height: 465 }] as const;
+let nextUnit = 0;
 // The painted medics and stretcher are cut into puppet layers (one shared 768x384 canvas) so the
 // crew can stop, lower the stretcher, bend to lift the patient on, raise it and wheel out. Back to front:
 const rig = ["base", "scissor", "bed", "woman-legs", "woman-body", "man-legs", "man-body"] as const;
@@ -131,12 +135,14 @@ export default function WinterRinkRescue() {
     async function begin(request: Request) {
       pauseClock();
       if (request.subject === "guest") setGuestWaiting(null);
+      if (request.ambulance && !request.unit) request.unit = UNITS[nextUnit++ % UNITS.length];
       current = request; ready = playing = false;
       duration = motion.matches ? 3000 : request.ambulance ? 13_000 : 10_500;
       setScene({ request, playing: false, duration });
       tell(true, request);
       try {
-        await Promise.all([...rig.map(part => rigDirectory + part + ".webp"), request.src].map(async src => {
+        const ambulanceArt = request.unit ? [`/images/winter/fleet/${request.unit.unit}.webp`] : [];
+        await Promise.all([...rig.map(part => rigDirectory + part + ".webp"), request.src, ...ambulanceArt].map(async src => {
           const image = new window.Image();
           image.src = src;
           await image.decode();
@@ -160,7 +166,7 @@ export default function WinterRinkRescue() {
         subject: fall.person, label: fall.name || "a skater", x: bounded(fall.x, .03, .97), floor: bounded(fall.floor, 0, .6),
         scale: bounded(fall.scale, .4, 1.4), width: bounded(fall.width, 10, 160), flip: fall.flip === -1 ? -1 : 1,
         src: fall.patient.src, ratio: fall.patient.height / fall.patient.width, rest: bounded(fall.patient.rest, 0, 1),
-        lift: 1, skater: true, ambulance: fall.ambulance === true, onStart: fall.onStart, onComplete: fall.onComplete,
+        lift: 1, skater: true, ambulance: fall.ambulance !== false, onStart: fall.onStart, onComplete: fall.onComplete,
       };
       // The crew is busy: this skater stays down on the ice until they come back for them.
       if (current || queuedGuest) { waiting.push(request); return; }
@@ -175,7 +181,7 @@ export default function WinterRinkRescue() {
       event.preventDefault();
       const request: Request = {
         subject: "guest", label: "the gift thief", x: bounded(Number.isFinite(guest.x) ? guest.x! : .5, .19, .81), floor: .12,
-        scale: 1, width: 95, flip: 1, src: thief.src, ratio: thief.height / thief.width, rest: 1, lift: .78, skater: false, ambulance: false,
+        scale: 1, width: 95, flip: 1, src: thief.src, ratio: thief.height / thief.width, rest: 1, lift: .78, skater: false, ambulance: true,
         onComplete: guest.onComplete,
       };
       if (!visible) rink!.scrollIntoView({ block: "center", behavior: motion.matches ? "instant" : "smooth" });
@@ -223,13 +229,13 @@ export default function WinterRinkRescue() {
         "--z": rinkDepthZ(request.floor),
       } as CSSProperties : undefined}>
       {scene?.playing && request && <>
-        {/* Hockey: Millstadt EMS unit 3925 pulls up at the edge of the rink, lights going; the crew
-            comes out of it with the cot and takes the player back to it, then it drives off. */}
-        {request.ambulance && (
+        {/* A Millstadt EMS rig (they take turns) pulls up at the edge of the rink, lights going; the
+            crew comes out of it with the cot and takes the patient back to it, then it drives off. */}
+        {request.ambulance && request.unit && (
           <div className={styles.amboLane}>
-            <div className={styles.ambo}>
-              <Sprite src="/images/winter/fleet/3925.webp" width={760} height={444} className={styles.amboArt} />
-              <EmergencyLights unit="3925" on />
+            <div className={styles.ambo} style={{ aspectRatio: `760 / ${request.unit.height}` }}>
+              <Sprite src={`/images/winter/fleet/${request.unit.unit}.webp`} width={760} height={request.unit.height} className={styles.amboArt} />
+              <EmergencyLights unit={request.unit.unit} on />
             </div>
           </div>
         )}

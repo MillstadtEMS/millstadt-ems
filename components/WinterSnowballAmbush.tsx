@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties }
 import { isSnowballTimeout, snowballTimeoutEvent } from "@/lib/seasonal/snowballTimeout";
 import { isTesla, reachSamples, tapSlop, touchReach } from "@/lib/device/profile";
 import { claimPeople, isPersonOut } from "@/lib/seasonal/cast";
+import { gabbyDone } from "@/lib/seasonal/fireplaceScenes";
 import { throwSnowball, visitorThrow, type Point } from "@/lib/seasonal/snowballFlight";
 import styles from "./WinterSnowballAmbush.module.css";
 
@@ -18,8 +19,9 @@ import styles from "./WinterSnowballAmbush.module.css";
 // (optional: pop-edge=drift|floor|corner-left|corner-right, pop-tough=1-3, pop-person=<id>).
 
 export type Crew = "kalista" | "braeden" | "dylan" | "medical-director";
-// Audrey and Debbie join the peeks (they don't hang on the lights).
-type Guest = "audrey" | "debbie";
+// Audrey, Debbie and Mylie join the peeks (they don't hang on the lights), and Gabby once she's off
+// the lights for good (after her chimney gag).
+type Guest = "audrey" | "debbie" | "mylie" | "gabby";
 type Person = Crew | Guest | "caroler-curly" | "caroler-straight" | "caroler-little";
 type Kind = "classic" | "wave" | "serenade" | "backflip" | "peek" | "caroler" | "trio";
 type Edge = "drift" | "floor" | "corner-left" | "corner-right";
@@ -81,13 +83,33 @@ const peekArt: Record<Crew, { excited: XY; scared: Placed; nauseous: Placed; hel
   "medical-director": { excited: [396, 634], scared: [395, 634, .993, 0, 0], nauseous: [402, 635, 1.005, 0, 0], hello: [428, 537, 1.74, -214.4, 9.5], face: [.52, .52] },
 };
 // Audrey and Debbie: busts cut from their pop-up videos (one smiling picture for every moment).
-const guestNames: Record<Guest, string> = { audrey: "Audrey", debbie: "Debbie" };
+const guestNames: Record<Guest, string> = { audrey: "Audrey", debbie: "Debbie", mylie: "Mylie", gabby: "Gabby" };
 const guestArt: Record<Guest, { size: XY; face: XY }> = {
   audrey: { size: [359, 498], face: [.5, .3] },
   debbie: { size: [407, 502], face: [.47, .3] },
+  mylie: { size: [371, 500], face: [.55, .24] },
+  gabby: { size: [380, 501], face: [.5, .3] },
 };
-const isGuest = (person: Person): person is Guest => person === "audrey" || person === "debbie";
+const isGuest = (person: Person): person is Guest => person === "audrey" || person === "debbie" || person === "mylie" || person === "gabby";
 function peekRig(person: Crew | Guest): Rig {
+  if (person === "gabby") {
+    // Gabby (her pose stills, cut to the upper body): a wave, a scratch of the head, hands on hips.
+    const { size: [W, H], face } = guestArt.gabby, pose = (name: string) => frame(`pop/gabby-${name}`, W, H);
+    return {
+      W, H, visible: .74,
+      frames: { hello: pose("happy"), excited: pose("scratch"), scared: pose("sad"), nauseous: pose("mad") },
+      faces: [[face[0] * W, face[1] * H]], head: [face[0] * W, H * .02],
+    };
+  }
+  if (person === "mylie") {
+    // Mylie (cut from her pop-up clip, one shared box): she waves hello, smiles and winks.
+    const { size: [W, H], face } = guestArt.mylie, pose = (name: string) => frame(`pop/mylie-${name}`, W, H);
+    return {
+      W, H, visible: .74,
+      frames: { hello: pose("wave"), excited: pose("smile"), scared: pose("wink"), nauseous: pose("smile") },
+      faces: [[face[0] * W, face[1] * H]], head: [face[0] * W, H * .02],
+    };
+  }
   if (isGuest(person)) {
     const { size: [W, H], face } = guestArt[person], bust = frame(`pop/${person}-excited`, W, H);
     return {
@@ -136,7 +158,7 @@ const carolerRigs: Record<"curlyFull" | "curlyHalf" | "straightHalf" | "trioFull
 };
 
 const crew: Crew[] = ["kalista", "braeden", "dylan", "medical-director"];
-const guests: Guest[] = ["audrey", "debbie"];
+const guests: Guest[] = ["audrey", "debbie", "mylie", "gabby"];
 // Audrey and Debbie each make their debut early in a visit: until they've appeared once this
 // session, their peeks are drawn far more often.
 const debutKey = "millstadt:pop-guests:v1";
@@ -168,7 +190,9 @@ const trioSong = ["♪ Deck the halls with boughs of holly…", "♪ Fa la la la
 const controls = 'a,button,input,textarea,select,label,summary,form,iframe,video,audio,canvas,nav,[role="application"],[role="grid"],[role="button"],[role="tab"],[role="menuitem"],[role="switch"],[role="slider"],[role="link"],[tabindex="0"],[contenteditable="true"]';
 const excluded = '[data-hunt-scene],[data-winter-rink],[data-hanging-chief] img:first-child,footer,[data-snow-chief],[data-winter-player]';
 const offLimits = controls + ",[data-winter-rink],[data-hunt-scene],footer";
-const drifts = [[.05,.13],[.43,.08],[.93,.20],[.23,.36],[.63,.41],[.03,.60],[.9,.62],[.39,.67],[.14,.92],[.73,.93]];
+// Snowdrift spots, all in the lower half of the screen so the living room and its shows at the top
+// stay clear.
+const drifts = [[.05,.52],[.43,.5],[.93,.56],[.23,.62],[.63,.66],[.03,.74],[.9,.76],[.39,.8],[.14,.92],[.73,.93]];
 const samples = [[.5,.10],[.23,.35],[.78,.35],[.5,.42],[.37,.72],[.66,.73],[.5,.9]];
 const between = (min: number, max: number) => min + Math.random() * (max - min);
 const pick = <T,>(list: readonly T[]) => list[Math.floor(Math.random() * list.length)];
@@ -280,7 +304,7 @@ function runCast(env: Env) {
   let wake: number | undefined, scrollCheck: number | undefined;
   let startX = 0, startY = 0, startType = "mouse";
   const gap = () => forced ? 2600 : between(5000, 9000);
-  const free = (person: Person) => !gone.has(person) && !isPersonOut(person);
+  const free = (person: Person) => !gone.has(person) && !isPersonOut(person) && (person !== "gabby" || gabbyDone());
 
   function commit() {
     if (disposed) return;
@@ -391,7 +415,9 @@ function runCast(env: Env) {
       case "peek": {
         const who = c.people[0];
         const guest = isGuest(who);
-        return { rig: peekRig(guest ? who : person), edges: ["floor", "floor", "corner-left", "corner-right"], frame: "excited", name: guest ? guestNames[who] : crewNames[person] };
+        // Mylie and Gabby lean in from the sides only.
+        const edges: Edge[] = who === "mylie" || who === "gabby" ? ["corner-left", "corner-right"] : ["floor", "floor", "corner-left", "corner-right"];
+        return { rig: peekRig(guest ? who : person), edges, frame: "excited", name: guest ? guestNames[who] : crewNames[person] };
       }
       case "serenade": return { rig: serenadeRig, edges: ["floor"], frame: "s1", name: "Braeden" };
       case "backflip": return { rig: flipRig, edges: ["floor"], frame: "f0", name: "Dylan" };
