@@ -10,6 +10,7 @@ import styles from "./WinterStreet.module.css";
 import WinterRinkRescue, { rinkDepthZ, rinkKnockdownEvent, rinkRescueEvent, type RinkKnockdown, type RinkRescueState } from "./WinterRinkRescue";
 import { snowHit } from "./WinterSnowballFight";
 import EmergencyLights from "./EmergencyLights";
+import WinterMylieRink, { rinkSceneEvent } from "./WinterMylieRink";
 
 type StreetProps = { active: boolean };
 
@@ -697,11 +698,17 @@ function RinkSkaters({ active }: StreetProps) {
       releaseHolds();
     }
 
-    // Dylan's axel and the hockey surprise get the ice to themselves.
+    // Dylan's axel, the hockey surprise and Mylie's cocoa run (WinterMylieRink) get the ice to themselves.
+    let sceneOn = false;
     function spotlight() {
       const dylan = sims.get("dylan")!;
-      return !reduced() && (hockeyLive || dylan.mode === "show" || dylan.mode === "exit");
+      return !reduced() && (hockeyLive || sceneOn || dylan.mode === "show" || dylan.mode === "exit");
     }
+    const onScene = (event: Event) => {
+      const detail = (event as CustomEvent<{ active: boolean; x: number }>).detail;
+      sceneOn = Boolean(detail?.active);
+      if (sceneOn) clearIce(detail.x); else releaseHolds();
+    };
 
     function clearIce(x: number) {
       for (const s of sims.values()) if (s.route?.loop && ["loop", "brake", "aim", "throw", "spin"].includes(s.mode)) hold(s, x);
@@ -920,7 +927,7 @@ function RinkSkaters({ active }: StreetProps) {
         hockeyLive = false;
         releaseHolds();
       }
-      if (hockeyLive || rescue || reduced() || isSnowballTimeout() || sims.get("dylan")!.mode !== "gone") return;
+      if (hockeyLive || sceneOn || rescue || reduced() || isSnowballTimeout() || sims.get("dylan")!.mode !== "gone") return;
       hockeyClock += dt;
       if (hockeyClock < hockeyNext) return;
       hockeyClock = 0;
@@ -1068,6 +1075,7 @@ function RinkSkaters({ active }: StreetProps) {
     document.addEventListener("visibilitychange", onVisibility);
     motion.addEventListener("change", onMotion);
     window.addEventListener(rinkRescueEvent, onRescue);
+    window.addEventListener(rinkSceneEvent, onScene);
     // Snowballs from anyone else in the fight knock skaters off balance.
     const onHit = (event: Event) => {
       const id = (event.currentTarget as HTMLElement).closest<HTMLElement>("[data-lead]")?.dataset.lead as SkaterId | undefined;
@@ -1084,6 +1092,7 @@ function RinkSkaters({ active }: StreetProps) {
       document.removeEventListener("visibilitychange", onVisibility);
       motion.removeEventListener("change", onMotion);
       window.removeEventListener(rinkRescueEvent, onRescue);
+      window.removeEventListener(rinkSceneEvent, onScene);
       for (const lane of lanes.values()) lane.lead.removeEventListener("mems:snow-hit", onHit);
       dylanRelease?.();
       shoot.current = null;
@@ -1113,6 +1122,7 @@ export function WinterStreetForeground({ active }: StreetProps) {
       </div>
       <span id="rink-snowball-instructions" className={styles.announcement}>Land three snowballs on the same skater within a couple of seconds for a visit from the Millstadt medics.</span>
       <RinkSkaters active={active} />
+      <WinterMylieRink active={active} />
       <WinterRinkRescue />
     </div>
   );
