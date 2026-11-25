@@ -68,13 +68,14 @@ const frame = (file: string, w: number, h: number, x = 0, y = 0, s = 1): Frame =
 export const crewNames: Record<Crew, string> = { kalista: "Kalista", braeden: "Braeden", dylan: "Dylan", "medical-director": "Dr. Hsu" };
 // `held`: the snowball painted into the wind-up's raised hand (centre and radius, wind-up px), so the
 // ball that leaves the release hand starts at that size. `palm`: the throwing hand's palm in the snow
-// pose (snow px), where the ball rests as they burst out of the drift (Dr. Hsu's snow pose already
-// holds one in his other hand).
-const crewArt: Record<Crew, { snow: number; mad: number; windup: number; release: number; wave: readonly [number, number, number, number]; palm: XY | null; held: readonly [number, number, number]; face: XY; ball: XY }> = {
+// pose (snow px), where the ball rests as they burst out of the drift. (Dr. Hsu's snow pose had a
+// snowball painted in his other hand, so it switched hands at the wind-up; pop/ has the pose with
+// that hand open instead, both hands up in surprise, and his ball starts on the throwing palm too.)
+const crewArt: Record<Crew, { snow: number; mad: number; windup: number; release: number; wave: readonly [number, number, number, number]; palm: XY; held: readonly [number, number, number]; face: XY; ball: XY }> = {
   kalista: { snow: 557, mad: 540, windup: 449, release: 434, wave: [238, 1.057, 31, 0], palm: [68, 110], held: [27, 66, 18.5], face: [.5, .25], ball: [.929, .225] },
   braeden: { snow: 626, mad: 567, windup: 404, release: 500, wave: [269, 1.061, 15, 2.5], palm: [85, 123], held: [76.5, 52, 24], face: [.47, .22], ball: [.931, .147] },
   dylan: { snow: 563, mad: 532, windup: 380, release: 449, wave: [265, 1.102, -12, 0], palm: [68, 129], held: [26.5, 75.5, 18.5], face: [.49, .22], ball: [.941, .212] },
-  "medical-director": { snow: 530, mad: 508, windup: 330, release: 432, wave: [269, 1.02, -20.6, 0], palm: null, held: [47, 73.5, 19.3], face: [.46, .27], ball: [.923, .396] },
+  "medical-director": { snow: 530, mad: 508, windup: 330, release: 432, wave: [269, 1.02, -20.6, 0], palm: [79, 214], held: [47, 73.5, 19.3], face: [.46, .27], ball: [.923, .396] },
 };
 export function crewRig(person: Crew): Rig {
   const a = crewArt[person], W = a.snow, H = 560, k = 1.72 * H / 620, top = -.02 * H;
@@ -85,14 +86,14 @@ export function crewRig(person: Crew): Rig {
   return {
     W, H, visible: .86,
     frames: {
-      boo: frame(`crew/${person}-snow`, W, H),
+      boo: frame(person === "medical-director" ? "pop/medical-director-snow-open" : `crew/${person}-snow`, W, H),
       mad: frame(`crew/${person}-snow-mad`, a.mad, H, (W - a.mad) / 2),
       windup: frame(windup, a.windup, 620, left(a.windup), top, k),
       release: frame(`crew/${person}-throw-release`, a.release, 620, left(a.release), top, k),
       wave: frame(`pop/${person}-wave`, waveW, 619, left(a.windup) + waveX * k, top + waveY * k, k * waveScale),
     },
     faces: [[a.face[0] * W, a.face[1] * H]], head: [a.face[0] * W, 0],
-    hand: a.palm ?? undefined,
+    hand: a.palm,
     ball: [left(a.release) + a.ball[0] * a.release * k, top + a.ball[1] * 620 * k],
     ballR: a.held[2] * k, cocked: [left(a.windup) + a.held[0] * k, top + a.held[1] * k],
   };
