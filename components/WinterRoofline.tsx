@@ -562,7 +562,7 @@ function HangingCrew({ chief, anchor, menuOpen, station = false }: { chief: Chie
       const push = clamp(velocity - lastV, -1.2, 1.2);
       lastV = velocity;
       const before = swing.omega;
-      swing.omega += 1.3 * push / reach * Math.cos(swing.theta);
+      swing.omega += 1.6 * push / reach * Math.cos(swing.theta);
       // They settle within a few seconds once the shaking stops (at once in a Time Out).
       const drag = isSnowballTimeout() ? 3 : .8;
       const steps = Math.ceil(dt / .008), step = dt / steps;
