@@ -29,7 +29,11 @@ export function preloadGag(): Promise<void> {
 
 type Props = { aside: HTMLElement; room: HTMLElement; onDone: () => void; preview?: boolean };
 
-const SAY_PX = 12.5, SFX_PX = 15, MIN_SAY = 11.5, MIN_SFX = 12.5;
+// Text sizes (CSS px on screen): speech, sound effects, and the floors they never go below (a phone draws
+// the room at about half size, so its text is set larger in room px). A speech bubble that can't fit over
+// the speaker's head (a phone's banner is only as tall as the room) runs along the top in one wide line,
+// down to MIN_SAY_TIGHT, instead of stacking over her face.
+const SAY_PX = 12.5, SFX_PX = 15, MIN_SAY = 11.5, MIN_SAY_TIGHT = 10, MIN_SFX = 12.5;
 
 export default function WinterGabbyGag({ aside, room, onDone, preview = false }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -109,12 +113,15 @@ export default function WinterGabbyGag({ aside, room, onDone, preview = false }:
       });
     };
     // ---- geometry: the banner's visible edges in room px
-    let stage: Stage = { left: 0, right: 760, top: 0, k: 1 };
+    let stage: Stage = { left: 0, right: 760, top: 0, k: 1, fridge: Infinity };
     const measure = () => {
       const r = room.getBoundingClientRect(), banner = aside.parentElement?.getBoundingClientRect();
       const k = r.width / 760 || 1;
       const left = Math.max(banner?.left ?? 0, 0), right = Math.min(banner?.right ?? innerWidth, innerWidth);
-      stage = { left: (left - r.left) / k, right: (right - r.left) / k, top: ((banner?.top ?? r.top) - r.top) / k, k };
+      // the fridge (WinterFireplaceScenes) is drawn in front of this layer: keep everything left of it
+      const fr = aside.parentElement?.querySelector("[data-fridge]")?.getBoundingClientRect();
+      const fridge = fr && fr.width > 0 ? (fr.left - r.left) / k : Infinity;
+      stage = { left: (left - r.left) / k, right: (right - r.left) / k, top: ((banner?.top ?? r.top) - r.top) / k, k, fridge };
     };
     measure();
     sizeZ();
@@ -176,6 +183,7 @@ export default function WinterGabbyGag({ aside, room, onDone, preview = false }:
         let node = pool.get(b.id);
         const say = b.kind === "say";
         const px = say ? Math.max(SAY_PX, MIN_SAY / stage.k) : Math.max(SFX_PX * (b.kind === "pop" ? 1.5 : b.kind === "beep" ? .8 : 1), (b.kind === "beep" ? MIN_SAY : MIN_SFX) / stage.k);
+        const margin = 4 / stage.k;
         if (!node) {
           node = document.createElement("div");
           node.className = styles.word;
@@ -186,6 +194,17 @@ export default function WinterGabbyGag({ aside, room, onDone, preview = false }:
           if (say) node.style.maxWidth = `${f(px * 13.5)}px`;
           words.appendChild(node);
           pool.set(b.id, node);
+          if (say && b.y - 9 / stage.k - node.offsetHeight < stage.top + margin) {
+            // no room over her head: one wide line along the top of the banner
+            node.style.whiteSpace = "nowrap";
+            node.style.maxWidth = "none";
+            const avail = Math.min(stage.right, stage.fridge) - stage.left - 2 * margin, one = node.offsetWidth;
+            if (one > avail) {
+              const fit = px * avail / one, least = MIN_SAY_TIGHT / stage.k;
+              if (fit >= least) node.style.fontSize = `${f(fit)}px`;
+              else { node.style.whiteSpace = ""; node.style.maxWidth = `${f(avail)}px`; node.style.fontSize = `${f(least)}px`; }
+            }
+          }
           sizes.set(b.id, [node.offsetWidth, node.offsetHeight]);
         }
         const [w, h] = sizes.get(b.id)!;
@@ -193,11 +212,10 @@ export default function WinterGabbyGag({ aside, room, onDone, preview = false }:
         const pin = b.age < 150 ? backOutIn(b.age / 150) : 1;
         const pout = b.rest < 120 ? b.rest / 120 : 1;
         const scale = Math.max(.01, pin * (.6 + .4 * pout));
-        const margin = 4 / stage.k;
         if (say) {
           // above the speaker's head, kept wholly on screen; the tail still points at her
           let left = b.x - w / 2;
-          left = Math.min(Math.max(left, stage.left + margin), stage.right - margin - w);
+          left = Math.min(Math.max(left, stage.left + margin), Math.min(stage.right, stage.fridge) - margin - w);
           let top = b.y - 9 / stage.k - h;
           top = Math.max(top, stage.top + margin);
           const tail = Math.min(Math.max(b.x - left, 12), w - 12);
@@ -205,8 +223,9 @@ export default function WinterGabbyGag({ aside, room, onDone, preview = false }:
           node.style.transformOrigin = `${f(tail)}px ${f(h + 6)}px`;
           (node.lastElementChild as HTMLElement).style.left = `${f(tail)}px`;
         } else {
-          let left = b.x - w / 2, top = b.y - h / 2;
-          left = Math.min(Math.max(left, stage.left + margin), stage.right - margin - w);
+          // a sound effect centres on its anchor, or starts from it (align left) or ends at it (align right)
+          let left = b.align === "left" ? b.x : b.align === "right" ? b.x - w : b.x - w / 2, top = b.y - h / 2;
+          left = Math.min(Math.max(left, stage.left + margin), Math.min(stage.right, stage.fridge) - margin - w);
           top = Math.max(top, stage.top + margin);
           node.style.transform = `translate(${f(left)}px, ${f(top)}px) rotate(${f(b.tilt ?? 0)}deg) scale(${f(scale)})`;
           node.style.transformOrigin = "50% 50%";

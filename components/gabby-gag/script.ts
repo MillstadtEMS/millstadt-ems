@@ -29,8 +29,11 @@ export type Stage = {
   left: number;
   right: number;
   top: number;
-  /** CSS px per room px (1 on desktops, .62 on phones). */
+  /** CSS px per room px (1 on desktops, about .5 on phones). */
   k: number;
+  /** Where the fridge beside the fireplace starts (room px; Infinity when it isn't shown). It stands in
+   *  front of the scene's layer, so nothing of the gag should land or be said behind it. */
+  fridge: number;
 };
 
 export type Bubble = {
@@ -44,6 +47,8 @@ export type Bubble = {
   age: number;
   rest: number;
   tilt?: number;
+  /** Sound effects: the anchor is the text's left or right end instead of its centre (so it clears her). */
+  align?: "left" | "right";
 };
 type Dust = { x: number; y: number; u: number; spread: number; dir: number };
 export type Treats = { o: number; plate: [number, number, number]; cookie: [number, number, number]; glass: [number, number, number]; splash: number; puddle: number };
@@ -493,13 +498,14 @@ export function buildGag(stage: Stage) {
     // the plate hops and rattles; the loose cookie flies off over Gabby; the milk tips and spills
     // (the plate and the glass sail past where his head lands, to the rug in front of the presents)
     const ph = seg(j, 0, 520);
-    const plate: [number, number, number] = [lerp(PLATE[0], 707, easeOut(ph)), lerp(PLATE[1], FIREBOX.hearth, ph) - Math.sin(ph * Math.PI) * 30, ph < 1 ? ph * 340 : 360 + Math.sin((j - 520) / 45) * 14 * Math.max(0, 1 - (j - 520) / 500)];
+    const plateTo = Math.min(707, stage.fridge - 13), glassTo = Math.min(722, stage.fridge - 5);
+    const plate: [number, number, number] = [lerp(PLATE[0], plateTo, easeOut(ph)), lerp(PLATE[1], FIREBOX.hearth, ph) - Math.sin(ph * Math.PI) * 30, ph < 1 ? ph * 340 : 360 + Math.sin((j - 520) / 45) * 14 * Math.max(0, 1 - (j - 520) / 500)];
     const cj = seg(j, 0, 700);
     const roll = seg(j, 700, 1150);
     const cx = lerp(PLATE[0] + 1, 506, easeOut(cj)) - roll * 9, cy = lerp(PLATE[1] - 3.2, FLOOR - 3.3, cj) - Math.sin(cj * Math.PI) * 46 + (cj >= 1 ? -Math.abs(Math.sin(roll * Math.PI * 2)) * 2 * (1 - roll) : 0);
     const cookie: [number, number, number] = [cx, cy, -cj * 900 - roll * 160];
     const gj = seg(j, 0, 420);
-    const glass: [number, number, number] = [lerp(GLASS[0], 722, easeOut(gj)), lerp(GLASS[1], FLOOR - 1, gj) - Math.sin(gj * Math.PI) * 38, gj * 270];
+    const glass: [number, number, number] = [lerp(GLASS[0], glassTo, easeOut(gj)), lerp(GLASS[1], FLOOR - 1, gj) - Math.sin(gj * Math.PI) * 38, gj * 270];
     return { o, plate, cookie, glass, splash: seg(j, 380, 520) * (1 - seg(j, 700, 1000)), puddle: seg(j, 420, 1100) };
   };
 
@@ -701,8 +707,9 @@ export function buildGag(stage: Stage) {
     // ---- speech bubbles and sound effects
     const life = (from: number, to: number) => ({ age: t - from, rest: to - t });
     if (g && t >= tSay1 && t < tSay1End) s.bubbles.push({ id: "nope", text: "OH NO YOU DON'T!", kind: "say", ...xy(headTop(g)), ...life(tSay1, tSay1End) });
-    if (g && t >= tHn1 && t < tSlip) s.bubbles.push({ id: "hn1", text: "HNNNGH!", kind: "sfx", ...xy(offsetPt(headTop(g), -16, -2)), ...life(tHn1, tSlip), tilt: -7 });
-    if (g && t >= tHn2 && t < tPop + 60) s.bubbles.push({ id: "hn2", text: "HNNNNGH!!", kind: "sfx", ...xy(offsetPt(headTop(g), -18, -3)), ...life(tHn2, tPop + 60), tilt: -9 });
+    // the grunts come out behind her head (the text ends just behind it), clear of her face
+    if (g && t >= tHn1 && t < tSlip) s.bubbles.push({ id: "hn1", text: "HNNNGH!", kind: "sfx", ...xy(offsetPt(headTop(g), -4, 4)), ...life(tHn1, tSlip), tilt: -7, align: "right" });
+    if (g && t >= tHn2 && t < tPop + 60) s.bubbles.push({ id: "hn2", text: "HNNNNGH!!", kind: "sfx", ...xy(offsetPt(headTop(g), -5, 3)), ...life(tHn2, tPop + 60), tilt: -9, align: "right" });
     if (t >= tPop && t < tPop + 650) s.bubbles.push({ id: "pop", text: "POP!", kind: "pop", x: SX + 2, y: 104, ...life(tPop, tPop + 650), tilt: 8 });
     if (g && t >= tDrag + 300 && t < tDrag + 3700) s.bubbles.push({ id: "milk", text: "YOU'RE GONNA FINISH YOUR MILK AND COOKIES!", kind: "say", ...xy(headTop(g)), ...life(tDrag + 300, tDrag + 3700) });
     if (s.santa && t >= tTurn && t < tGone) {
@@ -710,9 +717,10 @@ export function buildGag(stage: Stage) {
       s.bubbles.push({ id: "noo", text: "NOOOO!", kind: "noo", x: h[0] + 16, y: h[1] - 34, ...life(tTurn, tGone), tilt: 5 });
     }
     if (g && t >= tBeep && t < tBeep + 1100) {
+      // the beeps go off in front of her lap if there's room on screen, otherwise out past the chair's back
       const pg = pagerWorld(g);
-      const front = pg[0] - 104 > stage.left;
-      s.bubbles.push({ id: "beep", text: "BEEP BEEP!", kind: "beep", ...xy(offsetPt(pg, front ? -50 : 54, front ? -4 : -16)), ...life(tBeep, tBeep + 1100), tilt: front ? 6 : -6 });
+      const front = pg[0] - 26 - 88 / Math.min(1, stage.k) > stage.left;
+      s.bubbles.push({ id: "beep", text: "BEEP BEEP!", kind: "beep", ...xy(offsetPt(pg, front ? -12 : 30, front ? -6 : -16)), ...life(tBeep, tBeep + 1100), tilt: front ? 6 : -6, align: front ? "right" : "left" });
     }
     if (t >= tSay3 && t < tSay3End) {
       // (held steady over the spot where she landed and turns; she sprints out from under it)

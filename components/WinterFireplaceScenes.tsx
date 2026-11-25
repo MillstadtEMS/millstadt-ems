@@ -356,7 +356,7 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
       data-playing={playing || undefined}
       style={layout ? { "--heist-scale": layout.scale, bottom: px(layout.bottom), right: px(layout.right) } as CSSProperties : undefined}>
       {layout && <>
-        <Image ref={fridge} className={styles.layer} src={`${ART}/fridge.webp`} alt="" width={Math.round(FRIDGE.w * STAGE.file)} height={Math.round(FRIDGE.h * STAGE.file)}
+        <Image ref={fridge} data-fridge="" className={styles.layer} src={`${ART}/fridge.webp`} alt="" width={Math.round(FRIDGE.w * STAGE.file)} height={Math.round(FRIDGE.h * STAGE.file)}
           unoptimized draggable={false} style={{ left: px(FRIDGE.x), top: px(FRIDGE.y), width: px(FRIDGE.w), height: px(FRIDGE.h) }} />
         {armed && AT_FRAMES.map(([id]) => (
           <Image key={id} data-at={id} className={`${styles.layer} ${styles.at}`} src={`${ART}/at-${id}.webp`} alt=""
