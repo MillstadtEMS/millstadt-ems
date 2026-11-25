@@ -101,13 +101,17 @@ export default function StationDirector() {
     // Preview: ?preview=ve&station-fast=1&station-scene=ladder starts with everyone already down.
     const scene = fast ? new URLSearchParams(window.location.search).get("station-scene") : null;
 
-    /** Claim everyone in the reset, waiting a little for anyone still out in another act. */
+    /** Claim everyone in the reset, waiting for anyone still out in another act (a pop-up leaves
+     *  within seconds). Dr. Hsu above all: he carries the ladder, so he must not be popping up too. */
     async function claimCast(): Promise<() => void> {
       const releases = new Map<string, () => void>();
-      const deadline = Date.now() + (fast ? 3_000 : 8_000);
-      while (!cancelled && releases.size < CAST.length && Date.now() < deadline) {
+      const start = Date.now();
+      const everyone = start + (fast ? 8_000 : 15_000), carrier = start + (fast ? 15_000 : 30_000);
+      while (!cancelled) {
         for (const person of CAST) if (!releases.has(person)) { const release = claimPerson(person); if (release) releases.set(person, release); }
-        if (releases.size < CAST.length) await sleep(250);
+        const now = Date.now();
+        if (releases.size === CAST.length || now >= carrier || (releases.has("medical-director") && now >= everyone)) break;
+        await sleep(250);
       }
       return () => releases.forEach(release => release());
     }
