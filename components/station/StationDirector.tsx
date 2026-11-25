@@ -28,6 +28,8 @@ let state = { phase: "starting" as StationPhase, loop: 0, since: 0, order: [] as
 const listeners = new Set<() => void>();
 function announce(next: Partial<typeof state>) {
   state = { ...state, ...next, since: next.phase ? Date.now() : state.since };
+  // Also on the page, for the debug panel and for tests (html[data-station-phase]).
+  document.documentElement.dataset.stationPhase = state.phase;
   listeners.forEach(listener => listener());
 }
 export function useStationLoop() {
@@ -146,6 +148,7 @@ export default function StationDirector() {
 
     return () => {
       cancelled = true;
+      delete document.documentElement.dataset.stationPhase;
       timers.forEach(id => window.clearTimeout(id));
       held?.();
       setFireplaceProgram();
