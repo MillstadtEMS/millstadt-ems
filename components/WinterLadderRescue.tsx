@@ -273,6 +273,17 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
     const pivotX = () => truckX + BODY.pivot[0] * layout.S;
     let santaMode: "deck" | "ladder" = "deck";
     let santaSx = 925, santaPose: SantaPose = "climb1", santaHop = 0;
+    // He faces the way he goes: up the ladder when climbing (and when climbing back down it, facing the
+    // rungs), but turned round when he walks down a shallow ladder, and the way he jumps between the
+    // rear deck and the ladder's heel. (Mirrored = facing right; the art faces left.)
+    let santaDir = 0, hopFacing = 0;
+    const santaMirrored = () => {
+      if (hopFacing) return hopFacing > 0;
+      const up = santaMode === "ladder" && lad.c < 0;
+      return santaPose === "stand" && santaDir > 0 ? !up : up;
+    };
+    const deckX = () => truckX + BODY.deck[0] * layout.S;
+    const heelX = () => ladderPoint(layout, pivotX(), lad, 925, LAD.chord, false).x;
     let rope: { top: Pt; end: Pt; tail: number; swing: number; hand: boolean } | null = null;
     const bubbles: Bubble[] = [];
     type Actor = {
@@ -298,8 +309,10 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
         return { x: cx, y: cy, dx: Math.abs(cx - x), dy: Math.abs(cy - y) };
       };
       let side: "up" | "left" | "right" = "up";
+      // Measured once (reading it every frame would force a layout per frame).
+      const w = el.offsetWidth, h = el.offsetHeight;
       {
-        const at = anchor(), w = el.offsetWidth, h = el.offsetHeight;
+        const at = anchor();
         let best = Infinity;
         for (const s of ["up", "left", "right"] as const) {
           const p = spot(s, at, w, h);
@@ -310,7 +323,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
         }
       }
       const place = () => {
-        const at = anchor(), w = el.offsetWidth, h = el.offsetHeight;
+        const at = anchor();
         const { x, y } = spot(side, at, w, h);
         const mid = (at.left + at.right) / 2;
         el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
@@ -333,9 +346,9 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
     /** Santa's head (the top of his pose, where his hat and beard are). */
     const santaHead = (): Box => {
       const foot = santaFoot();
-      const box = santaBox(layout, santaPose, foot, lad.c < 0 && santaMode === "ladder");
+      const mirrored = santaMirrored();
+      const box = santaBox(layout, santaPose, foot, mirrored);
       const w = box.right - box.left, h = box.bottom - box.top;
-      const mirrored = lad.c < 0 && santaMode === "ladder";
       const left = mirrored ? box.left + w * .18 : box.left + w * .3;
       return { left, right: left + w * .52, top: box.top + h * .03, bottom: box.top + h * .3 };
     };
@@ -359,7 +372,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
       baseMirror.style.visibility = mirror ? "visible" : "hidden";
       // Santa: upright, facing up the ladder (left, or right once the turntable has swung round).
       const foot = santaFoot();
-      const facingRight = santaMode === "ladder" && lad.c < 0;
+      const facingRight = santaMirrored();
       santaEl!.dataset.pose = santaPose;
       santaEl!.style.transform = `translate3d(${foot.x.toFixed(2)}px, ${foot.y.toFixed(2)}px, 0) scaleX(${facingRight ? -1 : 1})`;
       // The rope: from Santa's raised hand up to the tip, and from the tip down to whoever's on it.
@@ -433,7 +446,9 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
 
     // ---- The timeline ----
     type Phase = { name: string; t0: number; run: (t: number) => boolean };
-    let clock = 0, last = performance.now(), frame = 0, phase: Phase | null = null, finished = false;
+    let clock = 0, last = performance.now(), frame = 0, phase: Phase | null = null, finished = false, step = 16;
+    let roomVideo: HTMLVideoElement | null = null;
+    const dt = () => step;
     const queue: Array<() => Phase | null> = [];
     const begin = (name: string, run: (t: number) => boolean): Phase => ({ name, t0: clock, run });
 
@@ -480,8 +495,10 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
           const within = clamp((t - k * 210) / 130, 0, 1);
           const at = Math.min(steps, k + (k < steps ? smooth(within) : 0));
           santaSx = lerp(sFrom, santaTo, at / steps);
+          santaDir = k < steps ? Math.sign(santaTo - sFrom) : 0;
           santaPose = deg(lad.a) > 34 ? (k % 2 ? "climb2" : "climb1") : "stand";
         } else if (santaMode === "ladder") santaPose = climbPose(lad);
+        if (u >= 1) santaDir = 0;
         return u >= 1;
       });
     }
@@ -490,11 +507,15 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
       const beat = steps > 6 ? 180 : 220;
       santaSx = 925;
       return begin("climb", t => {
-        if (t < 340) { santaHop = smooth(t / 340); santaPose = "climb1"; return false; }
-        santaMode = "ladder"; santaHop = 0;
+        if (t < 340) {
+          hopFacing = Math.sign(heelX() - deckX()) || -1;
+          santaHop = smooth(t / 340); santaPose = "climb1"; return false;
+        }
+        santaMode = "ladder"; santaHop = 0; hopFacing = 0;
         const s = t - 340, k = Math.min(steps, Math.floor(s / beat));
         const within = clamp((s - k * beat) / (beat * .64), 0, 1);
         santaSx = lerp(925, sxTo, Math.min(steps, k + (k < steps ? smooth(within) : 0)) / steps);
+        santaDir = k < steps ? -1 : 0;
         santaPose = deg(lad.a) > 34 ? (k % 2 ? "climb2" : "climb1") : "stand";
         return k >= steps;
       });
@@ -506,13 +527,15 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
           const k = Math.min(steps, Math.floor(t / 200));
           const within = clamp((t - k * 200) / 130, 0, 1);
           santaSx = lerp(from, 925, Math.min(steps, k + (k < steps ? smooth(within) : 0)) / steps);
+          santaDir = 1;
           santaPose = deg(lad.a) > 34 ? (k % 2 ? "climb2" : "climb1") : "stand";
-          if (k >= steps) { santaMode = "deck"; santaHop = 1; }
+          if (k >= steps) { santaMode = "deck"; santaHop = 1; santaDir = 0; hopFacing = Math.sign(deckX() - heelX()) || 1; }
           return false;
         }
         const u = clamp((t - steps * 200) / 320, 0, 1);
         santaHop = 1 - smooth(u);
         santaPose = "climb1";
+        if (u >= 1) hopFacing = 0;
         return u >= 1;
       });
     }
@@ -521,13 +544,20 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
       const line = rescued > 0 && hangingCrew().length === 1 ? LAST_LINE : SANTA_LINES[rescued % SANTA_LINES.length];
       say(line, santaHead, keepClear(m), 2100);
       const waist = m.y + m.height * .48;
+      const figure = () => document.querySelector<HTMLElement>(`[data-hanging-chief="${m.chief}"]`);
       return begin("rope", t => {
         const tip = tipOf(layout, pivotX(), lad);
         const u = Math.min(1, t / 520);
         const fall = easeIn(u);
         const endY = lerp(tip.y, waist, fall) + (u >= 1 ? Math.sin((t - 520) / 90) * Math.exp(-(t - 520) / 160) * 6 : 0);
         rope = { top: tip, end: { x: tip.x, y: Math.max(tip.y, endY) }, tail: 0, swing: t / 300, hand: true };
-        return t >= 760;
+        // The rope lands beside them: a gulp (the scared face) and a beat before they dare let go.
+        if (t >= 560 && t - dt() < 560) {
+          const el = figure();
+          if (el && WAVES[m.chief]) el.dataset.startled = "";
+          else el?.style.setProperty("--panic", "1");
+        }
+        return t >= 1250;
       });
     }
     function grab(plan: Plan): Phase {
@@ -553,7 +583,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
     function lower(plan: Plan): Phase {
       const m = plan.member, actor = currentActor!;
       const from = m.y + 14, to = landGrip(m);
-      const dur = clamp((to - from) / (layout.vh * .42) * 1000, 1100, 2300);
+      const dur = clamp((to - from) / (layout.vh * .34) * 1000, 1300, 2500);
       const sign = m.x > layout.vw / 2 ? 1 : -1;
       return begin("lower", t => {
         const u = Math.min(1, t / dur), e = smooth(u);
@@ -679,8 +709,10 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
       last = now;
       if (paused || document.hidden) return;
       clock += dt;
+      step = dt;
       // The living room's own Santa stays out of the chimney while this Santa is out.
-      const video = document.querySelector<HTMLVideoElement>("[data-living-room] video");
+      if (!roomVideo?.isConnected) roomVideo = document.querySelector<HTMLVideoElement>("[data-living-room] video");
+      const video = roomVideo;
       if (video && !video.paused && video.currentTime > 2.35 && video.currentTime < 5.35) video.currentTime = 5.35;
       while (!phase && queue.length) phase = queue.shift()!();
       if (phase && phase.run(clock - phase.t0)) phase = null;
@@ -736,20 +768,20 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
         <i className={styles.shadow} />
         <div ref={ladder} className={styles.ladder} style={{ left: px(BODY.pivot[0]), top: px(BODY.pivot[1]) }}>
           <span className={styles.flyClip} style={{ left: px(-4000), top: px(-LAD.pivot[1]), width: px(4000 + 1000 - LAD.pivot[0]), height: px(246) }}>
-            <Image ref={fly} className={styles.layer} src={`${ART}/ladder-fly.webp`} alt="" width={2400} height={246} unoptimized draggable={false}
+            <Image ref={fly} className={styles.layer} src={`${ART}/ladder-fly.webp`} alt="" width={2400} height={246} unoptimized draggable={false} loading="eager"
               style={{ left: px(4000 - LAD.pivot[0]), top: 0, width: px(2400), height: px(246) }} />
           </span>
           {(["plain", "mirror"] as const).map(kind => (
             <Image key={kind} data-base={kind} className={styles.layer} src={`${ART}/${kind === "plain" ? "ladder-base" : "ladder-base-mirror"}.webp`} alt=""
-              width={538} height={246} unoptimized draggable={false}
+              width={538} height={246} unoptimized draggable={false} loading="eager"
               style={{ left: px(LAD.base - LAD.pivot[0]), top: px(-LAD.pivot[1]), width: px(538), height: px(246), visibility: kind === "plain" ? "visible" : "hidden" }} />
           ))}
         </div>
-        <Image className={styles.layer} src={`${ART}/truck-body.webp`} alt="" width={BODY.w} height={BODY.h} unoptimized draggable={false}
+        <Image className={styles.layer} src={`${ART}/truck-body.webp`} alt="" width={BODY.w} height={BODY.h} unoptimized draggable={false} loading="eager"
           style={{ inset: 0, width: "100%", height: "100%" }} />
         {["twinkle-0", "twinkle-1", "left", "right", "bar-a", "bar-b"].map(glow => (
           <Image key={glow} data-glow={glow} className={`${styles.layer} ${styles.glow}`} src={`${ART}/truck-${glow}.webp`} alt="" width={BODY.w} height={BODY.h}
-            unoptimized draggable={false} style={{ inset: 0, width: "100%", height: "100%" }} />
+            unoptimized draggable={false} loading="eager" style={{ inset: 0, width: "100%", height: "100%" }} />
         ))}
       </div>
       <svg ref={ropes} className={styles.ropes} aria-hidden="true">
@@ -761,21 +793,21 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
       <div ref={santa} className={styles.santa} data-pose="climb1">
         {(Object.keys(POSES) as SantaPose[]).map(pose => {
           const p = POSES[pose];
-          return <Image key={pose} data-pose={pose} className={styles.layer} src={p.src} alt="" width={p.w} height={p.h} unoptimized draggable={false}
+          return <Image key={pose} data-pose={pose} className={styles.layer} src={p.src} alt="" width={p.w} height={p.h} unoptimized draggable={false} loading="eager"
             style={{ left: sx(-p.foot[0]), top: sx(-p.foot[1]), width: sx(p.w), height: sx(p.h) }} />;
         })}
       </div>
       <div ref={crewLayer} className={styles.crew}>
         {(Object.entries(WAVES) as Array<[CrewChief, NonNullable<(typeof WAVES)[CrewChief]>]>).map(([chief, w]) => (
           <span key={chief} data-crew={chief} className={styles.waver}>
-            <Image src={waveArt(w.name, "body")} alt="" width={w.w} height={w.h} unoptimized draggable={false} />
-            <Image className={styles.forearm} src={waveArt(w.name, "arm")} alt="" width={w.w} height={w.h} unoptimized draggable={false}
+            <Image src={waveArt(w.name, "body")} alt="" width={w.w} height={w.h} unoptimized draggable={false} loading="eager" />
+            <Image className={styles.forearm} src={waveArt(w.name, "arm")} alt="" width={w.w} height={w.h} unoptimized draggable={false} loading="eager"
               style={{ transformOrigin: `${w.elbow[0]}% ${w.elbow[1]}%` }} />
           </span>
         ))}
         {(Object.entries(CHEERS) as Array<[CrewChief, string]>).map(([chief, src]) => (
           <span key={chief} data-crew={chief} data-cheer={chief} className={styles.waver}>
-            <Image src={src} alt="" width={477} height={716} unoptimized draggable={false} />
+            <Image src={src} alt="" width={477} height={716} unoptimized draggable={false} loading="eager" />
           </span>
         ))}
       </div>

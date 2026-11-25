@@ -12,6 +12,9 @@
   visibility: hidden;
 }
 .scene[data-ready] { visibility: visible; }
+/* Until the art is decoded nothing shows, not even a pose or layer that is set visible itself. */
+.scene:not([data-ready]) * { visibility: hidden !important; }
+.scene { --s: .25; --sigma: .25; }
 .layer { position: absolute; display: block; max-width: none; pointer-events: none; }
 
 /* Ladder 3919 (sized in art px times --s by the script). */
