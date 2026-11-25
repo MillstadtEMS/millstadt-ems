@@ -714,9 +714,11 @@ function runCast(env: Env) {
     if (y > bottom) return false;
     const root = element(actor);
     if (!root) return false;
-    for (const picture of root.querySelectorAll<SVGSVGElement>("svg[data-frame]")) {
+    // (A rigged forearm is its own picture, the size of the one it was cut from.)
+    const { arm } = actor.rig;
+    for (const picture of root.querySelectorAll<SVGSVGElement>("svg[data-frame],svg[data-arm]")) {
       if (Number(getComputedStyle(picture).opacity) < .5) continue;
-      const pose = actor.rig.frames[picture.dataset.frame ?? ""];
+      const pose = picture.dataset.arm !== undefined ? arm && { ...actor.rig.frames[arm.frame], src: arm.src } : actor.rig.frames[picture.dataset.frame ?? ""];
       const matrix = picture.querySelector("image")?.getScreenCTM();
       if (!pose || !matrix) continue;
       const p = new DOMPoint(x, y).matrixTransform(matrix.inverse());
@@ -1252,7 +1254,7 @@ function Figure({ view, onShoot }: { view: View; onShoot: (id: number) => void }
           {arm && armFrame && (
             // The rigged forearm over its stump (turned about the elbow by the throw's CSS), with the
             // snowball in its palm while she holds one.
-            <svg className={styles.arm} data-on={view.frame === arm.frame || undefined} viewBox={`0 0 ${armFrame.w} ${armFrame.h}`} preserveAspectRatio="none" focusable="false"
+            <svg className={styles.arm} data-arm="" data-on={view.frame === arm.frame || undefined} viewBox={`0 0 ${armFrame.w} ${armFrame.h}`} preserveAspectRatio="none" focusable="false"
               style={{ left: pct(armFrame.x / rig.W), top: pct(armFrame.y / rig.H), width: pct(armFrame.w * armFrame.s / rig.W), height: pct(armFrame.h * armFrame.s / rig.H) }}>
               <defs>
                 <radialGradient id={`held-${view.id}`} cx="33%" cy="28%" r="78%">
