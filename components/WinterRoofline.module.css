@@ -232,11 +232,12 @@
 .kitLeg { transform: rotate(calc(var(--leg-turn, 0deg) + var(--kick-left, 0deg) * .85)); }
 .kitLegRight { transform: rotate(calc(var(--leg-turn, 0deg) + var(--kick-right, 0deg) * .85)); }
 /* Scared: only the face changes, painted on the same body, so nobody grows or jumps. Straining
-   (a shaking phone): the red-faced, gritted face, painted on the same body too. */
-.scaredFace, .strainFace { position: absolute; inset: 0; display: block; opacity: 0; transition: opacity .08s linear; }
+   (a shaking phone): the gritted face, then the same face beet red, painted on the same body too.
+   Faces swap whole, never blending into a double image. */
+.scaredFace, .strainFace { position: absolute; inset: 0; display: block; visibility: hidden; }
 .cradle[data-kit][data-face="1"] .scaredFace, .cradle[data-kit][data-phase="hit"] .scaredFace,
 .cradle[data-kit][data-face="2"]:not([data-phase="hit"]) .strainFace:not(.strainHard),
-.cradle[data-kit][data-face="3"]:not([data-phase="hit"]) .strainHard { opacity: 1; }
+.cradle[data-kit][data-face="3"]:not([data-phase="hit"]) .strainHard { visibility: visible; }
 
 /* Sweat flying off a straining head: each drop beads up at a temple, flicks off nose-first (its
    point trailing along its arc) and falls away. A drop a side while they strain, two a side once
@@ -414,6 +415,19 @@
   43% { transform: none; animation-timing-function: cubic-bezier(.48,.04,.92,.59); }
   100% { transform: translate(var(--fall-side, max(-10vw,-96px)), 110vh) rotate(var(--fall-turn, -16deg)); }
 }
+/* Shaken off (a shaking phone wore out their grip): no snowball to wait for. Their fingers slide
+   off the wire, they scrabble back up for one last grab, slip again, and they're gone. Jen's and
+   Kenny's painted strand stays with the lights from the first slip. */
+.cradle[data-phase="hit"][data-fall="slip"] .figure { animation-delay: 0s; }
+.cradle[data-phase="hit"][data-fall="slip"] .drop { animation: slipGrip 1.24s linear both; }
+@keyframes slipGrip {
+  0% { transform: none; animation-timing-function: cubic-bezier(.55,0,.9,.55); }
+  9% { transform: translateY(5%) rotate(2deg); animation-timing-function: cubic-bezier(.2,.75,.35,1); }
+  17% { transform: translateY(1%) rotate(-1.4deg); animation-timing-function: ease-in-out; }
+  25% { transform: translateY(1.6%) rotate(.8deg); animation-timing-function: ease-in; }
+  31% { transform: translateY(3.6%) rotate(0deg); animation-timing-function: cubic-bezier(.48,.04,.92,.59); }
+  100% { transform: translate(var(--fall-side, max(-10vw,-96px)), 110vh) rotate(var(--fall-turn, -16deg)); }
+}
 
 .volley {
   position: fixed;
@@ -457,7 +471,7 @@
   clip-path: inset(50%); white-space: nowrap;
 }
 @media (prefers-reduced-motion: reduce) {
-  .cradle[data-phase="hit"] .drop { animation: stillDrop .6s .12s ease-out both; }
+  .cradle[data-phase="hit"] .drop, .cradle[data-phase="hit"][data-fall="slip"] .drop { animation: stillDrop .6s .12s ease-out both; }
   .snowball { animation: stillBall .58s ease-out both; }
   .powder { display: none; }
 }

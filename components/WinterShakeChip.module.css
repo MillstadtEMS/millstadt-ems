@@ -1,6 +1,7 @@
 /* A little neon sign in the same family as the Time Out sign: a green tube on a dark board. It
-   docks low and centred, above the phone tab bar, so it never covers the header, the crew or the
-   music player. Only the chip itself takes taps. */
+   docks low and centred (above the phone tab bar; in the lower left corner on a phone held
+   sideways), so it never covers the header, the crew or the music player. Only the chip itself
+   takes taps. */
 .dock {
   position: fixed;
   left: 50%;
@@ -61,6 +62,18 @@
 .label {
   white-space: nowrap;
   text-shadow: 0 0 1px #fff, 0 0 5px #3dff95, 0 0 11px #19e57e;
+}
+
+/* A phone on its side: the living room fills the screen and its TV (the music player) sits
+   bottom centre, so the chip docks in the lower left corner instead. */
+@media (min-width: 568px) and (max-height: 560px) and (orientation: landscape) {
+  .dock {
+    left: max(16px, env(safe-area-inset-left, 0px));
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+    justify-content: flex-start;
+    translate: none;
+  }
+  .chip { font-size: clamp(.66rem, 1.6vw, .8rem); }
 }
 
 /* The phone rocks side to side with motion marks, the way it's meant to be shaken. */

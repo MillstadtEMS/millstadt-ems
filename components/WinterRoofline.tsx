@@ -198,6 +198,12 @@ const noBody = () => null;
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const ease = (from: number, to: number, value: number) => { const t = clamp01((value - from) / (to - from)); return t * t * (3 - 2 * t); };
+// Their arms only let them swing so far: past 28° the swing stiffens smoothly toward 42° instead of
+// stopping dead against a limit.
+const limitSwing = (deg: number) => {
+  const over = Math.abs(deg) - 28;
+  return over <= 0 ? deg : Math.sign(deg) * (28 + 14 * Math.tanh(over / 14));
+};
 
 function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObject<HTMLSpanElement | null>; menuOpen: boolean }) {
   const body = useSyncExternalStore<HTMLElement | null>(noSubscription, bodyOnClient, noBody);
@@ -410,7 +416,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       // scroll's kick, the legs trailing the swing, and a frantic scissor kick as they struggle.
       const kickLeft = energy * (Math.sin(phase * 1.31 + .5) * 11 + 7) + legLag + flail * (Math.sin(kickPhase) * 9 + 5);
       const kickRight = energy * (Math.sin(phase * 1.57 + 2) * 10 - 6) + legLag + flail * (Math.sin(kickPhase + Math.PI) * 9 - 5);
-      figure.style.setProperty("--swing", clamp(turn, -40, 40).toFixed(2) + "deg");
+      figure.style.setProperty("--swing", limitSwing(turn).toFixed(2) + "deg");
       figure.style.setProperty("--kick-left", clamp(kickLeft, -6, 21).toFixed(2) + "deg");
       figure.style.setProperty("--kick-right", clamp(kickRight, -21, 6).toFixed(2) + "deg");
     }

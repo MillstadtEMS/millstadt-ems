@@ -24,6 +24,8 @@ const G = 9.80665;
 const STRAIN_FLOOR = 4.5, STRAIN_SPAN = 10, STRAIN_MAX_RATE = 1;
 // After a short breather the crew recover, a little at a time.
 const RECOVER_AFTER = .9, RECOVER_RATE = .25;
+// After a start the filter spends a moment learning where gravity sits, then fades the shake in.
+const SETTLE = .4, FADE_IN = .3;
 
 type Member = { fall: () => void; at?: number; fired?: boolean };
 const members = new Map<string, Member>();
@@ -34,8 +36,11 @@ const state = {
   access: "idle" as ShakeAccess,
   // Some platforms (iOS) report the opposite sign to the spec; gravity tells us which.
   flip: 1,
-  gravityY: 0,
+  gravityUp: 0,
   low: [0, 0, 0],
+  // The first readings after a start, averaged: where gravity sits.
+  sum: [0, 0, 0],
+  span: 0,
   primed: false,
   settle: 0,
   // Running integral of the shake in screen space (m/s): readers take differences.
@@ -143,24 +148,35 @@ function onMotion(event: DeviceMotionEvent) {
   const x = source.x ?? 0, y = source.y ?? 0, z = source.z ?? 0;
   const reading = [x * cos - y * sin, x * sin + y * cos, z];
   if (restart || !state.primed) {
-    state.low = [...reading]; state.primed = true; state.settle = 0;
-    if (source === withGravity) state.gravityY = reading[1];
+    state.low = [...reading]; state.sum = [0, 0, 0]; state.span = 0; state.primed = true; state.settle = 0;
+    if (source === withGravity) state.gravityUp = reading[1] + reading[2];
   }
   if (source === withGravity) {
-    // Held upright, gravity reads +9.8 up the screen per the spec; a platform that reports -9.8
-    // has its signs flipped.
-    state.gravityY += (reading[1] - state.gravityY) * (1 - Math.exp(-dt / 1.2));
-    if (state.gravityY > 5) state.flip = 1;
-    else if (state.gravityY < -5) state.flip = -1;
+    // Held the right way up (upright, tilted back or flat on a table), gravity reads up the screen
+    // and out of it per the spec, about +10 to +14 combined at any tilt; a platform that reports
+    // the opposite has its signs flipped.
+    state.gravityUp += (reading[1] + reading[2] - state.gravityUp) * (1 - Math.exp(-dt / 1.2));
+    if (state.gravityUp > 6) state.flip = 1;
+    else if (state.gravityUp < -6) state.flip = -1;
   }
-  // Remove gravity and slow tilting: what's left is the shake. The filter settles quickly (and
-  // drives nothing) for a moment after a start, so a phone already moving doesn't fling anyone.
+  // Remove gravity and slow tilting: what's left is the shake. For a moment after a start the
+  // readings only teach the filter where gravity sits (their average, so a phone that's already
+  // moving doesn't fling anyone with a phantom jolt), then the shake fades in.
   state.settle += dt;
-  const settling = state.settle < .4;
-  const keep = 1 - Math.exp(-dt / (settling ? .07 : .35));
+  if (state.settle < SETTLE) {
+    reading.forEach((value, axis) => { state.sum[axis] += value * dt; });
+    state.span += dt;
+  } else if (state.span) {
+    state.low = state.sum.map(total => total / state.span);
+    state.span = 0;
+  }
+  const settling = state.settle < SETTLE;
+  const fade = settling ? 0 : Math.min(1, (state.settle - SETTLE) / FADE_IN);
+  const keep = 1 - Math.exp(-dt / .35);
   const shake = reading.map((value, axis) => {
+    if (settling) return 0;
     state.low[axis] += (value - state.low[axis]) * keep;
-    return settling ? 0 : (value - state.low[axis]) * state.flip;
+    return (value - state.low[axis]) * state.flip * fade;
   });
   state.vx += shake[0] * dt;
   const power = shake[0] ** 2 + shake[1] ** 2 + shake[2] ** 2;
