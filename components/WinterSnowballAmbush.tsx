@@ -144,10 +144,11 @@ function peekRig(person: Crew | Guest): Rig {
       };
     }
     if (person === "mylie") {
-      // Mylie (cut from her pop-up clip, one shared box): she waves hello, smiles and winks.
+      // Mylie (cut from her pop-up clip, one shared box): she waves hello and smiles; with a snowball
+      // coming (and the snow piling up on her) she winces, eyes squeezed shut and a hand up.
       return {
         ...base, visible: .74,
-        frames: { hello: pose("wave"), excited: pose("smile"), scared: pose("wink"), nauseous: pose("smile"), ...throwing, throw: pose("wave") },
+        frames: { hello: pose("wave"), excited: pose("smile"), scared: pose("wince"), nauseous: pose("smile"), ...throwing, throw: pose("wave") },
       };
     }
     const bust = pose("excited");
