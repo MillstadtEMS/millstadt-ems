@@ -576,7 +576,8 @@ function HangingCrew({ chief, anchor, menuOpen, station = false }: { chief: Chie
     let lastLift = shakeLift(), stretch = 0, stretchRate = 0;
     // Faces: 0 calm, 1 startled (a big swing, a hard scroll, a hit), 2 straining as the grip goes,
     // 3 all-out effort (eyes squeezed shut, teeth gritted, beet red), moments from letting go.
-    let face = 0, faceAt = 0, startledUntil = 0, shaken = false, stillSince = 0, recentSwing = 0;
+    let face = 0, faceAt = 0, startledUntil = 0, shaken = false, stillSince = 0, recentSwing = 0, scrolledAt = 0;
+    let gripping = false, gripSince = 0;
     // Hanging by both hands (Officer.grip): the arms layer, pinned at the fists. Its art box is
     // cached at measure time; hitAt marks when they let go.
     const grip = officer.grip;
@@ -643,21 +644,26 @@ function HangingCrew({ chief, anchor, menuOpen, station = false }: { chief: Chie
         if (face) figure.dataset.face = String(face);
         else delete figure.dataset.face;
       }
-      // Gabby: while the phone swings her, stills replace her painted loop (swapped crisply).
+      // Gabby: while the phone swings her, stills replace her painted loop (swapped crisply). While
+      // the page itself scrolls she keeps her own painted swing (a swap mid-scroll can go unpainted
+      // on iPhones until the scroll stops).
+      const scrolling = now - scrolledAt < 900;
       if (anim) {
-        if (swingDeg > 2.5 || strain > 0 || face) {
+        if (strain > 0 || (!scrolling && (swingDeg > 2.5 || face))) {
           stillSince = now;
           if (!shaken) { shaken = true; figure.dataset.shaken = ""; }
-        } else if (shaken && now - stillSince > 700) { shaken = false; delete figure.dataset.shaken; }
-      } else if (officer.grip.holes) {
-        // Everyone else rides their arms as a separate layer (and a masked body) only while the
-        // phone is being shaken, through their fall: iPhone Safari drops masked, separately composited
-        // layers during momentum scrolling, so at rest and while the page scrolls each of them is the
-        // single painting again (otherwise the whole crew vanished mid-scroll).
-        if (strain > 0 || shakeBusy() || (shaken && falling)) {
-          stillSince = now;
-          if (!shaken) { shaken = true; figure.dataset.shaken = ""; }
-        } else if (shaken && now - stillSince > 700) { shaken = false; delete figure.dataset.shaken; }
+        } else if (shaken && (scrolling || now - stillSince > 700) && !strain) { shaken = false; delete figure.dataset.shaken; }
+      }
+      // The arms as their own layer and a masked body (Officer.grip, data-gripping) only while a real
+      // shake strains them, through their fall, and never while the page scrolls: iPhone Safari drops
+      // masked, separately composited layers during momentum scrolling (their bodies vanished
+      // mid-scroll), and once motion is allowed even the hand that scrolls reads as a little motion, so
+      // mere motion isn't enough. At rest and while scrolling each of them is the single painting.
+      if (officer.grip.holes) {
+        if (!scrolling && (strain > 0 || (gripping && falling))) {
+          gripSince = now;
+          if (!gripping) { gripping = true; figure.dataset.gripping = ""; }
+        } else if (gripping && !falling && (scrolling || now - gripSince > 700)) { gripping = false; delete figure.dataset.gripping; }
       }
       // Grip trembles that grow as the strain does (weaker once the phone is still).
       const grip = ease(.45, 1, strain) * (shakeBusy() ? 1 : .55);
@@ -772,6 +778,7 @@ function HangingCrew({ chief, anchor, menuOpen, station = false }: { chief: Chie
       else pageY = y;
       if (Math.abs(dy) <= .1 || reduced.matches || document.hidden || rescuing.has(chief)) return;
       const now = performance.now();
+      scrolledAt = now;
       const elapsed = Math.max(12, Math.min(65, now - lastInput));
       lastInput = now;
       sign = Math.sign(dy);

@@ -515,24 +515,24 @@
    the picture is exactly the painting. Until both have loaded, everyone swings whole as before. */
 .arms, .arm { position: absolute; inset: 0; display: block; pointer-events: none; }
 .cradle:not([data-grip]) .arms { display: none; }
-/* Only while a shake is on (data-shaken): at rest and while the page scrolls everyone is the single
+/* Only while a real shake strains them (data-gripping): at rest and while the page scrolls everyone is the single
    painting, because iPhone Safari drops masked, separately composited layers during momentum
    scrolling (the whole crew vanished mid-scroll until it stopped). */
-.cradle:not([data-shaken]) .arms { display: none; }
+.cradle:not([data-gripping]) .arms { display: none; }
 .arm { transform-origin: 0 0; will-change: transform; backface-visibility: hidden; }
 .arm img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 .arm[data-arm="0"] { clip-path: inset(0 50% 0 0); }
 .arm[data-arm="1"] { clip-path: inset(0 0 0 50%); }
-.cradle[data-grip][data-shaken]:not([data-anim]) .gripBody,
-.cradle[data-grip][data-anim][data-shaken]:not([data-phase="hit"]) .gripBody {
+.cradle[data-grip][data-gripping]:not([data-anim]) .gripBody,
+.cradle[data-grip][data-anim][data-gripping]:not([data-phase="hit"]) .gripBody {
   -webkit-mask: var(--grip-holes) 0 0 / 100% 100% no-repeat;
   mask: var(--grip-holes) 0 0 / 100% 100% no-repeat;
 }
 /* Gabby's own painted loop carries its own arms: hers come out only while a shake swings her (her
    still beneath them), and her fall is her own painting again. */
-.cradle[data-anim]:not([data-shaken]) .arms, .cradle[data-anim][data-phase="hit"] .arms { display: none; }
+.cradle[data-anim]:not([data-gripping]) .arms, .cradle[data-anim][data-phase="hit"] .arms { display: none; }
 /* Their painted strand is already off: nothing is left behind on the lights when they let go. */
-.cradle[data-grip][data-shaken] { --release-mask: none; }
+.cradle[data-grip][data-gripping] { --release-mask: none; }
 
 /* The station TV's falls: a mad face painted onto the same hanging pose (only the face changes). */
 .madFace { position: absolute; inset: 0; display: block; opacity: 0; }
