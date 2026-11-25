@@ -649,6 +649,15 @@ function HangingCrew({ chief, anchor, menuOpen, station = false }: { chief: Chie
           stillSince = now;
           if (!shaken) { shaken = true; figure.dataset.shaken = ""; }
         } else if (shaken && now - stillSince > 700) { shaken = false; delete figure.dataset.shaken; }
+      } else if (officer.grip.holes) {
+        // Everyone else rides their arms as a separate layer (and a masked body) only while the
+        // phone is being shaken, through their fall: iPhone Safari drops masked, separately composited
+        // layers during momentum scrolling, so at rest and while the page scrolls each of them is the
+        // single painting again (otherwise the whole crew vanished mid-scroll).
+        if (strain > 0 || shakeBusy() || (shaken && falling)) {
+          stillSince = now;
+          if (!shaken) { shaken = true; figure.dataset.shaken = ""; }
+        } else if (shaken && now - stillSince > 700) { shaken = false; delete figure.dataset.shaken; }
       }
       // Grip trembles that grow as the strain does (weaker once the phone is still).
       const grip = ease(.45, 1, strain) * (shakeBusy() ? 1 : .55);
