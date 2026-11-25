@@ -78,9 +78,11 @@ html[data-snowball-timeout] .aim { pointer-events: none; cursor: auto; }
 .actor[data-phase="scoop"] .rise { animation: stoop .26s cubic-bezier(.5,0,.8,.6) forwards; }
 .actor[data-phase="rewind"] .rise { animation: unstoop .32s cubic-bezier(.2,.8,.3,1.05) both; }
 /* A peek ducks out of sight to scoop up snow, pops back up with it held high, pumps once, and hurls. */
+/* (--lift: they come up a little higher to throw, so the raised snowball clears the floor, then settle.) */
 .actor[data-phase="dip"] .rise { animation: duck .23s cubic-bezier(.5,0,.9,.5) forwards; }
-.actor[data-phase="cock"] .rise { animation: popBack .36s cubic-bezier(.2,.85,.3,1.05) both; }
+.actor[data-phase="cock"] .rise { animation: popHigh .38s cubic-bezier(.2,.85,.3,1.05) both; }
 .actor[data-phase="cock"] .motion { animation: cock .82s ease-out both; }
+.actor[data-phase="hurl"] .rise { animation: settle .34s .14s ease-in-out both; }
 .actor[data-phase="hurl"] .motion { animation: hurl .46s cubic-bezier(.15,.75,.3,1) both; }
 .actor[data-phase="buried"] .motion { animation: land .32s ease-out both; }
 
@@ -191,6 +193,8 @@ html[data-snowball-timeout] .aim { pointer-events: none; cursor: auto; }
 }
 @keyframes stoop { to { transform: translateY(13%) scale(1.03,.95); } }
 @keyframes unstoop { from { transform: translateY(13%) scale(1.03,.95); } 70% { transform: translateY(-1.5%); } to { transform: none; } }
+@keyframes popHigh { from { transform: translateY(var(--duck)); } 70% { transform: translateY(calc(var(--lift, 0%) - 2.5%)); } to { transform: translateY(var(--lift, 0%)); } }
+@keyframes settle { from { transform: translateY(var(--lift, 0%)); } to { transform: none; } }
 @keyframes cock { 45% { transform: rotate(-4deg) translateY(1.5%); } 65% { transform: rotate(-2.5deg) translateY(.5%); } 85%,to { transform: rotate(-5deg) translateY(1.8%); } }
 @keyframes hurl {
   from { transform: rotate(-5deg) translateY(1.8%); }

@@ -313,6 +313,8 @@ type Run = { dead: boolean; timers: Set<number> };
 type Actor = {
   id: number; kind: Kind; people: Person[]; name: string; rig: Rig;
   edge: Edge; box: Box; cut: number; tilt: number; hide: number; talk: "left" | "right" | "center";
+  /** How far a peek pops up (share of its height) to throw, so the raised snowball clears the floor. */
+  lift: number;
   phase: string; frame: string; bubble: string; mood: string; notes: string; fast: boolean; slow: boolean;
   hits: number; toughness: number; hittable: boolean; incoming: boolean; girl: number;
   /** How deep the snow is piled on them (0-1, 1 = up to the eyes). */
@@ -322,10 +324,10 @@ type Actor = {
   /** A duet: the companion leaves with its lead (not the other way round). */
   release: () => void; run: Run | null; lead: Actor | null; companion: Actor | null;
 };
-type View = Pick<Actor, "id" | "kind" | "people" | "name" | "rig" | "edge" | "box" | "cut" | "tilt" | "hide" | "talk" |
+type View = Pick<Actor, "id" | "kind" | "people" | "name" | "rig" | "edge" | "box" | "cut" | "tilt" | "hide" | "lift" | "talk" |
   "phase" | "frame" | "bubble" | "mood" | "notes" | "fast" | "slow" | "hits" | "hittable" | "bury" | "holding" | "girl">;
 const toView = (a: Actor): View => ({
-  id: a.id, kind: a.kind, people: a.people, name: a.name, rig: a.rig, edge: a.edge, box: a.box, cut: a.cut, tilt: a.tilt, hide: a.hide,
+  id: a.id, kind: a.kind, people: a.people, name: a.name, rig: a.rig, edge: a.edge, box: a.box, cut: a.cut, tilt: a.tilt, hide: a.hide, lift: a.lift,
   talk: a.talk, phase: a.phase, frame: a.frame, bubble: a.bubble, mood: a.mood, notes: a.notes, fast: a.fast, slow: a.slow, hits: a.hits, hittable: a.hittable,
   bury: a.bury, holding: a.holding, girl: a.girl,
 });
@@ -557,6 +559,26 @@ function runCast(env: Env) {
     return { edge, box, cut: Math.max(0, box.y + h - floor), tilt: (left ? 1 : -1) * between(9, 13), hide };
   }
 
+  /**
+   * A peek that throws pops up a little higher for it, enough that the snowball held up in the
+   * wind-up clears the floor line with room to spare, counting the corner lean and the lean back of
+   * the wind-up (both tip the throwing hand on the left down toward the floor).
+   */
+  function liftFor(kind: Kind, rig: Rig, spot: { edge: Edge; box: Box; cut: number; tilt: number; hide: number }) {
+    if (kind !== "peek" || !rig.cocked) return 0;
+    const { W, H } = rig, r = rig.ballR ?? 0, [bx, by] = rig.cocked;
+    const floor = (spot.box.h - spot.cut) / spot.box.h * H;
+    const turn = (x: number, y: number, deg: number, ox: number, oy: number) => {
+      const a = deg * Math.PI / 180;
+      return [ox + (x - ox) * Math.cos(a) - (y - oy) * Math.sin(a), oy + (x - ox) * Math.sin(a) + (y - oy) * Math.cos(a)] as const;
+    };
+    // The wind-up leans back 5 degrees about the middle of the floor line; the corner lean pivots at the edge.
+    const [mx, my] = turn(bx, by, -5, W / 2, floor);
+    const px = spot.edge === "corner-left" ? spot.hide * W : spot.edge === "corner-right" ? (1 - spot.hide) * W : W / 2;
+    const [, ly] = turn(mx, my, spot.tilt, px, floor);
+    return Math.min(.24, Math.max(0, (ly + r - (floor - H * .05)) / H));
+  }
+
   function clear(box: Box, shownBottom: number, top: number, avoid: Box[]) {
     const vw = document.documentElement.clientWidth;
     const left = Math.max(0, box.x), right = Math.min(vw, box.x + box.w), upper = box.y, lower = Math.min(shownBottom, box.y + box.h);
@@ -577,7 +599,7 @@ function runCast(env: Env) {
     const vw = document.documentElement.clientWidth, middle = spot.box.x + spot.box.w / 2;
     const tough = preview?.tough || ({ classic: pick([1, 2]), wave: pick([1, 2]), peek: pick([2, 3, 3]), serenade: 2, backflip: 1, caroler: 2, trio: pick([2, 3]) } satisfies Record<Kind, number>)[c.kind];
     const actor: Actor = {
-      id: ++serial, kind: c.kind, people: c.people, name: look.name, rig: look.rig, ...spot,
+      id: ++serial, kind: c.kind, people: c.people, name: look.name, rig: look.rig, ...spot, lift: liftFor(c.kind, look.rig, spot),
       talk: spot.edge === "corner-left" || middle < vw * .38 ? "right" : spot.edge === "corner-right" || middle > vw * .62 ? "left" : "center",
       phase: "rise", frame: c.kind === "peek" && spot.edge !== "corner-left" && Math.random() < .6 ? "hello" : look.frame,
       bubble: "", mood: "", notes: "", fast: false, slow: false,
@@ -1109,7 +1131,7 @@ function Figure({ view, onShoot }: { view: View; onShoot: (id: number) => void }
     "--x": box.x + "px", "--y": box.y + "px", "--w": box.w + "px", "--h": box.h + "px",
     "--cut": view.cut + "px", "--tilt": view.tilt + "deg", "--side": view.edge === "corner-right" ? -1 : 1,
     "--pivot": view.edge === "corner-left" ? `${pct(view.hide)} ${pct(shownAt)}` : view.edge === "corner-right" ? `${pct(1 - view.hide)} ${pct(shownAt)}` : "50% 100%",
-    "--floor-at": pct(shownAt), "--duck": pct(rig.ground ? .8 : rig.visible * .84),
+    "--floor-at": pct(shownAt), "--duck": pct(rig.ground ? .8 : rig.visible * .84), "--lift": pct(-view.lift),
     "--bx": headX + "px", "--by": headY + "px",
     // Song notes float up beside the singer, on the open side, never across the face.
     "--nx": (rig.mouth?.[0] ?? 0) / rig.W * box.w + (view.talk === "left" ? -1 : 1) * Math.min(box.w * .26, box.h * .16) + "px",
