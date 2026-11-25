@@ -234,17 +234,19 @@ test("intersections are where the two streets share an OpenStreetMap point", asy
 
 // ── Demo ──────────────────────────────────────────────────────────────────────────────────────────
 
-test("demo calls progress: located after a few seconds, enroute after ~30 s, clear, then a new call", () => {
+test("demo calls: a call comes in, is located, goes enroute after ~30 s, clears, then a new one", () => {
   const t0 = Date.parse("2026-11-25T12:00:00Z");
-  const [start] = demoCalls("demo", t0, t0 + 1000);
+  assert.equal(demoCalls("demo", t0, t0 + 1000).length, 0, "quiet at first, so the arrival shows");
+  const [start] = demoCalls("demo", t0, t0 + 5000);
   assert.equal(start.phase, "dispatched");
   assert.equal(start.locating, true);
+  assert.equal(start.location, null);
   const [later] = demoCalls("demo", t0, t0 + 31_000);
   assert.equal(later.phase, "enroute");
   assert.ok(later.location);
   assert.equal(demoCalls("demo", t0, t0 + 300_000)[0].phase, "clear");
   const [next] = demoCalls("demo", t0, t0 + 365_000);
   assert.notEqual(next.id, start.id);
-  const three = demoCalls("demo3", t0, t0 + 1000);
-  assert.deepEqual(three.map((c) => c.phase), ["onscene", "enroute", "dispatched"]);
+  assert.deepEqual(demoCalls("demo3", t0, t0 + 1000).map((c) => c.phase), ["onscene", "enroute"]);
+  assert.deepEqual(demoCalls("demo3", t0, t0 + 7000).map((c) => c.phase), ["onscene", "enroute", "dispatched"]);
 });

@@ -64,7 +64,7 @@ function withSecurityHeaders(res: NextResponse, pathname = ""): NextResponse {
       "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com" +
         (process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"),
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com https://api.weather.gov https://tilecache.rainviewer.com https://*.basemaps.cartocdn.com https://mesonet.agron.iastate.edu",
+      "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com https://api.weather.gov https://tilecache.rainviewer.com https://*.basemaps.cartocdn.com https://tile.openstreetmap.org https://mesonet.agron.iastate.edu",
       "font-src 'self' data:",
       "connect-src 'self' https://challenges.cloudflare.com https://api.weather.gov https://api.open-meteo.com https://api.rainviewer.com https://tilecache.rainviewer.com",
       "frame-src 'self' https://challenges.cloudflare.com https://calendar.google.com https://embed.waze.com https://www.youtube.com",
