@@ -18,7 +18,7 @@ export function withWinterShareCard(normal: Metadata, page: keyof typeof cards =
   const seasonYear = Number(localDate.slice(0, 4)) - (localDate.slice(5, 7) === "01" ? 1 : 0);
   const card = cards[page];
   const image = {
-    url: `https://www.millstadtems.org/images/winter/${card.file}?season=${seasonYear}&art=2`,
+    url: `https://www.millstadtems.org/images/winter/${card.file}?season=${seasonYear}&art=3`,
     width: 1200, height: 630, type: "image/jpeg", alt: card.alt,
   };
   // Omitting a shared title and description lets Next inherit the leaf page's

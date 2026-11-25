@@ -194,22 +194,36 @@ function preload(urls: string[], ms = 12_000): Promise<boolean> {
 
 /** A vehicle that can be snowed in and towed: its five snow-stage overlays and tow geometry. */
 type StuckVehicle = {
-  id: "ambulance";
+  id: "ambulance" | "chaos" | "roof";
   art: string;
   stages: readonly string[];
   /** Fractions of the art box: front bumper x, body length, road line y, front tow hook. */
   front: number; length: number; floor: number; hook: readonly [number, number];
 };
+const snowStages = (prefix: string) => [1, 2, 3, 4, 5].map(n => `/images/winter/kit/ambulance-snow/${prefix}${n}.webp`);
 const AMBULANCE: StuckVehicle = {
   id: "ambulance",
   art: "/images/winter/driveby/cartoon-ambo.webp",
-  stages: [1, 2, 3, 4, 5].map(n => `/images/winter/kit/ambulance-snow/stage${n}.webp`),
+  stages: snowStages("stage"),
   front: .018, length: .97, floor: .918, hook: [.029, .718],
 };
-/** Which vehicle gets snowed in on a pass. The snow stages only fit the cartoon ambulance so far;
- *  fire trucks can join the draw once their stages exist. */
+// The painted 3935 in the chaos sleigh and roof-ride passes: snow stages traced from each art's own
+// outline (drifts from the road, caps on the roof, hood and windshield).
+const CHAOS_AMBULANCE: StuckVehicle = {
+  id: "chaos",
+  art: `${DRIVEBY}/chaos-ambulance.webp`,
+  stages: snowStages("chaos-stage"),
+  front: .015, length: .97, floor: .985, hook: [.025, .76],
+};
+const ROOF_AMBULANCE: StuckVehicle = {
+  id: "roof",
+  art: `${DRIVEBY}/roof-ride-1-still.webp`,
+  stages: snowStages("roof-stage"),
+  front: .023, length: .96, floor: .993, hook: [.03, .76],
+};
+/** Which vehicle gets snowed in on a pass: every ambulance can be buried and towed out. */
 function pickStuckVehicle(variant: VariantId): StuckVehicle | null {
-  return variant === "classic" ? AMBULANCE : null;
+  return variant === "classic" ? AMBULANCE : variant === "chaos" ? CHAOS_AMBULANCE : variant === "roof" ? ROOF_AMBULANCE : null;
 }
 /** Snow stage 1-5 for a hit count: stage 5 (fully stuck) lands on the STUCK_HITS-th hit. */
 const snowStage = (hits: number) => hits <= 0 ? 0 : hits >= STUCK_HITS ? 5 : 1 + Math.floor((hits - 1) * 4 / (STUCK_HITS - 1));
@@ -746,8 +760,8 @@ function WinterConvoy({ pass, onFinish, drive, convoyRef, ambulanceRef, sleighRe
       }}
     >
       {pass.variant === "classic" && <ClassicConvoy drive={drive} ambulanceRef={ambulanceRef} sleighRef={sleighRef} snowRef={snowRef} onArt={onArt} />}
-      {pass.variant === "chaos" && <ChaosConvoy pass={pass} drive={drive} ambulanceRef={ambulanceRef} sleighRef={sleighRef} lit={ready} onArt={onArt} />}
-      {pass.variant === "roof" && <RoofConvoy pass={pass} drive={drive} ambulanceRef={ambulanceRef} sleighRef={sleighRef} lit={ready} onArt={onArt} />}
+      {pass.variant === "chaos" && <ChaosConvoy pass={pass} drive={drive} ambulanceRef={ambulanceRef} sleighRef={sleighRef} snowRef={snowRef} lit={ready} onArt={onArt} />}
+      {pass.variant === "roof" && <RoofConvoy pass={pass} drive={drive} ambulanceRef={ambulanceRef} sleighRef={sleighRef} snowRef={snowRef} lit={ready} onArt={onArt} />}
       {pass.variant === "reindeer" && <ReindeerConvoy drive={drive} sleighRef={sleighRef} onArt={onArt} />}
     </div>
   );
@@ -794,11 +808,23 @@ function Towline({ box, frame }: { box: Box; frame: Box }) {
   );
 }
 
+/** Snow piling up on an ambulance stage by stage, stacked exactly over its art. Each stage loads a
+ *  step ahead so the next one is ready when it lands; the pile breaks away when the tow frees it. */
+function SnowStages({ vehicle, drive, snowRef }: { vehicle: StuckVehicle; drive: DriveProps; snowRef: SpanRef }) {
+  const loadUpTo = drive.truckHits > 0 ? Math.min(5, drive.stage + 1) : 0;
+  return (
+    <span ref={snowRef} className={styles.snowStages} data-freed={drive.freed ? "true" : undefined}>
+      {vehicle.stages.slice(0, loadUpTo).map((src, i) => (
+        <Image key={src} className={styles.snowStage} data-on={drive.stage === i + 1 ? "true" : undefined}
+          src={src} alt="" fill unoptimized sizes="(max-width: 767px) 155px, 220px" loading="eager" draggable={false} />
+      ))}
+    </span>
+  );
+}
+
 function ClassicConvoy({ drive, ambulanceRef, sleighRef, snowRef, onArt }: { drive: DriveProps; ambulanceRef: SpanRef; sleighRef: SpanRef; snowRef: SpanRef; onArt: () => void }) {
   const stage = VARIANTS.classic.stage;
   const vehicle = AMBULANCE;
-  // Load each snow stage a step ahead so the next one is ready when it lands.
-  const loadUpTo = drive.truckHits > 0 ? Math.min(5, drive.stage + 1) : 0;
   return (
     <>
       <span className={styles.groundShadow} style={place([60, 900, 2780, 960], stage)} />
@@ -808,20 +834,14 @@ function ClassicConvoy({ drive, ambulanceRef, sleighRef, snowRef, onArt }: { dri
       <span ref={ambulanceRef} className={styles.ambulance} data-classic="" style={place(CLASSIC.art, stage)}>
         <Image className={styles.layerArt} src={vehicle.art} alt="" fill unoptimized
           sizes="(max-width: 767px) 155px, 220px" loading="eager" draggable={false} onLoad={onArt} onError={onArt} />
-        {/* Snow piling up stage by stage, stacked exactly over the art. */}
-        <span ref={snowRef} className={styles.snowStages} data-freed={drive.freed ? "true" : undefined}>
-          {vehicle.stages.slice(0, loadUpTo).map((src, i) => (
-            <Image key={src} className={styles.snowStage} data-on={drive.stage === i + 1 ? "true" : undefined}
-              src={src} alt="" fill unoptimized sizes="(max-width: 767px) 155px, 220px" loading="eager" draggable={false} />
-          ))}
-        </span>
+        <SnowStages vehicle={vehicle} drive={drive} snowRef={snowRef} />
         <Hit kind="truck" box={[30, 60, 1520, 900]} frame={CLASSIC.art} />
       </span>
     </>
   );
 }
 
-function ChaosConvoy({ pass, drive, ambulanceRef, sleighRef, lit, onArt }: { pass: Pass; drive: DriveProps; ambulanceRef: SpanRef; sleighRef: SpanRef; lit: boolean; onArt: () => void }) {
+function ChaosConvoy({ pass, drive, ambulanceRef, sleighRef, snowRef, lit, onArt }: { pass: Pass; drive: DriveProps; ambulanceRef: SpanRef; sleighRef: SpanRef; snowRef: SpanRef; lit: boolean; onArt: () => void }) {
   const tesla = useDeviceProfile() === "tesla";
   const stage = VARIANTS.chaos.stage;
   const sleighBox = CHAOS.sleigh;
@@ -875,6 +895,7 @@ function ChaosConvoy({ pass, drive, ambulanceRef, sleighRef, lit, onArt }: { pas
         <Image className={styles.layerArt} src="/images/winter/driveby/chaos-ambulance.webp" alt="" fill unoptimized
           sizes="(max-width: 767px) 150px, 216px" loading="eager" draggable={false} onLoad={onArt} onError={onArt} />
         <span className={styles.lights}><EmergencyLights unit="driveby-chaos" on={lit} /></span>
+        <SnowStages vehicle={CHAOS_AMBULANCE} drive={drive} snowRef={snowRef} />
         <Hit kind="truck" box={[240, 105, 798, 492]} frame={CHAOS.ambulance} />
         <Hit kind="truck" box={[1, 230, 495, 557]} frame={CHAOS.ambulance} />
       </span>
@@ -882,7 +903,7 @@ function ChaosConvoy({ pass, drive, ambulanceRef, sleighRef, lit, onArt }: { pas
   );
 }
 
-function RoofConvoy({ pass, drive, ambulanceRef, sleighRef, lit, onArt }: { pass: Pass; drive: DriveProps; ambulanceRef: SpanRef; sleighRef: SpanRef; lit: boolean; onArt: () => void }) {
+function RoofConvoy({ pass, drive, ambulanceRef, sleighRef, snowRef, lit, onArt }: { pass: Pass; drive: DriveProps; ambulanceRef: SpanRef; sleighRef: SpanRef; snowRef: SpanRef; lit: boolean; onArt: () => void }) {
   const stage = VARIANTS.roof.stage;
   return (
     <>
@@ -905,6 +926,7 @@ function RoofConvoy({ pass, drive, ambulanceRef, sleighRef, lit, onArt }: { pass
         <Image className={`${styles.layerArt} ${styles.roofStill}`} src={`/images/winter/driveby/roof-ride-${pass.version}-still.webp`} alt="" fill unoptimized
           sizes="(max-width: 767px) 180px, 252px" loading="eager" draggable={false} onLoad={onArt} onError={onArt} />
         <span className={styles.lights}><EmergencyLights unit={`driveby-roof-${pass.version}`} on={lit} /></span>
+        <SnowStages vehicle={ROOF_AMBULANCE} drive={drive} snowRef={snowRef} />
         <Hit kind="truck" box={[0, 250, 760, 684]} frame={ROOF.art} />
         <Hit kind="truck" box={[240, 0, 640, 280]} frame={ROOF.art} />
         <Hit kind="truck" box={[740, 470, 874, 580]} frame={ROOF.art} />

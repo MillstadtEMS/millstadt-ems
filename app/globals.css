@@ -216,6 +216,8 @@ body {
   flex: 0 0 auto;
   width: 100%;
 }
+/* Breathing room: the call stats and top categories never sit on the stats bar beneath them. */
+.hero-middle { padding-bottom: 48px; }
 
 /* ── Scoreboard roll animation ── */
 @keyframes roll-in {

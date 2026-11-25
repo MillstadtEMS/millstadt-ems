@@ -19,7 +19,9 @@ import styles from "./WinterSnowballAmbush.module.css";
 // (optional: pop-edge=drift|floor|corner-left|corner-right, pop-tough=1-3, pop-person=<id>).
 
 export type Crew = "kalista" | "braeden" | "dylan" | "medical-director";
-type Person = Crew | "caroler-curly" | "caroler-straight" | "caroler-little";
+// Audrey and Debbie join the peeks (they never hang on the lights, so they're always free).
+type Guest = "audrey" | "debbie";
+type Person = Crew | Guest | "caroler-curly" | "caroler-straight" | "caroler-little";
 type Kind = "classic" | "wave" | "serenade" | "backflip" | "peek" | "caroler" | "trio";
 type Edge = "drift" | "floor" | "corner-left" | "corner-right";
 export type XY = readonly [number, number];
@@ -79,7 +81,22 @@ const peekArt: Record<Crew, { excited: XY; scared: Placed; nauseous: Placed; hel
   dylan: { excited: [419, 585], scared: [420, 583, 1.018, -25.1, 0], nauseous: [422, 590, .993, 21, 0], hello: [487, 507, 1.53, -182.5, 4], face: [.54, .38] },
   "medical-director": { excited: [396, 634], scared: [395, 634, .993, 0, 0], nauseous: [402, 635, 1.005, 0, 0], hello: [428, 537, 1.74, -214.4, 9.5], face: [.52, .52] },
 };
-function peekRig(person: Crew): Rig {
+// Audrey and Debbie: busts cut from their pop-up videos (one smiling picture for every moment).
+const guestNames: Record<Guest, string> = { audrey: "Audrey", debbie: "Debbie" };
+const guestArt: Record<Guest, { size: XY; face: XY }> = {
+  audrey: { size: [359, 498], face: [.5, .3] },
+  debbie: { size: [407, 502], face: [.47, .3] },
+};
+const isGuest = (person: Person): person is Guest => person === "audrey" || person === "debbie";
+function peekRig(person: Crew | Guest): Rig {
+  if (isGuest(person)) {
+    const { size: [W, H], face } = guestArt[person], bust = frame(`pop/${person}-excited`, W, H);
+    return {
+      W, H, visible: .72,
+      frames: { hello: bust, excited: bust, scared: bust, nauseous: bust },
+      faces: [[face[0] * W, face[1] * H]], head: [face[0] * W, H * .02],
+    };
+  }
   const p = peekArt[person], [W, H] = p.excited;
   const placed = (pose: string, [w, h, s, x, y]: Placed) => frame(`pop/${person}-${pose}`, w, h, x, y, s);
   return {
@@ -125,7 +142,7 @@ const trio: Person[] = ["caroler-little", "caroler-curly", "caroler-straight"];
 const castings: ReadonlyArray<{ kind: Kind; weight: number; casts: Person[][] }> = [
   { kind: "classic", weight: 1, casts: crew.map((person) => [person]) },
   { kind: "wave", weight: .85, casts: crew.map((person) => [person]) },
-  { kind: "peek", weight: 1, casts: crew.map((person) => [person]) },
+  { kind: "peek", weight: 1, casts: [...crew, "audrey", "debbie"].map((person) => [person as Person]) },
   { kind: "serenade", weight: .8, casts: [["braeden"]] },
   { kind: "backflip", weight: .8, casts: [["dylan"]] },
   { kind: "caroler", weight: .9, casts: [["caroler-curly"], ["caroler-straight"]] },
@@ -353,7 +370,11 @@ function runCast(env: Env) {
     switch (c.kind) {
       case "classic": return { rig: crewRig(person), edges: ["drift", "drift", "floor"], frame: "boo", name: crewNames[person] };
       case "wave": return { rig: crewRig(person), edges: ["drift", "floor"], frame: "wave", name: crewNames[person] };
-      case "peek": return { rig: peekRig(person), edges: ["floor", "floor", "corner-left", "corner-right"], frame: "excited", name: crewNames[person] };
+      case "peek": {
+        const who = c.people[0];
+        const guest = isGuest(who);
+        return { rig: peekRig(guest ? who : person), edges: ["floor", "floor", "corner-left", "corner-right"], frame: "excited", name: guest ? guestNames[who] : crewNames[person] };
+      }
       case "serenade": return { rig: serenadeRig, edges: ["floor"], frame: "s1", name: "Braeden" };
       case "backflip": return { rig: flipRig, edges: ["floor"], frame: "f0", name: "Dylan" };
       case "caroler": {
@@ -381,15 +402,17 @@ function runCast(env: Env) {
       if (w < 72) return null;
       h = w / ratio;
     } else {
-      const zoom = (car ? 1.15 : 1) * between(.9, 1.1);
+      // The carolers sing smaller and out of the way.
+      const carol = kind === "caroler" || kind === "trio" ? .66 : 1;
+      const zoom = (car ? 1.15 : 1) * between(.9, 1.1) * carol;
       h = rig.ground ? Math.min(400, Math.max(170, vh * (phone ? .3 : .35))) * zoom
         : Math.min(300, Math.max(120, vh * (phone ? .24 : .27))) * zoom / rig.visible;
-      const widest = vw * (kind === "trio" ? (phone ? .76 : .36) : (phone ? .5 : .3));
+      const widest = vw * (kind === "trio" ? (phone ? .56 : .26) : (phone ? .5 : .3)) * (kind === "caroler" ? .75 : 1);
       if (h * ratio > widest) h = widest / ratio;
       // What shows must fit under the header (the backflip needs headroom for the jump).
       const shown = rig.ground ? h * (rig.ground / rig.H) * (kind === "backflip" ? 1.5 : 1) : h * rig.visible;
       if (shown > floor - top - 8) h *= (floor - top - 8) / shown;
-      if (h < 90 || h * ratio < 60) return null;
+      if (h < (carol < 1 ? 64 : 90) || h * ratio < 48) return null;
       w = h * ratio;
     }
     const avoid = [...actors.values()].map(a => a.box);
