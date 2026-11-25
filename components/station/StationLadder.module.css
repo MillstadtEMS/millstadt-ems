@@ -1,0 +1,16 @@
+/* Ladder 3919, placed and driven by the script (in the painting's own pixels, scaled as one piece).
+   It parks behind the drive-by lane and the crew climbing its ladder, under the bar. */
+.truck {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 29;
+  transform-origin: 0 0;
+  pointer-events: none;
+  will-change: transform;
+  filter: drop-shadow(0 10px 8px #050b18b0);
+}
+.body, .section { position: absolute; left: 0; top: 0; display: block; width: 100%; height: 100%; max-width: none; }
+.boom { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+.section { will-change: transform; }
+@media print { .truck { display: none; } }

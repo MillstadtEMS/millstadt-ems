@@ -1,0 +1,169 @@
+/* The station TV is exactly one screen: no scrolling at any TV size, on this route only. */
+:global(:root[data-station]),
+:global(:root[data-station]) body {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+  background: #050b18;
+}
+:global(:root[data-station]) body { cursor: none; }
+:global(:root[data-station]) :focus-visible { cursor: auto; }
+
+/* The crew on the lights: sized to the TV (a third of the screen tall) instead of the page, and the
+   gap in the lights over the TV scales with the living room. */
+:global(:root[data-station]) :is([data-winter-roof], [data-hanging-chief]) {
+  --crew-width: calc(20.6 * var(--station-u, 1vh));
+  --preferred-crew-width: calc(20.6 * var(--station-u, 1vh));
+  --video-gap: calc(311px * var(--station-room-k, 1));
+}
+
+.station {
+  --u: var(--station-u, 1vh);
+  --hud-h: calc(13 * var(--u));
+  --band-h: calc(200px * var(--station-room-k, 1));
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: var(--hud-h) var(--band-h) minmax(0, 1fr);
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 0%, #24477a 0%, transparent 70%),
+    radial-gradient(ellipse at 50% 40%, #142a4f, #0b1730 58%, #050b18);
+  color: #fff6dc;
+}
+
+/* The bar: the site's header colors (evergreen on the left, cranberry on the right) under a
+   candy-cane ribbon, with the Christmas lights strung along its bottom edge. Clock and countdown on
+   the left, the Sound button over the living-room TV, weather and helicopters on the right. */
+.hud {
+  position: relative;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: calc(2 * var(--u));
+  padding: calc(.9 * var(--u)) calc(2.2 * var(--u)) calc(.3 * var(--u));
+  background:
+    repeating-linear-gradient(135deg, #f7f3ea 0 calc(.7 * var(--u)), #c81330 calc(.7 * var(--u)) calc(1.4 * var(--u))) top / 100% calc(.7 * var(--u)) no-repeat,
+    linear-gradient(90deg, #00733e, #006337 50%, #bd0c29 50%, #c81330);
+  border-bottom: calc(.25 * var(--u)) solid #ffcd5b;
+  box-shadow: 0 calc(.4 * var(--u)) calc(1.4 * var(--u)) #000a;
+}
+.hudLeft { display: flex; align-items: center; justify-content: space-between; gap: calc(2 * var(--u)); min-width: 0; }
+.hudCenter { display: flex; justify-content: center; }
+.hudRight { display: flex; align-items: center; justify-content: space-between; gap: calc(1.8 * var(--u)); min-width: 0; }
+
+/* The living room, scaled as one piece from the site's 760 x 200 drawing. Its own TV buttons give way
+   to the big Sound button in the bar (which drives them). */
+.band {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  background: #6e1718;
+}
+.bandScale {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--band-width);
+  transform: scale(var(--station-room-k, 1));
+  transform-origin: 0 0;
+}
+.band :global([data-winter-video] > div) { display: none; }
+
+/* The village: the whole postcard (town and rink) on a snowy night sky. The bar shows the countdown,
+   and there are no visitors to tap its buttons. */
+.globe {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 30% 18% at 6% 104%, #e9f3fb 0 55%, transparent 56%),
+    radial-gradient(ellipse 34% 20% at 95% 106%, #e2eef8 0 55%, transparent 56%),
+    radial-gradient(ellipse 22% 12% at 20% 108%, #f4f9fd 0 55%, transparent 56%),
+    radial-gradient(ellipse 24% 14% at 80% 109%, #f1f7fc 0 55%, transparent 56%),
+    radial-gradient(1.5px 1.5px at 8% 18%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 14% 44%, #fffbe8, transparent),
+    radial-gradient(2px 2px at 4% 63%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 91% 22%, #fff, transparent),
+    radial-gradient(2px 2px at 86% 51%, #fffbe8, transparent),
+    radial-gradient(1.5px 1.5px at 96% 70%, #fff, transparent);
+}
+.globeFrame {
+  position: relative;
+  width: min(calc(100vw - 24 * var(--u)), calc((100vh - var(--hud-h) - var(--band-h) - 1.6 * var(--u)) / .6931));
+  margin-top: calc(.8 * var(--u));
+  align-self: start;
+  border-radius: calc(1.6 * var(--u)) calc(1.6 * var(--u)) 0 0;
+  overflow: hidden;
+  box-shadow: 0 0 0 calc(.3 * var(--u)) #e4d3a3, 0 0 0 calc(.7 * var(--u)) #0b1730, 0 0 0 calc(.9 * var(--u)) #c81330, 0 calc(1.6 * var(--u)) calc(4 * var(--u)) #000c;
+}
+.globe :global(#christmas-in-millstadt :is([role="timer"], [data-merry])) { display: none; }
+.globe :global(#christmas-in-millstadt section > :not(#winter-village-picture)) { display: none !important; }
+.globe :global(#christmas-in-millstadt section) { border: 0; }
+/* The wordmark and its caption are sized to the picture, not the screen. */
+.globe :global(#winter-village-title) { font-size: 6.4cqw; }
+.globe :global(#winter-village-title > span) { font-size: max(9px, .95cqw); }
+.globe :global(#winter-village-title img) { width: 27cqw; }
+
+/* Out of season: a clean clock, date, weather and helicopter screen. */
+.offSeason {
+  --u: var(--station-u, 1vh);
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: calc(5 * var(--u));
+  overflow: hidden;
+  color: #fff6dc;
+  background: radial-gradient(ellipse at 50% 30%, #17325a, #0b1730 60%, #050b18);
+}
+.offWeather {
+  display: flex;
+  align-items: center;
+  gap: calc(4 * var(--u));
+  padding: calc(2.4 * var(--u)) calc(3.2 * var(--u));
+  background: #0f2a4dcc;
+  border: calc(.2 * var(--u)) solid #8fb3e0;
+  border-radius: calc(1.6 * var(--u));
+}
+.offBrand { margin: 0; font: 800 calc(1.6 * var(--u))/1 system-ui, sans-serif; letter-spacing: .3em; text-transform: uppercase; color: #9fb8d8; }
+
+/* The sign-in check couldn't run: a calm screen that tries again by itself. */
+.retry {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 2vh;
+  color: #fff6dc;
+  background: radial-gradient(ellipse at 50% 30%, #17325a, #0b1730 60%, #050b18);
+}
+.retryTitle { margin: 0; font: 800 5vh/1 system-ui, sans-serif; letter-spacing: .2em; text-transform: uppercase; }
+.retryNote { margin: 0; font: 600 2.6vh/1.2 system-ui, sans-serif; color: #c9d8ee; }
+
+/* ?station-debug=1 */
+.debug {
+  position: fixed;
+  left: calc(1.2 * var(--station-u, 1vh));
+  bottom: calc(1.2 * var(--station-u, 1vh));
+  z-index: 90;
+  min-width: 26em;
+  padding: .8em 1em;
+  font: 600 max(11px, calc(1.15 * var(--station-u, 1vh)))/1.35 ui-monospace, Menlo, Consolas, monospace;
+  color: #e9f2ff;
+  background: #050b18e8;
+  border: 1px solid #8fb3e0;
+  border-radius: .6em;
+  pointer-events: none;
+}
+.debug b { display: block; margin-bottom: .4em; color: #ffe08a; letter-spacing: .08em; text-transform: uppercase; }
+.debug dl { margin: 0; display: grid; gap: .15em; }
+.debug dl > div { display: grid; grid-template-columns: 9.5em 1fr; gap: 1em; }
+.debug dt { color: #9fb8d8; }
+.debug dd { margin: 0; }
