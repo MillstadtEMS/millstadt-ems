@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, 
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 import { isSnowballTimeout, useSnowballTimeout } from "@/lib/seasonal/snowballTimeout";
 import { MITTEN_RELEASE, burst, flightTime, visitorStart, visitorThrow, type Point } from "@/lib/seasonal/snowballFlight";
+import { useDriveByLane } from "@/lib/seasonal/useDriveByLane";
 import { isTesla, touchReach, useDeviceProfile } from "@/lib/device/profile";
 import EmergencyLights from "./EmergencyLights";
 import PoliceTow, { policeTruckWidth, type TowGeometry } from "./WinterDriveByTow";
@@ -328,6 +329,9 @@ function WinterDriveBy() {
   const schedule = useRef({ count: -1, remaining: 0 });
   const broken = useRef(new Set<VariantId>());
   const driving = pass !== null;
+  // Each pass is announced on the shared drive-by lane before it enters, so pop-ups and other
+  // decorations clear the road in time (lib/seasonal/driveLane).
+  const driveLane = useDriveByLane({ lane, convoy, pass, halted: stuck || reaction || timeout, tow });
 
   // Visible-time clock between passes; it also stands still during Time Out.
   useEffect(() => {
@@ -346,7 +350,7 @@ function WinterDriveBy() {
       for (let attempt = 0; attempt < 3; attempt++) {
         const next = choosePass(count + 1, lastVariant.current, broken.current);
         if (!next) break;
-        const ok = await preload(passArt(next));
+        const ok = await driveLane.clearRoad(preload(passArt(next)), () => cancelled);
         if (cancelled) return;
         if (ok) {
           hits.current = { variant: next.variant, rider: 0, truck: 0, follower: 0, santa: 0, stuck: false, reaction: false, gabbyOff: false };
@@ -370,7 +374,7 @@ function WinterDriveBy() {
     if (!document.hidden) run();
     document.addEventListener("visibilitychange", onVisibility);
     return () => { cancelled = true; hold(); document.removeEventListener("visibilitychange", onVisibility); };
-  }, [driving, count, timeout]);
+  }, [driving, count, timeout, driveLane]);
 
   function stopFire() { window.clearInterval(fire.current); fire.current = undefined; aim.current = null; }
   useEffect(() => stopFire, []);
@@ -1148,7 +1152,8 @@ function RoofGabby({ version, knocks, onBack }: { version: 1 | 2; knocks: number
       {gag && (
         <span key={knocks} ref={fume} className={styles.gabbyFume} data-side={spot.bubble} aria-hidden="true">
           <i /><i /><i />
-          <b ref={grumble} className={styles.gabbyGrumble}>#@$%!</b>
+          {/* Fuming, not cussing (the owner's call for Gabby). */}
+          <b ref={grumble} className={styles.gabbyGrumble}>HMPH!</b>
         </span>
       )}
       {!gag && <Hit kind="gabby" box={hit} frame={GABBY.frame} />}

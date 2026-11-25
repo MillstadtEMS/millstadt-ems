@@ -1,0 +1,126 @@
+/* A little neon sign in the same family as the Time Out sign: a green tube on a dark board. It
+   docks low and centred (above the phone tab bar; in the lower left corner on a phone held
+   sideways), so it never covers the header, the crew or the music player. Only the chip itself
+   takes taps. */
+.dock {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 78px);
+  z-index: 46;
+  display: flex;
+  justify-content: center;
+  max-width: calc(100vw - 32px);
+  translate: -50% 0;
+  pointer-events: none;
+  animation: dockIn .42s cubic-bezier(.2,.9,.3,1.25) both;
+}
+@media (min-width: 768px) {
+  .dock { bottom: calc(env(safe-area-inset-bottom, 0px) + 26px); }
+}
+.dock[data-leaving] { animation: dockOut .3s ease-in both; }
+@keyframes dockIn {
+  from { opacity: 0; transform: translateY(18px) scale(.92); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes dockOut {
+  to { opacity: 0; transform: translateY(14px) scale(.95); }
+}
+
+.chip {
+  display: inline-flex;
+  align-items: stretch;
+  max-width: 100%;
+  border: 2px solid #52ffa6;
+  border-radius: 999px;
+  background: radial-gradient(ellipse at 50% 40%, #0d2c1d 0%, #08150f 68%, #060d0a 100%);
+  box-shadow: 0 0 3px #2bff8e, 0 0 12px #19e57e9e, inset 0 0 9px #19e57e52, 0 4px 14px #000a;
+  color: #eafff2;
+  font: 800 clamp(.72rem, 3.1vw, .86rem)/1.1 system-ui, sans-serif;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  pointer-events: auto;
+}
+.hint { gap: .55em; padding: .62em 1.15em .62em .9em; align-items: center; pointer-events: none; }
+.ask, .close {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.ask { gap: .55em; min-height: 44px; padding: .5em .5em .5em .95em; border-radius: 999px 0 0 999px; }
+.close { justify-content: center; min-width: 40px; padding: 0 .75em 0 .35em; border-radius: 0 999px 999px 0; }
+.close svg { width: 12px; height: 12px; fill: none; stroke: #b9f5d2; stroke-width: 1.8; stroke-linecap: round; opacity: .85; }
+.ask:active, .close:active { transform: translateY(1px); }
+.ask:focus-visible, .close:focus-visible { outline: 2px solid #ffe7a6; outline-offset: 2px; }
+.label {
+  white-space: nowrap;
+  text-shadow: 0 0 1px #fff, 0 0 5px #3dff95, 0 0 11px #19e57e;
+}
+
+/* A phone on its side: the living room fills the screen and its TV (the music player) sits
+   bottom centre, so the chip docks in the lower left corner instead. */
+@media (min-width: 568px) and (max-height: 560px) and (orientation: landscape) {
+  .dock {
+    left: max(16px, env(safe-area-inset-left, 0px));
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+    justify-content: flex-start;
+    translate: none;
+  }
+  .chip { font-size: clamp(.66rem, 1.6vw, .8rem); }
+}
+
+/* Under the living-room banner, below the crew's boots (top set inline): pinned to the page, so it
+   scrolls away with the room and never sits on the page's own buttons and links. */
+.dock[data-under-banner] {
+  position: absolute;
+  bottom: auto;
+  left: 50%;
+  translate: -50% 0;
+  justify-content: center;
+}
+.dock[data-under-banner] .chip { font-size: clamp(.62rem, 2.7vw, .76rem); }
+.dock[data-under-banner] .ask { min-height: 38px; }
+
+/* The phone rocks side to side with motion marks, the way it's meant to be shaken. */
+.phone {
+  flex: none;
+  width: 1.75em;
+  height: 1.75em;
+  overflow: visible;
+  filter: drop-shadow(0 0 3px #3dff95);
+}
+.body { fill: #0b2017; stroke: #c9ffe0; stroke-width: 1.5; }
+.screen { fill: #3dff95; opacity: .55; }
+.button { fill: #c9ffe0; }
+.motion { fill: none; stroke: #7dffbb; stroke-width: 1.4; stroke-linecap: round; }
+.phone { animation: rattle 1.6s ease-in-out infinite; transform-origin: 50% 80%; }
+.motion { animation: marks 1.6s ease-in-out infinite; }
+@keyframes rattle {
+  0%, 46%, 100% { transform: rotate(0); }
+  50% { transform: rotate(-15deg); }
+  58% { transform: rotate(13deg); }
+  66% { transform: rotate(-10deg); }
+  74% { transform: rotate(7deg); }
+  82% { transform: rotate(-3deg); }
+}
+@keyframes marks {
+  0%, 46%, 90%, 100% { opacity: 0; }
+  52%, 80% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock, .dock[data-leaving], .phone, .motion { animation: none; }
+}
+@media (forced-colors: active) {
+  .chip { border-color: ButtonText; }
+  .label { text-shadow: none; }
+}
+@media print { .dock { display: none; } }
+:global(html:not([data-mems-season="winter"])) .dock { display: none; }

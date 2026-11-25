@@ -1,0 +1,71 @@
+/* The night around the postcard, under it in the village region (the postcard covers the middle). */
+.sky {
+  --s: var(--station-u, 1vh);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* A low winter moon in the right-hand sky. */
+.moon {
+  position: absolute;
+  right: 5.5%;
+  top: 40%;
+  width: calc(7.5 * var(--s));
+  height: calc(7.5 * var(--s));
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 35%, #fffdf2 0 30%, #f3ead0 58%, #ddd0a8 100%);
+  box-shadow: 0 0 calc(2.5 * var(--s)) calc(.8 * var(--s)) #fff5d455, 0 0 calc(9 * var(--s)) calc(3 * var(--s)) #c9d9ff22;
+}
+.moon::before, .moon::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  background: #d6c79c88;
+}
+.moon::before { width: 22%; height: 22%; left: 52%; top: 24%; }
+.moon::after { width: 14%; height: 14%; left: 28%; top: 58%; }
+
+.star {
+  position: absolute;
+  width: calc(.55 * var(--star, 1) * var(--s));
+  height: calc(.55 * var(--star, 1) * var(--s));
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 calc(.6 * var(--s)) #fff9;
+  animation: twinkle 3.6s ease-in-out infinite alternate;
+}
+@keyframes twinkle { 0% { opacity: .35; transform: scale(.75); } 100% { opacity: 1; transform: scale(1.1); } }
+
+/* Snow drifts along the bottom edges, then the pines standing in them. */
+.drift {
+  position: absolute;
+  inset: auto 0 0;
+  height: calc(9 * var(--s));
+  background:
+    radial-gradient(ellipse 16% 70% at 6% 100%, #e9f3fb 0 62%, transparent 64%),
+    radial-gradient(ellipse 14% 60% at 17% 100%, #f2f8fd 0 62%, transparent 64%),
+    radial-gradient(ellipse 15% 66% at 84% 100%, #edf5fc 0 62%, transparent 64%),
+    radial-gradient(ellipse 16% 72% at 95% 100%, #e6f0f9 0 62%, transparent 64%);
+}
+.pine {
+  position: absolute;
+  bottom: calc(1.2 * var(--s));
+  width: calc(var(--pine) * .62 * var(--s));
+  height: calc(var(--pine) * var(--s));
+  transform: translateX(-50%);
+  filter: drop-shadow(0 calc(.3 * var(--s)) calc(.5 * var(--s)) #050b1888);
+}
+.pine[data-depth="1"] { bottom: calc(2.4 * var(--s)); filter: brightness(.86) drop-shadow(0 calc(.3 * var(--s)) calc(.5 * var(--s)) #050b1888); }
+.pine[data-depth="2"] { bottom: calc(3.4 * var(--s)); filter: brightness(.72); z-index: -1; }
+.pine svg { display: block; width: 100%; height: 100%; }
+
+/* Portrait (a phone): the open sky is under the postcard, so the moon and pines sit there. */
+@media (orientation: portrait) {
+  .moon { top: 62%; right: 8%; width: calc(16 * var(--s)); height: calc(16 * var(--s)); }
+  .pine { width: calc(var(--pine) * 1.25 * var(--s)); height: calc(var(--pine) * 2 * var(--s)); }
+}
+
+@media (prefers-reduced-motion: reduce) { .star { animation: none; opacity: .8; } }

@@ -240,7 +240,7 @@ function VillagePostcard() {
             <div className={styles.snoopy} data-snow-fighter="snoopy" data-snow-hand="0.55,0.35">
               <Image src="/images/winter/rose-beagle.webp" alt="A white beagle lies on his back on a snowy red doghouse, holding a red rose." fill sizes="(max-width: 720px) 100px, 15vw" unoptimized />
             </div>
-            <div className={styles.grinch} data-snow-fighter="grinch" data-snow-hand="0.7,0.38">
+            <div className={styles.grinch} data-snow-fighter="grinch" data-snow-hand="0.66,0.53" data-snow-windup="0.68,0.22">
               <Image src="/images/winter/grinch.webp" alt="The Grinch in the snow" fill sizes="(max-width: 720px) 90px, 13vw" unoptimized />
             </div>
             {/* Santa is painted into the village beside his presents; snowballs that reach him get a laugh. */}

@@ -1,0 +1,114 @@
+/* The pull station, its sign and the horn/strobe, in the living room's own pixels (760 x 200 room):
+   on the wall between the little TV (its stand ends at 436) and the painting by the mantel (518),
+   at about shoulder height, clear of the crew on the lights, the TV and the fridge. */
+.station {
+  position: absolute;
+  left: 449px;
+  top: 8px;
+  width: 54px;
+  height: 86px;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* Phones draw the whole room at 62%: the pull station keeps most of its size so the sign still reads. */
+@media (max-width: 700px) {
+  .station { scale: 1.3; transform-origin: 50% 0; }
+}
+.art { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
+
+/* ---- The sign ---- */
+.word {
+  font: 900 7.3px/1 "Arial Black", Arial, Helvetica, sans-serif;
+  letter-spacing: .2px;
+  fill: #3f0f0d;
+  transition: fill .25s ease;
+}
+.station[data-state="armed"] .word { fill: #ff4434; }
+.station[data-state="armed"] .words { animation: signBlink 1.35s steps(1, end) infinite; }
+.station:is([data-state="alarm"], [data-state="rescue"]) .word { fill: #ffd25e; }
+.station[data-state="alarm"] .words { animation: signBlink .62s steps(1, end) infinite; }
+@keyframes signBlink {
+  0% { opacity: 1; }
+  68% { opacity: .22; }
+}
+/* A soft red glow on the wallpaper around the lit sign. */
+.halo {
+  position: absolute;
+  left: -22px;
+  top: 6px;
+  width: 98px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 70 50 / .55), rgb(255 40 30 / .18) 55%, transparent);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+.station[data-state="armed"] .halo { opacity: 1; animation: signBlink 1.35s steps(1, end) infinite; }
+
+/* ---- The horn/strobe ---- */
+.hornWord { font: 900 4.9px/1 Arial, Helvetica, sans-serif; letter-spacing: .3px; fill: #fff6ea; }
+.lens { fill: #fffdf4; opacity: 0; }
+.flash {
+  position: absolute;
+  left: -44px;
+  top: -38px;
+  width: 142px;
+  height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 255 255 / .95), rgb(214 236 255 / .55) 28%, rgb(190 220 255 / .14) 62%, transparent);
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+/* The alarm: a bright strobe flash about one and a half times a second (well under the three a second
+   that can trouble photosensitive visitors). */
+.station[data-strobe] :is(.lens, .flash) { animation: strobe .7s linear infinite; }
+@keyframes strobe {
+  0%, 100% { opacity: 0; }
+  4% { opacity: 1; }
+  16% { opacity: .85; }
+  24% { opacity: 0; }
+}
+
+/* ---- The pull station ---- */
+.stationWord { font: 900 6.4px/1 Arial, Helvetica, sans-serif; letter-spacing: .4px; fill: #fff6ea; }
+.stationWordSmall { font: 900 4.9px/1 Arial, Helvetica, sans-serif; letter-spacing: .45px; fill: #fff6ea; }
+.handleWord { font: 900 3.6px/1 Arial, Helvetica, sans-serif; letter-spacing: .3px; fill: #b3140f; }
+.handle { transition: transform .2s cubic-bezier(.3, 1.6, .5, 1); }
+/* Pulled: the handle snaps down in its slot (it resets once the rescue is over). */
+.station:is([data-state="alarm"], [data-state="rescue"]) .handle { transform: translateY(4.6px); }
+.station[data-state="idle"] .art { filter: saturate(.85) brightness(.92); }
+
+/* The only thing in the room that takes a click or a tap, and only while the sign is lit. */
+.pull {
+  position: absolute;
+  left: 0;
+  top: 18px;
+  width: 54px;
+  height: 68px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.pull::before { content: ""; position: absolute; inset: -7px -9px; }
+.pull:focus-visible { outline: 2px dashed #ffe7a3; outline-offset: 2px; }
+
+.station[data-still] :is(.words, .halo, .lens, .flash) { animation: none; }
+.station[data-still][data-strobe] .lens { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .station :is(.words, .halo, .lens, .flash) { animation: none; }
+  .station[data-strobe] .lens { opacity: 1; }
+  .handle { transition: none; }
+}
+
+.announcement {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}
+@media print { .station { display: none; } }
