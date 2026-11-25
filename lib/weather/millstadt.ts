@@ -179,18 +179,27 @@ export async function fetchMillstadtWeather(): Promise<WeatherData> {
     const metarArr = metarResult.value;
     const m = Array.isArray(metarArr) ? metarArr[0] : null;
     if (m) {
+      // aviationweather.gov now sends cloud bases in feet, the category as fltCat and ISO times, so
+      // the sky is read from the raw METAR itself (OVC004 = 400 ft, VV002 = 200 ft), which is
+      // unambiguous, with the JSON layers (feet) as the fallback; bases stay in hundreds of feet here.
+      const sky = metarSky(typeof m.rawOb === "string" ? m.rawOb : "");
+      const category = m.fltCat ?? m.flightCategory;
+      const observed = typeof m.obsTime === "number" ? new Date(m.obsTime * 1000)
+        : m.reportTime ? new Date(String(m.reportTime).replace(" ", "T").replace(/Z?$/, "Z")) : null;
       metar = {
         icaoId:         m.icaoId ?? "KALN",
         name:           m.name ?? "Southwestern Illinois Airport",
         rawOb:          m.rawOb ?? "",
-        reportTime:     m.reportTime ?? "",
-        flightCategory: m.flightCategory ?? null,
+        // UTC without the zone (the display appends "Z"), e.g. 2026-11-25T11:55:00.
+        reportTime:     observed && !isNaN(observed.getTime()) ? observed.toISOString().slice(0, 19) : "",
+        flightCategory: category === "VFR" || category === "MVFR" || category === "IFR" || category === "LIFR" ? category : null,
         visib:          m.visib ?? null,
         wspd:           m.wspd ?? null,
         wgst:           m.wgst ?? null,
         wdir:           m.wdir ?? null,
-        clouds:         Array.isArray(m.clouds) ? m.clouds : null,
-        vertVis:        m.vertVis ?? null,
+        clouds:         sky ? sky.clouds
+          : Array.isArray(m.clouds) ? m.clouds.map((c: { cover: string; base: number | null }) => ({ cover: c.cover, base: c.base == null ? null : Math.round(c.base / 100) })) : null,
+        vertVis:        sky ? sky.vertVis : (typeof m.vertVis === "number" ? Math.round(m.vertVis / 100) : null),
       };
     }
   }
@@ -208,6 +217,16 @@ export async function fetchMillstadtWeather(): Promise<WeatherData> {
 /** The current-conditions headline: Open-Meteo's weather code, else the first forecast period. */
 export function currentConditionText(data: Pick<WeatherData, "current" | "periods">): string {
   return data.current.wmoCode != null ? wmoDescription(data.current.wmoCode) : (data.periods[0]?.shortForecast ?? "—");
+}
+
+/** Cloud layers and vertical visibility from a raw METAR, bases in hundreds of feet (BKN008 = 800 ft).
+ *  Null when the report has no sky group to read. */
+function metarSky(raw: string): { clouds: Array<{ cover: string; base: number | null }>; vertVis: number | null } | null {
+  const body = raw.split(" RMK ")[0];
+  const clouds = [...body.matchAll(/\b(FEW|SCT|BKN|OVC)(\d{3})\b/g)].map(([, cover, base]) => ({ cover, base: Number(base) }));
+  const vv = body.match(/\bVV(\d{3})\b/);
+  if (!clouds.length && !vv && !/\b(CLR|SKC|NCD|NSC|CAVOK)\b/.test(body)) return null;
+  return { clouds, vertVis: vv ? Number(vv[1]) : null };
 }
 
 /** METAR visibility in statute miles: aviationweather.gov sends a number or text such as "10+" or "1 1/2". */

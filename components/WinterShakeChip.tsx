@@ -12,8 +12,8 @@ import styles from "./WinterShakeChip.module.css";
 // answers "Now shake your phone!" (or tablet) until the first shake. Android needs no tap, so it just shows a
 // passing hint once a visit. Touch devices during the snowball fight only (never in Time Out, with
 // reduced motion, on the staff pages, with the menu open, or once everyone has fallen). It sits
-// low on the screen, clear of the music player and the header, and never blocks anything but
-// itself.
+// in a corner of the living-room banner, clear of the page's buttons and links, and never blocks
+// anything but itself.
 
 type Stage = "ask" | "go" | "hint";
 const dismissKey = "millstadt:shake-chip:v1";
@@ -83,8 +83,14 @@ export default function WinterShakeChip({ hidden }: { hidden: boolean }) {
       <circle className={styles.button} cx="12" cy="19.4" r=".75" />
     </svg>
   );
+  // It docks in a corner of the living-room banner when there is one (every public page), so it
+  // scrolls away with the room and never covers the page's own buttons and links (the hero's Pay
+  // Your Bill and Donate, the Financial Transparency links). data-snow-own-click keeps the site-wide
+  // fight from treating a tap on it as a throw.
+  const banner = body.querySelector<HTMLElement>("[data-living-room]")?.closest("aside")?.parentElement ?? null;
   return createPortal(
-    <div className={styles.dock} data-leaving={leaving || undefined} data-stage={stage}>
+    <div className={styles.dock} data-leaving={leaving || undefined} data-stage={stage}
+      data-in-banner={banner ? "" : undefined} data-snow-own-click="">
       {stage === "ask" ? (
         <span className={styles.chip}>
           <button type="button" className={styles.ask} onClick={() => askForShake()}
@@ -102,6 +108,6 @@ export default function WinterShakeChip({ hidden }: { hidden: boolean }) {
         </span>
       )}
     </div>,
-    body,
+    banner ?? body,
   );
 }

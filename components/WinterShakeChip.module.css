@@ -76,6 +76,20 @@
   .chip { font-size: clamp(.66rem, 1.6vw, .8rem); }
 }
 
+/* In the living-room banner: the bottom-left corner of the room (by the window and the armchair),
+   so it scrolls away with the room and never sits on the page's own buttons and links. */
+.dock[data-in-banner] {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  translate: none;
+  justify-content: flex-start;
+  max-width: calc(100% - 12px);
+  z-index: 5;
+}
+.dock[data-in-banner] .chip { font-size: clamp(.6rem, 2.6vw, .74rem); }
+.dock[data-in-banner] .ask { min-height: 36px; }
+
 /* The phone rocks side to side with motion marks, the way it's meant to be shaken. */
 .phone {
   flex: none;
