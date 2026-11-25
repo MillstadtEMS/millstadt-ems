@@ -40,6 +40,13 @@ export default function SiteShell({
     pathname.startsWith("/admin") ||
     (pathname.startsWith("/board") && !(winter && pathname === "/board-minutes"));
 
+  // The station TV (/station) is one hands-free screen that composes its own scene (the lights, the
+  // living room, the village, the snowball fight and the drive-by): no ticker, header, footer, Time
+  // Out sign, page surprises or trinkets.
+  if (pathname === "/station" || pathname.startsWith("/station/")) {
+    return <main className="mems-station flex-1 w-full">{children}</main>;
+  }
+
   const ambush = winter && <WinterSnowballAmbush key={pathname} pathname={pathname} />;
 
   if (standalone) {

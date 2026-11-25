@@ -198,12 +198,15 @@
 .idle, .figure { transform-origin: 50% 5%; }
 .idle { animation: sway 5.4s ease-in-out infinite alternate; }
 .figure {
-  transform: rotate(var(--swing, 0deg));
+  transform: rotate(var(--swing, 0deg)) scale(1, var(--stretch, 1));
   filter: brightness(1.08) drop-shadow(0 1px 1px #fff4) drop-shadow(1px 4px 3px #07100fbd);
 }
 .torso { clip-path: polygon(0 0,100% 0,100% 55.3%,63% 55.3%,50% 56.8%,36% 56%,0 56%); }
 .torso img { position: absolute; inset: 0; display: block; height: 100%; width: 100%; }
-.alarmed { opacity: var(--panic, 0); }
+/* Jen and Kenny: the startled and straining faces are painted on the same body and swap in whole
+   (never blending into a double image). */
+.alarmed, .strained, .strainedHard { visibility: hidden; }
+.cradle[data-face="1"] .alarmed, .cradle[data-face="2"] .strained, .cradle[data-face="3"] .strainedHard { visibility: visible; }
 /* Kit crew: one whole figure (no cut-out legs). Calm and startled are different poses, so they
    swap instantly instead of blending, and the wider startled pose keeps its proportions. */
 /* Their art carries no light strand of its own: the fists grip the site's wire, so a falling
@@ -213,15 +216,54 @@
 .cradle[data-anim] { --release-mask: none; }
 .cradle[data-anim] .torso { clip-path: none; }
 .cradle[data-anim] .maskSource { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+/* A shaking phone swings her for real: her still (the hit-test copy) replaces the painted loop
+   until she's been still a moment, with one face at a time over it (worried, furious, beet red).
+   A hit goes back to her own fall art. */
+.shakePose { visibility: hidden; }
+.cradle[data-anim]:is([data-shaken], [data-face]):not([data-phase="hit"]) .animBase { visibility: hidden; }
+.cradle[data-anim]:is([data-shaken], [data-face]):not([data-phase="hit"]) .maskSource { opacity: 1; }
+.cradle[data-anim][data-face="1"]:not([data-phase="hit"]) .shakeWorried,
+.cradle[data-anim][data-face="2"]:not([data-phase="hit"]) .shakeMad,
+.cradle[data-anim][data-face="3"]:not([data-phase="hit"]) .shakeFurious { visibility: visible; }
 .kitPiece { position: absolute; inset: 0; display: block; }
 .cradle[data-kit] .torso { clip-path: none; }
 /* Each leg kicks from its own hip with the same springy motion as Jen's and Kenny's (Braeden's
    legs also stay turned in so they hang together). */
 .kitLeg { transform: rotate(calc(var(--leg-turn, 0deg) + var(--kick-left, 0deg) * .85)); }
 .kitLegRight { transform: rotate(calc(var(--leg-turn, 0deg) + var(--kick-right, 0deg) * .85)); }
-/* Scared: only the face changes, painted on the same body, so nobody grows or jumps. */
-.scaredFace { position: absolute; inset: 0; display: block; opacity: 0; transition: opacity .08s linear; }
-.cradle[data-kit][data-startled] .scaredFace, .cradle[data-kit][data-phase="hit"] .scaredFace { opacity: 1; }
+/* Scared: only the face changes, painted on the same body, so nobody grows or jumps. Straining
+   (a shaking phone): the gritted face, then the same face beet red, painted on the same body too.
+   Faces swap whole, never blending into a double image. */
+.scaredFace, .strainFace { position: absolute; inset: 0; display: block; visibility: hidden; }
+.cradle[data-kit][data-face="1"] .scaredFace, .cradle[data-kit][data-phase="hit"] .scaredFace,
+.cradle[data-kit][data-face="2"]:not([data-phase="hit"]) .strainFace:not(.strainHard),
+.cradle[data-kit][data-face="3"]:not([data-phase="hit"]) .strainHard { visibility: visible; }
+
+/* Sweat flying off a straining head: each drop beads up at a temple, flicks off nose-first (its
+   point trailing along its arc) and falls away. A drop a side while they strain, two a side once
+   they're beet red. */
+.sweat { position: absolute; inset: 0; pointer-events: none; visibility: hidden; }
+.cradle:is([data-face="2"], [data-face="3"]):not([data-phase="hit"]) .sweat { visibility: visible; }
+.bead {
+  position: absolute;
+  left: calc(var(--head-x) + var(--side) * var(--head-half));
+  top: var(--head-y);
+  width: calc(var(--crew-width) * .075);
+  min-width: 6px;
+  max-width: 16px;
+  aspect-ratio: 10 / 14;
+  overflow: visible;
+  opacity: 0;
+  translate: -50% -50%;
+}
+.cradle[data-face="2"]:not([data-phase="hit"]) .bead:nth-child(-n+2),
+.cradle[data-face="3"]:not([data-phase="hit"]) .bead { animation: sweatFly .74s var(--drop-delay) cubic-bezier(.25,.6,.55,1) infinite; }
+@keyframes sweatFly {
+  0% { opacity: 0; transform: translate(0, 0) rotate(calc(var(--side) * -122deg)) scale(.3); }
+  14% { opacity: 1; transform: translate(calc(var(--side) * var(--crew-width) * .035), calc(var(--crew-width) * -.022)) rotate(calc(var(--side) * -118deg)) scale(1); }
+  55% { opacity: 1; transform: translate(calc(var(--side) * var(--crew-width) * .11), calc(var(--crew-width) * -.036)) rotate(calc(var(--side) * -92deg)) scale(1); }
+  100% { opacity: 0; transform: translate(calc(var(--side) * var(--crew-width) * .19), calc(var(--crew-width) * .045)) rotate(calc(var(--side) * -58deg)) scale(.8); }
+}
 /* Each limb is its own composited layer holding a real image, so mobile Safari keeps painting it
    while the page scrolls and the pieces rotate every frame. */
 .legLeft, .legRight, .coal {
@@ -302,6 +344,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .idle, .glass, .bloom { animation: none; }
+  .sweat { display: none; }
   .hanger, .bloom { transition: none; }
 }
 
@@ -362,13 +405,27 @@
 .cradle[data-phase="hit"] .figure { animation: releaseCable 1ms .61s step-end forwards; }
 @keyframes releaseCable { to { clip-path: var(--release-mask); } }
 .cradle[data-phase="hit"] .drop { animation: loseGrip 1.44s linear both; }
-.cradle[data-phase="hit"] .alarmed { opacity: 1; }
+.cradle[data-phase="hit"] .alarmed { visibility: visible; }
+.cradle[data-phase="hit"] :is(.strained, .strainedHard) { visibility: hidden; }
 .cradle[data-phase="hit"] .aim { visibility: hidden; }
 @keyframes loseGrip {
   0%, 27% { transform: none; }
   32% { transform: translateY(-1%) rotate(-2deg); }
   38% { transform: rotate(2deg); }
   43% { transform: none; animation-timing-function: cubic-bezier(.48,.04,.92,.59); }
+  100% { transform: translate(var(--fall-side, max(-10vw,-96px)), 110vh) rotate(var(--fall-turn, -16deg)); }
+}
+/* Shaken off (a shaking phone wore out their grip): no snowball to wait for. Their fingers slide
+   off the wire, they scrabble back up for one last grab, slip again, and they're gone. Jen's and
+   Kenny's painted strand stays with the lights from the first slip. */
+.cradle[data-phase="hit"][data-fall="slip"] .figure { animation-delay: 0s; }
+.cradle[data-phase="hit"][data-fall="slip"] .drop { animation: slipGrip 1.24s linear both; }
+@keyframes slipGrip {
+  0% { transform: none; animation-timing-function: cubic-bezier(.55,0,.9,.55); }
+  9% { transform: translateY(5%) rotate(2deg); animation-timing-function: cubic-bezier(.2,.75,.35,1); }
+  17% { transform: translateY(1%) rotate(-1.4deg); animation-timing-function: ease-in-out; }
+  25% { transform: translateY(1.6%) rotate(.8deg); animation-timing-function: ease-in; }
+  31% { transform: translateY(3.6%) rotate(0deg); animation-timing-function: cubic-bezier(.48,.04,.92,.59); }
   100% { transform: translate(var(--fall-side, max(-10vw,-96px)), 110vh) rotate(var(--fall-turn, -16deg)); }
 }
 
@@ -419,10 +476,18 @@
   clip-path: inset(50%); white-space: nowrap;
 }
 @media (prefers-reduced-motion: reduce) {
-  .cradle[data-phase="hit"] .drop { animation: stillDrop .6s .12s ease-out both; }
+  .cradle[data-phase="hit"] .drop, .cradle[data-phase="hit"][data-fall="slip"] .drop { animation: stillDrop .6s .12s ease-out both; }
   .snowball { animation: stillBall .58s ease-out both; }
   .powder { display: none; }
 }
 @keyframes stillDrop { 0%, 35% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes stillBall { 0%, 65% { opacity: 1; transform: translate(-50%,-50%); } 100% { opacity: 0; transform: translate(-50%,-50%); } }
 @media print { .volley { display: none; } }
+
+/* The station TV's falls: a mad face painted onto the same hanging pose (only the face changes). */
+.madFace { position: absolute; inset: 0; display: block; opacity: 0; }
+.torso img.madFace { opacity: 0; }
+.cradle[data-mad][data-phase="hit"] .madFace,
+.cradle[data-mad][data-phase="hit"] .torso img.madFace { opacity: 1; }
+.cradle[data-kit][data-mad][data-phase="hit"] .scaredFace,
+.cradle[data-mad][data-phase="hit"] .alarmed { opacity: 0; }

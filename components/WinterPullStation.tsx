@@ -43,6 +43,7 @@ export default function WinterPullStation() {
   const [reduced, setReduced] = useState(false);
   const [strobe, setStrobe] = useState(false);
   const [status, setStatus] = useState("");
+  // pull-preview=still rehearses the reduced-motion rescue.
   const [forceStill, setForceStill] = useState(false);
 
   // The room picture lives in the music player beside this marker; follow it as it comes and goes.
@@ -79,8 +80,7 @@ export default function WinterPullStation() {
   useEffect(() => {
     const mode = previewMode();
     if (!mode || stage !== "armed") return;
-    setForceStill(mode === "still");
-    const timer = window.setTimeout(pull, 900);
+    const timer = window.setTimeout(() => { setForceStill(mode === "still"); pull(); }, 900);
     return () => window.clearTimeout(timer);
   }, [stage, pull]);
 
@@ -173,8 +173,9 @@ export default function WinterPullStation() {
         <path d="M16.2 44.5c.2-1.6 1-2.4 2.6-2.6" stroke="#fff" strokeWidth=".7" opacity=".55" fill="none" strokeLinecap="round" />
       </svg>
       {/* The pointer's target (the room picture is decorative and hidden from assistive tech; the
-          keyboard and screen readers use the button beside the banner below). */}
-      {lit && <button type="button" className={styles.pull} onClick={pull} tabIndex={-1} aria-hidden="true"
+          keyboard and screen readers use the button beside the banner below). A tap that also lands
+          on someone hanging in front of it is theirs (WinterRoofline checks data-pull-station). */}
+      {lit && <button type="button" className={styles.pull} onClick={pull} tabIndex={-1} aria-hidden="true" data-pull-station=""
         onPointerEnter={() => void loadRescue()} />}
     </span>
   );

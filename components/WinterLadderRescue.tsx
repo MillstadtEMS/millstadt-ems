@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { isSnowballTimeout, snowballTimeoutEvent } from "@/lib/seasonal/snowballTimeout";
+import { holdLane, laneClaimed, subscribeLane, type LaneSpan } from "@/lib/seasonal/driveLane";
 import { finishRescue, hangingCrew, rescueChief, type CrewChief, type HangingCrewMember } from "./WinterRoofline";
 import styles from "./WinterLadderRescue.module.css";
 
@@ -216,6 +217,9 @@ const noBody = () => null;
 const bodyOnClient = () => document.body;
 const noSubscription = () => () => {};
 
+/** The street along the bottom of the screen where the truck parks (the drive-by's lane), in viewport px. */
+const streetBand = (): LaneSpan => ({ top: Math.round(window.innerHeight * .4), bottom: window.innerHeight });
+
 export default function WinterLadderRescue({ still, onPhase }: { still: boolean; onPhase: (phase: "start" | "parked" | "done") => void }) {
   const body = useSyncExternalStore<HTMLElement | null>(noSubscription, bodyOnClient, noBody);
   const scene = useRef<HTMLDivElement>(null);
@@ -246,9 +250,26 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
     });
     const minimum = new Promise(done => window.setTimeout(done, still ? 400 : 1500));
     const cap = new Promise(done => window.setTimeout(done, 9000));
-    void Promise.race([Promise.all([Promise.all(urls.map(one)), minimum]), cap]).then(() => { if (alive) setReady(true); });
+    // A drive-by already announced on the street (lib/seasonal/driveLane) goes by before the truck
+    // pulls in, so the two never drive through each other (give up waiting after 25 s).
+    const roadClear = () => new Promise<void>(done => {
+      const street = streetBand();
+      if (!laneClaimed(street)) { done(); return; }
+      const finish = () => { window.clearTimeout(giveUp); stop(); done(); };
+      const stop = subscribeLane(() => { if (!laneClaimed(street)) finish(); });
+      const giveUp = window.setTimeout(finish, 25_000);
+    });
+    void Promise.race([Promise.all([Promise.all(urls.map(one)), minimum]), cap]).then(roadClear).then(() => { if (alive) setReady(true); });
     return () => { alive = false; };
   }, [still]);
+
+  // While Ladder 3919 is on the street, new drive-by passes wait for it (a hold lasts at most 20 s,
+  // so it's renewed until the truck has gone).
+  useEffect(() => {
+    let release = holdLane("ladder-rescue", streetBand(), 20_000);
+    const renew = window.setInterval(() => { release(); release = holdLane("ladder-rescue", streetBand(), 20_000); }, 15_000);
+    return () => { window.clearInterval(renew); release(); };
+  }, []);
 
   useEffect(() => {
     if (!ready) return;
@@ -553,6 +574,10 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
         return u >= 1;
       });
     }
+    /** The startled face painted on their hanging pose (Gabby keeps her own painted swing). */
+    function scared(el: HTMLElement | null) {
+      if (el && !el.hasAttribute("data-anim")) el.dataset.face = "1";
+    }
     function dropRope(plan: Plan): Phase {
       const m = plan.member;
       ropeHeld = true;
@@ -567,11 +592,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
         const endY = lerp(tip.y, waist, fall) + (u >= 1 ? Math.sin((t - 520) / 90) * Math.exp(-(t - 520) / 160) * 6 : 0);
         rope = { top: tip, end: { x: tip.x, y: Math.max(tip.y, endY) }, tail: 0, swing: t / 300, hand: true };
         // The rope lands beside them: a gulp (the scared face) and a beat before they dare let go.
-        if (t >= 560 && t - lastStep < 560) {
-          const el = figure();
-          if (el && WAVES[m.chief]) el.dataset.startled = "";
-          else el?.style.setProperty("--panic", "1");
-        }
+        if (t >= 560 && t - lastStep < 560) scared(figure());
         return t >= 1250;
       });
     }
@@ -581,10 +602,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
       const actor: Actor = { chief: m.chief, member: m, handle, landed: 0, el: null, x: m.x, top: 0, height: m.height, width: m.width, leave: Infinity, gone: false };
       actors.push(actor);
       currentActor = actor;
-      if (handle) {
-        if (WAVES[m.chief]) handle.element.dataset.startled = "";
-        else handle.element.style.setProperty("--panic", "1");
-      }
+      scared(handle?.element ?? null);
       return begin("grab", t => {
         const tip = tipOf(layout, pivotX(), lad);
         const u = Math.min(1, t / 420);
@@ -766,7 +784,11 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
     else {
       queue.push(arrive, () => { nextRescue(true); return null; });
       frame = requestAnimationFrame(tick);
+      draw();
     }
+    // The scene shows only once every layer is placed; until then they'd sit at the page's top-left
+    // at their natural size (a flash of a giant Santa leg and ladder base when the alarm is pulled).
+    sceneEl.dataset.placed = "";
     window.addEventListener(snowballTimeoutEvent, syncPause);
     window.addEventListener("resize", resize, { passive: true });
     syncPause();
@@ -786,7 +808,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
   const px = (v: number) => `calc(${v}px * var(--s))`;
   const sx = (v: number) => `calc(${v}px * var(--sigma))`;
   return createPortal(<>
-    <div ref={scene} className={styles.scene} data-ready={ready || undefined} aria-hidden="true">
+    <div ref={scene} className={styles.scene} data-ready={ready || undefined} data-ladder-rescue="" aria-hidden="true">
       <div ref={truck} className={styles.truck} style={{ width: px(BODY.w), height: px(BODY.h) }}>
         <i className={styles.shadow} />
         <div ref={ladder} className={styles.ladder} style={{ left: px(BODY.pivot[0]), top: px(BODY.pivot[1]) }}>
@@ -797,7 +819,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
           {(["plain", "mirror"] as const).map(kind => (
             <Image key={kind} data-base={kind} className={styles.layer} src={`${ART}/${kind === "plain" ? "ladder-base" : "ladder-base-mirror"}.webp`} alt=""
               width={538} height={246} unoptimized draggable={false} loading="eager"
-              style={{ left: px(LAD.base - LAD.pivot[0]), top: px(-LAD.pivot[1]), width: px(538), height: px(246), visibility: kind === "plain" ? "visible" : "hidden" }} />
+              style={{ left: px(LAD.base - LAD.pivot[0]), top: px(-LAD.pivot[1]), width: px(538), height: px(246), visibility: ready && kind === "plain" ? "visible" : "hidden" }} />
           ))}
         </div>
         <Image className={styles.layer} src={`${ART}/truck-body.webp`} alt="" width={BODY.w} height={BODY.h} unoptimized draggable={false} loading="eager"

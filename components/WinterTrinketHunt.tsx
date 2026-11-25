@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { isTesla } from "@/lib/device/profile";
+import { useLaneTuck, type LaneRect } from "@/lib/seasonal/driveLane";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 import styles from "./WinterTrinketHunt.module.css";
 
@@ -979,7 +980,22 @@ function TrinketHunt({ pathname }: { pathname: string }) {
   const engine = useRef<{ drop: (slug: string) => void } | null>(null);
   const toasts = useRef(0);
   const focusBadge = useRef(false);
+  const note = useRef<HTMLButtonElement>(null);
   const titleId = useId();
+  // A drive-by coming through the corner: the stocking and its note duck below the edge just before
+  // it gets there and pop back up once it has gone by (lib/seasonal/driveLane). A find on its way in
+  // keeps the stocking up to catch it.
+  const tucked = useLaneTuck(() => {
+    if (flying > 0) return null;
+    let rect: LaneRect | null = null;
+    // Resting boxes: a fixed element's offsets ignore the tuck's own translate.
+    for (const el of [badge.current, note.current]) {
+      if (!el) continue;
+      const box = { left: el.offsetLeft, top: el.offsetTop, right: el.offsetLeft + el.offsetWidth, bottom: el.offsetTop + el.offsetHeight };
+      rect = rect ? { left: Math.min(rect.left, box.left), top: Math.min(rect.top, box.top), right: Math.max(rect.right, box.right), bottom: Math.max(rect.bottom, box.bottom) } : box;
+    }
+    return rect;
+  }, { recheck: `${found.length > 0}|${toast?.id ?? 0}|${flying}` });
 
   // Hide this page's trinkets once the page has settled, then keep them on their anchors.
   useEffect(() => {
@@ -1083,11 +1099,12 @@ function TrinketHunt({ pathname }: { pathname: string }) {
     };
   }, [pathname]);
 
+  // The note's time only runs while it shows (not while it's tucked away for a drive-by).
   useEffect(() => {
-    if (!toast) return;
+    if (!toast || tucked) return;
     const timer = window.setTimeout(() => setToast(null), 5600);
     return () => window.clearTimeout(timer);
-  }, [toast]);
+  }, [toast, tucked]);
 
   useEffect(() => {
     if (!focusBadge.current) return;
@@ -1190,7 +1207,7 @@ function TrinketHunt({ pathname }: { pathname: string }) {
       {/* The stocking hangs in the corner from the first find; the count rides on its gold tag. */}
       {found.length > 0 && (
         <button ref={badge} type="button" className={styles.stocking} data-complete={complete}
-          data-enter={found.length === 1 && flying > 0 && landed === 0 ? "" : undefined}
+          data-enter={found.length === 1 && flying > 0 && landed === 0 ? "" : undefined} data-lane-away={tucked || undefined}
           aria-haspopup="dialog" aria-label={`Peek in your stocking: ${shown} of ${total} Christmas trinkets collected`}
           title="Peek in your stocking" onClick={openBook} data-winter-trinkets="">
           <span key={landed} className={styles.sway} data-bump={landed > 0 ? "" : undefined}>
@@ -1206,7 +1223,7 @@ function TrinketHunt({ pathname }: { pathname: string }) {
       )}
 
       {toast && toastTrinket && (
-        <button key={toast.id} type="button" className={styles.toast} data-complete={toast.count >= total}
+        <button ref={note} key={toast.id} type="button" className={styles.toast} data-complete={toast.count >= total} data-lane-away={tucked || undefined}
           aria-haspopup="dialog" aria-label={`Collected ${toast.count} of ${total}: ${toastTrinket.name}. Peek in your stocking`}
           onClick={openBook} data-winter-trinkets="">
           <span className={styles.toastArt}>

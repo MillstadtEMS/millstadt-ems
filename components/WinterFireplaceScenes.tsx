@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { createPortal } from "react-dom";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
-import { gabbyDone, markGabbyDone, nextFireplaceTurn, reserveFireplace } from "@/lib/seasonal/fireplaceScenes";
+import { fireplaceGap, gabbyDone, markGabbyDone, nextFireplaceTurn, reserveFireplace } from "@/lib/seasonal/fireplaceScenes";
 import { allCrewDown, crewDownCount, subscribeCrewDown } from "./WinterRoofline";
+import WinterGabbyGag, { preloadGag } from "./WinterGabbyGag";
 import styles from "./WinterFireplaceScenes.module.css";
 
 // The fireplace scenes in the living-room banner, on one shared clock and one arbiter
@@ -20,16 +20,24 @@ import styles from "./WinterFireplaceScenes.module.css";
 // while the officer glides smoothly across the floor. The fridge stands at the room's own scale,
 // a little taller than the fireplace, just past the presents with its feet on the floor at the
 // back wall; with room to spare the stage reaches the banner's visible right edge, so he truly
-// peeks in around it. It stays out where there's no wall for it (phones, the enlarged player).
+// peeks in around it. On narrower banners (phones, tablets) it stands in front of the presents,
+// and it stays out only where even that won't fit (the enlarged player, the smallest screens).
 // Between heists, and with reduced motion, the closed fridge simply stands there.
 
 const ART = "/images/winter/kit/turkey-heist";
-// Gabby's chimney gag (26.5 s, played once, a 1:1 overlay on the room): Santa peeks down the
-// chimney, Gabby hauls him out over his unfinished milk and cookies, drags him off, comes back in
-// his hat, takes a radio call and runs. Like the heist it's an easter egg: it plays once a visit, after
-// every crew member has been knocked off the lights. The room video's own Santa (2.6-5.2 s of each
-// 15 s loop) is skipped while it plays, so he never appears twice.
-const GAG = { src: "/images/winter/kit/gabby/gabby-chimney-gag.webp", ms: 26_500, santa: [2.5, 5.3] as const } as const;
+// Gabby's chimney gag (WinterGabbyGag: a live cut-out puppet show over the room, about 30 s): a big fat
+// Santa wedges himself upside down in the chimney over his unfinished milk and cookies, Gabby hauls
+// him out, drags him off the left edge, comes back in his hat, dozes in the armchair, gets paged and
+// runs. Like the heist it's an easter egg: it plays once a visit, after every crew member has been
+// knocked off the lights. The room video's own Santa (2.6-5.2 s of each 15 s loop) is skipped while
+// it plays, so he never appears twice.
+// Preview on demand (without knocking anyone down): ?preview=ve&gag-preview=now
+const GAG = { santa: [2.5, 5.3] as const, previewDelay: 1500 } as const;
+const gagPreview = () => {
+  if (typeof window === "undefined") return false;
+  const query = new URLSearchParams(window.location.search);
+  return query.get("preview") === "ve" && query.get("gag-preview") === "now";
+};
 // Stage pixels (the pose sheets' own cell pixels): fridge, floor lines, and the files' scale.
 const STAGE = { w: 1640, h: 560, fridgeLeft: 153, doorRight: 484, feet: 461, boots: 515, file: .75 } as const;
 const AT = { x: 128, y: 60, w: 482, h: 472 } as const;                 // the at-the-fridge cells
@@ -52,8 +60,8 @@ const CREEP: ReadonlyArray<readonly [string, number]> = [
 const RUN = ["49-1", "49-2", "49-3", "49-4", "49-5", "49-6"] as const;
 // The room art (760 x 200): where the presents beside the fireplace end, the floor line at the back
 // wall (from the bottom), and the fridge's height there (the fireplace is about 135).
-const ROOM = { presentsRight: 748 / 760, floor: 30 / 200, fridge: 158 / 200 } as const;
-const MIN_SCALE = .18;
+const ROOM = { presentsLeft: 690 / 760, presentsRight: 748 / 760, floor: 30 / 200, fridge: 158 / 200 } as const;
+const MIN_SCALE = .17;
 const BIRD = { enter: 10_450, join: 12_700, end: 14_900, beak: [219, 102], size: [264, 230], width: 300, behind: 165, height: 285, beats: 3.6 } as const;
 const FIRST_TURN = 2_500, BETWEEN_TURNS = 50_000;
 
@@ -105,10 +113,12 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
   const [visible, setVisible] = useState(true);
   const [onScreen, setOnScreen] = useState(true);
   const [reduced, setReduced] = useState(false);
-  const [gagUrl, setGagUrl] = useState<string | null>(null);
+  const [gagOn, setGagOn] = useState(false);
   const [aside, setAside] = useState<HTMLElement | null>(null);
-  const gagBlob = useRef<Promise<Blob | null> | null>(null);
-  const gagRun = useRef<{ release: () => void; timers: number[]; frame: number; url: string; onEnd: () => void } | null>(null);
+  const [roomEl, setRoomEl] = useState<HTMLElement | null>(null);
+  const gagParts = useRef<Promise<void> | null>(null);
+  const gagRun = useRef<{ release: () => void; frame: number; onEnd: () => void } | null>(null);
+  const [preview] = useState(gagPreview);
   const crewDown = useSyncExternalStore(subscribeCrewDown, allCrewDown, () => false);
   // The poses load once most of the crew are down, so they're ready when the last one falls.
   const almost = useSyncExternalStore(subscribeCrewDown, () => crewDownCount() >= 4, () => false);
@@ -122,12 +132,19 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
     const measure = () => {
       frame = 0;
       const room = stage.querySelector<HTMLElement>("[data-living-room]");
-      const s = stage.getBoundingClientRect(), r = room?.getBoundingClientRect();
+      // On-screen boxes in the stage's own pixels (the station TV scales the whole living room).
+      const k = stage.getBoundingClientRect().width / (stage.offsetWidth || 1) || 1;
+      const local = (b: DOMRect) => new DOMRect(b.x / k, b.y / k, b.width / k, b.height / k);
+      const s = local(stage.getBoundingClientRect()), r = room ? local(room.getBoundingClientRect()) : undefined;
       if (!r || !r.width || getComputedStyle(room!).display === "none") { setLayout(null); return; }
-      const presents = r.left + r.width * ROOM.presentsRight;
+      const roomScale = r.height * ROOM.fridge / FRIDGE.h;
+      const reach = STAGE.doorRight - STAGE.fridgeLeft + 40; // the fridge and its open door, in stage pixels
+      let presents = r.left + r.width * ROOM.presentsRight;
+      // Narrower banners (phones, tablets) have no wall past the presents: the fridge stands in front of them.
+      if (s.right - presents < reach * roomScale) presents = r.left + r.width * ROOM.presentsLeft;
       const lane = s.right - presents;
       // Room scale (the fridge a little taller than the fireplace), unless its open door won't fit.
-      const scale = Math.min(r.height * ROOM.fridge / FRIDGE.h, lane / (STAGE.doorRight - STAGE.fridgeLeft + 40));
+      const scale = Math.min(roomScale, lane / reach);
       if (!(scale >= MIN_SCALE)) { setLayout(null); return; }
       const stageRight = presents + 8 - STAGE.fridgeLeft * scale + STAGE.w * scale;
       const right = Math.min(0, s.right - stageRight);
@@ -227,25 +244,20 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
 
   // ---- Gabby's chimney gag ----------------------------------------------------------------------
   const room = useCallback(() => host.current?.parentElement?.querySelector<HTMLElement>("[data-living-room]") ?? null, []);
-  const loadGag = useCallback(() => {
-    gagBlob.current ??= fetch(GAG.src).then(response => response.ok ? response.blob() : null).catch(() => null);
-    return gagBlob.current;
-  }, []);
+  const loadGag = useCallback(() => (gagParts.current ??= preloadGag()), []);
   const gagAllowed = useCallback(() => {
     const r = room();
-    return !gabbyDone() && !reduced && !timeout && !expanded && visible && Boolean(r) && getComputedStyle(r!).display !== "none";
-  }, [room, reduced, timeout, expanded, visible]);
-  // The gag (4.7 MB) loads once most of the crew are down, ready for when the last one falls.
-  useEffect(() => { if (almost && !reduced) void loadGag(); }, [almost, reduced, loadGag]);
+    return (preview || !gabbyDone()) && !reduced && !timeout && !expanded && visible && Boolean(r) && getComputedStyle(r!).display !== "none";
+  }, [room, reduced, timeout, expanded, visible, preview]);
+  // The puppets (small cut-outs, about 0.2 MB) load once most of the crew are down.
+  useEffect(() => { if ((almost || preview) && !reduced) void loadGag(); }, [almost, preview, reduced, loadGag]);
 
   const endGag = useCallback(() => {
     const current = gagRun.current;
     if (!current) return;
     gagRun.current = null;
-    current.timers.forEach(t => window.clearTimeout(t));
     cancelAnimationFrame(current.frame);
-    setGagUrl(null);
-    URL.revokeObjectURL(current.url);
+    setGagOn(false);
     current.release();
     // She doesn't climb back on the lights (a refresh does that); she pops up from the sides now.
     markGabbyDone();
@@ -255,14 +267,13 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
   /** Play the gag once on the fireplace stage; onEnd hands the stage to the next show. */
   const startGag = useCallback(async (onEnd: () => void) => {
     if (gagRun.current || !gagAllowed()) return false;
-    const blob = await loadGag();
-    if (!blob || !gagAllowed()) return false;
+    await loadGag();
+    if (gagRun.current || !gagAllowed()) return false;
     const release = reserveFireplace("gabby");
     if (!release) return false;
-    const url = URL.createObjectURL(blob);
-    const run = { release, timers: [] as number[], frame: 0, url, onEnd };
+    const run = { release, frame: 0, onEnd };
     gagRun.current = run;
-    setGagUrl(url);
+    setGagOn(true);
     // Keep the room video out of its own Santa peek while the gag's Santa is on.
     const video = room()?.querySelector("video");
     const skip = () => {
@@ -271,9 +282,15 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
       run.frame = requestAnimationFrame(skip);
     };
     run.frame = requestAnimationFrame(skip);
-    run.timers.push(window.setTimeout(endGag, GAG.ms));
     return true;
-  }, [gagAllowed, loadGag, room, endGag]);
+  }, [gagAllowed, loadGag, room]);
+
+  // ?preview=ve&gag-preview=now plays the gag shortly after the page loads, crew or no crew.
+  useEffect(() => {
+    if (!preview || reduced || timeout || expanded || !visible || !aside) return;
+    const timer = window.setTimeout(() => void startGag(() => {}), GAG.previewDelay);
+    return () => window.clearTimeout(timer);
+  }, [preview, reduced, timeout, expanded, visible, aside, startGag]);
 
   // The shared clock. Both shows are easter eggs: nothing happens until every crew member has been
   // knocked off the lights. Then Gabby's gag goes first (once a visit), the heist follows, and the
@@ -310,7 +327,7 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
       current.timers.push(window.setTimeout(() => {
         if (run.current !== current) return;
         stop();
-        nextDelay.current = BETWEEN_TURNS;
+        nextDelay.current = fireplaceGap(BETWEEN_TURNS);
         setCycle(c => c + 1);
       }, CLIP_MS));
     }, nextDelay.current);
@@ -327,9 +344,10 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
   }, [timeout, expanded, visible, reduced, endGag]);
   useEffect(() => endGag, [pathname, endGag]);
 
-  // The gag draws in the TV's own layer (so its speech bubbles can sit in front of the TV).
+  // The gag draws in the TV's own layer (so its speech bubbles can sit in front of the TV), over the room.
   useEffect(() => {
     setAside(host.current?.parentElement?.querySelector<HTMLElement>("[data-winter-video]") ?? null);
+    setRoomEl(host.current?.parentElement?.querySelector<HTMLElement>("[data-living-room]") ?? null);
   }, [expanded, layout]);
 
   const px = (v: number) => `${v}px`;
@@ -354,10 +372,7 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
         </span>}
       </>}
     </div>
-    {gagUrl && aside && createPortal(
-      <span className={styles.gag} aria-hidden="true">
-        <Image src={gagUrl} alt="" width={1140} height={300} unoptimized draggable={false} />
-      </span>, aside)}
+    {gagOn && aside && roomEl && <WinterGabbyGag aside={aside} room={roomEl} onDone={endGag} preview={preview} />}
     {/* The chase crosses the whole room, so the turkey flies in the banner's own layer. */}
     {armed && layout && !expanded && <div className={styles.chase} aria-hidden="true">
       <span ref={bird} className={styles.bird}>
