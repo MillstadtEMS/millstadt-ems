@@ -41,7 +41,13 @@ export type Rig = {
   /** Feet line, for figures standing in a snowbank on the bottom edge. */
   ground?: number;
   /** `ball`: where a thrown snowball leaves the hand. `hand`: the classic thrower's palm while rising. */
-  faces: XY[]; head: XY; ball?: XY; hand?: XY; mittens?: XY[]; mouth?: XY;
+  faces: XY[]; head: XY; ball?: XY; hand?: XY; mouth?: XY;
+  /**
+   * A forearm cut out of one picture (`frame`) for cut-out puppetry, on a picture the same size, so it
+   * lies exactly over the stump it was cut from (both keep a joint disc at the elbow). It turns about
+   * the elbow for a throw, the snowball (radius `ballR`) in its palm. Points in that picture's px.
+   */
+  arm?: { src: string; frame: string; elbow: XY; palm: XY; ballR: number };
   /** Radius (stage units) of the snowball as it was held: the flight starts at that size. */
   ballR?: number;
   /** Centre of the snowball held up in the wind-up picture (stage units). */
@@ -184,13 +190,22 @@ const flipRig: Rig = {
   },
   faces: [[182, 150]], head: [180, 26],
 };
-// The caroler girls (cartoon cut-outs). Trio faces and mittens run left to right: little, curly, straight.
+// The caroler girls (cartoon cut-outs). Trio faces run left to right: little, curly, straight. The
+// solo carolers hold their hymnals in both mittens, so they never throw (a hit gets a huff and they
+// sing on); the little one in the trio waves with her arm up, so she throws for all three: her
+// forearm is cut out of the picture and turns about the elbow, the snowball in her mitten.
 const carolerRigs: Record<"curlyFull" | "curlyHalf" | "straightHalf" | "trioFull" | "trioHalf", Rig> = {
-  curlyFull: { W: 315, H: 760, ground: 757, visible: 1, frames: { sing: frame("pop/caroler-curly", 315, 760) }, faces: [[132, 57]], mittens: [[189, 205]], mouth: [140, 78], head: [138, 10] },
-  curlyHalf: { W: 365, H: 640, visible: .8, frames: { sing: frame("pop/caroler-curly-half", 365, 640) }, faces: [[172, 115]], mittens: [[255, 403]], mouth: [175, 160], head: [166, 20] },
-  straightHalf: { W: 389, H: 640, visible: .8, frames: { sing: frame("pop/caroler-straight-half", 389, 640) }, faces: [[214, 118]], mittens: [[311, 403]], mouth: [222, 166], head: [196, 20] },
-  trioFull: { W: 689, H: 640, ground: 637, visible: 1, frames: { sing: frame("pop/carolers-trio", 689, 640) }, faces: [[110, 128], [324, 109], [524, 109]], mittens: [[21, 77], [324, 294], [524, 275]], mouth: [324, 130], head: [324, 30] },
-  trioHalf: { W: 757, H: 600, visible: .9, frames: { sing: frame("pop/carolers-trio-half", 757, 600) }, faces: [[136, 186], [371, 138], [590, 120]], mittens: [[23, 96], [371, 330], [606, 318]], mouth: [371, 164], head: [371, 40] },
+  curlyFull: { W: 315, H: 760, ground: 757, visible: 1, frames: { sing: frame("pop/caroler-curly", 315, 760) }, faces: [[132, 57]], mouth: [140, 78], head: [138, 10] },
+  curlyHalf: { W: 365, H: 640, visible: .8, frames: { sing: frame("pop/caroler-curly-half", 365, 640) }, faces: [[172, 115]], mouth: [175, 160], head: [166, 20] },
+  straightHalf: { W: 389, H: 640, visible: .8, frames: { sing: frame("pop/caroler-straight-half", 389, 640) }, faces: [[214, 118]], mouth: [222, 166], head: [196, 20] },
+  trioFull: {
+    W: 689, H: 640, ground: 637, visible: 1, frames: { sing: frame("pop/carolers-trio-noarm", 689, 640) }, faces: [[110, 128], [324, 109], [524, 109]], mouth: [324, 130], head: [324, 30],
+    arm: { src: art("pop/carolers-trio-forearm"), frame: "sing", elbow: [64, 186], palm: [32, 100], ballR: 18 },
+  },
+  trioHalf: {
+    W: 757, H: 600, visible: .9, frames: { sing: frame("pop/carolers-trio-half-noarm", 757, 600) }, faces: [[136, 186], [371, 138], [590, 120]], mouth: [371, 164], head: [371, 40],
+    arm: { src: art("pop/carolers-trio-half-forearm"), frame: "sing", elbow: [68, 214], palm: [34, 112], ballR: 19 },
+  },
 };
 
 const crew: Crew[] = ["kalista", "braeden", "dylan", "medical-director"];
@@ -603,7 +618,8 @@ function runCast(env: Env) {
 
   async function enter(c: Casting, token: number, lead: Actor | null): Promise<Actor | null> {
     const look = costume(c);
-    try { await Promise.all(Object.values(look.rig.frames).map(f => loadArt(f.src))); } catch { return null; }
+    const pictures = [...Object.values(look.rig.frames).map(f => f.src), ...(look.rig.arm ? [look.rig.arm.src] : [])];
+    try { await Promise.all(pictures.map(src => loadArt(src))); } catch { return null; }
     if (disposed || token !== stamp || guarded() || (lead && !actors.has(lead.id))) return null;
     const spot = place(c.kind, look.rig, look.edges, lead);
     if (!spot) return null;
@@ -713,9 +729,20 @@ function runCast(env: Env) {
   function pelt(actor: Actor, at: XY, r?: number, lob = false) {
     const from = anchor(actor, at);
     const rim = r ? anchor(actor, [at[0] + r, at[1]]) : null;
-    const fromSize = rim ? 2 * Math.hypot(rim.x - from.x, rim.y - from.y) : undefined;
+    launch(from, rim ? 2 * Math.hypot(rim.x - from.x, rim.y - from.y) : undefined, lob);
+  }
+  function launch(from: Point, fromSize: number | undefined, lob: boolean) {
     const to = { x: window.innerWidth * between(.3, .7), y: window.innerHeight * between(.3, .62) };
     void throwSnowball({ from, to, toward: "viewer", splat: "none", fromSize, arc: lob ? between(150, 210) : undefined, onImpact: p => splash(p, "smack") });
+  }
+  /** The snowball in a rigged forearm's palm leaves it from wherever the arm has swung it to (on screen). */
+  function peltFromArm(actor: Actor) {
+    const held = element(actor)?.querySelector<SVGCircleElement>("[data-arm-ball]");
+    const m = held?.getScreenCTM();
+    if (!held || !m) return false;
+    const c = new DOMPoint(held.cx.baseVal.value, held.cy.baseVal.value).matrixTransform(m);
+    launch({ x: c.x, y: c.y }, 2 * held.r.baseVal.value * Math.hypot(m.a, m.b), true);
+    return true;
   }
   /** Small and quick: a hit puff is gone in about a quarter of a second. */
   function splash(at: Point, kind: "puff" | "smack", size?: number) {
@@ -997,24 +1024,26 @@ function runCast(env: Env) {
           return;
         case "caroler":
         case "trio": {
-          const many = actor.kind === "trio";
-          // (Every bubble stays up at least a second and a half so it can be read.)
+          // Only the trio throws back (the little one has a hand free); a solo caroler, both mittens
+          // on her hymnal, huffs and sings on, louder. (Every bubble stays up at least 1.5 s.)
+          const throws = Boolean(actor.rig.arm);
           set(actor, { phase: "duck", bubble: done ? "Fiddlesticks!" : "", mood: "cross", notes: "" });
-          env.say(done ? `Direct hit! ${many ? "The carolers give up and duck away." : "The caroler gives up and ducks away."}`
-            : `Direct hit! ${many ? "The carolers duck, then one lobs a snowball back." : "The caroler ducks, then lobs a snowball back."}`);
+          env.say(done ? `Direct hit! ${throws ? "The carolers give up and duck away." : "The caroler gives up and ducks away."}`
+            : `Direct hit! ${throws ? "The carolers duck, then the littlest lobs a snowball back." : "The caroler ducks, huffs, and sings on louder."}`);
           if (done) { await wait(1500); break; }
           await wait(650);
-          // Down in the snow she packs a snowball; she comes back up with it in her mitten.
-          const mitten = actor.rig.mittens?.[Math.min(actor.girl, actor.rig.mittens.length - 1)];
-          set(actor, { phase: "indignant", bubble: "Hmph!", holding: Boolean(mitten) });
+          // Down in the snow the little one packs a snowball; she comes back up with it held high in her mitten.
+          set(actor, { phase: "indignant", bubble: "Hmph!", holding: throws });
           await wait(1500);
-          set(actor, { phase: "lob", bubble: "" });
-          await wait(310);
-          // It leaves the mitten as the lob snaps forward.
-          set(actor, { holding: false });
-          if (mitten) pelt(actor, mitten, actor.rig.ballR, true);
-          await wait(420);
-          set(actor, { phase: "sing", bubble: "♪ …fa la la!", mood: "", notes: "song", hittable: true });
+          if (throws) {
+            // Her forearm snaps forward about the elbow; the ball leaves the mitten at the fastest point.
+            set(actor, { phase: "lob", bubble: "" });
+            await wait(reducedMotion() ? 0 : 120);
+            peltFromArm(actor);
+            set(actor, { holding: false });
+            await wait(420);
+          }
+          set(actor, { phase: "sing", bubble: throws ? "♪ …fa la la!" : "♪ FA LA LA LA LA!", mood: "", notes: "song", hittable: true });
           await wait(1900);
           await sing(actor, wait, 1);
           set(actor, { bubble: "" });
@@ -1193,7 +1222,7 @@ function Figure({ view, onShoot }: { view: View; onShoot: (id: number) => void }
   const stand = rig.ground !== undefined;
   const pile = view.bury > 0 ? pileShape(rig, view.bury) : null;
   const ballD = pct(2 * (rig.ballR ?? rig.W * .05) / rig.W);
-  const mitten = view.holding ? rig.mittens?.[Math.min(view.girl, rig.mittens.length - 1)] : undefined;
+  const arm = rig.arm, armFrame = arm ? rig.frames[arm.frame] : undefined;
   // The swish of the throwing arm, around the hand the ball leaves from.
   const swish = view.phase === "hurl" || view.phase === "release" ? rig.ball : undefined;
   return (
@@ -1212,7 +1241,23 @@ function Figure({ view, onShoot }: { view: View; onShoot: (id: number) => void }
           ))}
           {/* The classic thrower bursts out of the drift with the snowball already on the palm of the throwing hand. */}
           {view.kind === "classic" && rig.hand && <i className={styles.heldBall} data-palm="" style={{ left: pct(rig.hand[0] / rig.W), top: pct(rig.hand[1] / rig.H), width: ballD }} />}
-          {mitten && <i className={styles.heldBall} data-mitten="" style={{ left: pct(mitten[0] / rig.W), top: pct(mitten[1] / rig.H), width: ballD }} />}
+          {arm && armFrame && (
+            // The rigged forearm over its stump (turned about the elbow by the throw's CSS), with the
+            // snowball in its palm while she holds one.
+            <svg className={styles.arm} data-on={view.frame === arm.frame || undefined} viewBox={`0 0 ${armFrame.w} ${armFrame.h}`} preserveAspectRatio="none" focusable="false"
+              style={{ left: pct(armFrame.x / rig.W), top: pct(armFrame.y / rig.H), width: pct(armFrame.w * armFrame.s / rig.W), height: pct(armFrame.h * armFrame.s / rig.H) }}>
+              <defs>
+                <radialGradient id={`held-${view.id}`} cx="33%" cy="28%" r="78%">
+                  <stop offset="0" stopColor="#fff" /><stop offset=".26" stopColor="#fff" /><stop offset=".54" stopColor="#f1f9ff" />
+                  <stop offset=".84" stopColor="#cfe3f4" /><stop offset="1" stopColor="#9dbcd9" />
+                </radialGradient>
+              </defs>
+              <g className={styles.forearm} style={{ transformOrigin: `${arm.elbow[0]}px ${arm.elbow[1]}px` }}>
+                <image href={arm.src} width={armFrame.w} height={armFrame.h} preserveAspectRatio="none" />
+                {view.holding && <circle data-arm-ball="" cx={arm.palm[0]} cy={arm.palm[1]} r={arm.ballR} fill={`url(#held-${view.id})`} stroke="#3b4652b3" strokeWidth={arm.ballR * .1} />}
+              </g>
+            </svg>
+          )}
           {swish && (
             // A tapered smear following the hand's arc over the shoulder to where it lets go.
             <svg className={styles.swish} viewBox="-50 -50 100 100" focusable="false"

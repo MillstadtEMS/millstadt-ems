@@ -46,14 +46,24 @@ html[data-snowball-timeout] .aim { pointer-events: none; cursor: auto; }
 .actor[data-phase="retreat"] .drift { animation: hideDrift .49s ease-in both; }
 
 /* A snowball held in a hand that isn't painted holding one: on the classic thrower's palm as they burst
-   out of the drift (they throw it next), or in a caroler's mitten before she lobs it. Shaded and
-   outlined like the painted ones; centred on the hand, sized like the ball they throw. */
+   out of the drift (they throw it next). Shaded and outlined like the painted ones; centred on the
+   hand, sized like the ball they throw. */
 .heldBall {
   position: absolute; aspect-ratio: 1; border-radius: 50%; translate: -50% -50%; opacity: 0;
   background: radial-gradient(circle at 34% 28%,#fff 0 22%,#f1f6fa 46%,#d5e2ec 74%,#a9bfd0);
   box-shadow: 0 0 0 1.5px #3b4652b3, inset -2px -3px 4px #6d86a052;
 }
-.actor[data-kind="classic"][data-phase="rise"] .heldBall[data-palm], .heldBall[data-mitten] { opacity: 1; }
+.actor[data-kind="classic"][data-phase="rise"] .heldBall[data-palm] { opacity: 1; }
+
+/* A forearm cut out of the picture (the littlest caroler's raised one), lying exactly over its stump
+   and turning about the elbow: up with the snowball she packed (a pump), then the snap forward
+   toward the visitor (it swings and grows a little, coming at the glass) that lets the ball go, and
+   back to her wave. It only ever turns toward her, so nothing behind it is uncovered. */
+.arm { position: absolute; display: block; overflow: visible; opacity: 0; pointer-events: none; }
+.arm[data-on] { opacity: 1; }
+.forearm { transform-box: view-box; }
+.actor[data-phase="indignant"] .forearm { animation: armPump 1.5s ease-in-out both; }
+.actor[data-phase="lob"] .forearm { animation: armSnap .5s cubic-bezier(.2,.7,.3,1) both; }
 
 /* Entrances and exits */
 .actor[data-phase="rise"] .rise { animation: pop .62s cubic-bezier(.2,.8,.3,1) both; }
@@ -233,7 +243,9 @@ html[data-snowball-timeout] .aim { pointer-events: none; cursor: auto; }
 @keyframes rock { 25% { transform: rotate(-3.2deg); } 75% { transform: rotate(3.2deg); } }
 @keyframes sway { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg) translateY(-1%); } }
 @keyframes huff { 18% { transform: rotate(-7deg) translateY(1%); } 42% { transform: rotate(4deg); } 62% { transform: rotate(-3deg); } 82% { transform: rotate(1.5deg); } }
-@keyframes lob { 38% { transform: rotate(-6deg) translateY(1.5%); } 60% { transform: rotate(7deg) translateY(-2.5%); } }
+@keyframes lob { 20% { transform: rotate(3deg) translateY(-1.5%) scale(1.02); } 55% { transform: rotate(-1.5deg); } }
+@keyframes armPump { 0%, 30% { transform: none; } 52% { transform: rotate(3deg) scale(.95); } 70% { transform: rotate(.5deg) scale(.99); } to { transform: rotate(2deg) scale(.94); } }
+@keyframes armSnap { from { transform: rotate(2deg) scale(.94); } 24% { transform: rotate(34deg) scale(1.12); } 56% { transform: rotate(12deg) scale(1.03); } to { transform: none; } }
 @keyframes woozy { 0%,100% { transform: rotate(-5deg) translateX(-2%); } 50% { transform: rotate(5deg) translateX(2%) skewX(-3deg); } }
 @keyframes squat { 55% { transform: scale(1.04,.93); } }
 @keyframes land { 0% { transform: scale(1.06,.9); } 60% { transform: scale(.98,1.03); } to { transform: none; } }
