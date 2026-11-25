@@ -1136,10 +1136,9 @@ function RoofGabby({ version, knocks, onBack }: { version: 1 | 2; knocks: number
     };
     const other = spot.bubble === "right" ? "left" : "right";
     layer.dataset.side = spill(spot.bubble) <= spill(other) ? spot.bubble : other;
-    // If the pass will be over before her grumble has had its full hold, she keeps it to herself
-    // rather than have it vanish with the truck.
-    const remaining = speed && run ? (Number(run.effect?.getTiming().duration) - Number(run.currentTime)) / (run.playbackRate || 1) / 1000 : Infinity;
-    if (remaining < GRUMBLE[1] + .2) { layer.dataset.mute = "true"; return; }
+    // If the truck will have carried her off the screen within half a second of her starting to grumble,
+    // she keeps it to herself rather than leave a bubble at the edge with nobody saying it.
+    if (head - speed * (GRUMBLE[0] + .5) < 0) { layer.dataset.mute = "true"; return; }
     // And whatever the screen does meanwhile (a narrow phone, a resize, the truck stopping or going on),
     // it's nudged back inside the screen and the lane every frame while it shows.
     const lane = box.closest<HTMLElement>("[data-lane]");
