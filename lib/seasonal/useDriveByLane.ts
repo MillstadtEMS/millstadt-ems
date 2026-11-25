@@ -37,12 +37,13 @@ function announcement(lane: DOMRect, enterAt: number): LanePlan {
   };
 }
 
-/** The drive animation's speed (px/ms), from the running CSS animation. */
+/** The drive animation's speed (px/ms), from the CSS animation (0 while it's paused). */
 function driveSpeed(convoy: HTMLElement) {
   const name = convoy.dataset.drive ?? "winterDrive";
   const run = convoy.getAnimations().find(a => a instanceof CSSAnimation && a.animationName.endsWith(name));
   const duration = Number(run?.effect?.getTiming().duration);
   if (!run || !(duration > 0)) return null;
+  if (run.playState !== "running") return 0;
   return (window.innerWidth + ENTER_GAP + convoy.offsetWidth + EXIT_GAP) / duration * Math.abs(run.playbackRate || 1);
 }
 

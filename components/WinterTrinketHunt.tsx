@@ -1099,11 +1099,12 @@ function TrinketHunt({ pathname }: { pathname: string }) {
     };
   }, [pathname]);
 
+  // The note's time only runs while it shows (not while it's tucked away for a drive-by).
   useEffect(() => {
-    if (!toast) return;
+    if (!toast || tucked) return;
     const timer = window.setTimeout(() => setToast(null), 5600);
     return () => window.clearTimeout(timer);
-  }, [toast]);
+  }, [toast, tucked]);
 
   useEffect(() => {
     if (!focusBadge.current) return;
