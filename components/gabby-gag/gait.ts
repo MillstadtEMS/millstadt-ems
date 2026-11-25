@@ -81,23 +81,25 @@ export function makeLoco(o: LocoOpts): Loco {
   const tEnd = o.t0 + dur;
   const lead = o.lead ?? 0, other = (1 - lead) as 0 | 1;
   const plants: Plant[] = [];
+  // footfall j (lead, other, lead, ...) is under its hip at tc(j)
   const footOf = (j: number) => ((((j % 2) + 2) % 2) === 0 ? lead : other);
-  let first = 0;
+  const phase = o.startFeet ? 1 : .5;
+  const tcOf = (j: number) => o.t0 + (j + phase) * T;
   if (o.startFeet) {
-    // standing start: the trailing boot carries her through the first step while the lead boot swings
-    plants.push({ foot: other, x: o.startFeet[other], t0: -Infinity, t1: o.t0 + T * .5 + half });
-    plants.push({ foot: lead, x: o.startFeet[lead], t0: -Infinity, t1: o.t0 + T * .08 });
-    first = 1;
+    // standing start: the lead boot leaves first and lands at footfall 0; the other boot holds her up
+    // until the lead one is down, then pushes off for footfall 1
+    plants.push({ foot: lead, x: o.startFeet[lead], t0: -Infinity, t1: o.t0 + T * .06 });
+    plants.push({ foot: other, x: o.startFeet[other], t0: -Infinity, t1: tcOf(0) - half + T * .15 });
   } else {
     // already on the move: footfalls laid out before t0 as if the gait had always been running
     for (let j = -3; j < 0; j++) {
-      const tc = o.t0 + (j + .5) * T, f = footOf(j);
+      const tc = tcOf(j), f = footOf(j);
       plants.push({ foot: f, x: o.x0 + o.dir * ((o.v / 1000) * (tc - o.t0) + hips[f]), t0: tc - half, t1: tc + half });
     }
   }
   const endMargin = o.easeEnd ? .55 * T : 0;
-  for (let j = first; ; j++) {
-    const tc = o.t0 + (j + .5) * T;
+  for (let j = 0; ; j++) {
+    const tc = tcOf(j);
     if (tc > tEnd - endMargin) break;
     const f = footOf(j);
     plants.push({ foot: f, x: px(tc) + o.dir * hips[f], t0: tc - half, t1: tc + half });
@@ -107,28 +109,42 @@ export function makeLoco(o: LocoOpts): Loco {
     return plants[0];
   };
   if (o.endFeet) {
-    // braking into a stance: the boot that has been down longest steps up beside the other one
+    // braking into a stance: each boot lands on its final spot only once the hips have caught up with
+    // it (so the last steps never overreach), the one that has been down longest first
     const final = (f: 0 | 1) => o.x1 + o.dir * o.endFeet![f];
+    const tAt = (x: number) => {
+      for (let t = o.t0; t < tEnd; t += 4) if ((px(t) - x) * o.dir >= 0) return t;
+      return tEnd;
+    };
     const a = lastOf(0), b = lastOf(1);
     const older = a.t0 < b.t0 ? a : b, newer = older === a ? b : a;
-    // the newer plant becomes (or stays near) its final spot; the older boot swings to its final spot
-    const land = Math.max(newer.t0 + T * .45, older.t1 + T * .15);
-    older.t1 = Math.min(older.t1, land - T * .7);
+    const reach = (f: 0 | 1, k: number) => final(f) - o.dir * (hips[f] + k * o.step);
+    const landOlder = Math.max(tAt(reach(older.foot, .3)), newer.t0 + T * .3, (Number.isFinite(older.t0) ? older.t0 : o.t0) + T * .9);
+    older.t1 = Math.max(Number.isFinite(older.t0) ? older.t0 : -Infinity, Math.min(older.t1, landOlder - T * .62));
+    plants.push({ foot: older.foot, x: final(older.foot), t0: landOlder, t1: Infinity });
     if (Math.abs(newer.x - final(newer.foot)) > 1.5) {
-      newer.t1 = Math.max(newer.t0 + T * .3, land + T * .1);
-      plants.push({ foot: newer.foot, x: final(newer.foot), t0: newer.t1 + T * .55, t1: Infinity });
+      newer.t1 = Math.max(newer.t0 + T * .25, landOlder + T * .12);
+      const landNewer = Math.max(newer.t1 + T * .5, tAt(reach(newer.foot, .05)));
+      plants.push({ foot: newer.foot, x: final(newer.foot), t0: landNewer, t1: Infinity });
     } else newer.t1 = Infinity;
-    plants.push({ foot: older.foot, x: final(older.foot), t0: land, t1: Infinity });
   } else {
     // walking on past the end at cruise speed (exits off-screen)
-    let j = Math.floor((tEnd - o.t0) / T - .5) + 1;
-    while (plants.some(p => p.t0 >= o.t0 + (j + .5) * T - half - 1)) j++;
+    let j = Math.floor((tEnd - o.t0) / T - phase) + 1;
+    while (plants.some(p => p.t0 >= tcOf(j) - half - 1)) j++;
     for (let n = 0; n < 6; n++, j++) {
-      const tc = o.t0 + (j + .5) * T, f = footOf(j);
+      const tc = tcOf(j), f = footOf(j);
       plants.push({ foot: f, x: o.x1 + o.dir * ((o.v / 1000) * (tc - tEnd) + hips[f]), t0: tc - half, t1: tc + half });
     }
   }
   plants.sort((p, q) => p.t0 - q.t0);
+  // a boot never stands in two places at once: each plant ends before that boot's next one begins
+  for (const f of [0, 1] as const) {
+    const mine = plants.filter(p => p.foot === f);
+    for (let i = 0; i + 1 < mine.length; i++) {
+      const gap = T * (o.style === "run" ? .3 : .22);
+      if (mine[i].t1 > mine[i + 1].t0 - gap) mine[i].t1 = Math.max(Number.isFinite(mine[i].t0) ? mine[i].t0 : -Infinity, mine[i + 1].t0 - gap);
+    }
+  }
   return { style: o.style, dir: o.dir, t0: o.t0, t1: tEnd, x0: o.x0, x1: o.x1, T, step: o.step, v: o.v, lift: o.lift ?? (o.style === "run" ? 10 : 4.5), plants, px };
 }
 

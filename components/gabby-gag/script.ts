@@ -137,8 +137,32 @@ function track(t: number, k: ReadonlyArray<readonly [number, GabbyPose, ((u: num
 
 type WalkOpts = { head: HeadId; lean: number; amp: number; elbow?: number; hat?: GabbyPose["hat"]; keepGoing?: boolean; run?: boolean; bob?: number };
 
-/** Gabby on the move: planted boots from the footstep plan, a bob locked to her footfalls, arms
- *  swinging against her legs. */
+/** How deep a walk has to dip at each footfall for its stride (measured over the plan's cruise). */
+const dips = new WeakMap<Loco, number>();
+function needAt(l: Loco, t: number, keepGoing?: boolean) {
+  const px = pelvisAt(l, t, keepGoing);
+  let need = -Infinity;
+  for (const [f, hip] of [[footAt(l, 0, t, GEO), HIPS[0]], [footAt(l, 1, t, GEO), HIPS[1]]] as const) {
+    if (!f.stance) continue;
+    const dx = px + hip * l.dir - f.x;
+    need = Math.max(need, FLOOR - f.up - Math.sqrt(Math.max(0, LEG_MAX * LEG_MAX - dx * dx)));
+  }
+  return need;
+}
+function dipOf(l: Loco) {
+  let d = dips.get(l);
+  if (d === undefined) {
+    d = 0;
+    const a = l.t0 + (l.t1 - l.t0) * .3, b = l.t0 + (l.t1 - l.t0) * .7;
+    for (let t = a; t <= b; t += 6) d = Math.max(d, needAt(l, t) - STAND);
+    d = clamp(d + .6, 1.5, 8);
+    dips.set(l, d);
+  }
+  return d;
+}
+
+/** Gabby on the move: planted boots from the footstep plan, a bob locked to her footfalls (as deep as
+ *  her stride needs, so a planted boot never has to stretch), arms swinging against her legs. */
 function walkPose(l: Loco, t: number, o: WalkOpts): GabbyPose {
   const px = pelvisAt(l, t, o.keepGoing);
   const fN = footAt(l, 0, t, GEO), fF = footAt(l, 1, t, GEO);
@@ -156,13 +180,14 @@ function walkPose(l: Loco, t: number, o: WalkOpts): GabbyPose {
   const u = Number.isFinite(td) && Number.isFinite(tn) ? (t - td) / (tn - td) : .5;
   let y: number;
   if (run) y = STAND + 4 + 4.2 * k * Math.cos(2 * Math.PI * (u - .3));
-  else y = STAND + (o.bob ?? 3) * k * (.5 + .5 * Math.cos(2 * Math.PI * (u - .1)));
+  else y = STAND + Math.max(o.bob ?? 0, dipOf(l)) * k * (.5 + .5 * Math.cos(2 * Math.PI * (u - .1)));
   // the stance boots must stay reachable (they never slide): drop the pelvis if one would overstretch
   for (const [f, hip] of [[fN, HIPS[0]], [fF, HIPS[1]]] as const) {
     if (!f.stance) continue;
     const dx = px + hip * l.dir - f.x, ay = FLOOR - f.up;
     const need = ay - Math.sqrt(Math.max(0, LEG_MAX * LEG_MAX - dx * dx));
-    if (need > y) y = need;
+    // (never more than a few px: a long reach is the planner's job, not a sudden crouch)
+    if (need > y) y = Math.min(need, y + 4);
   }
   const offN = (fN.x - px) * l.dir, offF = (fF.x - px) * l.dir;
   const swing = clamp((offF - offN) / Math.max(20, l.step * 1.2), -1, 1) * k;
@@ -195,7 +220,8 @@ export function buildGag(stage: Stage) {
   const tLook = tSpot + 140, tSnap = tLook + 430, tShout = tSnap + 640, tSay1 = tShout + 120, tRun = tSay1 + 1500, tSay1End = tSay1 + 1850;
   // ---------------------------------------------------------------- 3. the yank
   const YANK = 548, FRONT = 571, BACK = 524;
-  const run1 = makeLoco({ style: "run", dir: 1, t0: tRun, x0: SPOT, x1: YANK, v: 250, step: 38, easeStart: true, easeEnd: true, startFeet: [SPOT + 5, SPOT - 6], endFeet: [FRONT - YANK, BACK - YANK], hips: HIPS, lead: 1, sigma: .7 });
+  const RUN_END: readonly [number, number] = [YANK + 8, YANK - 8];
+  const run1 = makeLoco({ style: "run", dir: 1, t0: tRun, x0: SPOT, x1: YANK, v: 250, step: 38, easeStart: true, easeEnd: true, startFeet: [SPOT + 5, SPOT - 6], endFeet: [RUN_END[0] - YANK, RUN_END[1] - YANK], hips: HIPS, lead: 1, sigma: .7 });
   const tYank = settled(run1);
   const tHn1 = tYank + 330, tSlip = tHn1 + 1400, tRegrip = tSlip + 300, tHn2 = tRegrip + 220, tPop = tHn2 + 1050;
   const tImpact = tPop + 270, tLand = tPop + 480, tGetUp = tImpact + 1000, tStood = tGetUp + 620;
@@ -454,7 +480,8 @@ export function buildGag(stage: Stage) {
     const s: SceneState = { gabby: null, santa: null, santaInside: true, chair: false, treats: treats(t), dust: [], bang: null, zzz: null, streak: null, shadows: [], bubbles: [] };
     let g: GabbyPose | null = null;
     // ---- Gabby
-    if (t < tSpot) g = walkPose(walkIn, t, { head: "neutral", lean: 4, amp: 22 });
+    if (t < tWalk) g = null;
+    else if (t < tSpot) g = walkPose(walkIn, t, { head: "neutral", lean: 4, amp: 22 });
     else if (t < tSnap) {
       const w = walkPose(walkIn, tSpot, { head: "neutral", lean: 4, amp: 22 });
       g = t < tLook ? blend(w, spotStand, smooth(seg(t, tSpot, tLook))) : blend(spotStand, lookBack, smooth(seg(t, tLook, tLook + 160)), .2);
@@ -469,7 +496,13 @@ export function buildGag(stage: Stage) {
       if (t < tRun + 120) g = blend(shout, g, smooth((t - tRun) / 120));
     } else if (t < tPop) {
       const y = yankPose(t);
-      g = t < tYank + 180 ? blend(walkPose(run1, tYank, { head: "grit", lean: 14, amp: 48 }), y.pose, smooth((t - tYank) / 180)) : y.pose;
+      g = t < tYank + 260 ? blend(walkPose(run1, tYank, { head: "grit", lean: 14, amp: 48 }), y.pose, smooth(seg(t, tYank, tYank + 200))) : y.pose;
+      if (t < tYank + 260) {
+        // bracing: the front boot steps up onto the hearth's edge, then the back boot steps back and digs in
+        const s1 = smooth(seg(t, tYank, tYank + 170)), s2 = smooth(seg(t, tYank + 90, tYank + 260));
+        g.legN = { x: lerp(RUN_END[0], FRONT, s1), y: ANK - Math.sin(s1 * Math.PI) * 5, a: Math.sin(s1 * Math.PI) * 14 + 10 * s1 };
+        g.legF = { x: lerp(RUN_END[1], BACK, s2), y: ANK - Math.sin(s2 * Math.PI) * 3.5, a: Math.sin(s2 * Math.PI) * 8 };
+      }
     } else if (t < tGetUp) {
       g = track(t, [[tPop, popStart], [tPop + 130, airborne, easeOut], [tImpact, onRear, easeIn], [tImpact + 300, sitting, easeOut]]);
       if (t > tImpact + 300) {
@@ -521,11 +554,13 @@ export function buildGag(stage: Stage) {
       } else if (t < tHop) {
         const u = t - tStartle;
         const jolt = u < 100 ? easeOut(u / 100) : 1 - smooth(clamp((u - 100) / 250, 0, 1));
-        g = seated({ head: "shock", nod: -7, lean: -2, y: SEAT[1] - jolt * 7, sy: 1 + jolt * .07, sx: 1 - jolt * .04, armN: fk(40 - jolt * 10, 70 + jolt * 30), armF: fk(-18, 60), pager: Math.floor((t - tBeep) / 85) % 2 ? 1 : 0, hat: { on: true, lift: 8 * Math.sin(clamp(u / 330, 0, 1) * Math.PI), tilt: -10 * Math.sin(clamp(u / 330, 0, 1) * Math.PI) } });
+        // her hands fly up off her lap (quick, but not a jump cut)
+        const fling = easeOut(clamp(u / 80, 0, 1));
+        g = seated({ head: "shock", nod: lerp(17, -7, easeOut(clamp(u / 90, 0, 1))), lean: lerp(-10, -2, fling), y: SEAT[1] - jolt * 7, sy: 1 + jolt * .07, sx: 1 - jolt * .04, armN: fk(lerp(10, 40, fling) - jolt * 10, lerp(86, 70, fling) + jolt * 30), armF: fk(lerp(6, -18, fling), lerp(106, 60, fling)), pager: Math.floor((t - tBeep) / 85) % 2 ? 1 : 0, hat: { on: true, lift: 8 * Math.sin(clamp(u / 330, 0, 1) * Math.PI), tilt: -10 * Math.sin(clamp(u / 330, 0, 1) * Math.PI) } });
         s.bang = { ...offsetPt(headTop(g), -6, -10), s: u < 140 ? easeOut(u / 140) * 1.2 : u < 260 ? lerp(1.2, 1, (u - 140) / 120) : 1 };
       } else {
         const up = upPose;
-        const from = seated({ head: "yell", nod: -4, lean: -2, armN: fk(30, 60), armF: fk(-18, 60) });
+        const from = seated({ head: "yell", nod: -7, lean: -2, armN: fk(40, 70), armF: fk(-18, 60) });
         if (t < tUp) g = blend(from, up, easeInOut(seg(t, tHop, tUp)), 1);
         else if (t < tCrouch) g = { ...up, nod: wave(t - tUp, 500) * 2 };
         else {

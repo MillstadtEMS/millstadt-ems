@@ -3,9 +3,9 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { ALL_FILES, GAG_ART, ROOM_CUTS } from "./gabby-gag/art";
-import { GabbyRig } from "./gabby-gag/gabby";
+import { GabbyRig, handWorld, headTop, legKnee } from "./gabby-gag/gabby";
 import { Dust, MilkAndCookies, Streaks, drawBang } from "./gabby-gag/props";
-import { SantaRig } from "./gabby-gag/santa";
+import { SantaRig, santaHeadWorld } from "./gabby-gag/santa";
 import { buildGag, FLOOR, type Bubble, type SceneState, type Stage } from "./gabby-gag/script";
 import { el, f, img, show } from "./gabby-gag/svg";
 import styles from "./WinterGabbyGag.module.css";
@@ -232,6 +232,14 @@ export default function WinterGabbyGag({ aside, room, onDone, preview = false }:
       marks: () => gag.marks,
       stage: () => stage,
       state: (ms: number) => gag.sample(ms),
+      /** Key points in the world at a moment (for checking that nothing jumps between frames). */
+      probe: (ms: number) => {
+        const st = gag.sample(ms), g = st.gabby, sp = st.santa;
+        return {
+          g: g && { p: [g.x, g.y], dir: g.dir, head: headTop(g), hn: handWorld(g, true), hf: handWorld(g, false), fn: [g.legN.x, g.legN.y], ff: [g.legF.x, g.legF.y], kn: legKnee(g, true), kf: legKnee(g, false) },
+          s: sp && { p: [sp.x, sp.y], head: santaHeadWorld(sp), rot: sp.rot },
+        };
+      },
       seek: (ms: number) => { paused = ms; if (!frame) frame = requestAnimationFrame(tick); },
       pause: () => { paused = performance.now() - start; },
       play: (from?: number) => { start = performance.now() - (from ?? paused ?? 0); paused = null; finished = false; if (!frame) frame = requestAnimationFrame(tick); },
