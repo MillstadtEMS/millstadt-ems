@@ -9,7 +9,7 @@ import styles from "./WinterShakeChip.module.css";
 // The invitation to shake the phone at the crew on the lights. iPhones and iPads only deliver
 // motion after a tap, and a system prompt out of nowhere on the visitor's first tap would be
 // jarring, so a small neon chip asks instead: "Shake the lights". Tap it, allow motion, and it
-// answers "Now shake your phone!" until the first shake. Android needs no tap, so it just shows a
+// answers "Now shake your phone!" (or tablet) until the first shake. Android needs no tap, so it just shows a
 // passing hint once a visit. Touch devices during the snowball fight only (never in Time Out, with
 // reduced motion, on the staff pages, with the menu open, or once everyone has fallen). It sits
 // low on the screen, clear of the music player and the header, and never blocks anything but
@@ -73,6 +73,8 @@ export default function WinterShakeChip({ hidden }: { hidden: boolean }) {
   }, [leaving]);
 
   if (!body || !stage || hidden || timeout) return null;
+  // Tablets are shaken too: name the device in hand.
+  const device = Math.min(screen.width, screen.height) >= 600 ? "tablet" : "phone";
   const icon = (
     <svg className={styles.phone} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path className={styles.motion} d="M3.6 8.2c-1 1.1-1 2.5 0 3.6m-1.7-5.3c-2 2.1-2 5 0 7m18.5-5.3c1 1.1 1 2.5 0 3.6m1.7-5.3c2 2.1 2 5 0 7" />
@@ -86,7 +88,7 @@ export default function WinterShakeChip({ hidden }: { hidden: boolean }) {
       {stage === "ask" ? (
         <span className={styles.chip}>
           <button type="button" className={styles.ask} onClick={() => askForShake()}
-            aria-label="Shake the lights: allow motion, then shake your phone to rattle the crew hanging from the Christmas lights">
+            aria-label={`Shake the lights: allow motion, then shake your ${device} to rattle the crew hanging from the Christmas lights`}>
             {icon}<span className={styles.label}>Shake the lights</span>
           </button>
           <button type="button" className={styles.close} aria-label="No thanks"
@@ -96,7 +98,7 @@ export default function WinterShakeChip({ hidden }: { hidden: boolean }) {
         </span>
       ) : (
         <span className={`${styles.chip} ${styles.hint}`} role="status">
-          {icon}<span className={styles.label}>{stage === "go" ? "Now shake your phone!" : "Shake your phone!"}</span>
+          {icon}<span className={styles.label}>{stage === "go" ? `Now shake your ${device}!` : `Shake your ${device}!`}</span>
         </span>
       )}
     </div>,
