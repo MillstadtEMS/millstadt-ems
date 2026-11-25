@@ -815,7 +815,7 @@ const MYLIE_CHAOS = {
 };
 
 // Gabby on the roof: a sprite sheet of 36 frames, each 240 x 270 at the 720 px roof-ride animation's
-// scale (drawn at 1.4x that, so she stays crisp where she rides bigger) with her ground point
+// scale (drawn at 1.4x that, so she stays crisp at roof ride 2's bigger scale) with her ground point
 // (between the boots) at 120, 250. Frames 0-31 are her dance (a fist pump with a knee bounce, a wave
 // with a hip sway, a pump swaying side to side, a kick and its landing), 32-34 knocked off with a mad
 // face (the hit, then flailing arms and kicking legs), 35 her mad pose.
