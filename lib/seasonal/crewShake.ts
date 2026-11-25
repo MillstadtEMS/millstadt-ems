@@ -43,8 +43,9 @@ const state = {
   span: 0,
   primed: false,
   settle: 0,
-  // Running integral of the shake in screen space (m/s): readers take differences.
+  // Running integrals of the shake in screen space (m/s, right and up): readers take differences.
   vx: 0,
+  vy: 0,
   power: 0,
   load: 0,
   calm: 0,
@@ -179,6 +180,7 @@ function onMotion(event: DeviceMotionEvent) {
     return (value - state.low[axis]) * state.flip * fade;
   });
   state.vx += shake[0] * dt;
+  state.vy += shake[1] * dt;
   const power = shake[0] ** 2 + shake[1] ** 2 + shake[2] ** 2;
   state.power += (power - state.power) * (1 - Math.exp(-dt / .3));
 
@@ -268,6 +270,8 @@ export function shakeStrain(id: string) {
 
 /** The running sideways velocity of the shake (m/s, screen right positive); use differences. */
 export const shakeVelocity = () => state.vx;
+/** The running vertical velocity of the shake (m/s, screen up positive); use differences. */
+export const shakeLift = () => state.vy;
 /** True while the phone is moving or the crew are still strained. */
 export const shakeBusy = () => state.load > 0 || (state.last > 0 && performance.now() - state.last < 600 && state.power > .5);
 /** Wakes a swing loop on each motion reading. */

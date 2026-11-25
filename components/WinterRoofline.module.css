@@ -198,7 +198,7 @@
 .idle, .figure { transform-origin: 50% 5%; }
 .idle { animation: sway 5.4s ease-in-out infinite alternate; }
 .figure {
-  transform: rotate(var(--swing, 0deg));
+  transform: rotate(var(--swing, 0deg)) scale(1, var(--stretch, 1));
   filter: brightness(1.08) drop-shadow(0 1px 1px #fff4) drop-shadow(1px 4px 3px #07100fbd);
 }
 .torso { clip-path: polygon(0 0,100% 0,100% 55.3%,63% 55.3%,50% 56.8%,36% 56%,0 56%); }
