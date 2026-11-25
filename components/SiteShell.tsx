@@ -10,6 +10,7 @@ import WinterRoofline from "./WinterRoofline";
 import WinterSnowballAmbush from "./WinterSnowballAmbush";
 import WinterStreetParade from "./WinterStreetParade";
 import WinterMusicPlayer from "./WinterMusicPlayer";
+import WinterPullStation from "./WinterPullStation";
 import WinterSnowballFight from "./WinterSnowballFight";
 import WinterTimeoutButton from "./WinterTimeoutButton";
 import musicStyles from "./WinterMusicPlayer.module.css";
@@ -65,6 +66,8 @@ export default function SiteShell({
         {/* The top banner is a cozy living room; the music video plays on its old TV. */}
         <div className={musicStyles.stage}>
           <WinterMusicPlayer />
+          {/* The pull station easter egg on the living-room wall (Santa's ladder rescue). */}
+          {winter && <WinterPullStation />}
         </div>
         {children}
       </main>
