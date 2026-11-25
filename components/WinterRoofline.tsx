@@ -342,9 +342,10 @@ function HangingCrew({ chief, anchor, menuOpen, station = false }: { chief: Chie
   // Leaves the rescue registry when the figure leaves the lights for good.
   useEffect(() => {
     if (gone) return;
+    const figure = puppet.current;
     return () => {
       hangingFigures.delete(chief);
-      if (rescuing.delete(chief)) delete puppet.current?.dataset.rescue;
+      if (rescuing.delete(chief)) delete figure?.dataset.rescue;
     };
   }, [chief, gone]);
 
@@ -419,15 +420,19 @@ function HangingCrew({ chief, anchor, menuOpen, station = false }: { chief: Chie
       if (!figure || event.defaultPrevented || !event.detail || event.button !== 0 || isSnowballTimeout() ||
           offLights(chief) || Math.hypot(event.clientX - startX, event.clientY - startY) > tapSlop(startType)) return;
       // Page controls under a hanging figure keep priority, except the living-room pull station: a
-      // crew member hanging in front of it is the one being tapped (on phones it sits under Dylan).
-      if (!(event.target instanceof Element) || (event.target.closest(controls) && !event.target.closest("[data-pull-station]"))) return;
+      // crew member hanging in front of it is the one being tapped (on phones it stands in the narrow
+      // gap between Braeden and Dylan, so there only their costume right under the finger counts, not
+      // the finger's reach, or the station could never be pulled).
+      if (!(event.target instanceof Element)) return;
+      const station = Boolean(event.target.closest("[data-pull-station]"));
+      if (event.target.closest(controls) && !station) return;
       // Ask the browser which rotated/clipped costume pieces are at this point (and, for a finger,
       // a small ring around it). The overlay only participates in hit-testing during this
       // synchronous lookup, so page links, form fields, text selection and touch scrolling retain priority.
       figure.dataset.sampling = "";
       let visibleInk = false;
       try {
-        visibleInk = reachSamples(touchReach(startType)).some(([dx, dy]) => inkAt(event.clientX + dx, event.clientY + dy, mask));
+        visibleInk = reachSamples(station ? 0 : touchReach(startType)).some(([dx, dy]) => inkAt(event.clientX + dx, event.clientY + dy, mask));
       } finally { delete figure.dataset.sampling; }
       if (visibleInk) {
         event.preventDefault();
@@ -520,7 +525,8 @@ function HangingCrew({ chief, anchor, menuOpen, station = false }: { chief: Chie
       if (next < face && strain > [0, .19, .48, .72][face]) next = face;
       if (startled) next = Math.max(next, 1);
       if (calm || falling) next = 0;
-      if (next !== face && (now - faceAt > 300 || falling)) {
+      // (Santa's ladder rescue sets the face of whoever is on his rope.)
+      if (next !== face && !rescuing.has(chief) && (now - faceAt > 300 || falling)) {
         face = next; faceAt = now;
         if (face) figure.dataset.face = String(face);
         else delete figure.dataset.face;
@@ -684,7 +690,7 @@ function HangingCrew({ chief, anchor, menuOpen, station = false }: { chief: Chie
       document.removeEventListener("visibilitychange", rest);
       reduced.removeEventListener("change", rest);
     };
-  }, [anchor, anim, body, chief, gone, officer.fallback, officer.folder, officer.phase, officer.tempo]);
+  }, [anchor, anim, body, chief, gone, officer.fallback, officer.folder, officer.phase, officer.ratio, officer.tempo]);
 
   if (!body) return null;
   if (gone) return shot ? createPortal(<span role="status" className={styles.announcement}>{officer.name} fell from the Christmas lights!</span>, body) : null;

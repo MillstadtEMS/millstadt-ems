@@ -16,6 +16,9 @@
    base set visibility:visible themselves, which a hidden parent can't overrule, but opacity can
    (otherwise both flash at natural size in the top-left corner when the alarm is pulled). */
 .scene:not([data-ready][data-placed]) { opacity: 0; }
+.scene:not([data-ready][data-placed]) * { visibility: hidden !important; }
+/* Sizes before the script measures the screen (so nothing lays out at the art's natural size). */
+.scene { --s: .25; --sigma: .25; }
 .layer { position: absolute; display: block; max-width: none; pointer-events: none; }
 
 /* Ladder 3919 (sized in art px times --s by the script). */
@@ -104,11 +107,23 @@
 }
 .bubble[data-tail="left"]::after { left: 12px; }
 .bubble[data-tail="right"]::after { left: auto; right: 12px; }
+/* Beside the speaker: the tail points across at them. */
+.bubble[data-tail="east"]::after { left: auto; right: -7px; bottom: calc(50% - 6px); transform: rotate(-45deg); }
+.bubble[data-tail="west"]::after { left: -7px; bottom: calc(50% - 6px); transform: rotate(135deg); }
+.bubble[data-tail="none"]::after { display: none; }
 
 /* Time Out: everything holds still exactly where it is. */
 .scene[data-paused="true"] *, .scene[data-paused="true"] *::before, .scene[data-paused="true"] *::after { animation-play-state: paused !important; }
 @media (prefers-reduced-motion: reduce) {
-  .glow { animation: none !important; }
+  .glow, .forearm { animation: none !important; }
 }
 @media print { .scene, .talk { display: none; } }
 :global(html:not([data-mems-season="winter"])) :is(.scene, .talk) { display: none; }
+/* The thank-you wave: the forearm swings from the elbow. */
+.waver img { position: absolute; inset: 0; }
+.forearm { will-change: transform; }
+.waver[data-waving] .forearm { animation: wave .52s ease-in-out infinite alternate; }
+@keyframes wave {
+  from { rotate: -13deg; }
+  to { rotate: 9deg; }
+}
