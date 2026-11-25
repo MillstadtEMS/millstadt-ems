@@ -250,9 +250,10 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
   // Leaves the rescue registry when the figure leaves the lights for good.
   useEffect(() => {
     if (gone) return;
+    const figure = puppet.current;
     return () => {
       hangingFigures.delete(chief);
-      if (rescuing.delete(chief)) delete puppet.current?.dataset.rescue;
+      if (rescuing.delete(chief)) delete figure?.dataset.rescue;
     };
   }, [chief, gone]);
 
@@ -469,7 +470,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       document.removeEventListener("visibilitychange", rest);
       reduced.removeEventListener("change", rest);
     };
-  }, [anchor, body, chief, gone, officer.fallback, officer.folder, officer.phase, officer.tempo]);
+  }, [anchor, body, chief, gone, officer.fallback, officer.folder, officer.phase, officer.ratio, officer.tempo]);
 
   if (!body) return null;
   if (gone) return shot ? createPortal(<span role="status" className={styles.announcement}>{officer.name} fell from the Christmas lights!</span>, body) : null;

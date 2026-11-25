@@ -405,7 +405,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
         actor.handle = null;
       }
       const text = THANKS[actor.chief];
-      say(text, () => ({ left: actor.x - actor.width * .16, right: actor.x + actor.width * .16, top: actor.top + actor.height * .01, bottom: actor.top + actor.height * .2 }), [], text.length > 20 ? 3200 : 2300);
+      say(text, () => ({ left: actor.x - actor.width * .16, right: actor.x + actor.width * .16, top: actor.top + actor.height * .01, bottom: actor.top + actor.height * .2 }), [], still ? 1450 : text.length > 20 ? 3200 : 2300);
       actor.leave = now + (text.length > 20 ? 3300 : 2600);
     }
     function placeActor(actor: Actor, lift: number, squash: number) {
@@ -617,9 +617,15 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
           queue.push(() => moveLadder("aim", plan.ladder, plan.px, 900, plan.sx));
         }
       }
+      // Anyone knocked off the lights by a snowball meanwhile is skipped (the rope reels back up).
+      const here = () => hangingCrew().some(m => m.chief === plan.member.chief);
       queue.push(
-        () => dropRope(plan),
-        () => hangingCrew().some(m => m.chief === plan.member.chief) ? grab(plan) : null,
+        () => here() ? dropRope(plan) : null,
+        () => {
+          if (here()) return grab(plan);
+          if (rope) reeling = { t0: clock, from: rope.end.y };
+          return null;
+        },
         () => currentActor && currentActor.member.chief === plan.member.chief && !currentActor.landed ? lower(plan) : null,
         () => { nextRescue(false); return null; },
       );

@@ -43,7 +43,7 @@ export default function WinterPullStation() {
   const [reduced, setReduced] = useState(false);
   const [strobe, setStrobe] = useState(false);
   const [status, setStatus] = useState("");
-  const forceStill = useRef(false);
+  const [forceStill, setForceStill] = useState(false);
 
   // The room picture lives in the music player beside this marker; follow it as it comes and goes.
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function WinterPullStation() {
   useEffect(() => {
     const mode = previewMode();
     if (!mode || stage !== "armed") return;
-    forceStill.current = mode === "still";
+    setForceStill(mode === "still");
     const timer = window.setTimeout(pull, 900);
     return () => window.clearTimeout(timer);
   }, [stage, pull]);
@@ -182,6 +182,6 @@ export default function WinterPullStation() {
     <span ref={marker} hidden />
     {room && createPortal(station, room)}
     {body && createPortal(<span role="status" className={styles.announcement}>{status}</span>, body)}
-    {pulled && <WinterLadderRescue still={reduced || forceStill.current} onPhase={phase} />}
+    {pulled && <WinterLadderRescue still={reduced || forceStill} onPhase={phase} />}
   </>);
 }
