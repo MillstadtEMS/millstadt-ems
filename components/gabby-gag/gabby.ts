@@ -3,7 +3,7 @@
 // rig works in her own frame (facing right, the pelvis at the origin, y down, room px); facing left
 // mirrors the whole puppet, so she always faces the way she travels.
 
-import { ANKLE, G, GAG_ART, HEADS, type HeadId, type Pt } from "./art";
+import { G, GAG_ART, HEADS, type HeadId, type Pt } from "./art";
 import { clamp, deg } from "./math";
 import { drawHat } from "./props";
 import { el, f, img, pin, show } from "./svg";
@@ -82,16 +82,11 @@ const FARM = {
   open: { ...G.farm.open, len: Math.hypot(G.farm.open.hand[0] - G.farm.open.top[0], G.farm.open.hand[1] - G.farm.open.top[1]), intrinsic: boneAngle(G.farm.open.top, G.farm.open.hand) },
   fist: { ...G.farm.fist, len: Math.hypot(G.farm.fist.hand[0] - G.farm.fist.top[0], G.farm.fist.hand[1] - G.farm.fist.top[1]), intrinsic: boneAngle(G.farm.fist.top, G.farm.fist.hand) },
 };
-export const ARM_REACH = UARM_LEN + FARM.fist.len;
 
 // Torso anchors relative to the pelvis.
 const T = G.torso;
 const rel = (p: Pt): Pt => [p[0] - T.pelvis[0], p[1] - T.pelvis[1]];
 const NECK = rel(T.neck), SH_N = rel(T.shN), SH_F = rel(T.shF), HIP_N = rel(T.hipN), HIP_F = rel(T.hipF);
-/** Where a hand sits relative to the pelvis for a given torso lean (for scripting reaches). */
-export const shoulderAt = (near: boolean, lean: number) => rot(near ? SH_N : SH_F, lean);
-export const neckAt = (lean: number) => rot(NECK, lean);
-export const HIPS = { near: HIP_N, far: HIP_F };
 
 const PANTS = {
   near: { fill: "#18213a", lite: "#283456", ink: "#070a13", pocket: "#1d2846" },
@@ -302,5 +297,3 @@ const norm = (v: Pt): [number, number] => {
   return [v[0] / l, v[1] / l];
 };
 
-/** The ankle height above the floor for a flat boot (re-exported for scripting). */
-export const ANKLE_UP = ANKLE;

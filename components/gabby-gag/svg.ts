@@ -13,7 +13,7 @@ export function el<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<s
 /** A raster part drawn at w x h room px (its file may be 2x or 3x that). */
 export function img(href: string, w: number, h: number, parent?: Element): SVGImageElement {
   const node = el("image", { href, width: w, height: h, preserveAspectRatio: "none" }, parent);
-  node.setAttribute("decoding", "async");
+  node.setAttribute("decoding", "sync");
   return node;
 }
 
@@ -28,6 +28,3 @@ export function show(node: Element, on: boolean) {
   if ((node as SVGElement).style.display !== v) (node as SVGElement).style.display = v;
 }
 
-export function attr(node: Element, name: string, value: string) {
-  if (node.getAttribute(name) !== value) node.setAttribute(name, value);
-}

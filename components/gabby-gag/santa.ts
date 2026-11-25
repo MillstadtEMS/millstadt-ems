@@ -8,7 +8,7 @@ import { SANTA_HEAD, GAG_ART, type Pt } from "./art";
 import { solve2 } from "./gabby";
 import { drawHat } from "./props";
 import { clamp, lerp } from "./math";
-import { el, f, img, pin, show } from "./svg";
+import { el, f, img, show } from "./svg";
 
 export type SantaArm = { to: Pt; bend?: 1 | -1 } | { a: number; e: number };
 export type SantaLeg = { to: Pt; foot?: number; bend?: 1 | -1 } | { a: number; e: number; foot?: number };
@@ -213,8 +213,3 @@ export function santaHeadWorld(p: SantaPose): [number, number] {
   return [p.x + lx * c - ly * s, p.y + lx * s + ly * c];
 }
 
-export const SANTA_DIMS = { reachArm: UPPER + FORE, reachLeg: THIGH + SHIN, headK: HEAD_K };
-
-// Re-exported so the scene can draw Santa's spare parts with the same look.
-export const SANTA_COLORS = { RED, INK, FUR, FUR_INK };
-export { pin };

@@ -252,7 +252,9 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
   // The puppets (small cut-outs, about 0.2 MB) load once most of the crew are down.
   useEffect(() => { if ((almost || preview) && !reduced) void loadGag(); }, [almost, preview, reduced, loadGag]);
 
-  const endGag = useCallback(() => {
+  /** Ends the gag and frees the stage. Only a gag played to the end counts: one cut short (Time Out,
+   *  enlarging, a background tab, a new page) comes round again on a later turn. */
+  const endGag = useCallback((finished = false) => {
     const current = gagRun.current;
     if (!current) return;
     gagRun.current = null;
@@ -260,9 +262,10 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
     setGagOn(false);
     current.release();
     // She doesn't climb back on the lights (a refresh does that); she pops up from the sides now.
-    markGabbyDone();
+    if (finished) markGabbyDone();
     current.onEnd();
   }, []);
+  const finishGag = useCallback(() => endGag(true), [endGag]);
 
   /** Play the gag once on the fireplace stage; onEnd hands the stage to the next show. */
   const startGag = useCallback(async (onEnd: () => void) => {
@@ -342,7 +345,7 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
   useEffect(() => {
     if (gagRun.current && (timeout || expanded || !visible || reduced)) endGag();
   }, [timeout, expanded, visible, reduced, endGag]);
-  useEffect(() => endGag, [pathname, endGag]);
+  useEffect(() => () => endGag(), [pathname, endGag]);
 
   // The gag draws in the TV's own layer (so its speech bubbles can sit in front of the TV), over the room.
   useEffect(() => {
@@ -372,7 +375,7 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
         </span>}
       </>}
     </div>
-    {gagOn && aside && roomEl && <WinterGabbyGag aside={aside} room={roomEl} onDone={endGag} preview={preview} />}
+    {gagOn && aside && roomEl && <WinterGabbyGag aside={aside} room={roomEl} onDone={finishGag} preview={preview} />}
     {/* The chase crosses the whole room, so the turkey flies in the banner's own layer. */}
     {armed && layout && !expanded && <div className={styles.chase} aria-hidden="true">
       <span ref={bird} className={styles.bird}>

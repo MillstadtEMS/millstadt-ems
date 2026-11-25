@@ -248,7 +248,12 @@ export default function WinterGabbyGag({ aside, room, onDone, preview = false }:
     };
     syncFlicker();
     frame = requestAnimationFrame(tick);
-    const onResize = () => { measure(); sizeZ(); gag = buildGag(stage); sizes.clear(); pool.forEach(n => n.remove()); pool.clear(); };
+    const onResize = () => {
+      const was = stage;
+      measure();
+      if (Math.abs(was.left - stage.left) < .5 && Math.abs(was.right - stage.right) < .5 && Math.abs(was.k - stage.k) < .001 && Math.abs(was.top - stage.top) < .5) return;
+      sizeZ(); gag = buildGag(stage); sizes.clear(); pool.forEach(n => n.remove()); pool.clear();
+    };
     window.addEventListener("resize", onResize, { passive: true });
     const hooks = preview ? {
       duration: () => gag.duration,
