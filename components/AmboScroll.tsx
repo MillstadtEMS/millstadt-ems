@@ -874,7 +874,7 @@ const GABBY_ROOF: Record<1 | 2, RoofSpot> = {
   // over the corner. Knocked off, she topples over the corner and drops out of sight behind the cab;
   // she peeks back up clear of her neighbour's elbow, then hops back onto her corner. Her shadow sits
   // under the boot on the corner (the other is behind her neighbour).
-  2: roofSpot([256, 264], 1.4, {
+  2: roofSpot([256, 264], 1.5, {
     edge: [[874, 520], [212, 520], [212, 266]], fallEdge: [[874, 505], [0, 505]],
     fall: "off", mirror: true, under: true, peek: -.127, bubble: "left", shadow: [.44, .2],
   }),

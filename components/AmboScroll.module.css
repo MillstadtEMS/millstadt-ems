@@ -42,14 +42,15 @@
 /* ---- Winter convoy ------------------------------------------------------------------------- */
 
 /* The road sits where it always has; the lane reaches a little below it (--sink) so a crew member
-   dragged behind the sleigh isn't clipped, and is tall enough for the crew riding on the roof. */
+   dragged behind the sleigh isn't clipped, and is tall enough for the crew riding on the roof (and
+   Gabby's raised fists and hops on roof ride 2's front corner). */
 /* Big enough to read every detail of the trucks: up to 300px on desktops. */
 .winterLane {
   --truck-width: clamp(165px, 21vw, 300px);
   --sink: 14px;
   --road: calc(var(--sink) + 3px);
   bottom: calc(max(12px, env(safe-area-inset-bottom)) - var(--sink));
-  height: calc(var(--truck-width) * 1.04 + var(--sink));
+  height: calc(var(--truck-width) * 1.1 + var(--sink));
 }
 
 /* Reduced motion: a still picture in the page instead of the drive-by. */
