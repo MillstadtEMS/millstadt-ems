@@ -198,12 +198,15 @@
 .idle, .figure { transform-origin: 50% 5%; }
 .idle { animation: sway 5.4s ease-in-out infinite alternate; }
 .figure {
-  transform: rotate(var(--swing, 0deg));
+  transform: rotate(var(--swing, 0deg)) scale(1, var(--stretch, 1));
   filter: brightness(1.08) drop-shadow(0 1px 1px #fff4) drop-shadow(1px 4px 3px #07100fbd);
 }
 .torso { clip-path: polygon(0 0,100% 0,100% 55.3%,63% 55.3%,50% 56.8%,36% 56%,0 56%); }
 .torso img { position: absolute; inset: 0; display: block; height: 100%; width: 100%; }
-.alarmed { opacity: var(--panic, 0); }
+/* Jen and Kenny: the startled and straining faces are painted on the same body and swap in whole
+   (never blending into a double image). */
+.alarmed, .strained, .strainedHard { visibility: hidden; }
+.cradle[data-face="1"] .alarmed, .cradle[data-face="2"] .strained, .cradle[data-face="3"] .strainedHard { visibility: visible; }
 /* Kit crew: one whole figure (no cut-out legs). Calm and startled are different poses, so they
    swap instantly instead of blending, and the wider startled pose keeps its proportions. */
 /* Their art carries no light strand of its own: the fists grip the site's wire, so a falling
@@ -213,15 +216,55 @@
 .cradle[data-anim] { --release-mask: none; }
 .cradle[data-anim] .torso { clip-path: none; }
 .cradle[data-anim] .maskSource { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+/* A shaking phone swings her for real: her still (the hit-test copy) replaces the painted loop
+   until she's been still a moment, with one face at a time over it (worried, furious, beet red).
+   A hit goes back to her own fall art. */
+.shakePose { visibility: hidden; }
+.cradle[data-anim]:is([data-shaken], [data-face]):not([data-phase="hit"]) .animBase { visibility: hidden; }
+.cradle[data-anim]:is([data-shaken], [data-face]):not([data-phase="hit"]) .maskSource { opacity: 1; }
+.cradle[data-anim][data-face="1"]:not([data-phase="hit"]) .shakeWorried,
+.cradle[data-anim][data-face="2"]:not([data-phase="hit"]) .shakeMad,
+.cradle[data-anim][data-face="3"]:not([data-phase="hit"]) .shakeFurious { visibility: visible; }
 .kitPiece { position: absolute; inset: 0; display: block; }
 .cradle[data-kit] .torso { clip-path: none; }
 /* Each leg kicks from its own hip with the same springy motion as Jen's and Kenny's (Braeden's
    legs also stay turned in so they hang together). */
 .kitLeg { transform: rotate(calc(var(--leg-turn, 0deg) + var(--kick-left, 0deg) * .85)); }
 .kitLegRight { transform: rotate(calc(var(--leg-turn, 0deg) + var(--kick-right, 0deg) * .85)); }
-/* Scared: only the face changes, painted on the same body, so nobody grows or jumps. */
-.scaredFace { position: absolute; inset: 0; display: block; opacity: 0; transition: opacity .08s linear; }
-.cradle[data-kit][data-startled] .scaredFace, .cradle[data-kit][data-phase="hit"] .scaredFace { opacity: 1; }
+/* Scared: only the face changes, painted on the same body, so nobody grows or jumps. Straining
+   (a shaking phone): the glaring face, then the effort face (eyes squeezed shut, teeth gritted,
+   beet red), painted on the same body too.
+   Faces swap whole, never blending into a double image. */
+.scaredFace, .strainFace { position: absolute; inset: 0; display: block; visibility: hidden; }
+.cradle[data-kit][data-face="1"] .scaredFace, .cradle[data-kit][data-phase="hit"] .scaredFace,
+.cradle[data-kit][data-face="2"]:not([data-phase="hit"]) .strainFace:not(.strainHard),
+.cradle[data-kit][data-face="3"]:not([data-phase="hit"]) .strainHard { visibility: visible; }
+
+/* Sweat flying off a straining head: each drop beads up at a temple, flicks off nose-first (its
+   point trailing along its arc) and falls away. A drop a side while they strain, two a side once
+   they're beet red. */
+.sweat { position: absolute; inset: 0; pointer-events: none; visibility: hidden; }
+.cradle:is([data-face="2"], [data-face="3"]):not([data-phase="hit"]) .sweat { visibility: visible; }
+.bead {
+  position: absolute;
+  left: calc(var(--head-x) + var(--side) * var(--head-half));
+  top: var(--head-y);
+  width: calc(var(--crew-width) * .075);
+  min-width: 6px;
+  max-width: 16px;
+  aspect-ratio: 10 / 14;
+  overflow: visible;
+  opacity: 0;
+  translate: -50% -50%;
+}
+.cradle[data-face="2"]:not([data-phase="hit"]) .bead:nth-child(-n+2),
+.cradle[data-face="3"]:not([data-phase="hit"]) .bead { animation: sweatFly .74s var(--drop-delay) cubic-bezier(.25,.6,.55,1) infinite; }
+@keyframes sweatFly {
+  0% { opacity: 0; transform: translate(0, 0) rotate(calc(var(--side) * -122deg)) scale(.3); }
+  14% { opacity: 1; transform: translate(calc(var(--side) * var(--crew-width) * .035), calc(var(--crew-width) * -.022)) rotate(calc(var(--side) * -118deg)) scale(1); }
+  55% { opacity: 1; transform: translate(calc(var(--side) * var(--crew-width) * .11), calc(var(--crew-width) * -.036)) rotate(calc(var(--side) * -92deg)) scale(1); }
+  100% { opacity: 0; transform: translate(calc(var(--side) * var(--crew-width) * .19), calc(var(--crew-width) * .045)) rotate(calc(var(--side) * -58deg)) scale(.8); }
+}
 /* Each limb is its own composited layer holding a real image, so mobile Safari keeps painting it
    while the page scrolls and the pieces rotate every frame. */
 .legLeft, .legRight, .coal {
@@ -302,6 +345,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .idle, .glass, .bloom { animation: none; }
+  .sweat { display: none; }
   .hanger, .bloom { transition: none; }
 }
 
@@ -362,7 +406,8 @@
 .cradle[data-phase="hit"] .figure { animation: releaseCable 1ms .61s step-end forwards; }
 @keyframes releaseCable { to { clip-path: var(--release-mask); } }
 .cradle[data-phase="hit"] .drop { animation: loseGrip 1.44s linear both; }
-.cradle[data-phase="hit"] .alarmed { opacity: 1; }
+.cradle[data-phase="hit"] .alarmed { visibility: visible; }
+.cradle[data-phase="hit"] :is(.strained, .strainedHard) { visibility: hidden; }
 .cradle[data-phase="hit"] .aim { visibility: hidden; }
 @keyframes loseGrip {
   0%, 27% { transform: none; }
@@ -371,6 +416,42 @@
   43% { transform: none; animation-timing-function: cubic-bezier(.48,.04,.92,.59); }
   100% { transform: translate(var(--fall-side, max(-10vw,-96px)), 110vh) rotate(var(--fall-turn, -16deg)); }
 }
+/* Shaken off (a shaking phone wore out their grip): no snowball to wait for. Hanging by both
+   hands, the hand away from the swing slips first: they swing round under the fist that's still
+   holding (the drop pivots there), dangle a moment with a panicked face and the free arm flailing,
+   then that hand goes too and they fall the way they were swinging. */
+.cradle[data-phase="hit"][data-fall="slip"] .figure { animation-delay: 0s; }
+.cradle[data-phase="hit"][data-fall="slip"] .drop {
+  transform-origin: var(--grip-origin, 50% 5%);
+  animation: slipOneHand 1.36s linear both;
+}
+@keyframes slipOneHand {
+  0% { transform: none; animation-timing-function: cubic-bezier(.3,.6,.4,1); }
+  15% { transform: rotate(calc(var(--slip-dir, 1) * 17deg)); animation-timing-function: ease-in-out; }
+  24% { transform: rotate(calc(var(--slip-dir, 1) * 8deg)); animation-timing-function: ease-in-out; }
+  31% { transform: rotate(calc(var(--slip-dir, 1) * 13deg)); animation-timing-function: ease-in-out; }
+  38% { transform: rotate(calc(var(--slip-dir, 1) * 11deg)); animation-timing-function: cubic-bezier(.48,.04,.92,.59); }
+  100% { transform: translate(var(--fall-side, max(-10vw,-96px)), 110vh) rotate(calc(var(--slip-dir, 1) * 34deg)); }
+}
+/* Kenny hangs by one hand: it slips with a jolt, he catches it, swings on it a moment with his
+   panicked face, and drops. */
+.cradle[data-hanging-chief="kenny"][data-phase="hit"][data-fall="slip"] .drop {
+  transform-origin: 49.9% 4.75%;
+  animation-name: slipKenny;
+}
+@keyframes slipKenny {
+  0% { transform: none; animation-timing-function: cubic-bezier(.55,0,.9,.5); }
+  6% { transform: translateY(2.6%) rotate(-2deg); animation-timing-function: cubic-bezier(.2,.75,.35,1); }
+  12% { transform: translateY(-.4%) rotate(6deg); animation-timing-function: ease-in-out; }
+  20% { transform: rotate(-8deg); animation-timing-function: ease-in-out; }
+  28% { transform: rotate(5deg); animation-timing-function: ease-in-out; }
+  34% { transform: translateY(.5%) rotate(-3deg); animation-timing-function: ease-in; }
+  39% { transform: translateY(1.6%) rotate(-1deg); animation-timing-function: cubic-bezier(.48,.04,.92,.59); }
+  100% { transform: translate(var(--fall-side, max(-10vw,-96px)), 110vh) rotate(var(--fall-turn, -16deg)); }
+}
+/* Sweat already in the air finishes its flight (and keeps flying off them as they fall). */
+.cradle[data-phase="hit"][data-fall="slip"] .sweat { visibility: visible; }
+.cradle[data-phase="hit"][data-fall="slip"] .bead { animation: sweatFly .74s var(--drop-delay) cubic-bezier(.25,.6,.55,1) infinite; }
 
 .volley {
   position: fixed;
@@ -409,15 +490,50 @@
   10% { opacity: 1; }
   100% { opacity: 0; transform: rotate(var(--flake-angle)) translateX(clamp(12px,2vw,24px)) scale(.35); }
 }
+/* Santa's ladder rescue (WinterLadderRescue) moves the figure around its grip: no aim, no tie, and
+   Jen's and Kenny's painted strand stays behind on the lights. */
+.cradle[data-rescue] { transform-origin: 0 0; }
+.cradle[data-rescue] :is(.tether, .aim) { visibility: hidden; }
+.cradle[data-rescue] .figure { clip-path: var(--release-mask, none); }
 .announcement {
   position: absolute; width: 1px; height: 1px; overflow: hidden;
   clip-path: inset(50%); white-space: nowrap;
 }
 @media (prefers-reduced-motion: reduce) {
-  .cradle[data-phase="hit"] .drop { animation: stillDrop .6s .12s ease-out both; }
+  .cradle[data-phase="hit"] .drop, .cradle[data-phase="hit"][data-fall="slip"] .drop,
+  .cradle[data-hanging-chief="kenny"][data-phase="hit"][data-fall="slip"] .drop { animation: stillDrop .6s .12s ease-out both; }
   .snowball { animation: stillBall .58s ease-out both; }
   .powder { display: none; }
 }
 @keyframes stillDrop { 0%, 35% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes stillBall { 0%, 65% { opacity: 1; transform: translate(-50%,-50%); } 100% { opacity: 0; transform: translate(-50%,-50%); } }
 @media print { .volley { display: none; } }
+
+/* Hanging by both hands: the arms are their own layer (Officer.grip), each turned and stretched a
+   few percent by the swing loop so its fist stays on the wire while the body swings beneath it. The
+   body layers have the arms (and Jen's and Kenny's painted strand) lifted off by a mask, so at rest
+   the picture is exactly the painting. Until both have loaded, everyone swings whole as before. */
+.arms, .arm { position: absolute; inset: 0; display: block; pointer-events: none; }
+.cradle:not([data-grip]) .arms { display: none; }
+.arm { transform-origin: 0 0; will-change: transform; backface-visibility: hidden; }
+.arm img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.arm[data-arm="0"] { clip-path: inset(0 50% 0 0); }
+.arm[data-arm="1"] { clip-path: inset(0 0 0 50%); }
+.cradle[data-grip]:not([data-anim]) .gripBody,
+.cradle[data-grip][data-anim][data-shaken]:not([data-phase="hit"]) .gripBody {
+  -webkit-mask: var(--grip-holes) 0 0 / 100% 100% no-repeat;
+  mask: var(--grip-holes) 0 0 / 100% 100% no-repeat;
+}
+/* Gabby's own painted loop carries its own arms: hers come out only while a shake swings her (her
+   still beneath them), and her fall is her own painting again. */
+.cradle[data-anim]:not([data-shaken]) .arms, .cradle[data-anim][data-phase="hit"] .arms { display: none; }
+/* Their painted strand is already off: nothing is left behind on the lights when they let go. */
+.cradle[data-grip] { --release-mask: none; }
+
+/* The station TV's falls: a mad face painted onto the same hanging pose (only the face changes). */
+.madFace { position: absolute; inset: 0; display: block; opacity: 0; }
+.torso img.madFace { opacity: 0; }
+.cradle[data-mad][data-phase="hit"] .madFace,
+.cradle[data-mad][data-phase="hit"] .torso img.madFace { opacity: 1; }
+.cradle[data-kit][data-mad][data-phase="hit"] .scaredFace,
+.cradle[data-mad][data-phase="hit"] .alarmed { opacity: 0; }

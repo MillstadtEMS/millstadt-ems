@@ -1,0 +1,145 @@
+/* A little vertical neon sign in the same family as the Time Out sign: a green tube spelling
+   SHAKE down a dark board, hanging by two chains from a hook on the light string. It lives inside
+   the roofline (part of the header), so it never sits over the page: on a phone it hangs from the
+   clip between Gabby's and Jen's swags, in the narrow gap between their arms; with the music video
+   (tablets) it hangs from the open stretch of wire to the right of the TV. Only the board takes
+   taps, and the sign bows out as soon as the visitor scrolls into the page. */
+.sign {
+  --blade: clamp(21px, 6.4vw, 28px);
+  position: absolute;
+  left: calc(100% * 5 / 6);
+  top: -1px;
+  z-index: 3;
+  width: var(--blade);
+  translate: -50% 0;
+  pointer-events: none;
+}
+@media (min-width: 701px) {
+  .sign { --blade: clamp(26px, 3.3vw, 40px); }
+  /* The gap over the music video: hang right of the TV, from the wire's own curve there. */
+  :global(html:has([data-winter-video])) :global([data-winter-roof]:not([data-standalone])) .sign {
+    left: calc(50% + var(--video-gap, 311px) * .34);
+    top: 9px;
+  }
+  /* The enlarged player fills the gap: no room for the sign. */
+  :global(html:has([data-winter-video][data-expanded="true"])) .sign { display: none; }
+}
+
+/* It swings gently from its hook, drops in on arrival and falls off the wire at the first shake. */
+.swing {
+  display: block;
+  transform-origin: 50% 0;
+  animation: hangIn .62s cubic-bezier(.3,1.5,.5,1) both, sway 2.7s ease-in-out .62s infinite alternate;
+}
+.sign[data-leaving="fade"] .swing { animation: fadeAway .32s ease-in both; }
+.sign[data-leaving="drop"] .swing { animation: knockedOff .74s cubic-bezier(.45,0,.9,.6) both; }
+@keyframes hangIn {
+  from { opacity: 0; transform: translateY(-10px) rotate(-14deg); }
+  45% { opacity: 1; transform: translateY(1px) rotate(7deg); }
+  75% { transform: rotate(-3deg); }
+  to { opacity: 1; transform: rotate(0); }
+}
+@keyframes sway {
+  from { transform: rotate(-3.5deg); }
+  to { transform: rotate(3deg); }
+}
+@keyframes fadeAway {
+  to { opacity: 0; transform: translateY(-4px); }
+}
+@keyframes knockedOff {
+  0% { transform: rotate(0); }
+  14% { transform: translateY(-3px) rotate(-16deg); }
+  100% { opacity: 0; transform: translate(14px, 150px) rotate(64deg); }
+}
+
+.chains {
+  display: block;
+  width: 100%;
+  height: calc(var(--blade) * .72);
+  margin-bottom: -1px;
+  overflow: visible;
+}
+/* Little brass chains: dark links with a warm glint, so they read on the stripes and the wallpaper. */
+.chain { fill: none; stroke: #2a1d0c; stroke-width: 2.2; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.chainShine { fill: none; stroke: #e8c27a; stroke-width: 1.1; stroke-dasharray: 1.6 1.3; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.hook { fill: #d9b273; stroke: #3d2f1a; stroke-width: .8; vector-effect: non-scaling-stroke; }
+
+.board {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--blade) * .1);
+  width: 100%;
+  margin: 0;
+  padding: calc(var(--blade) * .16) 0 calc(var(--blade) * .2);
+  border: 1.5px solid #52ffa6;
+  border-radius: calc(var(--blade) * .3);
+  background: radial-gradient(ellipse at 50% 40%, #0d2c1d 0%, #08150f 70%, #060d0a 100%);
+  box-shadow: 0 0 2px #2bff8e, 0 0 9px #19e57e9e, inset 0 0 7px #19e57e52, 0 3px 9px #000b;
+  color: #eafff2;
+  font: 900 calc(var(--blade) * .46)/.98 system-ui, sans-serif;
+  text-transform: uppercase;
+  pointer-events: auto;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+/* A finger-sized target around the narrow board (it reaches a little past it on either side). */
+button.board::before { content: ""; position: absolute; inset: -6px -9px; }
+button.board:active { transform: translateY(1px); }
+button.board:focus-visible { outline: 2px solid #ffe7a6; outline-offset: 2px; }
+span.board { cursor: default; }
+
+.letters { display: flex; flex-direction: column; align-items: center; }
+.letters span {
+  display: block;
+  text-shadow: 0 0 1px #fff, 0 0 4px #3dff95, 0 0 9px #19e57e;
+  animation: chase 2.6s ease-in-out calc(var(--i) * .12s + .7s) infinite;
+}
+/* Allowed: the tube chases fast, calling for the shake. */
+.sign[data-stage="go"] .letters span { animation-duration: .9s; animation-delay: calc(var(--i) * .1s); }
+@keyframes chase {
+  0%, 30%, 100% { color: #eafff2; text-shadow: 0 0 1px #fff, 0 0 4px #3dff95, 0 0 9px #19e57e; }
+  12% { color: #fff; text-shadow: 0 0 2px #fff, 0 0 6px #b5ffd6, 0 0 14px #3dff95, 0 0 22px #19e57e; }
+}
+
+/* The phone at the top rocks side to side with motion marks, the way it's meant to be shaken. */
+.phone {
+  flex: none;
+  width: calc(var(--blade) * .66);
+  height: calc(var(--blade) * .66);
+  overflow: visible;
+  filter: drop-shadow(0 0 2px #3dff95);
+  transform-origin: 50% 80%;
+  animation: rattle 1.6s ease-in-out infinite;
+}
+.sign[data-stage="go"] .phone { animation-duration: .8s; }
+.body { fill: #0b2017; stroke: #c9ffe0; stroke-width: 1.7; }
+.screen { fill: #3dff95; opacity: .55; }
+.button { fill: #c9ffe0; }
+.motion { fill: none; stroke: #7dffbb; stroke-width: 1.6; stroke-linecap: round; animation: marks 1.6s ease-in-out infinite; }
+.sign[data-stage="go"] .motion { animation-duration: .8s; }
+@keyframes rattle {
+  0%, 46%, 100% { transform: rotate(0); }
+  50% { transform: rotate(-15deg); }
+  58% { transform: rotate(13deg); }
+  66% { transform: rotate(-10deg); }
+  74% { transform: rotate(7deg); }
+  82% { transform: rotate(-3deg); }
+}
+@keyframes marks {
+  0%, 46%, 90%, 100% { opacity: 0; }
+  52%, 80% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swing, .letters span, .phone, .motion { animation: none; }
+  .sign[data-leaving] .swing { animation: fadeAway .2s linear both; }
+}
+@media (forced-colors: active) {
+  .board { border-color: ButtonText; }
+  .letters span { text-shadow: none; }
+}
+@media print { .sign { display: none; } }
+:global(html:not([data-mems-season="winter"])) .sign { display: none; }

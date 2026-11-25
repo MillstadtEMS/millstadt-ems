@@ -1,0 +1,167 @@
+/* The pull station, its sign and the horn/strobe, in the living room's own pixels (760 x 200 room):
+   on the wall between the little TV (its stand ends at 436) and the painting by the mantel (518),
+   under the room's garland and above the chair rail (118), the handle at about shoulder height,
+   clear of the crew on the lights, the TV and the fridge. */
+.station {
+  position: absolute;
+  left: 448px;
+  top: 34px;
+  width: 56px;
+  height: 78px;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.art { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
+.artTall { display: none; }
+/* Phones: the crew hang over nearly all of the little room, but always leave a gap between Braeden and
+   Dylan (room x 424-468 on every phone width, the room and the crew both scale with the screen). The
+   tall station stands in it: horn, its sign on end, and the pull station below the chair rail, clear
+   of the TV stand's leg (x 434). */
+@media (max-width: 700px) {
+  .station { left: 432px; top: 27px; width: 36px; height: 138px; }
+  .artWide { display: none; }
+  .artTall { display: block; }
+}
+
+/* ---- The sign ---- */
+.word, .wordTall {
+  font: 900 7.6px/1 "Arial Black", Arial, Helvetica, sans-serif;
+  letter-spacing: .2px;
+  fill: #3f0f0d;
+  transition: fill .25s ease;
+}
+.wordTall { font-size: 12.6px; letter-spacing: 0; }
+.station[data-state="armed"] :is(.word, .wordTall) { fill: #ff4434; }
+.station[data-state="armed"] .words { animation: signBlink 1.35s steps(1, end) infinite; }
+.station:is([data-state="alarm"], [data-state="rescue"]) :is(.word, .wordTall) { fill: #ffd25e; }
+.station[data-state="alarm"] .words { animation: signBlink .62s steps(1, end) infinite; }
+@keyframes signBlink {
+  0% { opacity: 1; }
+  68% { opacity: .22; }
+}
+/* A soft red glow on the wallpaper around the lit sign. */
+.halo {
+  position: absolute;
+  left: -21px;
+  top: 0;
+  width: 98px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 70 50 / .55), rgb(255 40 30 / .18) 55%, transparent);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+.station[data-state="armed"] .halo { opacity: 1; animation: signBlink 1.35s steps(1, end) infinite; }
+@media (max-width: 700px) {
+  .halo { left: -18px; top: 8px; width: 72px; height: 96px; }
+  .flash { left: -41px; top: -40px; width: 118px; height: 94px; }
+}
+
+/* ---- The horn/strobe ---- */
+.hornWord { font: 900 4.4px/1 Arial, Helvetica, sans-serif; letter-spacing: .3px; fill: #fff6ea; }
+.lens { fill: #fffdf4; opacity: 0; }
+.flash {
+  position: absolute;
+  left: -43px;
+  top: -40px;
+  width: 142px;
+  height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 255 255 / .95), rgb(214 236 255 / .55) 28%, rgb(190 220 255 / .14) 62%, transparent);
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+/* The alarm: a bright strobe flash about one and a half times a second (well under the three a second
+   that can trouble photosensitive visitors). */
+.station[data-strobe] :is(.lens, .flash) { animation: strobe .7s linear infinite; }
+@keyframes strobe {
+  0%, 100% { opacity: 0; }
+  4% { opacity: 1; }
+  16% { opacity: .85; }
+  24% { opacity: 0; }
+}
+
+/* ---- The pull station ---- */
+.stationWord { font: 900 6.2px/1 Arial, Helvetica, sans-serif; letter-spacing: .4px; fill: #fff6ea; }
+.stationWordSmall { font: 900 4.7px/1 Arial, Helvetica, sans-serif; letter-spacing: .45px; fill: #fff6ea; }
+.handleWord { font: 900 3.6px/1 Arial, Helvetica, sans-serif; letter-spacing: .3px; fill: #b3140f; }
+.handle { transition: transform .2s cubic-bezier(.3, 1.6, .5, 1); }
+/* Pulled: the handle snaps down in its slot (it resets once the rescue is over). */
+.station:is([data-state="alarm"], [data-state="rescue"]) .handle { transform: translateY(4.6px); }
+.station[data-state="idle"] .art { filter: saturate(.85) brightness(.92); }
+
+/* The only thing in the room that takes a click or a tap, and only while the sign is lit. */
+.pull {
+  position: absolute;
+  left: 0;
+  top: 15px;
+  width: 56px;
+  height: 63px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.pull::before { content: ""; position: absolute; inset: -7px -9px; }
+@media (max-width: 700px) {
+  .pull { top: 12px; width: 36px; height: 126px; }
+  .pull::before { inset: -6px -10px; }
+}
+/* The keyboard's way in: hidden until focused, then a little red tag just under the pull station
+   (stage px: the station sits 98.75px right of the banner's centre, 34-112px down the room). */
+.keyboardPull {
+  position: absolute;
+  z-index: 3;
+  left: calc(50% + 98.75px + var(--room-shift, 0px));
+  top: 116px;
+  translate: -50% 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.keyboardPull:focus-visible {
+  width: auto;
+  height: auto;
+  padding: .3em .75em;
+  overflow: visible;
+  clip-path: none;
+  border: 2px solid #ffe7a3;
+  border-radius: 999px;
+  background: #b3140f;
+  color: #fff6ea;
+  font: 800 12px/1.2 system-ui, sans-serif;
+  letter-spacing: .02em;
+  box-shadow: 0 3px 10px rgb(0 0 0 / .5);
+  outline: 2px solid #1d4735;
+  outline-offset: 1px;
+  cursor: pointer;
+}
+@media (max-width: 700px) {
+  .keyboardPull { left: 50%; top: auto; bottom: 6px; }
+}
+
+.station[data-still] :is(.words, .halo, .lens, .flash) { animation: none; }
+.station[data-still][data-strobe] .lens { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .station :is(.words, .halo, .lens, .flash) { animation: none; }
+  .station[data-strobe] .lens { opacity: 1; }
+  .handle { transition: none; }
+}
+
+.announcement {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}
+@media print { .station { display: none; } }
+/* Time Out: the strobe and the sign hold still too. */
+:global(html[data-snowball-timeout]) .station :is(.words, .halo, .lens, .flash) { animation-play-state: paused; }

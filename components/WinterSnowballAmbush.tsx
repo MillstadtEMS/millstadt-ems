@@ -6,6 +6,7 @@ import { isSnowballTimeout, snowballTimeoutEvent } from "@/lib/seasonal/snowball
 import { isTesla, reachSamples, tapSlop, touchReach } from "@/lib/device/profile";
 import { claimPeople, isPersonOut } from "@/lib/seasonal/cast";
 import { gabbyDone } from "@/lib/seasonal/fireplaceScenes";
+import { laneClaimed, trackLaneOccupants, type LaneRect } from "@/lib/seasonal/driveLane";
 import { throwSnowball, visitorThrow, type Point } from "@/lib/seasonal/snowballFlight";
 import styles from "./WinterSnowballAmbush.module.css";
 
@@ -379,11 +380,25 @@ function runCast(env: Env) {
   const gap = () => forced ? 2600 : between(5000, 9000);
   // Gabby joins once her chimney gag is done (or when a preview asks for her).
   const free = (person: Person) => !gone.has(person) && !isPersonOut(person) && (person !== "gabby" || gabbyDone() || preview?.person === "gabby");
+  // The drive-by lane (lib/seasonal/driveLane): no act starts in a convoy's band while a pass is
+  // announced or under way, and anyone already standing there ducks away before it reaches them
+  // (asked from 1.7 s ahead, so a backflip already under way lands first).
+  const footprint = (box: Box, cut: number): LaneRect => ({ left: box.x - box.w * .14, right: box.x + box.w * 1.14, top: box.y, bottom: box.y + box.h - cut });
+  const lane = trackLaneOccupants({
+    list: () => [...actors.values()].map(a => ({ id: a.id, rect: footprint(a.box, a.cut), exitMs: 560, leaving: a.phase === "retreat" || a.phase === "bail" })),
+    leave: (id, urgent) => { const actor = actors.get(Number(id)); if (actor) makeWay(actor, urgent); },
+    grace: 1700,
+  });
+  /** A drive-by has the road along the floor: only an act that can pop out of a snowdrift above it. */
+  const roadTaken = () => { const floor = floorLine(document.documentElement.clientWidth, window.innerHeight); return laneClaimed({ top: floor - 40, bottom: floor }); };
+  /** When each actor's current phase began (a move in the air is finished before making way). */
+  const since = new WeakMap<Actor, number>();
 
   function commit() {
     if (disposed) return;
     env.render([...actors.values()].map(toView));
     aimSoon();
+    lane.refresh();
   }
   // Crosshair: while a mouse is over the painted character of someone who can be hit, their
   // snow target catches the pointer (showing the cursor); everywhere else the page works as usual.
@@ -397,6 +412,7 @@ function runCast(env: Env) {
   }
   const hover = (event: PointerEvent) => { aimX = event.clientX; aimY = event.clientY; aimType = event.pointerType; if (actors.size) aimSoon(); };
   function set(actor: Actor, patch: Partial<Actor>) {
+    if (patch.phase !== undefined && patch.phase !== actor.phase) since.set(actor, performance.now());
     Object.assign(actor, patch);
     if (actors.has(actor.id)) commit();
   }
@@ -512,13 +528,15 @@ function runCast(env: Env) {
     const top = Math.max(16, (nav?.bottom ?? 5) + 13, livingRoom ? livingRoom + 14 : 0);
     const floor = floorLine(vw, vh);
     const ratio = rig.W / rig.H, thrower = kind === "classic" || kind === "wave";
-    let edge = preview?.edge && edges.includes(preview.edge) ? preview.edge : pick(edges);
+    // While a drive-by has the road along the floor, a snowdrift up out of its way (if the act has one).
+    const road = edges.includes("drift") && laneClaimed({ top: floor - 40, bottom: floor });
+    let edge = preview?.edge && edges.includes(preview.edge) ? preview.edge : pick<Edge>(road ? ["drift"] : edges);
     // A thrower's snowball (held up in the wind-up, and where it leaves the hand) stays on screen.
     // The throwing hand is on the left of every picture, so a left-corner peek may only tuck a sliver
     // of itself past the edge (and none at all if the raised hand reaches past the picture).
     const balls = [rig.cocked, rig.ball].filter((p): p is XY => Boolean(p)), ballR = rig.ballR ?? 0;
     const maxHide = balls.length ? Math.min(...balls.map(([bx]) => (bx - ballR) / rig.W)) - .015 : 1;
-    if (edge === "corner-left" && maxHide < .03) edge = edges.find(e => e !== "corner-left") ?? edge;
+    if (edge === "corner-left" && maxHide < .03) edge = (road ? "drift" : edges.find(e => e !== "corner-left")) ?? edge;
     const ballsIn = (box: Box) => balls.every(([bx]) => {
       const x = box.x + bx / rig.W * box.w, r = ballR / rig.W * box.w;
       return x - r >= 4 && x + r <= vw - 4;
@@ -547,7 +565,8 @@ function runCast(env: Env) {
     }
     const avoid = [...actors.values()].map(a => a.box);
     const shownBottom = (box: Box) => thrower ? box.y + box.h * .86 : Math.min(floor, box.y + box.h);
-    const room = (box: Box, headroom = 0) => ballsIn(box) && clear(box, shownBottom(box), top + headroom, avoid);
+    const room = (box: Box, headroom = 0) => ballsIn(box) && clear(box, shownBottom(box), top + headroom, avoid) &&
+      !laneClaimed(footprint(box, Math.max(0, box.y + box.h - floor)));
     /** Nudge a box sideways so a raised snowball past the picture's edge is still on screen. */
     const inside = (x: number) => {
       if (!balls.length) return x;
@@ -638,6 +657,7 @@ function runCast(env: Env) {
       hits: 0, toughness: tough, hittable: false, incoming: false, girl: 1, bury: 0, holding: false,
       release: c.release, run: null, lead: null, companion: null,
     };
+    since.set(actor, performance.now());
     actors.set(actor.id, actor);
     commit();
     return actor;
@@ -646,7 +666,7 @@ function runCast(env: Env) {
   async function appear() {
     if (actors.size || disposed) return;
     if (guarded()) { schedule(850); return; }
-    const allowed: Kind[] | null = forced === "duet" ? ["serenade"] : forced ? [forced] : null;
+    const allowed: Kind[] | null = forced === "duet" ? ["serenade"] : forced ? [forced] : roadTaken() ? ["classic", "wave"] : null;
     const c = cast(allowed, lastPeople);
     if (!c) {
       if (castings.some(k => k.casts.some(people => people.every(p => !gone.has(p))))) schedule(forced ? 1000 : 4000);
@@ -896,6 +916,23 @@ function runCast(env: Env) {
     // only then are they gone (an empty heap never stands there, or vanishes).
     await wait(actor.bury > 0 ? (reducedMotion() ? 520 : 900) : slow ? 1080 : 520);
     remove(actor);
+  }
+  /** How long each move stays in the air (ms): rising, a throw (the crew's wind-up and release, a
+   *  peek's dip, raised snowball and hurl, the scoop that reloads), the backflip and its landing, a duck. */
+  const moveMs: Readonly<Record<string, number>> = {
+    rise: 720, throw: 640, toss: 460, windup: 480, rewind: 480, release: 380, scoop: 260, dip: 230, cock: 820, hurl: 460,
+    crouch: 440, flip: 1140, land: 320, duck: 880, indignant: 380, lob: 750,
+  };
+  /** Out of a drive-by's way: their usual retreat, once a move already under way has finished (unless time's up). */
+  function makeWay(actor: Actor, urgent: boolean) {
+    if (!actors.has(actor.id) || actor.phase === "retreat" || actor.phase === "bail") return;
+    const midMove = performance.now() - (since.get(actor) ?? 0) < (moveMs[actor.phase] ?? 0);
+    if (!urgent && (actor.incoming || midMove)) return;
+    actor.incoming = false;
+    // Flip-book acts (the strum, the backflip) show no single pose: they leave on a standing one.
+    const still = actor.frame || (actor.rig.frames.s1 ? "s1" : actor.rig.frames.f5 ? "f5" : Object.keys(actor.rig.frames)[0]);
+    set(actor, { hittable: false, frame: still, bubble: "", notes: "", mood: "", fast: false });
+    play(actor, wait => retreat(actor, wait));
   }
 
   function perform(actor: Actor) {
@@ -1151,7 +1188,7 @@ function runCast(env: Env) {
     shoot,
     stop() {
       disposed = true; stamp++; pause(); window.clearTimeout(scrollCheck); window.cancelAnimationFrame(aimFrame);
-      abort.abort(); dialogs.disconnect();
+      abort.abort(); dialogs.disconnect(); lane.stop();
       for (const actor of actors.values()) { halt(actor); actor.release(); }
       actors.clear();
     },

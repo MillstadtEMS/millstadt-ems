@@ -5,6 +5,8 @@ import { useEffect, useLayoutEffect, useRef, useState, useCallback, useSyncExter
 import { createPortal } from "react-dom";
 import { isSnowballTimeout, useSnowballTimeout } from "@/lib/seasonal/snowballTimeout";
 import { reachSamples, tapSlop, touchReach } from "@/lib/device/profile";
+import { SHAKE_GRAVITY, joinShake, shakeBusy, shakeLift, shakeStrain, shakeVelocity, shakeWanted, startShake, subscribeShake, subscribeShakeAccess } from "@/lib/seasonal/crewShake";
+import WinterShakeChip from "./WinterShakeChip";
 import styles from "./WinterRoofline.module.css";
 
 const bulbs = ["#ff463e", "#ffca48", "#48ef94", "#69caff", "#ff6956", "#ffdf8f", "#57dfab", "#ee80c7"];
@@ -26,36 +28,71 @@ type Officer = {
   // swings under the other leg stays with its own leg.
   legs?: { splitX: number; splitY: number; hipLeft: string; hipRight: string; turn: number; split?: Array<[number, number]> };
   // anim: a painted animation that swings on its own (Gabby): the hang loop, its still, and her
-  // furious face for the fall. A hit knocks her all the way off like everyone else.
-  anim?: { hang: string; still: string; mad: string };
+  // furious face for the fall. A hit knocks her all the way off like everyone else. Shaken, she
+  // goes from her still to worried to furious.
+  anim?: { hang: string; still: string; mad: string; worried: string };
+  // Shaking the phone: the straining face painted on the same body as they hang on for dear life,
+  // then, moments from letting go, the effort face (eyes squeezed shut, teeth gritted, beet red);
+  // and where their sweat flies from (head centre at eye level and half the face's width, percent
+  // of the art box).
+  strain: [string, string]; head: [number, number, number];
+  // How each one feels a shake, so the line ripples instead of swinging as one: their share of the
+  // push, how long it takes to reach them (ms), and how much their grip and the air slow them.
+  drive: [gain: number, lag: number, drag: number];
+  // grip: hanging by both hands, the arms are their own layer (with what the hat hides painted
+  // in) pinned at the fists, so the fists stay on the wire while the body swings beneath them;
+  // holes lifts the arms (and any painted light strand) off the body layers. Fists and shoulders
+  // in percent of the art box. Kenny, by one hand, swings about his own fist: only his strand comes off.
+  grip: { holes: string; arms?: string; fists?: [[number, number], [number, number]]; shoulders?: [[number, number], [number, number]] };
 };
 const kitCrew = (file: string) => `/images/winter/kit/crew/${file}.webp`;
+const shakeArt = (file: string) => `/images/winter/kit/shake/${file}.webp`;
+const gripArt = (name: string, fists: [[number, number], [number, number]], shoulders: [[number, number], [number, number]]) => ({
+  arms: shakeArt(`${name}-hanging-arms`), holes: `/images/winter/kit/shake/${name}-hanging-holes.png`, fists, shoulders,
+});
 const rigRatio = 477 / 716;
 const officers: Record<Chief, Officer> = {
-  jen: { name: "Jen", folder: "/images/winter/jen-tree/", ratio: rigRatio, fallback: .93, tempo: 5.5, phase: 0 },
-  kenny: { name: "Kenny", folder: "/images/winter/kenny/", ratio: rigRatio, fallback: .07, tempo: 4.9, phase: 2.2 },
+  jen: { name: "Jen", folder: "/images/winter/jen-tree/", ratio: rigRatio, fallback: .93, tempo: 5.5, phase: 0,
+    strain: [shakeArt("jen-hanging-strain"), shakeArt("jen-hanging-strain-hard")], head: [51.9, 23, 7.9], drive: [.95, 18, 1.05],
+    grip: gripArt("jen", [[39.41, 5.17], [59.12, 5.17]], [[37.11, 27.65], [62.26, 27.65]]) },
+  kenny: { name: "Kenny", folder: "/images/winter/kenny/", ratio: rigRatio, fallback: .07, tempo: 4.9, phase: 2.2,
+    strain: [shakeArt("kenny-hanging-effort"), shakeArt("kenny-hanging-effort-hard")], head: [63.3, 23.3, 8.7], drive: [1.28, 60, .85],
+    grip: { holes: "/images/winter/kit/shake/kenny-hanging-holes.png" } },
   kalista: { name: "Kalista", calm: kitCrew("kalista-hanging"), startled: kitCrew("kalista-hanging-scared"), ratio: 416 / 640, fallback: .3, tempo: 5.2, phase: 1.1,
+    strain: [shakeArt("kalista-hanging-strain"), shakeArt("kalista-hanging-effort-hard")], head: [50.4, 24.4, 8.1], drive: [.78, 90, 1.15],
+    grip: gripArt("kalista", [[38.46, 4.38], [60.58, 4.38]], [[35.82, 28.13], [63.46, 28.44]]),
     legs: { splitX: 55.5, splitY: 68.3, hipLeft: "46.5% 69.1%", hipRight: "66.8% 69.1%", turn: 0,
       split: [[55.5, 68.3], [56.7, 71.1], [56.4, 73.9], [55.3, 76.7], [53.5, 79.5], [51.4, 82.3], [48, 85.2], [45.1, 88], [44.8, 90.8], [44.4, 93.6], [44.4, 99.2]] } },
   braeden: { name: "Braeden", calm: kitCrew("braeden-hanging"), startled: kitCrew("braeden-hanging-scared"), ratio: 543 / 640, fallback: .43, tempo: 5.8, phase: 3, size: .8,
+    strain: [shakeArt("braeden-hanging-strain"), shakeArt("braeden-hanging-effort-hard")], head: [51.9, 26.6, 7.1], drive: [1.12, 110, .9],
+    grip: gripArt("braeden", [[26.15, 7.5], [73.66, 7.81]], [[30.39, 35], [67.77, 34.69]]),
     legs: { splitX: 53.8, splitY: 68.75, hipLeft: "47% 69.5%", hipRight: "59.9% 69.5%", turn: 38 } },
   dylan: { name: "Dylan", calm: kitCrew("dylan-hanging"), startled: kitCrew("dylan-hanging-scared"), ratio: 466 / 640, fallback: .57, tempo: 5, phase: .6,
+    strain: [shakeArt("dylan-hanging-strain"), shakeArt("dylan-hanging-effort-hard")], head: [51.8, 21.4, 7.2], drive: [.72, 30, 1.25],
+    grip: gripArt("dylan", [[39.06, 4.38], [61.16, 4.38]], [[37.12, 27.5], [63.95, 26.88]]),
     legs: { splitX: 56.3, splitY: 67.3, hipLeft: "48.7% 68.1%", hipRight: "69.1% 68.1%", turn: 0,
       split: [[56.3, 67.3], [58.5, 70.2], [60, 73], [58.6, 75.8], [55.9, 78.6], [54.1, 81.4], [51.2, 84.2], [47.1, 87], [46.2, 89.8], [46.5, 92.7], [45.2, 95.5], [45.2, 99.2]] } },
   // Gabby hangs where the medical director used to on the Christmas lights (he still pops up and
   // waves from behind the trucks everywhere else).
   gabby: { name: "Gabby", ratio: 600 / 720, fallback: .7, tempo: 4.7, phase: 2.6, anim: {
     hang: "/images/winter/kit/gabby/gabby-hang.webp", still: "/images/winter/kit/gabby/gabby-hang-still.webp",
-    mad: "/images/winter/kit/gabby/gabby-hang-mad.webp",
-  } },
+    mad: "/images/winter/kit/gabby/gabby-hang-mad.webp", worried: shakeArt("gabby-hang-worried"),
+  }, strain: ["/images/winter/kit/gabby/gabby-hang-mad.webp", shakeArt("gabby-hang-effort-hard")], head: [50.4, 24.7, 7.7], drive: [1.18, 75, .95],
+    grip: gripArt("gabby", [[39.11, 5.56], [58.67, 5.56]], [[37.78, 29.63], [62.67, 29.63]]) },
   "medical-director": { name: "Dr. Hsu", calm: kitCrew("medical-director-hanging"), startled: kitCrew("medical-director-hanging-scared"), ratio: 466 / 640, fallback: .7, tempo: 4.7, phase: 2.6,
+    strain: [kitCrew("medical-director-hanging-scared"), kitCrew("medical-director-hanging-scared")], head: [53.4, 23.8, 7.4], drive: [1, 40, 1], grip: { holes: "" },
     legs: { splitX: 54.2, splitY: 67.3, hipLeft: "47.7% 68.1%", hipRight: "66.3% 68.1%", turn: 0,
       split: [[54.2, 67.3], [56.3, 70.2], [58, 73], [57, 75.8], [55.2, 78.6], [53.9, 81.4], [51.5, 84.2], [48, 87], [46.8, 89.8], [47.5, 92.7], [46.6, 95.5], [45.8, 99.2]] } },
 };
 // This document's dismissals follow client navigation and reset on reload. Kept on the window so a
 // module reload (a code update while the page is open) doesn't put everyone back on the lights.
-const memory = globalThis as typeof globalThis & { __memsFallenChiefs?: Set<Chief>; __memsEveryoneDown?: boolean };
+const memory = globalThis as typeof globalThis & { __memsFallenChiefs?: Set<Chief>; __memsEveryoneDown?: boolean; __memsRescuedChiefs?: Set<Chief> };
 const fallenChiefs: Set<Chief> = (memory.__memsFallenChiefs ??= new Set<Chief>());
+// Santa's ladder rescue (WinterLadderRescue) takes people off the lights without the fall. They count
+// as down once the truck has gone (finishRescue), so the living room's easter eggs (Gabby's chimney
+// gag has its own Santa) wait until the rescue is over.
+const rescuedChiefs: Set<Chief> = (memory.__memsRescuedChiefs ??= new Set<Chief>());
+const offLights = (chief: Chief) => fallenChiefs.has(chief) || rescuedChiefs.has(chief);
 // Knocking everyone off the lights unlocks the living room's turkey heist (WinterFireplaceScenes).
 const crewListeners = new Set<() => void>();
 export function subscribeCrewDown(listener: () => void) {
@@ -70,8 +107,87 @@ const latchEveryoneDown = () => { everyoneDown = memory.__memsEveryoneDown = tru
 export const crewDownCount = () => fallenChiefs.size;
 export const allCrewDown = () => everyoneDown || lineup.every(chief => fallenChiefs.has(chief));
 
+// Each figure on the lights registers here for the rescue: its grip on the wire (viewport px), its
+// box, and a bounce for its string of lights when it lets go.
+type Hanging = { element: HTMLDivElement; x: number; y: number; width: number; height: number; retire: () => void; bounce: () => void };
+const hangingFigures = new Map<Chief, Hanging>();
+const rescuing = new Set<Chief>();
+const announce = () => crewListeners.forEach(listener => listener());
+export type CrewChief = Chief;
+/** Everyone is still on the lights (the living room's pull station lights up only then). */
+export const allCrewHanging = () => lineup.every(chief => !offLights(chief) && hangingFigures.has(chief));
+export type HangingCrewMember = { chief: Chief; name: string; x: number; y: number; width: number; height: number };
+/** The crew still on the lights, left to right: each grip on the wire and the figure's box size (viewport px). */
+export function hangingCrew(): HangingCrewMember[] {
+  return lineup.flatMap(chief => {
+    const figure = hangingFigures.get(chief);
+    if (!figure || offLights(chief)) return [];
+    return [{ chief, name: officers[chief].name, x: figure.x, y: figure.y, width: figure.width, height: figure.height }];
+  });
+}
+/** Takes a crew member off the lights without the fall (their string of lights bounces as they let
+ *  go). The caller moves their figure (a transform around the grip, `transform-origin: 0 0`) until it
+ *  calls release(); they count as down at finishRescue(). */
+export function rescueChief(chief: Chief): { element: HTMLDivElement; release: () => void } | null {
+  const figure = hangingFigures.get(chief);
+  if (!figure || offLights(chief) || rescuing.has(chief)) return null;
+  rescuing.add(chief);
+  rescuedChiefs.add(chief);
+  figure.element.dataset.rescue = "";
+  figure.bounce();
+  announce();
+  let released = false;
+  return { element: figure.element, release: () => { if (released) return; released = true; figure.retire(); } };
+}
+/** The rescue is over: everyone Santa took off the lights counts as down (unlocking the living room's
+ *  easter eggs once the whole crew is off). */
+export function finishRescue() {
+  if (!rescuedChiefs.size) return;
+  rescuedChiefs.forEach(chief => fallenChiefs.add(chief));
+  rescuedChiefs.clear();
+  if (lineup.every(chief => fallenChiefs.has(chief))) latchEveryoneDown();
+  announce();
+}
+
+// ── The station TV (/station) ────────────────────────────────────────────────────────────────────
+// Its attract loop drops the crew off the lights on its own (no visitor snowball, mad faces) and later
+// puts them back, each arriving along a path (the ladder) that the station supplies.
+export type HangingChief = Chief;
+/** Left to right, one per swag. */
+export const crewLineup = (): readonly Chief[] => lineup;
+export const chiefIsDown = (chief: Chief) => fallenChiefs.has(chief);
+const droppers = new Map<Chief, () => boolean>();
+const restorers = new Map<Chief, () => void>();
+const entrances = new Map<Chief, (cradle: HTMLElement) => void>();
+/** Station: the normal fall from the lights, with no visitor volley, and a mad face. False if already down. */
+export function dropChief(chief: Chief): boolean {
+  return droppers.get(chief)?.() ?? false;
+}
+/** Station: put one of the crew back on the lights. enter(cradle) runs as the figure is placed (before
+ *  it paints), so it can arrive along a path; the everyone-down latch clears so the loop can repeat. */
+export function restoreChief(chief: Chief, enter?: (cradle: HTMLElement) => void) {
+  everyoneDown = memory.__memsEveryoneDown = false;
+  if (!fallenChiefs.has(chief)) return;
+  fallenChiefs.delete(chief);
+  if (enter) entrances.set(chief, enter);
+  restorers.get(chief)?.();
+  crewListeners.forEach(listener => listener());
+}
+/** Station: everyone back on the lights at once (reduced motion, or leaving the station). */
+export function restoreCrew() {
+  for (const chief of lineup) restoreChief(chief);
+  everyoneDown = memory.__memsEveryoneDown = false;
+  crewListeners.forEach(listener => listener());
+}
+// Mad faces for the station's falls, painted onto each hanging pose (Gabby's own mad face is in her rig).
+const stationArt = (file: string) => `/images/winter/kit/station/${file}.webp`;
+const madFaces: Partial<Record<Chief, string>> = {
+  kenny: stationArt("kenny-hanging-mad"), jen: stationArt("jen-hanging-mad"), kalista: stationArt("kalista-hanging-mad"),
+  braeden: stationArt("braeden-hanging-mad"), dylan: stationArt("dylan-hanging-mad"),
+};
+
 /** Gabby's own painted swing, its still (reduced motion, Time Out), and her furious face as she falls. */
-function AnimRig({ anim, onMask, hit }: { anim: NonNullable<Officer["anim"]>; onMask: (image: HTMLImageElement) => void; hit: boolean }) {
+function AnimRig({ anim, onMask, hit, motion, hard }: { anim: NonNullable<Officer["anim"]>; onMask: (image: HTMLImageElement) => void; hit: boolean; motion: boolean; hard: string }) {
   const timeout = useSnowballTimeout();
   const [still, setStill] = useState(false);
   useEffect(() => {
@@ -83,13 +199,21 @@ function AnimRig({ anim, onMask, hit }: { anim: NonNullable<Officer["anim"]>; on
   }, []);
   const quiet = still || timeout;
   return (
-    <div className={styles.torso}>
-      <Image src={hit ? anim.mad : quiet ? anim.still : anim.hang} alt="" width={450} height={540} unoptimized loading="eager" />
+    <div className={`${styles.torso} ${styles.gripBody}`}>
+      <Image className={styles.animBase} src={hit ? anim.mad : quiet ? anim.still : anim.hang} alt="" width={450} height={540} unoptimized loading="eager" />
       {/* Ready for the moment she's hit. */}
       <link rel="preload" as="image" href={anim.mad} />
       {/* The still traces her outline for the snowball hit test. */}
       <Image className={styles.maskSource} src={anim.still} alt="" width={450} height={540} unoptimized loading="eager"
         onLoad={event => onMask(event.currentTarget)} />
+      {/* A shaken phone swings her for real, so her painted loop gives way to her still (the copy
+          above) with her faces over it, swapped crisply: worried, furious, then furious and beet red
+          as her grip goes. Loaded once someone means to shake; until a face arrives, the still. */}
+      {motion && !quiet && <>
+        <Image className={`${styles.shakePose} ${styles.shakeWorried}`} src={anim.worried} alt="" width={450} height={540} unoptimized loading="eager" data-shake-face="" />
+        <Image className={`${styles.shakePose} ${styles.shakeMad}`} src={anim.mad} alt="" width={450} height={540} unoptimized loading="eager" data-shake-face="" />
+        <Image className={`${styles.shakePose} ${styles.shakeFurious}`} src={hard} alt="" width={450} height={540} unoptimized loading="eager" data-shake-face="" />
+      </>}
       <HitMap />
     </div>
   );
@@ -120,15 +244,15 @@ function Limb({ src }: { src: string }) {
 // the hips, each leg kicking from its own hip as the page moves, and a still copy of the hips under
 // the legs so a kick never opens a hole. The figure never changes size: only the face changes, to
 // the freaked-out face painted onto the same body (…-hanging-scared.webp).
-function KitRig({ officer, onMask }: { officer: Officer; onMask: (image: HTMLImageElement) => void }) {
+function KitRig({ officer, onMask, motion, mad }: { officer: Officer; onMask: (image: HTMLImageElement) => void; motion: boolean; mad?: string }) {
   const { splitX, splitY, hipLeft, hipRight, turn, split = [[splitX, splitY], [splitX, 100]] } = officer.legs!;
   const seam = split.map(([x, y]) => `${x}% ${y}%`).join(",");
   const foot = split[split.length - 1][0];
   const leftLeg = `polygon(0 ${splitY}%,${seam},${foot}% 100%,0 100%)`;
   const rightLeg = `polygon(${seam},${foot}% 100%,100% 100%,100% ${splitY}%)`;
-  const art = (src: string, mask = false) => (
+  const art = (src: string, mask = false, face = false) => (
     <Image src={src} alt="" width={Math.round(640 * officer.ratio)} height={640} unoptimized loading="eager"
-      onLoad={mask ? event => onMask(event.currentTarget) : undefined} />
+      onLoad={mask ? event => onMask(event.currentTarget) : undefined} {...face ? { "data-shake-face": "" } : {}} />
   );
   return (
     <div className={styles.torso}>
@@ -141,9 +265,14 @@ function KitRig({ officer, onMask }: { officer: Officer; onMask: (image: HTMLIma
       <span className={`${styles.kitPiece} ${styles.kitLeg} ${styles.kitLegRight}`} style={{
         clipPath: rightLeg, transformOrigin: hipRight, "--leg-turn": `${turn}deg`,
       } as CSSProperties}>{art(officer.calm!)}</span>
-      <span className={styles.kitPiece} style={{ clipPath: `polygon(0 0,100% 0,100% ${splitY}%,0 ${splitY}%)` }}>
+      <span className={`${styles.kitPiece} ${styles.gripBody}`} style={{ clipPath: `polygon(0 0,100% 0,100% ${splitY}%,0 ${splitY}%)` }}>
         {art(officer.calm!, true)}
         <span className={styles.scaredFace}>{art(officer.startled!)}</span>
+        {motion && <>
+          <span className={styles.strainFace}>{art(officer.strain[0], false, true)}</span>
+          <span className={`${styles.strainFace} ${styles.strainHard}`}>{art(officer.strain[1], false, true)}</span>
+        </>}
+        {mad && <span className={styles.madFace}>{art(mad)}</span>}
       </span>
       {/* The painted belt and hips over the joins. */}
       <span className={styles.kitPiece} style={{ clipPath: `polygon(37% ${splitY - 6}%,66% ${splitY - 6}%,64% ${splitY + 3}%,39% ${splitY + 3}%)` }}>{art(officer.calm!)}</span>
@@ -152,23 +281,84 @@ function KitRig({ officer, onMask }: { officer: Officer; onMask: (image: HTMLIma
   );
 }
 
+// Sweat flying off a straining head: drops flick off both temples, drawn with the art's dark outline.
+function Sweat({ head }: { head: [number, number, number] }) {
+  return (
+    <span className={styles.sweat} aria-hidden="true" style={{ "--head-x": head[0] + "%", "--head-y": head[1] + "%", "--head-half": head[2] + "%" } as CSSProperties}>
+      {[-1, 1, -1, 1].map((side, i) => (
+        <svg key={i} className={styles.bead} viewBox="0 0 10 14" style={{ "--side": side, "--drop-delay": `${[0, .21, .43, .62][i]}s` } as CSSProperties}>
+          <path d="M5 .8C6.9 4.3 9.2 6.6 9.2 9.1a4.2 4.2 0 0 1-8.4 0C.8 6.6 3.1 4.3 5 .8Z" fill="#a9defb" stroke="#12303f" strokeWidth="1.2" />
+          <path d="M3.3 8.3c0-1 .5-1.9 1.2-2.6" fill="none" stroke="#fff" strokeWidth="1.1" strokeLinecap="round" />
+        </svg>
+      ))}
+    </span>
+  );
+}
+
+// Both arms as their own layer, pinned at the fists while the body swings (see Officer.grip): one
+// painting, each arm its own half, each moved by its own transform from the swing loop.
+function ArmsRig({ src, width, height }: { src: string; width: number; height: number }) {
+  return (
+    <span className={styles.arms} data-arms="" aria-hidden="true">
+      {[0, 1].map(side => (
+        <span key={side} className={styles.arm} data-arm={side}>
+          <Image src={src} alt="" width={width} height={height} unoptimized loading="eager" />
+        </span>
+      ))}
+    </span>
+  );
+}
+
 const noSubscription = () => () => {};
 const bodyOnClient = () => document.body;
 const noBody = () => null;
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const ease = (from: number, to: number, value: number) => { const t = clamp01((value - from) / (to - from)); return t * t * (3 - 2 * t); };
+// Their arms only let them swing so far: past a knee the swing stiffens smoothly toward a limit
+// instead of stopping dead against it. Hanging by both hands they tilt about 18° at most (the arms
+// stay on the wire and the legs swing on further); Kenny, by one hand, swings about his fist to 30°.
+const limitSwing = (deg: number, oneHand: boolean) => {
+  const knee = oneHand ? 20 : 11, span = oneHand ? 10 : 7;
+  const over = Math.abs(deg) - knee;
+  return over <= 0 ? deg : Math.sign(deg) * (knee + span * Math.tanh(over / span));
+};
+// A shaken string's push on the swing (after each person's own share of it).
+const SHAKE_PUSH = 1.25;
 
-function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObject<HTMLSpanElement | null>; menuOpen: boolean }) {
+function HangingCrew({ chief, anchor, menuOpen, station = false }: { chief: Chief; anchor: RefObject<HTMLSpanElement | null>; menuOpen: boolean; station?: boolean }) {
   const body = useSyncExternalStore<HTMLElement | null>(noSubscription, bodyOnClient, noBody);
   const puppet = useRef<HTMLDivElement>(null);
   const target = useRef<HTMLButtonElement>(null);
   const alpha = useRef<Uint8ClampedArray | null>(null);
   const retire = useRef<number | undefined>(undefined);
-  const [gone, setGone] = useState(() => fallenChiefs.has(chief));
-  const [shot, setShot] = useState<{ x: number; y: number } | null>(null);
+  const [gone, setGone] = useState(() => offLights(chief));
+  // slip: they lost their grip to a shaking phone (no snowball flies). volley false: the station TV
+  // dropped them on cue (no visitor snowball, a mad face).
+  const [shot, setShot] = useState<{ x: number; y: number; slip?: boolean; volley?: false } | null>(null);
+  // The swing a shaking phone drives, shared with the fall (they let go the way they swing).
+  const pendulum = useRef({ theta: 0, omega: 0 });
+  // The straining faces load only once someone means to shake (most visitors never will).
+  const motion = useSyncExternalStore(subscribeShakeAccess, shakeWanted, () => false);
   const officer = officers[chief];
   const anim = officer.anim;
-
-
+  // The arms come off the body only once their layer and the mask that lifts them have both
+  // loaded (a mask still loading would hide the whole body).
+  const [gripReady, setGripReady] = useState(false);
+  useEffect(() => {
+    const { holes, arms } = officers[chief].grip;
+    if (!holes) return;
+    let live = true;
+    const load = (src: string) => new Promise<void>((resolve, reject) => {
+      const image = new window.Image();
+      image.onload = () => resolve();
+      image.onerror = reject;
+      image.src = src;
+    });
+    Promise.all([load(holes), ...arms ? [load(arms)] : []])
+      .then(() => { if (live) setGripReady(true); }, () => { /* Without them they swing whole, as before. */ });
+    return () => { live = false; };
+  }, [chief]);
 
   function loadMask(image: HTMLImageElement) {
     const canvas = document.createElement("canvas");
@@ -185,12 +375,12 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     } catch { /* Browsers that restrict canvas reads use the body column below. */ }
   }
 
-  const throwSnowball = useCallback((x: number, y: number) => {
-    if (fallenChiefs.has(chief) || isSnowballTimeout()) return;
+  const throwSnowball = useCallback((x: number, y: number, slip = false) => {
+    if (offLights(chief) || isSnowballTimeout()) return;
     fallenChiefs.add(chief);
     if (lineup.every(c => fallenChiefs.has(c))) latchEveryoneDown();
     crewListeners.forEach(listener => listener());
-    setShot({ x, y });
+    setShot({ x, y, slip });
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     retire.current = window.setTimeout(() => setGone(true), still ? 750 : 1460);
     if (!still) anchor.current?.parentElement?.animate([
@@ -200,6 +390,72 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
   }, [anchor, chief]);
 
   useEffect(() => () => window.clearTimeout(retire.current), []);
+  // Leaves the rescue registry when the figure leaves the lights for good.
+  useEffect(() => {
+    if (gone) return;
+    const figure = puppet.current;
+    return () => {
+      hangingFigures.delete(chief);
+      if (rescuing.delete(chief)) delete figure?.dataset.rescue;
+    };
+  }, [chief, gone]);
+
+  // The straining faces decode as soon as they load, so their first appearance mid-shake is an
+  // instant swap instead of a hitch at the very moment the struggle starts.
+  useEffect(() => {
+    if (!motion) return;
+    puppet.current?.querySelectorAll<HTMLImageElement>("img[data-shake-face]").forEach(image => {
+      image.decode?.().catch(() => { /* Not decodable yet (or never): it simply decodes on first show. */ });
+    });
+  }, [motion]);
+
+  // Shaking the phone: when their grip gives out they let go the normal way, flying off toward the
+  // side they were swinging to. It counts as knocked off, like a snowball.
+  useEffect(() => {
+    if (shot || gone) return;
+    return joinShake(chief, () => {
+      const figure = puppet.current;
+      const box = figure?.querySelector("[data-snow-fighter]")?.getBoundingClientRect();
+      const left = pendulum.current.omega > 0;
+      figure?.style.setProperty("--fall-side", left ? "max(-10vw, -96px)" : "min(10vw, 96px)");
+      figure?.style.setProperty("--fall-turn", left ? "-16deg" : "17deg");
+      // Hanging by both hands, the one away from the swing slips first and they dangle a moment
+      // from the other, swinging round under that fist, before it goes too.
+      const fists = officers[chief].grip.fists;
+      if (figure && fists) {
+        const holding = left ? 0 : 1;
+        figure.dataset.loose = String(1 - holding);
+        figure.style.setProperty("--grip-origin", `${fists[holding][0]}% ${fists[holding][1]}%`);
+        figure.style.setProperty("--slip-dir", left ? "1" : "-1");
+      }
+      throwSnowball(box ? box.left + box.width / 2 : 0, box ? box.top + box.height * .3 : 0, true);
+    });
+  }, [chief, gone, shot, throwSnowball]);
+
+  // Station TV: drop off on cue (the same fall, no volley, a mad face) and come back when restored.
+  useEffect(() => {
+    if (!station) return;
+    droppers.set(chief, () => {
+      if (offLights(chief)) return false;
+      fallenChiefs.add(chief);
+      if (lineup.every(c => fallenChiefs.has(c))) latchEveryoneDown();
+      crewListeners.forEach(listener => listener());
+      setShot({ x: 0, y: 0, volley: false });
+      const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.clearTimeout(retire.current);
+      retire.current = window.setTimeout(() => setGone(true), still ? 750 : 1460);
+      return true;
+    });
+    restorers.set(chief, () => {
+      window.clearTimeout(retire.current);
+      setShot(null);
+      setGone(false);
+      // Still on screen (mid-fall): arrive from here; otherwise the placement effect runs it on remount.
+      const enter = entrances.get(chief);
+      if (enter && puppet.current) { entrances.delete(chief); enter(puppet.current); }
+    });
+    return () => { droppers.delete(chief); restorers.delete(chief); };
+  }, [chief, station]);
 
 
   useEffect(() => {
@@ -231,15 +487,21 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     function hit(event: MouseEvent) {
       const mask = alpha.current;
       if (!figure || event.defaultPrevented || !event.detail || event.button !== 0 || isSnowballTimeout() ||
-          fallenChiefs.has(chief) || Math.hypot(event.clientX - startX, event.clientY - startY) > tapSlop(startType)) return;
-      if (!(event.target instanceof Element) || event.target.closest(controls)) return;
+          offLights(chief) || Math.hypot(event.clientX - startX, event.clientY - startY) > tapSlop(startType)) return;
+      // Page controls under a hanging figure keep priority, except the living-room pull station: a
+      // crew member hanging in front of it is the one being tapped (on phones it stands in the narrow
+      // gap between Braeden and Dylan, so there only their costume right under the finger counts, not
+      // the finger's reach, or the station could never be pulled).
+      if (!(event.target instanceof Element)) return;
+      const station = Boolean(event.target.closest("[data-pull-station]"));
+      if (event.target.closest(controls) && !station) return;
       // Ask the browser which rotated/clipped costume pieces are at this point (and, for a finger,
       // a small ring around it). The overlay only participates in hit-testing during this
       // synchronous lookup, so page links, form fields, text selection and touch scrolling retain priority.
       figure.dataset.sampling = "";
       let visibleInk = false;
       try {
-        visibleInk = reachSamples(touchReach(startType)).some(([dx, dy]) => inkAt(event.clientX + dx, event.clientY + dy, mask));
+        visibleInk = reachSamples(station ? 0 : touchReach(startType)).some(([dx, dy]) => inkAt(event.clientX + dx, event.clientY + dy, mask));
       } finally { delete figure.dataset.sampling; }
       if (visibleInk) {
         event.preventDefault();
@@ -260,7 +522,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       hoverFrame = 0;
       const event = hoverAt;
       let on = false;
-      if (event && figure && !isSnowballTimeout() && !fallenChiefs.has(chief)) {
+      if (event && figure && !isSnowballTimeout() && !offLights(chief)) {
         const box = figure.querySelector("[data-snow-fighter]")?.getBoundingClientRect();
         if (box && event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom
             && !document.elementFromPoint(event.clientX, event.clientY)?.closest(controls)) {
@@ -300,30 +562,117 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     const scrollPositions = new WeakMap<Element, number>();
     let pageY = window.scrollY, lastInput = performance.now(), lastFrame = 0, raf = 0;
     let phase = officer.phase, energy = 0, expression = 0, sign = 1;
-    const kit = !officer.folder;
+    // A shaking phone (see crewShake): a real pendulum hung from the hands, its natural rate this
+    // person's own swing tempo. Jerk the phone and the string goes with it while the body lags.
+    const swing = pendulum.current;
+    const w0 = officer.tempo, reach = SHAKE_GRAVITY / (w0 * w0);
+    const [gain, lag, friction] = officer.drive, oneHand = chief === "kenny";
+    // Their own way of squirming as they struggle (a slow wriggle, a different pace for each).
+    const squirmRate = 9 + officer.phase * 3.1 % 5;
+    // lagV: the shake as it reaches this person (a moment late, each their own moment).
+    let lagV = shakeVelocity(), lastV = lagV, clock = officer.phase, kickPhase = officer.phase, legLag = 0, flail = 0;
+    // Shaken up and down, the body lags the string too: a jolt up stretches them from the hands, a
+    // drop squashes them, and they spring back (a few percent at most).
+    let lastLift = shakeLift(), stretch = 0, stretchRate = 0;
+    // Faces: 0 calm, 1 startled (a big swing, a hard scroll, a hit), 2 straining as the grip goes,
+    // 3 all-out effort (eyes squeezed shut, teeth gritted, beet red), moments from letting go.
+    let face = 0, faceAt = 0, startledUntil = 0, shaken = false, stillSince = 0, recentSwing = 0;
+    // Hanging by both hands (Officer.grip): the arms layer, pinned at the fists. Its art box is
+    // cached at measure time; hitAt marks when they let go.
+    const grip = officer.grip;
+    const arms = grip.arms ? [...figure.querySelectorAll<HTMLElement>("[data-arm]")] : [];
+    const artBox = figure.querySelector<HTMLElement>("[data-snow-fighter]");
+    let boxW = 0, boxH = 0, hitAt = 0;
+
+    // Each arm keeps its fist where the wire is (undoing the figure's own turn and stretch) and its
+    // shoulder on the body: a turn and a stretch of a few percent along the arm, its width kept.
+    // Letting go, the fist rides with the body instead; the hand that slipped first flails about
+    // its shoulder while they dangle from the other.
+    function placeArms(deg: number, st: number, now: number, falling: boolean) {
+      if (!falling) hitAt = 0;
+      else if (!hitAt) hitAt = now;
+      const t = hitAt ? (now - hitAt) / 1000 : 0;
+      const slip = figure!.dataset.fall === "slip", loose = Number(figure!.dataset.loose ?? -1);
+      const th = deg * Math.PI / 180, c = Math.cos(th), s = Math.sin(th);
+      const hx = boxW * .5, hy = boxH * .05;
+      for (let k = 0; k < 2; k++) {
+        const fx = boxW * grip.fists![k][0] / 100, fy = boxH * grip.fists![k][1] / 100;
+        const sx = boxW * grip.shoulders![k][0] / 100, sy = boxH * grip.shoulders![k][1] / 100;
+        const dx = fx - hx, dy = fy - hy;
+        const px = hx + c * dx + s * dy, py = hy + (-s * dx + c * dy) / st;
+        let hold = 1, wave = 0;
+        if (falling) {
+          if (slip && k === loose) { hold = 1 - ease(0, .07, t); wave = (k ? 1 : -1) * ease(0, .12, t) * (38 + 26 * Math.sin(t * 32.7)); }
+          else hold = 1 - ease(slip ? .46 : .58, slip ? .58 : .7, t);
+        }
+        const wr = wave * Math.PI / 180, wc = Math.cos(wr), ws = Math.sin(wr);
+        const qx = sx + wc * (fx - sx) - ws * (fy - sy), qy = sy + ws * (fx - sx) + wc * (fy - sy);
+        const tx = qx + (px - qx) * hold, ty = qy + (py - qy) * hold;
+        const ux = sx - fx, uy = sy - fy, vx = sx - tx, vy = sy - ty;
+        const lu = Math.hypot(ux, uy), lv = Math.hypot(vx, vy);
+        const aux = ux / lu, auy = uy / lu, avx = vx / lv, avy = vy / lv, along = lv / lu;
+        const m00 = along * avx * aux + avy * auy, m01 = along * avx * auy - avy * aux;
+        const m10 = along * avy * aux - avx * auy, m11 = along * avy * auy + avx * aux;
+        arms[k].style.transform = `matrix(${m00.toFixed(5)},${m10.toFixed(5)},${m01.toFixed(5)},${m11.toFixed(5)},${(tx - m00 * fx - m01 * fy).toFixed(2)},${(ty - m10 * fx - m11 * fy).toFixed(2)})`;
+      }
+    }
 
     // These transforms move only composited layers. Geometry is cached at
     // resize/header changes so the scroll handler never requests layout.
     function paint() {
       if (!figure) return;
-      figure.style.setProperty("--panic", reduced.matches ? "0" : Math.min(1, expression * 1.25).toFixed(3));
-      // Kit crew: calm and startled are different poses, so they swap (never blend), with a little
-      // hysteresis so the kick doesn't flicker.
-      if (kit) {
-        if (!reduced.matches && expression > .5) figure.dataset.startled = "";
-        else if (expression < .3) delete figure.dataset.startled;
+      const now = performance.now();
+      const calm = reduced.matches;
+      const falling = figure.dataset.phase === "hit";
+      const strain = calm || falling ? 0 : shakeStrain(chief);
+      // How far they've been swinging lately (not where the swing is this instant), so a face
+      // doesn't flicker each time the swing passes the bottom.
+      const swingDeg = recentSwing * 57.3;
+      // Calm and startled are different faces, so they swap (never blend), and a scare holds a
+      // moment. Gabby keeps her own painted swing on scroll.
+      if (swingDeg > 13 || (!anim && expression > .5)) startledUntil = now + 1100;
+      const startled = now < startledUntil;
+      let next = strain >= .8 ? 3 : strain >= .55 ? 2 : strain >= .25 ? 1 : 0;
+      // They only relax a step once they've clearly recovered.
+      if (next < face && strain > [0, .19, .48, .72][face]) next = face;
+      if (startled) next = Math.max(next, 1);
+      if (calm || falling) next = 0;
+      // (Santa's ladder rescue sets the face of whoever is on his rope.)
+      if (next !== face && !rescuing.has(chief) && (now - faceAt > 300 || falling || calm)) {
+        face = next; faceAt = now;
+        if (face) figure.dataset.face = String(face);
+        else delete figure.dataset.face;
       }
-      const swing = energy * (Math.sin(phase) * 9.8 + sign * 1.9);
-      // Kicks stay within what the cut-out hips can follow without the legs looking detached.
-      const kickLeft = energy * (Math.sin(phase * 1.31 + .5) * 11 + 7);
-      const kickRight = energy * (Math.sin(phase * 1.57 + 2) * 10 - 6);
-      figure.style.setProperty("--swing", swing.toFixed(2) + "deg");
-      figure.style.setProperty("--kick-left", kickLeft.toFixed(2) + "deg");
-      figure.style.setProperty("--kick-right", kickRight.toFixed(2) + "deg");
+      // Gabby: while the phone swings her, stills replace her painted loop (swapped crisply).
+      if (anim) {
+        if (swingDeg > 2.5 || strain > 0 || face) {
+          stillSince = now;
+          if (!shaken) { shaken = true; figure.dataset.shaken = ""; }
+        } else if (shaken && now - stillSince > 700) { shaken = false; delete figure.dataset.shaken; }
+      }
+      // Grip trembles that grow as the strain does (weaker once the phone is still).
+      const grip = ease(.45, 1, strain) * (shakeBusy() ? 1 : .55);
+      const tremble = grip * (Math.sin(clock * 71) * .7 + Math.sin(clock * 113 + 1.3) * .45 + Math.sin(clock * 47 + .4) * .3) * 1.15;
+      // Struggling, each wriggles their own way on top of the swing, so a line of strained people
+      // never moves as one.
+      const squirm = ease(.3, 1, strain) * (shakeBusy() ? 1 : .4)
+        * (Math.sin(clock * squirmRate + officer.phase * 2.3) * 3.2 + Math.sin(clock * squirmRate * 1.73 + officer.phase) * 1.4);
+      const turn = energy * (Math.sin(phase) * 9.8 + sign * 1.9) + swing.theta * 57.2958 + tremble + squirm;
+      // Kicks stay within what the cut-out hips can follow without the legs looking detached: the
+      // scroll's kick, the legs trailing the swing, and a frantic scissor kick as they struggle.
+      const kickLeft = energy * (Math.sin(phase * 1.31 + .5) * 11 + 7) + legLag + flail * (Math.sin(kickPhase) * 9 + 5);
+      const kickRight = energy * (Math.sin(phase * 1.57 + 2) * 10 - 6) + legLag + flail * (Math.sin(kickPhase + Math.PI) * 9 - 5);
+      const tilt = limitSwing(turn, oneHand), lengthen = 1 + .04 * Math.tanh(stretch / .04);
+      figure.style.setProperty("--swing", tilt.toFixed(2) + "deg");
+      figure.style.setProperty("--stretch", lengthen.toFixed(4));
+      if (arms.length === 2 && boxW) placeArms(tilt, lengthen, now, falling);
+      figure.style.setProperty("--kick-left", clamp(kickLeft, -6, 21).toFixed(2) + "deg");
+      figure.style.setProperty("--kick-right", clamp(kickRight, -21, 6).toFixed(2) + "deg");
     }
 
     function measure() {
-      if (!figure || !pin || !header) return;
+      // Santa's ladder rescue moves the figure now.
+      if (!figure || !pin || !header || rescuing.has(chief)) return;
       const pos = pin.getBoundingClientRect();
       const view = document.documentElement.clientWidth;
       const hidden = !pos.width || pos.top < 5 || getComputedStyle(header).visibility === "hidden";
@@ -332,21 +681,74 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       const y = hidden ? Math.max(24, figure.offsetWidth * .076) : pos.top;
       figure.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)`;
       figure.style.setProperty("--tie-opacity", hidden ? "1" : "0");
+      boxW = artBox?.offsetWidth ?? 0; boxH = artBox?.offsetHeight ?? 0;
       pageY = window.scrollY;
       paint();
       figure.dataset.ready = "";
+      const known = hangingFigures.has(chief);
+      hangingFigures.set(chief, {
+        element: figure, x, y, width: figure.offsetWidth, height: figure.offsetWidth / officer.ratio, retire: () => setGone(true),
+        bounce: () => pin.parentElement?.animate([
+          { transform: "translateY(0)" }, { transform: "translateY(-3px)" }, { transform: "translateY(1px)" }, { transform: "translateY(0)" },
+        ], { duration: 460, easing: "ease-out" }),
+      });
+      if (!known) announce();
     }
 
     function frame(now: number) {
       raf = 0;
-      if (document.hidden || reduced.matches) return;
+      if (document.hidden) return;
+      // Reduced motion switched on mid-swing: everyone back at rest with calm faces at once (the
+      // media query's change event can't be relied on while this loop keeps reading it).
+      if (reduced.matches) { rest(); return; }
       const dt = Math.min(.045, Math.max(.001, (now - (lastFrame || now - 16)) / 1000));
       lastFrame = now;
       energy *= Math.exp(-dt * 2.25);
       expression += (energy - expression) * (1 - Math.exp(-dt * (energy > expression ? 18 : 2.3)));
       phase += dt * (officer.tempo + 7.5 * energy);
-      if (energy < .008 && expression < .009) {
-        energy = expression = lastFrame = 0;
+      // The phone's sideways push since the last frame swings them (inertia: the string moves,
+      // the body trails), then gravity, friction and air bring them back. The push reaches each
+      // person a moment late and in their own measure, so six swings ripple along the lights.
+      // Once they've let go, nothing holds them: the shake stops pushing, the swing they had about
+      // their hands settles away, and the fall carries them off.
+      const falling = figure!.dataset.phase === "hit";
+      lagV += (shakeVelocity() - lagV) * (1 - Math.exp(-dt * 1000 / lag));
+      const push = falling ? 0 : clamp(lagV - lastV, -1.2, 1.2);
+      lastV = lagV;
+      const before = swing.omega;
+      swing.omega += gain * SHAKE_PUSH * push / reach * Math.cos(swing.theta);
+      // They settle within a few seconds once the shaking stops (at once in a Time Out).
+      const drag = (isSnowballTimeout() ? 3 : .95) * friction;
+      const steps = Math.ceil(dt / .008), step = dt / steps;
+      for (let i = 0; i < steps; i++) {
+        const t = swing.theta, w = swing.omega;
+        // Let go, the old swing about their hands relaxes away (the fall turns them now).
+        let alpha = falling ? -30 * t - 8 * w : -w0 * w0 * Math.sin(t) - drag * w - .1 * w * Math.abs(w);
+        const over = Math.abs(t) - .45;
+        if (over > 0 && !falling) alpha -= Math.sign(t) * over * 260 + w * 7;
+        swing.omega += alpha * step;
+        swing.theta += swing.omega * step;
+      }
+      recentSwing = Math.max(Math.abs(swing.theta), recentSwing * Math.exp(-dt / .9));
+      const lift = shakeLift();
+      if (!falling) stretchRate += clamp(lift - lastLift, -1.2, 1.2) * 1.1 * gain;
+      lastLift = lift;
+      for (let i = 0; i < steps; i++) {
+        stretchRate += (-260 * stretch - 9 * stretchRate) * step;
+        stretch += stretchRate * step;
+      }
+      // The legs hang from the hips, so they trail the body's swing a moment behind.
+      legLag += (clamp((before - swing.omega) / dt * .05, -9, 9) - legLag) * (1 - Math.exp(-dt * 12));
+      // Struggling legs: they kick faster and wider as the strain grows, and flail on the way down.
+      const strain = falling ? 0 : shakeStrain(chief);
+      const target = falling ? (figure!.dataset.fall === "slip" ? 1 : 0) : ease(.25, 1, strain);
+      flail += (target - flail) * (1 - Math.exp(-dt * 6));
+      kickPhase += dt * Math.PI * 2 * (2.1 + 2.7 * flail);
+      clock += dt;
+      if (energy < .008 && expression < .009 && Math.abs(swing.theta) < .003 && Math.abs(swing.omega) < .02
+          && Math.abs(legLag) < .05 && flail < .01 && Math.abs(stretch) < .002 && Math.abs(stretchRate) < .02 && !face && !shakeBusy() && !falling) {
+        energy = expression = lastFrame = legLag = flail = recentSwing = stretch = stretchRate = 0;
+        swing.theta = swing.omega = 0;
         paint(); return;
       }
       paint();
@@ -359,7 +761,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       const dy = y - (scroller ? scrollPositions.get(scroller) ?? 0 : pageY);
       if (scroller) scrollPositions.set(scroller, y);
       else pageY = y;
-      if (Math.abs(dy) <= .1 || reduced.matches || document.hidden) return;
+      if (Math.abs(dy) <= .1 || reduced.matches || document.hidden || rescuing.has(chief)) return;
       const now = performance.now();
       const elapsed = Math.max(12, Math.min(65, now - lastInput));
       lastInput = now;
@@ -369,12 +771,17 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       if (!raf) raf = requestAnimationFrame(frame);
     }
     function rest() {
-      cancelAnimationFrame(raf); raf = energy = expression = lastFrame = 0;
+      cancelAnimationFrame(raf); raf = energy = expression = lastFrame = legLag = flail = stretch = stretchRate = 0;
+      swing.theta = swing.omega = recentSwing = 0; lagV = lastV = shakeVelocity(); lastLift = shakeLift(); startledUntil = 0;
       pageY = window.scrollY; paint();
     }
+    // Each motion reading wakes the swing.
+    const unshake = subscribeShake(() => {
+      if (!raf && !document.hidden && !reduced.matches) raf = requestAnimationFrame(frame);
+    });
     // A snowball from the site-wide fight: a hard swing and the startled face.
     function struck(event: Event) {
-      if (reduced.matches || document.hidden) return;
+      if (reduced.matches || document.hidden || rescuing.has(chief)) return;
       const from = (event as CustomEvent<{ from?: { x: number } }>).detail?.from;
       const box = figure!.getBoundingClientRect();
       sign = from && from.x > box.left + box.width / 2 ? -1 : 1;
@@ -388,6 +795,11 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     if (pin.parentElement) sizing.observe(pin.parentElement);
     const changing = new MutationObserver(measure);
     changing.observe(header, { attributes: true, attributeFilter: ["class", "style", "hidden", "aria-hidden"] });
+    // Letting go (a snowball or a slipping grip) keeps the loop running, so the arms follow the fall.
+    const letting = new MutationObserver(() => {
+      if (!raf && figure.dataset.phase === "hit" && !document.hidden && !reduced.matches) raf = requestAnimationFrame(frame);
+    });
+    letting.observe(figure, { attributes: true, attributeFilter: ["data-phase"] });
     header.addEventListener("transitionend", measure);
     document.addEventListener("scroll", scroll, { passive: true, capture: true });
     window.addEventListener("resize", measure, { passive: true });
@@ -395,8 +807,11 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     reduced.addEventListener("change", rest);
     figure.addEventListener("mems:snow-hit", struck);
     measure();
+    // Station: a figure put back on the lights arrives along the station's path (the ladder).
+    const enter = entrances.get(chief);
+    if (enter) { entrances.delete(chief); enter(figure); }
     return () => {
-      sizing.disconnect(); changing.disconnect();
+      sizing.disconnect(); changing.disconnect(); letting.disconnect(); unshake();
       figure.removeEventListener("mems:snow-hit", struck);
       cancelAnimationFrame(raf);
       header.removeEventListener("transitionend", measure);
@@ -405,15 +820,17 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       document.removeEventListener("visibilitychange", rest);
       reduced.removeEventListener("change", rest);
     };
-  }, [anchor, body, chief, gone, officer.fallback, officer.folder, officer.phase, officer.tempo]);
+  }, [anchor, anim, body, chief, gone, officer.drive, officer.fallback, officer.folder, officer.grip, officer.phase, officer.ratio, officer.tempo]);
 
   if (!body) return null;
   if (gone) return shot ? createPortal(<span role="status" className={styles.announcement}>{officer.name} fell from the Christmas lights!</span>, body) : null;
   const kit = !officer.folder && !anim;
   return createPortal(<>
     <div ref={puppet} className={styles.cradle} data-hanging-chief={chief} data-phase={shot ? "hit" : "hanging"}
-      data-menu-open={menuOpen} data-kit={kit || undefined} data-anim={anim ? "" : undefined}
-      style={{ "--hang-ratio": String(officer.ratio), "--hang-scale": String((officer.ratio / rigRatio) * (officer.size ?? 1)) } as CSSProperties}>
+      data-fall={shot?.slip ? "slip" : undefined} data-mad={shot?.volley === false || undefined}
+      data-menu-open={menuOpen} data-kit={kit || undefined} data-anim={anim ? "" : undefined} data-grip={gripReady || undefined}
+      style={{ "--hang-ratio": String(officer.ratio), "--hang-scale": String((officer.ratio / rigRatio) * (officer.size ?? 1)),
+        ...officer.grip.holes ? { "--grip-holes": `url(${officer.grip.holes})` } : {} } as CSSProperties}>
       <svg className={styles.tether} viewBox="0 0 120 32" preserveAspectRatio="none" aria-hidden="true">
         <path d="M0 30C30 32 71 24 119 2" fill="none" stroke="#122a20" strokeWidth="3" />
         <path d="M0 29C30 31 71 23 119 1" fill="none" stroke="#9b9a65" strokeWidth=".75" />
@@ -422,19 +839,27 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
         <ellipse cx="73" cy="25" rx="2.3" ry="3.4" fill="#ea7061" />
       </svg>
       <div className={styles.hanger}><div className={styles.drop}><div className={styles.idle}><div className={styles.figure} data-snow-fighter={chief} data-snow-role="target">
-        {anim ? <AnimRig anim={anim} onMask={loadMask} hit={Boolean(shot)} /> : kit ? <KitRig officer={officer} onMask={loadMask} /> : <>
+        {officer.grip.arms && <ArmsRig src={officer.grip.arms} width={anim ? 450 : officer.folder ? 477 : Math.round(640 * officer.ratio)} height={anim ? 540 : officer.folder ? 716 : 640} />}
+        {anim ? <AnimRig anim={anim} onMask={loadMask} hit={Boolean(shot)} motion={motion} hard={officer.strain[1]} />
+          : kit ? <KitRig officer={officer} onMask={loadMask} motion={motion} mad={station ? madFaces[chief] : undefined} /> : <>
           {/* A still copy of the painted hips under the swinging legs: a big kick can't open a gap at the hip. */}
           <span className={styles.hips}><Limb src={officer.folder + "hanging.webp"} /></span>
           <span className={styles.legLeft}><Limb src={officer.folder + "hanging.webp"} /><HitMap /></span>
           <span className={styles.legRight}><Limb src={officer.folder + "hanging.webp"} /><HitMap /></span>
           {chief === "kenny" && <span className={styles.coal}><Limb src={officer.folder + "hanging.webp"} /><HitMap /></span>}
-          <div className={styles.torso}>
+          <div className={`${styles.torso} ${styles.gripBody}`}>
             <Image src={officer.folder + "hanging.webp"} alt="" width={477} height={716} unoptimized
               loading="eager" onLoad={event => loadMask(event.currentTarget)} />
             <Image src={officer.folder + "hanging-startled.webp"} alt="" width={477} height={716} className={styles.alarmed} unoptimized loading="eager" />
+            {motion && <>
+              <Image src={officer.strain[0]} alt="" width={477} height={716} className={styles.strained} unoptimized loading="eager" data-shake-face="" />
+              <Image src={officer.strain[1]} alt="" width={477} height={716} className={styles.strainedHard} unoptimized loading="eager" data-shake-face="" />
+            </>}
+            {station && madFaces[chief] && <Image src={madFaces[chief]!} alt="" width={477} height={716} className={styles.madFace} unoptimized loading="eager" />}
             <HitMap />
           </div>
         </>}
+        {motion && <Sweat head={officer.head} />}
         <button type="button" ref={target} className={styles.aim} aria-label={`Throw a snowball at ${officer.name}`}
           aria-disabled={Boolean(shot)} onClick={() => {
             const box = target.current?.getBoundingClientRect();
@@ -442,7 +867,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
           }} />
       </div></div></div></div>
     </div>
-    {shot && <div className={styles.volley} data-roof-snowball={chief} aria-hidden="true" style={{
+    {shot && !shot.slip && shot.volley !== false && <div className={styles.volley} data-roof-snowball={chief} aria-hidden="true" style={{
       left: shot.x, top: shot.y,
       "--launch-x": `${window.innerWidth / 2 - shot.x}px`,
       "--launch-y": `${Math.max(120, window.innerHeight * .87 - shot.y)}px`,
@@ -451,19 +876,29 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
         {Array.from({ length: 8 }, (_, i) => <i key={i} style={{ "--flake-angle": `${i * 45}deg` } as CSSProperties} />)}
       </span>
     </div>}
-    <span role="status" className={styles.announcement}>{shot ? `Snowball hit! ${officer.name} is falling from the lights.` : ""}</span>
+    <span role="status" className={styles.announcement}>{shot ? shot.slip ? `${officer.name} lost their grip and is falling from the lights!`
+      : shot.volley === false ? `${officer.name} lost their grip on the lights!`
+      : `Snowball hit! ${officer.name} is falling from the lights.` : ""}</span>
   </>, body,
   );
 }
 
 // One person per swag of lights, left to right.
 const lineup: Chief[] = ["kenny", "kalista", "braeden", "dylan", "gabby", "jen"];
+// (Anyone Santa has taken down off the ladder is off the lights too.)
+const someoneHanging = () => lineup.some(chief => !offLights(chief));
 
-export default function WinterRoofline({ menuOpen = false, standalone = false }: { menuOpen?: boolean; standalone?: boolean }) {
+export default function WinterRoofline({ menuOpen = false, standalone = false, station = false }: { menuOpen?: boolean; standalone?: boolean; station?: boolean }) {
   const roof = useRef<HTMLDivElement>(null);
   const pin0 = useRef<HTMLSpanElement>(null), pin1 = useRef<HTMLSpanElement>(null), pin2 = useRef<HTMLSpanElement>(null);
   const pin3 = useRef<HTMLSpanElement>(null), pin4 = useRef<HTMLSpanElement>(null), pin5 = useRef<HTMLSpanElement>(null);
   const pins = [pin0, pin1, pin2, pin3, pin4, pin5];
+  const crewHanging = useSyncExternalStore(subscribeCrewDown, someoneHanging, () => true);
+
+  // Phones and tablets: shaking the device rattles the crew on the lights (crewShake). The staff
+  // pages stay calm (no shaking there), and the station TV runs its own loop of falls, so neither
+  // listens for motion.
+  useEffect(() => standalone || station ? undefined : startShake(), [standalone, station]);
 
   useEffect(() => {
     const garland = roof.current;
@@ -504,13 +939,13 @@ export default function WinterRoofline({ menuOpen = false, standalone = false }:
   }, []);
 
   return (
-    <div ref={roof} className={styles.roof} data-winter-roof="" data-standalone={standalone || undefined} aria-hidden="true">
+    <div ref={roof} className={styles.roof} data-winter-roof="" data-standalone={standalone || undefined} data-station={station || undefined}>
       {[...swags.slice(0, 3), 15, ...swags.slice(3)].map((sag, slot) => {
         // Slot 3 is the gap over the music video: the lights run across it, nobody hangs there.
         const gap = slot === 3;
         const span = slot > 3 ? slot - 1 : slot;
         return (
-        <div key={gap ? "gap" : span} className={gap ? `${styles.swag} ${styles.videoGap}` : styles.swag} style={{ "--sag": sag + "px" } as CSSProperties}>
+        <div key={gap ? "gap" : span} className={gap ? `${styles.swag} ${styles.videoGap}` : styles.swag} style={{ "--sag": sag + "px" } as CSSProperties} aria-hidden="true">
           <span className={styles.wire} />
           {sockets.map((position, socket) => {
             const index = (gap ? 6 : span) * sockets.length + socket;
@@ -534,7 +969,11 @@ export default function WinterRoofline({ menuOpen = false, standalone = false }:
         </div>
         );
       })}
-      {lineup.map((chief, span) => <HangingCrew key={chief} chief={chief} anchor={pins[span]} menuOpen={menuOpen} />)}
+      {lineup.map((chief, span) => <HangingCrew key={chief} chief={chief} anchor={pins[span]} menuOpen={menuOpen} station={station} />)}
+      {/* The invitation hangs from the lights themselves (the decorations above are hidden from
+          screen readers; the sign is not). The staff pages and the station TV (its own loop drops
+          the crew) stay calm: no shaking there. */}
+      {!standalone && !station && <WinterShakeChip hidden={menuOpen || !crewHanging} />}
     </div>
   );
 }
