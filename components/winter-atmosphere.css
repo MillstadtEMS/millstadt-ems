@@ -6,7 +6,8 @@ html[data-mems-season="winter"] :is(.mems-site-nav, .mems-footer, .mems-main-pad
 }
 
 html[data-mems-season="winter"] .mems-site-nav .mems-nav-bar {
-  background: linear-gradient(113deg, #00733e, #006337 49%, #bd0c29 49.3%, #c81330) !important;
+  /* A straight, centred split: evergreen on the left, cranberry on the right. */
+  background: linear-gradient(90deg, #00733e, #006337 50%, #bd0c29 50%, #c81330) !important;
   border-bottom-color: #ffcd5b !important;
 }
 

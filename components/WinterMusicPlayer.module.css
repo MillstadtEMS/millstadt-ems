@@ -43,7 +43,7 @@
 .controls[data-docked] { left: var(--split-x, 50%); top: var(--band-y, 50%); bottom: auto; translate: -50% -50%; z-index: 6; gap: 0; }
 /* Wide enough cells that each label (lower down, where the slanted split sits further left)
    stays entirely on its own colour. */
-.controls[data-docked] .knob { width: 86px; }
+.controls[data-docked] .knob { width: 80px; }
 .controls[data-docked] .toggle, .controls[data-docked] .resize { width: 34px; height: 34px; border-radius: 11px; }
 .knob { display: grid; justify-items: center; gap: 2px; }
 .knob small {

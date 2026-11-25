@@ -83,13 +83,12 @@ function Soundtrack() {
   const room = useRef<HTMLVideoElement>(null);
   const timeout = useSnowballTimeout();
   const dock = useSyncExternalStore(noSubscription, headerDock, noDock);
-  // Centre the docked buttons on the header's diagonal red/green split (the bar's 113deg
-  // gradient, split at 49.15%), halfway down the band beneath the candy-cane ribbon.
+  // Centre the docked buttons on the header's red/green split (straight down the middle),
+  // halfway down the band beneath the candy-cane ribbon.
   const controlsRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const group = controlsRef.current;
     if (!dock || !group) return;
-    const theta = (113 * Math.PI) / 180, sin = Math.sin(theta), down = -Math.cos(theta);
     let frameId = 0;
     const place = () => {
       frameId = 0;
@@ -98,13 +97,7 @@ function Soundtrack() {
       const ribbon = dock.querySelector<HTMLElement>(".mems-weather-ribbon")?.getBoundingClientRect();
       const top = ribbon?.height ? Math.min(bar.height, Math.max(0, ribbon.bottom - bar.top)) : 0;
       const bandY = (top + bar.height - 7) / 2;
-      const box = group.getBoundingClientRect();
-      const button = group.querySelector("button")?.getBoundingClientRect();
-      const lift = button ? button.top + button.height / 2 - (box.top + box.height / 2) : 0;
-      const y = bandY + lift;
-      const length = Math.abs(bar.width * sin) + Math.abs(bar.height * Math.cos(theta));
-      const x = bar.width / 2 + ((0.4915 - 0.5) * length - (y - bar.height / 2) * down) / sin;
-      group.style.setProperty("--split-x", `${x.toFixed(1)}px`);
+      group.style.setProperty("--split-x", `${(bar.width / 2).toFixed(1)}px`);
       group.style.setProperty("--band-y", `${bandY.toFixed(1)}px`);
     };
     const queue = () => { if (!frameId) frameId = requestAnimationFrame(place); };
