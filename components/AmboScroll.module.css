@@ -43,8 +43,9 @@
 
 /* The road sits where it always has; the lane reaches a little below it (--sink) so a crew member
    dragged behind the sleigh isn't clipped, and is tall enough for the crew riding on the roof. */
+/* Big enough to read every detail of the trucks: up to 300px on desktops. */
 .winterLane {
-  --truck-width: clamp(153px, 16vw, 220px);
+  --truck-width: clamp(165px, 21vw, 300px);
   --sink: 14px;
   --road: calc(var(--sink) + 3px);
   bottom: calc(max(12px, env(safe-area-inset-bottom)) - var(--sink));
