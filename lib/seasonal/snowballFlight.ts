@@ -90,6 +90,8 @@ export function throwSnowball(options: ThrowOptions): Promise<void> {
   }
   const host = layer();
   const pieces = [ball(size), ball(size * .86, .32), ball(size * .7, .16)];
+  // A ball that was held keeps the fine rim it had in the hand (no change at the hand-off).
+  if (options.fromSize) pieces[0].style.boxShadow += `, 0 0 0 ${(1 / s0).toFixed(3)}px rgba(40, 56, 74, .5)`;
   pieces.forEach(p => host.appendChild(p));
   const flights = pieces.map((p, i) => p.animate(frames, { duration, delay: i * 26, easing: "linear", fill: "backwards" }));
   return flights[0].finished.then(() => {
