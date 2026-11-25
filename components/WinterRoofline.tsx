@@ -452,7 +452,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
 // One person per swag of lights, left to right.
 const lineup: Chief[] = ["kenny", "kalista", "braeden", "dylan", "gabby", "jen"];
 
-export default function WinterRoofline({ menuOpen = false, standalone = false }: { menuOpen?: boolean; standalone?: boolean }) {
+export default function WinterRoofline({ menuOpen = false, standalone = false, station = false }: { menuOpen?: boolean; standalone?: boolean; station?: boolean }) {
   const roof = useRef<HTMLDivElement>(null);
   const pin0 = useRef<HTMLSpanElement>(null), pin1 = useRef<HTMLSpanElement>(null), pin2 = useRef<HTMLSpanElement>(null);
   const pin3 = useRef<HTMLSpanElement>(null), pin4 = useRef<HTMLSpanElement>(null), pin5 = useRef<HTMLSpanElement>(null);
@@ -497,7 +497,7 @@ export default function WinterRoofline({ menuOpen = false, standalone = false }:
   }, []);
 
   return (
-    <div ref={roof} className={styles.roof} data-winter-roof="" data-standalone={standalone || undefined} aria-hidden="true">
+    <div ref={roof} className={styles.roof} data-winter-roof="" data-standalone={standalone || undefined} data-station={station || undefined} aria-hidden="true">
       {[...swags.slice(0, 3), 15, ...swags.slice(3)].map((sag, slot) => {
         // Slot 3 is the gap over the music video: the lights run across it, nobody hangs there.
         const gap = slot === 3;
