@@ -26,6 +26,10 @@ const STRAIN_FLOOR = 4.5, STRAIN_SPAN = 10, STRAIN_MAX_RATE = 1;
 const RECOVER_AFTER = .9, RECOVER_RATE = .25;
 // After a start the filter spends a moment learning where gravity sits, then fades the shake in.
 const SETTLE = .4, FADE_IN = .3;
+// The swing only answers a deliberate shake: below a soft knee on the in-plane shake (m/s² rms),
+// walking with the phone (about 1 Hz, 1 to 1.5 m/s²), a hand's tremble or a car's sway push
+// nobody, and the push comes in fully from about twice that.
+const DRIVE_KNEE = 1.6, DRIVE_FULL = 3.4;
 
 type Member = { fall: () => void; at?: number; fired?: boolean };
 const members = new Map<string, Member>();
@@ -47,6 +51,8 @@ const state = {
   vx: 0,
   vy: 0,
   power: 0,
+  // The in-plane shake's recent power (m²/s⁴), for the drive's soft knee.
+  plane: 0,
   load: 0,
   calm: 0,
   last: 0,
@@ -150,7 +156,7 @@ function onMotion(event: DeviceMotionEvent) {
   const x = source.x ?? 0, y = source.y ?? 0, z = source.z ?? 0;
   const reading = [x * cos - y * sin, x * sin + y * cos, z];
   if (restart || !state.primed) {
-    state.low = [...reading]; state.sum = [0, 0, 0]; state.span = 0; state.primed = true; state.settle = 0;
+    state.low = [...reading]; state.sum = [0, 0, 0]; state.span = 0; state.primed = true; state.settle = 0; state.plane = 0;
     if (source === withGravity) state.gravityUp = reading[1] + reading[2];
   }
   if (source === withGravity) {
@@ -180,8 +186,12 @@ function onMotion(event: DeviceMotionEvent) {
     state.low[axis] += (value - state.low[axis]) * keep;
     return (value - state.low[axis]) * state.flip * fade;
   });
-  state.vx += shake[0] * dt;
-  state.vy += shake[1] * dt;
+  // The push through the soft knee: a gentle sway reads as nothing, a real shake in full.
+  state.plane += (shake[0] ** 2 + shake[1] ** 2 - state.plane) * (1 - Math.exp(-dt / .25));
+  const knee = clamp((Math.sqrt(state.plane) - DRIVE_KNEE) / (DRIVE_FULL - DRIVE_KNEE), 0, 1);
+  const drive = knee * knee * (3 - 2 * knee);
+  state.vx += shake[0] * dt * drive;
+  state.vy += shake[1] * dt * drive;
   const power = shake[0] ** 2 + shake[1] ** 2 + shake[2] ** 2;
   state.power += (power - state.power) * (1 - Math.exp(-dt / .3));
 
@@ -219,7 +229,7 @@ export function startShake(): () => void {
     if (state.access === "idle") setAccess("listening");
     // No motion yet: iPhones and iPads need a tap to allow it.
     askTimer = window.setTimeout(() => {
-      if (state.access === "listening" && asker() && (isPhoneOrTablet() || previewMode() === "ios")) setAccess("ask");
+      if (state.access === "listening" && asker() && (isPhoneOrTablet() || previewMode()?.startsWith("ios"))) setAccess("ask");
     }, 1400);
     if (previewMode()) (window as { __memsCrewShake?: () => unknown }).__memsCrewShake = shakeSnapshot;
   }
@@ -234,6 +244,8 @@ export function startShake(): () => void {
 export function askForShake() {
   const ask = asker();
   if (!ask) return;
+  // ?preview=ve&shake=ios-deny rehearses a visitor who says Don't Allow.
+  if (previewMode() === "ios-deny") { setAccess("denied"); return; }
   const answer = previewMode() === "ios" ? Promise.resolve("granted" as const) : ask.call(DeviceMotionEvent);
   answer.then(
     result => {
