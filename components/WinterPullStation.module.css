@@ -1,25 +1,26 @@
 /* The pull station, its sign and the horn/strobe, in the living room's own pixels (760 x 200 room):
    on the wall between the little TV (its stand ends at 436) and the painting by the mantel (518),
-   at about shoulder height, clear of the crew on the lights, the TV and the fridge. */
+   under the room's garland and above the chair rail (118), the handle at about shoulder height,
+   clear of the crew on the lights, the TV and the fridge. */
 .station {
   position: absolute;
-  left: 449px;
-  top: 8px;
-  width: 54px;
-  height: 86px;
+  left: 448px;
+  top: 34px;
+  width: 56px;
+  height: 78px;
   pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
 }
 /* Phones draw the whole room at 62%: the pull station keeps most of its size so the sign still reads. */
 @media (max-width: 700px) {
-  .station { scale: 1.3; transform-origin: 50% 0; }
+  .station { scale: 1.22; transform-origin: 50% 62%; }
 }
 .art { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
 
 /* ---- The sign ---- */
 .word {
-  font: 900 7.3px/1 "Arial Black", Arial, Helvetica, sans-serif;
+  font: 900 7.6px/1 "Arial Black", Arial, Helvetica, sans-serif;
   letter-spacing: .2px;
   fill: #3f0f0d;
   transition: fill .25s ease;
@@ -35,8 +36,8 @@
 /* A soft red glow on the wallpaper around the lit sign. */
 .halo {
   position: absolute;
-  left: -22px;
-  top: 6px;
+  left: -21px;
+  top: 0;
   width: 98px;
   height: 52px;
   border-radius: 50%;
@@ -48,12 +49,12 @@
 .station[data-state="armed"] .halo { opacity: 1; animation: signBlink 1.35s steps(1, end) infinite; }
 
 /* ---- The horn/strobe ---- */
-.hornWord { font: 900 4.9px/1 Arial, Helvetica, sans-serif; letter-spacing: .3px; fill: #fff6ea; }
+.hornWord { font: 900 4.4px/1 Arial, Helvetica, sans-serif; letter-spacing: .3px; fill: #fff6ea; }
 .lens { fill: #fffdf4; opacity: 0; }
 .flash {
   position: absolute;
-  left: -44px;
-  top: -38px;
+  left: -43px;
+  top: -40px;
   width: 142px;
   height: 100px;
   border-radius: 50%;
@@ -72,8 +73,8 @@
 }
 
 /* ---- The pull station ---- */
-.stationWord { font: 900 6.4px/1 Arial, Helvetica, sans-serif; letter-spacing: .4px; fill: #fff6ea; }
-.stationWordSmall { font: 900 4.9px/1 Arial, Helvetica, sans-serif; letter-spacing: .45px; fill: #fff6ea; }
+.stationWord { font: 900 6.2px/1 Arial, Helvetica, sans-serif; letter-spacing: .4px; fill: #fff6ea; }
+.stationWordSmall { font: 900 4.7px/1 Arial, Helvetica, sans-serif; letter-spacing: .45px; fill: #fff6ea; }
 .handleWord { font: 900 3.6px/1 Arial, Helvetica, sans-serif; letter-spacing: .3px; fill: #b3140f; }
 .handle { transition: transform .2s cubic-bezier(.3, 1.6, .5, 1); }
 /* Pulled: the handle snaps down in its slot (it resets once the rescue is over). */
@@ -84,9 +85,9 @@
 .pull {
   position: absolute;
   left: 0;
-  top: 18px;
-  width: 54px;
-  height: 68px;
+  top: 15px;
+  width: 56px;
+  height: 63px;
   padding: 0;
   border: 0;
   border-radius: 4px;

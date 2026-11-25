@@ -24,7 +24,6 @@ import styles from "./WinterLadderRescue.module.css";
 // Time Out freezes it where it is; reduced motion shows a short sequence of stills instead.
 
 const ART = "/images/winter/kit/ladder-rescue";
-const POP = "/images/winter/kit/pop";
 
 // The truck body (1154 x 507 art px): the ladder's turntable pivot, Santa's spot on the rear deck and
 // the front wheel's ground line.
@@ -41,14 +40,16 @@ const POSES = {
 } as const;
 type SantaPose = keyof typeof POSES;
 const SANTA_TALL = 403;
-// The crew's thank-you art at the bottom edge, sized so each face matches its figure on the lights
-// (k: art height in hanging-box heights; edge: the share of the art above the bottom of the screen).
-const WAVES: Partial<Record<CrewChief, { src: string; w: number; h: number; k: number; edge: number }>> = {
-  kalista: { src: `${POP}/kalista-wave.webp`, w: 238, h: 619, k: .87, edge: .5 },
-  dylan: { src: `${POP}/dylan-wave.webp`, w: 265, h: 619, k: .97, edge: .5 },
-  braeden: { src: `${POP}/braeden-wave.webp`, w: 269, h: 619, k: 1.145, edge: .5 },
-  gabby: { src: `${POP}/gabby-happy.webp`, w: 380, h: 501, k: .44, edge: .99 },
+// The crew's thank-you waves at the bottom edge (the kit's waving poses cut into body and forearm so
+// the hand waves from the elbow), sized so each face matches its figure on the lights. k: art height
+// in hanging-box heights; edge: the share of the art above the bottom of the screen; elbow: % of the art.
+const WAVES: Partial<Record<CrewChief, { name: string; w: number; h: number; k: number; edge: number; elbow: [number, number] }>> = {
+  kalista: { name: "kalista", w: 238, h: 619, k: .87, edge: .5, elbow: [13.03, 31.83] },
+  dylan: { name: "dylan", w: 265, h: 619, k: .97, edge: .5, elbow: [15.85, 31.66] },
+  braeden: { name: "braeden", w: 269, h: 619, k: 1.145, edge: .5, elbow: [22.3, 20.52] },
+  gabby: { name: "gabby", w: 380, h: 501, k: .44, edge: .99, elbow: [15.79, 66.27] },
 };
+const waveArt = (name: string, part: "body" | "arm") => `${ART}/wave-${name}-${part}.webp`;
 // Kenny and Jen keep their own painted figures and cheer, fists up (their light strand stays behind).
 const CHEERS: Partial<Record<CrewChief, string>> = {
   kenny: "/images/winter/kenny/hanging.webp",
@@ -70,6 +71,7 @@ type Layout = {
 };
 type Plan = { member: HangingCrewMember; px: number; ladder: Ladder; tip: Pt; sx: number | null; cost: number };
 type Bubble = { el: HTMLElement; anim: Animation; place: () => void };
+type Box = { left: number; right: number; top: number; bottom: number };
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -91,7 +93,7 @@ function measureLayout(): Layout {
   const truckH = Math.max(40, Math.min(vh * .33, (small ? .92 : .62) * vw * BODY.h / BODY.w, crewH * 1.15));
   const S = truckH / BODY.h;
   const ground = edge - (small ? 4 : 8);
-  const santaH = truckH * .64;
+  const santaH = truckH * .72;
   return {
     vw, vh, top, edge, ground, S, truckW: BODY.w * S, truckH, pivotY: ground - (BODY.ground - BODY.pivot[1]) * S,
     sigma: santaH / SANTA_TALL, santaH, crewH, small,
@@ -157,8 +159,11 @@ function evaluate(L: Layout, m: HangingCrewMember, px: number, c: 1 | -1, prevPx
   if (angle < 6 || angle > 93) return null;
   const sx = santaSpot(L, px, ladder, m);
   let cost = 0;
-  if (sx === null) cost += 600;
-  else {
+  if (sx === null) {
+    // Santa works the rope from the rear deck instead (best avoided, and never off screen).
+    const deck = px + (BODY.deck[0] - BODY.pivot[0]) * L.S;
+    cost += 600 + (deck + L.santaH * .2 > L.vw ? 900 : 0);
+  } else {
     const foot = ladderPoint(L, px, ladder, sx, LAD.chord, false);
     const box = santaBox(L, climbPose(ladder), foot, c < 0);
     cost += Math.abs((box.left + box.right) / 2 - m.x) * .45 + Math.max(0, box.top - (m.y + m.height * .35)) * .25;
@@ -178,17 +183,19 @@ function evaluate(L: Layout, m: HangingCrewMember, px: number, c: 1 | -1, prevPx
 }
 
 /** The best next rescue: plans the rest of the crew right to left (the truck only creeps forward,
- *  and the turntable may swing from the right side to the left once) and returns the first step. */
+ *  and the turntable swings the ladder from one side to the other at most once) and returns the
+ *  first step. */
 function planNext(L: Layout, crew: HangingCrewMember[], prevPx: number, prevC: 1 | -1): Plan | null {
   const order = [...crew].sort((a, b) => b.x - a.x);
   if (!order.length) return null;
   const lo = 14, hi = L.vw - 14, step = Math.max(5, L.vw / 180);
   let best: { cost: number; first: Plan } | null = null;
-  const splits = prevC === 1 ? [0] : order.map((_, i) => i).concat(order.length);
-  for (const split of splits) {
+  const sequences: Array<[1 | -1, number]> = [];
+  for (let split = 0; split <= order.length; split++) sequences.push([-1, split], [1, split]);
+  for (const [lead, split] of sequences) {
     let px = prevPx, c = prevC, total = 0, first: Plan | null = null, ok = true;
     for (let i = 0; i < order.length; i++) {
-      const side: 1 | -1 = i < split ? -1 : 1;
+      const side: 1 | -1 = i < split ? lead : lead === 1 ? -1 : 1;
       if (side !== c) total += 160;
       let pick: Plan | null = null;
       for (let x = Math.min(hi, px); x >= lo; x -= step) {
@@ -228,7 +235,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
     let alive = true;
     const urls = [
       ...TRUCK_ART.map(name => `${ART}/${name}.webp`), ...Object.values(POSES).map(p => p.src),
-      ...Object.values(WAVES).map(w => w!.src), ...Object.values(CHEERS),
+      ...Object.values(WAVES).flatMap(w => [waveArt(w!.name, "body"), waveArt(w!.name, "arm")]), ...Object.values(CHEERS),
     ];
     const one = (src: string) => new Promise<void>(done => {
       const img = new window.Image();
@@ -275,20 +282,39 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
     const actors: Actor[] = [];
     let rescued = 0;
 
-    function say(text: string, anchor: () => Pt, side: "up" | "left" | "right", hold: number) {
+    /** A speech bubble by the speaker's head: above it if there's room, otherwise beside it, on
+     *  whichever side keeps it clear of the person being rescued, and always fully on screen. */
+    function say(text: string, anchor: () => Box, avoid: Box[], hold: number) {
       const el = document.createElement("span");
       el.className = styles.bubble;
       el.textContent = text;
       talkEl!.appendChild(el);
+      const spot = (side: "up" | "left" | "right", at: Box, w: number, h: number) => {
+        const mid = (at.left + at.right) / 2;
+        const x = side === "up" ? mid - w / 2 : side === "left" ? at.left - w - 12 : at.right + 12;
+        const y = side === "up" ? at.top - h - 12 : (at.top + at.bottom) / 2 - h / 2;
+        const top = layout.top + (layout.small ? 22 : 18);
+        const cx = clamp(x, 8, layout.vw - w - 8), cy = clamp(y, top, layout.edge - h - 6);
+        return { x: cx, y: cy, dx: Math.abs(cx - x), dy: Math.abs(cy - y) };
+      };
+      let side: "up" | "left" | "right" = "up";
+      {
+        const at = anchor(), w = el.offsetWidth, h = el.offsetHeight;
+        let best = Infinity;
+        for (const s of ["up", "left", "right"] as const) {
+          const p = spot(s, at, w, h);
+          let overlap = 0;
+          for (const box of avoid) overlap += Math.max(0, Math.min(p.x + w, box.right) - Math.max(p.x, box.left)) * Math.max(0, Math.min(p.y + h, box.bottom) - Math.max(p.y, box.top));
+          const score = overlap * 3 + (p.dx + p.dy) * 30 + (s === "up" ? 0 : 400);
+          if (score < best) { best = score; side = s; }
+        }
+      }
       const place = () => {
         const at = anchor(), w = el.offsetWidth, h = el.offsetHeight;
-        let x = side === "up" ? at.x - w / 2 : side === "left" ? at.x - w - 10 : at.x + 10;
-        let y = side === "up" ? at.y - h - 12 : at.y - h / 2;
-        if (y < layout.top + 6) { y = layout.top + 6; }
-        x = clamp(x, 8, layout.vw - w - 8);
-        y = Math.min(y, layout.edge - h - 6);
+        const { x, y } = spot(side, at, w, h);
+        const mid = (at.left + at.right) / 2;
         el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
-        el.dataset.tail = at.x < x + 16 ? "left" : at.x > x + w - 16 ? "right" : "mid";
+        el.dataset.tail = side === "left" ? "east" : side === "right" ? "west" : y + h > at.top ? "none" : mid < x + 18 ? "left" : mid > x + w - 18 ? "right" : "mid";
       };
       place();
       const anim = el.animate(still ? [{ opacity: 1 }, { opacity: 1 }] : [
@@ -301,10 +327,17 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
       anim.finished.then(done, done);
       return entry;
     }
-    const santaHead = (): Pt => {
+    const bodyBox = (m: HangingCrewMember): Box => ({ left: m.x - m.width * .3, right: m.x + m.width * .3, top: m.y - m.height * .05, bottom: m.y + m.height * .95 });
+    // Santa's lines keep clear of the person he's lowering and of every face still on the lights.
+    const keepClear = (m: HangingCrewMember): Box[] => [bodyBox(m), ...hangingCrew().map(o => ({ left: o.x - o.width * .3, right: o.x + o.width * .3, top: o.y, bottom: o.y + o.height * .42 }))];
+    /** Santa's head (the top of his pose, where his hat and beard are). */
+    const santaHead = (): Box => {
       const foot = santaFoot();
       const box = santaBox(layout, santaPose, foot, lad.c < 0 && santaMode === "ladder");
-      return { x: (box.left + box.right) / 2, y: box.top + (box.bottom - box.top) * .14 };
+      const w = box.right - box.left, h = box.bottom - box.top;
+      const mirrored = lad.c < 0 && santaMode === "ladder";
+      const left = mirrored ? box.left + w * .18 : box.left + w * .3;
+      return { left, right: left + w * .52, top: box.top + h * .03, bottom: box.top + h * .3 };
     };
 
     function santaFoot(): Pt {
@@ -365,12 +398,14 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
         actor.el = el; actor.x = m.x; actor.top = top; actor.height = height; actor.width = width;
         el.style.width = `${width.toFixed(1)}px`; el.style.height = `${height.toFixed(1)}px`;
         el.style.visibility = "visible";
+        el.style.transformOrigin = `50% ${((wave ? wave.edge : .62) * 100).toFixed(1)}%`;
+        if (wave && !still) el.dataset.waving = "";
         placeActor(actor, 0, 0);
         actor.handle?.release();
         actor.handle = null;
       }
       const text = THANKS[actor.chief];
-      say(text, () => ({ x: actor.x, y: actor.top + (actor.el ? actor.height * .02 : 0) }), "up", text.length > 20 ? 3200 : 2300);
+      say(text, () => ({ left: actor.x - actor.width * .16, right: actor.x + actor.width * .16, top: actor.top + actor.height * .01, bottom: actor.top + actor.height * .2 }), [], text.length > 20 ? 3200 : 2300);
       actor.leave = now + (text.length > 20 ? 3300 : 2600);
     }
     function placeActor(actor: Actor, lift: number, squash: number) {
@@ -386,7 +421,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
           const u = (now - actor.leave) / 520;
           const lift = u < .25 ? Math.sin(u / .25 * Math.PI / 2) * actor.height * .03 : -easeIn((u - .25) / .75) * actor.height * .75;
           placeActor(actor, lift, 0);
-          if (u >= 1) { actor.gone = true; if (actor.el) actor.el.style.visibility = "hidden"; }
+          if (u >= 1) { actor.gone = true; if (actor.el) { actor.el.style.visibility = "hidden"; delete actor.el.dataset.waving; } }
           continue;
         }
         // A landing squash, then a happy bounce (Kenny and Jen hop for joy, fists up).
@@ -452,11 +487,13 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
     }
     function climbOn(sxTo: number): Phase {
       const steps = Math.max(1, Math.round(Math.abs(925 - sxTo) / 48));
+      const beat = steps > 6 ? 180 : 220;
+      santaSx = 925;
       return begin("climb", t => {
         if (t < 340) { santaHop = smooth(t / 340); santaPose = "climb1"; return false; }
         santaMode = "ladder"; santaHop = 0;
-        const s = t - 340, k = Math.min(steps, Math.floor(s / 220));
-        const within = clamp((s - k * 220) / 140, 0, 1);
+        const s = t - 340, k = Math.min(steps, Math.floor(s / beat));
+        const within = clamp((s - k * beat) / (beat * .64), 0, 1);
         santaSx = lerp(925, sxTo, Math.min(steps, k + (k < steps ? smooth(within) : 0)) / steps);
         santaPose = deg(lad.a) > 34 ? (k % 2 ? "climb2" : "climb1") : "stand";
         return k >= steps;
@@ -482,7 +519,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
     function dropRope(plan: Plan): Phase {
       const m = plan.member;
       const line = rescued > 0 && hangingCrew().length === 1 ? LAST_LINE : SANTA_LINES[rescued % SANTA_LINES.length];
-      say(line, santaHead, santaHead().x > m.x ? "right" : "left", 2100);
+      say(line, santaHead, keepClear(m), 2100);
       const waist = m.y + m.height * .48;
       return begin("rope", t => {
         const tip = tipOf(layout, pivotX(), lad);
@@ -612,7 +649,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
         }
         truckX = plan.px - BODY.pivot[0] * layout.S;
         show(plan);
-        say(rescued ? SANTA_LINES[rescued % SANTA_LINES.length] : SANTA_LINES[0], santaHead, "left", 1300);
+        say(SANTA_LINES[rescued % SANTA_LINES.length], santaHead, keepClear(plan.member), 1300);
         timers.push(window.setTimeout(() => {
           const handle = rescueChief(plan.member.chief);
           const actor: Actor = { chief: plan.member.chief, member: plan.member, handle, landed: 0, el: null, x: plan.member.x, top: 0, height: plan.member.height, width: plan.member.width, leave: Infinity, gone: false };
@@ -725,7 +762,9 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
       <div ref={crewLayer} className={styles.crew}>
         {(Object.entries(WAVES) as Array<[CrewChief, NonNullable<(typeof WAVES)[CrewChief]>]>).map(([chief, w]) => (
           <span key={chief} data-crew={chief} className={styles.waver}>
-            <Image src={w.src} alt="" width={w.w} height={w.h} unoptimized draggable={false} />
+            <Image src={waveArt(w.name, "body")} alt="" width={w.w} height={w.h} unoptimized draggable={false} />
+            <Image className={styles.forearm} src={waveArt(w.name, "arm")} alt="" width={w.w} height={w.h} unoptimized draggable={false}
+              style={{ transformOrigin: `${w.elbow[0]}% ${w.elbow[1]}%` }} />
           </span>
         ))}
         {(Object.entries(CHEERS) as Array<[CrewChief, string]>).map(([chief, src]) => (
