@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { holdLane, laneClaimed } from "@/lib/seasonal/driveLane";
 import { chicagoDateTimeKey } from "@/lib/seasonal/themes";
 import { isSnowballTimeout } from "@/lib/seasonal/snowballTimeout";
 import { burst, flightTime, MITTEN_RELEASE, visitorStart, visitorThrow } from "@/lib/seasonal/snowballFlight";
@@ -138,7 +139,8 @@ function TurkeySky() {
       timer = window.setTimeout(launch, remaining);
     };
     function launch() {
-      if (skyIsCovered()) {
+      // On a short screen its sky reaches the road: it waits for a drive-by to go by (driveLane).
+      if (skyIsCovered() || laneClaimed({ top: Math.max(8, headerBottom() + 10), bottom: (window.innerHeight * 2) / 3 })) {
         remaining = 8_000;
         run();
         return;
@@ -205,18 +207,23 @@ function flightPath(plan: Plan, bird: { width: number; height: number }) {
 
   const keyframes: Keyframe[] = [];
   const steps = 64;
+  let highest = Infinity, lowest = -Infinity;
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
     const wave = 2 * Math.PI * plan.cycles * t + plan.phase;
     const x = startX + (endX - startX) * t;
     const y = base + drift * (t - 0.5) + amplitude * Math.sin(wave);
+    highest = Math.min(highest, y);
+    lowest = Math.max(lowest, y);
     // Nose follows the flight line: up while climbing, down while descending (mirrored for right-to-left).
     const slope = (drift + amplitude * 2 * Math.PI * plan.cycles * Math.cos(wave)) / distance;
     const pitch = Math.max(-9, Math.min(9, plan.direction * Math.atan(slope) * (180 / Math.PI) * 0.85));
     keyframes.push({ transform: `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) rotate(${pitch.toFixed(2)}deg)` });
   }
   const speed = AIRSPEED_PER_SPRITE_PX * bird.width * plan.pace;
-  return { keyframes, duration: (distance / speed) * 1000 };
+  // The band the bird covers on the way (its pitch tips a wing a little past its box).
+  const sky = { top: highest - bird.height * 0.1, bottom: lowest + bird.height * 1.1 };
+  return { keyframes, duration: (distance / speed) * 1000, sky };
 }
 
 function TurkeyPass({ plan, onDone }: { plan: Plan; onDone: () => void }) {
@@ -235,11 +242,13 @@ function TurkeyPass({ plan, onDone }: { plan: Plan; onDone: () => void }) {
     const element = bird.current;
     if (!ready || !element) return;
     const { width, height } = element.getBoundingClientRect();
-    const { keyframes, duration } = flightPath(plan, { width, height });
+    const { keyframes, duration, sky } = flightPath(plan, { width, height });
     const flight = element.animate(keyframes, { duration, easing: "linear", fill: "both" });
-    flight.onfinish = () => done.current();
+    // Flying low over a short screen, it has the road until it's across: a drive-by waits for it.
+    const unhold = holdLane("turkey", sky, duration);
+    flight.onfinish = () => { unhold(); done.current(); };
     flightRef.current = { flight, speed: (plan.direction * (window.innerWidth + width * 2.3)) / (duration / 1000) };
-    return () => flight.cancel();
+    return () => { unhold(); flight.cancel(); };
   }, [ready, plan]);
 
   // Snowballs: a visitor's tap throws at where the turkey is heading; a hit (or one from the

@@ -862,14 +862,14 @@ function runCast(env: Env) {
   }
   /** How long each move stays in the air (ms): rising, a throw (the crew's wind-up and release, a
    *  peek's dip, raised snowball and hurl, the scoop that reloads), the backflip and its landing, a duck. */
-  const moving: Readonly<Record<string, number>> = {
+  const moveMs: Readonly<Record<string, number>> = {
     rise: 720, throw: 640, toss: 460, windup: 480, rewind: 480, release: 380, scoop: 260, dip: 230, cock: 820, hurl: 460,
     crouch: 440, flip: 1140, land: 320, duck: 880, indignant: 380, lob: 750,
   };
   /** Out of a drive-by's way: their usual retreat, once a move already under way has finished (unless time's up). */
   function makeWay(actor: Actor, urgent: boolean) {
     if (!actors.has(actor.id) || actor.phase === "retreat" || actor.phase === "bail") return;
-    const midMove = performance.now() - (since.get(actor) ?? 0) < (moving[actor.phase] ?? 0);
+    const midMove = performance.now() - (since.get(actor) ?? 0) < (moveMs[actor.phase] ?? 0);
     if (!urgent && (actor.incoming || midMove)) return;
     actor.incoming = false;
     // Flip-book acts (the strum, the backflip) show no single pose: they leave on a standing one.
