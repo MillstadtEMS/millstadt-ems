@@ -361,6 +361,8 @@
   inset: 0;
 }
 .gabbyRoof[data-mirror] .gabbyFlip { transform: scaleX(-1); }
+/* Mirrored (roof 2), the anger mark goes on the side of her head away from her neighbour. */
+.gabbyRoof[data-mirror] .gabbyAnger { left: 30%; }
 .gabbySheet {
   position: absolute;
   top: 0;
@@ -376,12 +378,12 @@
 .gabbyRoof[data-gag][data-fall="off"] .gabbyMover { animation-name: gabbyKnockOff; }
 .gabbyRoof[data-gag] .gabbySheet { animation: gabbyGagFrames 4.6s step-end both; }
 
-/* Her contact shadow on the roof's edge, under her boots. */
+/* Her contact shadow on the roof's rim under her boots (left and width per spot). It's lifted over the
+   roof-ride art, so it falls on the rim and the light string even when she stands behind them. */
 .gabbyShadow {
   position: absolute;
-  left: 50%;
+  z-index: 1;
   top: 92.6%;
-  width: 34%;
   height: 4.6%;
   border-radius: 50%;
   background: radial-gradient(closest-side, rgb(4 12 22 / 62%), rgb(4 12 22 / 30%) 55%, transparent);
@@ -393,8 +395,8 @@
    never smaller than 12px, so it reads on a phone. */
 .gabbyAnger {
   position: absolute;
-  top: 15%;
-  left: 59%;
+  top: 21%;
+  left: 56%;
   width: max(10%, 12px);
   aspect-ratio: 1;
   overflow: visible;
@@ -451,6 +453,7 @@
   border: 5px solid transparent;
   border-top-color: #7a1018;
 }
+.gabbyFume[data-mute] .gabbyGrumble { display: none; }
 .gabbyFume[data-side="right"] .gabbyGrumble { left: 60%; transform-origin: 0 100%; }
 .gabbyFume[data-side="right"] .gabbyGrumble::after { left: .5em; }
 .gabbyFume[data-side="left"] .gabbyGrumble { right: 60%; transform-origin: 100% 100%; }

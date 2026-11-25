@@ -828,10 +828,12 @@ type RoofSpot = {
   /** "back": she drops behind the roof's back edge; "off": she topples over the far corner and down behind the cab. */
   fall: "back" | "off";
   /** Mirrored (so her kick goes out over open air), and drawn behind the roof-ride art (the riders nearer
-   *  the viewer stay in front of her). */
+   *  the viewer, the light string and the roof's rim stay in front of her). */
   mirror: boolean; under: boolean;
   /** Where she peeks back up before hopping on (a fraction of her box width), and her grumble's side. */
   peek: number; bubble: "left" | "right";
+  /** Her contact shadow on the roof's rim: its centre and width as fractions of her box. */
+  shadow: readonly [number, number];
 };
 /** A clip-path showing everything above `edge` (points right to left, in still px), carried level past its ends. */
 function clipAbove(box: Box, edge: Pts) {
@@ -841,30 +843,30 @@ function clipAbove(box: Box, edge: Pts) {
   return polygonPct(pts.map(([x, y]) => [x - box[0], y - box[1]] as const), w, h);
 }
 /** Gabby's spot on a roof ride: her ground point and scale, and the edges that hide her. */
-function roofSpot(at: readonly [number, number], scale: number, o: Omit<RoofSpot, "box" | "scale" | "clip" | "fallClip" | "mirror" | "under" | "peek">
-  & { edge: Pts; fallEdge?: Pts; mirror?: boolean; under?: boolean; peek?: number }): RoofSpot {
+function roofSpot(at: readonly [number, number], scale: number, o: Omit<RoofSpot, "box" | "scale" | "clip" | "fallClip" | "mirror" | "peek" | "shadow">
+  & { edge: Pts; fallEdge?: Pts; mirror?: boolean; peek?: number; shadow?: readonly [number, number] }): RoofSpot {
   const k = 874 / 720 * scale;
   const box: Box = [at[0] - 120 * k, at[1] - 250 * k, at[0] + 120 * k, at[1] + 20 * k];
   return {
     box, scale, clip: clipAbove(box, o.edge), fallClip: clipAbove(box, o.fallEdge ?? o.edge),
-    fall: o.fall, mirror: !!o.mirror, under: !!o.under, peek: o.peek ?? 0, bubble: o.bubble,
+    fall: o.fall, mirror: !!o.mirror, under: o.under, peek: o.peek ?? 0, bubble: o.bubble, shadow: o.shadow ?? [.5, .34],
   };
 }
 const GABBY_ROOF: Record<1 | 2, RoofSpot> = {
   // Roof 1: at the back of the roof beside the three standing riders and at their scale, boots on the
-  // roof's edge. Knocked off, she drops behind the roof's back edge (the clip).
+  // roof's rim behind the light string. Knocked off, she drops behind the roof's back edge (the clip).
   1: roofSpot([694.4, 278], 1, {
     edge: [[745, 293], [700, 284], [650, 274], [600, 264], [540, 252], [455, 242]],
-    fall: "back", bubble: "right",
+    fall: "back", under: true, bubble: "right",
   }),
   // Roof 2: the two riders up front are painted much bigger, so she stands on the box's far front
-  // corner at their scale, just behind the nearer rider's raised hand (drawn under the art, so the
-  // box and the riders cover her). Mirrored, her kick goes out over the corner. Knocked off, she
-  // topples over the corner and drops out of sight behind the cab; she peeks back up clear of her
-  // neighbour's elbow, then hops back onto her corner.
+  // corner at their scale, just behind the nearer rider's raised hand. Mirrored, her kick goes out
+  // over the corner. Knocked off, she topples over the corner and drops out of sight behind the cab;
+  // she peeks back up clear of her neighbour's elbow, then hops back onto her corner. Her shadow sits
+  // under the boot on the corner (the other is behind her neighbour).
   2: roofSpot([256, 264], 1.4, {
     edge: [[874, 520], [212, 520], [212, 266]], fallEdge: [[874, 505], [0, 505]],
-    fall: "off", mirror: true, under: true, peek: -.127, bubble: "left",
+    fall: "off", mirror: true, under: true, peek: -.127, bubble: "left", shadow: [.44, .2],
   }),
 };
 // Santa's reindeer sleigh (the kit's 680 x 268 art, measured here in its 1235 x 487 source pixels).
@@ -1112,6 +1114,10 @@ function RoofGabby({ version, knocks, onBack }: { version: 1 | 2; knocks: number
     };
     const other = spot.bubble === "right" ? "left" : "right";
     layer.dataset.side = spill(spot.bubble) <= spill(other) ? spot.bubble : other;
+    // If the pass will be over before her grumble has had its full hold, she keeps it to herself
+    // rather than have it vanish with the truck.
+    const remaining = speed && run ? (Number(run.effect?.getTiming().duration) - Number(run.currentTime)) / (run.playbackRate || 1) / 1000 : Infinity;
+    if (remaining < GRUMBLE[1] + .2) { layer.dataset.mute = "true"; return; }
     // And whatever the screen does meanwhile (a narrow phone, a resize, the truck stopping or going on),
     // it's nudged back inside the screen and the lane every frame while it shows.
     const lane = box.closest<HTMLElement>("[data-lane]");
@@ -1133,8 +1139,9 @@ function RoofGabby({ version, knocks, onBack }: { version: 1 | 2; knocks: number
     <span ref={root} className={styles.gabbyRoof} data-gag={gag ? "true" : undefined} data-fall={spot.fall}
       data-mirror={spot.mirror ? "true" : undefined}
       style={{ ...place(spot.box, ROOF.art), "--clip": spot.clip, "--fall-clip": spot.fallClip, "--peek-x": pct(spot.peek) } as CSSProperties}>
-      {/* Her contact shadow on the roof: it shrinks as she's knocked up and off, and lands with her. */}
-      <span key={`shadow-${knocks}`} className={styles.gabbyShadow} />
+      {/* Her contact shadow on the roof's rim (laid over the art even when she's under it): it shrinks
+          as she's knocked up and off, and lands with her. */}
+      <span key={`shadow-${knocks}`} className={styles.gabbyShadow} style={{ left: pct(spot.shadow[0]), width: pct(spot.shadow[1]) }} />
       <span key={`clip-${knocks}`} className={styles.gabbyClip}>
         <span key={knocks} className={styles.gabbyMover}
           onAnimationEnd={(event) => { if (event.target === event.currentTarget && gag) { setSettled(knocks); onBack(); } }}>
