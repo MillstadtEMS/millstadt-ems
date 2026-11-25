@@ -1,16 +1,41 @@
-/* Ladder 3919, placed and driven by the script (in the painting's own pixels, scaled as one piece).
-   It parks behind the drive-by lane and the crew climbing its ladder, under the bar. */
-.truck {
+/* Dr. Hsu and the station's ladder, placed and moved by the script in screen pixels. Behind the crew
+   climbing it (the hanging figures are z-index 36), under the bar. */
+.ladder {
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 29;
-  transform-origin: 0 0;
+  z-index: 33;
+  transform-origin: 0 50%;
   pointer-events: none;
   will-change: transform;
-  filter: drop-shadow(0 10px 8px #050b18b0);
+  visibility: hidden;
+  filter: drop-shadow(0 calc(.5 * var(--station-u, 1vh)) calc(.6 * var(--station-u, 1vh)) #050b18a8);
 }
-.body, .section { position: absolute; left: 0; top: 0; display: block; width: 100%; height: 100%; max-width: none; }
-.boom { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
-.section { will-change: transform; }
-@media print { .truck { display: none; } }
+.ladder[data-on] { visibility: visible; }
+.base, .fly { position: absolute; left: 0; display: block; }
+.base { top: 0; }
+.fly { will-change: transform; }
+.section { display: block; overflow: visible; }
+
+.hsu {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 34;
+  transform-origin: 50% 100%;
+  pointer-events: none;
+  will-change: transform;
+  visibility: hidden;
+  filter: drop-shadow(0 calc(.4 * var(--station-u, 1vh)) calc(.8 * var(--station-u, 1vh)) #050b18b0);
+}
+.hsu[data-on] { visibility: visible; }
+.hsu img { display: block; width: 100%; height: 100%; }
+
+.keepClear { position: fixed; left: 0; z-index: 0; pointer-events: none; }
+.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* A climber's painted bit of light string (Kenny's and Jen's art has one) stays on the lights: while
+   they climb and work along the string, only their hands show where it was. */
+:global(:root[data-station] [data-hanging-chief][data-station-climb] [data-snow-fighter]) { clip-path: var(--release-mask, none); }
+
+@media print { .ladder, .hsu { display: none; } }

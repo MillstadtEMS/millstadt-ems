@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { allCrewDown, chiefIsDown, crewLineup, dropChief, restoreCrew, type HangingChief } from "@/components/WinterRoofline";
-import { claimPeople } from "@/lib/seasonal/cast";
+import { claimPerson } from "@/lib/seasonal/cast";
 import { fireplaceOwner, reserveFireplace, resetGabbyDone, setFireplaceProgram } from "@/lib/seasonal/fireplaceScenes";
 import { stationFast } from "@/lib/station/flags";
 import StationLadder, { type LadderHandle } from "./StationLadder";
@@ -13,7 +13,7 @@ import StationLadder, { type LadderHandle } from "./StationLadder";
 //      sometimes two or three at once (WinterRoofline dropChief, the same fall as a snowball hit);
 //   3. with everyone down, the living room plays the turkey heist first, then Gabby's chimney gag
 //      (the shared arbiter, in the station's order: lib/seasonal/fireplaceScenes);
-//   4. Ladder 3919 comes for them and they all climb back up, one by one (StationLadder);
+//   4. Dr. Hsu brings the ladder and they all climb back up, one by one (StationLadder);
 //   ...and round again, forever. Reduced motion keeps everyone calmly on the lights.
 
 export type StationPhase = "starting" | "hanging" | "falling" | "heist" | "gag" | "ladder" | "calm";
@@ -22,12 +22,15 @@ const pacing = {
   normal: { hang: [32_000, 55_000], fallGap: [3_500, 9_500], together: [120, 420], showGap: 4_000, heistWait: 9_000, gagWait: 14_000, rest: 2_500 },
   fast: { hang: [3_500, 5_500], fallGap: [900, 2_000], together: [90, 260], showGap: 2_000, heistWait: 8_000, gagWait: 10_000, rest: 1_200 },
 } as const;
+// Everyone in the reset, so nobody pops up somewhere else while they're climbing (or carrying) the ladder.
+const CAST = ["kenny", "kalista", "braeden", "dylan", "gabby", "jen", "medical-director"] as const;
 
-// A little store for the debug panel.
+// A little store for the debug panel (and html[data-station-phase] for tests).
 let state = { phase: "starting" as StationPhase, loop: 0, since: 0, order: [] as HangingChief[] };
 const listeners = new Set<() => void>();
 function announce(next: Partial<typeof state>) {
   state = { ...state, ...next, since: next.phase ? Date.now() : state.since };
+  document.documentElement.dataset.stationPhase = state.phase;
   listeners.forEach(listener => listener());
 }
 export function useStationLoop() {
@@ -49,6 +52,16 @@ function shuffle<T>(list: readonly T[]): T[] {
 }
 /** Mostly one at a time; now and then two or three let go together. */
 const groupSize = (left: number) => Math.min(left, ((roll) => roll < .62 ? 1 : roll < .9 ? 2 : 3)(Math.random()));
+
+/** Up the ladder (it leans on the lights between the first two swags): whoever hangs farthest along
+ *  goes first, so nobody has to pass anyone on the string; the first in the lineup, whose spot is the
+ *  other way, joins at a random turn. */
+function climbingOrder(lineup: readonly HangingChief[]): HangingChief[] {
+  const [left, ...right] = lineup;
+  const order = [...right].reverse();
+  order.splice(Math.floor(Math.random() * (order.length + 1)), 0, left);
+  return order;
+}
 
 export default function StationDirector() {
   const ladder = useRef<LadderHandle>(null);
@@ -80,13 +93,24 @@ export default function StationDirector() {
       announce({ phase: "calm" });
       const onChange = () => { if (!reduced.matches) window.location.reload(); };
       reduced.addEventListener("change", onChange);
-      return () => reduced.removeEventListener("change", onChange);
+      return () => { reduced.removeEventListener("change", onChange); delete document.documentElement.dataset.stationPhase; };
     }
 
     // The living room's shows in the station's order: the heist first, then Gabby's gag.
     setFireplaceProgram({ order: ["heist", "gabby"], gapMs: T.showGap });
     // Preview: ?preview=ve&station-fast=1&station-scene=ladder starts with everyone already down.
     const scene = fast ? new URLSearchParams(window.location.search).get("station-scene") : null;
+
+    /** Claim everyone in the reset, waiting a little for anyone still out in another act. */
+    async function claimCast(): Promise<() => void> {
+      const releases = new Map<string, () => void>();
+      const deadline = Date.now() + (fast ? 3_000 : 8_000);
+      while (!cancelled && releases.size < CAST.length && Date.now() < deadline) {
+        for (const person of CAST) if (!releases.has(person)) { const release = claimPerson(person); if (release) releases.set(person, release); }
+        if (releases.size < CAST.length) await sleep(250);
+      }
+      return () => releases.forEach(release => release());
+    }
 
     async function loop() {
       let first = true;
@@ -99,7 +123,7 @@ export default function StationDirector() {
 
         // 2. They let go at random.
         const order = shuffle(crewLineup().filter(chief => !chiefIsDown(chief)));
-        announce({ phase: "falling", order });
+        announce({ phase: "falling", order: [...order] });
         while (order.length && !cancelled) {
           const group = order.splice(0, skipToLadder ? order.length : groupSize(order.length));
           for (const chief of group) {
@@ -123,17 +147,15 @@ export default function StationDirector() {
           await sleep(1_400);
         }
 
-        // 4. Hold the stage (no more heists) while Ladder 3919 brings everyone back.
+        // 4. Hold the stage (no more heists) while Dr. Hsu brings the ladder and everyone climbs back.
         await until(() => Boolean(held ??= reserveFireplace("ladder")), 30_000);
         announce({ phase: "ladder" });
         resetGabbyDone();
-        // Nobody pops up as someone who is climbing the ladder.
-        let cast = null as (() => void) | null;
-        await until(() => Boolean(cast ??= claimPeople(["kalista", "braeden", "dylan", "gabby"])), 12_000);
+        const releaseCast = await claimCast();
         try {
-          await ladder.current?.run(shuffle(crewLineup()), fast, isCancelled);
+          await ladder.current?.run(climbingOrder(crewLineup()), fast, isCancelled);
         } finally {
-          cast?.();
+          releaseCast();
         }
         if (cancelled) return;
         restoreCrew();
@@ -146,6 +168,7 @@ export default function StationDirector() {
 
     return () => {
       cancelled = true;
+      delete document.documentElement.dataset.stationPhase;
       timers.forEach(id => window.clearTimeout(id));
       held?.();
       setFireplaceProgram();

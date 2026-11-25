@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Bell, BellOff } from "lucide-react";
-import { currentConditionText, flightAcceptance, type WeatherData } from "@/lib/weather/millstadt";
-import { nwsIcon, type StationDisplay } from "@/lib/station/display";
+import { currentConditionText, flightAcceptance, type MetarData } from "@/lib/weather/millstadt";
 import { centralParts, holidayAt, monthNames, useStationSecond, weekdayNames } from "./stationTime";
 import type { StationWeather } from "./useStationWeather";
+import WeatherIcon, { weatherKind } from "./WeatherIcon";
 import styles from "./StationHud.module.css";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -24,8 +24,10 @@ export function StationClock({ big = false }: { big?: boolean }) {
         </span>
       </div>
       <div className={styles.date}>
-        <span className={styles.weekday}>{t ? weekdayNames[t.weekday] : " "}</span>
-        <span className={styles.day}>{t ? (big ? `${monthNames[t.month - 1]} ${t.day}, ${t.year}` : `${monthNames[t.month - 1].slice(0, 3)} ${t.day}`) : " "}</span>
+        {t ? <>
+          <span className={styles.weekday}>{weekdayNames[t.weekday]}</span>
+          <span className={styles.day}>{big ? `${monthNames[t.month - 1]} ${t.day}, ${t.year}` : `${monthNames[t.month - 1]} ${t.day}`}</span>
+        </> : <span className={styles.day}>&nbsp;</span>}
       </div>
     </div>
   );
@@ -57,47 +59,72 @@ function shortTime(ms: number) {
   return `${pad(t.hour)}${pad(t.minute)}`;
 }
 
-/** Current conditions, the next two forecast periods and the medical-helicopter estimate (shared with /weather). */
-export function StationWeatherPanel({ weather, display, wide = false }: { weather: StationWeather; display: StationDisplay | null; wide?: boolean }) {
+function Waiting({ status }: { status: StationWeather["status"] }) {
+  return <span className={styles.weatherNote}>{status === "loading" ? "Loading Millstadt weather…" : "Weather unavailable. Retrying…"}</span>;
+}
+
+/** Now: the icon, temperature and conditions, any NWS alert, and the next forecast period. */
+export function StationWeatherNow({ weather, wide = false }: { weather: StationWeather; wide?: boolean }) {
   const { data, status, updatedAt } = weather;
+  if (!data) return <div className={styles.weather} data-empty=""><Waiting status={status} /></div>;
+  const temp = data.current.tempF != null ? Math.round(data.current.tempF) : data.periods[0]?.temperature ?? null;
+  const condition = currentConditionText(data);
+  const night = data.periods[0] ? !data.periods[0].isDaytime : false;
+  const alert = data.alerts[0]?.properties.event;
+  const next = data.periods.slice(0, wide ? 3 : 1);
+  return (
+    <div className={styles.weather} data-wide={wide || undefined}>
+      <WeatherIcon kind={weatherKind(data)} night={night} className={styles.icon} />
+      <div className={styles.weatherText}>
+        {alert && <span className={styles.alert}>{alert}</span>}
+        <span className={styles.nowLine}>
+          <span className={styles.temp}>{temp != null ? `${temp}°` : "—"}<small>F</small></span>
+          <span className={styles.condition}>{condition}</span>
+        </span>
+        <ul className={styles.forecast} aria-label="Forecast">
+          {next.map((period) => (
+            <li key={period.name}><b>{period.name}</b> <span>{period.temperature}°</span> <em>{period.shortForecast}</em></li>
+          ))}
+        </ul>
+        {status === "stale" && updatedAt && <span className={styles.stale}>As of {shortTime(updatedAt)}</span>}
+      </div>
+    </div>
+  );
+}
+
+// The two long sentences of the shared estimate, said in fewer words for a TV across the room
+// (same meaning; every other reason is shown word for word).
+const shorterReasons: Record<string, string> = {
+  "Visibility and ceilings are currently favorable for helicopter operations.": "Visibility and ceilings are favorable.",
+  "Marginal conditions suggest possible flight restrictions.": "Marginal conditions: flights may be restricted.",
+};
+const categoryNames: Record<NonNullable<MetarData["flightCategory"]>, string> = {
+  VFR: "VFR", MVFR: "MVFR", IFR: "IFR", LIFR: "LIFR",
+};
+
+/** The medical-helicopter flight-acceptance estimate, exactly as /weather computes it (lib/weather). */
+export function StationHelicopter({ weather }: { weather: StationWeather }) {
+  const { data, status } = weather;
   if (!data) {
     return (
-      <div className={styles.weather} data-empty="">
-        <span className={styles.weatherNote}>{status === "loading" ? "Loading Millstadt weather…" : "Weather is unavailable right now. Retrying…"}</span>
+      <div className={styles.heli} data-status="unknown">
+        <span className={styles.heliLabel}>Helicopters</span>
+        <span className={styles.heliNote}>{status === "loading" ? "Checking flight weather…" : "Flight weather unavailable"}</span>
       </div>
     );
   }
-  return <WeatherReport data={data} stale={status === "stale"} updatedAt={updatedAt} display={display} wide={wide} />;
-}
-
-function WeatherReport({ data, stale, updatedAt, display, wide }: { data: WeatherData; stale: boolean; updatedAt: number | null; display: StationDisplay | null; wide: boolean }) {
-  const temp = data.current.tempF != null ? Math.round(data.current.tempF) : data.periods[0]?.temperature ?? null;
-  const condition = currentConditionText(data);
-  const icon = data.periods[0]?.icon ? nwsIcon(data.periods[0].icon, display) : null;
-  const next = data.periods.slice(0, wide ? 4 : 2);
-  const flight = flightAcceptance(data);
-  const alert = data.alerts[0]?.properties.event;
+  const result = flightAcceptance(data);
+  const category = data.metar?.flightCategory ?? null;
+  const reason = shorterReasons[result.reason] ?? result.reason;
   return (
-    <div className={styles.weather}>
-      <div className={styles.now}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {icon && <img className={styles.icon} src={icon} alt="" width={86} height={86} />}
-        <div className={styles.nowText}>
-          <span className={styles.temp}>{temp != null ? `${temp}°` : "—"}<small>F</small></span>
-          <span className={styles.condition}>{condition}</span>
-        </div>
-      </div>
-      <ul className={styles.forecast} aria-label="Forecast">
-        {alert && <li className={styles.alert}>{alert}</li>}
-        {next.slice(0, alert ? Math.max(1, next.length - 1) : next.length).map((period) => (
-          <li key={period.name}><b>{period.name}</b> <span>{period.temperature}°</span> <em>{period.shortForecast}</em></li>
-        ))}
-      </ul>
-      <div className={styles.flight} data-status={flight.status} title={flight.reason}>
-        <span className={styles.flightLabel}>Med helicopter <i>est.</i></span>
-        <span className={styles.flightStatus}>{flight.status === "flying" ? "Likely to accept flight" : "Unlikely to accept flight"}</span>
-      </div>
-      {stale && updatedAt && <span className={styles.stale}>As of {shortTime(updatedAt)}</span>}
+    <div className={styles.heli} data-status={result.status} role="status" aria-label={`Helicopters: ${result.title.toLowerCase()}. ${result.reason}`}>
+      <span className={styles.heliTop}>
+        <span className={styles.heliLabel}>Helicopters</span>
+        {category && <span className={styles.heliCategory} data-category={category} title={`METAR flight category at ${data.metar?.icaoId ?? "KALN"}`}>{categoryNames[category]}</span>}
+      </span>
+      <span className={styles.heliStatus}>{result.status === "flying" ? "Likely to accept flight" : "Unlikely to accept flight"}</span>
+      <span className={styles.heliReason}>{reason}</span>
+      <span className={styles.heliNote}>Weather-based estimate{category ? ` · ${data.metar?.icaoId ?? "KALN"} METAR` : ""}</span>
     </div>
   );
 }
