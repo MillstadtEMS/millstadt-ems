@@ -22,6 +22,9 @@
   --u: var(--station-u, 1vh);
   --hud-h: calc(13 * var(--u));
   --band-h: calc(200px * var(--station-room-k, 1));
+  /* The postcard as big as the space under the living room allows, at its own measured proportions. */
+  --frame-w: min(calc(100vw - 24 * var(--u)), calc((100vh - var(--hud-h) - var(--band-h) - 1.6 * var(--u)) / var(--village-ratio, .6986)));
+  --gutter: calc((100vw - var(--frame-w)) / 2);
   position: fixed;
   inset: 0;
   display: grid;
@@ -80,21 +83,10 @@
   place-items: center;
   min-height: 0;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse 30% 18% at 6% 104%, #e9f3fb 0 55%, transparent 56%),
-    radial-gradient(ellipse 34% 20% at 95% 106%, #e2eef8 0 55%, transparent 56%),
-    radial-gradient(ellipse 22% 12% at 20% 108%, #f4f9fd 0 55%, transparent 56%),
-    radial-gradient(ellipse 24% 14% at 80% 109%, #f1f7fc 0 55%, transparent 56%),
-    radial-gradient(1.5px 1.5px at 8% 18%, #fff, transparent),
-    radial-gradient(1.5px 1.5px at 14% 44%, #fffbe8, transparent),
-    radial-gradient(2px 2px at 4% 63%, #fff, transparent),
-    radial-gradient(1.5px 1.5px at 91% 22%, #fff, transparent),
-    radial-gradient(2px 2px at 86% 51%, #fffbe8, transparent),
-    radial-gradient(1.5px 1.5px at 96% 70%, #fff, transparent);
 }
 .globeFrame {
   position: relative;
-  width: min(calc(100vw - 24 * var(--u)), calc((100vh - var(--hud-h) - var(--band-h) - 1.6 * var(--u)) / .6931));
+  width: var(--frame-w);
   margin-top: calc(.8 * var(--u));
   align-self: start;
   border-radius: calc(1.6 * var(--u)) calc(1.6 * var(--u)) 0 0;
@@ -108,6 +100,48 @@
 .globe :global(#winter-village-title) { font-size: 6.4cqw; }
 .globe :global(#winter-village-title > span) { font-size: max(9px, .95cqw); }
 .globe :global(#winter-village-title img) { width: 27cqw; }
+
+/* The drive-by: its lanes are fixed to the screen anyway; a TV that gets its parked picture (still
+   motion, a slow device) shows it in the bottom right corner, beside the postcard. */
+.driveBy {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  width: max(var(--gutter), calc(30 * var(--u)));
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+/* A phone held upright: the bar in rows, the living room across the full width, the postcard under
+   it and the snowy night below (where the pop-ups and the drive-by come through). */
+@media (orientation: portrait) {
+  .station {
+    --u: calc(var(--station-u, 1vh) * 2);
+    --frame-w: calc(100vw - 4 * var(--u));
+    grid-template-rows: auto var(--band-h) minmax(0, 1fr);
+  }
+  .hud {
+    grid-template-columns: minmax(0, 1fr);
+    gap: calc(1.1 * var(--u));
+    padding: calc(1.7 * var(--u)) calc(2 * var(--u)) calc(1.3 * var(--u));
+  }
+  .hudLeft { order: 1; }
+  .hudRight { order: 2; }
+  .hudCenter { order: 3; }
+  .globeFrame { margin-top: calc(1.6 * var(--u)); }
+}
+@media (orientation: portrait) and (max-width: 700px) {
+  :global(:root[data-station]) :is([data-winter-roof], [data-hanging-chief]) { --crew-width: 15vw; --preferred-crew-width: 15vw; }
+}
+@media (orientation: portrait) and (min-width: 701px) {
+  :global(:root[data-station]) :is([data-winter-roof], [data-hanging-chief]) {
+    --crew-width: calc((100vw - 311px * var(--station-room-k, 1)) / 6 * 1.05);
+    --preferred-crew-width: calc((100vw - 311px * var(--station-room-k, 1)) / 6 * 1.05);
+  }
+}
 
 /* Out of season: a clean clock, date, weather and helicopter screen. */
 .offSeason {
