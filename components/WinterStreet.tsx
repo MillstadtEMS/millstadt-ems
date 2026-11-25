@@ -1116,7 +1116,7 @@ export function WinterStreetForeground({ active }: StreetProps) {
     <div className={styles.rink} data-winter-rink="" data-active={active} role="group" aria-label="The Christmas skating rink">
       <div className={styles.rinkLights} aria-hidden="true"><i /><i /><i /></div>
       <CocoaStall />
-      <div className={styles.neighbors} data-snow-fighter="neighbors" data-snow-target="" data-snow-hand="0.35,0.32">
+      <div className={styles.neighbors} data-snow-fighter="neighbors" data-snow-target="" data-snow-hand="0.53,0.43" data-snow-windup="0.57,0.11">
         <Image src="/images/winter/street/neighbors.webp" alt="Five neighbors with cocoa, wrapped presents and a lantern watch from the snowy edge of the rink."
           width={600} height={469} sizes="(max-width: 720px) 130px, 16vw" unoptimized />
       </div>

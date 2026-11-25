@@ -298,6 +298,149 @@
 .winterLane[data-paused="true"] .roofStill { visibility: visible; }
 .winterLane[data-paused="true"] .roofMoving { visibility: hidden; }
 
+/* ---- Mylie at the wheel: behind the windshield glass, bobbing on her seat; every few seconds she
+   lifts a hand off the wheel to wave (and winks). The opening clips her, so the pillars and dash
+   stay in front; snow piling up on the truck covers her with it. ---- */
+.cab {
+  position: absolute;
+  pointer-events: none;
+}
+.cabWindow,
+.driver {
+  position: absolute;
+  inset: 0;
+}
+.driver { transform-origin: 50% 100%; }
+.convoy[data-moving] .driver { animation: driverBob .88s ease-in-out -.12s infinite alternate; }
+/* Stuck in the drift she rocks in her seat with the spinning wheels. */
+.convoy[data-stuck="true"] .driver { animation: driverRock .28s ease-in-out infinite alternate; }
+.driverWave,
+.driverHand { visibility: hidden; }
+.convoy[data-moving] .driverSmile { animation: driverSmile 6.4s linear var(--wave-delay, 0s) infinite; }
+.convoy[data-moving] .driverWave { animation: driverWave 6.4s linear var(--wave-delay, 0s) infinite; }
+.convoy[data-moving] .driverHand { animation: driverHand 6.4s ease-in-out var(--wave-delay, 0s) infinite; }
+.cabGlass { pointer-events: none; }
+
+/* ---- Mylie squeezed into the back of the chaos sleigh: she bobs along with the bouncing sleigh and
+   waves (the hand turns on a pivot hidden behind the sombrero). ---- */
+.chaosSeat {
+  position: absolute;
+  pointer-events: none;
+}
+.chaosRider {
+  position: absolute;
+  transform-origin: 38% 100%;
+}
+.convoy[data-moving] .chaosRider { animation: chaosRiderBob .85s ease-in-out infinite alternate; }
+.convoy[data-moving] .chaosWave { animation: chaosWave 1.05s ease-in-out infinite; }
+
+/* ---- Gabby dancing on the roof: her sprite sheet steps through the 32-frame dance at the roof
+   ride's own 70 ms a frame. Knocked off, one 4.6 s timeline plays the gag: the flail and tumble
+   behind the roof (the clip is the roof's top edge), the glare as she rises back up, the hop on,
+   the fuming, and a huff before she dances again. ---- */
+.gabbyRoof {
+  position: absolute;
+  pointer-events: none;
+}
+.gabbyClip {
+  position: absolute;
+  inset: 0;
+}
+.gabbyMover {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* Her feet. */
+  transform-origin: 50% 92.59%;
+}
+.gabbySheet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3600%;
+  max-width: none;
+  height: 100%;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.convoy[data-moving] .gabbySheet { animation: gabbyDance 2.24s steps(32) infinite; }
+.gabbyRoof[data-gag] .gabbyMover { animation: gabbyKnock 4.6s linear both; }
+.gabbyRoof[data-gag] .gabbySheet { animation: gabbyGagFrames 4.6s step-end both; }
+
+/* Steam puffs off her head and a grumble while she glares. */
+.gabbyFume {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.gabbyFume i {
+  position: absolute;
+  top: 30%;
+  width: 9%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, #fff 0 38%, #e9f1f8 64%, #c8d6e4);
+  opacity: 0;
+  animation: gabbyPuff .6s ease-out 2.45s 3 both;
+}
+.gabbyFume i:nth-of-type(1) { left: 33%; --puff-x: -70%; }
+.gabbyFume i:nth-of-type(2) { left: 58%; --puff-x: 70%; animation-delay: 2.65s; }
+.gabbyFume i:nth-of-type(3) { left: 45.5%; top: 22%; --puff-x: 0%; animation-delay: 2.85s; }
+.gabbyGrumble {
+  position: absolute;
+  top: 6%;
+  padding: .22em .5em .26em;
+  border: 1.5px solid #7a1018;
+  border-radius: 1em;
+  background: #fffaf2;
+  color: #b3121f;
+  font: 900 clamp(11px, .95vw, 15px) / 1 system-ui, sans-serif;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 25%);
+  opacity: 0;
+  animation: gabbyGrumble 4.6s linear both;
+}
+.gabbyGrumble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  border: 5px solid transparent;
+  border-top-color: #7a1018;
+}
+.gabbyFume[data-side="right"] .gabbyGrumble { left: 60%; transform-origin: 0 100%; }
+.gabbyFume[data-side="right"] .gabbyGrumble::after { left: .5em; }
+.gabbyFume[data-side="left"] .gabbyGrumble { right: 60%; transform-origin: 100% 100%; }
+.gabbyFume[data-side="left"] .gabbyGrumble::after { right: .5em; }
+
+/* ---- Mylie in the back of Jen's sleigh with her coffee: she sways along, steam curls off the cup
+   and now and then she gives a happy little bounce. ---- */
+.seat {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.seated {
+  position: absolute;
+  transform-origin: 50% 88%;
+}
+.convoy[data-moving] .seated { animation: mylieSway 5.2s ease-in-out infinite; }
+.steam {
+  position: absolute;
+  overflow: visible;
+}
+.steam path {
+  fill: none;
+  stroke: #fffaf0;
+  stroke-width: 4.2;
+  stroke-linecap: round;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.convoy[data-moving] .steam path { animation: steamRise 2.6s ease-out infinite; }
+.convoy[data-moving] .steam path + path { animation-delay: -1.3s; }
+
 /* ---- Santa's reindeer: a low swoop over the road with a galloping bounce. ---- */
 .team {
   inset: 0;
@@ -524,6 +667,124 @@
 @keyframes shadowPulse {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(.86); opacity: .7; }
+}
+
+@keyframes driverBob {
+  from { transform: translateY(0) rotate(0deg); }
+  to { transform: translateY(3.5%) rotate(.6deg); }
+}
+
+@keyframes driverRock {
+  from { transform: translate(-1.2%, 1%) rotate(-1.4deg); }
+  to { transform: translate(1.2%, 0) rotate(1.4deg); }
+}
+
+/* Smiling at the wheel, then a wave (and a wink) from 62% to 92% of the cycle. The poses swap
+   while the hand is down behind the dash, so it rises into view and sinks back out of it. */
+@keyframes driverSmile {
+  0%, 61.9% { visibility: visible; }
+  62%, 91.9% { visibility: hidden; }
+  92%, 100% { visibility: visible; }
+}
+
+@keyframes driverWave {
+  0%, 61.9% { visibility: hidden; }
+  62%, 91.9% { visibility: visible; }
+  92%, 100% { visibility: hidden; }
+}
+
+@keyframes driverHand {
+  0%, 61.9% { visibility: hidden; transform: translateY(44%) rotate(-6deg); }
+  62% { visibility: visible; transform: translateY(44%) rotate(-6deg); }
+  67% { transform: translateY(0) rotate(-10deg); }
+  71% { transform: translateY(0) rotate(12deg); }
+  75% { transform: translateY(0) rotate(-10deg); }
+  79% { transform: translateY(0) rotate(12deg); }
+  83% { transform: translateY(0) rotate(-8deg); }
+  87% { transform: translateY(0) rotate(5deg); }
+  91.9% { visibility: visible; transform: translateY(44%) rotate(0deg); }
+  92%, 100% { visibility: hidden; transform: translateY(44%) rotate(0deg); }
+}
+
+/* Swaying along, then a happy bounce: a dip, up on the toes and a settle. */
+@keyframes mylieSway {
+  0%, 100% { transform: translateY(0) rotate(-1.4deg) scale(1); }
+  22% { transform: translateY(0) rotate(1.4deg) scale(1); }
+  44% { transform: translateY(0) rotate(-1.2deg) scale(1); }
+  56% { transform: translateY(1%) rotate(.4deg) scale(1.02, .975); }
+  62% { transform: translateY(-4.5%) rotate(-1.8deg) scale(.985, 1.025); }
+  68% { transform: translateY(.6%) rotate(.8deg) scale(1.015, .985); }
+  74% { transform: translateY(0) rotate(1.2deg) scale(1); }
+}
+
+@keyframes steamRise {
+  0% { opacity: 0; transform: translateY(14%) scaleX(.7); }
+  22% { opacity: .78; }
+  70% { opacity: .35; }
+  100% { opacity: 0; transform: translateY(-26%) scaleX(1.25); }
+}
+
+@keyframes chaosRiderBob {
+  from { transform: translateY(0) rotate(-1.2deg); }
+  to { transform: translateY(-2.5%) rotate(1.4deg); }
+}
+
+@keyframes chaosWave {
+  0%, 100% { transform: rotate(-10deg); }
+  50% { transform: rotate(9deg); }
+}
+
+/* Frames 0-31 of the sheet (36 frames wide). */
+@keyframes gabbyDance {
+  from { transform: translateX(0); }
+  to { transform: translateX(-88.8889%); }
+}
+
+/* The gag's poses (held, never blended): hit (32), flailing (33/34) while she tumbles out of sight,
+   her mad pose (35) swapped in behind the roof, and back to the dance (0) on the huff. */
+@keyframes gabbyGagFrames {
+  0% { transform: translateX(-88.8889%); }
+  2% { transform: translateX(-91.6667%); }
+  4% { transform: translateX(-94.4444%); }
+  6% { transform: translateX(-91.6667%); }
+  8% { transform: translateX(-94.4444%); }
+  10% { transform: translateX(-91.6667%); }
+  12% { transform: translateX(-94.4444%); }
+  14% { transform: translateX(-91.6667%); }
+  30% { transform: translateX(-97.2222%); }
+  95%, 100% { transform: translateX(0); }
+}
+
+/* Knocked up and back off the far side of the roof (tipping away, leaning a little toward --dir so
+   she clears the riders beside her), dropping behind its edge; out of sight she's set back under her
+   spot, rises until her glare clears the edge, holds it, hops on, squashes, fumes, huffs. */
+@keyframes gabbyKnock {
+  0% { transform: translate(0, 0) rotate(0deg) scale(1.04, .93); animation-timing-function: ease-out; }
+  2% { transform: translate(calc(var(--dir) * 1.5%), -5%) rotate(calc(var(--dir) * 4deg)) scale(.99, 1.03); animation-timing-function: ease-out; }
+  7.5% { transform: translate(calc(var(--dir) * 4%), -13%) rotate(calc(var(--dir) * 9deg)) scale(.97, .92); animation-timing-function: cubic-bezier(.45, 0, .9, .55); }
+  16% { transform: translate(calc(var(--dir) * 8%), 82%) rotate(calc(var(--dir) * 16deg)) scale(.92, .72); }
+  16.3%, 33% { transform: translate(0, 106%) rotate(0deg) scale(1); animation-timing-function: cubic-bezier(.2, .6, .35, 1); }
+  40%, 46% { transform: translate(0, 52%) rotate(0deg) scale(1); animation-timing-function: cubic-bezier(.2, .7, .4, 1); }
+  49% { transform: translate(0, -10%) rotate(0deg) scale(.97, 1.04); animation-timing-function: cubic-bezier(.55, 0, .9, .5); }
+  51% { transform: translate(0, 0) rotate(0deg) scale(1.08, .9); animation-timing-function: ease-out; }
+  53.5%, 90% { transform: translate(0, 0) rotate(0deg) scale(1); animation-timing-function: ease-out; }
+  91.5% { transform: translate(0, -5%) rotate(calc(var(--dir) * -3deg)) scale(.97, 1.04); animation-timing-function: ease-in; }
+  93% { transform: translate(0, 0) rotate(0deg) scale(1.05, .95); animation-timing-function: ease-out; }
+  95%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+}
+
+@keyframes gabbyPuff {
+  0% { opacity: 0; transform: translate(0, 0) scale(.45); }
+  20% { opacity: .95; }
+  100% { opacity: 0; transform: translate(var(--puff-x), -190%) scale(1.25); }
+}
+
+@keyframes gabbyGrumble {
+  0%, 51.9% { opacity: 0; transform: scale(.35); }
+  52% { opacity: 1; transform: scale(.6); }
+  54% { transform: scale(1.12); }
+  56%, 88% { opacity: 1; transform: scale(1); }
+  90%, 100% { opacity: 0; transform: scale(.85); }
 }
 
 @keyframes hoPop {

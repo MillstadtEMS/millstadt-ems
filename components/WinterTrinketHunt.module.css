@@ -125,6 +125,14 @@
   transition: translate .2s ease-out;
 }
 .stocking:hover { translate: 0 -2px; }
+/* A drive-by coming through the corner: the stocking ducks below the screen's edge just before it
+   gets there and pops back up once it has gone by (keyboard focus keeps it showing). */
+.stocking[data-lane-away]:not(:focus-visible) {
+  translate: 0 calc(100% + 40px);
+  opacity: 0;
+  pointer-events: none;
+  transition: translate .34s cubic-bezier(.5, 0, .9, .5), opacity .14s linear .2s;
+}
 .stocking:focus { outline: none; }
 .stocking:focus-visible { outline: 2px solid #f0b429; outline-offset: 3px; }
 .sway, .bulge { position: relative; display: block; }
@@ -263,6 +271,11 @@
 }
 @keyframes toastIn {
   from { opacity: 0; transform: translateY(10px) scale(.97); }
+}
+/* Its note ducks away with the stocking and slides back in after the drive-by. */
+.toast[data-lane-away]:not(:focus-visible) { pointer-events: none; animation: toastAway .3s cubic-bezier(.5, 0, .9, .5) forwards; }
+@keyframes toastAway {
+  to { opacity: 0; transform: translateY(26px) scale(.97); }
 }
 
 .sr {
