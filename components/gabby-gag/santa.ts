@@ -103,7 +103,7 @@ export class SantaRig {
     this.headG = el("g", {}, this.body);
     this.headImg = img(`${GAG_ART}/${SANTA_HEAD.src}`, SANTA_HEAD.w * HEAD_K, SANTA_HEAD.h * HEAD_K, this.headG);
     this.hatG = el("g", {}, this.headG);
-    drawHat(this.hatG, 1.08);
+    drawHat(this.hatG, .94);
   }
 
   pose(p: SantaPose) {
@@ -118,7 +118,7 @@ export class SantaRig {
     };
     // the belly: round and huge, pushed forward in profile
     const bsx = p.bsx ?? 1, bsy = p.bsy ?? 1;
-    const rx = (30 - 3 * a) * bsx, ry = 27 * bsy;
+    const rx = (32 - 4 * a) * bsx, ry = 28 * bsy;
     const bx = 12 * t, by = -28 - (bsy - 1) * 10;
     for (const e of [this.belly, this.bellyShade]) {
       e.setAttribute("cx", f(bx)); e.setAttribute("cy", f(by));
@@ -169,7 +169,7 @@ export class SantaRig {
     show(this.hatG, Boolean(p.hat?.on));
     if (p.hat?.on) {
       const cx = (SANTA_HEAD.crown[0] - SANTA_HEAD.neck[0]) * hk, cy = (SANTA_HEAD.crown[1] - SANTA_HEAD.neck[1]) * hk;
-      this.hatG.setAttribute("transform", `translate(${f(cx - 1)} ${f(cy + 5 - (p.hat.lift ?? 0))}) rotate(${f(-8 + (p.hat.tilt ?? 0))})`);
+      this.hatG.setAttribute("transform", `translate(${f(cx - 1.5)} ${f(cy + 3.2 - (p.hat.lift ?? 0))}) rotate(${f(-10 + (p.hat.tilt ?? 0))})`);
     }
   }
 

@@ -189,7 +189,7 @@ export function buildGag(stage: Stage) {
   // ---------------------------------------------------------------- 2. walk in
   const tWalk = 650;
   const SPOT = 436;
-  const vIn = clamp((SPOT - OFF) / 4.9, 92, 190);
+  const vIn = clamp((SPOT - OFF) / 4.7, 92, 200);
   const walkIn = makeLoco({ style: "walk", dir: 1, t0: tWalk, x0: OFF, x1: SPOT, v: vIn, step: clamp(vIn * .36, 30, 50), easeEnd: true, endFeet: [5, -6], hips: HIPS });
   const tSpot = settled(walkIn);
   const tLook = tSpot + 140, tSnap = tLook + 430, tShout = tSnap + 640, tSay1 = tShout + 120, tRun = tSay1 + 1500, tSay1End = tSay1 + 1850;
@@ -207,7 +207,7 @@ export function buildGag(stage: Stage) {
   const BOOT_UP: Pt = [566, 151];
   const DRAG_X = 541;
   const DRAG_END = L - 190;
-  const vDrag = clamp((DRAG_X - DRAG_END) / 6.0, 96, 205);
+  const vDrag = clamp((DRAG_X - DRAG_END) / 5.8, 96, 215);
   const drag = makeLoco({ style: "walk", dir: -1, t0: tDrag, x0: DRAG_X, x1: DRAG_END, v: vDrag, step: clamp(vDrag * .3, 26, 44), sigma: 1.3, easeStart: true, startFeet: [DRAG_X - 6, DRAG_X + 6], hips: HIPS, lead: 0, lift: 3.5 });
   const dragPose = (t: number): GabbyPose => {
     const w = walkPose(drag, t, { head: "grit", lean: 15, amp: 24, keepGoing: true, bob: 3.6 });
@@ -240,7 +240,7 @@ export function buildGag(stage: Stage) {
   const tStroll = tGone + 720;
   // she stops in front of the chair with her boots on the two spots she'll sit and stand up on
   const CHAIR = 73, FEET_L = 69, FEET_R = 77;
-  const vSt = clamp((CHAIR - OFF) / 3.2, 78, 170);
+  const vSt = clamp((CHAIR - OFF) / 3.0, 78, 185);
   const stroll = makeLoco({ style: "walk", dir: 1, t0: tStroll, x0: OFF, x1: CHAIR, v: vSt, step: clamp(vSt * .37, 28, 46), easeEnd: true, endFeet: [FEET_R - CHAIR, FEET_L - CHAIR], hips: HIPS });
   const tAtChair = settled(stroll);
   const tTurn2 = tAtChair + 90, tSit = tTurn2 + 200, tSat = tSit + 540, tDoze = tSat + 950, tZ = tDoze + 650;
@@ -338,7 +338,7 @@ export function buildGag(stage: Stage) {
   const SX = 617;
   const santaChimney = (t: number): SantaPose => {
     // pelvis height (world): his body hangs head-down; only what's below the arch shows
-    let y = keys(t, [[250, 18], [1150, 48], [2650, 48], [3350, 88]], easeInOut);
+    let y = keys(t, [[250, 22], [1150, 58], [2650, 58], [3350, 88]], easeInOut);
     if (t < 1150) y += Math.sin(seg(t, 250, 1150) * Math.PI) * 1.5;
     const wedge = seg(t, 3300, 3750);
     let bsx = 1, bsy = 1;
@@ -500,7 +500,8 @@ export function buildGag(stage: Stage) {
       else {
         const d = t - tSat;
         const settle = d < 260 ? Math.sin((d / 260) * Math.PI) : 0;
-        g = seated({ sy: 1 - settle * .035, sx: 1 + settle * .02 });
+        const breath = Math.sin(d / 520) * .5;
+        g = seated({ sy: 1 - settle * .035, sx: 1 + settle * .02, y: SEAT[1] - breath });
         // smug, getting comfy... then the eyelids droop
         if (t < tDoze) g.nod = Math.sin(d / 210) * 3 * Math.min(1, d / 300);
         else {
@@ -606,7 +607,7 @@ export function buildGag(stage: Stage) {
     if (g && t >= tDrag + 300 && t < tDrag + 3400) s.bubbles.push({ id: "milk", text: "YOU'RE GONNA FINISH YOUR MILK AND COOKIES!", kind: "say", ...xy(headTop(g)), ...life(tDrag + 300, tDrag + 3400) });
     if (s.santa && t >= tTurn && t < tGone) {
       const h = santaHeadWorld(s.santa);
-      s.bubbles.push({ id: "noo", text: "NOOOO!", kind: "noo", x: h[0] + 6, y: h[1] - 22, ...life(tTurn, tGone), tilt: 5 });
+      s.bubbles.push({ id: "noo", text: "NOOOO!", kind: "noo", x: h[0] + 16, y: h[1] - 34, ...life(tTurn, tGone), tilt: 5 });
     }
     if (g && t >= tBeep && t < tBeep + 1100) s.bubbles.push({ id: "beep", text: "BEEP BEEP!", kind: "beep", ...xy(offsetPt(pagerWorld(g), 4, -12)), ...life(tBeep, tBeep + 1100), tilt: -6 });
     if (g && t >= tSay3 && t < tSay3End) {
