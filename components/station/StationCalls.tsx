@@ -191,6 +191,9 @@ function useCallFeed(mode: DemoMode | null, review: boolean, enabled: boolean, s
         const offset = Date.parse(data.serverTime) - received;
         const calls = Array.isArray(data.calls) ? data.calls : [];
         setState((prev) => {
+          // A feed that can't answer right now keeps the last calls on screen (they leave after
+          // DROP_AFTER_MS), so a storage hiccup never makes every call "arrive" again afterwards.
+          if (!data.available) return { ...prev, available: false, reason: data.reason, health: null, failures: 0 };
           const ids = new Set(calls.map((c) => c.id));
           const arrivals = prune(prev.arrivals, received, ids);
           const changes = prune(prev.changes, received, ids);
@@ -204,9 +207,9 @@ function useCallFeed(mode: DemoMode | null, review: boolean, enabled: boolean, s
           }
           return {
             calls,
-            available: data.available,
-            reason: data.available ? null : data.reason,
-            health: data.available ? data.feed : null,
+            available: true,
+            reason: null,
+            health: data.feed,
             offset: Number.isFinite(offset) && Math.abs(offset) < 7 * 86400_000 ? offset : 0,
             failures: 0,
             lastOk: received,
@@ -611,8 +614,7 @@ export default function StationCalls({ onActiveChange, demo, className }: Statio
 
   return (
     <div ref={rootRef} className={[styles.root, className].filter(Boolean).join(" ")} style={style}
-      data-live={shown ? "" : undefined} data-layout={shown ? (single ? "single" : "multi") : undefined} data-clear={allClear ? "" : undefined}
-      data-reduced={reduced ? "" : undefined} aria-live="polite">
+      data-live={shown ? "" : undefined} data-layout={shown ? (single ? "single" : "multi") : undefined} data-clear={allClear ? "" : undefined}>
       {shown > 0 && (
         <>
           <header className={styles.bar}>

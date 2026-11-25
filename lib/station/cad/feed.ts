@@ -7,7 +7,7 @@
 import { foldCalls, eventKeyOf, toRecord, type FoldedCall } from "./merge";
 import { parseCadMessage } from "./parse";
 import { geocodeAddress } from "./geocode";
-import { FETCH_HORIZON_MS, getMessage, gmailErrorReason, listRecentMessageIds, stationGmailConfigured } from "./gmail";
+import { FETCH_HORIZON_MS, getMessage, gmailErrorReason, listRecentMessageIds, stationGmailConfigured, type StationEmail } from "./gmail";
 import { cadStore, GEOCODE_MISS_RETRY_MS, type CadStore, type SeenRow, type SyncState } from "./store";
 import type { StationCall, StationCallsResponse, StationFeedHealth } from "./types";
 
@@ -34,12 +34,20 @@ function httpStatus(error: unknown): number {
   return Number(e?.response?.status ?? e?.status ?? e?.code) || 0;
 }
 
+/** Where a sync reads mail from: the CAD Gmail inbox (read-only), or a stand-in in tests. */
+export interface MailSource {
+  list(max: number): Promise<string[]>;
+  get(id: string): Promise<StationEmail>;
+}
+
+const GMAIL: MailSource = { list: listRecentMessageIds, get: getMessage };
+
 /** Read new CAD emails into the store. Gmail problems are recorded on the sync row, not thrown. */
-export async function syncFeed(store: CadStore, now = Date.now()): Promise<void> {
+export async function syncFeed(store: CadStore, now = Date.now(), mail: MailSource = GMAIL): Promise<void> {
   const started = Date.now();
   let ids: string[];
   try {
-    ids = await listRecentMessageIds(100);
+    ids = await mail.list(100);
   } catch (error) {
     await store.recordSync({ ok: false, error: gmailErrorReason(error), durationMs: Date.now() - started, fetched: 0 });
     return;
@@ -51,7 +59,7 @@ export async function syncFeed(store: CadStore, now = Date.now()): Promise<void>
   for (let i = 0; i < todo.length; i += FETCH_CONCURRENCY) {
     if (Date.now() - started > SYNC_BUDGET_MS) break;
     const batch = todo.slice(i, i + FETCH_CONCURRENCY);
-    const results = await Promise.allSettled(batch.map((id) => getMessage(id)));
+    const results = await Promise.allSettled(batch.map((id) => mail.get(id)));
     results.forEach((result, index) => {
       const id = batch[index];
       if (result.status === "rejected") {
@@ -106,16 +114,16 @@ async function locate(store: CadStore, folded: FoldedCall[], now: number): Promi
 }
 
 /** The calls for a signed-in TV, syncing first when the feed is due. Never throws. */
-export async function getStationCalls(): Promise<FeedResult> {
+export async function getStationCalls(options: { store?: CadStore; mail?: MailSource } = {}): Promise<FeedResult> {
   const serverTime = () => new Date().toISOString();
-  if (!stationGmailConfigured()) {
+  if (!options.mail && !stationGmailConfigured()) {
     return { response: { available: false, serverTime: serverTime(), reason: "CAD email is not configured", calls: [] }, pending: [] };
   }
-  const store = cadStore();
+  const store = options.store ?? cadStore();
   try {
     if (await store.claimSync(SYNC_INTERVAL_MS)) {
       try {
-        await syncFeed(store);
+        await syncFeed(store, Date.now(), options.mail);
       } catch (error) {
         console.error("[station-cad] sync failed", { name: errorName(error) });
         await store.recordSync({ ok: false, error: "CAD feed sync failed", durationMs: 0, fetched: 0 }).catch(() => undefined);
