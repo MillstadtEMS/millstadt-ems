@@ -6,28 +6,34 @@
     /* Reserve space below Lounge and Menu for the peppermint edge and roof cable. */
     padding-block: 3px 16px;
   }
+  /* The weather readout and the neon Time Out sign sit side by side in the middle of the ribbon
+     (stacked on narrow screens). */
   .mems-weather-ribbon {
     position: relative;
     display: flex;
     align-items: center;
+    justify-content: center;
+    gap: 12px;
     width: 100%;
-    min-height: 36px;
+    min-height: 44px;
+    padding: 3px 10px;
     box-sizing: border-box;
   }
-  /* Phones: the Call Time Out button sits in the row; the weather readout centers in the rest. */
-  @media (max-width: 640px) {
-    .mems-weather-ribbon { padding-inline: 8px; gap: 8px; }
+  .mems-weather-ribbon > div { min-height: 34px; flex: 0 1 auto !important; min-width: 0; }
+  .mems-weather-ribbon > div > div { padding-inline: 0 !important; }
+  @media (max-width: 760px) {
+    .mems-weather-ribbon { flex-direction: column; gap: 3px; padding: 4px 8px 5px; }
+    .mems-weather-ribbon > div { min-height: 26px; max-width: 100%; }
   }
-  .mems-weather-ribbon > div { min-height: 34px; }
   .mems-weather-readout {
     display: inline-flex;
     align-items: center;
     gap: .45rem;
     max-width: 100%;
-    padding: 2px 10px;
+    padding: 4px 12px;
     border: 1px solid;
-    border-radius: 4px;
-    font-size: clamp(.68rem, 1.3vw, .8rem);
+    border-radius: 5px;
+    font-size: clamp(.72rem, 1.4vw, .9rem);
     font-weight: 800;
     line-height: 1.15;
     letter-spacing: .045em;

@@ -79,8 +79,7 @@ export default function WinterSnowChief({ person }: { person: Person }) {
       return box.top + Math.min(28, box.height * .25) < window.innerHeight - bottomClearance &&
         box.bottom > 130 && box.right > 0 && box.left < window.innerWidth;
     }
-    // One of each person at a time: while they hang from the Christmas lights they stay up there;
-    // knock them down and they land here in the village snowbank.
+    // One act per person at a time: if they're already out in another act, they wait their turn.
     let release: (() => void) | null = null;
     function popUp() {
       if (isSnowballTimeout() || poseRef.current === "out" || !onScreen()) return;

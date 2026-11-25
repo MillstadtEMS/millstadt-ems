@@ -30,8 +30,10 @@ export type RinkKnockdown = {
   width: number;
   /** -1 when the patient lies mirrored (head to the right). */
   flip: 1 | -1;
-  /** Lying-down art. `rest` is where the patient's back meets the ice, as a fraction of its height. */
-  patient: { src: string; width: number; height: number; rest: number };
+  /** Lying-down art. `rest` is where the patient's back meets the ice, as a fraction of its height;
+      `hip` is where the hips are across it (a blanket covers the legs on the stretcher), and `tilt`
+      lays a diagonal fall flat on the mattress. */
+  patient: { src: string; width: number; height: number; rest: number; hip?: number; tilt?: number };
   onStart?: () => void;
   onComplete?: () => void;
 };
@@ -39,7 +41,7 @@ export type RinkRescueState = { active: boolean; person: string; x: number };
 
 type Request = {
   subject: string; label: string; x: number; floor: number; scale: number; width: number; flip: 1 | -1;
-  src: string; ratio: number; rest: number; lift: number; skater: boolean;
+  src: string; ratio: number; rest: number; lift: number; skater: boolean; hip: number; tilt: number;
   onStart?: () => void; onComplete?: () => void;
 };
 type Guest = { person: "guest"; x?: number; onComplete: () => void };
@@ -153,6 +155,7 @@ export default function WinterRinkRescue() {
         subject: fall.person, label: fall.name || "a skater", x: bounded(fall.x, .03, .97), floor: bounded(fall.floor, 0, .6),
         scale: bounded(fall.scale, .4, 1.4), width: bounded(fall.width, 10, 160), flip: fall.flip === -1 ? -1 : 1,
         src: fall.patient.src, ratio: fall.patient.height / fall.patient.width, rest: bounded(fall.patient.rest, 0, 1),
+        hip: bounded(fall.patient.hip ?? 1, .3, 1), tilt: bounded(fall.patient.tilt ?? 0, -60, 60),
         lift: 1, skater: true, onStart: fall.onStart, onComplete: fall.onComplete,
       });
     }
@@ -164,7 +167,7 @@ export default function WinterRinkRescue() {
       event.preventDefault();
       const request: Request = {
         subject: "guest", label: "the gift thief", x: bounded(Number.isFinite(guest.x) ? guest.x! : .5, .19, .81), floor: .12,
-        scale: 1, width: 95, flip: 1, src: thief.src, ratio: thief.height / thief.width, rest: 1, lift: .78, skater: false,
+        scale: 1, width: 95, flip: 1, src: thief.src, ratio: thief.height / thief.width, rest: 1, lift: .78, skater: false, hip: 1, tilt: 0,
         onComplete: guest.onComplete,
       };
       if (!visible) rink!.scrollIntoView({ block: "center", behavior: motion.matches ? "instant" : "smooth" });
@@ -205,6 +208,7 @@ export default function WinterRinkRescue() {
         "--bed-drop": drop * request.lift / (74 * request.scale) * 100 + "%",
         // Limbs below the patient's back tuck out of sight behind the mattress once they're on the bed.
         "--clip": request.skater ? Math.max(0, (1 - request.rest) * 100 - 3) + "%" : "0%",
+        "--rest": request.rest, "--ratio": request.ratio, "--hip": request.hip, "--tilt": request.tilt + "deg",
         "--z": rinkDepthZ(request.floor),
       } as CSSProperties : undefined}>
       {scene?.playing && request && <>
@@ -213,7 +217,11 @@ export default function WinterRinkRescue() {
             {rig.map(part => part === "bed"
               ? <div key={part} className={styles.rigBed}>
                   <Sprite src={rigDirectory + "bed.webp"} width={768} height={384} className={styles.rigPart} />
-                  <Sprite src={request.src} width={400} height={Math.round(400 * request.ratio)} className={styles.onBed} />
+                  {/* Skaters ride out lying down under a blanket, like any patient (the gift thief keeps his own fall). */}
+                  <div className={styles.onBed}>
+                    <Sprite src={request.src} width={400} height={Math.round(400 * request.ratio)} className={styles.patientArt} />
+                    {request.skater && <span className={styles.blanket}><i /><i /></span>}
+                  </div>
                 </div>
               : <Sprite key={part} src={rigDirectory + part + ".webp"} width={768} height={384} className={`${styles.rigPart} ${styles[rigClass[part]]}`} />)}
           </div>

@@ -2,10 +2,9 @@
 
 import Image from "next/image";
 import { Smartphone, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
-import WinterFightSign from "./WinterFightSign";
-import WinterStreet, { WinterCocoaControl, WinterCocoaProvider, WinterStreetForeground } from "./WinterStreet";
+import WinterStreet, { WinterCocoaProvider, WinterStreetForeground } from "./WinterStreet";
 import { WinterVillageBellTower } from "./WinterVillageBells";
 import { WinterVillageHuntControls, WinterVillageHuntProvider, WinterVillageHuntTarget } from "./WinterVillageHunt";
 import WinterSnowChief from "./WinterSnowChief";
@@ -82,6 +81,62 @@ function FleetRig({ unit, height, description }: (typeof fleet)[number]) {
         width={760} height={height} sizes="(max-width: 720px) 200px, 27vw" unoptimized />
       <EmergencyLights unit={unit} on={lit} />
     </button>
+  );
+}
+
+// The countdown to Christmas morning (midnight December 25 in Millstadt, Central time), under the
+// wordmark. One shared one-second clock; the server and the first paint show dashes.
+let clockSecond = 0;
+let clockTimer: number | undefined;
+const clockListeners = new Set<() => void>();
+function subscribeClock(listener: () => void) {
+  clockListeners.add(listener);
+  if (clockListeners.size === 1) {
+    clockSecond = Math.floor(Date.now() / 1000);
+    clockTimer = window.setInterval(() => {
+      clockSecond = Math.floor(Date.now() / 1000);
+      clockListeners.forEach((hear) => hear());
+    }, 1000);
+  }
+  return () => {
+    clockListeners.delete(listener);
+    if (!clockListeners.size) window.clearInterval(clockTimer);
+  };
+}
+const readClock = () => clockSecond;
+const serverClock = () => 0;
+const centralDate = new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", year: "numeric", month: "numeric", day: "numeric" });
+
+/** Seconds until midnight on Christmas morning in Millstadt; null from Christmas Day through New Year's. */
+function untilChristmas(second: number): number | null {
+  const parts = centralDate.formatToParts(new Date(second * 1000));
+  const part = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((p) => p.type === type)?.value);
+  const year = part("year"), month = part("month"), day = part("day");
+  if (month === 1 || (month === 12 && day >= 25)) return null;
+  return Math.max(0, Date.UTC(year, 11, 25, 6) / 1000 - second); // December is CST, UTC-6
+}
+
+const countdownUnits = ["Days", "Hours", "Min", "Sec"] as const;
+function ChristmasCountdown() {
+  const second = useSyncExternalStore(subscribeClock, readClock, serverClock);
+  const left = second ? untilChristmas(second) : undefined;
+  if (left === null) {
+    return <p className={styles.countdown} data-merry=""><span className={styles.countdownMerry}>Merry Christmas from Millstadt EMS!</span></p>;
+  }
+  const values = left === undefined ? null : [Math.floor(left / 86400), Math.floor(left / 3600) % 24, Math.floor(left / 60) % 60, left % 60];
+  return (
+    <div className={styles.countdown} role="timer"
+      aria-label={values ? `${values[0]} days, ${values[1]} hours and ${values[2]} minutes until Christmas` : "Countdown to Christmas"}>
+      <span className={styles.countdownCaption} aria-hidden="true">Countdown to Christmas</span>
+      <span className={styles.countdownTiles} aria-hidden="true">
+        {countdownUnits.map((unit, i) => (
+          <span key={unit} className={styles.countdownTile}>
+            <b>{values ? String(values[i]).padStart(i ? 2 : 1, "0") : "--"}</b>
+            <small>{unit}</small>
+          </span>
+        ))}
+      </span>
+    </div>
   );
 }
 
@@ -167,12 +222,17 @@ function VillagePostcard() {
               <i className={styles.roadLight} />
               <i className={styles.roadLight} />
             </div>
-            <h2 className={styles.greeting} id="winter-village-title">
-              <span>Christmas in</span>
-              {/* The official millStadt windmill wordmark from the Millstadt EMS logo. */}
-              <Image className={styles.wordmark} src="/images/winter/kit/millstadt-wordmark.png" alt="Millstadt"
-                width={900} height={368} sizes="(max-width: 720px) 60vw, 34vw" unoptimized priority={false} />
-            </h2>
+            {/* The heading and the countdown under it. Pop-ups never cover the village (it's off-limits
+                to them), and the countdown sits above everything painted in the scene. */}
+            <div className={styles.greetingBlock}>
+              <h2 className={styles.greeting} id="winter-village-title">
+                <span>Christmas in</span>
+                {/* The official millStadt windmill wordmark from the Millstadt EMS logo. */}
+                <Image className={styles.wordmark} src="/images/winter/kit/millstadt-wordmark.png" alt="Millstadt"
+                  width={900} height={368} sizes="(max-width: 720px) 60vw, 34vw" unoptimized priority={false} />
+              </h2>
+              <ChristmasCountdown />
+            </div>
             <WinterVillageHuntTarget />
             <WinterTruckMedics active={inView} />
             <WinterStreet active={inView} />
@@ -208,15 +268,11 @@ function VillagePostcard() {
                 </span>
               </span>
             </div>
-            {/* Road signs on the front snowbank: "snowball fight ahead", and the Time Out call on
-                the plaque that hands the page back. */}
-            <div className={styles.roadSign}><WinterFightSign placement="village" /></div>
           </div>
           <WinterStreetForeground active={inView} />
         </div>
       </div>
       <div className={styles.controls} role="group" aria-label="Explore the Christmas village">
-        <WinterCocoaControl />
         <button type="button" ref={globeButton} className={styles.globeButton} onClick={() => void enterGlobe()}
           aria-label="Play the snowball fight in snow globe mode, full screen and sideways">
           <Smartphone size={17} aria-hidden="true" />

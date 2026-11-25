@@ -11,15 +11,14 @@ import styles from "./WinterSnowballAmbush.module.css";
 // Holiday pop-ups. Every 7-13 s someone who is free pops up from the bottom of the screen (or out
 // of a snowdrift) for one of several acts: a classic snowball throw, a wave hello and then a throw,
 // Braeden's mariachi serenade, Dylan's backflip, a peek with changing faces, a caroler, or the
-// whole caroler trio. Nobody appears twice at once (lib/seasonal/cast): the crew hanging on the
-// Christmas lights stay up there until a visitor knocks them down, while the carolers are free from
-// the start. Visitors throw back by clicking the character (or Alt+Shift+S); some take two or three
+// whole caroler trio. Nobody is in two acts at once (lib/seasonal/cast); the crew hanging on the
+// Christmas lights stay up there until a visitor knocks them down. Visitors throw back by clicking the character (or Alt+Shift+S); some take two or three
 // hits before giving up. Call Time Out and nothing appears or throws on its own.
 // Preview one act: ?preview=ve&pop-preview=classic|wave|serenade|backflip|peek|caroler|trio|duet
 // (optional: pop-edge=drift|floor|corner-left|corner-right, pop-tough=1-3, pop-person=<id>).
 
 export type Crew = "kalista" | "braeden" | "dylan" | "medical-director";
-// Audrey and Debbie join the peeks (they never hang on the lights, so they're always free).
+// Audrey and Debbie join the peeks (they don't hang on the lights).
 type Guest = "audrey" | "debbie";
 type Person = Crew | Guest | "caroler-curly" | "caroler-straight" | "caroler-little";
 type Kind = "classic" | "wave" | "serenade" | "backflip" | "peek" | "caroler" | "trio";

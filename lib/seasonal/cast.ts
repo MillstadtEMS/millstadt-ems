@@ -1,9 +1,9 @@
 "use client";
 
-// One of each person on screen at a time. Every character appearance (hanging from the lights,
-// popping out of a snowbank, riding the sleigh, pelting snowballs) claims its person first; a
-// second appearance of the same person waits until the first one leaves. Keeps the fight lively
-// without a crowd of identical faces.
+// One act per person at a time. Every act (popping out of a snowbank, skating out for a triple axel,
+// waving from behind a truck, pelting snowballs from the village) claims its person first; a second
+// act with the same person waits until the first one leaves. The crew hanging from the Christmas
+// lights don't count: they stay up there until a visitor knocks them down.
 
 const holders = new Map<string, symbol>();
 

@@ -5,7 +5,6 @@ import { useEffect, useLayoutEffect, useRef, useState, useCallback, useSyncExter
 import { createPortal } from "react-dom";
 import { isSnowballTimeout } from "@/lib/seasonal/snowballTimeout";
 import { reachSamples, tapSlop, touchReach } from "@/lib/device/profile";
-import { claimPerson } from "@/lib/seasonal/cast";
 import styles from "./WinterRoofline.module.css";
 
 const bulbs = ["#ff463e", "#ffca48", "#48ef94", "#69caff", "#ff6956", "#ffdf8f", "#57dfab", "#ee80c7"];
@@ -144,11 +143,6 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
 
   useEffect(() => () => window.clearTimeout(retire.current), []);
 
-  // While hanging, this person is "out": they won't also pop up elsewhere until knocked down.
-  useEffect(() => {
-    if (gone) return;
-    return claimPerson(chief) ?? undefined;
-  }, [chief, gone]);
 
   useEffect(() => {
     const figure = puppet.current;

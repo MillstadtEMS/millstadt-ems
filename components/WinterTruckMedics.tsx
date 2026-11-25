@@ -139,7 +139,7 @@ function runMedics(env: Env) {
 
   async function appear() {
     if (blocked() || medic || loading) return;
-    // Someone free: never anyone still on the Christmas lights or out in another act.
+    // Someone free: never anyone already out in another act.
     const order = preview?.person ? [preview.person] : [...crew.filter(p => p !== lastPerson).sort(() => Math.random() - .5), ...(lastPerson ? [lastPerson] : [])];
     let person: Crew | null = null;
     for (const candidate of order) {

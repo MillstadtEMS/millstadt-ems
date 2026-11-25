@@ -9,6 +9,7 @@ import brandStyles from "@/components/WinterBrandPlacement.module.css";
 import WinterRoofline from "@/components/WinterRoofline";
 import winterStyles from "@/components/WinterRoofline.module.css";
 import "@/components/winter-weather-ribbon.css";
+import WinterTimeoutNeon from "@/components/WinterTimeoutNeon";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 import CommunityAlertTicker, { CommunityAlertProvider } from "@/components/CommunityAlertTicker";
 
@@ -187,7 +188,8 @@ export default function Nav() {
       {/* ── Nav bar ── */}
       <CommunityAlertProvider>
       <div className={`mems-nav-bar bg-[#020912] border-b border-white/8 ${winter ? winterStyles.bar : ""}`} style={{ overflow: "visible" }}>
-        {winter && <div className="mems-weather-ribbon"><WeatherTicker ribbon /></div>}
+        {/* The candy-cane ribbon: the weather readout, and the neon Time Out sign for the snowball fight. */}
+        {winter && <div className="mems-weather-ribbon"><WeatherTicker ribbon /><WinterTimeoutNeon /></div>}
         <div className="mems-nav-content wrap flex items-center gap-4 py-3" style={{ overflow: "visible" }}>
 
           {/* Left group (flex-1) — balances the right group so the weather

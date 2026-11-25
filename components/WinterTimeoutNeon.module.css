@@ -1,0 +1,75 @@
+/* A neon sign on a dark backing board: a red tube that says links won't work during the fight,
+   a green tube underneath that says how to call Time Out. Plain words, holiday glow. */
+.neon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: .55em;
+  max-width: 100%;
+  padding: .32em .9em .36em;
+  border: 2px solid #ff6b84;
+  border-radius: 10px;
+  background: radial-gradient(ellipse at 50% 40%, #2a0d16 0%, #120a12 65%, #0b0910 100%);
+  box-shadow: 0 0 3px #ff3b5c, 0 0 10px #ff2d55a8, inset 0 0 9px #ff2d5559, 0 2px 4px #0009;
+  font: 800 clamp(.66rem, .95vw, .84rem)/1.12 system-ui, sans-serif;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: box-shadow .2s ease, transform .12s ease;
+}
+.neon:hover { box-shadow: 0 0 4px #ff3b5c, 0 0 16px #ff2d55d0, inset 0 0 12px #ff2d5580, 0 2px 4px #0009; }
+.neon:active { transform: translateY(1px); }
+.neon:focus-visible { outline: 2px solid #ffe7a6; outline-offset: 3px; }
+.lines { display: grid; justify-items: center; gap: .14em; min-width: 0; }
+.warn, .call { white-space: nowrap; }
+.warn {
+  color: #ffe4e9;
+  text-shadow: 0 0 1px #fff, 0 0 5px #ff4d6a, 0 0 11px #ff2d55, 0 0 18px #ff2d55;
+  animation: buzz 7s steps(1, end) infinite;
+}
+.call {
+  color: #e9fff0;
+  font-size: 1.04em;
+  text-shadow: 0 0 1px #fff, 0 0 5px #3dff95, 0 0 11px #19e57e, 0 0 18px #0fbf66;
+}
+.flake {
+  color: #dff6ff;
+  font-size: 1.15em;
+  text-shadow: 0 0 4px #9fe3ff, 0 0 10px #56c8ff;
+}
+/* Time out: the board turns green and the fight waits to be restarted. */
+.neon[data-timeout="true"] {
+  border-color: #52ffa6;
+  background: radial-gradient(ellipse at 50% 40%, #0b2a1b 0%, #08140f 65%, #070d0b 100%);
+  box-shadow: 0 0 3px #2bff8e, 0 0 10px #19e57ea8, inset 0 0 9px #19e57e59, 0 2px 4px #0009;
+}
+.neon[data-timeout="true"] .warn { color: #e9fff0; text-shadow: 0 0 1px #fff, 0 0 5px #3dff95, 0 0 11px #19e57e, 0 0 18px #0fbf66; animation: none; }
+.neon[data-timeout="true"] .call { color: #ffe4e9; text-shadow: 0 0 1px #fff, 0 0 5px #ff4d6a, 0 0 11px #ff2d55, 0 0 18px #ff2d55; }
+/* A real tube's little stutter now and then. */
+@keyframes buzz {
+  0%, 100% { opacity: 1; }
+  41% { opacity: .62; }
+  42% { opacity: 1; }
+  44% { opacity: .7; }
+  45% { opacity: 1; }
+}
+/* "Click" with a mouse, "tap" on a touchscreen. */
+.tap { display: none; }
+@media (hover: none) and (pointer: coarse) {
+  .click { display: none; }
+  .tap { display: inline; }
+}
+@media (max-width: 760px) {
+  .neon { padding-inline: .7em; gap: .4em; font-size: clamp(.6rem, 2.55vw, .74rem); letter-spacing: .05em; }
+}
+@media (prefers-reduced-motion: reduce) { .warn { animation: none; } .neon { transition: none; } }
+@media (forced-colors: active) { .neon { border-color: ButtonText; } .warn, .call, .flake { text-shadow: none; } }
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

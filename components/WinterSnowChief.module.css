@@ -1,6 +1,7 @@
 .chief {
   position: absolute;
-  left: 35.2%;
+  /* Jen's snowbank spot; Kenny's is at 67.5%. The fish stand stands between them. */
+  left: 33%;
   bottom: 3.6%;
   width: 14%;
   height: 24%;
@@ -234,7 +235,7 @@
 @media print { .lens, .hit { display: none; } }
 
 .chief[data-person="kenny"] {
-  left: 65.4%;
+  left: 67.5%;
   bottom: 3.1%;
   --arm-joint: 34% 46%;
   --arm-windup: 15deg;

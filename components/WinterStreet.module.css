@@ -351,14 +351,6 @@
 .chip { background: #fff; box-shadow: 0 0 1px #9fc3e0; }
 .iceChip { z-index: auto; background: #f3fbff; box-shadow: 0 0 2px #cde9ff; }
 
-.pour {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: .43em;
-  white-space: nowrap;
-}
-
 .announcement {
   position: absolute;
   width: 1px;
@@ -370,39 +362,24 @@
   white-space: nowrap;
 }
 
-.stallButton {
+/* The easter egg: the mug she holds out (centred at 47.7%, 51.6% of the stall art), a comfortable
+   tap target with no marker on it. */
+.mugButton {
   position: absolute;
   z-index: 3;
-  inset: 0;
-  min-width: 44px;
-  min-height: 44px;
+  left: 47.7%;
+  top: 51.6%;
+  width: max(44px, 16%);
+  aspect-ratio: 1;
+  translate: -50% -50%;
   pointer-events: auto;
   touch-action: manipulation;
   border: 0;
-  border-radius: .35em;
+  border-radius: 50%;
   background: transparent;
   cursor: pointer;
 }
-.stallButton:focus-visible { outline: 2px solid #ffedac; outline-offset: 2px; }
-.cocoaBadge {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  display: grid;
-  place-items: center;
-  width: clamp(16px, 1.7vw, 25px);
-  aspect-ratio: 1;
-  color: #fff2bc;
-  background: radial-gradient(ellipse at 30% 25%, #784a29, #452019);
-  border: 1px solid #e4bd75;
-  border-radius: 50%;
-  box-shadow: 0 1px 3px #201b2d88;
-}
-.cocoaBadge svg { width: 67%; height: 67%; }
-.stallButton:hover .cocoaBadge, .stallButton:focus-visible .cocoaBadge {
-  background: #834029;
-  box-shadow: 0 0 0 2px #ffdc865c;
-}
+.mugButton:focus-visible { outline: 2px solid #ffedac; outline-offset: 2px; }
 .stall[data-serving="true"] { z-index: 130; }
 .stall[data-serving="true"] .steam { transform: scale(1.8); transform-origin: center bottom; }
 .stall[data-serving="true"] .steam i { animation-duration: 1.65s; }
@@ -483,5 +460,5 @@
   .cup, .cup i { animation: none; }
 }
 @media print {
-  .cocoaBadge, .delivery, .pour, .ice { display: none; }
+  .delivery, .ice { display: none; }
 }

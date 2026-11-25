@@ -12,7 +12,6 @@ import WinterStreetParade from "./WinterStreetParade";
 import WinterMusicPlayer from "./WinterMusicPlayer";
 import WinterSnowballFight from "./WinterSnowballFight";
 import WinterTimeoutButton from "./WinterTimeoutButton";
-import WinterFightSign from "./WinterFightSign";
 import musicStyles from "./WinterMusicPlayer.module.css";
 import { useWinterTheme } from "@/lib/seasonal/useWinterTheme";
 import { useDeviceMarker } from "@/lib/device/profile";
@@ -67,9 +66,6 @@ export default function SiteShell({
         <div className={musicStyles.stage}>
           <WinterMusicPlayer />
         </div>
-        {/* The home page plants the Time Out road signs in its big village picture; other pages
-            get a small version of the same signs in the lower-left corner. */}
-        {winter && pathname !== "/" && <WinterFightSign placement="floating" />}
         {children}
       </main>
       <WinterPageSurprises pathname={pathname} />

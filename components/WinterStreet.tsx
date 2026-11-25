@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { Coffee } from "lucide-react";
 import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { isTesla, tapSlop } from "@/lib/device/profile";
 import { claimPerson } from "@/lib/seasonal/cast";
@@ -49,20 +48,9 @@ export function WinterCocoaProvider({ children }: { children: ReactNode }) {
     <CocoaContext.Provider value={{ pour, serving, stallButton }}>
       {children}
       <span className={styles.announcement} role="status">
-        {serving ? <span key={serving}>Your hot cocoa is ready. Extra marshmallows!</span> : null}
+        {serving ? <span key={serving}>Enjoy your hot cocoa!</span> : null}
       </span>
     </CocoaContext.Provider>
-  );
-}
-
-export function WinterCocoaControl({ className }: { className?: string }) {
-  const cocoa = useContext(CocoaContext);
-  return (
-    <button type="button" className={`${styles.pour} ${className ?? ""}`} disabled={!cocoa}
-      onClick={cocoa?.pour} aria-label="Pour cocoa at the village stand">
-      <Coffee size={17} aria-hidden="true" />
-      Pour cocoa
-    </button>
   );
 }
 
@@ -73,14 +61,13 @@ function CocoaStall() {
       <Image src="/images/winter/street/cocoa-stall.webp" alt=""
         width={398} height={500} sizes="(max-width: 720px) 100px, 13vw" unoptimized />
       <span className={styles.steam} aria-hidden="true"><i /><i /></span>
-      <button type="button" ref={cocoa?.stallButton} className={styles.stallButton} disabled={!cocoa}
-        title="Pour hot cocoa" aria-label="Pour a mug of hot cocoa at the striped village stand" onClick={cocoa?.pour}>
-        <span className={styles.cocoaBadge}><Coffee size={14} aria-hidden="true" /></span>
-      </button>
+      {/* An easter egg, unmarked: click the mug she's holding out and it's yours. */}
+      <button type="button" ref={cocoa?.stallButton} className={styles.mugButton} disabled={!cocoa}
+        aria-label="Take the mug of hot cocoa from the village stand" onClick={cocoa?.pour} />
       {cocoa?.serving ? (
         <div key={cocoa.serving} className={styles.delivery} aria-hidden="true">
           <span className={styles.cup}><i /></span>
-          <span className={styles.speech}>Hot cocoa!</span>
+          <span className={styles.speech}>Enjoy your hot cocoa!</span>
         </div>
       ) : null}
     </div>
@@ -145,8 +132,7 @@ function OldNumberFive() {
    skater hops cracks, the skater in red spins and the green-jacket skater stops to throw snowballs
    (flip-book swaps between his skating and throwing poses). Visitors tap any skater to throw:
    three hits in a couple of seconds knock them flat and the Millstadt medics haul them off. Dylan
-   comes down to the ice for a triple axel once a visitor has knocked him off the Christmas lights,
-   and once in a long while a Red Wings player and a Blues player burst in and collide.
+   skates out for a triple axel every minute or so, and once in a long while a Red Wings player and a Blues player burst in and collide.
    Positions are fractions of the rink: x across, f (floor) up from the bottom edge, which is depth.
    --------------------------------------------------------------------------------------------- */
 
@@ -166,31 +152,34 @@ type SkaterArt = {
   chest: readonly [number, number];
   /** The skating pose turned (about 90 degrees, more for skaters leaning hard into a stride) until
       the body lies flat, head to the left; offsets are from the canvas centre in canvas heights. */
-  down: { src: string; angle: number; width: number; height: number; ox: number; oy: number; rest: number };
+  down: { src: string; angle: number; width: number; height: number; ox: number; oy: number; rest: number;
+    /** On the stretcher: where the hips are across the lying art (the blanket covers from there to the
+        skates), and a lean (deg) that lays a diagonal fall flat on the mattress. */
+    hip: number; tilt?: number };
 };
 
 const rinkArt = "/images/winter/rink/";
 const skaterArt: readonly SkaterArt[] = [
   { id: "speed", name: "the speed skater", alt: "A speed skater in a red and navy puffer jacket races around the rink.",
     width: 382, height: 383, tall: 62, frames: [{ src: rinkArt + "speed.webp", body: [.14, .008, .69, .987] }], chest: [.61, .324],
-    down: { src: rinkArt + "speed-down.webp", angle: -114, width: 410, height: 297, ox: -.0274, oy: -.0078, rest: .86 } },
+    down: { src: rinkArt + "speed-down.webp", angle: -114, width: 410, height: 297, ox: -.0274, oy: -.0078, rest: .86, hip: .55 } },
   { id: "girl", name: "the skater in the red coat", alt: "A skater in a red coat and white knit hat glides with her arms out.",
     width: 358, height: 373, tall: 58, chest: [.456, .32],
     frames: [{ src: rinkArt + "girl-a.webp", body: [.14, .003, .55, .992] }, { src: rinkArt + "girl-b.webp", body: [.14, .051, .55, .941] }],
-    down: { src: rinkArt + "girl-down.webp", angle: -101, width: 365, height: 269, ox: -.0013, oy: .0858, rest: .747 } },
+    down: { src: rinkArt + "girl-down.webp", angle: -101, width: 365, height: 269, ox: -.0013, oy: .0858, rest: .747, hip: .6 } },
   { id: "green", name: "the skater in the green jacket", alt: "A skater in a green jacket and plaid scarf, never without a snowball.",
     width: 348, height: 373, tall: 60, chest: [.519, .349],
     frames: [{ src: rinkArt + "green-skate.webp", body: [.16, .046, .58, .949] }, { src: rinkArt + "green-throw.webp", body: [.141, .003, .701, .992] }],
-    down: { src: rinkArt + "green-down.webp", angle: -107, width: 356, height: 232, ox: 0, oy: .0295, rest: .88 } },
+    down: { src: rinkArt + "green-down.webp", angle: -107, width: 356, height: 232, ox: 0, oy: .0295, rest: .88, hip: .56 } },
   { id: "redwings", name: "the Red Wings player", alt: "A Detroit Red Wings hockey player rushes up the ice with the puck.",
     width: 450, height: 386, tall: 59, frames: [{ src: rinkArt + "redwings.webp", body: [.25, .003, .45, .992] }], chest: [.519, .32],
-    down: { src: rinkArt + "redwings-down.webp", angle: -94, width: 397, height: 388, ox: .0065, oy: -.0959, rest: .845 } },
+    down: { src: rinkArt + "redwings-down.webp", angle: -94, width: 397, height: 388, ox: .0065, oy: -.0959, rest: .845, hip: .6, tilt: -30 } },
   { id: "blues", name: "the Blues player", alt: "A St. Louis Blues hockey player charges in to check him.",
     width: 446, height: 386, tall: 59, frames: [{ src: rinkArt + "blues.webp", body: [.22, .003, .45, .992] }], chest: [.477, .32],
-    down: { src: rinkArt + "blues-down.webp", angle: -90, width: 384, height: 393, ox: 0, oy: -.0609, rest: .758 } },
+    down: { src: rinkArt + "blues-down.webp", angle: -90, width: 384, height: 393, ox: 0, oy: -.0609, rest: .758, hip: .58, tilt: -30 } },
   { id: "dylan", name: "Dylan", alt: "Dylan from Millstadt EMS, in uniform and a Santa hat, skates out for a triple axel.",
     width: 236, height: 367, tall: 57, frames: [{ src: rinkArt + "dylan.webp", body: [.12, .003, .72, .989] }], chest: [.509, .319],
-    down: { src: rinkArt + "dylan-down.webp", angle: -88, width: 364, height: 228, ox: -.0014, oy: .0204, rest: .82 } },
+    down: { src: rinkArt + "dylan-down.webp", angle: -88, width: 364, height: 228, ox: -.0014, oy: .0204, rest: .82, hip: .52 } },
 ];
 const snowballInHand = [.134, .107] as const; // the green-jacket skater's throwing pose
 const puckAtBlade = [.965, .985] as const;   // in front of the Red Wings player's stick
@@ -650,7 +639,7 @@ function RinkSkaters({ active }: StreetProps) {
         person: s.id, name: s.art.name,
         x: s.x + s.facing * end.centre * unit / 100 * R / W,
         floor: s.f, scale: shrink * CREW, width: s.art.down.width * unit, flip: s.facing,
-        patient: { src: s.art.down.src, width: s.art.down.width, height: s.art.down.height, rest: s.art.down.rest },
+        patient: { src: s.art.down.src, width: s.art.down.width, height: s.art.down.height, rest: s.art.down.rest, hip: s.art.down.hip, tilt: s.art.down.tilt ?? 0 },
         onStart: () => {
           if (disposed) return;
           started = true;
