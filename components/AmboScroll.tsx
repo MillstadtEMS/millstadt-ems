@@ -8,7 +8,7 @@ import { isSnowballTimeout, useSnowballTimeout } from "@/lib/seasonal/snowballTi
 import { MITTEN_RELEASE, burst, flightTime, visitorStart, visitorThrow, type Point } from "@/lib/seasonal/snowballFlight";
 import { isTesla, touchReach, useDeviceProfile } from "@/lib/device/profile";
 import EmergencyLights from "./EmergencyLights";
-import PoliceTow, { type TowGeometry } from "./WinterDriveByTow";
+import PoliceTow, { policeTruckWidth, type TowGeometry } from "./WinterDriveByTow";
 import styles from "./AmboScroll.module.css";
 
 const EMPLOYEE_PREFIXES = ["/lounge", "/admin", "/board", "/inventory", "/truckcheck"];
@@ -163,6 +163,19 @@ function previewVariant(): Pick<Pass, "variant" | "version"> | null {
   return VARIANT_WEIGHTS.some(([id]) => id === asked) ? { variant: asked as VariantId, version: 1 } : null;
 }
 
+// The fire trucks make their debut: until a visitor has seen Engine 3911 and Ladder 3919 this
+// session, the first passes of a visit are those (the engine, then the ladder).
+const FIRE_DEBUT_KEY = "millstadt:driveby-fire-seen:v1";
+function fireSeen(): Set<string> {
+  try { return new Set(JSON.parse(sessionStorage.getItem(FIRE_DEBUT_KEY) ?? "[]") as string[]); } catch { return new Set(); }
+}
+function markFireSeen(variant: VariantId) {
+  if (variant !== "engine" && variant !== "ladder") return;
+  const seen = fireSeen();
+  seen.add(variant);
+  try { sessionStorage.setItem(FIRE_DEBUT_KEY, JSON.stringify([...seen])); } catch { /* Storage blocked: the debut just repeats. */ }
+}
+
 function choosePass(id: number, previous: VariantId | null, broken: ReadonlySet<VariantId>): Pass | null {
   const pinned = previewVariant();
   const usable = VARIANT_WEIGHTS.filter(([v]) => !broken.has(v));
@@ -171,6 +184,10 @@ function choosePass(id: number, previous: VariantId | null, broken: ReadonlySet<
   let roll = Math.random() * pool.reduce((sum, [, w]) => sum + w, 0);
   let variant = pool[0]?.[0] ?? "classic";
   for (const [v, w] of pool) { roll -= w; if (roll <= 0) { variant = v; break; } }
+  const seen = fireSeen();
+  const debut = (["engine", "ladder"] as const).find(v => !seen.has(v) && pool.some(([p]) => p === v));
+  if (debut && !pinned) variant = debut;
+  markFireSeen(pinned?.variant ?? variant);
   return {
     id,
     variant: pinned?.variant ?? variant,
@@ -211,15 +228,16 @@ type StuckVehicle = {
   id: "ambulance" | "chaos" | "roof" | "engine" | "ladder";
   art: string;
   stages: readonly string[];
-  /** Fractions of the art box: front bumper x, body length, road line y, front tow hook. */
-  front: number; length: number; floor: number; hook: readonly [number, number];
+  /** Fractions of the art box: front bumper x, body length, road line y, front tow hook, and the
+   *  vehicle's own roof line y (under any riders), which sizes the police pickup beside it. */
+  front: number; length: number; floor: number; hook: readonly [number, number]; roof: number;
 };
 const snowStages = (prefix: string) => [1, 2, 3, 4, 5].map(n => `/images/winter/kit/ambulance-snow/${prefix}${n}.webp`);
 const AMBULANCE: StuckVehicle = {
   id: "ambulance",
   art: "/images/winter/driveby/cartoon-ambo.webp",
   stages: snowStages("stage"),
-  front: .018, length: .97, floor: .918, hook: [.029, .718],
+  front: .018, length: .97, floor: .918, hook: [.029, .718], roof: .05,
 };
 // The painted 3935 in the chaos sleigh and roof-ride passes: snow stages traced from each art's own
 // outline (drifts from the road, caps on the roof, hood and windshield).
@@ -227,13 +245,13 @@ const CHAOS_AMBULANCE: StuckVehicle = {
   id: "chaos",
   art: `${DRIVEBY}/chaos-ambulance.webp`,
   stages: snowStages("chaos-stage"),
-  front: .015, length: .97, floor: .985, hook: [.025, .76],
+  front: .015, length: .97, floor: .985, hook: [.025, .76], roof: .05,
 };
 const ROOF_AMBULANCE: StuckVehicle = {
   id: "roof",
   art: `${DRIVEBY}/roof-ride-1-still.webp`,
   stages: snowStages("roof-stage"),
-  front: .023, length: .96, floor: .993, hook: [.03, .76],
+  front: .023, length: .96, floor: .993, hook: [.03, .76], roof: .38,
 };
 // Millstadt Fire's Engine 3911 and Ladder 3919, fitted to the cartoon ambulance's frame (1536 x 1024
 // at half size): the same body length, front bumper and road line, so they share its --truck-width,
@@ -244,13 +262,13 @@ const ENGINE_3911: StuckVehicle = {
   id: "engine",
   art: `${FIRE_TRUCKS}/engine-3911.webp`,
   stages: fireStages("engine-3911"),
-  front: .009, length: .983, floor: .918, hook: [.014, .766],
+  front: .009, length: .983, floor: .918, hook: [.014, .766], roof: .2,
 };
 const LADDER_3919: StuckVehicle = {
   id: "ladder",
   art: `${FIRE_TRUCKS}/ladder-3919.webp`,
   stages: fireStages("ladder-3919"),
-  front: .009, length: .983, floor: .918, hook: [.031, .759],
+  front: .009, length: .983, floor: .918, hook: [.031, .759], roof: .3,
 };
 /** Which vehicle gets snowed in on a pass: every ambulance and fire truck can be buried and towed out. */
 function pickStuckVehicle(variant: VariantId): StuckVehicle | null {
@@ -451,14 +469,17 @@ function WinterDriveBy() {
     // convoy first slides back on the ice so the truck and Santa stay on screen.
     const length = a.width * vehicle.length;
     const front = a.left + a.width * vehicle.front - l.left;
-    const room = length * 1.12 * .8 + Math.max(length * .45, 74);
+    // A real police pickup stands about two thirds as tall as an ambulance, a bit less beside a fire truck.
+    const fire = vehicle.id === "engine" || vehicle.id === "ladder";
+    const truck = policeTruckWidth(a.height * (vehicle.floor - vehicle.roof) * (fire ? .62 : .68));
+    const room = truck * .8 + Math.max(length * .45, 74);
     const slide = Math.max(0, room - front);
     towStart.current = { base: shiftX.current, slide };
     setTow({
       laneWidth: l.width, laneHeight: l.height, screenTop: l.top,
       floor: a.top + a.height * vehicle.floor - l.top,
       front, hook: { x: a.left + a.width * vehicle.hook[0] - l.left, y: a.top + a.height * vehicle.hook[1] - l.top },
-      length, slide,
+      length, slide, truck,
     });
   }
 

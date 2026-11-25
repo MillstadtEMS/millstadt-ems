@@ -13,7 +13,9 @@ import styles from "./WinterDriveByTow.module.css";
 
 const ART = "/images/winter/kit/police-truck";
 /** Truck art is 529 x 178: winch on the push bar, cab door, rear wheel and road line in art px. */
-const TRUCK = { w: 529, h: 178, winch: [521, 136], door: [325, 118], rearWheel: [100, 134], beacon: [362, 26], grille: [512, 92], floor: 174 } as const;
+const TRUCK = { w: 529, h: 178, winch: [521, 136], door: [325, 118], rearWheel: [100, 134], beacon: [362, 26], grille: [512, 92], floor: 174, roof: 30 } as const;
+/** The pickup's width on screen when its roof stands `height` px above the road. */
+export const policeTruckWidth = (height: number) => height * TRUCK.w / (TRUCK.floor - TRUCK.roof);
 /** Santa walk frames are 156 x 220 with the feet on the bottom edge. */
 const SANTA = { w: 156, h: 220 } as const;
 
@@ -22,8 +24,10 @@ export type TowGeometry = {
   laneWidth: number; laneHeight: number; screenTop: number;
   /** The road line the vehicles stand on. */
   floor: number;
-  /** The stuck ambulance's front bumper x, its front tow hook, and its body length (sets the scale). */
+  /** The stuck vehicle's front bumper x, its front tow hook and its body length. */
   front: number; hook: { x: number; y: number }; length: number;
+  /** The police pickup's width, sized like a real pickup beside this ambulance or fire truck. */
+  truck: number;
   /** How far the stuck convoy first slides back on the ice so the truck and Santa fit on screen. */
   slide: number;
 };
@@ -66,7 +70,7 @@ export default function PoliceTow({ geometry, paused, hits, onSlide, onPull, onP
   useEffect(() => { live.current = { paused, hits, onSlide, onPull, onPopOut, onRelease, onDone }; });
 
   const { laneWidth, laneHeight, floor, length } = geometry;
-  const pw = length * 1.12, k = pw / TRUCK.w;
+  const pw = geometry.truck, k = pw / TRUCK.w;
   const sh = TRUCK.floor * k * .9, sw = sh * SANTA.w / SANTA.h;
   const road = laneHeight - floor;
 
