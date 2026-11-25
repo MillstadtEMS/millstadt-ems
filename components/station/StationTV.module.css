@@ -19,16 +19,16 @@
 }
 
 /* The living room's own TV buttons are replaced by the big Sound button in the bar (it drives them). */
-:global(:root[data-station]) [data-winter-video] div:has(> span > #winter-sound-toggle) { display: none; }
+:global(:root[data-station] [data-winter-video] div:has(> span > #winter-sound-toggle)) { display: none; }
 
 /* The village: the station's bar shows the countdown, and there are no visitors to tap its buttons. */
-:global(:root[data-station]) #christmas-in-millstadt :is([role="timer"], [data-merry]) { display: none; }
-:global(:root[data-station]) #christmas-in-millstadt section > :not(#winter-village-picture) { display: none !important; }
-:global(:root[data-station]) #christmas-in-millstadt section { border: 0; }
+:global(:root[data-station] #christmas-in-millstadt :is([role="timer"], [data-merry])) { display: none; }
+:global(:root[data-station] #christmas-in-millstadt section > :not(#winter-village-picture)) { display: none !important; }
+:global(:root[data-station] #christmas-in-millstadt section) { border: 0; }
 /* The wordmark and its caption are sized to the picture, not the screen. */
-:global(:root[data-station]) #winter-village-title { font-size: 6.4cqw; }
-:global(:root[data-station]) #winter-village-title > span { font-size: max(9px, .95cqw); }
-:global(:root[data-station]) #winter-village-title img { width: 31cqw; }
+:global(:root[data-station] #winter-village-title) { font-size: 6.4cqw; }
+:global(:root[data-station] #winter-village-title > span) { font-size: max(9px, .95cqw); }
+:global(:root[data-station] #winter-village-title img) { width: 27cqw; }
 
 .station {
   --u: var(--station-u, 1vh);

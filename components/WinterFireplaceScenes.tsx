@@ -4,7 +4,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
-import { gabbyDone, markGabbyDone, nextFireplaceTurn, reserveFireplace } from "@/lib/seasonal/fireplaceScenes";
+import { fireplaceGap, gabbyDone, markGabbyDone, nextFireplaceTurn, reserveFireplace } from "@/lib/seasonal/fireplaceScenes";
 import { allCrewDown, crewDownCount, subscribeCrewDown } from "./WinterRoofline";
 import styles from "./WinterFireplaceScenes.module.css";
 
@@ -122,7 +122,10 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
     const measure = () => {
       frame = 0;
       const room = stage.querySelector<HTMLElement>("[data-living-room]");
-      const s = stage.getBoundingClientRect(), r = room?.getBoundingClientRect();
+      // On-screen boxes in the stage's own pixels (the station TV scales the whole living room).
+      const k = stage.getBoundingClientRect().width / (stage.offsetWidth || 1) || 1;
+      const local = (b: DOMRect) => new DOMRect(b.x / k, b.y / k, b.width / k, b.height / k);
+      const s = local(stage.getBoundingClientRect()), r = room ? local(room.getBoundingClientRect()) : undefined;
       if (!r || !r.width || getComputedStyle(room!).display === "none") { setLayout(null); return; }
       const presents = r.left + r.width * ROOM.presentsRight;
       const lane = s.right - presents;
@@ -310,7 +313,7 @@ export default function WinterFireplaceScenes({ expanded, timeout }: { expanded:
       current.timers.push(window.setTimeout(() => {
         if (run.current !== current) return;
         stop();
-        nextDelay.current = BETWEEN_TURNS;
+        nextDelay.current = fireplaceGap(BETWEEN_TURNS);
         setCycle(c => c + 1);
       }, CLIP_MS));
     }, nextDelay.current);

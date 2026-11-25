@@ -13,6 +13,7 @@ import { detectDisplay, type StationDisplay } from "@/lib/station/display";
 import { STATION_ATTRIBUTE } from "@/lib/station/flags";
 import { StationClock, StationCountdown, StationSoundButton, StationWeatherPanel } from "./StationHud";
 import { useStationWeather } from "./useStationWeather";
+import StationDirector from "./StationDirector";
 import styles from "./StationTV.module.css";
 
 // The station TV: one screen, hands-free, all season. Across the top, the time, date, countdown and
@@ -92,9 +93,9 @@ export default function StationTV({ initialWinter, driveBy, review = false }: { 
       <header className={styles.hud} data-station-hud="" data-winter-player="">
         <div className={styles.hudLeft}>
           <StationClock />
-          <StationCountdown />
+          <StationSoundButton />
         </div>
-        <div className={styles.hudCenter}><StationSoundButton /></div>
+        <div className={styles.hudCenter}><StationCountdown /></div>
         <div className={styles.hudRight}><StationWeatherPanel weather={weather} display={display} /></div>
         <WinterRoofline station />
       </header>
@@ -113,6 +114,7 @@ export default function StationTV({ initialWinter, driveBy, review = false }: { 
       <WinterSnowballAmbush pathname="/station" />
       <WinterSnowballFight />
       <AmboScroll enabled={driveBy} />
+      <StationDirector />
     </div>
   );
 }

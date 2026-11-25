@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import StationTV from "@/components/station/StationTV";
 import { isStationAuthed, safeStationPath, stationReviewBypass } from "@/lib/station/auth";
 import { getSeasonalThemePublicConfig } from "@/lib/seasonal/themes";
+import { STATION_ATTRIBUTE } from "@/lib/station/flags";
 
 export const metadata: Metadata = {
   title: "Station TV",
@@ -27,11 +28,14 @@ export default async function StationPage({ searchParams }: { searchParams: Prom
     const next = safeStationPath(`/station${back.size ? `?${back}` : ""}`);
     redirect(`/station/login?next=${encodeURIComponent(next)}`);
   }
-  return (
+  return (<>
+    {/* Mark the document before any script runs, so the shared seasonal code knows it's on the TV
+        (Time Out is ignored, the crew fall with mad faces) from its very first check. */}
+    <script dangerouslySetInnerHTML={{ __html: `document.documentElement.setAttribute("${STATION_ATTRIBUTE}","")` }} />
     <StationTV
       initialWinter={getSeasonalThemePublicConfig().initialTheme === "winter"}
       driveBy={process.env.ENABLE_PUBLIC_AMBULANCE_DRIVE_BY !== "false"}
       review={review}
     />
-  );
+  </>);
 }

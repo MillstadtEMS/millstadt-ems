@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { isStation } from "@/lib/station/flags";
 
 // "Call time out" stops every automatic snowball antic (ambushes, characters throwing at each
 // other, pop-ups, staged incidents) and stops page-wide clicks from knocking characters over.
@@ -21,6 +22,8 @@ function mark(on: boolean) {
 
 export function isSnowballTimeout() {
   if (typeof window === "undefined") return false;
+  // The station TV (/station) is hands-free: a Time Out called on the site doesn't stop it.
+  if (isStation()) return false;
   if (cached === null) {
     cached = read();
     mark(cached);

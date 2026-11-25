@@ -16,7 +16,7 @@
 .ss small { font: 800 calc(1.45 * var(--u))/1 system-ui, sans-serif; letter-spacing: .14em; color: #d8f3e2; }
 .date { display: grid; gap: calc(.35 * var(--u)); color: #fff4d8; white-space: nowrap; }
 .weekday { font: 800 calc(1.7 * var(--u))/1 system-ui, sans-serif; letter-spacing: .2em; text-transform: uppercase; color: #ffe08a; }
-.day { font: 700 calc(2.6 * var(--u))/1.05 system-ui, sans-serif; }
+.day { font: 800 calc(3.3 * var(--u))/1 system-ui, sans-serif; }
 
 /* Off season: the clock fills the screen. */
 .clockBlock[data-big] { flex-direction: column; gap: calc(2.5 * var(--u)); }
@@ -79,10 +79,10 @@
   border-left: calc(.16 * var(--u)) solid #ffffff40;
   min-width: 0;
 }
-.forecast li { display: flex; align-items: baseline; gap: calc(.6 * var(--u)); white-space: nowrap; font: 600 calc(1.7 * var(--u))/1.15 system-ui, sans-serif; }
-.forecast b { font-weight: 800; color: #ffe08a; min-width: calc(9 * var(--u)); }
+.forecast li { display: flex; align-items: baseline; gap: calc(.55 * var(--u)); white-space: nowrap; font: 600 calc(1.6 * var(--u))/1.15 system-ui, sans-serif; }
+.forecast b { font-weight: 800; color: #ffe08a; min-width: calc(7.6 * var(--u)); }
 .forecast span { font-weight: 800; font-variant-numeric: tabular-nums; }
-.forecast em { font-style: normal; color: #ffe9d2; max-width: calc(18 * var(--u)); overflow: hidden; text-overflow: ellipsis; }
+.forecast em { font-style: normal; color: #ffe9d2; max-width: calc(14 * var(--u)); overflow: hidden; text-overflow: ellipsis; }
 .flight {
   display: grid;
   gap: calc(.3 * var(--u));
@@ -94,21 +94,20 @@
 }
 .flight[data-status="not-flying"] { background: #1d0508e8; border-color: #ff8a8a; }
 .flightLabel { font: 800 calc(1.05 * var(--u))/1 system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #cfe9da; white-space: nowrap; }
+.flightLabel i { font-style: normal; opacity: .75; letter-spacing: .08em; }
 .flight[data-status="not-flying"] .flightLabel { color: #ffd2cf; }
-.flightStatus { font: 800 calc(1.9 * var(--u))/1.05 system-ui, sans-serif; color: #7dffb0; white-space: nowrap; }
+.flightStatus { font: 800 calc(1.65 * var(--u))/1.05 system-ui, sans-serif; color: #7dffb0; white-space: nowrap; }
 .flight[data-status="not-flying"] .flightStatus { color: #ffb3b3; }
-.alert {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + .4 * var(--u));
-  padding: calc(.2 * var(--u)) calc(.8 * var(--u));
-  font: 800 calc(1.15 * var(--u))/1.2 system-ui, sans-serif;
+.forecast .alert {
+  display: block;
+  justify-self: start;
+  padding: calc(.18 * var(--u)) calc(.7 * var(--u));
+  font: 800 calc(1.1 * var(--u))/1.2 system-ui, sans-serif;
   letter-spacing: .1em;
   text-transform: uppercase;
   color: #1b1200;
   background: #ffd23f;
-  border-radius: calc(.5 * var(--u));
-  white-space: nowrap;
+  border-radius: calc(.45 * var(--u));
 }
 .stale {
   position: absolute;

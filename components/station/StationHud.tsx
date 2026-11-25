@@ -25,7 +25,7 @@ export function StationClock({ big = false }: { big?: boolean }) {
       </div>
       <div className={styles.date}>
         <span className={styles.weekday}>{t ? weekdayNames[t.weekday] : " "}</span>
-        <span className={styles.day}>{t ? `${monthNames[t.month - 1]} ${t.day}, ${t.year}` : " "}</span>
+        <span className={styles.day}>{t ? (big ? `${monthNames[t.month - 1]} ${t.day}, ${t.year}` : `${monthNames[t.month - 1].slice(0, 3)} ${t.day}`) : " "}</span>
       </div>
     </div>
   );
@@ -88,15 +88,15 @@ function WeatherReport({ data, stale, updatedAt, display, wide }: { data: Weathe
         </div>
       </div>
       <ul className={styles.forecast} aria-label="Forecast">
-        {next.map((period) => (
+        {alert && <li className={styles.alert}>{alert}</li>}
+        {next.slice(0, alert ? Math.max(1, next.length - 1) : next.length).map((period) => (
           <li key={period.name}><b>{period.name}</b> <span>{period.temperature}°</span> <em>{period.shortForecast}</em></li>
         ))}
       </ul>
       <div className={styles.flight} data-status={flight.status} title={flight.reason}>
-        <span className={styles.flightLabel}>Med helicopter · weather estimate</span>
+        <span className={styles.flightLabel}>Med helicopter <i>est.</i></span>
         <span className={styles.flightStatus}>{flight.status === "flying" ? "Likely to accept flight" : "Unlikely to accept flight"}</span>
       </div>
-      {alert && <span className={styles.alert}>{alert}</span>}
       {stale && updatedAt && <span className={styles.stale}>As of {shortTime(updatedAt)}</span>}
     </div>
   );
