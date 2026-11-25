@@ -11,7 +11,7 @@
   contain: strict;
   visibility: hidden;
 }
-.scene[data-ready] { visibility: visible; }
+.scene[data-ready][data-placed] { visibility: visible; }
 .layer { position: absolute; display: block; max-width: none; pointer-events: none; }
 
 /* Ladder 3919 (sized in art px times --s by the script). */

@@ -418,7 +418,9 @@ function HangingCrew({ chief, anchor, menuOpen, station = false }: { chief: Chie
       const mask = alpha.current;
       if (!figure || event.defaultPrevented || !event.detail || event.button !== 0 || isSnowballTimeout() ||
           offLights(chief) || Math.hypot(event.clientX - startX, event.clientY - startY) > tapSlop(startType)) return;
-      if (!(event.target instanceof Element) || event.target.closest(controls)) return;
+      // Page controls under a hanging figure keep priority, except the living-room pull station: a
+      // crew member hanging in front of it is the one being tapped (on phones it sits under Dylan).
+      if (!(event.target instanceof Element) || (event.target.closest(controls) && !event.target.closest("[data-pull-station]"))) return;
       // Ask the browser which rotated/clipped costume pieces are at this point (and, for a finger,
       // a small ring around it). The overlay only participates in hit-testing during this
       // synchronous lookup, so page links, form fields, text selection and touch scrolling retain priority.

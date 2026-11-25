@@ -689,7 +689,11 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
     else {
       queue.push(arrive, () => { nextRescue(true); return null; });
       frame = requestAnimationFrame(tick);
+      draw();
     }
+    // The scene shows only once every layer is placed; until then they'd sit at the page's top-left
+    // at their natural size (a flash of a giant Santa leg and ladder base when the alarm is pulled).
+    sceneEl.dataset.placed = "";
     window.addEventListener(snowballTimeoutEvent, syncPause);
     window.addEventListener("resize", resize, { passive: true });
     syncPause();

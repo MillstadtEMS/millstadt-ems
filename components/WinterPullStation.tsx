@@ -172,7 +172,7 @@ export default function WinterPullStation() {
         <text x="27" y="79.6" textAnchor="middle" className={styles.stationWordSmall}>ALARM</text>
         <path d="M15.2 50.5c.2-1.6 1-2.4 2.6-2.6" stroke="#fff" strokeWidth=".7" opacity=".55" fill="none" strokeLinecap="round" />
       </svg>
-      {lit && <button type="button" className={styles.pull} onClick={pull}
+      {lit && <button type="button" className={styles.pull} onClick={pull} data-pull-station=""
         onPointerEnter={() => void loadRescue()} onFocus={() => void loadRescue()}
         aria-label="Pull for emergency: the fire alarm calls Ladder 3919, and Santa rescues the crew from the Christmas lights" />}
     </span>
