@@ -208,8 +208,12 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     if (!context) return;
     try {
       context.drawImage(image, 0, 0, maskWidth, maskHeight);
-      alpha.current = context.getImageData(0, 0, maskWidth, maskHeight).data;
-    } catch { /* Browsers that restrict canvas reads use the uniform's center below. */ }
+      const data = context.getImageData(0, 0, maskWidth, maskHeight).data;
+      let opaque = 0;
+      for (let i = 3; i < data.length; i += 4) if (data[i] > 70) opaque++;
+      // A privacy mode that blanks canvas reads would leave nothing tappable: use the body column below instead.
+      alpha.current = opaque > maskWidth * maskHeight * .02 ? data : null;
+    } catch { /* Browsers that restrict canvas reads use the body column below. */ }
   }
 
   const throwSnowball = useCallback((x: number, y: number) => {
@@ -258,7 +262,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
         const x = Math.floor(point.x * maskWidth / 477), y = Math.floor(point.y * maskHeight / 716);
         const shirtCenter = chief === "kenny" ? 94 : 81;
         const ink = mask ? mask[(y * maskWidth + x) * 4 + 3] > 70
-          : Math.abs(x - shirtCenter) < 10 && y > 78 && y < 115;
+          : Math.abs(x - shirtCenter) < maskWidth * .28 && y > 24;
         if (x >= 0 && x < maskWidth && y > 9 && y < maskHeight && ink) return true;
       }
       return false;
@@ -311,11 +315,14 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       if (!hoverFrame) hoverFrame = requestAnimationFrame(hoverCheck);
     }
     document.addEventListener("pointerdown", start, { passive: true, capture: true });
-    document.addEventListener("click", hit, true);
+    // On the window, so a tap on someone on the lights is theirs before the site-wide fight's
+    // document listener can claim it as a plain throw, whichever was added first. A mouse marks its
+    // aim by hovering, but a phone has no hover to mark it with.
+    window.addEventListener("click", hit, true);
     document.addEventListener("pointermove", hover, { passive: true });
     return () => {
       document.removeEventListener("pointerdown", start, true);
-      document.removeEventListener("click", hit, true);
+      window.removeEventListener("click", hit, true);
       document.removeEventListener("pointermove", hover);
       cancelAnimationFrame(hoverFrame);
       setAiming(false);
