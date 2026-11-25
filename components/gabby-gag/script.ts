@@ -279,17 +279,22 @@ export function buildGag(stage: Stage) {
   // a beat with the room empty (about half a second once she's off the edge), then she strolls back in
   const tStroll = tGone + 260;
   // she stops in front of the chair with her boots on the two spots she'll sit and stand up on
-  const CHAIR = 73, FEET_L = 69, FEET_R = 77;
+  // her seat in the armchair (deeper in on phones, where the screen's edge cuts through the chair), and
+  // the two spots her boots stand on in front of it (she stops on them, sits over them, stands up off them)
+  const SEAT: Pt = [clamp(stage.left + 30, 87, 97), 157];
+  const FEET_L = SEAT[0] - 18, FEET_R = SEAT[0] - 10, CHAIR = SEAT[0] - 14;
   const vSt = clamp((CHAIR - OFF) / 3.0, 78, 185);
   const stroll = makeLoco({ style: "walk", dir: 1, t0: tStroll, x0: OFF, x1: CHAIR, v: vSt, step: clamp(vSt * .37, 28, 46), easeEnd: true, endFeet: [FEET_R - CHAIR, FEET_L - CHAIR], hips: HIPS });
   const tAtChair = settled(stroll);
   const tTurn2 = tAtChair + 90, tSit = tTurn2 + 200, tSat = tSit + 540, tDoze = tSat + 950, tZ = tDoze + 650;
   // ---------------------------------------------------------------- 6. the pager, run off
-  const tBeep = tDoze + 2150, tStartle = tBeep + 340, tSay3 = tStartle + 230, tHop = tStartle + 470, tUp = tHop + 380;
-  const tSay3End = tSay3 + 1950, tCrouch = tSay3End - 620, tRun2 = tCrouch + 240;
-  const RUN_FROM = 71;
-  const vRun = clamp((RUN_FROM - OFF) / 1.25, 250, 470);
-  const run2 = makeLoco({ style: "run", dir: -1, t0: tRun2, x0: RUN_FROM, x1: OFF - 40, v: vRun, step: clamp(vRun * .2, 46, 70), easeStart: true, startFeet: [FEET_L, FEET_R], hips: HIPS, lead: 0, sigma: .62 });
+  // BEEP BEEP: she jolts awake, springs up out of the chair (turning to face the room in the air), lands
+  // beside it: GOTTA RUN! Then she turns LEFT, winds up, and sprints off the far left edge.
+  const tBeep = tDoze + 2150, tStartle = tBeep + 340, tHop = tStartle + 470, tApex = tHop + 200, tLanded = tApex + 210;
+  const tSay3 = tLanded + 70, tSay3End = tSay3 + 1900, tTurnL = tSay3 + 1080, tCrouch = tTurnL + 240, tRun2 = tCrouch + 360;
+  const RUN_FROM = Math.max(SEAT[0] + 26, stage.left + 36);
+  const vRun = clamp((RUN_FROM - OFF) / 1.3, 250, 470);
+  const run2 = makeLoco({ style: "run", dir: -1, t0: tRun2, x0: RUN_FROM, x1: OFF - 40, v: vRun, step: clamp(vRun * .2, 46, 70), easeStart: true, startFeet: [RUN_FROM - 6, RUN_FROM + 5], hips: HIPS, lead: 0, sigma: .62 });
   const tOff = whenPast(run2, OFF - 6, tRun2);
   // the milk and cookies are tidied away (they fade out) as she dashes off
   const tTidy = Math.max(tRun2 + 60, tOff - 520);
@@ -355,12 +360,12 @@ export function buildGag(stage: Stage) {
   // turned: now facing left; the boot she holds is behind her (her near arm reaches back to it)
   const turned: GabbyPose = { ...dragPose(tDrag), y: STAND + 2 };
   // the armchair: facing left (like the chair), sunk into the seat, boots on the rug in front
-  // her far hip tucked in behind the near armrest, thighs out toward us, shins down in front of the seat
-  const SEAT: Pt = [87, 157];
+  // seated: facing the way the chair faces (left), sunk into the seat, her head turned toward the room
+  // (smugly eyeing the fireplace she just cleared); thighs out toward us, shins down in front of the seat
   const seated = (o: Partial<GabbyPose> = {}): GabbyPose => ({
-    x: SEAT[0], y: SEAT[1], dir: -1, lean: -8, floor: FLOOR, head: "sly", hat: { on: true },
+    x: SEAT[0], y: SEAT[1], dir: -1, lean: -8, floor: FLOOR, head: "sly", headBack: true, hat: { on: true },
     armN: fk(14, 98), armF: fk(6, 106),
-    legN: { x: 69, y: ANK, a: 4, knee: [66, 158.5] }, legF: { x: 77, y: ANK, a: 4, knee: [74, 160] },
+    legN: { x: FEET_L, y: ANK, a: 4, knee: [FEET_L - 3, 158.5] }, legF: { x: FEET_R, y: ANK, a: 4, knee: [FEET_R - 3, 160] },
     ...o,
   });
   const atChair = (dir: 1 | -1, o: Partial<GabbyPose> = {}): GabbyPose => ({
@@ -368,10 +373,18 @@ export function buildGag(stage: Stage) {
     armN: fk(4, 16), armF: fk(-3, 14),
     legN: flat(dir === 1 ? FEET_R : FEET_L), legF: flat(dir === 1 ? FEET_L : FEET_R), ...o,
   });
-  // standing up out of the chair and the wind-up before the sprint
-  const upPose = atChair(-1, { head: "yell", lean: 6, x: RUN_FROM, armN: fk(30, 70, "fist"), armF: fk(-20, 70, "fist") });
-  const crouch = (c: number): GabbyPose => ({ ...upPose, y: STAND + 5 * c, lean: lerp(6, -8, c), armN: fk(lerp(30, -45, c), 60, "fist"), armF: fk(lerp(-20, 40, c), 70, "fist"), head: "grit" });
-  const runAnchor = headTop(crouch(1));
+  // landed beside the chair, facing the room: alarmed, flapping
+  const landed = (o: Partial<GabbyPose> = {}): GabbyPose => ({
+    x: RUN_FROM, y: STAND, dir: 1, lean: -3, floor: FLOOR, head: "yell", hat: { on: true },
+    armN: fk(150, 30), armF: fk(120, 40), legN: flat(RUN_FROM + 5), legF: flat(RUN_FROM - 6), ...o,
+  });
+  // turned left on the same two spots, then winding up for the sprint (sinking, leaning back, arms back)
+  const turnedL = (o: Partial<GabbyPose> = {}): GabbyPose => ({
+    x: RUN_FROM, y: STAND + 1, dir: -1, lean: 4, floor: FLOOR, head: "grit", hat: { on: true },
+    armN: fk(30, 70, "fist"), armF: fk(-20, 70, "fist"), legN: flat(RUN_FROM - 6), legF: flat(RUN_FROM + 5), ...o,
+  });
+  const crouch = (c: number): GabbyPose => turnedL({ y: STAND + 1 + 5 * c, lean: lerp(4, -9, c), armN: fk(lerp(30, -48, c), 62, "fist"), armF: fk(lerp(-20, 44, c), 72, "fist") });
+  const runAnchor = headTop(landed());
 
   // ---------------------------------------------------------------- Santa
   const SX = 617;
@@ -561,43 +574,65 @@ export function buildGag(stage: Stage) {
         const settle = d < 260 ? Math.sin((d / 260) * Math.PI) : 0;
         const breath = Math.sin(d / 520) * .5;
         g = seated({ sy: 1 - settle * .035, sx: 1 + settle * .02, y: SEAT[1] - breath });
-        // smug, getting comfy... then the eyelids droop
+        // smug, getting comfy... then the eyelids droop and her head lolls back against the chair's wing
         if (t < tDoze) g.nod = Math.sin(d / 210) * 3 * Math.min(1, d / 300);
         else {
           const z = seg(t, tDoze, tDoze + 1100);
           g.head = "sleep";
-          g.nod = 17 * smooth(z) + Math.sin((t - tDoze) / 420) * 1.2 * z;
-          g.headDy = 2 * z;
-          g.lean = -7 - 3 * z;
-          g.armN = fk(10, 96 - z * 10);
+          g.nod = -15 * smooth(z) + Math.sin((t - tDoze) / 420) * 1.2 * z;
+          g.headDy = 1.5 * z;
+          g.lean = -8 - 3 * z;
+          g.armN = fk(14 - 4 * z, 98 - z * 12);
         }
       }
       if (t >= tSit) s.chair = true;
     } else if (t < tRun2) {
-      s.act = t < tStartle ? "doze" : t < tHop ? "startle" : t < tUp ? "stand up" : t < tCrouch ? "shout" : "wind-up";
-      const base = seated({ head: "sleep", nod: 17, headDy: 2, lean: -10, armN: fk(10, 86) });
+      s.act = t < tStartle ? "doze" : t < tHop ? "startle" : t < tLanded ? "spring up" : t < tTurnL ? "shout" : t < tCrouch ? "turn" : "wind-up";
+      const pagerOn = Math.floor((t - tBeep) / 85) % 2 ? 1 : 0;
+      const base = seated({ head: "sleep", nod: -15, headDy: 1.5, lean: -11, armN: fk(10, 86) });
       if (t < tStartle) {
-        g = { ...base, pager: Math.floor((t - tBeep) / 85) % 2 ? 1 : 0 };
+        g = { ...base, pager: pagerOn };
       } else if (t < tHop) {
         const u = t - tStartle;
         const jolt = u < 100 ? easeOut(u / 100) : 1 - smooth(clamp((u - 100) / 250, 0, 1));
-        // her hands fly up off her lap (quick, but not a jump cut)
+        // her head snaps up and her hands fly up off her lap (quick, but not a jump cut)
         const fling = easeOut(clamp(u / 80, 0, 1));
-        g = seated({ head: "shock", nod: lerp(17, -7, easeOut(clamp(u / 90, 0, 1))), lean: lerp(-10, -2, fling), y: SEAT[1] - jolt * 7, sy: 1 + jolt * .07, sx: 1 - jolt * .04, armN: fk(lerp(10, 40, fling) - jolt * 10, lerp(86, 70, fling) + jolt * 30), armF: fk(lerp(6, -18, fling), lerp(106, 60, fling)), pager: Math.floor((t - tBeep) / 85) % 2 ? 1 : 0, hat: { on: true, lift: 8 * Math.sin(clamp(u / 330, 0, 1) * Math.PI), tilt: -10 * Math.sin(clamp(u / 330, 0, 1) * Math.PI) } });
-        s.bang = { ...offsetPt(headTop(g), -6, -10), s: u < 140 ? easeOut(u / 140) * 1.2 : u < 260 ? lerp(1.2, 1, (u - 140) / 120) : 1 };
-      } else {
-        const up = upPose;
-        const from = seated({ head: "yell", nod: -7, lean: -2, armN: fk(40, 70), armF: fk(-18, 60) });
-        if (t < tUp) g = blend(from, up, easeInOut(seg(t, tHop, tUp)), 1);
-        else if (t < tCrouch) g = { ...up, nod: wave(t - tUp, 500) * 2 };
-        else {
-          // anticipation: a crouch and a wind-up before the sprint
-          g = crouch(easeOut(seg(t, tCrouch, tRun2)));
+        g = seated({ head: "shock", nod: lerp(-15, 5, easeOut(clamp(u / 90, 0, 1))), lean: lerp(-11, -2, fling), y: SEAT[1] - jolt * 7, sy: 1 + jolt * .07, sx: 1 - jolt * .04, armN: fk(lerp(10, 40, fling) - jolt * 10, lerp(86, 70, fling) + jolt * 30), armF: fk(lerp(6, -18, fling), lerp(106, 60, fling)), pager: pagerOn, hat: { on: true, lift: 8 * Math.sin(clamp(u / 330, 0, 1) * Math.PI), tilt: -10 * Math.sin(clamp(u / 330, 0, 1) * Math.PI) } });
+        s.bang = { ...offsetPt(headTop(g), 6, -10), s: u < 140 ? easeOut(u / 140) * 1.2 : u < 260 ? lerp(1.2, 1, (u - 140) / 120) : 1 };
+      } else if (t < tLanded) {
+        // the spring: straight up out of the seat, knees tucked; at the top she turns to face the room
+        // and drops beside the chair (moving the way she now faces)
+        const rise = t < tApex;
+        const u = rise ? easeOut(seg(t, tHop, tApex)) : easeIn(seg(t, tApex, tLanded));
+        const apexY = STAND - 20;
+        // (knees tucked, boots right under her, so the turn at the top is clean)
+        const tuck = (x: number, dir: 1 | -1): Partial<GabbyPose> => ({ legN: { x: x + dir * 2, y: apexY + 41, a: 24 }, legF: { x: x - dir * 2, y: apexY + 43, a: 18 } });
+        if (rise) {
+          const from = seated({ head: "shock", nod: 5, lean: -2, armN: fk(30, 100), armF: fk(-18, 60) });
+          const top: GabbyPose = { ...from, y: apexY, lean: 2, sy: 1.06, sx: .95, armN: fk(165, 10, "open"), armF: fk(150, 20, "open"), ...tuck(SEAT[0], -1) };
+          g = blend(from, top, u, 1);
+        } else {
+          const top: GabbyPose = { ...landed({ head: "shock", armN: fk(165, 10, "open"), armF: fk(150, 20, "open") }), x: SEAT[0], y: apexY, ...tuck(SEAT[0], 1) };
+          g = blend(top, landed({ y: STAND + 5, sy: .94, sx: 1.05, head: "shock" }), u, 1);
         }
-        if (t < tHop + 200) s.chair = true;
-        if (t < tStartle + 650) s.bang = { ...offsetPt(headTop(g), -6, -10), s: 1 - seg(t, tStartle + 560, tStartle + 650) };
+        g.hat = { on: true, lift: 4 + 6 * Math.sin(seg(t, tHop, tLanded) * Math.PI), tilt: -16 * Math.sin(seg(t, tHop, tLanded) * Math.PI) };
+        s.chair = rise;
+        if (t < tStartle + 650) s.bang = { ...offsetPt(headTop(g), 6, -10), s: 1 - seg(t, tStartle + 560, tStartle + 650) };
+      } else if (t < tTurnL) {
+        // GOTTA RUN!: landing squash, then frantic flapping
+        const d = t - tLanded;
+        const settle = d < 160 ? 1 - smooth(d / 160) : 0;
+        const flap = wave(d, 230);
+        g = landed({ y: STAND + 5 * settle, sy: 1 - .06 * settle, sx: 1 + .05 * settle, armN: fk(150 + flap * 22, 30 - flap * 15), armF: fk(120 - flap * 22, 40 + flap * 15), nod: wave(d, 460) * 3 });
+      } else if (t < tCrouch) {
+        // the turn: crisp, a little hop on the spot, her boots landing back on the same two spots
+        const u = seg(t, tTurnL, tCrouch);
+        g = turnedL({ y: STAND + 1 - Math.sin(u * Math.PI) * 3 });
+      } else {
+        // anticipation: a crouch and a wind-up before the sprint
+        g = crouch(easeOut(seg(t, tCrouch, tRun2)));
       }
-      if (t < tHop + 200) s.chair = true;
+      if (t < tHop) s.chair = true;
     } else if (t < tOff + 200) {
       s.act = "run";
       g = walkPose(run2, t, { head: "grit", lean: 15, amp: 52, keepGoing: true, hat: { on: true } });
@@ -637,6 +672,7 @@ export function buildGag(stage: Stage) {
     // ---- effects
     if (t >= tImpact && t < tImpact + 700) s.dust.push({ x: SIT_X - 2, y: FLOOR - 1, u: (t - tImpact) / 700, spread: 1.1, dir: -1 });
     if (t >= tLand && t < tLand + 700) s.dust.push({ x: SANTA_LAND[0] + 6, y: FLOOR - 1, u: (t - tLand) / 700, spread: 1.4, dir: 1 });
+    if (t >= tLanded && t < tLanded + 600) s.dust.push({ x: RUN_FROM, y: FLOOR - 1, u: (t - tLanded) / 600, spread: .8, dir: 0 });
     if (t >= tRun2 && t < tRun2 + 650) s.dust.push({ x: RUN_FROM + 4, y: FLOOR - 1, u: (t - tRun2) / 650, spread: .9, dir: 1 });
     if (t >= tDrag && t < tGone && g) {
       // dust kicked up where Santa scrapes along the floor
@@ -677,9 +713,9 @@ export function buildGag(stage: Stage) {
       const front = pg[0] - 104 > stage.left;
       s.bubbles.push({ id: "beep", text: "BEEP BEEP!", kind: "beep", ...xy(offsetPt(pg, front ? -50 : 54, front ? -4 : -16)), ...life(tBeep, tBeep + 1100), tilt: front ? 6 : -6 });
     }
-    if (g && t >= tSay3 && t < tSay3End) {
-      const anchor = t < tRun2 ? headTop(g) : runAnchor;
-      s.bubbles.push({ id: "run", text: "GOTTA RUN!", kind: "say", ...xy(anchor), ...life(tSay3, tSay3End) });
+    if (t >= tSay3 && t < tSay3End) {
+      // (held steady over the spot where she landed and turns; she sprints out from under it)
+      s.bubbles.push({ id: "run", text: "GOTTA RUN!", kind: "say", ...xy(runAnchor), ...life(tSay3, tSay3End) });
     }
     return s;
   };
