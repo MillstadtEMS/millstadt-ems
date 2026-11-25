@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { isStationAuthed, stationReviewBypass } from "@/lib/station/auth";
+import { getSeasonalThemePublicConfig } from "@/lib/seasonal/themes";
+import { STATION_FLAG_SCRIPT } from "@/lib/station/flags";
 import CallsPreview from "./CallsPreview";
 
 export const metadata: Metadata = {
@@ -14,7 +16,8 @@ export const metadata: Metadata = {
 // Development harness for the station TV's live-call panel (components/station/StationCalls): the
 // panel alone, at TV size, where it will sit over the village. Never served in production.
 //   ?mode=demo   one synthetic call      ?mode=demo3 (default) three calls      ?mode=live  the real feed
-//   ?frame=village (default: the station's village area under the bar and living room) | full
+//   ?frame=village (default: placeholders for the bar and living room, the panel where the village is)
+//   ?frame=station (the real station TV, the panel laid over its village) | full (the panel alone)
 // Sign in at /station/login first, or add ?station-review=1 when the dev server runs with
 // STATION_REVIEW_BYPASS=1 (localhost only).
 export default async function CallsPreviewPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -30,6 +33,12 @@ export default async function CallsPreviewPage({ searchParams }: { searchParams:
     );
   }
   const mode = query.mode === "live" ? null : query.mode === "demo" ? "demo" : "demo3";
-  const frame = query.frame === "full" ? "full" : "village";
+  const frame = query.frame === "full" ? "full" : query.frame === "station" ? "station" : "village";
+  if (frame === "station") {
+    return (<>
+      <script dangerouslySetInnerHTML={{ __html: STATION_FLAG_SCRIPT }} />
+      <CallsPreview mode={mode} frame={frame} initialWinter={getSeasonalThemePublicConfig().initialTheme === "winter"} />
+    </>);
+  }
   return <CallsPreview mode={mode} frame={frame} />;
 }

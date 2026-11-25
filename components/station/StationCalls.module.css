@@ -362,10 +362,21 @@
   box-shadow: 0 0 calc(1.2 * var(--cu)) var(--ph-glow);
 }
 .rowTime { min-width: calc(10 * var(--cu)); text-align: right; font: 900 calc(3.6 * var(--cu))/1 system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+/* Four or more calls at once: tighter rows so the list and the timeline still fit. */
+.list[data-count="4"], .list[data-count="5"], .list[data-count="6"] { gap: calc(.6 * var(--cu)); }
+.list:is([data-count="4"], [data-count="5"], [data-count="6"]) .row { padding: calc(.55 * var(--cu)) calc(1.2 * var(--cu)); gap: calc(1.1 * var(--cu)); }
+.list:is([data-count="4"], [data-count="5"], [data-count="6"]) .badge { width: calc(3.8 * var(--cu)); height: calc(3.8 * var(--cu)); font-size: calc(2.2 * var(--cu)); }
+.list:is([data-count="4"], [data-count="5"], [data-count="6"]) .rowNature { font-size: calc(2.6 * var(--cu)); }
+.list:is([data-count="4"], [data-count="5"], [data-count="6"]) .rowWhere { font-size: calc(1.9 * var(--cu)); }
+.list:is([data-count="4"], [data-count="5"], [data-count="6"]) .rowTime { font-size: calc(3 * var(--cu)); }
+.list:is([data-count="4"], [data-count="5"], [data-count="6"]) .pill { font-size: calc(1.5 * var(--cu)); }
+.list:is([data-count="5"], [data-count="6"]) .rowWhere { display: none; }
+.side[data-count="5"] .tlTotals b, .side[data-count="6"] .tlTotals b { font-size: calc(2.4 * var(--cu)); }
 
 .timeline {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
   gap: calc(1 * var(--cu));
   min-height: 0;
   padding: calc(1.3 * var(--cu)) calc(1.6 * var(--cu)) calc(1.1 * var(--cu));

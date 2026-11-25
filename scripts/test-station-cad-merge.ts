@@ -171,6 +171,9 @@ test("feed health: delayed after two minutes without a good sync, errors only wh
   const health = feedHealth(failing, now);
   assert.equal(health.error, "Gmail request failed (401)");
   assert.equal(health.delayed, true);
+  const waking = { ...ok, lastOkAt: now - 3 * 60 * 60_000, lastSyncAt: now - 2000, lastError: null, lastErrorAt: null };
+  assert.equal(feedHealth(waking, now).delayed, false, "a sync running after a quiet night is not 'delayed'");
+  assert.equal(feedHealth({ ...waking, lastSyncAt: now - 5 * 60_000 }, now).delayed, true);
 });
 
 // ── Geocoding (no network: a fake fetch) ──────────────────────────────────────────────────────────
@@ -249,4 +252,106 @@ test("demo calls: a call comes in, is located, goes enroute after ~30 s, clears,
   assert.notEqual(next.id, start.id);
   assert.deepEqual(demoCalls("demo3", t0, t0 + 1000).map((c) => c.phase), ["onscene", "enroute"]);
   assert.deepEqual(demoCalls("demo3", t0, t0 + 7000).map((c) => c.phase), ["onscene", "enroute", "dispatched"]);
+});
+
+// ── The whole pipeline: mail → parser → store → calls (a stand-in inbox, the memory store) ────────
+
+import { feedDiagnostics, getStationCalls, syncFeed, type MailSource } from "../lib/station/cad/feed";
+import { emailBody, gmailErrorReason, type StationEmail } from "../lib/station/cad/gmail";
+
+function inbox(emails: StationEmail[], failures: Record<string, number> = {}) {
+  const gets: string[] = [];
+  const source: MailSource = {
+    async list() { return emails.map((e) => e.id).reverse(); },
+    async get(id) {
+      gets.push(id);
+      if (failures[id]) throw Object.assign(new Error("gmail"), { response: { status: failures[id] } });
+      const email = emails.find((e) => e.id === id);
+      if (!email) throw new Error("missing");
+      return email;
+    },
+  };
+  return { source, gets };
+}
+
+test("end to end: emails become a live call with its status, then a closed one", async () => {
+  const now = Date.now();
+  const at = (minutesAgo: number) => now - minutesAgo * 60_000;
+  const stamp = (ms: number) => {
+    const d = new Date(ms);
+    return d.toLocaleString("en-US", { timeZone: "America/Chicago", hour: "2-digit", minute: "2-digit", hourCycle: "h23", month: "long", day: "numeric", year: "numeric" });
+  };
+  const body = (status: string, ms: number) =>
+    `Event Report\nCategory: CHEST PAIN\nStatus: ${status}\nEvent No: 2026-41000\nLocation: 9 ELM ST, MILLSTADT\nUnits: M3925\n${stamp(ms)}`;
+  const emails: StationEmail[] = [
+    { id: "a", from: "alert@cfmsg.co", subject: "[39 EMS CAD] CHEST PAIN -- 9 Elm St", body: body("Dispatched", at(6)), receivedAt: at(6) },
+    { id: "b", from: "alert@cfmsg.co", subject: "[39 EMS CAD] CHEST PAIN -- 9 Elm St", body: body("Enroute", at(6)), receivedAt: at(5) },
+    { id: "c", from: "cencom@omnigo.com", subject: "911 CALL", body: "Call Type: MEDICAL\nEvent No: 2026-41000", receivedAt: at(6.5) },
+    { id: "d", from: "news@example.org", subject: "Weekly digest", body: "Hello", receivedAt: at(30) },
+  ];
+  const store = memoryStore(freshState());
+  const mail = inbox(emails);
+  const first = await getStationCalls({ store, mail: mail.source });
+  assert.equal(first.response.available, true);
+  if (!first.response.available) return;
+  assert.equal(first.response.calls.length, 1);
+  const [call] = first.response.calls;
+  assert.equal(call.nature, "Chest Pain");
+  assert.equal(call.phase, "enroute");
+  assert.equal(call.address, "9 Elm St");
+  assert.equal(call.locating, true, "not geocoded yet");
+  assert.deepEqual(first.pending.map((p) => p.key), ["9 ELM ST|MILLSTADT"]);
+  assert.equal(first.response.feed.error, null);
+  assert.deepEqual((await store.counts()), { events: 1, messages: 4, parseFailures: 1 });
+
+  // Within 20 s nobody syncs again, and nothing is fetched twice.
+  await getStationCalls({ store, mail: mail.source });
+  assert.equal(mail.gets.length, 4);
+
+  // The closeout arrives; the next sync (once due) closes the call.
+  emails.push({ id: "e", from: "cencom@omnigo.com", subject: "EVENT CLOSEOUT", body: `EVENT CLOSEOUT\nEvent No: 2026-41000\nClosed: ${new Date(at(0.5)).toLocaleString("en-US", { timeZone: "America/Chicago", hourCycle: "h23" }).replace(",", "")}`, receivedAt: at(0.4) });
+  await syncFeed(store, Date.now(), mail.source);
+  assert.equal(mail.gets.length, 5, "only the new closeout is fetched");
+  assert.equal(mail.gets[4], "e");
+  const closed = await getStationCalls({ store: { ...store, claimSync: async () => false }, mail: mail.source });
+  assert.equal(closed.response.available && closed.response.calls[0].phase, "clear");
+});
+
+test("end to end: Gmail failures are recorded, deleted messages are skipped, others retried", async () => {
+  const store = memoryStore(freshState());
+  const failing: MailSource = { async list() { throw Object.assign(new Error("x"), { response: { status: 401, data: { error: "invalid_grant" } } }); }, async get() { throw new Error("unused"); } };
+  const result = await getStationCalls({ store, mail: failing });
+  assert.equal(result.response.available, true);
+  assert.equal(result.response.available && result.response.feed.error, "Gmail sign-in expired (invalid_grant)");
+  assert.equal(result.response.available && result.response.feed.delayed, true);
+
+  const emails: StationEmail[] = [
+    { id: "gone", from: "alert@cfmsg.co", subject: "x", body: "", receivedAt: Date.now() },
+    { id: "flaky", from: "alert@cfmsg.co", subject: "[39 EMS CAD] FALL -- 77 Main St", body: "", receivedAt: Date.now() },
+  ];
+  const mail = inbox(emails, { gone: 404, flaky: 500 });
+  await syncFeed(store, Date.now(), mail.source);
+  assert.deepEqual([...(await store.seen(["gone", "flaky"]))], ["gone"]);
+  const fixed = inbox(emails, { gone: 404 });
+  await syncFeed(store, Date.now(), fixed.source);
+  assert.deepEqual(fixed.gets, ["flaky"], "only the message that failed before is fetched again");
+});
+
+test("admin diagnostics carry counts and health, never call details", async () => {
+  const diagnostics = await feedDiagnostics();
+  assert.equal(diagnostics.store, "memory");
+  assert.equal(typeof diagnostics.configured, "boolean");
+  assert.doesNotMatch(JSON.stringify(diagnostics), /Elm|Chest|address|nature/i);
+});
+
+test("email bodies: labeled plain text wins, else the HTML; error reasons stay short", () => {
+  const b64 = (s: string) => Buffer.from(s).toString("base64url");
+  const plain = "Category: FALL\nStatus: Dispatched\nEvent No: 2026-1";
+  const html = "<table><tr><td>Category:</td><td>FALL</td></tr></table>";
+  const payload = (p: string) => ({ mimeType: "multipart/alternative", parts: [{ mimeType: "text/plain", body: { data: b64(p) } }, { mimeType: "text/html", body: { data: b64(html) } }] });
+  assert.equal(emailBody(payload(plain)), plain);
+  assert.equal(emailBody(payload("See the HTML version.")), html);
+  assert.equal(emailBody({ mimeType: "text/html", body: { data: b64(html) } }), html);
+  assert.equal(gmailErrorReason({ response: { status: 429 } }), "Gmail request failed (429)");
+  assert.equal(gmailErrorReason(new Error("request timed out")), "Gmail request timed out");
 });

@@ -32,6 +32,7 @@ const POLL_MS = 10_000;
 const DEMO_POLL_MS = 4000;
 const REQUEST_TIMEOUT_MS = 9000;
 const OFFLINE_AFTER_FAILURES = 3;
+const OFFLINE_AFTER_MS = 10 * 60_000;
 /** Without a good answer for this long, calls are taken off the screen rather than shown stale. */
 const DROP_AFTER_MS = 15 * 60_000;
 const ALERT_MS = 6500;
@@ -163,14 +164,15 @@ function prune(map: Record<string, number>, now: number, ids: Set<string>) {
   return out;
 }
 
-function useCallFeed(mode: DemoMode | null, review: boolean, enabled: boolean): FeedState {
+function useCallFeed(mode: DemoMode | null, review: boolean, enabled: boolean, skipSeconds: number): FeedState {
   const [state, setState] = useState<FeedState>(EMPTY_FEED);
   useEffect(() => {
     if (!enabled) return;
     let alive = true;
     let timer: number | undefined;
     let controller: AbortController | null = null;
-    const t0 = Date.now();
+    // Demo stories run from this moment (a dev-only skip jumps ahead to the later phases).
+    const t0 = Date.now() - skipSeconds * 1000;
     const poll = async () => {
       controller = new AbortController();
       const params = new URLSearchParams();
@@ -189,6 +191,9 @@ function useCallFeed(mode: DemoMode | null, review: boolean, enabled: boolean): 
         const offset = Date.parse(data.serverTime) - received;
         const calls = Array.isArray(data.calls) ? data.calls : [];
         setState((prev) => {
+          // A feed that can't answer right now keeps the last calls on screen (they leave after
+          // DROP_AFTER_MS), so a storage hiccup never makes every call "arrive" again afterwards.
+          if (!data.available) return { ...prev, available: false, reason: data.reason, health: null, failures: 0 };
           const ids = new Set(calls.map((c) => c.id));
           const arrivals = prune(prev.arrivals, received, ids);
           const changes = prune(prev.changes, received, ids);
@@ -202,9 +207,9 @@ function useCallFeed(mode: DemoMode | null, review: boolean, enabled: boolean): 
           }
           return {
             calls,
-            available: data.available,
-            reason: data.available ? null : data.reason,
-            health: data.available ? data.feed : null,
+            available: true,
+            reason: null,
+            health: data.feed,
             offset: Number.isFinite(offset) && Math.abs(offset) < 7 * 86400_000 ? offset : 0,
             failures: 0,
             lastOk: received,
@@ -226,7 +231,7 @@ function useCallFeed(mode: DemoMode | null, review: boolean, enabled: boolean): 
       window.clearTimeout(timer);
       controller?.abort();
     };
-  }, [mode, review, enabled]);
+  }, [mode, review, enabled, skipSeconds]);
   return state;
 }
 
@@ -537,7 +542,7 @@ function Timeline({ calls, now, colors }: { calls: StationCall[]; now: number; c
 
 function CallList({ calls, now, colors, changes }: { calls: StationCall[]; now: number; colors: Map<string, string>; changes: Record<string, number> }) {
   return (
-    <ol className={styles.list} aria-label="Calls">
+    <ol className={styles.list} aria-label="Calls" data-count={Math.min(calls.length, 6)}>
       {calls.map((call, index) => (
         <li key={`${call.id}-${changes[call.id] ?? 0}`} className={styles.row} style={{ "--call": colors.get(call.id) } as CSSProperties}
           {...phaseStyle(call.phase)} data-flash={changes[call.id] ? "" : undefined} data-clear={call.closedAt ? "" : undefined}>
@@ -564,9 +569,10 @@ export default function StationCalls({ onActiveChange, demo, className }: Statio
     const params = new URLSearchParams(search);
     const fromUrl = params.get("preview") === "ve" ? params.get("station-cad") : null;
     const mode: DemoMode | null = demo === true ? "demo" : demo ? demo : fromUrl === "demo" || fromUrl === "demo3" ? fromUrl : null;
-    return { mode, review: params.get("station-review") === "1" };
+    const skip = Number(params.get("station-cad-skip"));
+    return { mode, review: params.get("station-review") === "1", skip: mode && Number.isFinite(skip) ? Math.min(Math.max(skip, 0), 3600) : 0 };
   }, [search, demo]);
-  const feed = useCallFeed(flags?.mode ?? null, flags?.review ?? false, flags !== null);
+  const feed = useCallFeed(flags?.mode ?? null, flags?.review ?? false, flags !== null, flags?.skip ?? 0);
   const reduced = useReducedMotion();
   const unit = usePanelUnit(rootRef);
   const wall = useTick();
@@ -591,7 +597,11 @@ export default function StationCalls({ onActiveChange, demo, className }: Statio
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [pinKey]);
 
-  const offline = !feed.available || feed.failures >= OFFLINE_AFTER_FAILURES || stale;
+  // Delayed: the server's last good sync is a few minutes old. Offline: no answer from the server,
+  // a feed that never synced, or one that has been failing for ten minutes.
+  const sinceOk = feed.health?.lastOkAt && now ? now - Date.parse(feed.health.lastOkAt) : null;
+  const offline = !feed.available || feed.failures >= OFFLINE_AFTER_FAILURES || stale ||
+    (feed.health !== null && (sinceOk === null ? Boolean(feed.health.error) : sinceOk > OFFLINE_AFTER_MS));
   const delayed = !offline && Boolean(feed.health?.delayed);
   const feedChip = offline ? "CAD feed offline" : delayed ? "CAD feed delayed" : null;
 
@@ -604,8 +614,7 @@ export default function StationCalls({ onActiveChange, demo, className }: Statio
 
   return (
     <div ref={rootRef} className={[styles.root, className].filter(Boolean).join(" ")} style={style}
-      data-live={shown ? "" : undefined} data-layout={shown ? (single ? "single" : "multi") : undefined} data-clear={allClear ? "" : undefined}
-      data-reduced={reduced ? "" : undefined} aria-live="polite">
+      data-live={shown ? "" : undefined} data-layout={shown ? (single ? "single" : "multi") : undefined} data-clear={allClear ? "" : undefined}>
       {shown > 0 && (
         <>
           <header className={styles.bar}>
@@ -626,7 +635,7 @@ export default function StationCalls({ onActiveChange, demo, className }: Statio
             {single ? (
               <SingleCall call={calls[0]} now={now} flashKey={feed.changes[calls[0].id]} />
             ) : (
-              <div className={styles.side}>
+              <div className={styles.side} data-count={Math.min(shown, 6)}>
                 <CallList calls={calls} now={now} colors={colors} changes={feed.changes} />
                 {now > 0 && <Timeline calls={calls} now={now} colors={colors} />}
               </div>
