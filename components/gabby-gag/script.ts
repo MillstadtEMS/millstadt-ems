@@ -12,9 +12,11 @@
 //     her rear in a puff of dust, the milk and cookies go flying.
 //  4. She gets up, grabs his boot, turns to face left and drags him off the left edge, walking forward,
 //     arm back on the boot every frame: "YOU'RE GONNA FINISH YOUR MILK AND COOKIES!" / "NOOOO!"
-//  5. A beat, then she strolls back in wearing his hat, sits in the green armchair and dozes off (Zzz).
-//  6. BEEP BEEP! She startles awake: "GOTTA RUN!", hops up and sprints off the left edge, hat nearly
-//     flying off. The milk and cookies are tidied away.
+//  5. A beat, then she strolls back in wearing his hat, sits in the green armchair, eyes the fireplace
+//     smugly and dozes off with her head against the chair's wing (Zzz).
+//  6. BEEP BEEP! She startles awake, springs up out of the chair (turning to the room in the air), lands
+//     beside it: "GOTTA RUN!", turns left, winds up and sprints off the far left edge, hat nearly flying
+//     off. The milk and cookies are tidied away as she goes.
 
 import { ANKLE, FIREBOX, G, type HeadId, type Pt } from "./art";
 import { handWorld, headTop, legKnee, pagerWorld, shoulderWorld, type Arm, type GabbyPose, type Leg } from "./gabby";
@@ -278,9 +280,8 @@ export function buildGag(stage: Stage) {
   // ---------------------------------------------------------------- 5. stroll back, sit, doze
   // a beat with the room empty (about half a second once she's off the edge), then she strolls back in
   const tStroll = tGone + 260;
-  // she stops in front of the chair with her boots on the two spots she'll sit and stand up on
   // her seat in the armchair (deeper in on phones, where the screen's edge cuts through the chair), and
-  // the two spots her boots stand on in front of it (she stops on them, sits over them, stands up off them)
+  // the two spots her boots stand on in front of it (she stops on them and sits down over them)
   const SEAT: Pt = [clamp(stage.left + 30, 87, 97), 157];
   const FEET_L = SEAT[0] - 18, FEET_R = SEAT[0] - 10, CHAIR = SEAT[0] - 14;
   const vSt = clamp((CHAIR - OFF) / 3.0, 78, 185);
@@ -376,7 +377,7 @@ export function buildGag(stage: Stage) {
   // landed beside the chair, facing the room: alarmed, flapping
   const landed = (o: Partial<GabbyPose> = {}): GabbyPose => ({
     x: RUN_FROM, y: STAND, dir: 1, lean: -3, floor: FLOOR, head: "yell", hat: { on: true },
-    armN: fk(150, 30), armF: fk(120, 40), legN: flat(RUN_FROM + 5), legF: flat(RUN_FROM - 6), ...o,
+    armN: fk(112, 38), armF: fk(160, 22), legN: flat(RUN_FROM + 5), legF: flat(RUN_FROM - 6), ...o,
   });
   // turned left on the same two spots, then winding up for the sprint (sinking, leaning back, arms back)
   const turnedL = (o: Partial<GabbyPose> = {}): GabbyPose => ({
@@ -609,10 +610,10 @@ export function buildGag(stage: Stage) {
         const tuck = (x: number, dir: 1 | -1): Partial<GabbyPose> => ({ legN: { x: x + dir * 2, y: apexY + 41, a: 24 }, legF: { x: x - dir * 2, y: apexY + 43, a: 18 } });
         if (rise) {
           const from = seated({ head: "shock", nod: 5, lean: -2, armN: fk(30, 100), armF: fk(-18, 60) });
-          const top: GabbyPose = { ...from, y: apexY, lean: 2, sy: 1.06, sx: .95, armN: fk(165, 10, "open"), armF: fk(150, 20, "open"), ...tuck(SEAT[0], -1) };
+          const top: GabbyPose = { ...from, y: apexY, lean: 2, sy: 1.06, sx: .95, armN: fk(122, 32, "open"), armF: fk(165, 12, "open"), ...tuck(SEAT[0], -1) };
           g = blend(from, top, u, 1);
         } else {
-          const top: GabbyPose = { ...landed({ head: "shock", armN: fk(165, 10, "open"), armF: fk(150, 20, "open") }), x: SEAT[0], y: apexY, ...tuck(SEAT[0], 1) };
+          const top: GabbyPose = { ...landed({ head: "shock", armN: fk(122, 32, "open"), armF: fk(165, 12, "open") }), x: SEAT[0], y: apexY, ...tuck(SEAT[0], 1) };
           g = blend(top, landed({ y: STAND + 5, sy: .94, sx: 1.05, head: "shock" }), u, 1);
         }
         g.hat = { on: true, lift: 4 + 6 * Math.sin(seg(t, tHop, tLanded) * Math.PI), tilt: -16 * Math.sin(seg(t, tHop, tLanded) * Math.PI) };
@@ -623,7 +624,7 @@ export function buildGag(stage: Stage) {
         const d = t - tLanded;
         const settle = d < 160 ? 1 - smooth(d / 160) : 0;
         const flap = wave(d, 230);
-        g = landed({ y: STAND + 5 * settle, sy: 1 - .06 * settle, sx: 1 + .05 * settle, armN: fk(150 + flap * 22, 30 - flap * 15), armF: fk(120 - flap * 22, 40 + flap * 15), nod: wave(d, 460) * 3 });
+        g = landed({ y: STAND + 5 * settle, sy: 1 - .06 * settle, sx: 1 + .05 * settle, armN: fk(108 + flap * 16, 40 - flap * 14), armF: fk(160 - flap * 16, 22 + flap * 12), nod: wave(d, 460) * 3 });
       } else if (t < tCrouch) {
         // the turn: crisp, a little hop on the spot, her boots landing back on the same two spots
         const u = seg(t, tTurnL, tCrouch);
