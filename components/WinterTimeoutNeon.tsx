@@ -22,6 +22,11 @@ export default function WinterTimeoutNeon() {
             <span className={styles.tap}>{timeout ? "Tap here to restart the fight" : "Tap here to call Time Out"}</span>
           </span>
         </span>
+        {/* Phones: one slim line instead of the two-line board. */}
+        <span className={styles.short} aria-hidden="true">
+          {timeout ? <><span className={styles.warn}>Time out</span> <span className={styles.call}>· links work · tap to resume</span></>
+            : <><span className={styles.warn}>Links paused</span> <span className={styles.call}>· tap for Time Out</span></>}
+        </span>
         <span className={styles.flake} aria-hidden="true">❄</span>
       </button>
       <span className={styles.sr} role="status">{timeout ? "Time out. The snowball fight is paused across the site, and links work." : ""}</span>
