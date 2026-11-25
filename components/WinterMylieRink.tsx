@@ -749,13 +749,9 @@ function Scene({ onDone, seek }: { onDone: () => void; seek: boolean }) {
     const imgs = [...host.querySelectorAll<HTMLImageElement>("img")];
     const ready = Promise.all(imgs.map(img => img.decode().catch(() => undefined)));
     const timeout = new Promise(resolve => window.setTimeout(resolve, 6000));
-    let clearing = false;
     void Promise.race([ready, timeout]).then(() => {
       if (disposed) return;
       host.dataset.ready = "true";
-      // the rink's own skaters drift to the back boards and watch, as they do for Dylan's axel
-      clearing = true;
-      window.dispatchEvent(new CustomEvent(rinkSceneEvent, { detail: { active: true, x: SCENE_WATCH } }));
       if (seek) {
         // preview frame stepping: window.__mylieRinkSeek(t) draws the scene at t seconds
         (window as Window & { __mylieRinkSeek?: (t: number) => number }).__mylieRinkSeek = (t: number) => { render(t); return scene?.length ?? 0; };
@@ -766,7 +762,6 @@ function Scene({ onDone, seek }: { onDone: () => void; seek: boolean }) {
     });
     return () => {
       disposed = true;
-      if (clearing) window.dispatchEvent(new CustomEvent(rinkSceneEvent, { detail: { active: false, x: SCENE_WATCH } }));
       cancelAnimationFrame(frameId);
       window.removeEventListener(snowballTimeoutEvent, onTimeout);
       motion.removeEventListener("change", onMotion);
@@ -822,6 +817,9 @@ function Scene({ onDone, seek }: { onDone: () => void; seek: boolean }) {
 }
 
 /* ------------------------------------------------------------------ when it plays */
+/** The rink's own skaters drift to the back boards and watch (as for Dylan's axel), or go back to their laps. */
+const clearIce = (active: boolean) => window.dispatchEvent(new CustomEvent(rinkSceneEvent, { detail: { active, x: SCENE_WATCH } }));
+
 export default function WinterMylieRink({ active }: { active: boolean }) {
   const [scene, setScene] = useState(0);
   // Mylie and Dylan are claimed for the run (no other act can use them meanwhile); Dylan stays
@@ -839,6 +837,7 @@ export default function WinterMylieRink({ active }: { active: boolean }) {
   const nextAt = useRef(0);
 
   const done = useCallback(() => {
+    clearIce(false);
     release.current.mylie?.();
     release.current.mylie = null;
     window.clearTimeout(dylanRest.current);
@@ -875,6 +874,8 @@ export default function WinterMylieRink({ active }: { active: boolean }) {
       }
       window.clearTimeout(dylanRest.current);
       release.current = { mylie, dylan };
+      // the rink's skaters start for the back boards now, while Mylie's art loads and she walks in
+      clearIce(true);
       setScene(++seq.current);
     };
     timer = window.setTimeout(attempt, 300);
@@ -883,6 +884,7 @@ export default function WinterMylieRink({ active }: { active: boolean }) {
 
   // Unmounting lets Mylie and Dylan go.
   useEffect(() => () => {
+    if (release.current.mylie) clearIce(false);
     window.clearTimeout(dylanRest.current);
     release.current.mylie?.(); release.current.dylan?.();
     release.current = { mylie: null, dylan: null };
