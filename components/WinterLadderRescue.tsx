@@ -285,6 +285,8 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
     const deckX = () => truckX + BODY.deck[0] * layout.S;
     const heelX = () => ladderPoint(layout, pivotX(), lad, 925, LAD.chord, false).x;
     let rope: { top: Pt; end: Pt; tail: number; swing: number; hand: boolean } | null = null;
+    // Santa lets go of the rope when he starts back down the ladder (it reels up on its own).
+    let ropeHeld = true;
     const bubbles: Bubble[] = [];
     type Actor = {
       chief: CrewChief; member: HangingCrewMember; handle: { element: HTMLDivElement; release: () => void } | null;
@@ -521,17 +523,30 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
     }
     function climbOff(): Phase {
       const from = santaSx, steps = Math.max(1, Math.round(Math.abs(925 - from) / 48));
+      // A long way down (a tall ladder on a phone): he slides down the rails like a firefighter,
+      // hands on, picking up speed, instead of climbing down rung by rung.
+      const slide = steps > 8;
+      const length = Math.abs(925 - from) * layout.S;
+      const down = slide ? clamp(length / (layout.vh * .75) * 1000, 650, 1300) : steps * 200;
+      ropeHeld = false;
       return begin("climb-down", t => {
         if (santaMode === "ladder") {
+          santaDir = 1;
+          if (slide) {
+            const u = Math.min(1, t / down);
+            santaSx = lerp(from, 925, u * u);
+            santaPose = deg(lad.a) > 34 ? "climb1" : "stand";
+            if (u >= 1) { santaMode = "deck"; santaHop = 1; santaDir = 0; hopFacing = Math.sign(deckX() - heelX()) || 1; }
+            return false;
+          }
           const k = Math.min(steps, Math.floor(t / 200));
           const within = clamp((t - k * 200) / 130, 0, 1);
           santaSx = lerp(from, 925, Math.min(steps, k + (k < steps ? smooth(within) : 0)) / steps);
-          santaDir = 1;
           santaPose = deg(lad.a) > 34 ? (k % 2 ? "climb2" : "climb1") : "stand";
           if (k >= steps) { santaMode = "deck"; santaHop = 1; santaDir = 0; hopFacing = Math.sign(deckX() - heelX()) || 1; }
           return false;
         }
-        const u = clamp((t - steps * 200) / 320, 0, 1);
+        const u = clamp((t - down) / 320, 0, 1);
         santaHop = 1 - smooth(u);
         santaPose = "climb1";
         if (u >= 1) hopFacing = 0;
@@ -540,6 +555,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
     }
     function dropRope(plan: Plan): Phase {
       const m = plan.member;
+      ropeHeld = true;
       const line = rescued > 0 && hangingCrew().length === 1 ? LAST_LINE : SANTA_LINES[rescued % SANTA_LINES.length];
       say(line, santaHead, keepClear(m), 2100);
       const waist = m.y + m.height * .48;
@@ -607,7 +623,7 @@ export default function WinterLadderRescue({ still, onPhase }: { still: boolean;
       if (!reeling || !rope) { reeling = null; return; }
       const u = Math.min(1, (clock - reeling.t0) / 460);
       const tip = tipOf(layout, pivotX(), lad);
-      rope = { top: tip, end: { x: tip.x, y: lerp(reeling.from, tip.y, easeOut(u)) }, tail: lerp(16, 0, u), swing: clock / 200, hand: true };
+      rope = { top: tip, end: { x: tip.x, y: lerp(reeling.from, tip.y, easeOut(u)) }, tail: lerp(16, 0, u), swing: clock / 200, hand: ropeHeld };
       if (u >= 1) { rope = null; reeling = null; }
     }
     function stow(): Phase {
