@@ -58,7 +58,8 @@ export default function WinterShakeChip({ hidden }: { hidden: boolean }) {
     else if (access === "on" && !remembered(hintKey)) next = "hint";
     if (!next) return;
     const timer = window.setTimeout(() => {
-      if (window.scrollY > SCROLL_AWAY) return;
+      // Already scrolled into the page, or already shaking: no need to suggest it.
+      if (window.scrollY > SCROLL_AWAY || (next === "hint" && shakeCount() > 0)) return;
       shown.current = true;
       shakesAtShow.current = shakeCount();
       if (next === "hint") remember(hintKey);
