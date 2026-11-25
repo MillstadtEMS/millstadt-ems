@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { askForShake, shakeAccess, shakeCount, subscribeShakeAccess, type ShakeAccess } from "@/lib/seasonal/crewShake";
+import { laneClaimed, subscribeLane } from "@/lib/seasonal/driveLane";
 import { useSnowballTimeout } from "@/lib/seasonal/snowballTimeout";
 import styles from "./WinterShakeChip.module.css";
 
@@ -23,12 +24,17 @@ const remember = (key: string) => { try { sessionStorage.setItem(key, "1"); } ca
 const noBody = () => null;
 const bodyOnClient = () => document.body;
 const noSubscription = () => () => {};
+// A drive-by (or anything else announced in lib/seasonal/driveLane) on screen: the chip steps aside
+// so it never sits over the convoy and its riders.
+const laneBusy = () => laneClaimed({ top: 0, bottom: window.innerHeight });
+const laneFree = () => false;
 
 export default function WinterShakeChip({ hidden }: { hidden: boolean }) {
   const body = useSyncExternalStore<HTMLElement | null>(noSubscription, bodyOnClient, noBody);
   const access = useSyncExternalStore<ShakeAccess>(subscribeShakeAccess, shakeAccess, () => "idle");
   const shakes = useSyncExternalStore(subscribeShakeAccess, shakeCount, () => 0);
   const timeout = useSnowballTimeout();
+  const driveBy = useSyncExternalStore(subscribeLane, laneBusy, laneFree);
   const [stage, setStage] = useState<Stage | null>(null);
   const [leaving, setLeaving] = useState(false);
   const shown = useRef(false);
@@ -63,7 +69,11 @@ export default function WinterShakeChip({ hidden }: { hidden: boolean }) {
   }, [shakes, stage]);
   useEffect(() => {
     if (!stage) return;
-    const timer = window.setTimeout(() => setLeaving(true), stage === "ask" ? 16000 : stage === "go" ? 6000 : 5200);
+    const timer = window.setTimeout(() => {
+      // An unanswered invitation counts as declined for the rest of the visit (iPhones see it once).
+      if (stage === "ask") remember(dismissKey);
+      setLeaving(true);
+    }, stage === "ask" ? 8000 : stage === "go" ? 6000 : 5200);
     return () => window.clearTimeout(timer);
   }, [stage]);
   useEffect(() => {
@@ -72,7 +82,7 @@ export default function WinterShakeChip({ hidden }: { hidden: boolean }) {
     return () => window.clearTimeout(timer);
   }, [leaving]);
 
-  if (!body || !stage || hidden || timeout) return null;
+  if (!body || !stage || hidden || timeout || driveBy) return null;
   // Tablets are shaken too: name the device in hand.
   const device = Math.min(screen.width, screen.height) >= 600 ? "tablet" : "phone";
   const icon = (

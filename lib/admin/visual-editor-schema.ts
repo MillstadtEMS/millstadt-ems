@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-const contentKey = z.string().trim().min(1).max(120).regex(/^[a-z0-9._-]+$/i);
+/** Keys in site_content that hold secrets (e.g. inventory_password_hash, station_password_hash). */
+export const isSecretContentKey = (key: string) => /_password_hash$/i.test(key.trim());
+const contentKey = z.string().trim().min(1).max(120).regex(/^[a-z0-9._-]+$/i)
+  .refine(key => !isSecretContentKey(key), "Not an editable content key");
 const contentValue = z.string().max(50_000);
 const draft = z.object({ key: contentKey, value: contentValue }).strict();
 
