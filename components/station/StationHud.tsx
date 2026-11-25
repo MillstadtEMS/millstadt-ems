@@ -103,11 +103,11 @@ const categoryNames: Record<NonNullable<MetarData["flightCategory"]>, string> = 
 };
 
 /** The medical-helicopter flight-acceptance estimate, exactly as /weather computes it (lib/weather). */
-export function StationHelicopter({ weather }: { weather: StationWeather }) {
+export function StationHelicopter({ weather, big = false }: { weather: StationWeather; big?: boolean }) {
   const { data, status } = weather;
   if (!data) {
     return (
-      <div className={styles.heli} data-status="unknown">
+      <div className={styles.heli} data-status="unknown" data-big={big || undefined}>
         <span className={styles.heliLabel}>Helicopters</span>
         <span className={styles.heliNote}>{status === "loading" ? "Checking flight weather…" : "Flight weather unavailable"}</span>
       </div>
@@ -117,7 +117,7 @@ export function StationHelicopter({ weather }: { weather: StationWeather }) {
   const category = data.metar?.flightCategory ?? null;
   const reason = shorterReasons[result.reason] ?? result.reason;
   return (
-    <div className={styles.heli} data-status={result.status} role="status" aria-label={`Helicopters: ${result.title.toLowerCase()}. ${result.reason}`}>
+    <div className={styles.heli} data-status={result.status} data-big={big || undefined} role="status" aria-label={`Helicopters: ${result.title.toLowerCase()}. ${result.reason}`}>
       <span className={styles.heliTop}>
         <span className={styles.heliLabel}>Helicopters</span>
         {category && <span className={styles.heliCategory} data-category={category} title={`METAR flight category at ${data.metar?.icaoId ?? "KALN"}`}>{categoryNames[category]}</span>}

@@ -127,6 +127,13 @@
 .heli[data-status="not-flying"] .heliReason { color: #fff0ee; }
 .heliNote { font: 700 calc(1.05 * var(--u))/1 system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #b9d8c6; }
 .heli[data-status="not-flying"] .heliNote { color: #e9bcb8; }
+/* Off season the estimate has the room to be bigger. */
+.heli[data-big] { max-width: calc(60 * var(--u)); padding: calc(1.2 * var(--u)) calc(1.8 * var(--u)); gap: calc(.5 * var(--u)); }
+.heli[data-big] .heliLabel { font-size: calc(1.7 * var(--u)); }
+.heli[data-big] .heliCategory { font-size: calc(1.6 * var(--u)); }
+.heli[data-big] .heliStatus { font-size: calc(3.2 * var(--u)); }
+.heli[data-big] .heliReason { font-size: calc(2 * var(--u)); }
+.heli[data-big] .heliNote { font-size: calc(1.4 * var(--u)); }
 
 /* The living-room TV's sound: big, glossy and impossible to miss with a remote. */
 .sound {
