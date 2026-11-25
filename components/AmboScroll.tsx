@@ -209,7 +209,7 @@ const mylieArt = (pass: Pass, cab: Cab, sleigh: readonly string[]) => pass.mylie
 function passArt(pass: Pass): string[] {
   switch (pass.variant) {
     case "classic": return [AMBULANCE.art, JEN, AMBULANCE.stages[0], ...(pass.follower ? [pass.follower === "engine" ? ENGINE_3911.art : LADDER_3919.art] : []), ...mylieArt(pass, CARTOON_CAB, [MYLIE_SLEIGH.art])];
-    case "chaos": return [`${DRIVEBY}/chaos-ambulance.webp`, `${DRIVEBY}/chaos-sleigh.webp`, `${DRIVEBY}/chaos-legs.webp`, `${DRIVEBY}/chaos-props.webp`, ...mylieArt(pass, CHAOS_CAB, [MYLIE_CHAOS.body, MYLIE_CHAOS.hand])];
+    case "chaos": return [`${DRIVEBY}/chaos-ambulance.webp`, `${DRIVEBY}/chaos-sleigh.webp`, `${DRIVEBY}/chaos-legs.webp`, `${DRIVEBY}/chaos-props.webp`, ...mylieArt(pass, CHAOS_CAB, [MYLIE_CHAOS.body, MYLIE_CHAOS.wink, MYLIE_CHAOS.hand])];
     case "roof": return [roofRide(pass.version), roofRide(pass.version, true), JEN, GABBY.sheet, ...mylieArt(pass, CARTOON_CAB, [MYLIE_SLEIGH.art])];
     case "reindeer": return [REINDEER.base, POOF];
     case "engine": return [ENGINE_3911.art, ENGINE_3911.stages[0]];
@@ -709,7 +709,11 @@ const CHAOS = {
 };
 // Snow pile in the chaos sleigh: it rises from the rim until only the top row's eyes and hats (and
 // the sombrero) are left above it; lumps rise between the faces, never over their eyes.
-type Pile = { x: number[]; top: number[]; base: number[]; face: boolean[] };
+type Pile = {
+  x: number[]; top: number[]; base: number[]; face: boolean[];
+  /** How deep the burial (0-1) has to be before snow starts rising at each point (default 0). */
+  delay?: number[];
+};
 const CHAOS_PILE: Pile = {
   x: [760, 800, 842, 868, 897, 912, 932, 952, 975, 998, 1015, 1037, 1059, 1084, 1106, 1127, 1134, 1152, 1171, 1195, 1220, 1242],
   top: [302, 250, 170, 164, 168, 98, 95, 98, 86, 82, 80, 78, 80, 106, 106, 108, 176, 180, 180, 215, 258, 296],
@@ -717,17 +721,21 @@ const CHAOS_PILE: Pile = {
   // Segment i runs from x[i-1] to x[i]; true where it crosses a face (a flat dip under the eyes).
   face: [false, false, false, true, true, false, true, true, false, false, false, true, true, false, true, true, false, true, true, false, false, false],
 };
-// With Mylie leaning in at the back, the pile heaps up over her too, to her eyes, resting on the
-// guitar neck where there's no sleigh under her (her waving hand stays out of it).
-const withMylie = (pile: Pile, from: number, tail: Pile): Pile => ({
+// With Mylie leaning in at the back, the pile heaps up over her too, to just under her eyes, on the
+// guitar neck where there's no sleigh under her (her waving hand stays out of it). That part only
+// starts once the pile has climbed to the back of the sleigh, so the snow rises up over her instead
+// of appearing in mid-air at guitar height.
+const withMylie = (pile: Pile, from: number, tail: Required<Pile>): Pile => ({
   x: [...pile.x.slice(0, from), ...tail.x], top: [...pile.top.slice(0, from), ...tail.top],
   base: [...pile.base.slice(0, from), ...tail.base], face: [...pile.face.slice(0, from), ...tail.face],
+  delay: [...pile.x.slice(0, from).map(() => 0), ...tail.delay],
 });
 const CHAOS_PILE_MYLIE = withMylie(CHAOS_PILE, 19, {
-  x: [1186, 1200, 1213, 1226, 1240, 1253, 1266, 1280, 1292, 1304],
-  top: [160, 128, 111, 106, 110, 116, 125, 139, 160, 222],
-  base: [375, 350, 300, 250, 244, 236, 232, 230, 228, 226],
-  face: [false, false, false, true, true, true, false, false, false, false],
+  x: [1186, 1200, 1213, 1226, 1240, 1253, 1266, 1280, 1294],
+  top: [150, 128, 112, 98, 100, 108, 120, 140, 178],
+  base: [375, 355, 340, 250, 244, 236, 232, 230, 228],
+  face: [false, false, false, true, true, true, false, false, false],
+  delay: [0, 0, .1, .48, .53, .57, .61, .65, .69],
 });
 // Flying props on the sprite sheet: sheet x, width and height, and the source box.
 const PROP_SHEET = { w: 294, h: 37 };
@@ -790,15 +798,17 @@ const MYLIE_SLEIGH = {
     [103, 333], [71, 320], [40, 308], [9, 302], [-120, 298]], 741, 693),
 };
 // Mylie in the chaos sleigh, in its art's pixels (the art sits at 699, 1): she leans in at the back
-// behind the sombrero and the guitar, waving (and winking) while everyone screams. She sits under the
-// art, so the crew stay in front of her, and shows only above the guitar neck; the hand turns on a
-// pivot hidden behind the sombrero.
+// behind the sombrero and the guitar, head up clear of the crowd, smiling and waving while everyone
+// screams (now and then she winks: the winking body swaps in crisply). She sits under the art, so the
+// crew stay in front of her, and shows only above the guitar neck; the hand turns on a pivot hidden
+// behind the sombrero.
 const CHAOS_SEAT: Box = [1100, -20, 1340, 300];
 const MYLIE_CHAOS = {
-  body: `${RIDERS}/mylie-chaos-body.webp`,
-  hand: `${RIDERS}/mylie-chaos-hand.webp`,
-  box: [1110, 10, 1320, 300] as Box,
-  pivot: "22.02% 50.19%",
+  body: `${RIDERS}/mylie-chaos-open.webp`,
+  wink: `${RIDERS}/mylie-chaos-wink.webp`,
+  hand: `${RIDERS}/mylie-chaos-wave.webp`,
+  box: [1100, -10, 1340, 300] as Box,
+  pivot: "23.44% 52.75%",
   // Everything above the guitar neck and the sombrero guy's hand on it.
   clip: polygonPct(([[1100, -20], [1340, -20], [1340, 231], [1260, 233], [1240, 244], [1222, 240], [1216, 252], [1212, 265], [1205, 282], [1195, 300], [1100, 300]] as const)
     .map(([x, y]) => [x - CHAOS_SEAT[0], y - CHAOS_SEAT[1]] as const), CHAOS_SEAT[2] - CHAOS_SEAT[0], CHAOS_SEAT[3] - CHAOS_SEAT[1]),
@@ -921,13 +931,20 @@ function seeded(seed: number) {
   };
 }
 
-/** A lumpy snow pile between two contours: `b` = 0 sits on the rim, 1 reaches the eye line. */
-function pileTop(pile: Pile, b: number) {
-  const pts = pile.x.map((x, i) => [x, pile.base[i] + (pile.top[i] - pile.base[i]) * b] as const);
-  const lump = Math.min(1, b * 2.5);
+/** How far each point of a pile has risen (0-1) at burial depth `b`. */
+const pileRise = (pile: Pile, b: number) => pile.x.map((_, i) => {
+  const d = pile.delay?.[i] ?? 0;
+  return Math.max(0, Math.min(1, (b - d) / (1 - d)));
+});
+
+/** A lumpy snow pile between two contours: 0 sits on the rim, 1 reaches the eye line. Only the points
+ *  that have started to rise are drawn, so a later part grows out of the pile instead of a sliver. */
+function pileTop(pile: Pile, rise: number[], n: number) {
+  const pts = pile.x.slice(0, n).map((x, i) => [x, pile.base[i] + (pile.top[i] - pile.base[i]) * rise[i]] as const);
   let d = `${pts[0][0]} ${pts[0][1].toFixed(1)}`;
   for (let i = 1; i < pts.length; i++) {
     const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+    const lump = Math.min(1, 2.5 * Math.min(rise[i - 1], rise[i]));
     // Between faces the snow heaps up in lumps; across a face it dips a little under the eyes.
     const cy = pile.face[i] ? Math.max(y0, y1) + 3 * lump : Math.min(y0, y1) - (x1 - x0) * .38 * lump;
     d += ` Q ${((x0 + x1) / 2).toFixed(1)} ${cy.toFixed(1)} ${x1} ${y1.toFixed(1)}`;
@@ -937,9 +954,13 @@ function pileTop(pile: Pile, b: number) {
 
 function SnowPile({ pile, bury, buried, viewBox }: { pile: Pile; bury: number; buried: number; viewBox: string }) {
   if (bury <= 0) return null;
-  const top = pileTop(pile, bury);
+  const rise = pileRise(pile, bury);
+  // The points still waiting their turn come last: leave them out (the pile ends at its base there).
+  let n = rise.length;
+  while (n > 2 && rise[n - 1] <= 0) n--;
+  const top = pileTop(pile, rise, n);
   let fill = `M ${pile.x[0]} ${pile.base[0]} L ${top}`;
-  for (let i = pile.x.length - 1; i >= 0; i--) fill += ` L ${pile.x[i]} ${pile.base[i]}`;
+  for (let i = n - 1; i >= 0; i--) fill += ` L ${pile.x[i]} ${pile.base[i]}`;
   return (
     <svg key={buried} className={styles.pile} viewBox={viewBox} preserveAspectRatio="none" aria-hidden="true" focusable="false">
       <defs>
@@ -1065,14 +1086,15 @@ function MylieInSleigh() {
   );
 }
 
-/** Mylie squeezed into the back of the chaos sleigh, leaning in to wave (and wink) while everyone
- *  screams; she rides the sleigh's bounces with a little bob of her own. Laid out in the sleigh art's
- *  pixels and drawn under it, so the crew stay in front of her. */
+/** Mylie squeezed into the back of the chaos sleigh, leaning in to wave (and now and then wink) while
+ *  everyone screams; she rides the sleigh's bounces with a little bob of her own. Laid out in the
+ *  sleigh art's pixels and drawn under it, so the crew stay in front of her. */
 function MylieInChaos({ frame }: { frame: Box }) {
   return (
     <span className={styles.chaosSeat} style={{ ...place(CHAOS_SEAT, frame), clipPath: MYLIE_CHAOS.clip }}>
       <span className={styles.chaosRider} style={place(MYLIE_CHAOS.box, CHAOS_SEAT)}>
-        <Image className={styles.layerArt} src={MYLIE_CHAOS.body} alt="" fill unoptimized sizes="(max-width: 767px) 50px, 80px" loading="eager" draggable={false} />
+        <Image className={`${styles.layerArt} ${styles.chaosEyes}`} src={MYLIE_CHAOS.body} alt="" fill unoptimized sizes="(max-width: 767px) 50px, 80px" loading="eager" draggable={false} />
+        <Image className={`${styles.layerArt} ${styles.chaosWink}`} src={MYLIE_CHAOS.wink} alt="" fill unoptimized sizes="(max-width: 767px) 50px, 80px" loading="eager" draggable={false} />
         <Image className={`${styles.layerArt} ${styles.chaosWave}`} src={MYLIE_CHAOS.hand} alt="" fill unoptimized sizes="(max-width: 767px) 50px, 80px" loading="eager" draggable={false}
           style={{ transformOrigin: MYLIE_CHAOS.pivot }} />
       </span>

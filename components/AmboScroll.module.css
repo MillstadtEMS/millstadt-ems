@@ -333,6 +333,10 @@
 }
 .convoy[data-moving] .chaosRider { animation: chaosRiderBob .85s ease-in-out infinite alternate; }
 .convoy[data-moving] .chaosWave { animation: chaosWave 1.05s ease-in-out infinite; }
+/* Eyes open, and every third wave a wink: the two bodies swap crisply, never blend. */
+.chaosWink { visibility: hidden; }
+.convoy[data-moving] .chaosEyes { animation: chaosEyes 3.15s linear infinite; }
+.convoy[data-moving] .chaosWink { animation: chaosWink 3.15s linear infinite; }
 
 /* ---- Gabby dancing on the roof: her sprite sheet steps through the 32-frame dance at the roof
    ride's own 70 ms a frame. Knocked off, one 4.6 s timeline plays the gag: the flail and fall off
@@ -773,6 +777,18 @@
 @keyframes chaosRiderBob {
   from { transform: translateY(0) rotate(-1.2deg); }
   to { transform: translateY(-2.5%) rotate(1.4deg); }
+}
+
+@keyframes chaosEyes {
+  0%, 69.9% { visibility: visible; }
+  70%, 82.9% { visibility: hidden; }
+  83%, 100% { visibility: visible; }
+}
+
+@keyframes chaosWink {
+  0%, 69.9% { visibility: hidden; }
+  70%, 82.9% { visibility: visible; }
+  83%, 100% { visibility: hidden; }
 }
 
 @keyframes chaosWave {
