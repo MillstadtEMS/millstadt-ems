@@ -35,24 +35,27 @@ type Officer = {
   // then the same face gone beet red; and where their sweat flies from (head centre at eye level
   // and half the face's width, percent of the art box).
   strain: [string, string]; head: [number, number, number];
+  // How each one feels a shake, so the line ripples instead of swinging as one: their share of the
+  // push, how long it takes to reach them (ms), and how much their grip and the air slow them.
+  drive: [gain: number, lag: number, drag: number];
 };
 const kitCrew = (file: string) => `/images/winter/kit/crew/${file}.webp`;
 const shakeArt = (file: string) => `/images/winter/kit/shake/${file}.webp`;
 const rigRatio = 477 / 716;
 const officers: Record<Chief, Officer> = {
   jen: { name: "Jen", folder: "/images/winter/jen-tree/", ratio: rigRatio, fallback: .93, tempo: 5.5, phase: 0,
-    strain: [shakeArt("jen-hanging-strain"), shakeArt("jen-hanging-strain-hard")], head: [51.9, 23, 7.9] },
+    strain: [shakeArt("jen-hanging-strain"), shakeArt("jen-hanging-strain-hard")], head: [51.9, 23, 7.9], drive: [.95, 18, 1.05] },
   kenny: { name: "Kenny", folder: "/images/winter/kenny/", ratio: rigRatio, fallback: .07, tempo: 4.9, phase: 2.2,
-    strain: [shakeArt("kenny-hanging-strain"), shakeArt("kenny-hanging-strain-hard")], head: [63.3, 23.3, 8.7] },
+    strain: [shakeArt("kenny-hanging-strain"), shakeArt("kenny-hanging-strain-hard")], head: [63.3, 23.3, 8.7], drive: [1.28, 60, .85] },
   kalista: { name: "Kalista", calm: kitCrew("kalista-hanging"), startled: kitCrew("kalista-hanging-scared"), ratio: 416 / 640, fallback: .3, tempo: 5.2, phase: 1.1,
-    strain: [shakeArt("kalista-hanging-strain"), shakeArt("kalista-hanging-strain-hard")], head: [50.4, 24.4, 8.1],
+    strain: [shakeArt("kalista-hanging-strain"), shakeArt("kalista-hanging-strain-hard")], head: [50.4, 24.4, 8.1], drive: [.78, 90, 1.15],
     legs: { splitX: 55.5, splitY: 68.3, hipLeft: "46.5% 69.1%", hipRight: "66.8% 69.1%", turn: 0,
       split: [[55.5, 68.3], [56.7, 71.1], [56.4, 73.9], [55.3, 76.7], [53.5, 79.5], [51.4, 82.3], [48, 85.2], [45.1, 88], [44.8, 90.8], [44.4, 93.6], [44.4, 99.2]] } },
   braeden: { name: "Braeden", calm: kitCrew("braeden-hanging"), startled: kitCrew("braeden-hanging-scared"), ratio: 543 / 640, fallback: .43, tempo: 5.8, phase: 3, size: .8,
-    strain: [shakeArt("braeden-hanging-strain"), shakeArt("braeden-hanging-strain-hard")], head: [51.9, 26.6, 7.1],
+    strain: [shakeArt("braeden-hanging-strain"), shakeArt("braeden-hanging-strain-hard")], head: [51.9, 26.6, 7.1], drive: [1.12, 110, .9],
     legs: { splitX: 53.8, splitY: 68.75, hipLeft: "47% 69.5%", hipRight: "59.9% 69.5%", turn: 38 } },
   dylan: { name: "Dylan", calm: kitCrew("dylan-hanging"), startled: kitCrew("dylan-hanging-scared"), ratio: 466 / 640, fallback: .57, tempo: 5, phase: .6,
-    strain: [shakeArt("dylan-hanging-strain"), shakeArt("dylan-hanging-strain-hard")], head: [51.8, 21.4, 7.2],
+    strain: [shakeArt("dylan-hanging-strain"), shakeArt("dylan-hanging-strain-hard")], head: [51.8, 21.4, 7.2], drive: [.72, 30, 1.25],
     legs: { splitX: 56.3, splitY: 67.3, hipLeft: "48.7% 68.1%", hipRight: "69.1% 68.1%", turn: 0,
       split: [[56.3, 67.3], [58.5, 70.2], [60, 73], [58.6, 75.8], [55.9, 78.6], [54.1, 81.4], [51.2, 84.2], [47.1, 87], [46.2, 89.8], [46.5, 92.7], [45.2, 95.5], [45.2, 99.2]] } },
   // Gabby hangs where the medical director used to on the Christmas lights (he still pops up and
@@ -60,9 +63,9 @@ const officers: Record<Chief, Officer> = {
   gabby: { name: "Gabby", ratio: 600 / 720, fallback: .7, tempo: 4.7, phase: 2.6, anim: {
     hang: "/images/winter/kit/gabby/gabby-hang.webp", still: "/images/winter/kit/gabby/gabby-hang-still.webp",
     mad: "/images/winter/kit/gabby/gabby-hang-mad.webp", worried: shakeArt("gabby-hang-worried"),
-  }, strain: ["/images/winter/kit/gabby/gabby-hang-mad.webp", shakeArt("gabby-hang-mad-hard")], head: [50.4, 24.7, 7.7] },
+  }, strain: ["/images/winter/kit/gabby/gabby-hang-mad.webp", shakeArt("gabby-hang-mad-hard")], head: [50.4, 24.7, 7.7], drive: [1.18, 75, .95] },
   "medical-director": { name: "Dr. Hsu", calm: kitCrew("medical-director-hanging"), startled: kitCrew("medical-director-hanging-scared"), ratio: 466 / 640, fallback: .7, tempo: 4.7, phase: 2.6,
-    strain: [kitCrew("medical-director-hanging-scared"), kitCrew("medical-director-hanging-scared")], head: [53.4, 23.8, 7.4],
+    strain: [kitCrew("medical-director-hanging-scared"), kitCrew("medical-director-hanging-scared")], head: [53.4, 23.8, 7.4], drive: [1, 40, 1],
     legs: { splitX: 54.2, splitY: 67.3, hipLeft: "47.7% 68.1%", hipRight: "66.3% 68.1%", turn: 0,
       split: [[54.2, 67.3], [56.3, 70.2], [58, 73], [57, 75.8], [55.2, 78.6], [53.9, 81.4], [51.5, 84.2], [48, 87], [46.8, 89.8], [47.5, 92.7], [46.6, 95.5], [45.8, 99.2]] } },
 };
@@ -108,9 +111,9 @@ function AnimRig({ anim, onMask, hit, motion, hard }: { anim: NonNullable<Office
           above) with her faces over it, swapped crisply: worried, furious, then furious and beet red
           as her grip goes. Loaded once someone means to shake; until a face arrives, the still. */}
       {motion && !quiet && <>
-        <Image className={`${styles.shakePose} ${styles.shakeWorried}`} src={anim.worried} alt="" width={450} height={540} unoptimized loading="eager" />
-        <Image className={`${styles.shakePose} ${styles.shakeMad}`} src={anim.mad} alt="" width={450} height={540} unoptimized loading="eager" />
-        <Image className={`${styles.shakePose} ${styles.shakeFurious}`} src={hard} alt="" width={450} height={540} unoptimized loading="eager" />
+        <Image className={`${styles.shakePose} ${styles.shakeWorried}`} src={anim.worried} alt="" width={450} height={540} unoptimized loading="eager" data-shake-face="" />
+        <Image className={`${styles.shakePose} ${styles.shakeMad}`} src={anim.mad} alt="" width={450} height={540} unoptimized loading="eager" data-shake-face="" />
+        <Image className={`${styles.shakePose} ${styles.shakeFurious}`} src={hard} alt="" width={450} height={540} unoptimized loading="eager" data-shake-face="" />
       </>}
       <HitMap />
     </div>
@@ -148,9 +151,9 @@ function KitRig({ officer, onMask, motion }: { officer: Officer; onMask: (image:
   const foot = split[split.length - 1][0];
   const leftLeg = `polygon(0 ${splitY}%,${seam},${foot}% 100%,0 100%)`;
   const rightLeg = `polygon(${seam},${foot}% 100%,100% 100%,100% ${splitY}%)`;
-  const art = (src: string, mask = false) => (
+  const art = (src: string, mask = false, face = false) => (
     <Image src={src} alt="" width={Math.round(640 * officer.ratio)} height={640} unoptimized loading="eager"
-      onLoad={mask ? event => onMask(event.currentTarget) : undefined} />
+      onLoad={mask ? event => onMask(event.currentTarget) : undefined} {...face ? { "data-shake-face": "" } : {}} />
   );
   return (
     <div className={styles.torso}>
@@ -167,8 +170,8 @@ function KitRig({ officer, onMask, motion }: { officer: Officer; onMask: (image:
         {art(officer.calm!, true)}
         <span className={styles.scaredFace}>{art(officer.startled!)}</span>
         {motion && <>
-          <span className={styles.strainFace}>{art(officer.strain[0])}</span>
-          <span className={`${styles.strainFace} ${styles.strainHard}`}>{art(officer.strain[1])}</span>
+          <span className={styles.strainFace}>{art(officer.strain[0], false, true)}</span>
+          <span className={`${styles.strainFace} ${styles.strainHard}`}>{art(officer.strain[1], false, true)}</span>
         </>}
       </span>
       {/* The painted belt and hips over the joins. */}
@@ -198,12 +201,16 @@ const noBody = () => null;
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const ease = (from: number, to: number, value: number) => { const t = clamp01((value - from) / (to - from)); return t * t * (3 - 2 * t); };
-// Their arms only let them swing so far: past 28° the swing stiffens smoothly toward 42° instead of
-// stopping dead against a limit.
-const limitSwing = (deg: number) => {
-  const over = Math.abs(deg) - 28;
-  return over <= 0 ? deg : Math.sign(deg) * (28 + 14 * Math.tanh(over / 14));
+// Their arms only let them swing so far: past a knee the swing stiffens smoothly toward a limit
+// instead of stopping dead against it. Hanging by both hands they tilt about 18° at most (the arms
+// stay on the wire and the legs swing on further); Kenny, by one hand, swings about his fist to 30°.
+const limitSwing = (deg: number, oneHand: boolean) => {
+  const knee = oneHand ? 20 : 11, span = oneHand ? 10 : 7;
+  const over = Math.abs(deg) - knee;
+  return over <= 0 ? deg : Math.sign(deg) * (knee + span * Math.tanh(over / span));
 };
+// A shaken string's push on the swing (after each person's own share of it).
+const SHAKE_PUSH = 1.25;
 
 function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObject<HTMLSpanElement | null>; menuOpen: boolean }) {
   const body = useSyncExternalStore<HTMLElement | null>(noSubscription, bodyOnClient, noBody);
@@ -253,6 +260,15 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
   }, [anchor, chief]);
 
   useEffect(() => () => window.clearTimeout(retire.current), []);
+
+  // The straining faces decode as soon as they load, so their first appearance mid-shake is an
+  // instant swap instead of a hitch at the very moment the struggle starts.
+  useEffect(() => {
+    if (!motion) return;
+    puppet.current?.querySelectorAll<HTMLImageElement>("img[data-shake-face]").forEach(image => {
+      image.decode?.().catch(() => { /* Not decodable yet (or never): it simply decodes on first show. */ });
+    });
+  }, [motion]);
 
   // Shaking the phone: when their grip gives out they let go the normal way, flying off toward the
   // side they were swinging to. It counts as knocked off, like a snowball.
@@ -371,7 +387,11 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     // person's own swing tempo. Jerk the phone and the string goes with it while the body lags.
     const swing = pendulum.current;
     const w0 = officer.tempo, reach = SHAKE_GRAVITY / (w0 * w0);
-    let lastV = shakeVelocity(), clock = officer.phase, kickPhase = officer.phase, legLag = 0, flail = 0;
+    const [gain, lag, friction] = officer.drive, oneHand = chief === "kenny";
+    // Their own way of squirming as they struggle (a slow wriggle, a different pace for each).
+    const squirmRate = 9 + officer.phase * 3.1 % 5;
+    // lagV: the shake as it reaches this person (a moment late, each their own moment).
+    let lagV = shakeVelocity(), lastV = lagV, clock = officer.phase, kickPhase = officer.phase, legLag = 0, flail = 0;
     // Shaken up and down, the body lags the string too: a jolt up stretches them from the hands, a
     // drop squashes them, and they spring back (a few percent at most).
     let lastLift = shakeLift(), stretch = 0, stretchRate = 0;
@@ -399,7 +419,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       if (next < face && strain > [0, .19, .48, .72][face]) next = face;
       if (startled) next = Math.max(next, 1);
       if (calm || falling) next = 0;
-      if (next !== face && (now - faceAt > 300 || falling)) {
+      if (next !== face && (now - faceAt > 300 || falling || calm)) {
         face = next; faceAt = now;
         if (face) figure.dataset.face = String(face);
         else delete figure.dataset.face;
@@ -414,12 +434,16 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       // Grip trembles that grow as the strain does (weaker once the phone is still).
       const grip = ease(.45, 1, strain) * (shakeBusy() ? 1 : .55);
       const tremble = grip * (Math.sin(clock * 71) * .7 + Math.sin(clock * 113 + 1.3) * .45 + Math.sin(clock * 47 + .4) * .3) * 1.15;
-      const turn = energy * (Math.sin(phase) * 9.8 + sign * 1.9) + swing.theta * 57.2958 + tremble;
+      // Struggling, each wriggles their own way on top of the swing, so a line of strained people
+      // never moves as one.
+      const squirm = ease(.3, 1, strain) * (shakeBusy() ? 1 : .4)
+        * (Math.sin(clock * squirmRate + officer.phase * 2.3) * 3.2 + Math.sin(clock * squirmRate * 1.73 + officer.phase) * 1.4);
+      const turn = energy * (Math.sin(phase) * 9.8 + sign * 1.9) + swing.theta * 57.2958 + tremble + squirm;
       // Kicks stay within what the cut-out hips can follow without the legs looking detached: the
       // scroll's kick, the legs trailing the swing, and a frantic scissor kick as they struggle.
       const kickLeft = energy * (Math.sin(phase * 1.31 + .5) * 11 + 7) + legLag + flail * (Math.sin(kickPhase) * 9 + 5);
       const kickRight = energy * (Math.sin(phase * 1.57 + 2) * 10 - 6) + legLag + flail * (Math.sin(kickPhase + Math.PI) * 9 - 5);
-      figure.style.setProperty("--swing", limitSwing(turn).toFixed(2) + "deg");
+      figure.style.setProperty("--swing", limitSwing(turn, oneHand).toFixed(2) + "deg");
       figure.style.setProperty("--stretch", (1 + .04 * Math.tanh(stretch / .04)).toFixed(4));
       figure.style.setProperty("--kick-left", clamp(kickLeft, -6, 21).toFixed(2) + "deg");
       figure.style.setProperty("--kick-right", clamp(kickRight, -21, 6).toFixed(2) + "deg");
@@ -442,34 +466,40 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
 
     function frame(now: number) {
       raf = 0;
-      if (document.hidden || reduced.matches) return;
+      if (document.hidden) return;
+      // Reduced motion switched on mid-swing: everyone back at rest with calm faces at once (the
+      // media query's change event can't be relied on while this loop keeps reading it).
+      if (reduced.matches) { rest(); return; }
       const dt = Math.min(.045, Math.max(.001, (now - (lastFrame || now - 16)) / 1000));
       lastFrame = now;
       energy *= Math.exp(-dt * 2.25);
       expression += (energy - expression) * (1 - Math.exp(-dt * (energy > expression ? 18 : 2.3)));
       phase += dt * (officer.tempo + 7.5 * energy);
       // The phone's sideways push since the last frame swings them (inertia: the string moves,
-      // the body trails), then gravity, friction and air bring them back. Past ~26° their arms
-      // won't let them swing much further.
-      const velocity = shakeVelocity();
-      const push = clamp(velocity - lastV, -1.2, 1.2);
-      lastV = velocity;
+      // the body trails), then gravity, friction and air bring them back. The push reaches each
+      // person a moment late and in their own measure, so six swings ripple along the lights.
+      // Once they've let go, nothing holds them: the shake stops pushing, the swing they had coasts
+      // and dies away, and the fall carries them off.
+      const falling = figure!.dataset.phase === "hit";
+      lagV += (shakeVelocity() - lagV) * (1 - Math.exp(-dt * 1000 / lag));
+      const push = falling ? 0 : clamp(lagV - lastV, -1.2, 1.2);
+      lastV = lagV;
       const before = swing.omega;
-      swing.omega += 1.6 * push / reach * Math.cos(swing.theta);
+      swing.omega += gain * SHAKE_PUSH * push / reach * Math.cos(swing.theta);
       // They settle within a few seconds once the shaking stops (at once in a Time Out).
-      const drag = isSnowballTimeout() ? 3 : .8;
+      const drag = (isSnowballTimeout() ? 3 : .95) * friction;
       const steps = Math.ceil(dt / .008), step = dt / steps;
       for (let i = 0; i < steps; i++) {
         const t = swing.theta, w = swing.omega;
-        let alpha = -w0 * w0 * Math.sin(t) - drag * w - .1 * w * Math.abs(w);
+        let alpha = falling ? -1.6 * w : -w0 * w0 * Math.sin(t) - drag * w - .1 * w * Math.abs(w);
         const over = Math.abs(t) - .45;
-        if (over > 0) alpha -= Math.sign(t) * over * 260 + w * 7;
+        if (over > 0 && !falling) alpha -= Math.sign(t) * over * 260 + w * 7;
         swing.omega += alpha * step;
         swing.theta += swing.omega * step;
       }
       recentSwing = Math.max(Math.abs(swing.theta), recentSwing * Math.exp(-dt / .9));
       const lift = shakeLift();
-      stretchRate += clamp(lift - lastLift, -1.2, 1.2) * 1.1;
+      if (!falling) stretchRate += clamp(lift - lastLift, -1.2, 1.2) * 1.1 * gain;
       lastLift = lift;
       for (let i = 0; i < steps; i++) {
         stretchRate += (-260 * stretch - 9 * stretchRate) * step;
@@ -478,7 +508,6 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       // The legs hang from the hips, so they trail the body's swing a moment behind.
       legLag += (clamp((before - swing.omega) / dt * .05, -9, 9) - legLag) * (1 - Math.exp(-dt * 12));
       // Struggling legs: they kick faster and wider as the strain grows, and flail on the way down.
-      const falling = figure!.dataset.phase === "hit";
       const strain = falling ? 0 : shakeStrain(chief);
       const target = falling ? (figure!.dataset.fall === "slip" ? 1 : 0) : ease(.25, 1, strain);
       flail += (target - flail) * (1 - Math.exp(-dt * 6));
@@ -511,7 +540,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
     }
     function rest() {
       cancelAnimationFrame(raf); raf = energy = expression = lastFrame = legLag = flail = stretch = stretchRate = 0;
-      swing.theta = swing.omega = recentSwing = 0; lastV = shakeVelocity(); lastLift = shakeLift(); startledUntil = 0;
+      swing.theta = swing.omega = recentSwing = 0; lagV = lastV = shakeVelocity(); lastLift = shakeLift(); startledUntil = 0;
       pageY = window.scrollY; paint();
     }
     // Each motion reading wakes the swing.
@@ -551,7 +580,7 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       document.removeEventListener("visibilitychange", rest);
       reduced.removeEventListener("change", rest);
     };
-  }, [anchor, anim, body, chief, gone, officer.fallback, officer.folder, officer.phase, officer.tempo]);
+  }, [anchor, anim, body, chief, gone, officer.drive, officer.fallback, officer.folder, officer.phase, officer.tempo]);
 
   if (!body) return null;
   if (gone) return shot ? createPortal(<span role="status" className={styles.announcement}>{officer.name} fell from the Christmas lights!</span>, body) : null;
@@ -581,8 +610,8 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
               loading="eager" onLoad={event => loadMask(event.currentTarget)} />
             <Image src={officer.folder + "hanging-startled.webp"} alt="" width={477} height={716} className={styles.alarmed} unoptimized loading="eager" />
             {motion && <>
-              <Image src={officer.strain[0]} alt="" width={477} height={716} className={styles.strained} unoptimized loading="eager" />
-              <Image src={officer.strain[1]} alt="" width={477} height={716} className={styles.strainedHard} unoptimized loading="eager" />
+              <Image src={officer.strain[0]} alt="" width={477} height={716} className={styles.strained} unoptimized loading="eager" data-shake-face="" />
+              <Image src={officer.strain[1]} alt="" width={477} height={716} className={styles.strainedHard} unoptimized loading="eager" data-shake-face="" />
             </>}
             <HitMap />
           </div>
@@ -621,8 +650,9 @@ export default function WinterRoofline({ menuOpen = false, standalone = false }:
   const pins = [pin0, pin1, pin2, pin3, pin4, pin5];
   const crewHanging = useSyncExternalStore(subscribeCrewDown, someoneHanging, () => true);
 
-  // Phones and tablets: shaking the device rattles the crew on the lights (crewShake).
-  useEffect(() => startShake(), []);
+  // Phones and tablets: shaking the device rattles the crew on the lights (crewShake). The staff
+  // pages stay calm: no shaking there.
+  useEffect(() => standalone ? undefined : startShake(), [standalone]);
 
   useEffect(() => {
     const garland = roof.current;
@@ -663,13 +693,13 @@ export default function WinterRoofline({ menuOpen = false, standalone = false }:
   }, []);
 
   return (
-    <div ref={roof} className={styles.roof} data-winter-roof="" data-standalone={standalone || undefined} aria-hidden="true">
+    <div ref={roof} className={styles.roof} data-winter-roof="" data-standalone={standalone || undefined}>
       {[...swags.slice(0, 3), 15, ...swags.slice(3)].map((sag, slot) => {
         // Slot 3 is the gap over the music video: the lights run across it, nobody hangs there.
         const gap = slot === 3;
         const span = slot > 3 ? slot - 1 : slot;
         return (
-        <div key={gap ? "gap" : span} className={gap ? `${styles.swag} ${styles.videoGap}` : styles.swag} style={{ "--sag": sag + "px" } as CSSProperties}>
+        <div key={gap ? "gap" : span} className={gap ? `${styles.swag} ${styles.videoGap}` : styles.swag} style={{ "--sag": sag + "px" } as CSSProperties} aria-hidden="true">
           <span className={styles.wire} />
           {sockets.map((position, socket) => {
             const index = (gap ? 6 : span) * sockets.length + socket;
@@ -694,7 +724,8 @@ export default function WinterRoofline({ menuOpen = false, standalone = false }:
         );
       })}
       {lineup.map((chief, span) => <HangingCrew key={chief} chief={chief} anchor={pins[span]} menuOpen={menuOpen} />)}
-      {/* The staff pages stay calm: no invitation to shake there. */}
+      {/* The invitation hangs from the lights themselves (the decorations above are hidden from
+          screen readers; the sign is not). The staff pages stay calm: no shaking there. */}
       {!standalone && <WinterShakeChip hidden={menuOpen || !crewHanging} />}
     </div>
   );
