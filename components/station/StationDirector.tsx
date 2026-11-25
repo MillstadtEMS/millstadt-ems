@@ -172,6 +172,7 @@ export default function StationDirector() {
 
     return () => {
       cancelled = true;
+      state = { ...state, loop: 0, order: [] };
       delete document.documentElement.dataset.stationPhase;
       timers.forEach(id => window.clearTimeout(id));
       held?.();
