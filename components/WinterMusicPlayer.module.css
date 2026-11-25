@@ -38,7 +38,12 @@
 }
 /* Docked in the header: centred on the red-and-green split, right above the TV. */
 :global(.mems-site-nav .mems-nav-bar) { position: relative; }
-.controls[data-docked] { left: 50%; top: 50%; bottom: auto; translate: -50% -50%; z-index: 6; gap: 12px; }
+/* Centred on the diagonal red/green split (WinterMusicPlayer measures it), in the middle of the
+   band under the candy-cane ribbon; equal cells so each button sits the same distance from it. */
+.controls[data-docked] { left: var(--split-x, 50%); top: var(--band-y, 50%); bottom: auto; translate: -50% -50%; z-index: 6; gap: 0; }
+/* Wide enough cells that each label (lower down, where the slanted split sits further left)
+   stays entirely on its own colour. */
+.controls[data-docked] .knob { width: 86px; }
 .controls[data-docked] .toggle, .controls[data-docked] .resize { width: 34px; height: 34px; border-radius: 11px; }
 .knob { display: grid; justify-items: center; gap: 2px; }
 .knob small {
@@ -82,42 +87,46 @@
 .room {
   position: absolute;
   z-index: 0;
-  left: -280px;
-  top: -31.75px;
+  /* Measured from the art: the TV's glass (inside its light-grey rim) is 207.5 x 148 at
+     (273.5, 13.5) in this 760x200 room; the room is placed so that glass is centred on the
+     200 x 112.5 video. The outer 1.5% (the art's dark vignette) is masked away. */
+  left: -277.25px;
+  top: -31.25px;
   width: 760px;
   height: 200px;
   pointer-events: none;
   background: url("/images/winter/kit/living-room/living-room-still.webp") 0 0 / 100% 100% no-repeat;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent 1.5%, #000 5%, #000 95%, transparent 98.5%);
+  mask-image: linear-gradient(90deg, transparent 1.5%, #000 5%, #000 95%, transparent 98.5%);
 }
 /* The site's mobile rule caps spans in page content at 100% width; the room must stay 760px. */
 .player .room { max-width: none; }
 .roomVideo { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
-.tvScreen {
-  position: absolute;
-  left: 280px;
-  top: 15px;
-  width: 200px;
-  height: 146px;
-  border-radius: 11px / 13px;
-  background: radial-gradient(ellipse at 50% 42%, #141b21, #040607 72%);
-  box-shadow: inset 0 0 10px #000, inset 0 0 2px 1px #000;
-}
+.tvScreen { display: none; }
 .player iframe { position: relative; z-index: 1; border-radius: 6px; }
+/* On the TV the video fills the whole glass, edge to edge: scaled up to the glass height and
+   trimmed at the sides (148 / 112.5 = 1.3156; 207.5px of width stays visible). */
+.player:not([data-expanded="true"]) iframe {
+  transform: scale(1.3156);
+  clip-path: inset(0 21.14px round 2.3px);
+  border-radius: 0;
+  box-shadow: none;
+}
 .controls { z-index: 2; }
 .player[data-expanded="true"] .room { display: none; }
-/* The room sits at the bottom of the banner, leaving space above the TV for its buttons. */
-.player:not([data-expanded="true"]) { align-self: end; margin-bottom: 31.75px; }
+/* The room sits flush with the bottom of the banner (it reaches 56.25px below the video). */
+.player:not([data-expanded="true"]) { align-self: end; margin-bottom: 56.25px; }
 /* The whole banner is the living room: the painted room around the TV, and the same red damask
    wallpaper, wood wainscoting and floor running out to both edges. No snow falls indoors. */
 .stage:has(.player) {
   min-height: 200px;
   overflow: hidden;
   border-block: 1px solid #c9a35c;
+  /* Cut from the room picture itself and aligned with it row for row and in phase: the damask
+     from beside the tree, and the wainscot, baseboard and floor from beside the armchair. */
   background:
-    linear-gradient(180deg, #9a6438, #7b4a28 30%, #3d2412 34%, #5c3a21 38%, #6d4528 70%, #4a2d18) left bottom / 100% 77.5px no-repeat,
-    url("/images/winter/kit/living-room/wallpaper-tile.webp") center top / 94px 148px repeat,
+    url("/images/winter/kit/living-room/wainscot-strip.webp") left calc(50% - 243.25px) bottom 0 / 28px 77px repeat-x,
+    url("/images/winter/kit/living-room/wallpaper-tile.webp") left calc(50% - 236.25px) bottom 36px / 94px 132px repeat,
     #6e1718;
 }
 :global(html:has([data-winter-video])) :global(.winter-snowfall) { clip-path: inset(var(--room-bottom, 0px) 0 0 0); }

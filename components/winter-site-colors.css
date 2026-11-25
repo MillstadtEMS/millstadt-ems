@@ -317,3 +317,19 @@
     border-bottom-color: #f3c87555;
   }
 }
+
+/* Phones and tablets: page headers are tall and narrow, so the masthead's diagonal would cut
+   through the title and intro. There the split moves to the far right, keeping all the wording on
+   the evergreen and leaving a cranberry corner. */
+@media screen and (forced-colors: none) and (max-width: 900px) {
+  html[data-mems-season="winter"] .mems-main-pad:not(:has(.hero-content))
+    :is(.mems-page-hero,
+      section[aria-labelledby="financial-library-title"],
+      section:has(> .wrap a[href="/forms"]):has(h1),
+      section:has(> .wrap h1):is([class~="bg-[#040d1a]"], [class~="from-[#071428]"]),
+      main > header:first-child:has(h1)) {
+    background:
+      repeating-linear-gradient(126deg, transparent 0 28px, #fff6ce0c 28px 29px, transparent 29px 54px),
+      linear-gradient(119deg, #08733d 0%, #006038 93.6%, #d8a848 93.7%, #ffdd72 93.95%, #b90d29 94.1%, #ce1631 100%) !important;
+  }
+}

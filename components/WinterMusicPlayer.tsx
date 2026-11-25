@@ -83,6 +83,37 @@ function Soundtrack() {
   const room = useRef<HTMLVideoElement>(null);
   const timeout = useSnowballTimeout();
   const dock = useSyncExternalStore(noSubscription, headerDock, noDock);
+  // Centre the docked buttons on the header's diagonal red/green split (the bar's 113deg
+  // gradient, split at 49.15%), halfway down the band beneath the candy-cane ribbon.
+  const controlsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const group = controlsRef.current;
+    if (!dock || !group) return;
+    const theta = (113 * Math.PI) / 180, sin = Math.sin(theta), down = -Math.cos(theta);
+    let frameId = 0;
+    const place = () => {
+      frameId = 0;
+      const bar = dock.getBoundingClientRect();
+      if (!bar.width) return;
+      const ribbon = dock.querySelector<HTMLElement>(".mems-weather-ribbon")?.getBoundingClientRect();
+      const top = ribbon?.height ? Math.min(bar.height, Math.max(0, ribbon.bottom - bar.top)) : 0;
+      const bandY = (top + bar.height - 7) / 2;
+      const box = group.getBoundingClientRect();
+      const button = group.querySelector("button")?.getBoundingClientRect();
+      const lift = button ? button.top + button.height / 2 - (box.top + box.height / 2) : 0;
+      const y = bandY + lift;
+      const length = Math.abs(bar.width * sin) + Math.abs(bar.height * Math.cos(theta));
+      const x = bar.width / 2 + ((0.4915 - 0.5) * length - (y - bar.height / 2) * down) / sin;
+      group.style.setProperty("--split-x", `${x.toFixed(1)}px`);
+      group.style.setProperty("--band-y", `${bandY.toFixed(1)}px`);
+    };
+    const queue = () => { if (!frameId) frameId = requestAnimationFrame(place); };
+    place();
+    const sizes = new ResizeObserver(queue);
+    sizes.observe(dock);
+    window.addEventListener("resize", queue, { passive: true });
+    return () => { cancelAnimationFrame(frameId); sizes.disconnect(); window.removeEventListener("resize", queue); };
+  }, [dock]);
   // Snow falls outdoors only: the snowfall layer starts below the living-room banner.
   useEffect(() => {
     const banner = room.current?.closest("aside")?.parentElement;
@@ -274,8 +305,8 @@ function Soundtrack() {
           split right above the TV. */}
       {(() => {
         const buttons = (
-          <div className={styles.controls} data-docked={dock ? "" : undefined}>
-            <span className={styles.knob}>{control}<small aria-hidden="true">{enabled ? "Sound on" : "Muted"}</small></span>
+          <div ref={controlsRef} className={styles.controls} data-docked={dock ? "" : undefined}>
+            <span className={styles.knob}>{control}<small aria-hidden="true">{enabled ? "Sound on" : "Sound off"}</small></span>
             <span className={styles.knob}>
               <button id="winter-sound-expand" type="button" className={styles.resize} aria-controls={frameId}
                 aria-label={expanded ? "Make player smaller" : "Enlarge player"} title={expanded ? "Make player smaller" : "Enlarge player"}

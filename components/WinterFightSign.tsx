@@ -12,7 +12,7 @@ export default function WinterFightSign({ placement = "scene" }: { placement?: "
   return (
     <div className={placement === "scene" ? styles.signs : `${styles.signs} ${styles[placement]}`}
       data-winter-signs={placement} data-timeout={timeout}>
-      <span className={styles.warning} aria-hidden="true">
+      <span className={styles.warning} aria-hidden="true" hidden>
         <i className={styles.beacon} />
         <svg className={styles.diamond} viewBox="0 0 120 120" focusable="false">
           <defs>

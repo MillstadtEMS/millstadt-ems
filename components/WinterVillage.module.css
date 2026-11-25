@@ -24,7 +24,7 @@
 }
 /* The snowball-fight road signs stand on the front snowbank, between the fish stand and the
    Grinch, below the ambulances' wheels. */
-.roadSign { position: absolute; z-index: 4; left: 64.2%; bottom: 2.4%; }
+.roadSign { position: absolute; z-index: 4; left: 66.4%; bottom: 2.4%; }
 .village {
   object-fit: cover;
   object-position: center 63%;
@@ -200,7 +200,7 @@
 /* The real red fish stand on the front snowbank, between the gold ambulance and the old fire engine
    (it sits below the vehicles' wheels, so it covers none of them). */
 .fishStand {
-  position: absolute; left: 43.5%; bottom: 2.2%; width: 19.5%; aspect-ratio: 917 / 709;
+  position: absolute; left: 41.8%; bottom: 2.2%; width: 22.9%; aspect-ratio: 917 / 709;
   filter: drop-shadow(0 3px 3px #27365788);
 }
 .fishHouse { position: absolute; inset: 0; width: 100%; height: 100%; }
