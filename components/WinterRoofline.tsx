@@ -104,11 +104,10 @@ function AnimRig({ anim, onMask, hit, motion, hard }: { anim: NonNullable<Office
       {/* The still traces her outline for the snowball hit test. */}
       <Image className={styles.maskSource} src={anim.still} alt="" width={450} height={540} unoptimized loading="eager"
         onLoad={event => onMask(event.currentTarget)} />
-      {/* A shaken phone swings her for real, so her painted loop gives way to stills (one shown at
-          a time, swapped crisply): calm, worried, furious, then furious and beet red as her grip
-          goes. Loaded once the phone's motion is on. */}
+      {/* A shaken phone swings her for real, so her painted loop gives way to her still (the copy
+          above) with her faces over it, swapped crisply: worried, furious, then furious and beet red
+          as her grip goes. Loaded once the phone's motion is on; until a face arrives, the still. */}
       {motion && !quiet && <>
-        <Image className={`${styles.shakePose} ${styles.shakeCalm}`} src={anim.still} alt="" width={450} height={540} unoptimized loading="eager" />
         <Image className={`${styles.shakePose} ${styles.shakeWorried}`} src={anim.worried} alt="" width={450} height={540} unoptimized loading="eager" />
         <Image className={`${styles.shakePose} ${styles.shakeMad}`} src={anim.mad} alt="" width={450} height={540} unoptimized loading="eager" />
         <Image className={`${styles.shakePose} ${styles.shakeFurious}`} src={hard} alt="" width={450} height={540} unoptimized loading="eager" />
@@ -185,7 +184,7 @@ function Sweat({ head }: { head: [number, number, number] }) {
     <span className={styles.sweat} aria-hidden="true" style={{ "--head-x": head[0] + "%", "--head-y": head[1] + "%", "--head-half": head[2] + "%" } as CSSProperties}>
       {[-1, 1, -1, 1].map((side, i) => (
         <svg key={i} className={styles.bead} viewBox="0 0 10 14" style={{ "--side": side, "--drop-delay": `${[0, .21, .43, .62][i]}s` } as CSSProperties}>
-          <path d="M5 .8C6.9 4.3 9.2 6.6 9.2 9.1a4.2 4.2 0 0 1-8.4 0C.8 6.6 3.1 4.3 5 .8Z" fill="#cdeeff" stroke="#163243" strokeWidth="1.1" />
+          <path d="M5 .8C6.9 4.3 9.2 6.6 9.2 9.1a4.2 4.2 0 0 1-8.4 0C.8 6.6 3.1 4.3 5 .8Z" fill="#a9defb" stroke="#12303f" strokeWidth="1.2" />
           <path d="M3.3 8.3c0-1 .5-1.9 1.2-2.6" fill="none" stroke="#fff" strokeWidth="1.1" strokeLinecap="round" />
         </svg>
       ))}
