@@ -12,7 +12,8 @@ import { isSnowballTimeout } from "./snowballTimeout";
 // Phones and tablets only. iPhones and iPads ask for motion access from a tap first (the "Shake
 // the lights" chip); Android delivers motion right away. Call Time Out and reduced motion turn it
 // all off. ?preview=ve&shake=1 enables it with a mouse (dispatch DeviceMotionEvents from the
-// console); &shake=ios also rehearses the iPhone permission chip.
+// console; window.__memsCrewShake() reports the strain); &shake=ios also rehearses the iPhone
+// permission chip, and &shake-plan=all or &shake-plan=one picks how they let go.
 
 export type ShakeAccess = "idle" | "listening" | "ask" | "on" | "denied";
 
@@ -53,13 +54,13 @@ const state = {
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 
-let preview: string | null | undefined;
+let preview: string | null | undefined, previewPlan: string | null = null;
 function previewMode() {
   if (preview !== undefined) return preview;
   preview = null;
   try {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("preview") === "ve") preview = params.get("shake");
+    if (params.get("preview") === "ve") { preview = params.get("shake"); previewPlan = params.get("shake-plan"); }
   } catch { /* No preview override. */ }
   return preview;
 }
@@ -92,7 +93,8 @@ function planFalls() {
     const j = Math.floor(Math.random() * (i + 1));
     [ids[i], ids[j]] = [ids[j], ids[i]];
   }
-  const roll = Math.random();
+  // ?preview=ve&shake=1&shake-plan=all|one rehearses one pattern.
+  const roll = previewPlan === "all" ? 0 : previewPlan === "one" ? .3 : Math.random();
   let groups: string[][];
   if (roll < .17) groups = [ids];
   else if (roll < .4) groups = ids.map(id => [id]);
