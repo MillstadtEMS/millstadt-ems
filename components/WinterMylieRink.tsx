@@ -613,17 +613,34 @@ function Scene({ onDone, seek }: { onDone: () => void; seek: boolean }) {
         left: clamp((viewLeft - box.left) / box.width, 0, 1), right: clamp((viewRight - box.left) / box.width, 0, 1),
       } satisfies Env;
     }
-    const env = measure();
+    let env = measure();
     if (!env) { onDone(); return; }
-    scene = buildScene(env);
-    const vScale = env.stall.w / VENDOR.stall[0];
-    Object.assign(vendor.style, { left: `${env.stall.x}px`, top: `${env.stall.y}px`, transform: `scale(${vScale.toFixed(5)})` });
-    // the cup in the vendor's mitten is drawn the size it will be in Mylie's hand
-    const cupScale = VENDOR.cupScale * scene.kc / STAND_SCALE / vScale;
-    Object.assign(vCup.style, { width: `${VENDOR.cup.w * cupScale}px`, height: `${VENDOR.cup.h * cupScale}px` });
+    // Lay the scene out for this rink (positions are fractions of it, so a resize or a phone turned
+    // mid-run lays it out again and carries on at the same moment).
+    function layout(next: Env) {
+      env = next;
+      scene = buildScene(next);
+      const vScale = next.stall.w / VENDOR.stall[0];
+      Object.assign(vendor.style, { left: `${next.stall.x}px`, top: `${next.stall.y}px`, transform: `scale(${vScale.toFixed(5)})` });
+      // the cup in the vendor's mitten is drawn the size it will be in Mylie's hand
+      const cupScale = VENDOR.cupScale * scene.kc / STAND_SCALE / vScale;
+      Object.assign(vCup.style, { width: `${VENDOR.cup.w * cupScale}px`, height: `${VENDOR.cup.h * cupScale}px` });
+    }
+    layout(env);
+    let lastSize = `${env.W}x${env.R}`;
+    const resize = new ResizeObserver(() => {
+      const next = measure();
+      if (!next || disposed || `${next.W}x${next.R}` === lastSize) return;
+      lastSize = `${next.W}x${next.R}`;
+      layout(next);
+      render(shown);
+    });
+    resize.observe(rink);
 
+    let shown = 0;
     function render(t: number) {
       if (!scene) return;
+      shown = t;
       const fr = scene.frameAt(t);
       const z = rinkDepthZ(fr.f);
       for (const r of rigs) {
@@ -751,6 +768,7 @@ function Scene({ onDone, seek }: { onDone: () => void; seek: boolean }) {
       cancelAnimationFrame(frameId);
       window.removeEventListener(snowballTimeoutEvent, onTimeout);
       motion.removeEventListener("change", onMotion);
+      resize.disconnect();
       delete (window as Window & { __mylieRinkSeek?: unknown }).__mylieRinkSeek;
     };
   }, [onDone, seek]);
