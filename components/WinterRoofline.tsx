@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState, useCallback, useSyncExter
 import { createPortal } from "react-dom";
 import { isSnowballTimeout, useSnowballTimeout } from "@/lib/seasonal/snowballTimeout";
 import { reachSamples, tapSlop, touchReach } from "@/lib/device/profile";
-import { SHAKE_GRAVITY, joinShake, shakeAccess, shakeBusy, shakeStrain, shakeVelocity, startShake, subscribeShake, subscribeShakeAccess, type ShakeAccess } from "@/lib/seasonal/crewShake";
+import { SHAKE_GRAVITY, joinShake, shakeBusy, shakeStrain, shakeVelocity, shakeWanted, startShake, subscribeShake, subscribeShakeAccess } from "@/lib/seasonal/crewShake";
 import WinterShakeChip from "./WinterShakeChip";
 import styles from "./WinterRoofline.module.css";
 
@@ -106,7 +106,7 @@ function AnimRig({ anim, onMask, hit, motion, hard }: { anim: NonNullable<Office
         onLoad={event => onMask(event.currentTarget)} />
       {/* A shaken phone swings her for real, so her painted loop gives way to her still (the copy
           above) with her faces over it, swapped crisply: worried, furious, then furious and beet red
-          as her grip goes. Loaded once the phone's motion is on; until a face arrives, the still. */}
+          as her grip goes. Loaded once someone means to shake; until a face arrives, the still. */}
       {motion && !quiet && <>
         <Image className={`${styles.shakePose} ${styles.shakeWorried}`} src={anim.worried} alt="" width={450} height={540} unoptimized loading="eager" />
         <Image className={`${styles.shakePose} ${styles.shakeMad}`} src={anim.mad} alt="" width={450} height={540} unoptimized loading="eager" />
@@ -210,8 +210,8 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
   const [shot, setShot] = useState<{ x: number; y: number; slip?: boolean } | null>(null);
   // The swing a shaking phone drives, shared with the fall (they let go the way they swing).
   const pendulum = useRef({ theta: 0, omega: 0 });
-  // The straining faces load only once the phone's motion is actually coming in.
-  const motion = useSyncExternalStore<ShakeAccess>(subscribeShakeAccess, shakeAccess, () => "idle") === "on";
+  // The straining faces load only once someone means to shake (most visitors never will).
+  const motion = useSyncExternalStore(subscribeShakeAccess, shakeWanted, () => false);
   const officer = officers[chief];
   const anim = officer.anim;
 

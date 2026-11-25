@@ -46,6 +46,8 @@ const state = {
   lastShake: 0,
   shakes: 0,
   data: false,
+  // The visitor allowed motion from the chip: they mean to shake.
+  asked: false,
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -213,7 +215,10 @@ export function askForShake() {
   if (!ask) return;
   const answer = previewMode() === "ios" ? Promise.resolve("granted" as const) : ask.call(DeviceMotionEvent);
   answer.then(
-    result => setAccess(result === "granted" ? state.data ? "on" : "listening" : "denied"),
+    result => {
+      state.asked = result === "granted";
+      setAccess(result === "granted" ? state.data ? "on" : "listening" : "denied");
+    },
     () => setAccess("denied"),
   );
 }
@@ -221,6 +226,8 @@ export function askForShake() {
 export const shakeAccess = () => state.access;
 /** Bumps each time a new burst of real shaking starts. */
 export const shakeCount = () => state.shakes;
+/** Someone means to shake (they allowed motion, or already shook): time to load the straining faces. */
+export const shakeWanted = () => state.asked || state.shakes > 0;
 export function subscribeShakeAccess(listener: () => void) {
   accessListeners.add(listener);
   return () => { accessListeners.delete(listener); };
