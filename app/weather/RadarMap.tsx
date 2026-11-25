@@ -63,16 +63,42 @@ export default function RadarMap() {
       });
       mapRef.current = map;
 
+      // The base map: CARTO's free dark tiles now need an API key (every tile came back as an "API
+      // KEY REQUIRED" picture), so the radar sits on a dark night map drawn from the Iowa
+      // Environmental Mesonet's county and state lines (already allowed by the site's image policy),
+      // turned light on dark, with the area's towns labelled.
+      containerRef.current.style.background = "#0a1426";
+      const lines = map.createPane("lines");
+      lines.style.zIndex = "250";
+      lines.style.filter = "invert(1)";
+      lines.style.pointerEvents = "none";
       L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-        { attribution: "© OpenStreetMap © CARTO", subdomains: "abcd", maxZoom: 19 }
+        "https://mesonet.agron.iastate.edu/c/tile.py/1.0.0/uscounties/{z}/{x}/{y}.png",
+        { pane: "lines", opacity: 0.22, maxZoom: 12, attribution: "Boundaries: Iowa Environmental Mesonet" }
       ).addTo(map);
-
-      // State/county boundaries
       L.tileLayer(
         "https://mesonet.agron.iastate.edu/c/tile.py/1.0.0/usstates/{z}/{x}/{y}.png",
-        { opacity: 0.35, zIndex: 3 }
+        { pane: "lines", opacity: 0.55, maxZoom: 12 }
       ).addTo(map);
+      // [name, lat, lon, the zoom it appears from]: the nearby towns crowd each other zoomed out.
+      const towns: Array<[string, number, number, number]> = [
+        ["St. Louis", 38.627, -90.199, 0], ["Alton", 38.891, -90.184, 0], ["Sparta", 38.123, -89.702, 0],
+        ["Belleville", 38.520, -89.984, 9], ["Columbia", 38.443, -90.201, 9], ["Waterloo", 38.336, -90.150, 9],
+        ["Mascoutah", 38.490, -89.793, 9], ["Collinsville", 38.670, -89.985, 9], ["Red Bud", 38.212, -89.994, 9],
+      ];
+      const labels = towns.map(([name, lat, lon, from]) => ({ from, marker: L.marker([lat, lon], {
+        interactive: false, keyboard: false,
+        icon: L.divIcon({
+          className: "",
+          html: `<span style="font:600 11px/1 system-ui,sans-serif;color:#cbd5e1;white-space:nowrap;text-shadow:0 1px 2px #000,0 0 3px #000">${name}</span>`,
+          iconSize: [0, 0],
+        }),
+      }) }));
+      const showLabels = () => labels.forEach(({ from, marker }) => {
+        if (map.getZoom() >= from) marker.addTo(map); else marker.remove();
+      });
+      map.on("zoomend", showLabels);
+      showLabels();
 
       // Millstadt marker
       const icon = L.divIcon({
