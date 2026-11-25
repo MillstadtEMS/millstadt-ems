@@ -10,6 +10,11 @@ import { flinch, throwSnowball, visitorThrow, windUp, type Point } from "@/lib/s
 // chiefs (data-snow-role="target" ones only get hit, like the crew hanging from the lights).
 // Throws go at each other, at Santa (data-snow-santa) and at the visitor's screen. Visitors join
 // in by clicking a character. "Call time out" stops it all.
+// Every throw comes out of a hand: the snowball is packed in the thrower's hand (data-snow-hand,
+// fractions of their box), carried up and back over the shoulder as they lean back (or held up
+// where data-snow-windup puts the raised hand), and whipped forward to leave that hand
+// (snowballFlight's windUp). Skaters on the rink are painted holding theirs and wind up with their
+// own pictures; the medics behind the trucks throw only with their own wind-up and release pictures.
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)];
@@ -35,6 +40,24 @@ function handOf(el: HTMLElement): Point {
   const [hx, hy] = (el.dataset.snowHand || "0.6,0.3").split(",").map(Number);
   return { x: r.left + r.width * hx, y: r.top + r.height * hy };
 }
+
+function previewThrower() {
+  try {
+    const query = new URLSearchParams(window.location.search);
+    return query.get("preview") === "ve" ? query.get("fight-thrower") || null : null;
+  } catch { return null; }
+}
+
+/** Is the thrower's picture up yet? (A snowball never winds up in the hand of someone not drawn.) */
+function drawn(el: HTMLElement) {
+  const art = el.querySelector("img");
+  return !art || (art.complete && art.naturalWidth > 0);
+}
+
+/** Throwers whose own pictures show the snowball in hand and the throw (so none is drawn for them). */
+const paintedThrow = (el: HTMLElement) => Boolean(el.closest("[data-lead]"));
+/** The medics behind the trucks throw on their own, with their wind-up and release pictures; here they're only targets. */
+const throwsOnOwn = (el: HTMLElement) => Boolean(el.closest("[data-truck-medics]"));
 
 function bodyOf(el: HTMLElement): Point {
   const r = el.getBoundingClientRect();
@@ -82,39 +105,54 @@ export default function WinterSnowballFight() {
     let timer: number | undefined;
     let disposed = false;
     let busy = false;
+    const preview = previewThrower();
     const schedule = (ms?: number) => {
       window.clearTimeout(timer);
       if (disposed) return;
       // Lively but not overbearing: a throw every ~2-4.5s, a little calmer on phones.
-      timer = window.setTimeout(volley, ms ?? rand(1900, 4400) * (window.innerWidth < 700 ? 1.35 : 1));
+      timer = window.setTimeout(volley, ms ?? (preview ? 900 : rand(1900, 4400) * (window.innerWidth < 700 ? 1.35 : 1)));
     };
     async function volley() {
       if (disposed) return;
       if (busy || guarded()) { schedule(1600); return; }
       const all = [...document.querySelectorAll<HTMLElement>("[data-snow-fighter]")].filter(onScreen);
-      const throwers = all.filter(el => el.dataset.snowRole !== "target");
-      if (!throwers.length) { schedule(3000); return; }
+      let throwers = all.filter(el => el.dataset.snowRole !== "target" && !throwsOnOwn(el) && drawn(el));
+      // Preview one thrower (when they're on screen): ?preview=ve&fight-thrower=<name, or the start of one>.
+      if (preview) throwers = throwers.filter(el => el.dataset.snowFighter?.startsWith(preview));
+      if (!throwers.length) { schedule(preview ? 700 : 3000); return; }
       busy = true;
       const thrower = pick(throwers);
-      const from = handOf(thrower);
+      const hand = handOf(thrower);
       const santas = [...document.querySelectorAll<HTMLElement>("[data-snow-santa]")].filter(onScreen);
       const others = all.filter(el => el !== thrower);
       const roll = Math.random();
+      /**
+       * Wind up toward `to` with the snowball in hand; resolves where (and how big) it leaves the
+       * hand, or null if the throw is off (a Time Out, or the thrower is gone).
+       */
+      const windUpAt = async (to: Point): Promise<{ at: Point; size?: number } | null> => {
+        const painted = paintedThrow(thrower);
+        const motion = windUp(thrower, to.x >= hand.x ? 1 : -1, 1, { hold: !painted });
+        await motion.release;
+        if (disposed || isSnowballTimeout()) { motion.drop(); return null; }
+        return painted ? { at: hand } : motion.held();
+      };
       try {
         if (roll < .22 || !others.length) {
           const to = { x: rand(.18, .82) * window.innerWidth, y: rand(.22, .7) * window.innerHeight };
-          const motion = windUp(thrower, to.x >= from.x ? 1 : -1);
-          await motion.release;
-          await throwSnowball({ from, to, toward: "viewer", splat: "glass" });
+          const ball = await windUpAt(to);
+          if (ball) await throwSnowball({ from: ball.at, fromSize: ball.size, to, toward: "viewer", splat: "glass" });
         } else {
           const target = roll < .32 && santas.length ? santas[0] : pick(others);
           const aim = bodyOf(target);
           const miss = Math.random() < .17;
           const to = miss ? { x: aim.x + rand(-70, 70), y: aim.y + rand(35, 80) } : aim;
-          const motion = windUp(thrower, to.x >= from.x ? 1 : -1);
-          await motion.release;
-          await throwSnowball({ from, to, splat: miss ? "ground" : "powder",
-            onImpact: () => { if (!miss && target.isConnected) snowHit(target, from); } });
+          const ball = await windUpAt(to);
+          if (ball) {
+            const from = ball.at;
+            await throwSnowball({ from, fromSize: ball.size, to, splat: miss ? "ground" : "powder",
+              onImpact: () => { if (!miss && target.isConnected) snowHit(target, from); } });
+          }
         }
       } finally {
         busy = false;

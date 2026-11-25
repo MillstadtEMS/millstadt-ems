@@ -12,6 +12,12 @@ export type ThrowOptions = {
   to: Point;
   /** Ball diameter at release, CSS px. Defaults to ~1.25% of the screen width. */
   size?: number;
+  /**
+   * Diameter (CSS px) of the snowball the thrower was holding: the flight starts at exactly that size,
+   * so the ball that leaves a hand is the one that was in it (no jump). Coming at the viewer it then
+   * swells to at least its usual size at the glass.
+   */
+  fromSize?: number;
   /** Apex height above the straight line between the points. Defaults from the distance. */
   arc?: number;
   /** Sideways travel speed in px/s (real snowballs: a brisk, slightly lobbed toss). */
@@ -70,13 +76,16 @@ export function throwSnowball(options: ThrowOptions): Promise<void> {
   const spin = rand(420, 760) * (dx < 0 ? -1 : 1);
   const steps = 20;
   const frames: Keyframe[] = [];
+  // Start scale: the held ball's size when known (viewer throws otherwise start small and far).
+  const s0 = options.fromSize ? options.fromSize / size : viewer ? .38 : 1;
+  const s1 = Math.max(3.28, s0 * 2.2);
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
     // Projectile motion: x moves at constant speed, y follows a gravity parabola.
     const x = from.x + dx * t;
     const y = from.y + dy * t - 4 * arc * t * (1 - t);
     // Coming at the screen it swells (perspective); into the scene it shrinks slightly with distance.
-    const s = viewer ? .38 + 2.9 * t * t : 1 - .22 * t + .06 * Math.sin(Math.PI * t);
+    const s = viewer ? s0 + (s1 - s0) * t * t : s0 * (1 - .22 * t + .06 * Math.sin(Math.PI * t));
     frames.push({ transform: `translate(${x - size / 2}px, ${y - size / 2}px) rotate(${spin * t}deg) scale(${s})`, offset: t });
   }
   const host = layer();
@@ -160,9 +169,39 @@ function glassSplat(at: Point, size: number) {
     ], { duration: still ? 420 : 620, easing: "ease-in" }).finished.then(() => el.remove(), () => el.remove());
 }
 
+/** A snowball in a thrower's hand: where it is on screen and how big (CSS px diameter). */
+export type Held = { at: Point; size: number };
+export type WindUpOptions = {
+  /**
+   * Show the snowball in the thrower's hand (for art that isn't painted holding one): it is packed
+   * in the hand (the element's data-snow-hand), carried up and back over the shoulder as they lean
+   * back (or wherever data-snow-windup says the raised hand is), held up there a beat, then whipped
+   * forward to where it leaves the hand. This wind-up runs longer so the raised snowball reads.
+   */
+  hold?: boolean;
+};
+export type WindUp = {
+  /** Resolves at the moment the ball leaves the hand. */
+  release: Promise<void>;
+  done: Promise<void>;
+  /** The held snowball as it leaves the hand (start the flight there, at that size); null when nothing was held or the thrower vanished. */
+  held: () => Held | null;
+  /** Called off mid-wind-up (a Time Out): the snowball drops out of the hand and is gone. */
+  drop: () => void;
+};
+
+/** "x,y" fractions of a box, as the data-snow-* attributes write them. */
+function fractions(value: string | undefined, fallback: readonly [number, number]): readonly [number, number] {
+  const [x, y] = (value ?? "").split(",").map(Number);
+  return Number.isFinite(x) && Number.isFinite(y) ? [x, y] : fallback;
+}
+
 /** A throwing motion: lean back, snap forward, settle. Resolves `release` at the moment the ball leaves the hand. */
-export function windUp(el: HTMLElement, facing: 1 | -1 = 1, scale = 1) {
-  if (reducedMotion()) return { release: Promise.resolve(), done: Promise.resolve() };
+export function windUp(el: HTMLElement, facing: 1 | -1 = 1, scale = 1, options: WindUpOptions = {}): WindUp {
+  const empty = { held: () => null, drop: () => {} };
+  if (reducedMotion()) return { release: Promise.resolve(), done: Promise.resolve(), ...empty };
+  if (options.hold) return windUpHolding(el, facing, scale);
+  // (The rink recognises this lean on a skater the fight picks by its second keyframe at .42.)
   const lean = 8 * scale, snap = 11 * scale;
   const anim = el.animate([
     { rotate: "0deg", translate: "0 0" },
@@ -172,7 +211,142 @@ export function windUp(el: HTMLElement, facing: 1 | -1 = 1, scale = 1) {
     { rotate: "0deg", translate: "0 0" },
   ], { duration: 600, easing: "ease-in-out" });
   const release = new Promise<void>(resolve => window.setTimeout(resolve, 600 * .64));
-  return { release, done: anim.finished.then(() => undefined, () => undefined) };
+  return { release, done: anim.finished.then(() => undefined, () => undefined), ...empty };
+}
+
+// The held wind-up's beats, as shares of HOLD_MS: pack the snowball in the hand, carry it up and back
+// over the shoulder (leaning back), hold it up there with a little pump, whip it forward, let go.
+const HOLD_MS = 1250;
+const PACKED = .11, COCKED = .42, PUMPED = .64, LET_GO = .7;
+
+function windUpHolding(el: HTMLElement, facing: 1 | -1, scale: number): WindUp {
+  const rect = el.getBoundingClientRect();
+  const w = el.offsetWidth || rect.width, h = el.offsetHeight || rect.height;
+  if (!w || !h) return windUp(el, facing, scale);
+  const lean = 8 * scale, snap = 11 * scale, f = facing;
+  // The same lean as a quick wind-up (second keyframe at .42), holding back a beat before the snap.
+  const anim = el.animate([
+    { rotate: "0deg", translate: "0 0", easing: "ease-in-out" },
+    { rotate: `${-lean * f}deg`, translate: `${-3 * f * scale}px 1px`, offset: COCKED, easing: "ease-in-out" },
+    { rotate: `${-(lean + 1.5) * f}deg`, translate: `${-3.6 * f * scale}px 1.5px`, offset: .62, easing: "ease-in" },
+    { rotate: `${snap * f}deg`, translate: `${5 * f * scale}px -2px`, offset: .72, easing: "ease-out" },
+    { rotate: `${-2 * f}deg`, translate: "0 0", offset: .86, easing: "ease-in-out" },
+    { rotate: "0deg", translate: "0 0" },
+  ], { duration: HOLD_MS, easing: "linear" });
+  const done = anim.finished.then(() => undefined, () => undefined);
+
+  // The path in the element's own box (CSS px, before the lean): hand, raised hand, release point.
+  const [hx, hy] = fractions(el.dataset.snowHand, [.6, .3]);
+  const hand = { x: hx * w, y: hy * h };
+  // An arm's reach for this figure; the snowball is about a fist across.
+  const arm = Math.min(64, Math.max(7, h * .26));
+  const size = Math.min(Math.min(26, Math.max(10, window.innerWidth * .0125)), Math.max(7, h * .09));
+  // Raised: up beside the head on the throwing hand's side (never across the face), and further
+  // out when that side is also away from the target (back, then forward).
+  const side = hand.x >= w / 2 ? 1 : -1;
+  const out = Math.max(Math.abs(hand.x - w / 2) + arm * (side === -f ? .55 : .2), arm * .5);
+  const raised = el.dataset.snowWindup
+    ? (([x, y]) => ({ x: x * w, y: y * h }))(fractions(el.dataset.snowWindup, [hx, hy]))
+    : { x: Math.min(w * 1.12, Math.max(-w * .12, w / 2 + side * out)), y: Math.max(-h * .1, hand.y - arm * .85) };
+  // A raised hand that is already up (data-snow-windup at the hand) just pumps; otherwise the ball
+  // swings out first, then up (a quadratic curve through `swing`).
+  const travel = Math.hypot(raised.x - hand.x, raised.y - hand.y);
+  const swing = { x: raised.x + side * travel * .2, y: hand.y - (hand.y - raised.y) * .2 };
+  const letGo = { x: raised.x + f * Math.max(arm * .95, travel * .9), y: raised.y + arm * .3 };
+  const ease = (t: number) => t < .5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
+  /** Where the ball is (element px), its scale and opacity, at share `t` of the wind-up. */
+  function pathAt(t: number) {
+    if (t < PACKED) {
+      const k = t / PACKED;
+      return { x: hand.x, y: hand.y, s: k < .7 ? .35 + .8 * (k / .7) : 1.15 - .15 * ((k - .7) / .3), o: Math.min(1, k * 2.5) };
+    }
+    if (t < COCKED) {
+      const k = ease((t - PACKED) / (COCKED - PACKED)), u = 1 - k;
+      return { x: u * u * hand.x + 2 * u * k * swing.x + k * k * raised.x, y: u * u * hand.y + 2 * u * k * swing.y + k * k * raised.y, s: 1, o: 1 };
+    }
+    if (t < PUMPED) {
+      // A pump: the hand dips back a little and comes up again.
+      const k = Math.sin(Math.PI * (t - COCKED) / (PUMPED - COCKED));
+      return { x: raised.x - f * arm * .06 * k, y: raised.y + arm * .1 * k, s: 1, o: 1 };
+    }
+    const k = Math.min(1, (t - PUMPED) / (LET_GO - PUMPED)), e = k * k;
+    return { x: raised.x + (letGo.x - raised.x) * e, y: raised.y + (letGo.y - raised.y) * e, s: 1, o: 1 };
+  }
+  /** That point on screen, through the element's lean, wherever it has moved or scrolled to. */
+  function onScreen(p: { x: number; y: number }): Point | null {
+    if (!el.isConnected) return null;
+    const box = el.getBoundingClientRect();
+    if (!box.width && !box.height) return null;
+    const a = (parseFloat(getComputedStyle(el).rotate) || 0) * Math.PI / 180;
+    const dx = p.x - w / 2, dy = p.y - h / 2;
+    return { x: box.left + box.width / 2 + dx * Math.cos(a) - dy * Math.sin(a), y: box.top + box.height / 2 + dx * Math.sin(a) + dy * Math.cos(a) };
+  }
+
+  const piece = ball(size, 0);
+  // A fine dark rim keeps a small snowball readable against snow.
+  piece.style.boxShadow += ", 0 0 0 1px rgba(40, 56, 74, .5)";
+  layer().appendChild(piece);
+  const start = performance.now();
+  let frame = 0, last: Held | null = null, state: "held" | "thrown" | "dropped" = "held";
+  const draw = (t: number) => {
+    const p = pathAt(t), at = onScreen(p);
+    if (!at) { last = null; piece.style.opacity = "0"; return; }
+    piece.style.transform = `translate(${at.x - size / 2}px, ${at.y - size / 2}px) scale(${p.s})`;
+    piece.style.opacity = String(p.o);
+    last = { at, size: size * p.s };
+  };
+  const tick = () => {
+    frame = 0;
+    if (state !== "held") return;
+    draw(Math.min(LET_GO, (performance.now() - start) / HOLD_MS));
+    frame = requestAnimationFrame(tick);
+  };
+  draw(0);
+  frame = requestAnimationFrame(tick);
+  packFlecks(hand, onScreen, size);
+  const release = new Promise<void>(resolve => window.setTimeout(() => {
+    if (state === "held") {
+      cancelAnimationFrame(frame);
+      draw(LET_GO);
+      state = "thrown";
+      // The flight takes over from here at this size, in the same frame.
+      piece.remove();
+    }
+    resolve();
+  }, HOLD_MS * LET_GO));
+  return {
+    release, done,
+    held: () => state === "dropped" ? null : last,
+    drop() {
+      if (state !== "held") return;
+      state = "dropped";
+      cancelAnimationFrame(frame);
+      piece.animate([{ translate: "0 0", opacity: piece.style.opacity || "1" }, { translate: `${-f * 4}px ${Math.max(14, size * 1.4)}px`, opacity: 0 }],
+        { duration: 240, easing: "ease-in" }).finished.then(() => piece.remove(), () => piece.remove());
+    },
+  };
+}
+
+/** A few crumbs of snow fall from the hand as the snowball is packed. */
+function packFlecks(hand: { x: number; y: number }, onScreen: (p: { x: number; y: number }) => Point | null, size: number) {
+  const at = onScreen(hand);
+  if (!at) return;
+  const host = layer();
+  for (let i = 0; i < 3; i++) {
+    const r = Math.max(2, size * rand(.16, .24));
+    const fleck = document.createElement("i");
+    Object.assign(fleck.style, {
+      position: "absolute", left: at.x - r / 2 + "px", top: at.y - r / 2 + "px", width: r + "px", height: r + "px",
+      borderRadius: "50%", background: "#fbfdff", boxShadow: "0 0 0 .5px rgba(60, 80, 104, .45)",
+    });
+    host.appendChild(fleck);
+    const dx = (i - 1) * size * .45 + rand(-2, 2), fall = size * rand(1.1, 1.8);
+    fleck.animate([
+      { transform: "translate(0, 0)", opacity: 1 },
+      { transform: `translate(${dx}px, ${fall}px)`, opacity: 0 },
+    ], { duration: rand(260, 380), delay: i * 40, easing: "cubic-bezier(.3,0,.8,.6)", fill: "backwards" })
+      .finished.then(() => fleck.remove(), () => fleck.remove());
+  }
 }
 
 /** Knocked back by a hit coming from `from`: a jolt away from the impact, a wobble, then still. */
