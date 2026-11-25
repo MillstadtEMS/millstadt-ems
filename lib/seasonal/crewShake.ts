@@ -113,8 +113,9 @@ function planFalls() {
     }
     if (group.length) groups.push(group);
   }
-  const first = groups.length === 1 ? rand(2.6, 3.4) : rand(2, 2.8);
-  const span = groups.length === 1 ? 0 : rand(2.2, 3.6);
+  // A hard shake lets the first go after two or three seconds and the last within about six.
+  const first = groups.length === 1 ? rand(2.3, 3) : rand(1.8, 2.5);
+  const span = groups.length === 1 ? 0 : rand(1.8, 2.8);
   groups.forEach((group, index) => {
     const at = first + (groups.length > 1 ? span * index / (groups.length - 1) : 0) + rand(-.15, .15) * (index ? 1 : 0);
     // Within a group they go a breath apart, not in robotic unison.
