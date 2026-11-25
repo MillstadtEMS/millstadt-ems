@@ -456,10 +456,12 @@ function HangingCrew({ chief, anchor, menuOpen }: { chief: Chief; anchor: RefObj
       lastV = velocity;
       const before = swing.omega;
       swing.omega += 1.3 * push / reach * Math.cos(swing.theta);
+      // They settle within a few seconds once the shaking stops (at once in a Time Out).
+      const drag = isSnowballTimeout() ? 3 : .8;
       const steps = Math.ceil(dt / .008), step = dt / steps;
       for (let i = 0; i < steps; i++) {
         const t = swing.theta, w = swing.omega;
-        let alpha = -w0 * w0 * Math.sin(t) - .5 * w - .1 * w * Math.abs(w);
+        let alpha = -w0 * w0 * Math.sin(t) - drag * w - .1 * w * Math.abs(w);
         const over = Math.abs(t) - .45;
         if (over > 0) alpha -= Math.sign(t) * over * 260 + w * 7;
         swing.omega += alpha * step;
