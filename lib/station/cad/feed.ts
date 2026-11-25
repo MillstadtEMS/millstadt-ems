@@ -18,7 +18,8 @@ const MAX_FETCH_PER_SYNC = 40;
 const FETCH_CONCURRENCY = 6;
 /** The TV shows "CAD feed delayed" when the last good sync is older than this. */
 const DELAYED_AFTER_MS = 2 * 60_000;
-const GEOCODES_PER_REQUEST = 3;
+/** Each lookup can take ~9 s (Census, then Nominatim), and the route allows 30. */
+const GEOCODES_PER_REQUEST = 2;
 
 export interface PendingGeocode { key: string; address: string; city: string | null }
 
