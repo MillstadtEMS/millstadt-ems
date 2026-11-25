@@ -100,6 +100,8 @@ function legMats(body: Mat, p: LegPose, out: Record<string, Mat>) {
   return blades;
 }
 
+/** Her belt buckle (walking px): the skating upper body bends about it. */
+const BELT: Pt = [195, 557];
 const bodyMat = (root: Pt, lean: number) => mul(tr(PEL[0] + root[0], PEL[1] + root[1]), mul(rot(lean), tr(-PEL[0], -PEL[1])));
 
 /* ---- the walk: two steps a cycle; feet planted where they strike while the body travels on ---- */
@@ -161,9 +163,9 @@ function settlePose(endPhase: number, stride: number, u: number, advanceTo: numb
   return { pose, advance };
 }
 
-/* ---- skating strokes: glide on one blade under the body while the other pushes back along the ice,
-   lifts and comes back under; drive 0 glides on both blades ---- */
-function strokePose(phase: number, drive: number): LegPose {
+/* ---- skating strokes (two a cycle): she glides on one bent leg under her while the other pushes
+   back along the ice, rises behind her, extended, and swings back under; drive 0 glides on both ---- */
+function strokePose(phase: number, drive: number, stance?: { far: number; near: number }): LegPose {
   const crouch = lerp(.95, .86, drive);
   const ground = PEL[1] + crouch * LEG + WALK.ankleH;
   const legs = {} as Record<"far" | "near", LegTarget>;
@@ -171,17 +173,19 @@ function strokePose(phase: number, drive: number): LegPose {
     const q = ((phase + (side === "far" ? 0 : .5)) % 1 + 1) % 1;
     const sideX = PEL[0] + (side === "far" ? -14 : 14);
     let x: number, lift = 0, foot = 0;
-    if (q < .46) x = sideX - 40 + 40 * (q / .46);
-    else if (q < .72) x = sideX + 210 * easeOut((q - .46) / .26);
-    else {
-      const s = (q - .72) / .28;
-      x = sideX + 210 + (-40 - 210) * smooth(s);
-      lift = 34 * Math.sin(Math.PI * s);
-      foot = -.35 * Math.sin(Math.PI * Math.min(1, s * 1.3)) * (1 - s * .4);
+    if (q < .42) x = sideX - 55 + 45 * (q / .42);                       // glide
+    else if (q < .62) x = sideX - 10 + 175 * easeOut((q - .42) / .2);   // push back along the ice
+    else if (q < .8) {                                                   // up behind her, leg straight
+      const u = smooth((q - .62) / .18);
+      x = sideX + 165 + 130 * u; lift = 100 * u; foot = -.3 * u;
+    } else {                                                             // and back under her
+      const u = smooth((q - .8) / .2);
+      x = sideX + 295 - 350 * u; lift = 100 * (1 - u) + 10 * Math.sin(Math.PI * u); foot = -.3 * (1 - u);
     }
-    legs[side] = { ankle: [lerp(sideX - 6, x, drive), ground - WALK.ankleH - lift * drive], foot: foot * drive };
+    legs[side] = { ankle: [lerp(stance ? stance[side] : sideX - 6, x, drive), ground - WALK.ankleH - lift * drive], foot: foot * drive };
   }
-  return { root: [0, drive * (4 + 10 * Math.cos(4 * Math.PI * (phase - .58)))], lean: -.13 * drive - .03, ground, ...legs };
+  // lowest through each push, rising into the glide; leaning into the strokes
+  return { root: [0, drive * (7 + 7 * Math.cos(4 * Math.PI * (phase - .52)))], lean: -.26 * drive - .03, ground, ...legs };
 }
 
 /* ---- standing at the counter: the arm reaches, takes and sips; the cup stays upright ---- */
@@ -249,13 +253,15 @@ type RigName = "walk" | "stand" | "skate";
 type Frame = {
   rig: RigName; x: number; f: number; parts: Record<string, Mat>; ref: Pt; scale: number; squash: Pt; blades: Pt[]; lifts: number[];
   dylan: { on: boolean; x: number; f: number; sx: number; sy: number; rot: number };
-  vendor: { mitten: Pt; cup: boolean; front: boolean; on: boolean };
+  vendor: { mitten: Pt; cup: boolean; cupAt: Pt; on: boolean };
   steam: number; steamAt: Pt | null; heart: number; heartAt: Pt | null; sparkle: number; sparkleAt: Pt | null;
   sprays: { at: Pt; age: number; dir: number; size: number }[]; done: boolean;
 };
 
 const DY = { tall: 57, aspect: 236 / 367 };
-const F_COUNTER = .215, F_ICE = .13, F_DYLAN = .23;
+// Depths (floor up from the front edge): Dylan glides nearer the front than Mylie, so the pair reads
+// side by side with him a touch bigger, as he is.
+const F_COUNTER = .215, F_ICE = .2, F_DYLAN = .12;
 /** Window event: the rink's skaters clear the ice to the back boards while Mylie's run plays. */
 export const rinkSceneEvent = "winter-rink-scene";
 
@@ -269,19 +275,22 @@ function buildScene(env: Env) {
   const x0 = env.left - halfWidth * 1.4;
   // walk: a whole number of steps that ends with a foot striking, then the stopping step
   const kc = kAt(F_COUNTER), ks = kc / STAND_SCALE;
-  // Her ankles when she stands at the counter (rink px), and the walk that gets her there: an odd
-  // number of steps, so her near foot strikes last, right on its standing spot, and the stopping
-  // step brings the other foot up to its spot. The swap to the standing pose (turning to the
-  // vendor) keeps both ankles where they are; only the skates turn on them.
-  const standFar = xCounter * env.W + (SJ.farAnkle[0] - STAND_REF[0]) * ks;
-  const standNear = xCounter * env.W + (SJ.nearAnkle[0] - STAND_REF[0]) * ks;
+  // Where her feet stand at the counter (rink px), and the walk that gets her there: an odd number
+  // of steps, so her near foot strikes last, right on its standing spot, and the stopping step
+  // brings the other foot up to its spot. The swap to the standing pose (turning to the vendor)
+  // keeps both feet where they are.
+  // (Her skates turn about their middles: the side-view walking and skating skates put their blade
+  // middles where the standing skates' middles are, so a turn is a pivot in place.)
+  const bladeMid = -(WALK.blade.toe[0] + WALK.blade.heel[0]) / 2 * kc; // ankle to blade middle, screen px
+  const standFar = xCounter * env.W + (STAND_BLADES[0] - STAND_REF[0]) * ks - bladeMid;
+  const standNear = xCounter * env.W + (STAND_BLADES[1] - STAND_REF[0]) * ks - bladeMid;
   const reachNear = standNear - x0 * env.W + 16 * kc; // pelvis travel + stride*DUTY/2, to the strike
   const steps = 2 * (reachNear / (WALK_STRIDE * kc) - DUTY / 2);
   let halfSteps = Math.max(3, 2 * Math.round((steps - 1) / 2) + 1); // the nearest odd count
   if (reachNear / ((halfSteps / 2 + DUTY / 2) * kc) > 470) halfSteps += 2; // never a stride her legs can't reach
   const stride = reachNear / ((halfSteps / 2 + DUTY / 2) * kc);
   const xStrike = x0 * env.W + halfSteps / 2 * stride * kc; // pelvis at the last strike
-  const xEnd = (standNear + standFar) / 2;                    // and once she has stopped
+  const xEnd = (standNear + standFar) / 2 + bladeMid * .5;    // and once she has stopped: over her feet
   const settleAdvance = (xEnd - xStrike) / kc;
   const trailTo = PEL[0] + (xEnd - standFar) / kc;            // far ankle, body-relative
   const STEP = .24; // seconds a step: short careful steps on her blades, in a hurry for coffee
@@ -289,35 +298,40 @@ function buildScene(env: Env) {
   const S0 = tWalk + .34; // the standing beats are timed from here
   const tSkate = S0 + 2.28;
 
-  // The vendor's left hand (stall px): from the counter round behind her stacked mugs, where the
-  // coffee waits out of sight, up over the mugs and out in front of them to Mylie. Keys are where
-  // her mitten is; the forearm turns about her elbow and foreshortens as it reaches toward us.
-  const VK = { rest: VENDOR.mitten as Pt, behind: [270, 302] as Pt, lift: [284, 242] as Pt, offer: [283, 281] as Pt };
+  // The vendor's left hand (stall px). Mylie's coffee stands ready on the counter behind the stack
+  // of mugs, out of sight. The vendor's mitten goes round behind the stack, grips the cup's lower
+  // half, lifts it straight up from behind the mugs (the cup's top shows first, then her hand) and
+  // holds it out above them to Mylie; empty, the hand goes back down behind the mugs to rest. The
+  // forearm turns about her painted elbow and foreshortens as it reaches out toward us. Nothing
+  // switches layers: the mugs and the counter cover the hand the whole time it is behind them.
+  const vScale = st.w / VENDOR.stall[0];
+  const cupH = VENDOR.cup.h * VENDOR.cupScale * kc / STAND_SCALE / vScale;
+  const GRIP: Pt = [9, 10];                // her mitten to the cup's bottom centre (it grips the lower half)
+  const CUP_WAITS: Pt = [271, 295.5];      // the cup's bottom centre, hidden behind the stack of mugs
+  const VK = { rest: VENDOR.mitten as Pt, grip: [CUP_WAITS[0] - GRIP[0], CUP_WAITS[1] - GRIP[1]] as Pt, up: [264, 234] as Pt, offer: [279, 227] as Pt };
   const GRAB = .84; // seconds into the stand when Mylie's hand closes on the cup
   const vendorAt = (t: number) => {
     const r = t - S0;
-    let mitten: Pt = VK.rest, cup = false, front = false;
-    if (r < 0 || r >= 1.2) return { mitten, cup, front, on: false };
-    // down behind the counter for a coffee (the cup is hidden by the mugs and the counter), then up
-    if (r < .2) mitten = lerpPt(VK.rest, VK.behind, smooth(r / .2));
-    else if (r < .28) { mitten = VK.behind; cup = true; }
-    else if (r < .5) { mitten = lerpPt(VK.behind, VK.lift, smooth((r - .28) / .22)); cup = true; }
-    else if (r < .7) { mitten = lerpPt(VK.lift, VK.offer, smooth((r - .5) / .2)); cup = true; front = true; }
-    else if (r < .9) { mitten = VK.offer; cup = r < GRAB; front = true; }
-    else { mitten = lerpPt(VK.offer, VK.rest, smooth((r - .9) / .3)); front = true; }
-    return { mitten, cup, front, on: true };
+    let mitten: Pt = VK.rest, held = false;
+    if (r < 0 || r >= 1.2) return { mitten, cup: false, cupAt: CUP_WAITS, on: false };
+    if (r < .2) mitten = lerpPt(VK.rest, VK.grip, smooth(r / .2));
+    else if (r < .27) { mitten = VK.grip; held = r > .23; }
+    else if (r < .46) { mitten = lerpPt(VK.grip, VK.up, smooth((r - .27) / .19)); held = true; }
+    else if (r < .64) { mitten = lerpPt(VK.up, VK.offer, smooth((r - .46) / .18)); held = true; }
+    else if (r < .9) { mitten = VK.offer; held = true; }
+    else mitten = lerpPt(VK.offer, VK.rest, smooth((r - .9) / .3));
+    // the cup's bottom centre: waiting behind the mugs, then in her grip until Mylie takes it
+    const cupAt: Pt = held ? [mitten[0] + GRIP[0], mitten[1] + GRIP[1]] : CUP_WAITS;
+    return { mitten, cup: r < GRAB, cupAt, on: true };
   };
-  // vendor's cup centre on screen (px in the rink) at a moment, for her hand to meet
-  const vScale = st.w / VENDOR.stall[0];
-  const cupH = VENDOR.cup.h * VENDOR.cupScale * kc / STAND_SCALE / vScale;
-  // she carries it on her palm: the cup stands on her mitten
-  const cupStall = (m: Pt): Pt => [m[0] + 1, m[1] - 2.5 - cupH * .5];
+  // the cup's centre (stall px) for its bottom centre
+  const cupStall = (bottom: Pt): Pt => [bottom[0], bottom[1] - cupH * .5];
   const toScreen = (p: Pt): Pt => [st.x + p[0] * vScale, st.y + p[1] * vScale];
   // Mylie's standing rig: screen = (xCounter*W, R - F*R) + (p - STAND_REF) * ks
   const standOrigin: Pt = [xCounter * env.W, env.R - F_COUNTER * env.R];
   const toStand = (p: Pt): Pt => [STAND_REF[0] + (p[0] - standOrigin[0]) / ks, STAND_REF[1] + (p[1] - standOrigin[1]) / ks];
   const offer = vendorAt(S0 + GRAB);
-  const grabCup = toStand(toScreen(cupStall(offer.mitten)));
+  const grabCup = toStand(toScreen(cupStall(offer.cupAt)));
   const cupOff = cupCentre([0, 0], 0);
   const grabWrist: Pt = [grabCup[0] - cupOff[0], grabCup[1] - cupOff[1]];
   const ARM_REACH = reachArm(grabWrist, 1);
@@ -331,7 +345,9 @@ function buildScene(env: Env) {
   const dIn = { t0: S0 - 1.9, x0: env.right + .06, x1: xWait, t1: S0 + 1.05 };
   type Sample = { mx: number; mf: number; drive: number; phase: number; cup: number; dx: number; dface: number; dturn: number; dlean: number; dpace: number; dstride: number };
   const table: Sample[] = [];
-  let mx = xCounter, mv = 0, phase = .25, mf = F_COUNTER, drive = 0, cupRaise = 0;
+  // She sets off pushing with her back foot (the far one) and gliding on her front foot, just as she
+  // stood: the stroke cycle starts at the phase where its feet match her standing feet.
+  let mx = xEnd / env.W, mv = 0, phase = .56, mf = F_COUNTER, drive = 0, cupRaise = 0;
   let dx = dIn.x1, dv = 0, dface = -1, dturn = 1, mode: "wait" | "turn" | "go" | "pair" | "exit" = "wait", modeT = 0, dstride = 0;
   let prevDv = 0, dlean = 0;
   let endT = Infinity;
@@ -350,11 +366,11 @@ function buildScene(env: Env) {
     const gap = (dx - mx) * A;
     if (mode === "wait" && gap < 1.05 && tau > .4) { mode = "turn"; modeT = tau; }
     if (mode === "turn") { dturn = clamp((tau - modeT) / .17, 0, 1); if (dturn >= 1) { dface = 1; mode = "go"; modeT = tau; } }
-    if (mode === "go") { dv += clamp(.7 - dv, -1 * dt, 1.1 * dt); if (gap < .3) { mode = "pair"; modeT = tau; } }
+    if (mode === "go") { dv += clamp(.7 - dv, -1 * dt, 1.1 * dt); if (gap < .38) { mode = "pair"; modeT = tau; } }
     if (mode === "pair") {
       dv += clamp(.85 - dv, -1 * dt, 1 * dt);
       // she settles alongside him, a little behind his shoulder
-      mv += clamp((gap - .24) * 2.2, -.6, .6) * dt * 4;
+      mv += clamp((gap - .3) * 2.2, -.6, .6) * dt * 4;
       cupRaise = smooth((tau - modeT - .08) / .22) * (1 - smooth((tau - modeT - .78) / .24));
       if (tau - modeT > 1.05) { mode = "exit"; modeT = tau; }
     }
@@ -452,18 +468,30 @@ function buildScene(env: Env) {
       rig = "skate";
       const s = sample(t);
       x = s.mx; f = s.mf; scale = kAt(f);
-      const pose = strokePose(s.phase, s.drive);
+      // She sets off from where she stood: her feet start where they were at the counter and her
+      // upper body upright over them, then she leans into her first push.
+      const tau = t - tSkate, settle = smooth(tau / .45);
+      const stance = { far: lerp(PEL[0] + (xEnd - standFar) / kc, PEL[0] - 20, settle), near: lerp(PEL[0] - (standNear - xEnd) / kc, PEL[0] + 8, settle) };
+      const pose = strokePose(s.phase, s.drive, stance);
+      if (tau < .3) {
+        // her first push: the back blade stays where it stood on the ice while she moves off it
+        const planted = PEL[0] + (x * env.W - standFar) / scale, w = 1 - smooth((tau - .1) / .09);
+        pose.far = { ankle: [lerp(pose.far.ankle[0], planted, w), pose.far.ankle[1]], foot: pose.far.foot * (1 - w) };
+      }
       const body = bodyMat(pose.root, pose.lean);
-      parts.hips = body; parts.torso = body; parts.tag = body;
-      parts.cupArm = mul(body, mul(tr(-6 * s.cup, -18 * s.cup), about(SKATE.farShoulder, rot(-.1 * s.cup + .03 * Math.sin(4 * Math.PI * s.phase) * s.drive))));
+      const upper = mul(body, about(BELT, rot(.1 * (1 - smooth(tau / .4)))));
+      parts.hips = body; parts.torso = upper; parts.tag = upper;
+      // the cheers: her cup goes up toward Dylan
+      parts.cupArm = mul(upper, mul(tr(-10 * s.cup, -38 * s.cup), about(SKATE.farShoulder, rot(.12 * s.cup + .03 * Math.sin(4 * Math.PI * s.phase) * s.drive))));
       parts.logo = parts.cupArm;
-      parts.freeArm = mul(body, about(SKATE.nearShoulder, rot(-(.1 * Math.sin(TAU * (s.phase - .1)) * s.drive))));
+      parts.freeArm = mul(upper, about(SKATE.nearShoulder, rot(-(.1 * Math.sin(TAU * (s.phase - .1)) * s.drive))));
       blades = legMats(body, pose, parts);
       lifts = (["far", "near"] as const).map(side => Math.max(0, pose.ground - WALK.ankleH - pose[side].ankle[1]));
       ref = [PEL[0], pose.ground];
       steam = 1; steamAt = toRink(ap(parts.cupArm, SKATE.cupTop));
+      // the heart from her first sip drifts along with her as she pushes off
       const h = t - S0 - 1.76;
-      if (h < 1.2) { heart = h / 1.2; heartAt = heartAnchor; }
+      if (h < 1.2) { heart = h / 1.2; heartAt = [heartAnchor[0] + x * env.W - standOrigin[0], heartAnchor[1]]; }
       if (s.cup > .02) { sparkle = s.cup; sparkleAt = toRink(ap(parts.cupArm, SKATE.cupTop)); }
     }
     // Dylan
@@ -479,8 +507,8 @@ function buildScene(env: Env) {
       dylan = { on: true, x: s.dx, f: F_DYLAN, sx, sy: 1 - .012 * s.dpace * (1 - Math.cos(TAU * s.dstride)) / 2, rot: s.dlean };
     }
     const vend = vendorAt(t);
-    if (vend.cup && !steamAt) {
-      const c = toScreen(cupStall(vend.mitten));
+    if (vend.cup && vend.cupAt[1] < 262 && !steamAt) {
+      const c = toScreen(cupStall(vend.cupAt));
       steam = .8; steamAt = [c[0], c[1] - cupH * vScale * .5];
     }
     const live = sprays.filter(sp => t >= sp.t && t - sp.t < .3).map(sp => {
@@ -531,7 +559,6 @@ function Rig({ name, mirror }: { name: RigName; mirror?: boolean }) {
 }
 
 const clipBehind = `polygon(${VENDOR.clip.map(([x, y]) => `${x}px ${y}px`).join(", ")})`;
-const clipFront = `polygon(0px 0px, ${VENDOR.stall[0]}px 0px, ${VENDOR.stall[0]}px 294px, 0px 294px)`;
 /** The vendor's forearm placed so her mitten lands on a point: turned about the elbow, foreshortened toward us. */
 const FOREARM = Math.hypot(VENDOR.mitten[0] - VENDOR.elbow[0], VENDOR.mitten[1] - VENDOR.elbow[1]);
 const FOREARM_REST = Math.atan2(VENDOR.mitten[1] - VENDOR.elbow[1], VENDOR.mitten[0] - VENDOR.elbow[0]);
@@ -564,7 +591,7 @@ function Scene({ onDone, seek }: { onDone: () => void; seek: boolean }) {
     const heartEl = q<HTMLElement>('[data-fx="heart"]')!, sparkleEl = q<HTMLElement>('[data-fx="sparkle"]')!;
     const chips = [...host.querySelectorAll<HTMLElement>('[data-fx="chip"]')];
     const dylanLane = q<HTMLElement>('[data-fx="dylan"]')!, dylanFigure = q<HTMLElement>('[data-fx="dylan-figure"]')!, dylanMirror = q<HTMLElement>('[data-fx="dylan-mirror"]')!;
-    const vendor = q<HTMLElement>('[data-fx="vendor"]')!, vHand = q<HTMLElement>('[data-fx="vendor-hand"]')!;
+    const vendor = q<HTMLElement>('[data-fx="vendor"]')!;
     const vArm = q<HTMLElement>('[data-fx="vendor-arm"]')!, vCup = q<HTMLElement>('[data-fx="vendor-cup"]')!;
 
     const stallImg = rink.querySelector<HTMLImageElement>('img[src*="cocoa-stall"]');
@@ -645,10 +672,7 @@ function Scene({ onDone, seek }: { onDone: () => void; seek: boolean }) {
       if (v.on) {
         vArm.style.transform = css(mul(vendorArm(v.mitten), tr(VENDOR.arm.x, VENDOR.arm.y)));
         vCup.dataset.on = String(v.cup);
-        vCup.style.transform = `translate(${(v.mitten[0] + 1).toFixed(2)}px, ${(v.mitten[1] - 2.5 - parseFloat(vCup.style.height) * .5).toFixed(2)}px) translate(-50%, -50%)`;
-        // behind the mugs the arm is hidden by them; once it is up over them it reaches out in front
-        const clip = v.front ? "front" : "behind";
-        if (vHand.dataset.clip !== clip) { vHand.dataset.clip = clip; vHand.style.clipPath = v.front ? clipFront : clipBehind; }
+        vCup.style.transform = `translate(${v.cupAt[0].toFixed(2)}px, ${v.cupAt[1].toFixed(2)}px) translate(-50%, -100%)`;
       }
       // steam, the heart, the sparkle
       steams.forEach((el, i) => {
@@ -750,7 +774,7 @@ function Scene({ onDone, seek }: { onDone: () => void; seek: boolean }) {
           <Image src={ART + VENDOR.patch.src + ".webp"} alt="" width={VENDOR.patch.w * 2} height={VENDOR.patch.h * 2} unoptimized loading="eager"
             draggable={false} style={{ left: VENDOR.patch.x, top: VENDOR.patch.y, width: VENDOR.patch.w, height: VENDOR.patch.h }} />
         </div>
-        <div className={styles.vendorLayer} data-fx="vendor-hand" data-clip="behind" style={{ clipPath: clipBehind }}>
+        <div className={styles.vendorLayer} style={{ clipPath: clipBehind }}>
           <Image src={ART + VENDOR.cup.src + ".webp"} alt="" width={Math.round(VENDOR.cup.w * .4)} height={Math.round(VENDOR.cup.h * .4)} unoptimized
             loading="eager" draggable={false} data-fx="vendor-cup" data-on="false" className={styles.vendorCup} />
           <Image src={ART + VENDOR.arm.src + ".webp"} alt="" width={VENDOR.arm.w * 2} height={VENDOR.arm.h * 2} unoptimized loading="eager"
