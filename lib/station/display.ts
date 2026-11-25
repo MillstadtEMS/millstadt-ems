@@ -55,15 +55,3 @@ export function detectDisplay(): StationDisplay {
     sharpness: scale * dpr,
   };
 }
-
-/** NWS forecast icons come in small, medium and large; a big TV gets the large ones. */
-export function nwsIcon(url: string, display: Pick<StationDisplay, "sharpness"> | null): string {
-  if (!url) return url;
-  try {
-    const icon = new URL(url);
-    icon.searchParams.set("size", display && display.sharpness > 1.2 ? "large" : "medium");
-    return icon.toString();
-  } catch {
-    return url;
-  }
-}

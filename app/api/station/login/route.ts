@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import {
-  createStationSession, safeStationPath, STATION_COOKIE, stationCookieOptions, stationPasswordSource,
-  stationSameOrigin, verifyStationPassword,
+  createStationSession, safeStationPath, STATION_COOKIE, stationCookieOptions, stationPasswordStatus,
+  stationSameOrigin, verifyStationPassword, wantsSecureCookie,
 } from "@/lib/station/auth";
 
 export const runtime = "nodejs";
@@ -12,6 +12,7 @@ function back(path: string) {
   return new NextResponse(null, { status: 303, headers: { Location: path, "Cache-Control": "no-store, private" } });
 }
 
+/** The sign-in form, capped at 4 KB (a password and the return path). */
 async function readForm(req: NextRequest): Promise<URLSearchParams | null> {
   if (!req.headers.get("content-type")?.toLowerCase().startsWith("application/x-www-form-urlencoded")) return null;
   const reader = req.body?.getReader();
@@ -37,19 +38,22 @@ export async function POST(req: NextRequest) {
   const next = safeStationPath(form.get("next"));
   const retry = (error: string) => back(`/station/login?error=${error}&next=${encodeURIComponent(next)}`);
 
-  if ((await stationPasswordSource()) === "unset") return retry("setup");
   try {
     const rate = await checkRateLimit(req, "station-login", { limit: 10, windowMs: 15 * 60_000, blockMs: 15 * 60_000 });
     if (!rate.allowed) return retry("wait");
   } catch (error) {
     console.error("[station] sign-in rate limit unavailable", { name: error instanceof Error ? error.name : "UnknownError" });
+    return retry("unavailable");
   }
+
+  const status = await stationPasswordStatus();
+  if (status === "unset") return retry("setup");
+  if (status === "unavailable") return retry("unavailable");
   if (!(await verifyStationPassword(form.get("password")))) return retry("password");
 
   const token = await createStationSession();
-  if (!token) return retry("setup");
+  if (!token) return retry("unavailable");
   const response = back(next);
-  const secure = req.nextUrl.protocol === "https:" || req.headers.get("x-forwarded-proto") === "https";
-  response.cookies.set(STATION_COOKIE, token, stationCookieOptions(secure));
+  response.cookies.set(STATION_COOKIE, token, stationCookieOptions(wantsSecureCookie(req.nextUrl.protocol, req.headers.get("x-forwarded-proto"))));
   return response;
 }

@@ -1,130 +1,139 @@
-/* The station TV's time, date, countdown and weather. Sized in --u (1% of the screen height, or less
-   on a narrow screen) so it reads the same from across the room on any TV. */
+/* The station TV's time, date, countdown, weather and helicopter estimate. Sized in --u (1% of the
+   screen height, or less on a narrow screen) so it reads the same from across the room on any TV. */
 
-.clockBlock { display: flex; align-items: center; gap: calc(1.6 * var(--u)); min-width: 0; }
+.clockBlock { display: grid; gap: calc(.5 * var(--u)); min-width: 0; }
 .clock {
   display: flex;
   align-items: flex-start;
-  gap: calc(.5 * var(--u));
+  gap: calc(.55 * var(--u));
   font-variant-numeric: tabular-nums;
   color: #fffaf0;
   text-shadow: 0 calc(.2 * var(--u)) 0 #03140c, 0 0 calc(1.2 * var(--u)) #00000080;
 }
-.hhmm { font: 800 calc(7.6 * var(--u))/.9 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: -.02em; }
-.ss { display: grid; justify-items: start; gap: calc(.35 * var(--u)); padding-top: calc(.5 * var(--u)); }
-.ss b { font: 800 calc(3.1 * var(--u))/1 system-ui, sans-serif; color: #ffe08a; }
-.ss small { font: 800 calc(1.45 * var(--u))/1 system-ui, sans-serif; letter-spacing: .14em; color: #d8f3e2; }
-.date { display: grid; gap: calc(.35 * var(--u)); color: #fff4d8; white-space: nowrap; }
-.weekday { font: 800 calc(1.7 * var(--u))/1 system-ui, sans-serif; letter-spacing: .2em; text-transform: uppercase; color: #ffe08a; }
-.day { font: 800 calc(3.3 * var(--u))/1 system-ui, sans-serif; }
+.hhmm { font: 800 calc(7.4 * var(--u))/.84 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: -.02em; }
+.ss { display: grid; justify-items: start; gap: calc(.4 * var(--u)); padding-top: calc(.3 * var(--u)); }
+.ss b { font: 800 calc(3 * var(--u))/1 system-ui, sans-serif; color: #ffe08a; }
+.ss small { font: 800 calc(1.35 * var(--u))/1 system-ui, sans-serif; letter-spacing: .14em; color: #d8f3e2; }
+.date { display: flex; align-items: baseline; gap: calc(.9 * var(--u)); color: #fff4d8; white-space: nowrap; }
+.weekday { font: 800 calc(1.55 * var(--u))/1 system-ui, sans-serif; letter-spacing: .2em; text-transform: uppercase; color: #ffe08a; }
+.day { font: 800 calc(2.3 * var(--u))/1 system-ui, sans-serif; }
 
 /* Off season: the clock fills the screen. */
-.clockBlock[data-big] { flex-direction: column; gap: calc(2.5 * var(--u)); }
+.clockBlock[data-big] { justify-items: center; gap: calc(2.5 * var(--u)); }
 .clockBlock[data-big] .hhmm { font-size: calc(24 * var(--u)); }
 .clockBlock[data-big] .ss b { font-size: calc(9 * var(--u)); }
 .clockBlock[data-big] .ss small { font-size: calc(3.2 * var(--u)); }
-.clockBlock[data-big] .date { justify-items: center; }
+.clockBlock[data-big] .date { flex-direction: column; align-items: center; gap: calc(1.2 * var(--u)); }
 .clockBlock[data-big] .weekday { font-size: calc(3.4 * var(--u)); }
 .clockBlock[data-big] .day { font-size: calc(5.4 * var(--u)); }
 
-.countdown { display: grid; justify-items: center; gap: calc(.45 * var(--u)); color: #fff6dc; }
+.countdown { display: grid; justify-items: center; gap: calc(.5 * var(--u)); color: #fff6dc; }
 .caption { font: 800 calc(1.3 * var(--u))/1 system-ui, sans-serif; letter-spacing: .24em; text-transform: uppercase; color: #ffe3a3; }
 .tiles { display: flex; gap: calc(.55 * var(--u)); }
 .tile {
   display: grid;
   justify-items: center;
   gap: calc(.25 * var(--u));
-  min-width: calc(6.1 * var(--u));
-  padding: calc(.5 * var(--u)) calc(.5 * var(--u)) calc(.4 * var(--u));
+  min-width: calc(6.2 * var(--u));
+  padding: calc(.55 * var(--u)) calc(.5 * var(--u)) calc(.45 * var(--u));
   background: linear-gradient(180deg, #e01f38, #a30d21 62%, #840a1b);
   border: calc(.16 * var(--u)) solid #f3c875;
   border-radius: calc(.7 * var(--u));
   box-shadow: inset 0 1px 0 #ffffff4d, inset 0 -2px 3px #0000004d, 0 calc(.3 * var(--u)) calc(.7 * var(--u)) #000a;
 }
-.tile b { font: 800 calc(3.5 * var(--u))/1 system-ui, sans-serif; font-variant-numeric: tabular-nums; color: #fff; text-shadow: 0 1px 0 #4a0410; }
+.tile b { font: 800 calc(3.7 * var(--u))/1 system-ui, sans-serif; font-variant-numeric: tabular-nums; color: #fff; text-shadow: 0 1px 0 #4a0410; }
 .tile small { font: 800 calc(1.05 * var(--u))/1 system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #ffe9b8; }
-.countdown[data-greeting] { gap: calc(.3 * var(--u)); }
+.countdown[data-greeting] { gap: calc(.4 * var(--u)); }
 .greeting { font: italic 700 calc(4.4 * var(--u))/1 Georgia, "Times New Roman", serif; color: #fff; text-shadow: 0 calc(.25 * var(--u)) calc(.8 * var(--u)) #000a; white-space: nowrap; }
 .countdown[data-greeting] small { font: 700 calc(1.5 * var(--u))/1 system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: #ffe3a3; }
 
+/* Weather now: icon; any NWS alert, the temperature and conditions, and the next forecast period. */
 .weather {
   display: flex;
   align-items: center;
-  gap: calc(1.6 * var(--u));
+  gap: calc(1 * var(--u));
   min-width: 0;
   color: #fff7e6;
-  position: relative;
 }
 .weather[data-empty] { justify-content: flex-end; }
 .weatherNote { font: 700 calc(1.8 * var(--u))/1.2 system-ui, sans-serif; color: #ffe3c4; }
-.now { display: flex; align-items: center; gap: calc(.8 * var(--u)); }
 .icon {
+  flex: none;
   width: calc(7.4 * var(--u));
   height: calc(7.4 * var(--u));
-  border-radius: calc(1.2 * var(--u));
-  border: calc(.16 * var(--u)) solid #f3c875;
-  box-shadow: 0 calc(.3 * var(--u)) calc(.9 * var(--u)) #000a;
-  object-fit: cover;
+  filter: drop-shadow(0 calc(.25 * var(--u)) calc(.5 * var(--u)) #0009);
 }
-.nowText { display: grid; gap: calc(.2 * var(--u)); }
-.temp { font: 800 calc(6.2 * var(--u))/.9 system-ui, sans-serif; letter-spacing: -.03em; text-shadow: 0 calc(.2 * var(--u)) 0 #3a0610, 0 0 calc(1 * var(--u)) #0008; }
-.temp small { font-size: .38em; vertical-align: top; margin-left: .1em; letter-spacing: 0; }
-.condition { font: 700 calc(1.75 * var(--u))/1.1 system-ui, sans-serif; color: #ffe9c6; white-space: nowrap; max-width: calc(16 * var(--u)); overflow: hidden; text-overflow: ellipsis; }
-.forecast {
-  display: grid;
-  gap: calc(.45 * var(--u));
-  margin: 0;
-  padding: 0 0 0 calc(1.4 * var(--u));
-  list-style: none;
-  border-left: calc(.16 * var(--u)) solid #ffffff40;
-  min-width: 0;
-}
-.forecast li { display: flex; align-items: baseline; gap: calc(.55 * var(--u)); white-space: nowrap; font: 600 calc(1.6 * var(--u))/1.15 system-ui, sans-serif; }
-.forecast b { font-weight: 800; color: #ffe08a; min-width: calc(7.6 * var(--u)); }
+.weatherText { display: grid; justify-items: start; gap: calc(.45 * var(--u)); min-width: 0; }
+.nowLine { display: flex; align-items: baseline; gap: calc(.9 * var(--u)); min-width: 0; }
+.temp { font: 800 calc(5.6 * var(--u))/.86 system-ui, sans-serif; letter-spacing: -.03em; text-shadow: 0 calc(.2 * var(--u)) 0 #3a0610, 0 0 calc(1 * var(--u)) #0008; }
+.temp small { font-size: .36em; vertical-align: top; margin-left: .1em; letter-spacing: 0; }
+.condition { font: 800 calc(1.9 * var(--u))/1.05 system-ui, sans-serif; color: #ffe9c6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.forecast { display: grid; gap: calc(.4 * var(--u)); margin: 0; padding: 0; list-style: none; min-width: 0; max-width: 100%; }
+.forecast li { display: flex; align-items: baseline; gap: calc(.5 * var(--u)); white-space: nowrap; min-width: 0; font: 600 calc(1.55 * var(--u))/1.15 system-ui, sans-serif; }
+.forecast b { font-weight: 800; color: #ffe08a; }
 .forecast span { font-weight: 800; font-variant-numeric: tabular-nums; }
-.forecast em { font-style: normal; color: #ffe9d2; max-width: calc(14 * var(--u)); overflow: hidden; text-overflow: ellipsis; }
-.flight {
-  display: grid;
-  gap: calc(.3 * var(--u));
-  padding: calc(.65 * var(--u)) calc(1.1 * var(--u));
-  background: #071a12e6;
-  border: calc(.16 * var(--u)) solid #6fdc9e;
-  border-radius: calc(.8 * var(--u));
-  box-shadow: 0 calc(.3 * var(--u)) calc(.8 * var(--u)) #0009;
-}
-.flight[data-status="not-flying"] { background: #1d0508e8; border-color: #ff8a8a; }
-.flightLabel { font: 800 calc(1.05 * var(--u))/1 system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #cfe9da; white-space: nowrap; }
-.flightLabel i { font-style: normal; opacity: .75; letter-spacing: .08em; }
-.flight[data-status="not-flying"] .flightLabel { color: #ffd2cf; }
-.flightStatus { font: 800 calc(1.65 * var(--u))/1.05 system-ui, sans-serif; color: #7dffb0; white-space: nowrap; }
-.flight[data-status="not-flying"] .flightStatus { color: #ffb3b3; }
-.forecast .alert {
-  display: block;
-  justify-self: start;
-  padding: calc(.18 * var(--u)) calc(.7 * var(--u));
+.forecast em { font-style: normal; color: #ffe9d2; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.alert {
+  max-width: 100%;
+  padding: calc(.2 * var(--u)) calc(.7 * var(--u));
   font: 800 calc(1.1 * var(--u))/1.2 system-ui, sans-serif;
   letter-spacing: .1em;
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: #1b1200;
   background: #ffd23f;
   border-radius: calc(.45 * var(--u));
 }
-.stale {
-  position: absolute;
-  right: 0;
-  top: calc(100% + .3 * var(--u));
-  font: 700 calc(1.1 * var(--u))/1 system-ui, sans-serif;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: #ffd9d0;
+.stale { font: 700 calc(1.05 * var(--u))/1 system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #ffd9d0; }
+/* Off season: the next three periods. */
+.weather[data-wide] .forecast li { font-size: calc(2.2 * var(--u)); }
+.weather[data-wide] .temp { font-size: calc(9 * var(--u)); }
+.weather[data-wide] .condition { font-size: calc(2.4 * var(--u)); }
+.weather[data-wide] .icon { width: calc(11 * var(--u)); height: calc(11 * var(--u)); }
+
+/* Helicopters: the shared flight-acceptance estimate, green or red, readable across the room. */
+.heli {
+  flex: none;
+  display: grid;
+  gap: calc(.3 * var(--u));
+  max-width: calc(40 * var(--u));
+  padding: calc(.7 * var(--u)) calc(1.2 * var(--u)) calc(.75 * var(--u));
+  background: linear-gradient(180deg, #06331ef2, #041f13f2);
+  border: calc(.2 * var(--u)) solid #5fe39a;
+  border-radius: calc(.9 * var(--u));
+  box-shadow: inset 0 1px 0 #ffffff26, 0 calc(.3 * var(--u)) calc(.9 * var(--u)) #000a;
 }
+.heli[data-status="not-flying"] { background: linear-gradient(180deg, #3d070df2, #24040af2); border-color: #ff8080; }
+.heli[data-status="unknown"] { background: #0b1730e6; border-color: #8fa7c6; }
+.heliTop { display: flex; align-items: center; justify-content: space-between; gap: calc(1 * var(--u)); }
+.heliLabel { font: 800 calc(1.25 * var(--u))/1 system-ui, sans-serif; letter-spacing: .2em; text-transform: uppercase; color: #d6f5e3; }
+.heli[data-status="not-flying"] .heliLabel { color: #ffd7d4; }
+.heliCategory {
+  padding: calc(.2 * var(--u)) calc(.6 * var(--u));
+  font: 900 calc(1.2 * var(--u))/1 system-ui, sans-serif;
+  letter-spacing: .08em;
+  border-radius: calc(.4 * var(--u));
+  color: #04140b;
+  background: #6ee7a8;
+}
+.heliCategory[data-category="MVFR"] { background: #7cb8ff; color: #04122a; }
+.heliCategory[data-category="IFR"] { background: #ff6b6b; color: #2a0404; }
+.heliCategory[data-category="LIFR"] { background: #f08cff; color: #2a0430; }
+.heliStatus { font: 900 calc(2.15 * var(--u))/1 system-ui, sans-serif; letter-spacing: .02em; text-transform: uppercase; color: #7dffb4; white-space: nowrap; }
+.heli[data-status="not-flying"] .heliStatus { color: #ffadad; }
+.heliReason { font: 700 calc(1.4 * var(--u))/1.15 system-ui, sans-serif; color: #f2fff7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.heli[data-status="not-flying"] .heliReason { color: #fff0ee; }
+.heliNote { font: 700 calc(1.05 * var(--u))/1 system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #b9d8c6; }
+.heli[data-status="not-flying"] .heliNote { color: #e9bcb8; }
 
 /* The living-room TV's sound: big, glossy and impossible to miss with a remote. */
 .sound {
   display: inline-flex;
   align-items: center;
   gap: calc(.9 * var(--u));
-  padding: calc(1 * var(--u)) calc(2 * var(--u)) calc(1 * var(--u)) calc(1.6 * var(--u));
+  padding: calc(1.05 * var(--u)) calc(2 * var(--u)) calc(1.05 * var(--u)) calc(1.6 * var(--u));
   font: 800 calc(2.1 * var(--u))/1 system-ui, sans-serif;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -143,3 +152,5 @@
 .sound:hover { filter: brightness(1.08); }
 .sound:active { transform: translateY(2px); }
 .sound:focus-visible { outline: calc(.45 * var(--u)) solid #ffe08a; outline-offset: calc(.45 * var(--u)); box-shadow: 0 0 0 calc(1.1 * var(--u)) #ffe08a55, 0 calc(.6 * var(--u)) calc(1.2 * var(--u)) #000b; }
+
+@media (prefers-reduced-motion: reduce) { .sound { transition: none; } }
