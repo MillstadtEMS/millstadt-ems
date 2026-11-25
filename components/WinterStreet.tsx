@@ -132,7 +132,7 @@ function OldNumberFive() {
    skater hops cracks, the skater in red spins and the green-jacket skater stops to throw snowballs
    (flip-book swaps between his skating and throwing poses). Visitors tap any skater to throw:
    three hits in a couple of seconds knock them flat and the Millstadt medics haul them off. Dylan
-   skates out for a triple axel every minute or so, and once in a long while a Red Wings player and a Blues player burst in and collide.
+   skates out for a triple axel every half minute or so, and every few minutes a Red Wings player and a Blues player burst in and collide.
    Positions are fractions of the rink: x across, f (floor) up from the bottom edge, which is depth.
    --------------------------------------------------------------------------------------------- */
 
@@ -152,34 +152,40 @@ type SkaterArt = {
   chest: readonly [number, number];
   /** The skating pose turned (about 90 degrees, more for skaters leaning hard into a stride) until
       the body lies flat, head to the left; offsets are from the canvas centre in canvas heights. */
-  down: { src: string; angle: number; width: number; height: number; ox: number; oy: number; rest: number;
-    /** On the stretcher: where the hips are across the lying art (the blanket covers from there to the
-        skates), and a lean (deg) that lays a diagonal fall flat on the mattress. */
-    hip: number; tilt?: number };
+  down: { src: string; angle: number; width: number; height: number; ox: number; oy: number; rest: number };
+  /** The posed fall: the skater lying on their side, propped on an elbow (painted, head to the left,
+      resting on its bottom edge). They settle into it once they're down, and ride the cot in it. */
+  lie: { src: string; width: number; height: number };
 };
 
 const rinkArt = "/images/winter/rink/";
 const skaterArt: readonly SkaterArt[] = [
   { id: "speed", name: "the speed skater", alt: "A speed skater in a red and navy puffer jacket races around the rink.",
     width: 382, height: 383, tall: 62, frames: [{ src: rinkArt + "speed.webp", body: [.14, .008, .69, .987] }], chest: [.61, .324],
-    down: { src: rinkArt + "speed-down.webp", angle: -114, width: 410, height: 297, ox: -.0274, oy: -.0078, rest: .86, hip: .55 } },
+    down: { src: rinkArt + "speed-down.webp", angle: -114, width: 410, height: 297, ox: -.0274, oy: -.0078, rest: .86 },
+    lie: { src: rinkArt + "speed-lie.webp", width: 400, height: 154 } },
   { id: "girl", name: "the skater in the red coat", alt: "A skater in a red coat and white knit hat glides with her arms out.",
     width: 358, height: 373, tall: 58, chest: [.456, .32],
     frames: [{ src: rinkArt + "girl-a.webp", body: [.14, .003, .55, .992] }, { src: rinkArt + "girl-b.webp", body: [.14, .051, .55, .941] }],
-    down: { src: rinkArt + "girl-down.webp", angle: -101, width: 365, height: 269, ox: -.0013, oy: .0858, rest: .747, hip: .6 } },
+    down: { src: rinkArt + "girl-down.webp", angle: -101, width: 365, height: 269, ox: -.0013, oy: .0858, rest: .747 },
+    lie: { src: rinkArt + "girl-lie.webp", width: 400, height: 152 } },
   { id: "green", name: "the skater in the green jacket", alt: "A skater in a green jacket and plaid scarf, never without a snowball.",
     width: 348, height: 373, tall: 60, chest: [.519, .349],
     frames: [{ src: rinkArt + "green-skate.webp", body: [.16, .046, .58, .949] }, { src: rinkArt + "green-throw.webp", body: [.141, .003, .701, .992] }],
-    down: { src: rinkArt + "green-down.webp", angle: -107, width: 356, height: 232, ox: 0, oy: .0295, rest: .88, hip: .56 } },
+    down: { src: rinkArt + "green-down.webp", angle: -107, width: 356, height: 232, ox: 0, oy: .0295, rest: .88 },
+    lie: { src: rinkArt + "green-lie.webp", width: 398, height: 144 } },
   { id: "redwings", name: "the Red Wings player", alt: "A Detroit Red Wings hockey player rushes up the ice with the puck.",
     width: 450, height: 386, tall: 59, frames: [{ src: rinkArt + "redwings.webp", body: [.25, .003, .45, .992] }], chest: [.519, .32],
-    down: { src: rinkArt + "redwings-down.webp", angle: -94, width: 397, height: 388, ox: .0065, oy: -.0959, rest: .845, hip: .6, tilt: -30 } },
+    down: { src: rinkArt + "redwings-down.webp", angle: -94, width: 397, height: 388, ox: .0065, oy: -.0959, rest: .845 },
+    lie: { src: rinkArt + "redwings-lie.webp", width: 400, height: 129 } },
   { id: "blues", name: "the Blues player", alt: "A St. Louis Blues hockey player charges in to check him.",
     width: 446, height: 386, tall: 59, frames: [{ src: rinkArt + "blues.webp", body: [.22, .003, .45, .992] }], chest: [.477, .32],
-    down: { src: rinkArt + "blues-down.webp", angle: -90, width: 384, height: 393, ox: 0, oy: -.0609, rest: .758, hip: .58, tilt: -30 } },
+    down: { src: rinkArt + "blues-down.webp", angle: -90, width: 384, height: 393, ox: 0, oy: -.0609, rest: .758 },
+    lie: { src: rinkArt + "blues-lie.webp", width: 400, height: 129 } },
   { id: "dylan", name: "Dylan", alt: "Dylan from Millstadt EMS, in uniform and a Santa hat, skates out for a triple axel.",
     width: 236, height: 367, tall: 57, frames: [{ src: rinkArt + "dylan.webp", body: [.12, .003, .72, .989] }], chest: [.509, .319],
-    down: { src: rinkArt + "dylan-down.webp", angle: -88, width: 364, height: 228, ox: -.0014, oy: .0204, rest: .82, hip: .52 } },
+    down: { src: rinkArt + "dylan-down.webp", angle: -88, width: 364, height: 228, ox: -.0014, oy: .0204, rest: .82 },
+    lie: { src: rinkArt + "dylan-lie.webp", width: 398, height: 148 } },
 ];
 const snowballInHand = [.134, .107] as const; // the green-jacket skater's throwing pose
 const puckAtBlade = [.965, .985] as const;   // in front of the Red Wings player's stick
@@ -215,8 +221,8 @@ type Sim = {
 type World = { aspect: number; sims: Map<SkaterId, Sim> };
 type Lane = {
   lane: HTMLElement; figure: HTMLElement; reflection: HTMLElement; shadow: HTMLElement; button: HTMLButtonElement;
-  leadLane: HTMLElement; lead: HTMLElement;
-  on: boolean; z: number; facing: number; frame: number; blur: boolean; leadOn: boolean; leadFacing: number;
+  leadLane: HTMLElement; lead: HTMLElement; lie: HTMLElement;
+  on: boolean; z: number; facing: number; frame: number; blur: boolean; leadOn: boolean; leadFacing: number; lying: boolean;
 };
 
 const TAU = Math.PI * 2;
@@ -224,6 +230,7 @@ const K = 3;              // a step in depth covers K times the ground of the sa
 const LOOK = .45;         // pursuit lookahead along the lap, radians
 const FLIP = .17;         // seconds to turn around
 const FALL = .95, GETUP = .75;
+const LIE_LENGTH = 1.06;  // a posed fall's length, in the skater's standing heights
 const CREW = .9;          // the painted medics stand a little taller than the skaters' scale
 const LEAD = .95;         // the fight's target box sits where each skater will be this many seconds ahead
 const SHOW = [2.5, .24, .8, .28, 3.4].reduce<number[]>((ends, part) => [...ends, (ends.at(-1) ?? 0) + part], []);
@@ -432,6 +439,11 @@ function SkaterLane({ art, timeout, onShoot }: { art: SkaterArt; timeout: boolea
         {art.frames.map((frame, i) => <Image key={frame.src} data-frame={i} src={frame.src} alt={i ? "" : art.alt}
           width={art.width} height={art.height} sizes="(max-width: 720px) 90px, 14vw" unoptimized draggable={false} />)}
       </div>
+      {/* Knocked down: they settle onto their side, propped on an elbow, until the medics come. */}
+      <span className={styles.lie} data-part="lie" aria-hidden="true">
+        <Image src={art.lie.src} alt="" width={art.lie.width} height={art.lie.height} sizes="(max-width: 720px) 110px, 16vw"
+          unoptimized draggable={false} loading="eager" />
+      </span>
       <button type="button" className={styles.skateTarget} data-snow-target="" aria-disabled={timeout || undefined}
         aria-label={`Throw a snowball at ${art.name}`} aria-describedby="rink-snowball-instructions"
         onPointerDown={e => { drag.current = { x: e.clientX, y: e.clientY, moved: false }; }}
@@ -468,13 +480,13 @@ function RinkSkaters({ active }: StreetProps) {
       const lane = layer.querySelector<HTMLElement>(`[data-skater="${art.id}"]`);
       const leadLane = layer.querySelector<HTMLElement>(`[data-lead="${art.id}"]`);
       const part = (name: string) => lane?.querySelector<HTMLElement>(`[data-part="${name}"]`) ?? null;
-      const figure = part("figure"), reflection = part("reflection"), shadow = part("shadow");
+      const figure = part("figure"), reflection = part("reflection"), shadow = part("shadow"), lie = part("lie");
       const button = lane?.querySelector("button"), lead = leadLane?.querySelector<HTMLElement>("[data-snow-fighter]");
       // Every part is rendered with the rink; if any is missing (a stale hot reload), leave the ice still.
-      if (!lane || !leadLane || !figure || !reflection || !shadow || !button || !lead) return;
+      if (!lane || !leadLane || !figure || !reflection || !shadow || !button || !lead || !lie) return;
       lanes.set(art.id, {
-        lane, leadLane, figure, reflection, shadow, button, lead,
-        on: false, z: -1, facing: 1, frame: 0, blur: false, leadOn: false, leadFacing: 1,
+        lane, leadLane, figure, reflection, shadow, button, lead, lie,
+        on: false, z: -1, facing: 1, frame: 0, blur: false, leadOn: false, leadFacing: 1, lying: false,
       });
     }
     const puckPart = layer.querySelector<HTMLElement>("[data-part='puck']");
@@ -482,10 +494,10 @@ function RinkSkaters({ active }: StreetProps) {
     const puck: HTMLElement = puckPart;
     let W = 0, R = 0, running = false, disposed = false, frameId = 0, timerId = 0, last = 0, clock = 0, frames = 0;
     let rescue: RinkRescueState | null = null;
-    // The hockey pair is a rare surprise: every 10-15 minutes the rink is on screen, and on about one
-    // page view in four a little sooner.
+    // The hockey pair is a surprise every few minutes the rink is on screen (the first within a
+    // minute or two of seeing it).
     let hockeyClock = 0, hockeyLive = false;
-    let hockeyNext = hockeyPreview ? 3 : Math.random() < .25 ? rand(60, 180) : rand(600, 900);
+    let hockeyNext = hockeyPreview ? 3 : rand(40, 90);
     let loosePuck: { x: number; f: number; vx: number; t0: number } | null = null;
     let dylanTry = dylanPreview ? 1 : 4, dylanRelease: (() => void) | null = null;
     const ownAnimations = new WeakSet<Animation>();
@@ -623,9 +635,11 @@ function RinkSkaters({ active }: StreetProps) {
       if (reduced()) { s.mode = "down"; s.t0 = clock; callMedics(s); }
     }
 
+    // Keyboard players keep their place when a skater goes down; a mouse or finger tap leaves focus
+    // alone, so no focus ring jumps onto another skater.
     function focusElsewhere(s: Sim) {
       const lane = lanes.get(s.id)!;
-      if (document.activeElement !== lane.button) return;
+      if (document.activeElement !== lane.button || !lane.button.matches(":focus-visible")) return;
       const other = [...sims.values()].find(o => o !== s && hittable(o) && lanes.get(o.id)!.on);
       if (other) lanes.get(other.id)!.button.focus({ preventScroll: true });
     }
@@ -636,10 +650,10 @@ function RinkSkaters({ active }: StreetProps) {
       const unit = s.art.tall * shrink / s.art.height; // rink-height percent per canvas px
       let started = false;
       const detail: RinkKnockdown = {
-        person: s.id, name: s.art.name,
+        person: s.id, name: s.art.name, ambulance: s.id === "redwings" || s.id === "blues",
         x: s.x + s.facing * end.centre * unit / 100 * R / W,
-        floor: s.f, scale: shrink * CREW, width: s.art.down.width * unit, flip: s.facing,
-        patient: { src: s.art.down.src, width: s.art.down.width, height: s.art.down.height, rest: s.art.down.rest, hip: s.art.down.hip, tilt: s.art.down.tilt ?? 0 },
+        floor: s.f, scale: shrink * CREW, width: s.art.height * LIE_LENGTH * unit, flip: s.facing,
+        patient: { src: s.art.lie.src, width: s.art.lie.width, height: s.art.lie.height, rest: .97 },
         onStart: () => {
           if (disposed) return;
           started = true;
@@ -675,7 +689,7 @@ function RinkSkaters({ active }: StreetProps) {
       dylanRelease?.();
       dylanRelease = null;
       // Back up to the lights or off on another antic for a while before the next show.
-      dylanTry = clock + (dylanPreview ? 6 : rand(50, 90));
+      dylanTry = clock + (dylanPreview ? 6 : rand(25, 40));
       releaseHolds();
     }
 
@@ -906,7 +920,7 @@ function RinkSkaters({ active }: StreetProps) {
       hockeyClock += dt;
       if (hockeyClock < hockeyNext) return;
       hockeyClock = 0;
-      hockeyNext = hockeyPreview ? 25 : rand(600, 900);
+      hockeyNext = hockeyPreview ? 25 : rand(150, 240);
       const meetX = rand(.42, .58), meetF = rand(.12, .2);
       hockeyLive = true;
       clearIce(meetX);
@@ -944,6 +958,17 @@ function RinkSkaters({ active }: StreetProps) {
       if (s.facing !== lane.facing) { lane.facing = s.facing; lane.lane.dataset.facing = String(s.facing); }
       if (s.frame !== lane.frame) { lane.frame = s.frame; lane.lane.dataset.pose = String(s.frame); }
       const pose = figurePose(s, clock), k = height / s.art.height;
+      // Down on the ice: the toppled skater settles into their posed fall, where the medics find them.
+      const lying = s.mode === "down";
+      if (lying !== lane.lying) {
+        lane.lying = lying;
+        lane.lane.dataset.lying = String(lying);
+        if (lying) {
+          const end = lyingPose(s.art), w = s.art.height * LIE_LENGTH * k;
+          lane.lie.style.width = `${w.toFixed(1)}px`;
+          lane.lie.style.transform = `translateX(${(s.facing * end.centre * k - w / 2).toFixed(1)}px) scaleX(${s.facing})`;
+        }
+      }
       lane.figure.style.transform = `translate(${(pose.tx * k).toFixed(2)}px, ${(pose.ty * k).toFixed(2)}px) rotate(${pose.rot.toFixed(2)}deg) scale(${pose.sx.toFixed(3)}, ${pose.sy.toFixed(3)})`;
       const air = clamp(pose.lift / (s.art.height * .3), 0, 1);
       lane.reflection.style.transform = `translateY(${(pose.lift * k * .5).toFixed(2)}px) rotate(${(-pose.rot).toFixed(2)}deg) scaleX(${pose.sx.toFixed(3)})`;

@@ -146,6 +146,17 @@
 }
 .snowStages[data-freed="true"] { opacity: 0; transform: translateY(5%) scaleY(.96); }
 .snowStage { visibility: hidden; }
+/* Engine 3911 and Ladder 3919 run with every light on: their Christmas lights twinkle in two sets out
+   of step, the engine's red light bar double-flashes and the headlights wig-wag left and right. */
+.truckGlow { pointer-events: none; mix-blend-mode: screen; }
+.truckGlow[data-glow="twinkle"] { animation: truckTwinkle 1.4s steps(1, end) infinite; }
+.truckGlow[data-glow="twinkle"][data-set="1"] { animation-delay: -.7s; }
+.truckGlow[data-glow="bar"] { animation: truckBar .8s steps(1, end) infinite; }
+.truckGlow[data-glow="left"] { animation: truckWigWag .6s steps(1, end) infinite; }
+.truckGlow[data-glow="right"] { animation: truckWigWag .6s steps(1, end) -.3s infinite; }
+@keyframes truckTwinkle { 0% { opacity: 1; } 50% { opacity: .25; } }
+@keyframes truckBar { 0% { opacity: 1; } 14% { opacity: .1; } 24% { opacity: 1; } 38% { opacity: .1; } }
+@keyframes truckWigWag { 0% { opacity: 1; } 50% { opacity: 0; } }
 .snowStage[data-on="true"] { visibility: visible; }
 
 .groundShadow {

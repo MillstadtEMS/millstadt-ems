@@ -87,47 +87,12 @@
   left: 49.02%;
   bottom: calc(49.46% - var(--bed-drop, 0%));
   width: var(--bed-w, 50.07%);
+  height: auto;
   translate: -50% 0;
   scale: var(--flip) 1;
-  clip-path: inset(-60% -12% var(--clip, 0%) -12%);
+  clip-path: inset(0 0 var(--clip, 0%) 0);
   animation: bedPatient var(--run) step-end both;
 }
-.stage .patientArt { width: 100%; height: auto; }
-/* A skater lies flat on the cot like any patient: head and shoulders on the pillow end, everything
-   from the hips down tucked under a red blanket with two cot straps. Hockey players' diagonal falls
-   lean back flat about the hips (--tilt). */
-.stage[data-kind="skater"] .patientArt {
-  transform-origin: calc(var(--hip) * 100%) calc(var(--rest) * 100%);
-  rotate: var(--tilt, 0deg);
-  clip-path: inset(-30% calc((1 - var(--hip)) * 100% - 6%) -30% -30%);
-}
-.blanket {
-  position: absolute;
-  left: calc(var(--hip) * 100% - 10%);
-  right: -8%;
-  bottom: calc((1 - var(--rest)) * 100% - 3%);
-  height: calc(19% / var(--ratio));
-  border-radius: 40% 46% 8% 10% / 75% 80% 10% 10%;
-  background:
-    linear-gradient(180deg, #ffffff38, transparent 30%),
-    repeating-linear-gradient(90deg, transparent 0 30%, #ffffff1f 30% 32%),
-    linear-gradient(180deg, #d42b37, #a2141f 60%, #7a0d17);
-  border-top: 2px solid #f4d5a4;
-  box-shadow: inset 0 -3px 4px #00000052, 0 2px 3px #0005;
-  transform-origin: left bottom;
-  animation: drape var(--run) ease-out both;
-}
-.blanket i {
-  position: absolute;
-  top: 6%;
-  bottom: -2%;
-  width: 7%;
-  border-radius: 2px;
-  background: linear-gradient(90deg, #15181e, #3b414b 50%, #15181e);
-}
-.blanket i:first-child { left: 24%; }
-.blanket i:last-child { left: 66%; }
-@keyframes drape { 0%, 52% { transform: scaleX(.2); opacity: 0; } 57%, 100% { transform: none; opacity: 1; } }
 /* Walk in by 33%, lower and bend 33-39%, reach 39-44%, lift the patient on 44-52%, raise the
    stretcher and straighten 52-62%, settle, then wheel out from 72%. */
 @keyframes manBend {
@@ -175,6 +140,45 @@
   48% { transform: translateY(calc(-13cqh * var(--crew))) rotate(-4deg); }
   52%, 100% { transform: translate(calc(-1.45cqh * var(--crew)), calc(-30.82cqh * var(--crew))); clip-path: inset(0 0 var(--clip, 0%) 0); }
 }
+/* Hockey: an ambulance (unit 3925, turned to face into the rink) drives up to the front left of the
+   ice with its lights going and parks; the crew appears at its back doors, walks out to the player,
+   wheels them back to it and climbs in, and it drives off across the front of the rink. */
+.stage { --ambo-at: 17%; }
+.amboLane {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 0;
+  bottom: calc(var(--ground) + .5cqh);
+  animation: amboVisit var(--run) both;
+}
+.ambo {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: calc(150cqh * var(--crew));
+  aspect-ratio: 760 / 444;
+  translate: -50% 0;
+  scale: -1 1;
+}
+.stage .ambo .amboArt { position: absolute; inset: 0; width: 100%; height: 100%; }
+@keyframes amboVisit {
+  0% { transform: translateX(-35%); animation-timing-function: cubic-bezier(.15, .6, .35, 1); }
+  13%, 88% { transform: translateX(var(--ambo-at)); animation-timing-function: cubic-bezier(.55, 0, .85, .4); }
+  100% { transform: translateX(135%); }
+}
+.stage[data-ambulance] .cotLane { animation-name: collectFromAmbulance; }
+.stage[data-ambulance] .crew { animation: pickupFootfalls var(--run) linear both, backToAmbulance var(--run) step-end both; }
+@keyframes collectFromAmbulance {
+  0%, 13% { transform: translateX(var(--ambo-at)); opacity: 0; }
+  15% { transform: translateX(calc(var(--ambo-at) + 3%)); opacity: 1; }
+  31% { transform: translateX(calc(var(--pickup-x) - 3%)); }
+  33%, 72% { transform: translateX(var(--pickup-x)); opacity: 1; }
+  85% { transform: translateX(calc(var(--ambo-at) + 3%)); opacity: 1; }
+  88%, 100% { transform: translateX(var(--ambo-at)); opacity: 0; }
+}
+/* Heading back to the ambulance, the crew turns around. */
+@keyframes backToAmbulance { 0% { scale: 1 1; } 72% { scale: -1 1; } }
 .announcement { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
 
 .stage[data-paused="true"] * { animation-play-state: paused !important; }
@@ -188,6 +192,8 @@
   }
   .stage :is(.crew, .down) { animation: none; }
   .stage .crew :is(.rigManBody, .rigBed, .rigScissor, .rigWomanLegs, .rigWomanBody) { animation: none; }
-  .blanket { animation: none; }
   @keyframes stillMedics { 0% { opacity: 0; } 30%, 100% { opacity: 1; } }
+  .amboLane { display: none; }
+  .stage[data-ambulance] .cotLane { animation-name: stillMedics; }
+  .stage[data-ambulance] .crew { animation: none; }
 }

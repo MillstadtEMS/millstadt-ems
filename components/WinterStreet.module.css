@@ -256,6 +256,20 @@
   inset: 0;
   transform-origin: 50% 100%;
 }
+/* The posed fall (placed by the rink script): once a knocked-down skater is on the ice they lie on
+   their side, propped on an elbow, until the medics lift them onto the cot. */
+.lie {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform-origin: 50% 100%;
+  transition: opacity .2s ease;
+}
+.rink .lie img { position: static; display: block; width: 100%; height: auto; filter: brightness(.95) drop-shadow(0 1px 1px #1c243b66); }
+.lane[data-lying="true"] .lie { opacity: 1; }
+.lane[data-lying="true"] .figure { opacity: 0; transition: opacity .2s ease; }
 .rink .figure img {
   position: absolute;
   inset: 0;

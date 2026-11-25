@@ -8,7 +8,7 @@ import { claimPeople, isPersonOut } from "@/lib/seasonal/cast";
 import { throwSnowball, visitorThrow, type Point } from "@/lib/seasonal/snowballFlight";
 import styles from "./WinterSnowballAmbush.module.css";
 
-// Holiday pop-ups. Every 7-13 s someone who is free pops up from the bottom of the screen (or out
+// Holiday pop-ups. Every 5-9 s someone who is free pops up from the bottom of the screen (or out
 // of a snowdrift) for one of several acts: a classic snowball throw, a wave hello and then a throw,
 // Braeden's mariachi serenade, Dylan's backflip, a peek with changing faces, a caroler, or the
 // whole caroler trio. Nobody is in two acts at once (lib/seasonal/cast); the crew hanging on the
@@ -136,14 +136,29 @@ const carolerRigs: Record<"curlyFull" | "curlyHalf" | "straightHalf" | "trioFull
 };
 
 const crew: Crew[] = ["kalista", "braeden", "dylan", "medical-director"];
+const guests: Guest[] = ["audrey", "debbie"];
+// Audrey and Debbie each make their debut early in a visit: until they've appeared once this
+// session, their peeks are drawn far more often.
+const debutKey = "millstadt:pop-guests:v1";
+function debuted(): Set<string> {
+  try { return new Set(JSON.parse(sessionStorage.getItem(debutKey) ?? "[]") as string[]); } catch { return new Set(); }
+}
+function markDebut(people: readonly Person[]) {
+  const seen = debuted();
+  let changed = false;
+  for (const person of people) if (isGuest(person) && !seen.has(person)) { seen.add(person); changed = true; }
+  if (changed) try { sessionStorage.setItem(debutKey, JSON.stringify([...seen])); } catch { /* Storage blocked: they just stay boosted. */ }
+}
 const trio: Person[] = ["caroler-little", "caroler-curly", "caroler-straight"];
 // Who can do which act. Weights are per act (shared by everyone who can do it).
 const castings: ReadonlyArray<{ kind: Kind; weight: number; casts: Person[][] }> = [
   { kind: "classic", weight: 1, casts: crew.map((person) => [person]) },
   { kind: "wave", weight: .85, casts: crew.map((person) => [person]) },
-  { kind: "peek", weight: 1, casts: [...crew, "audrey", "debbie"].map((person) => [person as Person]) },
-  { kind: "serenade", weight: .8, casts: [["braeden"]] },
-  { kind: "backflip", weight: .8, casts: [["dylan"]] },
+  { kind: "peek", weight: 1, casts: crew.map((person) => [person]) },
+  // Audrey and Debbie get peeks of their own, so they turn up about as often as each of the crew.
+  { kind: "peek", weight: 1.1, casts: guests.map((person) => [person]) },
+  { kind: "serenade", weight: 1, casts: [["braeden"]] },
+  { kind: "backflip", weight: 1.15, casts: [["dylan"]] },
   { kind: "caroler", weight: .9, casts: [["caroler-curly"], ["caroler-straight"]] },
   { kind: "trio", weight: .8, casts: [trio] },
 ];
@@ -261,10 +276,10 @@ function runCast(env: Env) {
   const gone = new Set<Person>();
   let disposed = false, loadingArt = false, stamp = 0, serial = 0;
   let lastPeople: Person[] = [], lastKind: Kind | null = null, lastDrift: Box | null = null;
-  let waiting = forced ? 900 : between(6000, 10000), clock: number | null = null;
+  let waiting = forced ? 900 : between(4000, 7000), clock: number | null = null;
   let wake: number | undefined, scrollCheck: number | undefined;
   let startX = 0, startY = 0, startType = "mouse";
-  const gap = () => forced ? 2600 : between(7000, 13000);
+  const gap = () => forced ? 2600 : between(5000, 9000);
   const free = (person: Person) => !gone.has(person) && !isPersonOut(person);
 
   function commit() {
@@ -344,10 +359,14 @@ function runCast(env: Env) {
   /** Choose an act and claim its people: never someone already out, never last time's face if avoidable. */
   function cast(allowed: readonly Kind[] | null, exclude: readonly Person[]): Casting | null {
     let pool: Array<{ kind: Kind; people: Person[]; weight: number }> = [];
+    const seen = debuted();
     for (const c of castings) {
       if (allowed && !allowed.includes(c.kind)) continue;
       const casts = c.casts.filter(people => people.every(free));
-      for (const people of casts) pool.push({ kind: c.kind, people, weight: c.weight / casts.length * (c.kind === lastKind && !forced ? .35 : 1) });
+      for (const people of casts) {
+        const debut = people.some(person => isGuest(person) && !seen.has(person)) ? 6 : 1;
+        pool.push({ kind: c.kind, people, weight: c.weight / casts.length * (c.kind === lastKind && !forced ? .35 : 1) * debut });
+      }
     }
     const wanted = preview?.person ? pool.filter(o => o.people.includes(preview.person!)) : [];
     if (wanted.length) pool = wanted;
@@ -499,6 +518,7 @@ function runCast(env: Env) {
     if (!actor) { c.release(); if (!disposed && token === stamp && !actors.size) schedule(guarded() ? 1200 : 1700); return; }
     lastPeople = actor.people;
     lastKind = actor.kind;
+    markDebut(actor.people);
     begin(actor);
     void duet(actor, token);
   }

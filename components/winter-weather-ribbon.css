@@ -6,24 +6,25 @@
     /* Reserve space below Lounge and Menu for the peppermint edge and roof cable. */
     padding-block: 3px 16px;
   }
-  /* The weather readout and the neon Time Out sign sit side by side in the middle of the ribbon
-     (stacked on narrow screens). */
+  /* The ribbon stacks its signs down the middle: the weather readout on top, the neon Time Out
+     sign centred under it. */
   .mems-weather-ribbon {
     position: relative;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 4px;
     width: 100%;
     min-height: 44px;
-    padding: 3px 10px;
+    padding: 5px 10px 6px;
     box-sizing: border-box;
   }
-  .mems-weather-ribbon > div { min-height: 34px; flex: 0 1 auto !important; min-width: 0; }
+  .mems-weather-ribbon > div { min-height: 28px; flex: 0 1 auto !important; min-width: 0; max-width: 100%; }
   .mems-weather-ribbon > div > div { padding-inline: 0 !important; }
   @media (max-width: 760px) {
-    .mems-weather-ribbon { flex-direction: column; gap: 3px; padding: 4px 8px 5px; }
-    .mems-weather-ribbon > div { min-height: 26px; max-width: 100%; }
+    .mems-weather-ribbon { gap: 3px; padding: 4px 8px 5px; }
+    .mems-weather-ribbon > div { min-height: 26px; }
   }
   .mems-weather-readout {
     display: inline-flex;

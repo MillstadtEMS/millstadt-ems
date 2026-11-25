@@ -2,13 +2,15 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import EmergencyLights from "./EmergencyLights";
 import styles from "./WinterRinkRescue.module.css";
 
 // The Millstadt medics answer every fall on the Christmas rink: they wheel the stretcher in, lower
 // it, bend to lift the patient on, raise it and wheel out. A skater knocked flat on the ice (three
 // quick snowballs, or the hockey pair's collision) sends "winter-rink-knockdown"; the village hunt
 // sends "winter-rink-pickup" when the gift thief goes down in the snow. While the crew is out, the
-// rink hears "winter-rink-rescue" so the other skaters can make room and watch.
+// rink hears "winter-rink-rescue" so the other skaters can make room and watch. Everyone knocked
+// down while the crew is busy waits on the ice, in order, until the crew comes for them.
 
 export const rinkKnockdownEvent = "winter-rink-knockdown";
 export const rinkRescueEvent = "winter-rink-rescue";
@@ -30,10 +32,10 @@ export type RinkKnockdown = {
   width: number;
   /** -1 when the patient lies mirrored (head to the right). */
   flip: 1 | -1;
-  /** Lying-down art. `rest` is where the patient's back meets the ice, as a fraction of its height;
-      `hip` is where the hips are across it (a blanket covers the legs on the stretcher), and `tilt`
-      lays a diagonal fall flat on the mattress. */
-  patient: { src: string; width: number; height: number; rest: number; hip?: number; tilt?: number };
+  /** Hockey: the crew arrives in an ambulance, lights going, and takes the player back to it. */
+  ambulance?: boolean;
+  /** Lying-down art (a posed fall). `rest` is where the patient's back meets the ice, as a fraction of its height. */
+  patient: { src: string; width: number; height: number; rest: number };
   onStart?: () => void;
   onComplete?: () => void;
 };
@@ -41,7 +43,7 @@ export type RinkRescueState = { active: boolean; person: string; x: number };
 
 type Request = {
   subject: string; label: string; x: number; floor: number; scale: number; width: number; flip: 1 | -1;
-  src: string; ratio: number; rest: number; lift: number; skater: boolean; hip: number; tilt: number;
+  src: string; ratio: number; rest: number; lift: number; skater: boolean; ambulance: boolean;
   onStart?: () => void; onComplete?: () => void;
 };
 type Guest = { person: "guest"; x?: number; onComplete: () => void };
@@ -74,6 +76,7 @@ export default function WinterRinkRescue() {
     if (!rink) return;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let current: Request | null = null, queuedGuest: Request | null = null;
+    const waiting: Request[] = [];
     let ready = false, playing = false, visible = false, disposed = false;
     let remaining = 0, duration = 0, startedAt: number | null = null;
     let timer: number | undefined;
@@ -116,8 +119,8 @@ export default function WinterRinkRescue() {
         setStatus("The medics have left the rink with their passenger.");
         tell(false, completed);
       }
-      const next = queuedGuest;
-      queuedGuest = null;
+      const next = queuedGuest ?? waiting.shift() ?? null;
+      if (next === queuedGuest) queuedGuest = null;
       if (next) void begin(next);
       else schedule();
       completed?.onComplete?.();
@@ -126,7 +129,7 @@ export default function WinterRinkRescue() {
     async function begin(request: Request) {
       pauseClock();
       current = request; ready = playing = false;
-      duration = motion.matches ? 3000 : 10_500;
+      duration = motion.matches ? 3000 : request.ambulance ? 13_000 : 10_500;
       setScene({ request, playing: false, duration });
       tell(true, request);
       try {
@@ -145,19 +148,21 @@ export default function WinterRinkRescue() {
     }
 
     function onKnockdown(event: Event) {
-      if (!(event instanceof CustomEvent) || !event.cancelable || current || queuedGuest || document.hidden) return;
+      if (!(event instanceof CustomEvent) || !event.cancelable || document.hidden) return;
       const fall = event.detail as RinkKnockdown;
       if (!fall || typeof fall.person !== "string" || !fall.patient?.src ||
         ![fall.x, fall.floor, fall.scale, fall.width, fall.patient.width, fall.patient.height, fall.patient.rest].every(Number.isFinite)) return;
       event.preventDefault();
-      if (!visible) rink!.scrollIntoView({ block: "nearest", behavior: motion.matches ? "instant" : "smooth" });
-      void begin({
+      const request: Request = {
         subject: fall.person, label: fall.name || "a skater", x: bounded(fall.x, .03, .97), floor: bounded(fall.floor, 0, .6),
         scale: bounded(fall.scale, .4, 1.4), width: bounded(fall.width, 10, 160), flip: fall.flip === -1 ? -1 : 1,
         src: fall.patient.src, ratio: fall.patient.height / fall.patient.width, rest: bounded(fall.patient.rest, 0, 1),
-        hip: bounded(fall.patient.hip ?? 1, .3, 1), tilt: bounded(fall.patient.tilt ?? 0, -60, 60),
-        lift: 1, skater: true, onStart: fall.onStart, onComplete: fall.onComplete,
-      });
+        lift: 1, skater: true, ambulance: fall.ambulance === true, onStart: fall.onStart, onComplete: fall.onComplete,
+      };
+      // The crew is busy: this skater stays down on the ice until they come back for them.
+      if (current || queuedGuest) { waiting.push(request); return; }
+      if (!visible) rink!.scrollIntoView({ block: "nearest", behavior: motion.matches ? "instant" : "smooth" });
+      void begin(request);
     }
 
     function onGuest(event: Event) {
@@ -167,7 +172,7 @@ export default function WinterRinkRescue() {
       event.preventDefault();
       const request: Request = {
         subject: "guest", label: "the gift thief", x: bounded(Number.isFinite(guest.x) ? guest.x! : .5, .19, .81), floor: .12,
-        scale: 1, width: 95, flip: 1, src: thief.src, ratio: thief.height / thief.width, rest: 1, lift: .78, skater: false, hip: 1, tilt: 0,
+        scale: 1, width: 95, flip: 1, src: thief.src, ratio: thief.height / thief.width, rest: 1, lift: .78, skater: false, ambulance: false,
         onComplete: guest.onComplete,
       };
       if (!visible) rink!.scrollIntoView({ block: "center", behavior: motion.matches ? "instant" : "smooth" });
@@ -192,6 +197,7 @@ export default function WinterRinkRescue() {
       window.removeEventListener("winter-rink-pickup", onGuest);
       current?.onComplete?.();
       queuedGuest?.onComplete?.();
+      waiting.splice(0).forEach(request => request.onComplete?.());
     };
   }, []);
 
@@ -199,7 +205,7 @@ export default function WinterRinkRescue() {
   const drop = request ? (1 - request.rest) * request.width * request.ratio : 0;
   return <>
     <div className={styles.stage} ref={stage} aria-hidden="true" data-paused={paused}
-      data-kind={request ? request.skater ? "skater" : "guest" : undefined}
+      data-kind={request ? request.skater ? "skater" : "guest" : undefined} data-ambulance={request?.ambulance || undefined}
       data-rink-rescue={scene ? scene.playing ? "playing" : "loading" : "idle"} style={request ? {
         "--run": (scene?.duration ?? 10_500) + "ms", "--pickup-x": request.x * 100 + "%", "--ground": request.floor * 100 + "%",
         "--crew": request.scale, "--down-w": request.width, "--down-drop": drop, "--flip": request.flip, "--lift": request.lift,
@@ -208,20 +214,26 @@ export default function WinterRinkRescue() {
         "--bed-drop": drop * request.lift / (74 * request.scale) * 100 + "%",
         // Limbs below the patient's back tuck out of sight behind the mattress once they're on the bed.
         "--clip": request.skater ? Math.max(0, (1 - request.rest) * 100 - 3) + "%" : "0%",
-        "--rest": request.rest, "--ratio": request.ratio, "--hip": request.hip, "--tilt": request.tilt + "deg",
         "--z": rinkDepthZ(request.floor),
       } as CSSProperties : undefined}>
       {scene?.playing && request && <>
+        {/* Hockey: Millstadt EMS unit 3925 pulls up at the edge of the rink, lights going; the crew
+            comes out of it with the cot and takes the player back to it, then it drives off. */}
+        {request.ambulance && (
+          <div className={styles.amboLane}>
+            <div className={styles.ambo}>
+              <Sprite src="/images/winter/fleet/3925.webp" width={760} height={444} className={styles.amboArt} />
+              <EmergencyLights unit="3925" on />
+            </div>
+          </div>
+        )}
         <div className={styles.cotLane}>
           <div className={styles.crew}>
             {rig.map(part => part === "bed"
               ? <div key={part} className={styles.rigBed}>
                   <Sprite src={rigDirectory + "bed.webp"} width={768} height={384} className={styles.rigPart} />
-                  {/* Skaters ride out lying down under a blanket, like any patient (the gift thief keeps his own fall). */}
-                  <div className={styles.onBed}>
-                    <Sprite src={request.src} width={400} height={Math.round(400 * request.ratio)} className={styles.patientArt} />
-                    {request.skater && <span className={styles.blanket}><i /><i /></span>}
-                  </div>
+                  {/* Everyone rides out in their own posed fall, lying on their side like the gift thief. */}
+                  <Sprite src={request.src} width={400} height={Math.round(400 * request.ratio)} className={styles.onBed} />
                 </div>
               : <Sprite key={part} src={rigDirectory + part + ".webp"} width={768} height={384} className={`${styles.rigPart} ${styles[rigClass[part]]}`} />)}
           </div>
